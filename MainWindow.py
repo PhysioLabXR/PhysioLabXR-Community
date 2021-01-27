@@ -97,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_visualize_unityLSL_data(self):
         unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
         [self.unityLSL_widget.layout().addWidget(upw) for upw in unityLSL_plot_widgets]
-        self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(0, 0, 255))) for upw in unityLSL_plot_widgets]
+        self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
 
     def visualize_eeg_data(self, data_dict):
         self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
