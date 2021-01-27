@@ -5,7 +5,7 @@ import numpy as np
 import brainflow
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from brainflow.data_filter import DataFilter, FilterTypes, AggOperations
-
+import matplotlib.pyplot as plt
 
 def main():
     parser = argparse.ArgumentParser()
@@ -48,14 +48,25 @@ def main():
 
     # board.start_stream () # use this for default options
     board.start_stream(45000, args.streamer_params)
-    time.sleep(10)
-    # data = board.get_current_board_data (256) # get latest 256 packages or less, doesnt remove them from internal buffer
-    data = board.get_board_data()  # get all data and remove it from internal buffer
+
+    data = np.empty(shape=(31, 0))
+    print('Started streaming')
+    start_time = time.time()
+    while True:
+        try:
+            # data = board.get_current_board_data (256) # get latest 256 packages or less, doesnt remove them from internal buffer
+            new_data = board.get_board_data()
+            print('new data shape is ' + str(new_data.shape))
+            data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
+        except KeyboardInterrupt:
+            f_sample = data.shape[-1] / (time.time() - start_time)
+            print('Stopped streaming, sampling rate = ' + str(f_sample))
+            break
     board.stop_stream()
     board.release_session()
 
     print(data)
-
+    return data
 
 if __name__ == "__main__":
-    main()
+    data = main()
