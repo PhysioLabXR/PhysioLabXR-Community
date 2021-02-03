@@ -6,7 +6,7 @@ from pylsl import StreamInlet, resolve_stream
 def main():
     # first resolve an EEG stream on the lab network
     print("looking for an EyeData stream...")
-    streams = resolve_stream('type', 'Unity.EyeData')
+    streams = resolve_stream('type', 'Unity.SynchronizationTest')
 
     # create a new inlet to read from the stream
     inlet = StreamInlet(streams[0])

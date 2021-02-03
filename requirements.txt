@@ -2,3 +2,4 @@ brainflow
 numpy
 PyQt5
 pyserial
+pylsl
