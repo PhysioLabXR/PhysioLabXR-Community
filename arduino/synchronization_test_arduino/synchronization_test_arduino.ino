@@ -58,5 +58,5 @@ void loop(){
 //    //Serial.print("turn ON");
 //  }
 
-  delay(10); //Small delay
+  //delay(10); //Small delay
 }

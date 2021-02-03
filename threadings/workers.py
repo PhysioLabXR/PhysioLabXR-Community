@@ -175,3 +175,81 @@ class UnityLSLWorker(QObject):
             return self._is_connected
         else:
             print('UnityLSLWorker: No Radar Interface Connected, ignored.')
+
+
+class InferenceWorker(QObject):
+    """
+
+    """
+    # for passing data to the gesture tab
+    # signal_inference_results = pyqtSignal(np.ndarray)
+    signal_inference_results = pyqtSignal(int)
+    tick_signal = pyqtSignal(dict)
+
+    def __init__(self, inference_interface=None, *args, **kwargs):
+        super(InferenceWorker, self).__init__()
+        self.tick_signal.connect(self.inference_process_on_tick)
+        if not inference_interface:
+            print('None type unityLSL_interface, starting in simulation mode')
+
+        self.inference_interface = inference_interface
+        self._is_streaming = True
+        # self._is_connected = False
+
+        self.start_time = time.time()
+        self.end_time = time.time()
+
+    def inference_process_on_tick(self, samples_dict):
+        if self._is_streaming:
+            if self.inference_interface:
+                inference_results, _ = self.inference_interface.send_samples_receive_inference(samples_dict)  # get all data and remove it from internal buffer
+            else:  # this is in simulation mode
+                inference_results = None  # TODO implement simulation mode
+
+            self.signal_inference_results.emit(inference_results)
+
+    # def start_stream(self):
+    #     if self._unityLSL_interface:  # if the sensor interfaces is established
+    #         self._unityLSL_interface.start_sensor()
+    #     else:
+    #         print('UnityLSLWorker: Start Simulating Unity LSL data')
+    #     self._is_streaming = True
+    #     self.start_time = time.time()
+    #
+    # def stop_stream(self):
+    #     if self._unityLSL_interface:
+    #         self._unityLSL_interface.stop_sensor()
+    #     else:
+    #         print('UnityLSLWorker: Stop Simulating Unity LSL data')
+    #         print('UnityLSLWorker: frame rate calculation is not enabled in simulation mode')
+    #     self._is_streaming = False
+    #     self.end_time = time.time()
+    #
+    # def connect(self, params):
+    #     """
+    #     check if _unityLSL_interface exists before connecting.
+    #     """
+    #     if self._unityLSL_interface:
+    #         self._unityLSL_interface.connect_sensor()
+    #     else:
+    #         print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
+    #     self._is_connected = True
+    #
+    # def disconnect(self, params):
+    #     """
+    #     check if _unityLSL_interface exists before connecting.
+    #     """
+    #     if self._unityLSL_interface:
+    #         self._unityLSL_interface.disconnect_sensor()
+    #     else:
+    #         print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
+    #     self._is_connected = False
+    #
+    # def is_streaming(self):
+    #     return self._is_streaming
+    #
+    # def is_connected(self):
+    #     if self._unityLSL_interface:
+    #         return self._is_connected
+    #     else:
+    #         print('UnityLSLWorker: No Radar Interface Connected, ignored.')

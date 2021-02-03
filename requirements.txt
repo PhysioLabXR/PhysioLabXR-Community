@@ -3,3 +3,4 @@ numpy
 PyQt5
 pyserial
 pylsl
+tensorflow

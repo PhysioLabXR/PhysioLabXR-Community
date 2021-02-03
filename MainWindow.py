@@ -7,26 +7,34 @@ import numpy as np
 
 import config
 import threadings.workers as workers
+from utils.data_utils import window_slice
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, eeg_interface, unityLSL_inferface, *args, **kwargs):
+    def __init__(self, eeg_interface, unityLSL_inferface, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
 
         # create sensor threads, worker threads for different sensors
         self.worker_threads = None
         self.workers = None
+        self.inference_worker = None
 
         # create workers for different sensors
-        self.init_sensor_workers_threads(eeg_interface, unityLSL_inferface)
+        self.init_sensor_workers_threads(eeg_interface, unityLSL_inferface, inference_interface)
 
         # timer
         self.timer = QTimer()
-        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 0.5 KHz refresh rate
+        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 250 KHz refresh rate
         self.timer.timeout.connect(self.ticks)
         self.timer.start()
+
+        # inference timer
+        self.inference_timer = QTimer()
+        self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
+        self.inference_timer.timeout.connect(self.inference_ticks)
+        self.inference_timer.start()
 
         # bind buttons
         self.connect_sensor_btn.clicked.connect(self.workers['eeg'].connect)
@@ -55,10 +63,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
-    def init_sensor_workers_threads(self, eeg_interface, unityLSL_inferface):
+    def init_sensor_workers_threads(self, eeg_interface, unityLSL_inferface, inference_interface):
         self.worker_threads = {
             'unityLSL': pg.QtCore.QThread(self),
             'eeg': pg.QtCore.QThread(self),
+            'inference': pg.QtCore.QThread(self),
         }
         [w.start() for w in self.worker_threads.values()]  # start all the worker threads
 
@@ -69,11 +78,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.workers['eeg'].moveToThread(self.worker_threads['eeg'])
         self.workers['unityLSL'].moveToThread(self.worker_threads['unityLSL'])
 
+        self.inference_worker = workers.InferenceWorker(inference_interface)
+        self.inference_worker.moveToThread(self.worker_threads['inference'])
+
+
     def ticks(self):
         """
         ticks every 'refresh' milliseconds
         """
+        # pass
         [w.tick_signal.emit() for w in self.workers.values()]
+
+    def inference_ticks(self):
+        if self.unityLSL_data_buffer.shape[-1] < config.EYE_INFERENCE_SEND_SIZE:
+            eye_frames = np.concatenate((np.zeros(shape=(
+                2,  # 2 for two eyes' pupil sizes
+                config.EYE_INFERENCE_SEND_SIZE - self.unityLSL_data_buffer.shape[-1])),
+                                                    self.unityLSL_data_buffer[1:3, :]), axis=-1)
+        else:
+            eye_frames = self.unityLSL_data_buffer[1:2,
+                                    -config.EYE_INFERENCE_SEND_SIZE:]  # plot the most recent 10 seconds
+        # make samples out of the most recent data
+        eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_TIMESTEPS, stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
+
+        samples_dict = {'eye': eye_samples}
+        self.inference_worker.tick_signal.emit(samples_dict)
 
     def stop_eeg(self):
         self.workers['eeg'].stop_stream()
