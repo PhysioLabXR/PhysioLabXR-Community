@@ -1,3 +1,4 @@
 brainflow
 numpy
 PyQt5
+pyserial
