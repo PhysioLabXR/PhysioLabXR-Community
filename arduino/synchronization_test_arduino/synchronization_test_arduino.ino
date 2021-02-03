@@ -27,7 +27,7 @@ void setup(){
 void loop(){
   
   if (pulse_debouncer < pulse_debouncer_steps) {
-    analogWrite(pwm,25);
+    analogWrite(pwm,50);
     pulse_debouncer += 1;
   }
   else {
@@ -39,7 +39,7 @@ void loop(){
   //Serial.println(value);
   
   if (value - value_last > 200 && pulse_debouncer >= pulse_debouncer_steps) {
-    Serial.println("Pulse detected");
+    Serial.println("D");
     digitalWrite(LEDPin, HIGH);
     analogWrite(pwm,25);
     pulse_debouncer = 0;

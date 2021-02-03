@@ -1,7 +1,7 @@
 import serial
 import time
 
-ser = serial.Serial('/dev/tty.usbmodem144101', 9600)  # change this to your serial port
+ser = serial.Serial('COM8', 9600, timeout=1e-2)  # change this to your serial port
 time.sleep(2)
 
 while 1:

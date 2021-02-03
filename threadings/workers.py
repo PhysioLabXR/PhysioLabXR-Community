@@ -123,7 +123,7 @@ class UnityLSLWorker(QObject):
     def unityLSL_process_on_tick(self):
         if self._is_streaming:
             if self._unityLSL_interface:
-                data = self._unityLSL_interface.process_frames()  # get all data and remove it from internal buffer
+                data, _ = self._unityLSL_interface.process_frames()  # get all data and remove it from internal buffer
             else:  # this is in simulation mode
                 data = sim_unityLSL()
 

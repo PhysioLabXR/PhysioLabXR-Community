@@ -28,7 +28,7 @@ class UnityLSLInterface:
     def process_frames(self):
         # return one or more frames of the sensor
         frames, timestamps = self.inlet.pull_chunk()
-        return np.transpose(frames)
+        return np.transpose(frames), timestamps
 
     def stop_sensor(self):
         print('UnityLSLInterface: Nothing to be done.')
@@ -37,6 +37,9 @@ class UnityLSLInterface:
         self.inlet.close_stream()
         print('UnityLSLInterface: inlet stream closed.')
 
+    def info(self):
+        return self.inlet.info()
+
 
 def run_test():
     data = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
@@ -44,7 +47,7 @@ def run_test():
     start_time = time.time()
     while 1:
         try:
-            new_data = openBCI_interface.process_frames()
+            new_data, _ = openBCI_interface.process_frames()
             print(new_data)
             if len(new_data) > 0:
                 data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
