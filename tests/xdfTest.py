@@ -2,7 +2,8 @@ import pyxdf
 import matplotlib.pyplot as plt
 import numpy as np
 
-data, header = pyxdf.load_xdf('C:/Recordings/CurrentStudy/exp1/untitled.xdf')
+# data, header = pyxdf.load_xdf('C:/Recordings/CurrentStudy/exp1/untitled.xdf')
+data, header = pyxdf.load_xdf('C:/Users/S-Vec/Dropbox/NiDyN/s13/s13_eye/data/s13_eye_1.xdf')
 
 for stream in data:
     y = stream['time_series']
