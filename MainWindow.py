@@ -61,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.inference_results_plots = None
         self.init_visualize_inference_results()
+        self.inference_num_visualized_results = int(
+            config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
         self.workers['eeg'].signal_data.connect(self.visualize_eeg_data)
         self.workers['unityLSL'].signal_data.connect(self.visualize_unityLSL_data)
@@ -91,7 +93,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_worker = workers.InferenceWorker(inference_interface)
         self.inference_worker.moveToThread(self.worker_threads['inference'])
 
-
     def ticks(self):
         """
         ticks every 'refresh' milliseconds
@@ -104,12 +105,13 @@ class MainWindow(QtWidgets.QMainWindow):
             eye_frames = np.concatenate((np.zeros(shape=(
                 2,  # 2 for two eyes' pupil sizes
                 config.EYE_INFERENCE_TOTAL_TIMESTEPS - self.unityLSL_data_buffer.shape[-1])),
-                                                    self.unityLSL_data_buffer[1:3, :]), axis=-1)
+                                         self.unityLSL_data_buffer[1:3, :]), axis=-1)
         else:
-            eye_frames = self.unityLSL_data_buffer[1:2,
-                         -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]  # plot the most recent 10 seconds
+            eye_frames = self.unityLSL_data_buffer[1:3,
+                         -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
         # make samples out of the most recent data
-        eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS, stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
+        eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
+                                   stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
 
         samples_dict = {'eye': eye_samples}
         self.inference_worker.tick_signal.emit(samples_dict)
@@ -141,7 +143,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
         [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
-        self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 0, 255))) for pw in inference_results_plot_widgets]
+        self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
+                                        inference_results_plot_widgets]
 
     def visualize_eeg_data(self, data_dict):
         self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
@@ -172,13 +175,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 unityLSL_data_to_plot = self.unityLSL_data_buffer[:,
                                         -self.unityLSL_num_visualized_sample:]  # plot the most recent 10 seconds
             time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
-            unityLSL_data_to_plot = unityLSL_data_to_plot[config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
+            unityLSL_data_to_plot = unityLSL_data_to_plot[
+                config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
             [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
 
     def visualize_inference_results(self, inference_results):
-        if self.inference_worker.is_connected > 0:
+        # results will be -1 if inference is not connected
+        if self.inference_worker.is_connected and inference_results[0][0] >= 0:
             self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
-            pass
+
+            if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
+                data_to_plot = np.concatenate((np.zeros(shape=(
+                    self.inference_num_visualized_results - self.inference_buffer.shape[0], config.INFERENCE_CLASS_NUM)),
+                                               self.inference_buffer), axis=0)  # zero padding
+            else:
+                # plot the most recent 10 seconds
+                data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
+            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
+            [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
     def init_eeg_buffer(self):
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))

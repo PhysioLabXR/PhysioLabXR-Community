@@ -10,9 +10,9 @@ from interfaces.UnityLSLInterface import UnityLSLInterface
 if __name__ == '__main__':
     # Define the sensor interfaces
     # eeg_interface = OpenBCIInterface()
-    # unityLSL_inferface = UnityLSLInterface()
+    unityLSL_inferface = UnityLSLInterface()
     eeg_interface = None
-    unityLSL_inferface = None
+    # unityLSL_inferface = None
     inference_interface = InferenceInterface()
 
     # load the qt application

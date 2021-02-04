@@ -216,7 +216,8 @@ class InferenceWorker(QObject):
                 inference_results = self.inference_interface.send_samples_receive_inference(samples_dict)  # get all data and remove it from internal buffer
             else:  # this is in simulation mode
                 inference_results = sim_inference()  # TODO implement simulation mode
-            self.signal_inference_results.emit(inference_results)
+            if len(inference_results) > 0:
+                self.signal_inference_results.emit(inference_results)
 
     # def start_stream(self):
     #     if self._unityLSL_interface:  # if the sensor interfaces is established
