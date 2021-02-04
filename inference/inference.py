@@ -1,5 +1,5 @@
 import numpy as np
-from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet, local_clock
+from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet, local_clock, resolve_byprop
 from scipy.signal import resample
 from tensorflow.python.keras.models import load_model
 
@@ -27,13 +27,15 @@ def inference(samples_preprocessed, model, y_encoder):
     return results, results_decoded
 
 def main():
-    print("looking for stream with type " + config.INFERENCE_LSL_NAME)
-    streams = resolve_stream('type', config.INFERENCE_LSL_NAME)
+    print("Waiting for inference sample data stream " + config.INFERENCE_LSL_NAME + '...')
+    streams = resolve_byprop('type', config.INFERENCE_LSL_NAME)
 
     # create a new inlet to read from the stream  ######################################################################
     inlet = StreamInlet(streams[0])
+    print('number of streams is ' + str(len(streams)))
 
     # create a outlet to relay the inference results  ##################################################################
+    print('Sample stream found, creating inference results out stream ...')
     lsl_data_type = config.INFERENCE_LSL_RESULTS_TYPE
     lsl_data_name = config.INFERENCE_LSL_RESULTS_NAME
     info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=config.INFERENCE_CLASS_NUM, channel_format='float32', source_id='myuid1234')
@@ -52,7 +54,6 @@ def main():
     model, y_encoder, data_downsampled_min, data_downsampled_max = load_model_params()
 
     # data buffers #####################################################################
-    eye_data_accumulated = np.empty((0, 2))
     timestamp_accumulated = []
 
     print('Entering inference loop')
@@ -60,15 +61,10 @@ def main():
         # get a new sample (you can also omit the timestamp part if you're not
         # interested in it)
         try:
-            data, timestamps = inlet.pull_chunk(timeout=1e-2, max_samples=config.EYE_TOTAL_POINTS_PER_INFERENCE)
-            if len(data) > 0:
-                timestamp_accumulated += timestamps  # accumulate timestamps
-                eye_data_accumulated = np.concatenate([eye_data_accumulated, data])
-
-            if len(eye_data_accumulated) == config.EYE_TOTAL_POINTS_PER_INFERENCE:
-                print(len(eye_data_accumulated))
-                print(eye_data_accumulated.shape[0] / config.EYE_TOTAL_POINTS_PER_INFERENCE)
-                samples = np.reshape(eye_data_accumulated[:config.EYE_TOTAL_POINTS_PER_INFERENCE], newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, -1))  # take the most recent samples
+            data, timestamp = inlet.pull_sample(timeout=1e-2)
+            if data:
+                timestamp_accumulated.append(timestamp)  # accumulate timestamps
+                samples = np.reshape(data, newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, 2))  # take the most recent samples
 
                 # conduct inference
                 samples_preprocessed = preprocess_eye_samples(samples, data_downsampled_max, data_downsampled_min)
@@ -78,13 +74,9 @@ def main():
                 results_moving_average = np.mean(results, axis=0)
                 print(results_moving_average)
                 outlet.push_sample(results_moving_average)
-
-                # put the reminder
-                eye_data_accumulated = np.empty((0, 2))  # this is mostly not needed because each call to pull_chunk will return a fixed chunk size of config.EYE_TOTAL_POINTS_PER_INFERENCE
-                print(eye_data_accumulated.shape[0] / config.EYE_TOTAL_POINTS_PER_INFERENCE)
+                inference_per_second = len(timestamp_accumulated) / (timestamp_accumulated[-1] - timestamp_accumulated[0]) if timestamp_accumulated[-1] - timestamp_accumulated[0] != 0. else 0.
+                print('Inference per second is ' + str(inference_per_second))
                 print()
-            elif len(eye_data_accumulated) > config.EYE_TOTAL_POINTS_PER_INFERENCE:
-                print('missed, this should never happen; you probably want to use a smaller batch size')
         except KeyboardInterrupt:
             pass
             # if len(samples) > 1:
