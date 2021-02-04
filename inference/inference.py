@@ -16,7 +16,7 @@ def main():
     eye_data_accumulated = np.empty((0, 2))
     timestamp_accumulated = []
 
-    print('Entering inference look')
+    print('Entering inference loop')
     while True:
         # get a new sample (you can also omit the timestamp part if you're not
         # interested in it)
@@ -26,7 +26,6 @@ def main():
                 timestamp_accumulated += timestamps  # accumulate timestamps
                 eye_data_accumulated = np.concatenate([eye_data_accumulated, data])
 
-            print(data.shape)
             if len(eye_data_accumulated) >= config.EYE_TOTAL_POINTS_PER_INFERENCE:
                 # samples = np.reshape(eye_data_accumulated, newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, -1))
                 print(eye_data_accumulated.shape)
