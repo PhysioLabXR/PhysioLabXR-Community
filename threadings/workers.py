@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from utils.sim import sim_openBCI_eeg, sim_unityLSL
+from interfaces.InferenceInterface import InferenceInterface
+from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
 
 class EEGWorker(QObject):
@@ -183,10 +184,10 @@ class InferenceWorker(QObject):
     """
     # for passing data to the gesture tab
     # signal_inference_results = pyqtSignal(np.ndarray)
-    signal_inference_results = pyqtSignal(int)
+    signal_inference_results = pyqtSignal(list)
     tick_signal = pyqtSignal(dict)
 
-    def __init__(self, inference_interface=None, *args, **kwargs):
+    def __init__(self, inference_interface: InferenceInterface=None, *args, **kwargs):
         super(InferenceWorker, self).__init__()
         self.tick_signal.connect(self.inference_process_on_tick)
         if not inference_interface:
@@ -194,18 +195,27 @@ class InferenceWorker(QObject):
 
         self.inference_interface = inference_interface
         self._is_streaming = True
-        # self._is_connected = False
+        self.is_connected = False
 
         self.start_time = time.time()
         self.end_time = time.time()
 
+    def connect(self):
+        if self.inference_interface:
+            self.inference_interface.connect_inference_result_stream()
+            self.is_connected = True
+
+    def disconnect(self):
+        if self.inference_interface:
+            self.inference_interface.disconnect_inference_result_stream()
+            self.is_connected = False
+
     def inference_process_on_tick(self, samples_dict):
         if self._is_streaming:
             if self.inference_interface:
-                inference_results, _ = self.inference_interface.send_samples_receive_inference(samples_dict)  # get all data and remove it from internal buffer
+                inference_results = self.inference_interface.send_samples_receive_inference(samples_dict)  # get all data and remove it from internal buffer
             else:  # this is in simulation mode
-                inference_results = None  # TODO implement simulation mode
-
+                inference_results = sim_inference()  # TODO implement simulation mode
             self.signal_inference_results.emit(inference_results)
 
     # def start_stream(self):
