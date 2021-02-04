@@ -47,6 +47,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unitylsl_stop_streaming_btn.clicked.connect(self.stop_unityLSL)
         self.unitylsl_disconnect_sensor_btn.clicked.connect(self.workers['unityLSL'].disconnect)
 
+        self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
+        self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
+
         # bind visualization
         self.eeg_plots = None
         self.init_visualize_eeg_data()
@@ -56,12 +59,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_visualize_unityLSL_data()
         self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
 
+        self.inference_results_plots = None
+        self.init_visualize_inference_results()
+
         self.workers['eeg'].signal_data.connect(self.visualize_eeg_data)
         self.workers['unityLSL'].signal_data.connect(self.visualize_unityLSL_data)
+        self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
 
         # data buffers
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
+
+        # inference buffer
+        self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
     def init_sensor_workers_threads(self, eeg_interface, unityLSL_inferface, inference_interface):
         self.worker_threads = {
@@ -128,6 +138,11 @@ class MainWindow(QtWidgets.QMainWindow):
         [self.unityLSL_widget.layout().addWidget(upw) for upw in unityLSL_plot_widgets]
         self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
 
+    def init_visualize_inference_results(self):
+        inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
+        [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
+        self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 0, 255))) for pw in inference_results_plot_widgets]
+
     def visualize_eeg_data(self, data_dict):
         self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
                                               axis=-1)  # get all data and remove it from internal buffer
@@ -159,6 +174,11 @@ class MainWindow(QtWidgets.QMainWindow):
             time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
             unityLSL_data_to_plot = unityLSL_data_to_plot[config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
             [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
+
+    def visualize_inference_results(self, inference_results):
+        if self.inference_worker.is_connected > 0:
+            self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
+            pass
 
     def init_eeg_buffer(self):
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))

@@ -8,3 +8,6 @@ def sim_openBCI_eeg():
 
 def sim_unityLSL():
     return np.random.uniform(low=0.0, high=1.0, size=(config.UNITY_LSL_CHANNEL_SIZE, 1))
+
+def sim_inference():
+    return [[0. for _ in range(config.INFERENCE_CLASS_NUM)]]

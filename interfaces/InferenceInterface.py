@@ -1,7 +1,9 @@
 import numpy as np
 
-from pylsl import StreamInfo, StreamOutlet, local_clock, StreamInlet, resolve_stream
+from pylsl import StreamInfo, StreamOutlet, local_clock, StreamInlet, resolve_stream, resolve_byprop
 import config
+from utils.sim import sim_inference
+
 
 class InferenceInterface:
 
@@ -10,7 +12,7 @@ class InferenceInterface:
         self.lsl_data_name = lsl_data_name
 
         # TODO need to change the channel count when adding eeg
-        info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=2, channel_format='float32', source_id='myuid2424')
+        info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=config.EYE_TOTAL_POINTS_PER_INFERENCE, channel_format='float32', source_id='myuid2424')
         info.desc().append_child_value("apocalyvec", "RealityNavigation")
 
         # chns = info.desc().append_child("eeg_channels")
@@ -32,8 +34,21 @@ class InferenceInterface:
         self.outlet = StreamOutlet(info, max_buffered=360)
         self.start_time = local_clock()
 
-        streams = resolve_stream('type', config.INFERENCE_LSL_NAME)
-        inlet = StreamInlet(streams[0])
+        self.inlet = None
+        self.connect_inference_result_stream()
+
+
+    def connect_inference_result_stream(self):
+        streams = resolve_byprop('type', config.INFERENCE_LSL_RESULTS_TYPE, timeout=1)
+
+        if len(streams) == 0:
+            print('No inference stream open, please start the external inference script first')
+        else:  # TODO handle external inference stream lost
+            self.inlet = StreamInlet(streams[0])
+            self.inlet.open_stream()
+
+    def disconnect_inference_result_stream(self):
+        self.inlet.close_stream()
 
     def send_samples_receive_inference(self, samples_dict):
         """
@@ -41,8 +56,16 @@ class InferenceInterface:
         :param frames:
         """
         # TODO add EEG
-        chunk = np.reshape(samples_dict['eye'], newshape=(-1, samples_dict['eye'].shape[-1]))
-        chunk = chunk.tolist()  # have to convert to list for LSL
-        self.outlet.push_chunk(chunk)
+        sample = np.reshape(samples_dict['eye'], newshape=(-1, ))  # flatten out
+        sample = sample.tolist()  # have to convert to list for LSL
 
-        return 1, 2
+        # chunk[0][0] = 42.0
+        # chunk[0][1] = 24.0
+
+        self.outlet.push_sample(sample)
+
+        if self.inlet:
+            inference_results_moving_averaged, timestamps = self.inlet.pull_chunk()
+            return inference_results_moving_averaged
+        else:
+            return sim_inference()
