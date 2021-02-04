@@ -36,21 +36,17 @@ def main():
     # create a outlet to relay the inference results  ##################################################################
     lsl_data_type = config.INFERENCE_LSL_RESULTS_TYPE
     lsl_data_name = config.INFERENCE_LSL_RESULTS_NAME
-
-    # TODO need to change the channel count when adding eeg
-    info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=2, channel_format='float32', source_id='myuid2424')
+    info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=config.INFERENCE_CLASS_NUM, channel_format='float32', source_id='myuid1234')
     info.desc().append_child_value("apocalyvec", "RealityNavigation")
 
-    chns = info.desc().append_child("eye")
-    channel_names = ['left_pupil_diameter_sample', 'right_pupil_diameter_sample']
+    chns = info.desc().append_child("inference")
+    channel_names = ['class' + str(i) for i in range(config.INFERENCE_CLASS_NUM)]
     for label in channel_names:
         ch = chns.append_child("channel")
         ch.append_child_value("label", label)
-        ch.append_child_value("unit", "mm")
-        ch.append_child_value("type", "eye")
 
-    self.outlet = StreamOutlet(info, max_buffered=360)
-    self.start_time = local_clock()
+    outlet = StreamOutlet(info, max_buffered=360)
+    start_time = local_clock()
 
     # Load inference parameters ########################################################################################
     model, y_encoder, data_downsampled_min, data_downsampled_max = load_model_params()
@@ -64,29 +60,31 @@ def main():
         # get a new sample (you can also omit the timestamp part if you're not
         # interested in it)
         try:
-            data, timestamps = inlet.pull_chunk(max_samples=config.EYE_TOTAL_POINTS_PER_INFERENCE)
+            data, timestamps = inlet.pull_chunk(timeout=1e-2, max_samples=config.EYE_TOTAL_POINTS_PER_INFERENCE)
             if len(data) > 0:
                 timestamp_accumulated += timestamps  # accumulate timestamps
                 eye_data_accumulated = np.concatenate([eye_data_accumulated, data])
 
-            if len(eye_data_accumulated) >= config.EYE_TOTAL_POINTS_PER_INFERENCE:
+            if len(eye_data_accumulated) == config.EYE_TOTAL_POINTS_PER_INFERENCE:
                 print(len(eye_data_accumulated))
                 print(eye_data_accumulated.shape[0] / config.EYE_TOTAL_POINTS_PER_INFERENCE)
-                samples = np.reshape(eye_data_accumulated[-config.EYE_TOTAL_POINTS_PER_INFERENCE:], newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, -1))  # take the most recent samples
+                samples = np.reshape(eye_data_accumulated[:config.EYE_TOTAL_POINTS_PER_INFERENCE], newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, -1))  # take the most recent samples
 
                 # conduct inference
                 samples_preprocessed = preprocess_eye_samples(samples, data_downsampled_max, data_downsampled_min)
                 results, results_decoded = inference(samples_preprocessed, model, y_encoder)
 
                 # send the inference results via LSL, only send out the not-decoded results
-
+                results_moving_average = np.mean(results, axis=0)
+                print(results_moving_average)
+                outlet.push_sample(results_moving_average)
 
                 # put the reminder
-                print('cutting')
-                eye_data_accumulated = eye_data_accumulated[:-config.EYE_TOTAL_POINTS_PER_INFERENCE]  # this is mostly not needed because each call to pull_chunk will return a fixed chunk size of config.EYE_TOTAL_POINTS_PER_INFERENCE
+                eye_data_accumulated = np.empty((0, 2))  # this is mostly not needed because each call to pull_chunk will return a fixed chunk size of config.EYE_TOTAL_POINTS_PER_INFERENCE
                 print(eye_data_accumulated.shape[0] / config.EYE_TOTAL_POINTS_PER_INFERENCE)
                 print()
-
+            elif len(eye_data_accumulated) > config.EYE_TOTAL_POINTS_PER_INFERENCE:
+                print('missed, this should never happen; you probably want to use a smaller batch size')
         except KeyboardInterrupt:
             pass
             # if len(samples) > 1:
