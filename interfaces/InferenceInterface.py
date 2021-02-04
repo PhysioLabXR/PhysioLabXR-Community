@@ -10,7 +10,7 @@ class InferenceInterface:
         self.lsl_data_name = lsl_data_name
 
         # TODO need to change the channel count when adding eeg
-        info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=1, channel_format='float32', source_id='myuid2424')
+        info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=2, channel_format='float32', source_id='myuid2424')
         info.desc().append_child_value("apocalyvec", "RealityNavigation")
 
         # chns = info.desc().append_child("eeg_channels")
@@ -39,6 +39,7 @@ class InferenceInterface:
         """
         # TODO add EEG
         chunk = np.reshape(samples_dict['eye'], newshape=(-1, samples_dict['eye'].shape[-1]))
+        chunk = chunk.tolist()  # have to convert to list for LSL
         self.outlet.push_chunk(chunk)
 
         return 1, 2
