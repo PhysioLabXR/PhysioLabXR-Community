@@ -90,16 +90,16 @@ class MainWindow(QtWidgets.QMainWindow):
         [w.tick_signal.emit() for w in self.workers.values()]
 
     def inference_ticks(self):
-        if self.unityLSL_data_buffer.shape[-1] < config.EYE_INFERENCE_SEND_SIZE:
+        if self.unityLSL_data_buffer.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
             eye_frames = np.concatenate((np.zeros(shape=(
                 2,  # 2 for two eyes' pupil sizes
-                config.EYE_INFERENCE_SEND_SIZE - self.unityLSL_data_buffer.shape[-1])),
+                config.EYE_INFERENCE_TOTAL_TIMESTEPS - self.unityLSL_data_buffer.shape[-1])),
                                                     self.unityLSL_data_buffer[1:3, :]), axis=-1)
         else:
             eye_frames = self.unityLSL_data_buffer[1:2,
-                                    -config.EYE_INFERENCE_SEND_SIZE:]  # plot the most recent 10 seconds
+                         -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]  # plot the most recent 10 seconds
         # make samples out of the most recent data
-        eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_TIMESTEPS, stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
+        eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS, stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
 
         samples_dict = {'eye': eye_samples}
         self.inference_worker.tick_signal.emit(samples_dict)

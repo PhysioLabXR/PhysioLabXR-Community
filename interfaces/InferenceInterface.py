@@ -5,7 +5,7 @@ import config
 
 class InferenceInterface:
 
-    def __init__(self, lsl_data_name = 'Python.Samples',lsl_data_type='Python.Main'):  # default board_id 2 for Cyton
+    def __init__(self, lsl_data_name=config.INFERENCE_LSL_NAME, lsl_data_type=config.INFERENCE_LSL_TYPE):  # default board_id 2 for Cyton
         self.lsl_data_type = lsl_data_type
         self.lsl_data_name = lsl_data_name
 
