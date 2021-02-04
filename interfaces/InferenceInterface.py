@@ -1,6 +1,6 @@
 import numpy as np
 
-from pylsl import StreamInfo, StreamOutlet, local_clock
+from pylsl import StreamInfo, StreamOutlet, local_clock, StreamInlet, resolve_stream
 import config
 
 class InferenceInterface:
@@ -31,6 +31,9 @@ class InferenceInterface:
 
         self.outlet = StreamOutlet(info, max_buffered=360)
         self.start_time = local_clock()
+
+        streams = resolve_stream('type', config.INFERENCE_LSL_NAME)
+        inlet = StreamInlet(streams[0])
 
     def send_samples_receive_inference(self, samples_dict):
         """
