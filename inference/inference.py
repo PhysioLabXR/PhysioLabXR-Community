@@ -28,7 +28,7 @@ def main():
 
             if len(eye_data_accumulated) >= config.EYE_TOTAL_POINTS_PER_INFERENCE:
                 # samples = np.reshape(eye_data_accumulated, newshape=(config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, -1))
-                print(eye_data_accumulated.shape)
+                print(eye_data_accumulated.shape[0] / config.EYE_TOTAL_POINTS_PER_INFERENCE)
             # samples.append((timestamp, sample))
         except KeyboardInterrupt:
             pass
