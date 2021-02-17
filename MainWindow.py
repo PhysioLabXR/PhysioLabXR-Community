@@ -1,4 +1,6 @@
-from PyQt5 import QtWidgets, uic
+import time
+
+from PyQt5 import QtWidgets, uic, sip
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 from PyQt5.QtCore import QTimer
@@ -6,16 +8,17 @@ from PyQt5.QtWidgets import QPushButton, QWidget
 import numpy as np
 
 import config
+import config_ui
 import threadings.workers as workers
 from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
 from utils.data_utils import window_slice
-from utils.ui_utiles import init_sensor_widget
+from utils.ui_utils import init_sensor_widget, init_add_sensor_widget, CustomDialog, init_button
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, eeg_interface, unityLSL_inferface, inference_interface, *args, **kwargs):
+    def __init__(self, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
 
@@ -70,8 +73,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
 
         # TESTING
-        self.init_sensor(sensor_type=config.sensors[0])
-        self.init_sensor(sensor_type=config.sensors[1])
+        self.add_sensor_layout, self.sensor_combo_box, self.add_btn =init_add_sensor_widget(parent=self.sensorTabSensorsHorizontalLayout)
+        self.add_btn.clicked.connect(self.add_sensor_clicked)
+        # self.init_sensor(sensor_type=config.sensors[0])
+        # self.init_sensor(sensor_type=config.sensors[1])
 
         # data buffers
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
@@ -80,8 +85,22 @@ class MainWindow(QtWidgets.QMainWindow):
         # inference buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
+    def add_sensor_clicked(self):
+        sensor_type = config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())]
+        if sensor_type not in self.sensor_workers.keys():
+            self.init_sensor(sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
+        else:
+            msg = 'MainWindow: sensor type ' + sensor_type + ' is already added.'
+            dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
+            if dlg.exec_():
+                print("Success!")
+            else:
+                print("Cancel!")
+
     def init_sensor(self, sensor_type):
-        sensor_layout, start_stream_btn, stop_stream_btn= init_sensor_widget(parent=self.sensorTabSensorsHorizontalLayout, sensor_type=sensor_type)
+        sensor_widget_name = sensor_type + '_widget'
+        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn=init_sensor_widget(parent=self.sensorTabSensorsHorizontalLayout, sensor_type=sensor_type, insert_position=self.sensorTabSensorsHorizontalLayout.count()-1)
+        sensor_widget.setObjectName(sensor_widget_name)
         worker_thread = pg.QtCore.QThread(self)
         self.worker_threads[sensor_type] = worker_thread
 
@@ -98,6 +117,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.init_visualize_unityLSL_data(parent=sensor_layout)
             self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
 
+        def remove_sensor():
+            # fire stop streaming first
+            stop_stream_btn.click()
+            worker_thread.exit()
+            self.sensor_workers.pop(sensor_type)
+            self.worker_threads.pop(sensor_type)
+            self.sensorTabSensorsHorizontalLayout.removeWidget(sensor_widget)
+            sip.delete(sensor_widget)
+            # sensor_widget = None
+        #     worker_thread
+        init_button(parent=sensor_layout, label='Remove Sensor', function=remove_sensor) # add delete sensor button after adding visualization
         self.sensor_workers[sensor_type].moveToThread(self.worker_threads[sensor_type])
         start_stream_btn.clicked.connect(self.sensor_workers[sensor_type].start_stream)
 

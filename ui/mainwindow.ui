@@ -23,69 +23,14 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="main_tab">
+      <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
-        <string>Main</string>
+        <string>Visualization</string>
        </attribute>
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>
          <widget class="QWidget" name="sensorWidget" native="true">
-          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout">
-           <item>
-            <widget class="QWidget" name="eeg_widget" native="true">
-             <layout class="QVBoxLayout" name="verticalLayout">
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>EEG</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="start_streaming_btn">
-                <property name="text">
-                 <string>Start Streaming</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="stop_streaming_btn">
-                <property name="text">
-                 <string>Stop Streaming</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QWidget" name="unityLSL_widget" native="true">
-             <layout class="QVBoxLayout" name="verticalLayout_3">
-              <item>
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Pupil &amp; Gaze</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="unitylsl_start_streaming_btn">
-                <property name="text">
-                 <string>Start Streaming</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="unitylsl_stop_streaming_btn">
-                <property name="text">
-                 <string>Stop Streaming</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
+          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout"/>
          </widget>
         </item>
         <item>
@@ -117,22 +62,43 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="visualizationTab">
+      <widget class="QWidget" name="advanced_tab">
        <attribute name="title">
-        <string>Visualization</string>
+        <string>Advanced</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QLabel" name="label">
           <property name="text">
-           <string>PushButton</string>
+           <string>Working in Progress</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="pushButton_4">
           <property name="text">
-           <string>PushButton</string>
+           <string>Check Status</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="help_tab">
+       <attribute name="title">
+        <string>Help</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Working in Progress</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="Check status">
+          <property name="text">
+           <string>Check Status</string>
           </property>
          </widget>
         </item>
