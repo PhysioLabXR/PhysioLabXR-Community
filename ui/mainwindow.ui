@@ -27,7 +27,6 @@
        <attribute name="title">
         <string>Main</string>
        </attribute>
-
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>
          <widget class="QWidget" name="sensorWidget" native="true">
@@ -39,13 +38,6 @@
                <widget class="QLabel" name="label">
                 <property name="text">
                  <string>EEG</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="connect_sensor_btn">
-                <property name="text">
-                 <string>Connect Sensor</string>
                 </property>
                </widget>
               </item>
@@ -63,13 +55,6 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QPushButton" name="disconnect_sensor_btn">
-                <property name="text">
-                 <string>Disconnect Sensor</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </widget>
            </item>
@@ -80,13 +65,6 @@
                <widget class="QLabel" name="label_2">
                 <property name="text">
                  <string>Pupil &amp; Gaze</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="unitylsl_connect_sensor_btn">
-                <property name="text">
-                 <string>Connect Sensor</string>
                 </property>
                </widget>
               </item>
@@ -104,56 +82,40 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QPushButton" name="unitylsl_disconnect_sensor_btn">
-                <property name="text">
-                 <string>Disconnect Sensor</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </widget>
            </item>
-
           </layout>
-        </widget>
+         </widget>
         </item>
-
-          <item>
-           <widget class="QWidget" name="inference_widget" native="true">
-            <layout class="QVBoxLayout" name="inferenceVerticalLayout">
-             <item>
-              <widget class="QLabel" name="inference_label">
-               <property name="text">
-                <string>Inference</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="connect_inference_btn">
-               <property name="text">
-                <string>Connect Inference</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="disconnect_inference_btn">
-               <property name="text">
-                <string>Disconnect Inference</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
+        <item>
+         <widget class="QWidget" name="inference_widget" native="true">
+          <layout class="QVBoxLayout" name="inferenceVerticalLayout">
+           <item>
+            <widget class="QLabel" name="inference_label">
+             <property name="text">
+              <string>Inference</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="connect_inference_btn">
+             <property name="text">
+              <string>Connect Inference</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="disconnect_inference_btn">
+             <property name="text">
+              <string>Disconnect Inference</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
        </layout>
-
-
-
-
-
-
-
       </widget>
       <widget class="QWidget" name="visualizationTab">
        <attribute name="title">

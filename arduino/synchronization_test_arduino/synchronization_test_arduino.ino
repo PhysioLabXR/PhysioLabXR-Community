@@ -8,12 +8,13 @@ const int pResistor = A0; // Photoresistor at Arduino analog pin A0
 //const int ledPin=9;       // Led pin at Arduino pin 9
 const int pwm = 2 ;     //initializing pin 2 as ‘pwm’ variable
 const int LEDPin = 13;
-const int pulse_debouncer_steps = 20;
+const int pulse_debouncer_steps = 1000;
+const int eeg_pulse_debouncer_steps = 10000;
 //Variables
 int value;          // Store value from photoresistor (0-1023)
 int value_last;
 int pulse_debouncer = pulse_debouncer_steps;
-
+int eeg_pulse_debouncer = eeg_pulse_debouncer_steps;
 
 void setup(){
  Serial.begin(9600);
@@ -27,12 +28,19 @@ void setup(){
 void loop(){
   
   if (pulse_debouncer < pulse_debouncer_steps) {
-    analogWrite(pwm,50);
     pulse_debouncer += 1;
   }
   else {
-    analogWrite(pwm,0) ;
     digitalWrite(LEDPin, LOW);
+  }
+
+  if (eeg_pulse_debouncer < eeg_pulse_debouncer_steps) {
+    eeg_pulse_debouncer += 1;
+    analogWrite(pwm,50);
+    // Serial.print("H");
+  }
+  else {
+    analogWrite(pwm,0);
   }
   
   value = analogRead(pResistor);
@@ -41,8 +49,10 @@ void loop(){
   if (value - value_last > 200 && pulse_debouncer >= pulse_debouncer_steps) {
     Serial.println("D");
     digitalWrite(LEDPin, HIGH);
-    analogWrite(pwm,25);
+    analogWrite(pwm,50);
+    
     pulse_debouncer = 0;
+    eeg_pulse_debouncer = 0;
   }
   //Serial.print("\n");
   //You can change value "25"

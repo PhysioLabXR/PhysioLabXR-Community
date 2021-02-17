@@ -9,9 +9,9 @@ from interfaces.UnityLSLInterface import UnityLSLInterface
 
 if __name__ == '__main__':
     # Define the sensor interfaces
-    # eeg_interface = OpenBCIInterface()
+    eeg_interface = OpenBCIInterface()
     unityLSL_inferface = UnityLSLInterface()
-    eeg_interface = None
+    # eeg_interface = None
     # unityLSL_inferface = None
     inference_interface = InferenceInterface()
 

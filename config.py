@@ -35,3 +35,5 @@ INFERENCE_LSL_RESULTS_TYPE = 'Python.Inference.Results'
 
 INFERENCE_LSL_NAME = 'Python.Samples'
 INFERENCE_LSL_TYPE = 'Python.Samples'
+
+sensors = ['OpenBCICyton', 'RNUnityEyeLSL', 'B-Alert X24']

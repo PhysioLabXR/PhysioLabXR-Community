@@ -34,7 +34,6 @@ class EEGWorker(QObject):
 
         self._eeg_interface = eeg_interface
         self._is_streaming = False
-        self._is_connected = False
 
         self.start_time = time.time()
         self.end_time = time.time()
@@ -69,34 +68,38 @@ class EEGWorker(QObject):
         self._is_streaming = False
         self.end_time = time.time()
 
-    def connect(self, params):
-        """
-        check if _eeg_interface exists before connecting.
-        """
-        if self._eeg_interface:
-            self._eeg_interface.connect_sensor()
-        else:
-            print('EEGWorker: No EEG Interface defined, ignored.')
-        self._is_connected = True
-
-    def disconnect(self, params):
-        """
-        check if _eeg_interface exists before connecting.
-        """
-        if self._eeg_interface:
-            self._eeg_interface.disconnect_sensor()
-        else:
-            print('EEGWorker: No EEG Interface defined, ignored.')
-        self._is_connected = False
+    # def connect(self, params):
+    #     """
+    #     check if _eeg_interface exists before connecting.
+    #     """
+    #     if self._is_streaming:
+    #         self.stop_stream()
+    #     if self._eeg_interface:
+    #         self._eeg_interface.connect_sensor()
+    #     else:
+    #         print('EEGWorker: No EEG Interface defined, ignored.')
+    #     self._is_connected = True
+    #
+    # def disconnect(self, params):
+    #     """
+    #     check if _eeg_interface exists before connecting.
+    #     """
+    #     if self._is_streaming:
+    #         self.stop_stream()
+    #     if self._eeg_interface:
+    #         self._eeg_interface.disconnect_sensor()
+    #     else:
+    #         print('EEGWorker: No EEG Interface defined, ignored.')
+    #     self._is_connected = False
 
     def is_streaming(self):
         return self._is_streaming
 
-    def is_connected(self):
-        if self._eeg_interface:
-            return self._is_connected
-        else:
-            print('EEGWorker: No Radar Interface Connected, ignored.')
+    # def is_connected(self):
+    #     if self._eeg_interface:
+    #         return self._is_connected
+    #     else:
+    #         print('EEGWorker: No Radar Interface Connected, ignored.')
 
 
 class UnityLSLWorker(QObject):
@@ -114,15 +117,14 @@ class UnityLSLWorker(QObject):
             print('None type unityLSL_interface, starting in simulation mode')
 
         self._unityLSL_interface = unityLSL_interface
-        self._is_streaming = False
-        self._is_connected = False
+        self.is_streaming = False
 
         self.start_time = time.time()
         self.end_time = time.time()
 
     @pg.QtCore.pyqtSlot()
     def unityLSL_process_on_tick(self):
-        if self._is_streaming:
+        if self.is_streaming:
             if self._unityLSL_interface:
                 data, _ = self._unityLSL_interface.process_frames()  # get all data and remove it from internal buffer
             else:  # this is in simulation mode
@@ -136,7 +138,7 @@ class UnityLSLWorker(QObject):
             self._unityLSL_interface.start_sensor()
         else:
             print('UnityLSLWorker: Start Simulating Unity LSL data')
-        self._is_streaming = True
+        self.is_streaming = True
         self.start_time = time.time()
 
     def stop_stream(self):
@@ -145,37 +147,8 @@ class UnityLSLWorker(QObject):
         else:
             print('UnityLSLWorker: Stop Simulating Unity LSL data')
             print('UnityLSLWorker: frame rate calculation is not enabled in simulation mode')
-        self._is_streaming = False
+        self.is_streaming = False
         self.end_time = time.time()
-
-    def connect(self, params):
-        """
-        check if _unityLSL_interface exists before connecting.
-        """
-        if self._unityLSL_interface:
-            self._unityLSL_interface.connect_sensor()
-        else:
-            print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
-        self._is_connected = True
-
-    def disconnect(self, params):
-        """
-        check if _unityLSL_interface exists before connecting.
-        """
-        if self._unityLSL_interface:
-            self._unityLSL_interface.disconnect_sensor()
-        else:
-            print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
-        self._is_connected = False
-
-    def is_streaming(self):
-        return self._is_streaming
-
-    def is_connected(self):
-        if self._unityLSL_interface:
-            return self._is_connected
-        else:
-            print('UnityLSLWorker: No Radar Interface Connected, ignored.')
 
 
 class InferenceWorker(QObject):

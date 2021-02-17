@@ -30,13 +30,10 @@ class OpenBCIInterface:
 
         self.board = BoardShim(board_id, params)
 
-    def connect_sensor(self):
-        # connect to the sensor
-        self.board.prepare_session()
-        print('OpenBCIInterface: connected to sensor')
-
     def start_sensor(self):
         # tell the sensor to start sending frames
+        self.board.prepare_session()
+        print('OpenBCIInterface: connected to sensor')
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
         except brainflow.board_shim.BrainFlowError:
@@ -50,8 +47,6 @@ class OpenBCIInterface:
     def stop_sensor(self):
         self.board.stop_stream()
         print('OpenBCIInterface: stopped streaming.')
-
-    def disconnect_sensor(self):
         self.board.release_session()
         print('OpenBCIInterface: released session.')
 
@@ -73,8 +68,6 @@ def run_test():
 
 if __name__ == "__main__":
     openBCI_interface = OpenBCIInterface()
-    openBCI_interface.connect_sensor()
     openBCI_interface.start_sensor()
     data = run_test()
     openBCI_interface.stop_sensor()
-    openBCI_interface.disconnect_sensor()

@@ -20,7 +20,6 @@ unity_synchronization_interface.start_sensor()
 unity_synchronization_interface.info()
 
 openBCI_interface = OpenBCIInterface()
-openBCI_interface.connect_sensor()
 openBCI_interface.start_sensor()
 
 def read_line_from_serial(port: serial.Serial):

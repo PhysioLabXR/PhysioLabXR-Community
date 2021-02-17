@@ -14,16 +14,13 @@ class UnityLSLInterface:
         self.inlet = None
         pass
 
-    def connect_sensor(self):
+    def start_sensor(self):
         # connect to the sensor
         self.streams = resolve_stream('type', self.lsl_data_type)
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         print('UnityLSLInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
-
-    def start_sensor(self):
         # tell the sensor to start sending frames
-        print('UnityLSLInterface: Unity is already running. Nothing to be done.')
 
     def process_frames(self):
         # return one or more frames of the sensor
@@ -31,9 +28,6 @@ class UnityLSLInterface:
         return np.transpose(frames), timestamps
 
     def stop_sensor(self):
-        print('UnityLSLInterface: Nothing to be done.')
-
-    def disconnect_sensor(self):
         self.inlet.close_stream()
         print('UnityLSLInterface: inlet stream closed.')
 
@@ -47,7 +41,7 @@ def run_test():
     start_time = time.time()
     while 1:
         try:
-            new_data, _ = openBCI_interface.process_frames()
+            new_data, _ = unityLSL_inferface.process_frames()
             print(new_data)
             if len(new_data) > 0:
                 data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
@@ -59,9 +53,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    openBCI_interface = UnityLSLInterface()
-    openBCI_interface.connect_sensor()
-    openBCI_interface.start_sensor()
+    unityLSL_inferface = UnityLSLInterface()
+    unityLSL_inferface.start_sensor()
     data = run_test()
-    openBCI_interface.stop_sensor()
-    openBCI_interface.disconnect_sensor()
+    unityLSL_inferface.stop_sensor()
