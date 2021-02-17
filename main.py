@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(inference_interface=None)
+    window = MainWindow(inference_interface=inference_interface)
     window.show()
     app.exec_()
     print('Resuming Console Interaction.')

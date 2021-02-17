@@ -38,8 +38,15 @@
           <layout class="QVBoxLayout" name="inferenceVerticalLayout">
            <item>
             <widget class="QLabel" name="inference_label">
+             <property name="font">
+              <font>
+               <pointsize>16</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
              <property name="text">
-              <string>Inference</string>
+              <string>Inference (Targets / Distractor)</string>
              </property>
             </widget>
            </item>

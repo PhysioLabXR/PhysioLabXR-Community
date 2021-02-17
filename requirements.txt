@@ -6,3 +6,4 @@ pylsl
 tensorflow
 sklearn
 scipy
+mne

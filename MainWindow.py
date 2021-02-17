@@ -27,10 +27,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sensor_workers = {}
         self.inference_worker = None
 
-
-
         # create workers for different sensors
-        # self.init_sensor_workers_threads(eeg_interface, unityLSL_inferface, inference_interface)
+        self.init_inference(inference_interface)
 
         # timer
         self.timer = QTimer()
@@ -44,39 +42,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_timer.timeout.connect(self.inference_ticks)
         self.inference_timer.start()
 
-        # bind buttons
-        # self.start_streaming_btn.clicked.connect(self.sensor_workers['eeg'].start_stream)
-        # self.stop_streaming_btn.clicked.connect(self.stop_eeg)
-
-        # self.unitylsl_start_streaming_btn.clicked.connect(self.sensor_workers['unityLSL'].start_stream)
-        # self.unitylsl_stop_streaming_btn.clicked.connect(self.stop_unityLSL)
-
-        # self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-        # self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-
         # bind visualization
-        self.eeg_plots = None
-        # self.init_visualize_eeg_data()
         self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-        #
-        # self.unityLSL_plots = None
-        # self.init_visualize_unityLSL_data()
         self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-        #
-        # self.inference_results_plots = None
-        # self.init_visualize_inference_results()
-        # self.inference_num_visualized_results = int(
-        #     config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
-
-        # self.sensor_workers['eeg'].signal_data.connect(self.visualize_eeg_data)
-        # self.sensor_workers['unityLSL'].signal_data.connect(self.visualize_unityLSL_data)
-        # self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-
+        self.inference_num_visualized_results = int(
+            config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
         # TESTING
         self.add_sensor_layout, self.sensor_combo_box, self.add_btn =init_add_sensor_widget(parent=self.sensorTabSensorsHorizontalLayout)
         self.add_btn.clicked.connect(self.add_sensor_clicked)
-        # self.init_sensor(sensor_type=config.sensors[0])
-        # self.init_sensor(sensor_type=config.sensors[1])
 
         # data buffers
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
@@ -134,23 +107,18 @@ class MainWindow(QtWidgets.QMainWindow):
         worker_thread.start()
         pass
 
-    def init_sensor_workers_threads(self, eeg_interface, unityLSL_inferface, inference_interface):
-        self.worker_threads = {
-            config.sensors[1]: pg.QtCore.QThread(self),
-            config.sensors[0]: pg.QtCore.QThread(self),
-            'inference': pg.QtCore.QThread(self),
-        }
-        [w.start() for w in self.worker_threads.values()]  # start all the worker threads
-
-        self.sensor_workers = {
-            config.sensors[0]: workers.EEGWorker(eeg_interface),
-            config.sensors[1]: workers.UnityLSLWorker(unityLSL_inferface)
-        }
-        self.sensor_workers[config.sensors[0]].moveToThread(self.worker_threads[config.sensors[0]])
-        self.sensor_workers[config.sensors[1]].moveToThread(self.worker_threads[config.sensors[1]])
-
+    def init_inference(self, inference_interface):
+        inference_thread = pg.QtCore.QThread(self)
+        self.worker_threads['inference'] = inference_thread
         self.inference_worker = workers.InferenceWorker(inference_interface)
         self.inference_worker.moveToThread(self.worker_threads['inference'])
+        self.init_visualize_inference_results()
+        self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
+
+        self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
+        self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
+
+        inference_thread.start()
 
     def ticks(self):
         """
