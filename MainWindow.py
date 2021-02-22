@@ -163,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_visualize_eeg_data(self, parent):
         eeg_plot_widgets = [pg.PlotWidget() for i in range(config.OPENBCI_EEG_USEFUL_CHANNELS_NUM)]
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
-        self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(0, 0, 255))) for epw in eeg_plot_widgets]
+        self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
     def init_visualize_unityLSL_data(self, parent):
         unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]

@@ -35,6 +35,24 @@
         </item>
         <item>
          <widget class="QWidget" name="inference_widget" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>250</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>250</height>
+           </size>
+          </property>
           <layout class="QVBoxLayout" name="inferenceVerticalLayout">
            <item>
             <widget class="QLabel" name="inference_label">
