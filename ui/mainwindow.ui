@@ -87,26 +87,11 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="advanced_tab">
+      <widget class="QWidget" name="recordings_tab">
        <attribute name="title">
-        <string>Advanced</string>
+        <string>Recording</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Working in Progress</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_4">
-          <property name="text">
-           <string>Check Status</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <layout class="QVBoxLayout" name="recordings_tab_vertical_layout"/>
       </widget>
       <widget class="QWidget" name="help_tab">
        <attribute name="title">

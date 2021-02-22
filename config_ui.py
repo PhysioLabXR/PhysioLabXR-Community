@@ -14,3 +14,6 @@ sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
                              'B-Alert X24': 'ABM B-Alert'}
 
 sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
+
+
+default_add_lsl_data_type = 'Unity.EventMarkers'

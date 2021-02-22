@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from interfaces.InferenceInterface import InferenceInterface
+from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
 
@@ -192,48 +193,37 @@ class InferenceWorker(QObject):
             if len(inference_results) > 0:
                 self.signal_inference_results.emit(inference_results)
 
-    # def start_stream(self):
-    #     if self._unityLSL_interface:  # if the sensor interfaces is established
-    #         self._unityLSL_interface.start_sensor()
-    #     else:
-    #         print('UnityLSLWorker: Start Simulating Unity LSL data')
-    #     self._is_streaming = True
-    #     self.start_time = time.time()
-    #
-    # def stop_stream(self):
-    #     if self._unityLSL_interface:
-    #         self._unityLSL_interface.stop_sensor()
-    #     else:
-    #         print('UnityLSLWorker: Stop Simulating Unity LSL data')
-    #         print('UnityLSLWorker: frame rate calculation is not enabled in simulation mode')
-    #     self._is_streaming = False
-    #     self.end_time = time.time()
-    #
-    # def connect(self, params):
-    #     """
-    #     check if _unityLSL_interface exists before connecting.
-    #     """
-    #     if self._unityLSL_interface:
-    #         self._unityLSL_interface.connect_sensor()
-    #     else:
-    #         print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
-    #     self._is_connected = True
-    #
-    # def disconnect(self, params):
-    #     """
-    #     check if _unityLSL_interface exists before connecting.
-    #     """
-    #     if self._unityLSL_interface:
-    #         self._unityLSL_interface.disconnect_sensor()
-    #     else:
-    #         print('UnityLSLWorker: No Unity LSL Interface defined, ignored.')
-    #     self._is_connected = False
-    #
-    # def is_streaming(self):
-    #     return self._is_streaming
-    #
-    # def is_connected(self):
-    #     if self._unityLSL_interface:
-    #         return self._is_connected
-    #     else:
-    #         print('UnityLSLWorker: No Radar Interface Connected, ignored.')
+
+class LSLInletWorker(QObject):
+
+    # for passing data to the gesture tab
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, LSLInlet_interface: LSLInletInterface, *args, **kwargs):
+        super(LSLInletWorker, self).__init__()
+        self.tick_signal.connect(self.process_on_tick)
+
+        self._lslInlet_interface = LSLInlet_interface
+        self.is_streaming = False
+
+        self.start_time = time.time()
+        self.end_time = time.time()
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if self.is_streaming:
+            frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+
+            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps}
+            self.signal_data.emit(data_dict)
+
+    def start_stream(self):
+        self._lslInlet_interface.start_sensor()
+        self.is_streaming = True
+        self.start_time = time.time()
+
+    def stop_stream(self):
+        self._lslInlet_interface.stop_sensor()
+        self.is_streaming = False
+        self.end_time = time.time()
