@@ -138,3 +138,10 @@ class CustomDialog(QDialog):
         self.layout.addWidget(message)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
+
+def dialog_popup(msg):
+    dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
+    if dlg.exec_():
+        print("Success!")
+    else:
+        print("Cancel!")

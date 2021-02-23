@@ -15,7 +15,7 @@ from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
-from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button
+from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -71,7 +71,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
-        self.recordings_tab_vertical_layout.addWidget(RecordingsTab())
+        self.recordingTab = RecordingsTab(self, self.LSL_data_buffer_dicts)
+        self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
     def add_sensor_clicked(self):
         sensor_type = config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())]
@@ -100,6 +101,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("Cancel!")
 
     def init_lsl(self, lsl_data_type, lsl_num_chan):
+
+        try:
+            interface = LSLInletInterface(lsl_data_type, lsl_num_chan)
+        except AttributeError:
+            dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_data_type))
+            return
+        self.lsl_workers[lsl_data_type] = workers.LSLInletWorker(interface)
         lsl_widget_name = lsl_data_type + '_widget'
         lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
             parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_data_type,
@@ -108,12 +116,11 @@ class MainWindow(QtWidgets.QMainWindow):
         worker_thread = pg.QtCore.QThread(self)
         self.worker_threads[lsl_data_type] = worker_thread
 
-        interface = LSLInletInterface(lsl_data_type, lsl_num_chan)
-        self.lsl_workers[lsl_data_type] = workers.LSLInletWorker(interface)
+
         stop_stream_btn.clicked.connect(self.lsl_workers[lsl_data_type].stop_stream)
         self.LSL_plots_dict[lsl_data_type] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan)
-        self.lsl_workers[lsl_data_type].signal_data.connect(self.visualize_LSLInlet_data)
-        self.LSL_data_buffer_dicts[lsl_data_type] = [np.empty(shape=(lsl_num_chan, 0)), np.empty(shape=(1, 0))]
+        self.lsl_workers[lsl_data_type].signal_data.connect(self.process_visualize_LSLInlet_data)
+        self.LSL_data_buffer_dicts[lsl_data_type] = np.empty(shape=(lsl_num_chan, 0))
 
         def remove_lsl():
             # fire stop streaming first
@@ -123,6 +130,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads.pop(lsl_data_type)
             self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
             sip.delete(lsl_widget)
+            self.LSL_data_buffer_dicts.pop(lsl_data_type)
 
         #     worker_thread
         init_button(parent=lsl_layout, label='Remove Inlet',
@@ -264,9 +272,9 @@ class MainWindow(QtWidgets.QMainWindow):
         [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
         # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
-    def visualize_LSLInlet_data(self, data_dict):
-        if len(data_dict['frames']) > 0:
-            buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']][0]
+    def process_visualize_LSLInlet_data(self, data_dict):
+        if data_dict['frames'].shape[-1] > 0:
+            buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
             buffered_data = np.concatenate(
                 (buffered_data, data_dict['frames']),
                 axis=-1)  # get all data and remove it from internal buffer
@@ -282,7 +290,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                - self.LSLInlet_num_visualized_sample:]  # plot the most recent 10 seconds
             time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.LSLInlet_num_visualized_sample)
             [up.setData(time_vector, data_to_plot[i, :]) for i, up in enumerate(self.LSL_plots_dict[data_dict['lsl_data_type']])]
-            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']][0] = buffered_data
+
+            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot  # main window only retains the most recent 10 seconds for visualization purposes
+
+            # notify the internal buffer in recordings tab
+            self.recordingTab.update_buffers(data_dict)
+
+
     def visualize_unityLSL_data(self, data_dict):
         if len(data_dict['data']) > 0:
             self.unityLSL_data_buffer = np.concatenate((self.unityLSL_data_buffer, data_dict['data']),
