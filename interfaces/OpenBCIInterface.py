@@ -45,10 +45,13 @@ class OpenBCIInterface:
         return frames
 
     def stop_sensor(self):
-        self.board.stop_stream()
-        print('OpenBCIInterface: stopped streaming.')
-        self.board.release_session()
-        print('OpenBCIInterface: released session.')
+        try:
+            self.board.stop_stream()
+            print('OpenBCIInterface: stopped streaming.')
+            self.board.release_session()
+            print('OpenBCIInterface: released session.')
+        except brainflow.board_shim.BrainFlowError as e:
+            print(e)
 
 
 def run_test():

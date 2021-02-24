@@ -15,6 +15,7 @@ from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
+from utils.general import load_all_LSL_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup
 
 
@@ -53,10 +54,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.inference_num_visualized_results = int(
             config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
-        # TESTING
+
+        self.lsl_presets = load_all_LSL_presets()
         self.add_sensor_layout, self.sensor_combo_box, self.add_sensor_btn, \
-        self.lsl_data_type_input, self.lsl_num_chan_input, self.add_lsl_btn = init_add_widget(
-            parent=self.sensorTabSensorsHorizontalLayout)
+        self.lsl_stream_name_input, self.lsl_num_chan_input, self.add_lsl_btn = init_add_widget(
+            parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets)
         self.add_sensor_btn.clicked.connect(self.add_sensor_clicked)
         self.add_lsl_btn.clicked.connect(self.add_lsl_clicked)
 
@@ -75,69 +77,69 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
     def add_sensor_clicked(self):
-        sensor_type = config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())]
-        if sensor_type not in self.sensor_workers.keys():
-            self.init_sensor(sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
+        selected_text = str(self.sensor_combo_box.currentText())
+        if selected_text in self.lsl_presets.keys():
+            self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'])
         else:
-            msg = 'MainWindow: sensor type ' + sensor_type + ' is already added.'
-            dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
-            if dlg.exec_():
-                print("Success!")
+            sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
+            if sensor_type not in self.sensor_workers.keys():
+                self.init_sensor(sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
             else:
-                print("Cancel!")
+                msg = 'MainWindow: sensor type ' + sensor_type + ' is already added.'
+                dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
+                if dlg.exec_():
+                    print("Success!")
+                else:
+                    print("Cancel!")
 
     def add_lsl_clicked(self):
-        lsl_data_type = self.lsl_data_type_input.text()
+        lsl_stream_name = self.lsl_stream_name_input.text()
         lsl_num_chan = int(self.lsl_num_chan_input.text())
 
-        if lsl_data_type not in self.lsl_workers.keys():
-            self.init_lsl(lsl_data_type, lsl_num_chan)
+        self.init_lsl(lsl_stream_name, lsl_num_chan)
+
+
+    def init_lsl(self, lsl_stream_name, lsl_num_chan):
+        if lsl_stream_name not in self.lsl_workers.keys():
+
+            try:
+                interface = LSLInletInterface(lsl_stream_name, lsl_num_chan)
+            except AttributeError:
+                dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
+                return
+            self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
+            lsl_widget_name = lsl_stream_name + '_widget'
+            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
+                parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
+                insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+            lsl_widget.setObjectName(lsl_widget_name)
+            worker_thread = pg.QtCore.QThread(self)
+            self.worker_threads[lsl_stream_name] = worker_thread
+
+            stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
+            self.LSL_plots_dict[lsl_stream_name] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan)
+            self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_visualize_LSLInlet_data)
+            self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
+
+            def remove_lsl():
+                # fire stop streaming first
+                stop_stream_btn.click()
+                worker_thread.exit()
+                self.lsl_workers.pop(lsl_stream_name)
+                self.worker_threads.pop(lsl_stream_name)
+                self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
+                sip.delete(lsl_widget)
+                self.LSL_data_buffer_dicts.pop(lsl_stream_name)
+
+            #     worker_thread
+            init_button(parent=lsl_layout, label='Remove Inlet',
+                        function=remove_lsl)  # add delete sensor button after adding visualization
+            self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
+            start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
+            worker_thread.start()
         else:
-            msg = 'MainWindow: LSL inlet with data type ' + lsl_data_type + ' is already added.'
-            dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
-            if dlg.exec_():
-                print("Success!")
-            else:
-                print("Cancel!")
+            dialog_popup('LSL inlet with data type ' + lsl_stream_name + ' is already added.')
 
-    def init_lsl(self, lsl_data_type, lsl_num_chan):
-
-        try:
-            interface = LSLInletInterface(lsl_data_type, lsl_num_chan)
-        except AttributeError:
-            dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_data_type))
-            return
-        self.lsl_workers[lsl_data_type] = workers.LSLInletWorker(interface)
-        lsl_widget_name = lsl_data_type + '_widget'
-        lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
-            parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_data_type,
-            insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        lsl_widget.setObjectName(lsl_widget_name)
-        worker_thread = pg.QtCore.QThread(self)
-        self.worker_threads[lsl_data_type] = worker_thread
-
-
-        stop_stream_btn.clicked.connect(self.lsl_workers[lsl_data_type].stop_stream)
-        self.LSL_plots_dict[lsl_data_type] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan)
-        self.lsl_workers[lsl_data_type].signal_data.connect(self.process_visualize_LSLInlet_data)
-        self.LSL_data_buffer_dicts[lsl_data_type] = np.empty(shape=(lsl_num_chan, 0))
-
-        def remove_lsl():
-            # fire stop streaming first
-            stop_stream_btn.click()
-            worker_thread.exit()
-            self.lsl_workers.pop(lsl_data_type)
-            self.worker_threads.pop(lsl_data_type)
-            self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
-            sip.delete(lsl_widget)
-            self.LSL_data_buffer_dicts.pop(lsl_data_type)
-
-        #     worker_thread
-        init_button(parent=lsl_layout, label='Remove Inlet',
-                    function=remove_lsl)  # add delete sensor button after adding visualization
-        self.lsl_workers[lsl_data_type].moveToThread(self.worker_threads[lsl_data_type])
-        start_stream_btn.clicked.connect(self.lsl_workers[lsl_data_type].start_stream)
-        worker_thread.start()
 
     def init_sensor(self, sensor_type):
         sensor_widget_name = sensor_type + '_widget'
@@ -249,7 +251,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_visualize_LSLInlet_data(self, parent, num_chan):
         plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
         [parent.addWidget(upw) for upw in plot_widgets]
-        return [pw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for pw in plot_widgets]
+        [pw.addLegend() for pw in plot_widgets]
+        return [pw.plot([], [], pen=pg.mkPen(color=(255, 255, 255)), name="Hi") for pw in plot_widgets]
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -273,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
     def process_visualize_LSLInlet_data(self, data_dict):
-        if data_dict['frames'].shape[-1] > 0:
+        if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
             buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
             buffered_data = np.concatenate(
                 (buffered_data, data_dict['frames']),

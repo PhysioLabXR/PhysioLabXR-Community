@@ -102,18 +102,16 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     return container_widget, layout, start_stream_btn, stop_stream_btn
 
 
-
-
-
-
-def init_add_widget(parent):
+def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Sensor or LSL', label_bold=True)
 
-    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Sensor to Add', vertical=False)
-    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None, item_list=list(config_ui.sensors_type_ui_name_dict.values()))
+    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add', vertical=False)
+    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None, item_list=list(config_ui.sensors_type_ui_name_dict.values()) + list(lsl_presets.keys()))
+
+
     add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
 
-    container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define LSL Inlet to Add', vertical=False)
+    container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
     _, lsl_num_chan_input = init_inputBox(parent=layout_add_lsl, default_input=1)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')

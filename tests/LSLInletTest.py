@@ -6,7 +6,7 @@ from pylsl import StreamInlet, resolve_stream
 def main():
     # first resolve an EEG stream on the lab network
     print("looking for an EyeData stream...")
-    streams = resolve_stream('type', 'Unity.EventMarkers')
+    streams = resolve_stream('name', 'BAlert')
 
     # create a new inlet to read from the stream
     inlet = StreamInlet(streams[0])
@@ -18,6 +18,7 @@ def main():
         try:
             sample, timestamp = inlet.pull_sample()
             print(timestamp, sample)
+            print(len(sample))
             samples.append((timestamp, sample))
         except KeyboardInterrupt:
             if len(samples) > 1:
