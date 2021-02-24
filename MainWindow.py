@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, uic, sip
 import pyqtgraph as pg
 from pyqtgraph import PlotWidget
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QPushButton, QWidget
+from PyQt5.QtWidgets import QPushButton, QWidget, QLabel
 import numpy as np
 
 import config
@@ -16,7 +16,8 @@ from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets
-from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup
+from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
+    init_container, get_distinct_colors
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -50,8 +51,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
         self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
 
-        self.LSLInlet_num_visualized_sample = int(60 * config.PLOT_RETAIN_HISTORY)  # TODO have user input sampling rate
-
         self.inference_num_visualized_results = int(
             config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
@@ -63,7 +62,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_lsl_btn.clicked.connect(self.add_lsl_clicked)
 
         # data buffers
-        self.LSL_plots_dict = {}
+        self.LSL_plots_fs_label_dict = {}
         self.LSL_data_buffer_dicts = {}
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
@@ -79,7 +78,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def add_sensor_clicked(self):
         selected_text = str(self.sensor_combo_box.currentText())
         if selected_text in self.lsl_presets.keys():
-            self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'])
+            self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'], self.lsl_presets[selected_text]['ChannelNames'])
         else:
             sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
             if sensor_type not in self.sensor_workers.keys():
@@ -99,7 +98,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_lsl(lsl_stream_name, lsl_num_chan)
 
 
-    def init_lsl(self, lsl_stream_name, lsl_num_chan):
+    def init_lsl(self, lsl_stream_name, lsl_num_chan, lsl_chan_names=None):
         if lsl_stream_name not in self.lsl_workers.keys():
 
             try:
@@ -117,9 +116,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[lsl_stream_name] = worker_thread
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
-            self.LSL_plots_dict[lsl_stream_name] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan)
+            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan, chan_names=lsl_chan_names)
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_visualize_LSLInlet_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
+            self.lsl_presets[lsl_stream_name]["num_samples_to_plot"] = int(
+                self.lsl_presets[lsl_stream_name]["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)  # TODO have user input sampling rate
 
             def remove_lsl():
                 # fire stop streaming first
@@ -132,13 +133,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.LSL_data_buffer_dicts.pop(lsl_stream_name)
 
             #     worker_thread
-            init_button(parent=lsl_layout, label='Remove Inlet',
+            init_button(parent=lsl_layout, label='Remove Stream',
                         function=remove_lsl)  # add delete sensor button after adding visualization
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
         else:
-            dialog_popup('LSL inlet with data type ' + lsl_stream_name + ' is already added.')
+            dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
 
 
     def init_sensor(self, sensor_type):
@@ -248,11 +249,29 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
         self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
 
-    def init_visualize_LSLInlet_data(self, parent, num_chan):
-        plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
-        [parent.addWidget(upw) for upw in plot_widgets]
-        [pw.addLegend() for pw in plot_widgets]
-        return [pw.plot([], [], pen=pg.mkPen(color=(255, 255, 255)), name="Hi") for pw in plot_widgets]
+    # def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names):
+    #     plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
+    #     plot_containing_layouts = [init_container(parent, vertical=False)[1] for i in range(num_chan)]
+    #
+    #     chan_names = ['Unknown'] * num_chan if chan_names is None else chan_names
+    #     [layout.addWidget(QtWidgets.QLineEdit(text=chan_name)) for layout, chan_name in zip(plot_containing_layouts, chan_names)]
+    #     [layout.addWidget(upw) for layout, upw in zip(plot_containing_layouts, plot_widgets)]
+    #
+    #     [pw.addLegend() for pw in plot_widgets]
+    #     return [pw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for pw in plot_widgets]
+
+    def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names):
+        plot_widget = pg.PlotWidget()
+
+        chan_names = ['Unknown'] * num_chan if chan_names is None else chan_names
+        parent.addWidget(plot_widget)
+
+        distinct_colors = get_distinct_colors(num_chan)
+        plot_widget.addLegend()
+
+        fs_label = QLabel(text='Sampling rate = ')
+        parent.addWidget(fs_label)
+        return [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=chan_names) for color, chan_names in zip(distinct_colors, chan_names)], fs_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -276,25 +295,31 @@ class MainWindow(QtWidgets.QMainWindow):
         # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
     def process_visualize_LSLInlet_data(self, data_dict):
+        samples_to_plot = self.lsl_presets[data_dict['lsl_data_type']]["num_samples_to_plot"]
         if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
             buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
-            buffered_data = np.concatenate(
-                (buffered_data, data_dict['frames']),
-                axis=-1)  # get all data and remove it from internal buffer
-
-            if buffered_data.shape[-1] < self.LSLInlet_num_visualized_sample:
+            try:
+                buffered_data = np.concatenate(
+                    (buffered_data, data_dict['frames']),
+                    axis=-1)  # get all data and remove it from internal buffer
+            except ValueError:
+                raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(data_dict['lsl_data_type']))
+            if buffered_data.shape[-1] < samples_to_plot:
                 data_to_plot = np.concatenate((np.zeros(shape=(
                     buffered_data.shape[0],
-                    self.LSLInlet_num_visualized_sample -
+                    samples_to_plot -
                     buffered_data.shape[-1])),
                                                buffered_data), axis=-1)
             else:
                 data_to_plot = buffered_data[:,
-                               - self.LSLInlet_num_visualized_sample:]  # plot the most recent 10 seconds
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.LSLInlet_num_visualized_sample)
-            [up.setData(time_vector, data_to_plot[i, :]) for i, up in enumerate(self.LSL_plots_dict[data_dict['lsl_data_type']])]
+                               - samples_to_plot:]  # plot the most recent 10 seconds
+            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, samples_to_plot)
 
-            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot  # main window only retains the most recent 10 seconds for visualization purposes
+            [up.setData(time_vector, data_to_plot[i, :]) for i, up in enumerate(self.LSL_plots_fs_label_dict[data_dict['lsl_data_type']][0])]
+            self.LSL_plots_fs_label_dict[data_dict['lsl_data_type']][1].setText('Sampling rate = {0}'.format(round(data_dict['sampling_rate'], config_ui.sampling_rate_decimal_places)))
+
+            # main window only retains the most recent 10 seconds for visualization purposes
+            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
 
             # notify the internal buffer in recordings tab
             self.recordingTab.update_buffers(data_dict)

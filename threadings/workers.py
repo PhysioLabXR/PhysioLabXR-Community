@@ -208,22 +208,26 @@ class LSLInletWorker(QObject):
         self.is_streaming = False
 
         self.start_time = time.time()
-        self.end_time = time.time()
+        self.num_samples = 0
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
 
-            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps}
+            self.num_samples += len(timestamps)
+            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+
+            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
         self._lslInlet_interface.start_sensor()
         self.is_streaming = True
+
+        self.num_samples = 0
         self.start_time = time.time()
 
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
-        self.end_time = time.time()

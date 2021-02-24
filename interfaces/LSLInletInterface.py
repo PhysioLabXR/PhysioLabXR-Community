@@ -20,7 +20,10 @@ class LSLInletInterface:
 
     def start_sensor(self):
         # connect to the sensor
-
+        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=1)
+        if len(self.streams) < 1:
+            raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_data_type))
+        self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
         # tell the sensor to start sending frames
@@ -37,7 +40,7 @@ class LSLInletInterface:
     def stop_sensor(self):
         if self.inlet:
             self.inlet.close_stream()
-        print('UnityLSLInterface: inlet stream closed.')
+        print('LSLInletInterface: inlet stream closed.')
 
     def info(self):
         return self.inlet.info()

@@ -44,7 +44,9 @@ def init_view(label, container, label_bold=True, position="centertop", vertical=
 
     return vl
 
-def init_container(parent, label=None, label_position=None, label_bold=True, vertical=True, style=None, size=None, insert_position=None):
+
+def init_container(parent, label=None, label_position=None, label_bold=True, vertical=True, style=None, size=None,
+                   insert_position=None):
     container = QtGui.QWidget()
 
     if size:
@@ -62,11 +64,12 @@ def init_container(parent, label=None, label_position=None, label_bold=True, ver
 
     return container, vl
 
+
 def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     container, layout = init_container(parent=parent,
-                           label=label,
-                           label_bold=label_bold,
-                           vertical=False)
+                                       label=label,
+                                       label_bold=label_bold,
+                                       vertical=False)
     textbox = QtWidgets.QLineEdit()
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
@@ -74,6 +77,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     textbox.setStyleSheet("background-color:white;")
 
     return layout, textbox
+
 
 def init_button(parent, label=None, function=None, style=config_ui.button_style_classic):
     btn = QtWidgets.QPushButton(text=label)
@@ -83,6 +87,7 @@ def init_button(parent, label=None, function=None, style=config_ui.button_style_
     btn.setStyleSheet(config_ui.button_style_classic)
 
     return btn
+
 
 def init_combo_box(parent, label, item_list):
     container_widget, vl = init_container(parent=parent, label=label, vertical=False)
@@ -96,7 +101,9 @@ def init_combo_box(parent, label, item_list):
 
 
 def init_sensor_or_lsl_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, label=config_ui.sensors_type_ui_name_dict[label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string, insert_position=insert_position)
+    container_widget, layout = init_container(parent=parent, label=config_ui.sensors_type_ui_name_dict[
+        label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string,
+                                              insert_position=insert_position)
     start_stream_btn = init_button(parent=layout, label='Start Stream')
     stop_stream_btn = init_button(parent=layout, label='Stop Stream')
     return container_widget, layout, start_stream_btn, stop_stream_btn
@@ -105,9 +112,11 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Sensor or LSL', label_bold=True)
 
-    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add', vertical=False)
-    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None, item_list=list(config_ui.sensors_type_ui_name_dict.values()) + list(lsl_presets.keys()))
-
+    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
+                                                             vertical=False)
+    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,
+                                      item_list=list(
+                                          lsl_presets.keys()) + list(config_ui.sensors_type_ui_name_dict.values()))
 
     add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
 
@@ -137,9 +146,25 @@ class CustomDialog(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
+
 def dialog_popup(msg):
     dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
     if dlg.exec_():
         print("Success!")
     else:
         print("Cancel!")
+
+
+import numpy as np
+import colorsys
+
+
+def get_distinct_colors(num_colors, depth=8):
+    colors = []
+    for i in np.arange(0., 360., 360. / num_colors):
+        hue = i / 360.
+        lightness = (50 + np.random.rand() * 10) / 100.
+        saturation = (90 + np.random.rand() * 10) / 100.
+        colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+    colors = [tuple(v * (2 ** depth -1) for v in c) for c in colors]
+    return colors

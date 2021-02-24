@@ -17,3 +17,5 @@ sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
 
 
 default_add_lsl_data_type = 'Unity.EventMarkers'
+
+sampling_rate_decimal_places = 2
