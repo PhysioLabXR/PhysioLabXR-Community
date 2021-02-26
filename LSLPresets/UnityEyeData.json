@@ -7,4 +7,5 @@
     "R Gaze Direction X", "R Gaze Direction Y", "R Gaze Direction Z",
     "L Gaze Origin X", "L Gaze Origin Y", "L Gaze Origin Z",
     "R Gaze Origin X", "R Gaze Origin Y", "R Gaze Origin Z"],
-  "NominalSamplingRate":  70}
+  "NominalSamplingRate":  70,
+  "GroupChannelsInPlot":  [2, 4, 7, 10, 13]}
