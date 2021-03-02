@@ -30,6 +30,7 @@ class EEGWorker(QObject):
     def __init__(self, eeg_interface=None, *args, **kwargs):
         super(EEGWorker, self).__init__()
         self.tick_signal.connect(self.eeg_process_on_tick)
+        self.tick_signal.connect(self.test_google)
         if not eeg_interface:
             print('None type eeg_interface, starting in simulation mode')
 
@@ -44,6 +45,7 @@ class EEGWorker(QObject):
         if self._is_streaming:
             if self._eeg_interface:
                 data = self._eeg_interface.process_frames()  # get all data and remove it from internal buffer
+
             else:  # this is in simulation mode
                 # assume we only working with OpenBCI eeg
                 data = sim_openBCI_eeg()
@@ -51,6 +53,11 @@ class EEGWorker(QObject):
             # notify the eeg data for the radar tab
             data_dict = {'data': data}
             self.signal_data.emit(data_dict)
+
+    @pg.QtCore.pyqtSlot()
+    def test_google(self):
+        if self._is_streaming:
+            print('is streaming')
 
     def start_stream(self):
         if self._eeg_interface:  # if the sensor interfaces is established
@@ -206,7 +213,7 @@ class LSLInletWorker(QObject):
 
         self._lslInlet_interface = LSLInlet_interface
         self.is_streaming = False
-
+        self._is_cloud_flowing = True # is flowing to GCloud dataflow
         self.start_time = time.time()
         self.num_samples = 0
 
@@ -219,6 +226,8 @@ class LSLInletWorker(QObject):
             sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
 
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            if self._is_cloud_flowing:
+                print('_is_cloud_flowing')
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
