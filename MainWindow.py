@@ -86,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if selected_text in self.lsl_presets.keys():
             self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'],
                           self.lsl_presets[selected_text]['ChannelNames'],
-                          self.lsl_presets[selected_text]['PlotGroupSlices'] if 'PlotGroupSlices' in self.lsl_presets[selected_text].keys() else None)
+                          self.lsl_presets[selected_text]['PlotGroupSlices'])
         else:
             sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
             if sensor_type not in self.sensor_workers.keys():
@@ -285,7 +285,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
         else:
             plot_widget = pg.PlotWidget()
-            chan_names = ['Unknown'] * num_chan if chan_names is None else chan_names
             parent.addWidget(plot_widget)
 
             distinct_colors = get_distinct_colors(num_chan)

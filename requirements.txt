@@ -7,3 +7,7 @@ tensorflow
 sklearn
 scipy
 mne
+pyqtgraph
+Pillow
+matplotlib
+pyxdf
