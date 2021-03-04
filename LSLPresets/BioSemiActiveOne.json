@@ -1,4 +1,4 @@
 { "StreamName":"BioSemi",
   "NumChannels":89,
   "NominalSamplingRate":  2048,
-  "GroupChannelsInPlot":  [89]}
+  "GroupChannelsInPlot":  []}

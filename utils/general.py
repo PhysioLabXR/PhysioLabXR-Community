@@ -26,7 +26,7 @@ def load_all_LSL_presets(lsl_preset_roots='LSLPresets'):
 
         stream_name = loaded_preset_dict.pop('StreamName')
 
-        if 'GroupChannelsInPlot' in loaded_preset_dict.keys():
+        if 'GroupChannelsInPlot' in loaded_preset_dict.keys() and len(loaded_preset_dict['GroupChannelsInPlot']) > 0:
             try:
                 assert np.max(loaded_preset_dict['GroupChannelsInPlot']) <= loaded_preset_dict['NumChannels']
             except AssertionError:
