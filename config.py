@@ -11,8 +11,16 @@ PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 
 '''
 ########################################################################################################################
-Dev parameters:
+Advanced parameters:
 these parameters, and what they controls are still under development
+'''
+DOWNSAMPLE_MULTIPLY_THRESHOLD = 5
+
+
+'''
+########################################################################################################################
+Dev parameters:
+parameters whose functions are still under development
 '''
 OPENBCI_EEG_CHANNEL_SIZE = 31
 OPENBCI_EEG_USEFUL_CHANNELS = slice(1, 17)
