@@ -12,3 +12,4 @@ Pillow
 matplotlib
 apache-beam[gcp]
 pyxdf
+google-cloud-pubsub

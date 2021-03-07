@@ -31,6 +31,7 @@ class EEGWorker(QObject):
         super(EEGWorker, self).__init__()
         self.tick_signal.connect(self.eeg_process_on_tick)
         self.tick_signal.connect(self.test_google)
+
         if not eeg_interface:
             print('None type eeg_interface, starting in simulation mode')
 

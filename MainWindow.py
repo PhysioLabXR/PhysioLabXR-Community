@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_lsl(self, lsl_stream_name, lsl_num_chan, lsl_chan_names=None, plot_group_slices=None):
         if lsl_stream_name not in self.lsl_workers.keys():
-
+            
             try:
                 interface = LSLInletInterface(lsl_stream_name, lsl_num_chan)
             except AttributeError:
