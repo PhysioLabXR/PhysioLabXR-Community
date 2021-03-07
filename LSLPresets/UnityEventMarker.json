@@ -1,4 +1,0 @@
-{ "StreamName":"Unity.RotationWheel.EventMarkers",
-  "NumChannels":1,
-  "ChannelNames":["EventLabel"],
-  "NominalSamplingRate":  60}

@@ -11,3 +11,4 @@ pyqtgraph
 Pillow
 matplotlib
 apache-beam[gcp]
+pyxdf

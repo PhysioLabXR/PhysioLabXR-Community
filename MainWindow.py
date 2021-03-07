@@ -6,6 +6,7 @@ from pyqtgraph import PlotWidget
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QPushButton, QWidget, QLabel
 import numpy as np
+from scipy.signal import resample, decimate
 
 import config
 import config_ui
@@ -25,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
-
+        self.setWindowTitle('Reality Navigation')
         # create sensor threads, worker threads for different sensors
         self.worker_threads = {}
         self.sensor_workers = {}
@@ -86,7 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if selected_text in self.lsl_presets.keys():
             self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'],
                           self.lsl_presets[selected_text]['ChannelNames'],
-                          self.lsl_presets[selected_text]['PlotGroupSlices'] if 'PlotGroupSlices' in self.lsl_presets[selected_text].keys() else None)
+                          self.lsl_presets[selected_text]['PlotGroupSlices'])
         else:
             sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
             if sensor_type not in self.sensor_workers.keys():
@@ -124,7 +125,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[lsl_stream_name] = worker_thread
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
-            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLInlet_data(parent=lsl_layout, num_chan=lsl_num_chan, chan_names=lsl_chan_names, plot_group_slices=plot_group_slices)
+            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(parent=lsl_layout, num_chan=lsl_num_chan, chan_names=lsl_chan_names, plot_group_slices=plot_group_slices)
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             self.lsl_presets[lsl_stream_name]["num_samples_to_plot"] = int(
@@ -271,9 +272,10 @@ class MainWindow(QtWidgets.QMainWindow):
     #     [pw.addLegend() for pw in plot_widgets]
     #     return [pw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for pw in plot_widgets]
 
-    def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names, plot_group_slices):
+    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices):
         fs_label = QLabel(text='Sampling rate = ')
         parent.addWidget(fs_label)
+        plot_widget = None
         if plot_group_slices:
             plots = []
             for pg_slice in plot_group_slices:  # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
@@ -285,13 +287,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
         else:
             plot_widget = pg.PlotWidget()
-            chan_names = ['Unknown'] * num_chan if chan_names is None else chan_names
             parent.addWidget(plot_widget)
 
             distinct_colors = get_distinct_colors(num_chan)
             plot_widget.addLegend()
             plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in zip(distinct_colors, chan_names)]
-        return plots, fs_label
+
+        [p.setDownsampling(auto=True, method='mean') for p in plots]
+        [p.setClipToView(clip=True) for p in plots]
+
+        return plots, plot_widget, fs_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -343,10 +348,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def visualize_LSLStream_data(self):
         for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
             time_vector = self.lsl_presets[lsl_stream_name]["timevector"]
+
             if data_to_plot.shape[-1] == len(time_vector):
                 actual_sampling_rate = self.lsl_presets[lsl_stream_name]["ActualSamplingRate"]
+                max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
+
+                # reduce the number of points to plot to the number of pixels in the corresponding plot widget
+                if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1]/max_display_datapoint_num), axis=1)  # resample to 100 hz with retain history of 10 sec
+                    time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+
                 [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-                self.LSL_plots_fs_label_dict[lsl_stream_name][1].setText('Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+                self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText('Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
 
 
     def visualize_unityLSL_data(self, data_dict):

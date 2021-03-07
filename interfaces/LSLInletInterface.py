@@ -26,6 +26,8 @@ class LSLInletInterface:
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
+
+        # read the channel names is there's any
         # tell the sensor to start sending frames
 
     def process_frames(self):

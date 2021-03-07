@@ -111,7 +111,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Sensor or LSL', label_bold=True)
-
+    container.setFixedWidth(600)
     container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
                                                              vertical=False)
     sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,

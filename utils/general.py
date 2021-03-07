@@ -16,16 +16,19 @@ def load_all_LSL_presets(lsl_preset_roots='LSLPresets'):
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
 
-        try:
-            assert loaded_preset_dict['NumChannels'] == len(loaded_preset_dict['ChannelNames'])
-        except AssertionError:
-            raise Exception('Unable to load {0}, number of channels mismatch the number of channel names.'.format(pf_path))
+        if 'ChannelNames' in loaded_preset_dict.keys():
+            try:
+                assert loaded_preset_dict['NumChannels'] == len(loaded_preset_dict['ChannelNames'])
+            except AssertionError:
+                raise Exception('Unable to load {0}, number of channels mismatch the number of channel names.'.format(pf_path))
+        else:
+            loaded_preset_dict['ChannelNames'] = ['Unknown'] * loaded_preset_dict['NumChannels']
 
         stream_name = loaded_preset_dict.pop('StreamName')
 
-        if 'GroupChannelsInPlot' in loaded_preset_dict.keys():
+        if 'GroupChannelsInPlot' in loaded_preset_dict.keys() and len(loaded_preset_dict['GroupChannelsInPlot']) > 0:
             try:
-                assert np.max(loaded_preset_dict['GroupChannelsInPlot']) < loaded_preset_dict['NumChannels']
+                assert np.max(loaded_preset_dict['GroupChannelsInPlot']) <= loaded_preset_dict['NumChannels']
             except AssertionError:
                 raise Exception('GroupChannelsInPlot max must be less than the number of channels.')
 
@@ -34,7 +37,10 @@ def load_all_LSL_presets(lsl_preset_roots='LSLPresets'):
             for x in loaded_preset_dict['GroupChannelsInPlot']:
                 loaded_preset_dict["PlotGroupSlices"].append((head, x))
                 head = x
-            loaded_preset_dict["PlotGroupSlices"].append((head, loaded_preset_dict['NumChannels']))  # append the last group
+            if head != loaded_preset_dict['NumChannels']:
+                loaded_preset_dict["PlotGroupSlices"].append((head, loaded_preset_dict['NumChannels']))  # append the last group
+        else:
+            loaded_preset_dict["PlotGroupSlices"] = None
         presets[stream_name] = loaded_preset_dict
 
     return presets
