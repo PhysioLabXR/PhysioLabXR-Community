@@ -1,0 +1,3 @@
+[submodule "aiyvoice-raspbian"]
+	path = aiyvoice-raspbian
+	url = https://github.com/schko/aiyvoice-raspbian

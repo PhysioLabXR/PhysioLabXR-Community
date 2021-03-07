@@ -1,0 +1,47 @@
+/* Custom styles for AIY Projects reference */
+
+/* code font more like aiyprojects.withgoogle.com */
+code,
+.rst-content tt,
+.rst-content code {
+	background: #f6f6f6;
+    border: none;
+    padding: .1em .3em;
+    font-size: 80%;
+    font-weight: bold;
+    color: #263238;
+}
+
+.rst-content tt.literal,
+.rst-content tt.literal,
+.rst-content code.literal {
+    color: inherit;
+}
+
+/* Force-remove bottom-margin from parameter list */
+.rst-content table.field-list td ul.last {
+    margin-bottom: 0 !important;
+}
+
+/* Remove bottom padding from table around parameter list */
+.rst-content table.field-list td {
+    padding-bottom: 0;
+    vertical-align: top;
+}
+
+/* floating elements (images) */
+.attempt-right {
+    float: right;
+    margin: 0 0 40px 40px;
+    max-width: calc((100% - 40px)/2);
+}
+
+/* Smallish screens */
+@media screen and (max-width: 1000px) {
+	.attempt-right {
+	    display: block;
+	    float: none;
+	    margin: 16px 0;
+	    max-width: 100%;
+	}
+}

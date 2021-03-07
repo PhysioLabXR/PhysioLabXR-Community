@@ -1,0 +1,26 @@
+# Install:
+#    sudo ln -s `pwd`/assistant_grpc_demo.service /lib/systemd/system
+#    sudo systemctl daemon-reload
+#
+# Start on each boot:
+#    sudo systemctl enable assistant_grpc_demo.service
+#
+# Start right now:
+#    sudo systemctl start assistant_grpc_demo.service
+
+[Unit]
+Description=Assistant gRPC Demo
+Wants=network-online.target
+After=network-online.target
+Wants=systemd-timesyncd.service
+After=systemd-timesyncd.service
+
+[Service]
+Environment=DISPLAY=:0
+Type=simple
+Restart=always
+User=pi
+ExecStart=/usr/bin/python3 -u /home/pi/AIY-projects-python/src/examples/voice/assistant_grpc_demo.py --language en-US
+
+[Install]
+WantedBy=multi-user.target
