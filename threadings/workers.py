@@ -243,3 +243,9 @@ class WebcamWorker(QObject):
         ret, cv_img = self.cap.read()
         if ret:
             self.change_pixmap_signal.emit((self.cam_id, cv_img))
+
+class ScreenCapWorker(QObject):
+    tick_signal = pyqtSignal()
+    change_pixmap_signal = pyqtSignal(tuple)
+
+

@@ -107,9 +107,9 @@ def init_combo_box(parent, label, item_list):
 
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
-    camera_img_label =QLabel()
+    camera_img_label = QLabel()
     _, label_btn_layout = init_container(parent=layout, vertical=False)
-    cam_id_label =QLabel(label_string)
+    cam_id_label = QLabel(label_string)
     cam_id_label.setStyleSheet("font: bold 14px;")
     label_btn_layout.addWidget(cam_id_label)
     remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Camera')
@@ -153,9 +153,14 @@ def init_add_widget(parent, lsl_presets: dict):
 
     container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) to add',
                                                              vertical=False)
+
+    # detect camera
+    cameras = returnCameraIndexes()
+    cameras = map(str, cameras)
+
     # add camera container
     camera_combo_box = init_combo_box(parent=layout_add_camera, label=None,
-                                      item_list=['0', '1', '2', '3', '4'])
+                                      item_list=cameras)
     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
 
     # add sensor container
@@ -216,6 +221,7 @@ def get_distinct_colors(num_colors, depth=8):
     colors = [tuple(v * (2 ** depth - 1) for v in c) for c in colors]
     return colors
 
+
 def convert_cv_qt(cv_img):
     """Convert from an opencv image to QPixmap"""
     rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
@@ -224,3 +230,17 @@ def convert_cv_qt(cv_img):
     convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
     p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(p)
+
+def returnCameraIndexes():
+    # checks the first 10 indexes.
+    index = 0
+    arr = []
+    i = 10
+    while i > 0:
+        cap = cv2.VideoCapture(index)
+        if cap.read()[0]:
+            arr.append(index)
+            cap.release()
+        index += 1
+        i -= 1
+    return arr
