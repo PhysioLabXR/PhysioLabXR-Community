@@ -20,5 +20,5 @@ default_add_lsl_data_type = 'Unity.EventMarkers'
 
 sampling_rate_decimal_places = 2
 
-cam_disply_width = 320
-cam_display_height = 240
+cam_disply_width = 640
+cam_display_height = 480

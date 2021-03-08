@@ -1,11 +1,10 @@
 import sys
+
 from PyQt5 import QtWidgets
 
 # Press the green button in the gutter to run the script.
 from MainWindow import MainWindow
 from interfaces.InferenceInterface import InferenceInterface
-from interfaces.OpenBCIInterface import OpenBCIInterface
-from interfaces.UnityLSLInterface import UnityLSLInterface
 
 if __name__ == '__main__':
     # Define the sensor interfaces

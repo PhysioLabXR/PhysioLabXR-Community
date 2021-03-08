@@ -46,6 +46,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.v_timer.timeout.connect(self.visualize_LSLStream_data)
         self.v_timer.start()
 
+        # camera/screen capture timer
+        self.c_timer = QTimer()
+        self.c_timer.setInterval(config.CAMERA_SCREENCAPTURE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.c_timer.timeout.connect(self.camera_screen_capture_tick)
+        self.c_timer.start()
+
         # inference timer
         self.inference_timer = QTimer()
         self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
@@ -86,9 +92,9 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_camera_id = self.camera_combo_box.currentText()
         self.init_camera(selected_camera_id)
 
-    def init_camera(self, selected_camera_id):
-        if selected_camera_id not in self.cam_workers.keys():
-            camera_widget_name = 'Webcam ' + str(selected_camera_id)
+    def init_camera(self, cam_id):
+        if cam_id not in self.cam_workers.keys():
+            camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
             camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
                 parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
                 insert_position=self.camWidgetVerticalLayout.count() - 1)
@@ -96,27 +102,27 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # create camera worker thread
             worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[selected_camera_id] = worker_thread
+            self.worker_threads[cam_id] = worker_thread
 
-            cam_worker = workers.WebcamWorker(cam_id=selected_camera_id)
+            wkr = workers.WebcamWorker(cam_id=cam_id) if cam_id.isnumeric() else workers.ScreenCaptureWorker(cam_id)
 
-            self.cam_workers[selected_camera_id] = cam_worker
-            self.cam_displays[selected_camera_id] = camera_img_label
+            self.cam_workers[cam_id] = wkr
+            self.cam_displays[cam_id] = camera_img_label
 
-            cam_worker.change_pixmap_signal.connect(self.visualize_cam)
+            wkr.change_pixmap_signal.connect(self.visualize_cam)
 
             def remove_cam():
                 worker_thread.exit()
-                self.cam_workers.pop(selected_camera_id)
-                self.cam_displays.pop(selected_camera_id)
+                self.cam_workers.pop(cam_id)
+                self.cam_displays.pop(cam_id)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
                 sip.delete(camera_widget)
 
             remove_cam_btn.clicked.connect(remove_cam)
-            self.cam_workers[selected_camera_id].moveToThread(self.worker_threads[selected_camera_id])
+            self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
             worker_thread.start()
         else:
-            dialog_popup('Webcam with ID ' + selected_camera_id + ' is already added.')
+            dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
     def visualize_cam(self, cam_id_cv_img):
         cam_id, cv_img = cam_id_cv_img
@@ -261,7 +267,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # pass
         [w.tick_signal.emit() for w in self.sensor_workers.values()]
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
-        [w.tick_signal.emit() for w in self.cam_workers.values()]
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -395,6 +400,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lsl_presets[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
             self.recordingTab.update_buffers(data_dict)
+
+    def camera_screen_capture_tick(self):
+        [w.tick_signal.emit() for w in self.cam_workers.values()]
 
     def visualize_LSLStream_data(self):
 

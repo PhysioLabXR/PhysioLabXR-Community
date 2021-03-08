@@ -96,7 +96,6 @@ def init_button(parent, label=None, function=None, style=config_ui.button_style_
 
 def init_combo_box(parent, label, item_list):
     container_widget, vl = init_container(parent=parent, label=label, vertical=False)
-    combo_widget = QtGui.QWidget()
     combo_box = QComboBox()
     for i in item_list:
         combo_box.addItem(i)
@@ -112,7 +111,7 @@ def init_camera_widget(parent, label_string, insert_position):
     cam_id_label = QLabel(label_string)
     cam_id_label.setStyleSheet("font: bold 14px;")
     label_btn_layout.addWidget(cam_id_label)
-    remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Camera')
+    remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Capture')
     layout.addWidget(camera_img_label)
 
     return container_widget, layout, remove_cam_btn, camera_img_label
@@ -148,19 +147,18 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 
 def init_add_widget(parent, lsl_presets: dict):
-    container, layout = init_container(parent=parent, label='Add Sensor or LSL', label_bold=True)
+    container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(600)
 
-    container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) to add',
+    container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) or Screen Capture to add',
                                                              vertical=False)
-
     # detect camera
-    cameras = returnCameraIndexes()
-    cameras = map(str, cameras)
-
+    cameras = get_working_camera_id()
+    cameras = list(map(str, cameras))
+    camera_screen_cap_list = cameras + ['monitor1']
     # add camera container
     camera_combo_box = init_combo_box(parent=layout_add_camera, label=None,
-                                      item_list=cameras)
+                                      item_list=camera_screen_cap_list)
     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
 
     # add sensor container
@@ -231,7 +229,7 @@ def convert_cv_qt(cv_img):
     p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(p)
 
-def returnCameraIndexes():
+def get_working_camera_id():
     # checks the first 10 indexes.
     index = 0
     arr = []

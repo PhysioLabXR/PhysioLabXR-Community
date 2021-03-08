@@ -9,6 +9,9 @@ from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
+import pyautogui
+
+import numpy as np
 
 class EEGWorker(QObject):
     """
@@ -60,38 +63,8 @@ class EEGWorker(QObject):
         self._is_streaming = False
         self.end_time = time.time()
 
-    # def connect(self, params):
-    #     """
-    #     check if _eeg_interface exists before connecting.
-    #     """
-    #     if self._is_streaming:
-    #         self.stop_stream()
-    #     if self._eeg_interface:
-    #         self._eeg_interface.connect_sensor()
-    #     else:
-    #         print('EEGWorker: No EEG Interface defined, ignored.')
-    #     self._is_connected = True
-    #
-    # def disconnect(self, params):
-    #     """
-    #     check if _eeg_interface exists before connecting.
-    #     """
-    #     if self._is_streaming:
-    #         self.stop_stream()
-    #     if self._eeg_interface:
-    #         self._eeg_interface.disconnect_sensor()
-    #     else:
-    #         print('EEGWorker: No EEG Interface defined, ignored.')
-    #     self._is_connected = False
-
     def is_streaming(self):
         return self._is_streaming
-
-    # def is_connected(self):
-    #     if self._eeg_interface:
-    #         return self._is_connected
-    #     else:
-    #         print('EEGWorker: No Radar Interface Connected, ignored.')
 
 
 class UnityLSLWorker(QObject):
@@ -244,8 +217,19 @@ class WebcamWorker(QObject):
         if ret:
             self.change_pixmap_signal.emit((self.cam_id, cv_img))
 
-class ScreenCapWorker(QObject):
-    tick_signal = pyqtSignal()
+class ScreenCaptureWorker(QObject):
+    tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
     change_pixmap_signal = pyqtSignal(tuple)
 
+    def __init__(self, screen_label):
+        super().__init__()
+        self.tick_signal.connect(self.process_on_tick)
+        self.screen_label = screen_label
 
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        img = pyautogui.screenshot()
+        frame = np.array(img)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        self.change_pixmap_signal.emit((self.screen_label, frame))

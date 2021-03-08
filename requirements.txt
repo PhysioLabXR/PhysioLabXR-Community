@@ -12,3 +12,4 @@ Pillow
 matplotlib
 pyxdf
 opencv-python
+pyautogui
