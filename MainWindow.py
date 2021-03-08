@@ -28,8 +28,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sensor_workers = {}
         self.lsl_workers = {}
         self.inference_worker = None
-        self.webcam_workers = {}
-        self.webcam_displays = {}
+        self.cam_workers = {}
+        self.cam_displays = {}
 
         # create workers for different sensors
         self.init_inference(inference_interface)
@@ -87,29 +87,42 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_camera(selected_camera_id)
 
     def init_camera(self, selected_camera_id):
-        camera_widget_name = 'Webcam ' + str(selected_camera_id)
-        camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
-            parent=self.sensorTabSensorsHorizontalLayout, label_string=camera_widget_name,
-            insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        camera_widget.setObjectName(camera_widget_name)
-        cam_worker = workers.WebcamWorker(cam_id=selected_camera_id)
+        if selected_camera_id not in self.cam_workers.keys():
+            camera_widget_name = 'Webcam ' + str(selected_camera_id)
+            camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
+                parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
+                insert_position=self.camWidgetVerticalLayout.count() - 1)
+            camera_widget.setObjectName(camera_widget_name)
 
-        self.webcam_workers[selected_camera_id] = cam_worker
-        self.webcam_displays[selected_camera_id] = camera_img_label
+            # create camera worker thread
+            worker_thread = pg.QtCore.QThread(self)
+            self.worker_threads[selected_camera_id] = worker_thread
 
-        cam_worker.change_pixmap_signal.connect(self.visualize_cam)
+            cam_worker = workers.WebcamWorker(cam_id=selected_camera_id)
 
-        def remove_cam():
-            remove_cam_btn.click()  # release camera
-            self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
-            sip.delete(camera_widget)
+            self.cam_workers[selected_camera_id] = cam_worker
+            self.cam_displays[selected_camera_id] = camera_img_label
 
-        remove_cam_btn.clicked.connect(remove_cam)
+            cam_worker.change_pixmap_signal.connect(self.visualize_cam)
+
+            def remove_cam():
+                worker_thread.exit()
+                self.cam_workers.pop(selected_camera_id)
+                self.cam_displays.pop(selected_camera_id)
+                self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
+                sip.delete(camera_widget)
+
+            remove_cam_btn.clicked.connect(remove_cam)
+            self.cam_workers[selected_camera_id].moveToThread(self.worker_threads[selected_camera_id])
+            worker_thread.start()
+        else:
+            dialog_popup('Webcam with ID ' + selected_camera_id + ' is already added.')
 
     def visualize_cam(self, cam_id_cv_img):
         cam_id, cv_img = cam_id_cv_img
-        qt_img = convert_cv_qt(cv_img)
-        self.webcam_displays[cam_id].setPixmap(qt_img)
+        if cam_id in self.cam_displays.keys():
+            qt_img = convert_cv_qt(cv_img)
+            self.cam_displays[cam_id].setPixmap(qt_img)
 
     def add_sensor_clicked(self):
         selected_text = str(self.sensor_combo_box.currentText())
@@ -248,7 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # pass
         [w.tick_signal.emit() for w in self.sensor_workers.values()]
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
-        [w.tick_signal.emit() for w in self.webcam_workers.values()]
+        [w.tick_signal.emit() for w in self.cam_workers.values()]
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -341,20 +354,20 @@ class MainWindow(QtWidgets.QMainWindow):
                                         inference_results_plot_widgets]
 
     def visualize_eeg_data(self, data_dict):
-
-        self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
-                                              axis=-1)  # get all data and remove it from internal buffer
-        if self.eeg_data_buffer.shape[-1] < self.eeg_num_visualized_sample:
-            eeg_data_to_plot = np.concatenate((np.zeros(shape=(
-                config.OPENBCI_EEG_CHANNEL_SIZE, self.eeg_num_visualized_sample - self.eeg_data_buffer.shape[-1])),
-                                               self.eeg_data_buffer), axis=-1)
-        else:
-            eeg_data_to_plot = self.eeg_data_buffer[:,
-                               -self.eeg_num_visualized_sample:]  # plot the most recent 10 seconds
-        time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.eeg_num_visualized_sample)
-        eeg_data_to_plot = eeg_data_to_plot[config.OPENBCI_EEG_USEFUL_CHANNELS]  ## keep only the useful channels
-        [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
-        # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
+        if config.sensors[0] in self.sensor_workers.keys():
+            self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
+                                                  axis=-1)  # get all data and remove it from internal buffer
+            if self.eeg_data_buffer.shape[-1] < self.eeg_num_visualized_sample:
+                eeg_data_to_plot = np.concatenate((np.zeros(shape=(
+                    config.OPENBCI_EEG_CHANNEL_SIZE, self.eeg_num_visualized_sample - self.eeg_data_buffer.shape[-1])),
+                                                   self.eeg_data_buffer), axis=-1)
+            else:
+                eeg_data_to_plot = self.eeg_data_buffer[:,
+                                   -self.eeg_num_visualized_sample:]  # plot the most recent 10 seconds
+            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.eeg_num_visualized_sample)
+            eeg_data_to_plot = eeg_data_to_plot[config.OPENBCI_EEG_USEFUL_CHANNELS]  ## keep only the useful channels
+            [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
+            # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
     def process_LSLStream_data(self, data_dict):
         samples_to_plot = self.lsl_presets[data_dict['lsl_data_type']]["num_samples_to_plot"]

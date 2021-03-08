@@ -106,10 +106,13 @@ def init_combo_box(parent, label, item_list):
 
 
 def init_camera_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, label=label_string,
-                                              insert_position=insert_position)
+    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
     camera_img_label =QLabel()
-    remove_cam_btn = init_button(parent=layout, label='Release Camera')
+    _, label_btn_layout = init_container(parent=layout, vertical=False)
+    cam_id_label =QLabel(label_string)
+    cam_id_label.setStyleSheet("font: bold 14px;")
+    label_btn_layout.addWidget(cam_id_label)
+    remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Camera')
     layout.addWidget(camera_img_label)
 
     return container_widget, layout, remove_cam_btn, camera_img_label
