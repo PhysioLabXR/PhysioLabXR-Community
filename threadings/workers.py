@@ -1,25 +1,9 @@
-import base64
 import time
-from collections import deque
-from io import BytesIO
 
-import PIL
-import numpy as np
-from PIL import Image
-
-from PyQt5.QtCore import pyqtSignal, QObject
-import pyqtgraph as pg
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout
-from PyQt5.QtGui import QPixmap
-import sys
 import cv2
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
-import numpy as np
-
-import matplotlib.pyplot as plt
-
-import numpy as np
+import pyqtgraph as pg
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
 
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
@@ -239,36 +223,23 @@ class LSLInletWorker(QObject):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
 
-class WebCamWorker(QObject):
+class WebcamWorker(QObject):
+    tick_signal = pyqtSignal()
+    change_pixmap_signal = pyqtSignal(tuple)
 
-    change_pixmap_signal = pyqtSignal(np.ndarray)
-
-    def __init__(self):
+    def __init__(self, cam_id):
         super().__init__()
         self.cap = None
+        self.cam_id = cam_id
+        self.cap = cv2.VideoCapture(int(self.cam_id))
+        self.tick_signal.connect(self.process_on_tick)
 
-
-    def run(self):
-        # capture from web cam
-        # i = 1
-        self.cap = cv2.VideoCapture(1)
-        while True:
-            ret, cv_img = self.cap.read()
-
-            if ret:
-                self.change_pixmap_signal.emit(cv_img)
-                # i = i + 1
-                # print(i)
-                # if i>30:
-                #     self.quit()
-                #     self.run()
-
-    def quit(self):
+    def release_webcam(self):
         if self.cap is not None:
             self.cap.release()
 
-    class App(QWidget):
-        def __init__(self):
-            super().__init__()
-            self.setWindowTitle("Qt live label demo")
-            self.disply_width = 640
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        ret, cv_img = self.cap.read()
+        if ret:
+            self.change_pixmap_signal.emit((self.cam_id, cv_img))

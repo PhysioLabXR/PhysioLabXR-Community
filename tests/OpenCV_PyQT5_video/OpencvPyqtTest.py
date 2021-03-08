@@ -1,3 +1,5 @@
+import time
+
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout
 from PyQt5.QtGui import QPixmap
@@ -17,8 +19,9 @@ class VideoThread(QThread):
     def run(self):
         # capture from web cam
         # i = 1
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
         while True:
+            time.sleep(1e-3)
             ret, cv_img = self.cap.read()
 
             if ret:
@@ -29,15 +32,9 @@ class VideoThread(QThread):
                 #     self.quit()
                 #     self.run()
 
-
-
     def quit(self):
         if self.cap is not None:
             self.cap.release()
-
-
-
-
 
 
 class App(QWidget):
@@ -66,14 +63,12 @@ class App(QWidget):
         # start the thread
         self.thread.start()
 
-
     @pyqtSlot(np.ndarray)
     def update_image(self, cv_img):
         """Updates the image_label with a new opencv image"""
         qt_img = self.convert_cv_qt(cv_img)
         self.image_label.setPixmap(qt_img)
         print(self.image_label.isWidgetType())
-
 
     def convert_cv_qt(self, cv_img):
         """Convert from an opencv image to QPixmap"""

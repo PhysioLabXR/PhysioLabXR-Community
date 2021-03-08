@@ -1,8 +1,12 @@
-from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtWidgets import QLabel, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+import cv2
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
+    QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QLabel, QVBoxLayout
 
-import config
 import config_ui
 
 
@@ -104,32 +108,31 @@ def init_combo_box(parent, label, item_list):
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, label=label_string,
                                               insert_position=insert_position)
-    start_recording_bun = init_button(parent=layout, label='Start Recording')
-    stop_recording_btn = init_button(parent=layout, label='Stop Recording')
+    camera_img_label =QLabel()
+    remove_cam_btn = init_button(parent=layout, label='Release Camera')
+    layout.addWidget(camera_img_label)
 
+    return container_widget, layout, remove_cam_btn, camera_img_label
 
-
-
-    return container_widget, layout, start_recording_bun, stop_recording_btn
 
 def init_spec_view(parent, label, graph=None):
-        if label:
-            ql = QLabel()
-            ql.setAlignment(QtCore.Qt.AlignTop)
-            ql.setAlignment(QtCore.Qt.AlignCenter)
-            ql.setText(label)
-            parent.addWidget(ql)
+    if label:
+        ql = QLabel()
+        ql.setAlignment(QtCore.Qt.AlignTop)
+        ql.setAlignment(QtCore.Qt.AlignCenter)
+        ql.setText(label)
+        parent.addWidget(ql)
 
-        spc_gv = QGraphicsView()
-        parent.addWidget(spc_gv)
+    spc_gv = QGraphicsView()
+    parent.addWidget(spc_gv)
 
-        scene = QGraphicsScene()
-        spc_gv.setScene(scene)
-        spc_gv.setAlignment(QtCore.Qt.AlignCenter)
-        if graph:
-            scene.addItem(graph)
-        # spc_gv.setFixedSize(config.WINDOW_WIDTH/4, config.WINDOW_HEIGHT/4)
-        return scene
+    scene = QGraphicsScene()
+    spc_gv.setScene(scene)
+    spc_gv.setAlignment(QtCore.Qt.AlignCenter)
+    if graph:
+        scene.addItem(graph)
+    # spc_gv.setFixedSize(config.WINDOW_WIDTH/4, config.WINDOW_HEIGHT/4)
+    return scene
 
 
 def init_sensor_or_lsl_widget(parent, label_string, insert_position):
@@ -209,3 +212,12 @@ def get_distinct_colors(num_colors, depth=8):
         colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
     colors = [tuple(v * (2 ** depth - 1) for v in c) for c in colors]
     return colors
+
+def convert_cv_qt(cv_img):
+    """Convert from an opencv image to QPixmap"""
+    rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+    h, w, ch = rgb_image.shape
+    bytes_per_line = ch * w
+    convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
+    return QPixmap.fromImage(p)

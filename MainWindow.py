@@ -1,26 +1,21 @@
-import time
-
-from PyQt5 import QtWidgets, uic, sip
 import pyqtgraph as pg
-from pyqtgraph import PlotWidget
+from PyQt5 import QtWidgets, uic, sip
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QPushButton, QWidget, QLabel, QGraphicsPixmapItem
-import numpy as np
-from scipy.signal import resample, decimate
-import cv2
+from PyQt5.QtWidgets import QLabel
+from scipy.signal import decimate
+
 import config
 import config_ui
 import threadings.workers as workers
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
-from interfaces.WebcamInterface import *
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
-    init_container, get_distinct_colors, init_camera_widget, init_spec_view
-
+    get_distinct_colors, init_camera_widget, convert_cv_qt
+import numpy as np
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -33,6 +28,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sensor_workers = {}
         self.lsl_workers = {}
         self.inference_worker = None
+        self.webcam_workers = {}
+        self.webcam_displays = {}
 
         # create workers for different sensors
         self.init_inference(inference_interface)
@@ -86,48 +83,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
     def add_camera_clicked(self):
-
         selected_camera_id = self.camera_combo_box.currentText()
         self.init_camera(selected_camera_id)
 
-
-
     def init_camera(self, selected_camera_id):
-        label_name = 'camera' + str(selected_camera_id)
-        camera_widget_name = label_name + '_widget'
-        camera_widget, camera_layout, start_recording_bun, stop_recording_btn = init_camera_widget(
+        camera_widget_name = 'Webcam ' + str(selected_camera_id)
+        camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
             parent=self.sensorTabSensorsHorizontalLayout, label_string=camera_widget_name,
             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         camera_widget.setObjectName(camera_widget_name)
+        cam_worker = workers.WebcamWorker(cam_id=selected_camera_id)
 
+        self.webcam_workers[selected_camera_id] = cam_worker
+        self.webcam_displays[selected_camera_id] = camera_img_label
 
-        camera_display = QGraphicsPixmapItem()
-        camera_run_time_view = init_spec_view(parent=camera_layout, label=label_name,
-                                              graph=camera_display)
+        cam_worker.change_pixmap_signal.connect(self.visualize_cam)
 
-
-        cv_img = cv2.imread('../BCI_interface/interfaces/test_img.jpg')
-        # convert the image to Qt format
-        qt_img = convert_cv_qt(cv_img)
-        # display it
-        camera_display.setPixmap(qt_img)
-
-        def remove_camera():
-            # fire stop streaming first
-            stop_recording_btn.click()
-            # worker_thread.exit()
-            # self.sensor_workers.pop(sensor_type)
-            # self.worker_threads.pop(sensor_type)
+        def remove_cam():
+            remove_cam_btn.click()  # release camera
             self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
             sip.delete(camera_widget)
 
-        init_button(parent=camera_layout, label='Release Camera',
-                    function=remove_camera)
+        remove_cam_btn.clicked.connect(remove_cam)
 
-
-
-
-
+    def visualize_cam(self, cam_id_cv_img):
+        cam_id, cv_img = cam_id_cv_img
+        qt_img = convert_cv_qt(cv_img)
+        self.webcam_displays[cam_id].setPixmap(qt_img)
 
     def add_sensor_clicked(self):
         selected_text = str(self.sensor_combo_box.currentText())
@@ -266,6 +248,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # pass
         [w.tick_signal.emit() for w in self.sensor_workers.values()]
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
+        [w.tick_signal.emit() for w in self.webcam_workers.values()]
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -358,6 +341,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         inference_results_plot_widgets]
 
     def visualize_eeg_data(self, data_dict):
+
         self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
                                               axis=-1)  # get all data and remove it from internal buffer
         if self.eeg_data_buffer.shape[-1] < self.eeg_num_visualized_sample:
@@ -400,6 +384,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.recordingTab.update_buffers(data_dict)
 
     def visualize_LSLStream_data(self):
+
         for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
             time_vector = self.lsl_presets[lsl_stream_name]["timevector"]
 
@@ -409,7 +394,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
                 if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1]/max_display_datapoint_num), axis=1)  # resample to 100 hz with retain history of 10 sec
+                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+                                            axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
                 [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
