@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtWidgets import QLabel, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QComboBox, QDialog, QDialogButtonBox
+from PyQt5.QtWidgets import QLabel, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
+    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
 import config
 import config_ui
@@ -100,6 +101,37 @@ def init_combo_box(parent, label, item_list):
     return combo_box
 
 
+def init_camera_widget(parent, label_string, insert_position):
+    container_widget, layout = init_container(parent=parent, label=label_string,
+                                              insert_position=insert_position)
+    start_recording_bun = init_button(parent=layout, label='Start Recording')
+    stop_recording_btn = init_button(parent=layout, label='Stop Recording')
+
+
+
+
+    return container_widget, layout, start_recording_bun, stop_recording_btn
+
+def init_spec_view(parent, label, graph=None):
+        if label:
+            ql = QLabel()
+            ql.setAlignment(QtCore.Qt.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignCenter)
+            ql.setText(label)
+            parent.addWidget(ql)
+
+        spc_gv = QGraphicsView()
+        parent.addWidget(spc_gv)
+
+        scene = QGraphicsScene()
+        spc_gv.setScene(scene)
+        spc_gv.setAlignment(QtCore.Qt.AlignCenter)
+        if graph:
+            scene.addItem(graph)
+        # spc_gv.setFixedSize(config.WINDOW_WIDTH/4, config.WINDOW_HEIGHT/4)
+        return scene
+
+
 def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, label=config_ui.sensors_type_ui_name_dict[
         label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string,
@@ -112,6 +144,15 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Sensor or LSL', label_bold=True)
     container.setFixedWidth(600)
+
+    container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) to add',
+                                                             vertical=False)
+    # add camera container
+    camera_combo_box = init_combo_box(parent=layout_add_camera, label=None,
+                                      item_list=['0', '1', '2', '3', '4'])
+    add_camera_btn = init_button(parent=layout_add_camera, label='Add')
+
+    # add sensor container
     container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
                                                              vertical=False)
     sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,
@@ -125,7 +166,7 @@ def init_add_widget(parent, lsl_presets: dict):
     _, lsl_num_chan_input = init_inputBox(parent=layout_add_lsl, default_input=1)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, sensor_combo_box, add_sensor_btn, lsl_data_type_input, lsl_num_chan_input, add_lsl_btn
+    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, lsl_num_chan_input, add_lsl_btn
 
 
 class CustomDialog(QDialog):
@@ -166,5 +207,5 @@ def get_distinct_colors(num_colors, depth=8):
         lightness = (50 + np.random.rand() * 10) / 100.
         saturation = (90 + np.random.rand() * 10) / 100.
         colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
-    colors = [tuple(v * (2 ** depth -1) for v in c) for c in colors]
+    colors = [tuple(v * (2 ** depth - 1) for v in c) for c in colors]
     return colors
