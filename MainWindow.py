@@ -408,9 +408,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
 
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-                if data_to_plot.shape[-1] > max_display_datapoint_num:
-                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                                            axis=1)  # resample to 100 hz with retain history of 10 sec
+                if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1]/max_display_datapoint_num), axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
                 [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in

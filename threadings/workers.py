@@ -9,6 +9,13 @@ from PIL import Image
 
 from PyQt5.QtCore import pyqtSignal, QObject
 import pyqtgraph as pg
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QVBoxLayout
+from PyQt5.QtGui import QPixmap
+import sys
+import cv2
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -231,3 +238,37 @@ class LSLInletWorker(QObject):
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
+
+class WebCamWorker(QObject):
+
+    change_pixmap_signal = pyqtSignal(np.ndarray)
+
+    def __init__(self):
+        super().__init__()
+        self.cap = None
+
+
+    def run(self):
+        # capture from web cam
+        # i = 1
+        self.cap = cv2.VideoCapture(1)
+        while True:
+            ret, cv_img = self.cap.read()
+
+            if ret:
+                self.change_pixmap_signal.emit(cv_img)
+                # i = i + 1
+                # print(i)
+                # if i>30:
+                #     self.quit()
+                #     self.run()
+
+    def quit(self):
+        if self.cap is not None:
+            self.cap.release()
+
+    class App(QWidget):
+        def __init__(self):
+            super().__init__()
+            self.setWindowTitle("Qt live label demo")
+            self.disply_width = 640
