@@ -30,7 +30,13 @@
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>
          <widget class="QWidget" name="sensorWidget" native="true">
-          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout"/>
+          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout">
+           <item>
+            <widget class="QWidget" name="camWidget" native="true">
+             <layout class="QVBoxLayout" name="camWidgetVerticalLayout"/>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>

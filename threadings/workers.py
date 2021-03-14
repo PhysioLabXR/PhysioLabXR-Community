@@ -1,23 +1,17 @@
-import base64
 import time
-from collections import deque
-from io import BytesIO
 
-import PIL
-import numpy as np
-from PIL import Image
-
-from PyQt5.QtCore import pyqtSignal, QObject
+import cv2
 import pyqtgraph as pg
-
-import matplotlib.pyplot as plt
-
-import numpy as np
-
+from PyQt5.QtCore import QObject
+from PyQt5.QtCore import pyqtSignal
+from interfaces.SimulationInterface import SimulationInterface
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
+import pyautogui
+
+import numpy as np
 
 class EEGWorker(QObject):
     """
@@ -77,38 +71,8 @@ class EEGWorker(QObject):
         self._is_streaming = False
         self.end_time = time.time()
 
-    # def connect(self, params):
-    #     """
-    #     check if _eeg_interface exists before connecting.
-    #     """
-    #     if self._is_streaming:
-    #         self.stop_stream()
-    #     if self._eeg_interface:
-    #         self._eeg_interface.connect_sensor()
-    #     else:
-    #         print('EEGWorker: No EEG Interface defined, ignored.')
-    #     self._is_connected = True
-    #
-    # def disconnect(self, params):
-    #     """
-    #     check if _eeg_interface exists before connecting.
-    #     """
-    #     if self._is_streaming:
-    #         self.stop_stream()
-    #     if self._eeg_interface:
-    #         self._eeg_interface.disconnect_sensor()
-    #     else:
-    #         print('EEGWorker: No EEG Interface defined, ignored.')
-    #     self._is_connected = False
-
     def is_streaming(self):
         return self._is_streaming
-
-    # def is_connected(self):
-    #     if self._eeg_interface:
-    #         return self._is_connected
-    #     else:
-    #         print('EEGWorker: No Radar Interface Connected, ignored.')
 
 
 class UnityLSLWorker(QObject):
@@ -214,7 +178,6 @@ class LSLInletWorker(QObject):
 
         self._lslInlet_interface = LSLInlet_interface
         self.is_streaming = False
-        self._is_cloud_flowing = True # is flowing to GCloud dataflow
         self.start_time = time.time()
         self.num_samples = 0
 
@@ -227,8 +190,80 @@ class LSLInletWorker(QObject):
             sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
 
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
-            if self._is_cloud_flowing:
-                print('_is_cloud_flowing')
+            self.signal_data.emit(data_dict)
+
+    def start_stream(self):
+        self._lslInlet_interface.start_sensor()
+        self.is_streaming = True
+
+        self.num_samples = 0
+        self.start_time = time.time()
+
+    def stop_stream(self):
+        self._lslInlet_interface.stop_sensor()
+        self.is_streaming = False
+
+class WebcamWorker(QObject):
+    tick_signal = pyqtSignal()
+    change_pixmap_signal = pyqtSignal(tuple)
+
+    def __init__(self, cam_id):
+        super().__init__()
+        self.cap = None
+        self.cam_id = cam_id
+        self.cap = cv2.VideoCapture(int(self.cam_id))
+        self.tick_signal.connect(self.process_on_tick)
+
+    def release_webcam(self):
+        if self.cap is not None:
+            self.cap.release()
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        ret, cv_img = self.cap.read()
+        if ret:
+            self.change_pixmap_signal.emit((self.cam_id, cv_img))
+
+class ScreenCaptureWorker(QObject):
+    tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
+    change_pixmap_signal = pyqtSignal(tuple)
+
+    def __init__(self, screen_label):
+        super().__init__()
+        self.tick_signal.connect(self.process_on_tick)
+        self.screen_label = screen_label
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        img = pyautogui.screenshot()
+        frame = np.array(img)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        self.change_pixmap_signal.emit((self.screen_label, frame))
+
+class DEAPWorker(QObject):
+
+    # for passing data to the gesture tab
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, LSLInlet_interface: SimulationInterface, *args, **kwargs):
+        super(DEAPWorker, self).__init__()
+        self.tick_signal.connect(self.process_on_tick)
+        self._lslInlet_interface = LSLInlet_interface
+        self.is_streaming = False
+        self.start_time = time.time()
+        self.num_samples = 0
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if self.is_streaming:
+            frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+
+            self.num_samples += len(timestamps)
+            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+
+            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):

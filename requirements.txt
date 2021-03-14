@@ -13,3 +13,5 @@ matplotlib
 apache-beam[gcp]
 pyxdf
 google-cloud-pubsub
+opencv-python
+pyautogui
