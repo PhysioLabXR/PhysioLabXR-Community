@@ -1,0 +1,5 @@
+{ "StreamName":"AIYVoice",
+  "NumChannels":1,
+  "ChannelNames":[
+    "Text"],
+  "NominalSamplingRate":  1}

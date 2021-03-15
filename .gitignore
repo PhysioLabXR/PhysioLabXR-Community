@@ -1,2 +1,4 @@
 auth/
 data/
+**/__pycache__
+**/*.idea/
