@@ -6,18 +6,13 @@ from pylsl import StreamInlet, resolve_stream, LostError, resolve_byprop, Stream
 import config
 import pickle
 
-# ref: https://stackoverflow.com/questions/21204206/faster-way-to-simultaneously-iterate-over-rolling-window-of-two-or-more-numpy-ar
-def rolling_window(a, window):
-    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-    strides = a.strides + (a.strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-
 
 class DEAPReader:
 
-    def __init__(self):
+    def __init__(self, sampling_rate):
         self._running = True
         self.sample_no = 0
+        self.wait_time = 1/sampling_rate - 0.0018   # delay the signal by the simulated frequency, may vary by machine
 
     def terminate(self):
         self._running = False
@@ -27,16 +22,17 @@ class DEAPReader:
             if self.sample_no>deap_data.shape[1]-1:
                 self.sample_no = 0
             subset = deap_data[:, self.sample_no]
-            stamp = local_clock() - 0.125
+            stamp = local_clock()
             outlet.push_sample(subset.tolist(), stamp)
             self.sample_no += 1
-            time.sleep(0.01)
+            time.sleep(self.wait_time)
 
 class SimulationInterface:
 
     def __init__(self, lsl_data_type, num_channels, sampling_rate):  # default board_id 2 for Cyton
         self.lsl_data_type = lsl_data_type
         self.lsl_num_channels = num_channels
+        self.sampling_rate = sampling_rate
         with open('data/s01.dat', "rb") as f:
             deap_data = pickle.load(f, encoding="latin1")
         deap_data = np.array(deap_data['data'])
@@ -44,7 +40,7 @@ class SimulationInterface:
         self.deap_data = deap_data.reshape(deap_data.shape[1],deap_data.shape[0]*deap_data.shape[2])
         self.dreader = None
         self.stream_process = None
-        info = StreamInfo('DEAP Simulation', 'EEG', num_channels, sampling_rate, 'float32', 'deapcontinuous')
+        info = StreamInfo('DEAP Simulation', 'EEG', num_channels, self.sampling_rate, 'float32', 'deapcontinuous')
         self.outlet = StreamOutlet(info, 32, 360)
         self.streams = resolve_byprop('name', self.lsl_data_type, timeout=1)
         if len(self.streams) < 1:
@@ -54,7 +50,7 @@ class SimulationInterface:
 
     def start_sensor(self):
         # connect to the sensor
-        self.dreader = DEAPReader()
+        self.dreader = DEAPReader(self.sampling_rate)
         self.stream_process = threading.Thread(target=self.dreader.run, args=(self.deap_data,self.outlet))
 
         self.stream_process.start()

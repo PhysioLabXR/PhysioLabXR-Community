@@ -76,7 +76,7 @@ class WriteBatchesToGCS(beam.DoFn):
                 f.write("{}\n".format(json.dumps(element)).encode("utf-8"))
 
 
-def run(input_topic, output_path, window_size=1.0, pipeline_args=None):
+def run(input_topic, output_path, window_size=1.0):
     # `save_main_session` is set to true because some DoFn's rely on
     # globally imported modules.
     pipeline_options = PipelineOptions(

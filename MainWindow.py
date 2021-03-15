@@ -11,6 +11,7 @@ from interfaces.SimulationInterface import SimulationInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
+from ui.CloudTab import CloudTab
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets
@@ -88,6 +89,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add other tabs
         self.recordingTab = RecordingsTab(self, self.LSL_data_buffer_dicts)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+
+        self.cloudTab = CloudTab(self, self.LSL_data_buffer_dicts)
+        self.cloud_tab_vertical_layout.addWidget(self.cloudTab)
 
     def add_camera_clicked(self):
         selected_camera_id = self.camera_combo_box.currentText()
@@ -408,6 +412,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lsl_presets[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
             self.recordingTab.update_buffers(data_dict)
+            # notify the internal buffer in cloud tab
+            self.cloudTab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]

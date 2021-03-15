@@ -1,6 +1,6 @@
 import time
 
-import cv2
+#import cv2
 import pyqtgraph as pg
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal

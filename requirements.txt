@@ -1,5 +1,5 @@
 brainflow
-numpy
+numpy==1.19.2
 PyQt5
 pyserial
 pylsl
@@ -15,3 +15,4 @@ pyxdf
 google-cloud-pubsub
 opencv-python
 pyautogui
+six

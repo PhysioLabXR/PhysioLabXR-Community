@@ -1,4 +1,4 @@
-import cv2
+#import cv2
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import Qt
@@ -234,7 +234,8 @@ def get_working_camera_id():
     index = 0
     arr = []
     i = 10
-    while i > 0:
+    #while i > 0:
+    while False:
         cap = cv2.VideoCapture(index)
         if cap.read()[0]:
             arr.append(index)
