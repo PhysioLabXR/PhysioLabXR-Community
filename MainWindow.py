@@ -9,6 +9,7 @@ import config_ui
 import threadings.workers as workers
 from interfaces.SimulationInterface import SimulationInterface
 from interfaces.LSLInletInterface import LSLInletInterface
+from interfaces.AIYVoiceInterface import AIYVoiceInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
 from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.CloudTab import CloudTab
@@ -166,6 +167,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 if lsl_stream_name.lower().endswith('simulation'):
                     interface = SimulationInterface(lsl_stream_name, lsl_num_chan,
                                                     self.lsl_presets[lsl_stream_name]["NominalSamplingRate"])
+                elif lsl_stream_name.lower() == 'aiyvoice':
+                    interface = AIYVoiceInterface(lsl_stream_name, lsl_num_chan)
                 else:
                     interface = LSLInletInterface(lsl_stream_name, lsl_num_chan)
             except AttributeError:
@@ -174,6 +177,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if lsl_stream_name.lower().startswith('deap'):
                 self.lsl_workers[lsl_stream_name] = workers.DEAPWorker(interface)
+            elif lsl_stream_name.lower() == 'aiyvoice':
+                self.lsl_workers[lsl_stream_name] = workers.AIYWorker(interface)
             else:
                 self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
@@ -422,12 +427,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
             time_vector = self.lsl_presets[lsl_stream_name]["timevector"]
-            if lsl_stream_name == 'AIYVoice' and len(data_to_plot[0])>0:
-                # TODO: move this into a usable structure for the experiment, for now log the relevant speech as detected
-                data_to_plot[-1][-1] = 1
-                data_to_plot = data_to_plot.astype(np.float)
-            elif lsl_stream_name == 'AIYVoice':
-                continue
             if data_to_plot.shape[-1] == len(time_vector):
                 actual_sampling_rate = self.lsl_presets[lsl_stream_name]["ActualSamplingRate"]
                 max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()

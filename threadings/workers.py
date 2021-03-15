@@ -5,10 +5,11 @@ import pyqtgraph as pg
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from interfaces.SimulationInterface import SimulationInterface
+from interfaces.AIYVoiceInterface import AIYVoiceInterface
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
-
+from pylsl import local_clock
 import pyautogui
 
 import numpy as np
@@ -203,6 +204,7 @@ class LSLInletWorker(QObject):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
 
+
 class WebcamWorker(QObject):
     tick_signal = pyqtSignal()
     change_pixmap_signal = pyqtSignal(tuple)
@@ -224,6 +226,7 @@ class WebcamWorker(QObject):
         if ret:
             self.change_pixmap_signal.emit((self.cam_id, cv_img))
 
+
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
     change_pixmap_signal = pyqtSignal(tuple)
@@ -240,6 +243,48 @@ class ScreenCaptureWorker(QObject):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         self.change_pixmap_signal.emit((self.screen_label, frame))
+
+
+class AIYWorker(QObject):
+
+    # for passing data to the gesture tab
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, LSLInlet_interface: AIYVoiceInterface, *args, **kwargs):
+        super(AIYWorker, self).__init__()
+        self.tick_signal.connect(self.process_on_tick)
+        self._lslInlet_interface = LSLInlet_interface
+        self.is_streaming = False
+        self.start_time = time.time()
+        self.num_samples = 0
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if self.is_streaming:
+            frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            if len(frames) == 0: # if no signal is received from AIY
+                frames, timestamps = np.array([[0]]), np.array([local_clock()])
+            else:
+                print('received confidence rating', frames)
+                frames = np.array([[1]]) # just visualize as trigger for now
+            self.num_samples += len(timestamps)
+            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+
+            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            self.signal_data.emit(data_dict)
+
+    def start_stream(self):
+        self._lslInlet_interface.start_sensor()
+        self.is_streaming = True
+
+        self.num_samples = 0
+        self.start_time = time.time()
+
+    def stop_stream(self):
+        self._lslInlet_interface.stop_sensor()
+        self.is_streaming = False
+
 
 class DEAPWorker(QObject):
 
