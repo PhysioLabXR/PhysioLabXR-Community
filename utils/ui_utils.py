@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
 from PyQt5.QtWidgets import QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 
 import config_ui
 
@@ -138,12 +139,21 @@ def init_spec_view(parent, label, graph=None):
 
 
 def init_sensor_or_lsl_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, label=config_ui.sensors_type_ui_name_dict[
-        label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string,
-                                              insert_position=insert_position)
+    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+
+    _, top_layout = init_container(parent=layout, vertical=False)
+    ql = QLabel(config_ui.sensors_type_ui_name_dict[
+        label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+    ql.setStyleSheet("font: bold 14px;")
+    pop_window_btn = init_button(parent=top_layout, label='Pop Window')
+    pop_window_btn.setFixedWidth(200)
+
+    top_layout.addWidget(ql)
+    top_layout.addWidget(pop_window_btn)
+
     start_stream_btn = init_button(parent=layout, label='Start Stream')
     stop_stream_btn = init_button(parent=layout, label='Stop Stream')
-    return container_widget, layout, start_stream_btn, stop_stream_btn
+    return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn
 
 
 def init_add_widget(parent, lsl_presets: dict):
@@ -242,3 +252,21 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
+class AnotherWindow(QWidget):
+    """
+    This "window" is a QWidget. If it has no parent, it
+    will appear as a free-floating window as we want.
+    """
+    def __init__(self, widget_to_add: QWidget, close_function):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(widget_to_add)
+        self.close_function = close_function
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        # do stuff
+        print('Window closed')
+        self.close_function()
+        event.accept() # let the window close

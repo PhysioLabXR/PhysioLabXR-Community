@@ -6,33 +6,33 @@ from pylsl import StreamInlet, resolve_stream
 import config
 
 
-class UnityLSLInterface:
-
-    def __init__(self, lsl_data_type='Unity.EyeData'):  # default board_id 2 for Cyton
-        self.lsl_data_type = lsl_data_type
-        self.streams = None
-        self.inlet = None
-        pass
-
-    def start_sensor(self):
-        # connect to the sensor
-        self.streams = resolve_stream('type', self.lsl_data_type)
-        self.inlet = StreamInlet(self.streams[0])
-        self.inlet.open_stream()
-        print('UnityLSLInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
-        # tell the sensor to start sending frames
-
-    def process_frames(self):
-        # return one or more frames of the sensor
-        frames, timestamps = self.inlet.pull_chunk()
-        return np.transpose(frames), timestamps
-
-    def stop_sensor(self):
-        self.inlet.close_stream()
-        print('UnityLSLInterface: inlet stream closed.')
-
-    def info(self):
-        return self.inlet.info()
+# class UnityLSLInterface:
+#
+#     def __init__(self, lsl_data_type='Unity.EyeData'):  # default board_id 2 for Cyton
+#         self.lsl_data_type = lsl_data_type
+#         self.streams = None
+#         self.inlet = None
+#         pass
+#
+#     def start_sensor(self):
+#         # connect to the sensor
+#         self.streams = resolve_stream('type', self.lsl_data_type)
+#         self.inlet = StreamInlet(self.streams[0])
+#         self.inlet.open_stream()
+#         print('UnityLSLInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
+#         # tell the sensor to start sending frames
+#
+#     def process_frames(self):
+#         # return one or more frames of the sensor
+#         frames, timestamps = self.inlet.pull_chunk()
+#         return np.transpose(frames), timestamps
+#
+#     def stop_sensor(self):
+#         self.inlet.close_stream()
+#         print('UnityLSLInterface: inlet stream closed.')
+#
+#     def info(self):
+#         return self.inlet.info()
 
 
 def run_test():

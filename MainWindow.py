@@ -9,12 +9,12 @@ import config_ui
 import threadings.workers as workers
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
-from interfaces.UnityLSLInterface import UnityLSLInterface
+# from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
-    get_distinct_colors, init_camera_widget, convert_cv_qt
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -87,6 +87,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add other tabs
         self.recordingTab = RecordingsTab(self, self.LSL_data_buffer_dicts)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+
+        # windows
+        self.pop_windows = {}
 
     def add_camera_clicked(self):
         selected_camera_id = self.camera_combo_box.currentText()
@@ -165,7 +168,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
+            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
                 parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
                 insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             lsl_widget.setObjectName(lsl_widget_name)
@@ -187,6 +190,25 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                           self.lsl_presets[lsl_stream_name][
                                                                               "num_samples_to_plot"])
 
+            # pop window actions
+            def dock_window():
+                self.sensorTabSensorsHorizontalLayout.insertWidget(0, lsl_widget)
+                pop_window_btn.clicked.disconnect()
+                pop_window_btn.clicked.connect(pop_window)
+                pop_window_btn.setText('Pop Window')
+                self.pop_windows[lsl_stream_name].hide()  # tetentive measures
+                self.pop_windows.pop(lsl_stream_name)
+
+            def pop_window():
+                w = AnotherWindow(lsl_widget, remove_lsl)
+                self.pop_windows[lsl_stream_name] = w
+                w.setWindowTitle(lsl_stream_name)
+                pop_window_btn.setText('Dock Window')
+                w.show()
+                pop_window_btn.clicked.disconnect()
+                pop_window_btn.clicked.connect(dock_window)
+            pop_window_btn.clicked.connect(pop_window)
+
             def remove_lsl():
                 # fire stop streaming first
                 stop_stream_btn.click()
@@ -194,7 +216,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
-                sip.delete(lsl_widget)
+                # close window if popped
+                if lsl_stream_name in self.pop_windows.keys():
+                    self.pop_windows[lsl_stream_name].hide()
+                    self.pop_windows.pop(lsl_stream_name)
+                else:  # use recursive delete if docked
+                    sip.delete(lsl_widget)
                 self.LSL_data_buffer_dicts.pop(lsl_stream_name)
 
             #     worker_thread
@@ -208,7 +235,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_sensor(self, sensor_type):
         sensor_widget_name = sensor_type + '_widget'
-        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
+        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
             parent=self.sensorTabSensorsHorizontalLayout, label_string=sensor_type,
             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         sensor_widget.setObjectName(sensor_widget_name)
@@ -221,12 +248,12 @@ class MainWindow(QtWidgets.QMainWindow):
             stop_stream_btn.clicked.connect(self.stop_eeg)
             self.init_visualize_eeg_data(parent=sensor_layout)
             self.sensor_workers[sensor_type].signal_data.connect(self.visualize_eeg_data)
-        elif sensor_type == config.sensors[1]:
-            interface = UnityLSLInterface()
-            self.sensor_workers[sensor_type] = workers.UnityLSLWorker(interface)
-            stop_stream_btn.clicked.connect(self.stop_unityLSL)
-            self.init_visualize_unityLSL_data(parent=sensor_layout)
-            self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
+        # elif sensor_type == config.sensors[1]:
+        #     interface = UnityLSLInterface()
+        #     self.sensor_workers[sensor_type] = workers.UnityLSLWorker(interface)
+        #     stop_stream_btn.clicked.connect(self.stop_unityLSL)
+        #     self.init_visualize_unityLSL_data(parent=sensor_layout)
+        #     self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
 
         def remove_sensor():
             # fire stop streaming first
