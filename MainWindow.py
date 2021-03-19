@@ -176,6 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[lsl_stream_name] = worker_thread
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
+            if not lsl_chan_names:
+                lsl_chan_names = ['Unknown' for i in range(lsl_num_chan)]
             self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(parent=lsl_layout,
                                                                                                num_chan=lsl_num_chan,
                                                                                                chan_names=lsl_chan_names,
