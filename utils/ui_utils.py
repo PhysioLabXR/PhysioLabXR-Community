@@ -143,7 +143,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
     _, top_layout = init_container(parent=layout, vertical=False)
     ql = QLabel(config_ui.sensors_type_ui_name_dict[
-        label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+                    label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
     ql.setStyleSheet("font: bold 14px;")
     pop_window_btn = init_button(parent=top_layout, label='Pop Window')
     pop_window_btn.setFixedWidth(200)
@@ -160,7 +160,8 @@ def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(600)
 
-    container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) or Screen Capture to add',
+    container_add_camera, layout_add_camera = init_container(parent=layout,
+                                                             label='Select a Camera(ID) or Screen Capture to add',
                                                              vertical=False)
     # detect camera
     cameras = get_working_camera_id()
@@ -239,6 +240,7 @@ def convert_cv_qt(cv_img):
     p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(p)
 
+
 def get_working_camera_id():
     # checks the first 10 indexes.
     index = 0
@@ -253,11 +255,13 @@ def get_working_camera_id():
         i -= 1
     return arr
 
+
 class AnotherWindow(QWidget):
     """
     This "window" is a QWidget. If it has no parent, it
     will appear as a free-floating window as we want.
     """
+
     def __init__(self, widget_to_add: QWidget, close_function):
         super().__init__()
         layout = QVBoxLayout()
@@ -269,4 +273,4 @@ class AnotherWindow(QWidget):
         # do stuff
         print('Window closed')
         self.close_function()
-        event.accept() # let the window close
+        event.accept()  # let the window close

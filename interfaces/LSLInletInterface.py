@@ -12,7 +12,7 @@ class LSLInletInterface:
         self.lsl_data_type = lsl_data_type
         self.lsl_num_channels = num_channels
 
-        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=1)
+        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=0.1)
         if len(self.streams) < 1:
             raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_data_type))
         self.inlet = StreamInlet(self.streams[0])
@@ -20,7 +20,7 @@ class LSLInletInterface:
 
     def start_sensor(self):
         # connect to the sensor
-        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=1)
+        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=0.1)
         if len(self.streams) < 1:
             raise AttributeError('Unable to find LSL Stream with given type {0}'.format(self.lsl_data_type))
         self.inlet = StreamInlet(self.streams[0])
