@@ -8,14 +8,14 @@ import config
 
 class LSLInletInterface:
 
-    def __init__(self, lsl_data_type, num_channels):  # default board_id 2 for Cyton
-        self.lsl_data_type = lsl_data_type
-        self.lsl_num_channels = num_channels
-
-        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=0.1)
+    def __init__(self, lsl_data_type):
+        self.streams = resolve_byprop('name', lsl_data_type, timeout=0.1)
         if len(self.streams) < 1:
             raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_data_type))
         self.inlet = StreamInlet(self.streams[0])
+
+        self.lsl_data_type = lsl_data_type
+        self.lsl_num_channels = self.inlet.channel_count
         pass
 
     def start_sensor(self):
@@ -46,6 +46,12 @@ class LSLInletInterface:
 
     def info(self):
         return self.inlet.info()
+
+    def get_num_chan(self):
+        return self.lsl_num_channels
+
+    def get_nominal_srate(self):
+        return self.streams[0].nominal_srate()
 
 
 def run_test():

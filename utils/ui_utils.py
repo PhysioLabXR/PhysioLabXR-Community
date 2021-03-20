@@ -158,7 +158,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
-    container.setFixedWidth(600)
+    container.setFixedWidth(700)
 
     container_add_camera, layout_add_camera = init_container(parent=layout,
                                                              label='Select a Camera(ID) or Screen Capture to add',
@@ -180,20 +180,20 @@ def init_add_widget(parent, lsl_presets: dict):
                                           lsl_presets.keys()) + list(config_ui.sensors_type_ui_name_dict.values()))
 
     add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
+    reload_presets_btn = init_button(parent=layout_add_sensor, label='Reload Presets')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
-    _, lsl_num_chan_input = init_inputBox(parent=layout_add_lsl, default_input=1)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, lsl_num_chan_input, add_lsl_btn
+    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn
 
 
 class CustomDialog(QDialog):
-    def __init__(self, msg, parent=None):
+    def __init__(self, title, msg, parent=None):
         super().__init__(parent=parent)
 
-        self.setWindowTitle("Warning")
+        self.setWindowTitle(title)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
 
@@ -208,10 +208,10 @@ class CustomDialog(QDialog):
         self.setLayout(self.layout)
 
 
-def dialog_popup(msg):
-    dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
+def dialog_popup(msg, title='Warning'):
+    dlg = CustomDialog(title, msg)  # If you pass self, the dialog will be centered over the main window as before.
     if dlg.exec_():
-        print("Success!")
+        print("Dialog popup")
     else:
         print("Cancel!")
 

@@ -3,6 +3,8 @@ import os
 
 import numpy as np
 
+from interfaces.LSLInletInterface import LSLInletInterface
+
 
 def slice_len_for(slc, seqlen):
     start, stop, step = slc.indices(seqlen)
@@ -15,33 +17,68 @@ def load_all_LSL_presets(lsl_preset_roots='LSLPresets'):
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
-
-        if 'ChannelNames' in loaded_preset_dict.keys():
-            try:
-                assert loaded_preset_dict['NumChannels'] == len(loaded_preset_dict['ChannelNames'])
-            except AssertionError:
-                raise Exception('Unable to load {0}, number of channels mismatch the number of channel names.'.format(pf_path))
-        else:
-            loaded_preset_dict['ChannelNames'] = ['Unknown'] * loaded_preset_dict['NumChannels']
-
-        stream_name = loaded_preset_dict.pop('StreamName')
-
-        if 'GroupChannelsInPlot' in loaded_preset_dict.keys() and len(loaded_preset_dict['GroupChannelsInPlot']) > 0:
-            try:
-                assert np.max(loaded_preset_dict['GroupChannelsInPlot']) <= loaded_preset_dict['NumChannels']
-            except AssertionError:
-                raise Exception('GroupChannelsInPlot max must be less than the number of channels.')
-
-            loaded_preset_dict["PlotGroupSlices"] = []
-            head = 0
-            for x in loaded_preset_dict['GroupChannelsInPlot']:
-                loaded_preset_dict["PlotGroupSlices"].append((head, x))
-                head = x
-            if head != loaded_preset_dict['NumChannels']:
-                loaded_preset_dict["PlotGroupSlices"].append((head, loaded_preset_dict['NumChannels']))  # append the last group
-        else:
-            loaded_preset_dict["PlotGroupSlices"] = None
-        presets[stream_name] = loaded_preset_dict
-
+        preset_dict = load_LSL_preset(loaded_preset_dict)
+        stream_name = preset_dict['StreamName']
+        presets[stream_name] = preset_dict
     return presets
 
+
+def load_LSL_preset(preset_dict):
+    if 'ChannelNames' not in preset_dict.keys():
+        preset_dict['ChannelNames'] = None
+    if 'GroupChannelsInPlot' not in preset_dict.keys():
+        preset_dict['GroupChannelsInPlot'] = None
+    if 'NominalSamplingRate' not in preset_dict.keys():
+        preset_dict['NominalSamplingRate'] = None
+    return preset_dict
+
+
+def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None):
+    preset_dict = {'StreamName': stream_name, 'ChannelNames': channel_names, 'PlotGroupSlices': plot_group_slices}
+    preset_dict = load_LSL_preset(preset_dict)
+    return preset_dict
+
+
+def process_LSL_plot_group(preset_dict):
+    preset_dict["PlotGroupSlices"] = []
+    head = 0
+    for x in preset_dict['GroupChannelsInPlot']:
+        preset_dict["PlotGroupSlices"].append((head, x))
+        head = x
+    if head != preset_dict['NumChannels']:
+        preset_dict["PlotGroupSlices"].append(
+            (head, preset_dict['NumChannels']))  # append the last group
+    return preset_dict
+
+
+def process_preset_create_interface(preset_dict):
+    lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset_dict['StreamName'], preset_dict['ChannelNames'], \
+                                                         preset_dict['GroupChannelsInPlot']
+    try:
+        interface = LSLInletInterface(lsl_stream_name)
+    except AttributeError:
+        raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
+    lsl_num_chan = interface.get_num_chan()
+    preset_dict['NumChannels'] = lsl_num_chan
+
+    # process srate
+    if not preset_dict['NominalSamplingRate']:  # try to find the nominal srate from lsl stream info if not provided
+        preset_dict['NominalSamplingRate'] = interface.get_nominal_srate()
+        if not preset_dict['NominalSamplingRate']:
+            raise AssertionError('Unable to load preset with name {0}, it does not have a nominal srate. RN requires all its streams to provide nominal srate for visualization purpose. You may manually define the NominalSamplingRate in presets.'.format(lsl_stream_name))
+
+    # process channel names ###########################
+    if lsl_chan_names:
+        if lsl_num_chan != len(lsl_chan_names):
+            raise AssertionError('Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
+                    lsl_stream_name))
+    else:
+        preset_dict['ChannelNames'] = ['Unknown'] * preset_dict['NumChannels']
+    # process lsl presets ###########################
+    if group_chan_in_plot and len(group_chan_in_plot) > 0:
+        if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:
+            raise AssertionError(
+                'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
+                    lsl_stream_name))
+        preset_dict = process_LSL_plot_group(preset_dict)
+    return preset_dict, interface

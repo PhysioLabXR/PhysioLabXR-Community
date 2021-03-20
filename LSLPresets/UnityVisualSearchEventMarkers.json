@@ -1,5 +1,4 @@
 { "StreamName":"Unity.VisualSearch.EventMarkers",
-  "NumChannels":13,
   "ChannelNames":[
     "Item1InFustum", "Item1FoveateValue",
     "Item2InFustum", "Item2FoveateValue",
