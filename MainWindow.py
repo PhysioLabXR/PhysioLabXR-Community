@@ -97,6 +97,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pop_windows = {}
 
     def add_camera_clicked(self):
+        if self.recordingTab.is_recording:
+            dialog_popup(msg='Cannot add capture while recording.')
+            return
         selected_camera_id = self.camera_combo_box.currentText()
         self.init_camera(selected_camera_id)
 
@@ -120,11 +123,15 @@ class MainWindow(QtWidgets.QMainWindow):
             wkr.change_pixmap_signal.connect(self.visualize_cam)
 
             def remove_cam():
+                if self.recordingTab.is_recording:
+                    dialog_popup(msg='Cannot remove stream while recording.')
+                    return False
                 worker_thread.exit()
                 self.cam_workers.pop(cam_id)
                 self.cam_displays.pop(cam_id)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
                 sip.delete(camera_widget)
+                return True
 
             remove_cam_btn.clicked.connect(remove_cam)
             self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
@@ -140,6 +147,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recordingTab.update_camera_screen_buffer(cam_id, cv_img)
 
     def add_preset_sensor_clicked(self):
+        if self.recordingTab.is_recording:
+            dialog_popup(msg='Cannot add stream while recording.')
+            return
         selected_text = str(self.sensor_combo_box.currentText())
         if selected_text in self.lsl_presets.keys():
             self.init_lsl(self.lsl_presets[selected_text])
@@ -217,7 +227,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             def remove_lsl():
                 if self.recordingTab.is_recording:
-                    dialog_popup()
+                    dialog_popup(msg='Cannot remove stream while recording.')
+                    return False
                 # fire stop streaming first
                 stop_stream_btn.click()
                 worker_thread.exit()
@@ -231,6 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:  # use recursive delete if docked
                     sip.delete(lsl_widget)
                 self.LSL_data_buffer_dicts.pop(lsl_stream_name)
+                return True
 
             #     worker_thread
             init_button(parent=lsl_layout, label='Remove Stream',

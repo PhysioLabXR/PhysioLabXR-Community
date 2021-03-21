@@ -272,5 +272,7 @@ class AnotherWindow(QWidget):
     def closeEvent(self, event):
         # do stuff
         print('Window closed')
-        self.close_function()
-        event.accept()  # let the window close
+        if self.close_function():
+            event.accept()  # let the window close
+        else:
+            event.ignore()
