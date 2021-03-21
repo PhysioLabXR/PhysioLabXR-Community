@@ -1,5 +1,4 @@
 { "StreamName":"BAlert",
-  "NumChannels":30,
   "ChannelNames":[
     "unknown",
     "unknown",

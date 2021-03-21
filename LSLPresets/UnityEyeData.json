@@ -1,5 +1,4 @@
 { "StreamName":"Unity.ViveSREyeTracking",
-  "NumChannels":16,
   "ChannelNames":[
     "L Pupil Diameter", "R Pupil Diameter",
     "L Openness", "R Openness",
