@@ -79,7 +79,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LSL_data_buffer_dicts = {}
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
-        self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
+
+        self.camera_screen_capture_buffer = {}
+        # self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
         # inference buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
@@ -132,6 +134,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if cam_id in self.cam_displays.keys():
             qt_img = convert_cv_qt(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
+        self.recordingTab.update_camera_screen_buffer(cam_id, cv_img)
 
     def add_sensor_clicked(self):
         selected_text = str(self.sensor_combo_box.currentText())
@@ -212,6 +215,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pop_window_btn.clicked.connect(pop_window)
 
             def remove_lsl():
+                if self.recordingTab.is_recording:
+                    dialog_popup()
                 # fire stop streaming first
                 stop_stream_btn.click()
                 worker_thread.exit()
@@ -325,22 +330,22 @@ class MainWindow(QtWidgets.QMainWindow):
         print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
         self.init_eeg_buffer()
 
-    def stop_unityLSL(self):
-        self.sensor_workers[config.sensors[1]].stop_stream()
-        f_sample = self.unityLSL_data_buffer.shape[-1] / (
-                self.sensor_workers[config.sensors[1]].end_time - self.sensor_workers[config.sensors[1]].start_time)
-        print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
-        self.init_unityLSL_buffer()
+    # def stop_unityLSL(self):
+    #     self.sensor_workers[config.sensors[1]].stop_stream()
+    #     f_sample = self.unityLSL_data_buffer.shape[-1] / (
+    #             self.sensor_workers[config.sensors[1]].end_time - self.sensor_workers[config.sensors[1]].start_time)
+    #     print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
+    #     self.init_unityLSL_buffer()
 
     def init_visualize_eeg_data(self, parent):
         eeg_plot_widgets = [pg.PlotWidget() for i in range(config.OPENBCI_EEG_USEFUL_CHANNELS_NUM)]
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_unityLSL_data(self, parent):
-        unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
-        [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
-        self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
+    # def init_visualize_unityLSL_data(self, parent):
+    #     unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
+    #     [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
+    #     self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
 
     # def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names):
     #     plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
@@ -453,23 +458,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
 
-    def visualize_unityLSL_data(self, data_dict):
-        if len(data_dict['data']) > 0:
-            self.unityLSL_data_buffer = np.concatenate((self.unityLSL_data_buffer, data_dict['data']),
-                                                       axis=-1)  # get all data and remove it from internal buffer
-
-            if self.unityLSL_data_buffer.shape[-1] < self.unityLSL_num_visualized_sample:
-                unityLSL_data_to_plot = np.concatenate((np.zeros(shape=(
-                    config.UNITY_LSL_CHANNEL_SIZE,
-                    self.unityLSL_num_visualized_sample - self.unityLSL_data_buffer.shape[-1])),
-                                                        self.unityLSL_data_buffer), axis=-1)
-            else:
-                unityLSL_data_to_plot = self.unityLSL_data_buffer[:,
-                                        -self.unityLSL_num_visualized_sample:]  # plot the most recent 10 seconds
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
-            unityLSL_data_to_plot = unityLSL_data_to_plot[
-                config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
-            [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
+    # def visualize_unityLSL_data(self, data_dict):
+    #     if len(data_dict['data']) > 0:
+    #         self.unityLSL_data_buffer = np.concatenate((self.unityLSL_data_buffer, data_dict['data']),
+    #                                                    axis=-1)  # get all data and remove it from internal buffer
+    #
+    #         if self.unityLSL_data_buffer.shape[-1] < self.unityLSL_num_visualized_sample:
+    #             unityLSL_data_to_plot = np.concatenate((np.zeros(shape=(
+    #                 config.UNITY_LSL_CHANNEL_SIZE,
+    #                 self.unityLSL_num_visualized_sample - self.unityLSL_data_buffer.shape[-1])),
+    #                                                     self.unityLSL_data_buffer), axis=-1)
+    #         else:
+    #             unityLSL_data_to_plot = self.unityLSL_data_buffer[:,
+    #                                     -self.unityLSL_num_visualized_sample:]  # plot the most recent 10 seconds
+    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
+    #         unityLSL_data_to_plot = unityLSL_data_to_plot[
+    #             config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
+    #         [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected

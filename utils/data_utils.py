@@ -14,3 +14,9 @@ def window_slice(data, window_size, stride, channel_mode='channel_last'):
     for i in range(window_size, len(data), stride):
         rtn.append(data[i - window_size:i])
     return np.array(rtn)
+
+class StreamOut:
+    def __init__(self, file_path):
+        f = open(file_path, "a")
+        f.write("Now the file has more content!")
+        f.close()
