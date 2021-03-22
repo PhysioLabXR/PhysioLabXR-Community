@@ -107,6 +107,8 @@ def init_combo_box(parent, label, item_list):
 
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+    container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
+
     camera_img_label = QLabel()
     _, label_btn_layout = init_container(parent=layout, vertical=False)
     cam_id_label = QLabel(label_string)
@@ -237,8 +239,8 @@ def convert_cv_qt(cv_img):
     h, w, ch = rgb_image.shape
     bytes_per_line = ch * w
     convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
-    return QPixmap.fromImage(p)
+    # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
+    return QPixmap.fromImage(convert_to_Qt_format)
 
 
 def get_working_camera_id():

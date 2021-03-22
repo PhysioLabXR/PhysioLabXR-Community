@@ -1,3 +1,5 @@
+import time
+
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, sip
 from PyQt5.QtCore import QTimer
@@ -83,18 +85,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
 
-        self.camera_screen_capture_buffer = {}
         # self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
         # inference buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
-        self.recordingTab = RecordingsTab(self, self.LSL_data_buffer_dicts)
+        self.recordingTab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
         # windows
         self.pop_windows = {}
+        self.test_ts_buffer = []
 
     def add_camera_clicked(self):
         if self.recordingTab.is_recording:
@@ -139,12 +141,13 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
-    def visualize_cam(self, cam_id_cv_img):
-        cam_id, cv_img = cam_id_cv_img
+    def visualize_cam(self, cam_id_cv_img_timestamp):
+        cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         if cam_id in self.cam_displays.keys():
             qt_img = convert_cv_qt(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
-        self.recordingTab.update_camera_screen_buffer(cam_id, cv_img)
+            self.test_ts_buffer.append(time.time())
+            self.recordingTab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_preset_sensor_clicked(self):
         if self.recordingTab.is_recording:
@@ -207,7 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # pop window actions
             def dock_window():
-                self.sensorTabSensorsHorizontalLayout.insertWidget(0, lsl_widget)
+                self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1, lsl_widget)
                 pop_window_btn.clicked.disconnect()
                 pop_window_btn.clicked.connect(pop_window)
                 pop_window_btn.setText('Pop Window')

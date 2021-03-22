@@ -5,6 +5,7 @@ import pyqtgraph as pg
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 
+import config_ui
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
@@ -215,7 +216,9 @@ class WebcamWorker(QObject):
     def process_on_tick(self):
         ret, cv_img = self.cap.read()
         if ret:
-            self.change_pixmap_signal.emit((self.cam_id, cv_img))
+            cv_img = cv_img.astype(np.uint8)
+            cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+            self.change_pixmap_signal.emit((self.cam_id, cv_img, time.time()))
 
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
@@ -231,5 +234,6 @@ class ScreenCaptureWorker(QObject):
         img = pyautogui.screenshot()
         frame = np.array(img)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        self.change_pixmap_signal.emit((self.screen_label, frame))
+        frame = frame.astype(np.uint8)
+        frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+        self.change_pixmap_signal.emit((self.screen_label, frame, time.time()))

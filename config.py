@@ -13,10 +13,10 @@ PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 '''
 ########################################################################################################################
 Advanced parameters:
-these parameters, and what they controls are still under development
+do not change these unless you know what you are doing
 '''
 DOWNSAMPLE_MULTIPLY_THRESHOLD = 5
-
+EVICTION_INTERVAL = 1000.  # in seconds,
 
 '''
 ########################################################################################################################
