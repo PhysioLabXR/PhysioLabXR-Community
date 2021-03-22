@@ -125,4 +125,5 @@ class RNStream:
                 else:
                     file.read(data_array_num_bytes + timestamp_array_num_bytes)
                     read_bytes_count += data_array_num_bytes + timestamp_array_num_bytes
+        print("Stream-in completed: {0}".format(self.fn))
         return buffer
