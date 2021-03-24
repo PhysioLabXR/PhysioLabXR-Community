@@ -11,6 +11,7 @@ import numpy as np
 from datetime import datetime
 
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QFileDialog
 
 import config
 from utils.data_utils import RNStream
@@ -32,6 +33,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.StartRecordingBtn.clicked.connect(self.start_recording_btn_ressed)
         self.StopRecordingBtn.clicked.connect(self.stop_recording_btn_pressed)
+        self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
         self.StopRecordingBtn.setEnabled(False)
         self.parent = parent
@@ -44,6 +46,15 @@ class RecordingsTab(QtWidgets.QWidget):
         self.timer.timeout.connect(self.evict_buffer)
 
         self.recording_byte_count = 0
+
+
+    def select_data_dir_btn_pressed(self):
+
+        data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
+        print("Selected data dir: ", data_dir)
+        self.saveRootTextEdit.setText(data_dir+'/')
+
+
 
     def start_recording_btn_ressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):

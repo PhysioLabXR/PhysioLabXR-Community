@@ -43,6 +43,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="SelectDataDirBtn">
+              <property name="text">
+               <string>Browse...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QTextEdit" name="saveRootTextEdit">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
