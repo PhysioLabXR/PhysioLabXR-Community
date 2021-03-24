@@ -8,7 +8,7 @@ from utils.data_utils import RNStream
 
 
 
-rns = RNStream('C:/Recordings/03_22_2021_00_00_55-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
+rns = RNStream('C:/Recordings/03_22_2021_12_37_03-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
 
 start_time = time.time()
 reloaded_buffer = rns.stream_in(ignore_stream=('monitor1', '0'))
