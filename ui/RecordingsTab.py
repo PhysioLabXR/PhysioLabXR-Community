@@ -47,14 +47,15 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
 
-
     def select_data_dir_btn_pressed(self):
 
         data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
+
+        if data_dir == '':
+            data_dir = 'C:/Recordings'
+
         print("Selected data dir: ", data_dir)
-        self.saveRootTextEdit.setText(data_dir+'/')
-
-
+        self.saveRootTextEdit.setText(data_dir + '/')
 
     def start_recording_btn_ressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):
