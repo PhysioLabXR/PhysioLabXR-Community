@@ -70,9 +70,9 @@ class RNStream:
         return len(magic + stream_label_bytes + dtype_bytes + dim_bytes + shape_bytes + data_bytes + ts_bytes)
 
     def stream_in(self, ignore_stream=()):
-        total_bytes = os.path.getsize(self.fn)
+        total_bytes = float(os.path.getsize(self.fn))  # use floats to avoid scalar type overflow
         buffer = {}
-        read_bytes_count = 0
+        read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
                 print('Streaming in progress {}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
