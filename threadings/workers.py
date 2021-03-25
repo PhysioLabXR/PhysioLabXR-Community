@@ -14,6 +14,9 @@ import pyautogui
 
 import numpy as np
 
+from utils.ui_utils import dialog_popup
+
+
 class EEGWorker(QObject):
     """
 
@@ -187,7 +190,11 @@ class LSLInletWorker(QObject):
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
-        self._lslInlet_interface.start_sensor()
+        try:
+            self._lslInlet_interface.start_sensor()
+        except AttributeError as e:
+            dialog_popup(e)
+            return
         self.is_streaming = True
 
         self.num_samples = 0
