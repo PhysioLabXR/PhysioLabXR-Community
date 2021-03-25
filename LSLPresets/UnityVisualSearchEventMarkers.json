@@ -5,8 +5,7 @@
     "Item3InFustum", "Item3FoveateValue",
     "Item4InFustum", "Item4FoveateValue",
     "Item5InFustum", "Item5FoveateValue",
-    "Item6InFustum", "Item6FoveateValue",
     "EventLabel"
   ],
   "NominalSamplingRate":  60,
-  "GroupChannelsInPlot":  [2, 4, 6, 8, 10, 12]}
+  "GroupChannelsInPlot":  [2, 4, 6, 8, 10]}

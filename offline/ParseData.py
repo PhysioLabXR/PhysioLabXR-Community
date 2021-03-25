@@ -1,6 +1,9 @@
 import pickle
 import numpy as np
 
-file_path = 'C:/Recordings/03_05_2021_15_01_57-Exp_Unity.RealityNavigationHotel.EventMarkers-Sbj_someone-Ssn_0.p'
+from utils.data_utils import RNStream
 
-lsl_data_dict = pickle.load(open(file_path, 'rb'))
+file_path = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1.dats'
+
+rns = RNStream(file_path)
+data = rns.stream_in(ignore_stream=('monitor1', '0'))

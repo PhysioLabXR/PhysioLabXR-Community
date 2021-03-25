@@ -1,7 +1,7 @@
 import time
 
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, sip
+from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QLabel
 from scipy.signal import decimate
@@ -516,9 +516,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
     def reload_all_presets(self):
-        self.lsl_presets = load_all_LSL_presets()
-        self.update_preset_combo_box()
-        dialog_popup('Reloaded all presets')
+        if len(self.lsl_workers) > 0:
+            dialog_popup('Remove all streams before reloading presets!', title='Warning')
+        else:
+            self.lsl_presets = load_all_LSL_presets()
+            self.update_preset_combo_box()
+            dialog_popup('Reloaded all presets', title='Info')
 
     def update_preset_combo_box(self):
         self.sensor_combo_box.clear()
