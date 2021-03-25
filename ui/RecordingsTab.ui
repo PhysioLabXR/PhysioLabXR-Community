@@ -194,22 +194,39 @@ p, li { white-space: pre-wrap; }
       </item>
       <item>
        <widget class="QWidget" name="widget_5" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <widget class="QPushButton" name="StartRecordingBtn">
-           <property name="text">
-            <string>Start Recording</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="StopRecordingBtn">
-           <property name="text">
-            <string>Stop Recording</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <layout class="QVBoxLayout" name="verticalLayout_4"/>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="widget_6" native="true">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>150</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>150</height>
+      </size>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QPushButton" name="StartRecordingBtn">
+        <property name="text">
+         <string>Start Recording</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="StopRecordingBtn">
+        <property name="text">
+         <string>Stop Recording</string>
+        </property>
        </widget>
       </item>
      </layout>
