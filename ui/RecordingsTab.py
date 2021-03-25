@@ -80,7 +80,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
         self.update_file_size_label()
-        dialog_popup('Saved to {0}'.format(self.save_path))
+        dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
