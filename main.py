@@ -20,8 +20,8 @@ if __name__ == '__main__':
 
     # splash screen
     splash = QLabel()
-    pixmap = QPixmap('media/logo/John.png')
-    pixmap = pixmap.scaled(640, 640)
+    pixmap = QPixmap('media/logo/RN.png')
+    # pixmap = pixmap.scaled(640, 640)
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()
