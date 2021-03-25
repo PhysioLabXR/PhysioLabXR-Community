@@ -20,6 +20,16 @@ EVICTION_INTERVAL = 1000.  # in seconds, large eviction interval means laggier a
 
 '''
 ########################################################################################################################
+data file parameters:
+data recording settings
+'''
+DEFAULT_DATA_DIR = 'C:/Recordings'
+DEFAULT_EXPERIMENT_NAME = 'my experiment'
+DEFAULT_SUBJECT_TAG = 'someone'
+DEFAULT_SESSION_TAG = '0'
+
+'''
+########################################################################################################################
 Dev parameters:
 parameters whose functions are still under development
 '''
