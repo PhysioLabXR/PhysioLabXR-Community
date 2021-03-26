@@ -11,6 +11,8 @@ from interfaces.InferenceInterface import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream
 
+app = None
+
 if __name__ == '__main__':
     # Define the sensor interfaces
 
@@ -31,10 +33,11 @@ if __name__ == '__main__':
     window = MainWindow(inference_interface=inference_interface)
 
     # stylesheet init
-    # stylesheet = QFile('ui/light.qss')
-    # stylesheet.open(QFile.ReadOnly | QFile.Text)
-    # stream = QTextStream(stylesheet)
-    # app.setStyleSheet(stream.readAll())
+
+    stylesheet = QFile('ui/dark.qss')
+    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stream = QTextStream(stylesheet)
+    app.setStyleSheet(stream.readAll())
 
     # splash screen destroy
     splash.destroy()

@@ -311,6 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
         self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
 
+        self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
         inference_thread.start()
 
     def ticks(self):
