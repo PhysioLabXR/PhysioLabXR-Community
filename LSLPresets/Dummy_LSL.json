@@ -1,11 +1,11 @@
-{ "StreamName":"Unity.RotationWheel.EventMarkers",
+{ "StreamName":"Dummy-BioSemi-8Chan-787",
   "ChannelNames":[
-    "Item1InFustum", "Item1FoveateValue",
-    "Item2InFustum", "Item2FoveateValue",
-    "Item3InFustum", "Item3FoveateValue",
-    "Item4InFustum", "Item4FoveateValue",
-    "Item5InFustum", "Item5FoveateValue",
-    "EventLabel"
+    "Channel1", "Channel2",
+    "Channel3", "Channel4",
+    "Channel5", "Channel6",
+    "Channel7", "Channel8",
+    "Channel9", "Channel10",
+    "Channel11"
   ],
   "NominalSamplingRate":  60,
   "GroupChannelsInPlot":  [2, 4, 6, 8, 10]}
