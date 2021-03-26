@@ -4,7 +4,7 @@ from utils.data_utils import RNStream
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 
-file_path = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0.dats'
+file_path = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1.dats'
 em_stream_name = 'Unity.RotationWheel.EventMarkers'
 
 rns = RNStream(file_path)
@@ -60,7 +60,6 @@ for target_label in range(offset, offset + 5):
     plt.show()
     assert np.count_nonzero(target_onset_em) == trial_count
 
-
-data[em_stream_name][0] = event_label_stream
+data[em_stream_name][0][-1, :] = event_label_stream
 rns = RNStream('{0} CLEANED.dats'.format(file_path.split('.')[0]))
 rns.stream_out(data)

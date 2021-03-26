@@ -1,42 +1,40 @@
-import numpy as np
+import json
 
-from utils.data_utils import RNStream
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
+from multiprocessing import freeze_support
 
-file_path = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_03_52-Exp_realitynavigation-Sbj_0-Ssn_2.dats'
-em_stream_name = 'Unity.RotationWheel.EventMarkers'
-target_label = 1
+from utils.data_utils import process_data
 
-def plot_stream(stream, timestamps):
-    timestamps = timestamps - timestamps[0]  # baseline the timestamps
-    plt.plot(timestamps, stream)
+files = [
+        'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_03_52-Exp_realitynavigation-Sbj_0-Ssn_2 CLEANED.dats',
+         'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_13_28-Exp_realitynavigation-Sbj_0-Ssn_3 CLEANED.dats',
+         'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats',
+         'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1 CLEANED.dats',
+         ]
+EM_stream_name = 'Unity.RotationWheel.EventMarkers'
+EEG_stream_name = 'BioSemi'
+pre_stimulus_time = -.5
+post_stimulus_time = 1.
+
+EEG_stream_preset = json.load(open('D:\PycharmProjects\RealityNavigation\LSLPresets\BioSemiActiveTwo.json'))
+notch_f0 = 60.
+notch_band_demoninator = 200.
+EEG_fresample = 50
+
+if __name__ == '__main__':  # for windows all mp must be guarded by the main condition
+    freeze_support()
+    target_label = [3]
+    epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan = process_data(files, EM_stream_name, EEG_stream_name, target_label, pre_stimulus_time, post_stimulus_time,
+                     EEG_stream_preset)
+    plt.plot(epoched_EEG_timevector, epoched_EEG_average_trial_chan, c='b')
+
+    target_label = [2, 4, 5, 6]
+    epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan = process_data(files, EM_stream_name, EEG_stream_name, target_label, pre_stimulus_time, post_stimulus_time,
+                     EEG_stream_preset)
+    plt.plot(epoched_EEG_timevector, epoched_EEG_average_trial_chan, c='r')
+
+    # plt.fill_between(epoched_EEG_timevector, epoched_EEG_min_trial_chan, epoched_EEG_max_trial_chan, alpha=0.5)
     plt.xlabel('Time (sec)')
+    plt.ylabel('Amplitude (\u03BCV)')
+    plt.title('All (baselined)')
     plt.show()
-
-
-rns = RNStream(file_path)
-data = rns.stream_in(ignore_stream=('monitor1', '0'))
-# plot_stream(data['Unity.VisualSearch.EventMarkers'][0][-1, :], data['Unity.VisualSearch.EventMarkers'][1])
-# plot_stream(data['Unity.RotationWheel.EventMarkers'][0][-1, :], data['Unity.RotationWheel.EventMarkers'][1])
-
-data_stream = data[em_stream_name][0]
-timestamps_stream = data[em_stream_name][1]
-event_label_stream = data_stream[-1, :]
-
-# extract the time when the target label - 4 is present
-figure(figsize=(30, 6), dpi=80)
-
-target_label = 1
-target_onset_em = np.logical_and(event_label_stream == target_label, np.concatenate([np.array([0]), np.diff(event_label_stream)]) != 0)
-plt.scatter(timestamps_stream, target_onset_em, c='r')
-
-target_label = 3
-target_onset_em = np.logical_and(event_label_stream == target_label, np.concatenate([np.array([0]), np.diff(event_label_stream)]) != 0)
-plt.scatter(timestamps_stream, target_onset_em, c='b')
-plt.show()
-
-
-# a = np.count_nonzero(target_onset_em)
-# target_onset_ts = timestamps_stream[target_onset_em]
-

@@ -11,9 +11,9 @@ from utils.data_utils import RNStream
 rns = RNStream('C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_13_28-Exp_realitynavigation-Sbj_0-Ssn_3.dats')
 print('String names are {0}'.format(str(rns.get_stream_names())))
 
-# start_time = time.time()
-# reloaded_buffer = rns.stream_in(only_stream=('BioSemi',))
-# print('reload with only took {0}'.format(time.time() - start_time))
+start_time = time.time()
+reloaded_buffer = rns.stream_in(only_stream=('BioSemi',))
+print('reload with only took {0}'.format(time.time() - start_time))
 #
 # start_time = time.time()
 # reloaded_buffer = rns.stream_in(ignore_stream=('monitor1', '0'))
