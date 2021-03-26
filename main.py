@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # stylesheet init
 
-    stylesheet = QFile('ui/dark.qss')
+    stylesheet = QFile('ui/stylesheet/dark.qss')
     stylesheet.open(QFile.ReadOnly | QFile.Text)
     stream = QTextStream(stylesheet)
     app.setStyleSheet(stream.readAll())

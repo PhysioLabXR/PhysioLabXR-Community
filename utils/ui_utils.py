@@ -80,7 +80,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
     layout.addWidget(textbox)
-    textbox.setStyleSheet("background-color:white;")
+    # textbox.setStyleSheet("background-color:white;")
 
     return layout, textbox
 
@@ -90,7 +90,7 @@ def init_button(parent, label=None, function=None, style=config_ui.button_style_
     if function:
         btn.clicked.connect(function)
     parent.addWidget(btn)
-    btn.setStyleSheet(config_ui.button_style_classic)
+    # btn.setStyleSheet(config_ui.button_style_classic)
 
     return btn
 
