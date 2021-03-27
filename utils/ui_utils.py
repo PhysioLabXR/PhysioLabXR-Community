@@ -1,7 +1,7 @@
 import cv2
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QFile, QTextStream
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
@@ -256,6 +256,12 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
+def stream_stylesheet(stylesheet_url):
+    stylesheet = QFile(stylesheet_url)
+    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stream = QTextStream(stylesheet)
+    QtWidgets.qApp.setStyleSheet(stream.readAll())
 
 
 class AnotherWindow(QWidget):

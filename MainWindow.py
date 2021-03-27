@@ -13,6 +13,7 @@ from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
 # from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
+from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_plot_group, \
     process_preset_create_interface
@@ -93,6 +94,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add other tabs
         self.recordingTab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+
+        self.settingTab = SettingsTab(self)
+        self.settings_tab_vertical_layout.addWidget(self.settingTab)
 
         # windows
         self.pop_windows = {}

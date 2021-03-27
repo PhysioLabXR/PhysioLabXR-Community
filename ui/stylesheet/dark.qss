@@ -852,6 +852,7 @@ QAbstractSpinBox::down-arrow:hover
 
 QLabel
 {
+    font: bold 14px;
     border: 0ex solid black;
 }
 
