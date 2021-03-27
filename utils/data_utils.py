@@ -280,10 +280,15 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
     biosemi_64_montage = mne.channels.make_standard_montage('biosemi64')
     EEG_chan_names = biosemi_64_montage.ch_names
     events = np.empty(shape=(0, 3), dtype=int)
-    reject = dict(eeg=180e-6)
-    evoked_target_all_session = []
-    evoked_nontarget_all_session = []
+    reject = dict(eeg=500.)
+    _evoked_target_all_session = []
+    _evoked_nontarget_all_session = []
 
+    target_count = 0
+    nontarget_count = 0
+
+    target_label = 3
+    nontarget_label = [2,4,5,6]
     for fp in file_path:
 
         rns = RNStream(fp)
@@ -374,27 +379,29 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
                 dtype=int).T
             events = np.concatenate([events, new_events], axis=0)
         events = np.sort(events, axis=0)
+        target_count += np.count_nonzero(events[:, 2] == target_label)
+        nontarget_count += np.count_nonzero(np.isin(events[:, 2], nontarget_label))
+
         ##################################################################
-        epochs_params = dict(events=events, event_id=3, tmin=pre_stimulus_time, tmax=post_stimulus_time,
-                             baseline=(-0.2, 0.)
-                             # reject=reject
-                             )
+        epochs_params = dict(events=events, event_id=target_label, tmin=pre_stimulus_time, tmax=post_stimulus_time,
+                             baseline=(-0.2, 0.), reject=reject)
         evoked_target = mne.Epochs(raw=array_EEG, **epochs_params)
-        evoked_target_all_session.append(evoked_target)
-        epochs_params = dict(events=events, event_id=[2, 4, 5, 6], tmin=pre_stimulus_time, tmax=post_stimulus_time,
-                             baseline=(-0.2, 0.)
-                             # reject=reject
-                             )
+        _evoked_target_all_session.append(evoked_target)
+        epochs_params = dict(events=events, event_id=nontarget_label, tmin=pre_stimulus_time, tmax=post_stimulus_time,
+                             baseline=(-0.2, 0.), reject=reject)
         evoked_nontarget = mne.Epochs(raw=array_EEG, **epochs_params)
-        evoked_nontarget_all_session.append(evoked_nontarget)
+        _evoked_nontarget_all_session.append(evoked_nontarget)
 
         # epoched_EEG_new = np.array([stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
         #                         array_prepost_target_onset_i])
         # epoched_EEG = np.concatenate([epoched_EEG, epoched_EEG_new], axis=0)
         print('Total number of trials for label {0} is {1}'.format(str(target_labels), len(epoched_EEG)))
 
-    evoked_target_all_session = mne.concatenate_epochs(evoked_target_all_session).average().resample(sfreq=EEG_fresample)
-    evoked_nontarget_all_session = mne.concatenate_epochs(evoked_nontarget_all_session).average().resample(sfreq=EEG_fresample)
+    evoked_target_all_session = mne.concatenate_epochs(_evoked_target_all_session).average().resample(sfreq=EEG_fresample)
+    print('{0}/{1} was dropped for Target.'.format(target_count - mne.concatenate_epochs(_evoked_target_all_session).get_data().shape[0], target_count))
+    print('---------------------loading nonTargets')
+    evoked_nontarget_all_session = mne.concatenate_epochs(_evoked_nontarget_all_session).average().resample(sfreq=EEG_fresample)
+    print('{0}/{1} was dropped for NonTarget.'.format(nontarget_count - mne.concatenate_epochs(_evoked_nontarget_all_session).get_data().shape[0], nontarget_count))
 
     title = 'EEG Targets'
     # evoked_target_all_session.plot(titles=dict(eeg=title), time_unit='s')

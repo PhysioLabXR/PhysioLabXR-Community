@@ -6,10 +6,10 @@ from multiprocessing import freeze_support
 from utils.data_utils import process_data
 
 files = [
+    'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats',
+    'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1 CLEANED.dats',
         # 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_03_52-Exp_realitynavigation-Sbj_0-Ssn_2 CLEANED.dats',
         #  'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_13_28-Exp_realitynavigation-Sbj_0-Ssn_3 CLEANED.dats',
-         'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats',
-         'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1 CLEANED.dats',
          ]
 EM_stream_name = 'Unity.RotationWheel.EventMarkers'
 EEG_stream_name = 'BioSemi'
@@ -27,8 +27,8 @@ if __name__ == '__main__':  # for windows all mp must be guarded by the main con
     evoked = process_data(files, EM_stream_name, EEG_stream_name, target_label, pre_stimulus_time, post_stimulus_time,
                      EEG_stream_preset)
 
-    title = 'EEG Original reference'
-    evoked.average().plot(titles=dict(eeg=title), time_unit='s')
+    # title = 'EEG Original reference'
+    # evoked.average().plot(titles=dict(eeg=title), time_unit='s')
 
 
 
