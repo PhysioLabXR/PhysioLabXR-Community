@@ -3,10 +3,11 @@ from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
+import mne
 import numpy as np
 from scipy.signal import resample
 
-from utils.sig_proc_utils import notch_filter, baseline_correction
+from utils.sig_proc_utils import notch_filter, baseline_correction, butter_bandpass_filter
 
 
 def window_slice(data, window_size, stride, channel_mode='channel_last'):
@@ -37,6 +38,7 @@ encoding = 'utf-8'
 
 ts_dtype = 'float64'
 
+
 class RNStream:
     def __init__(self, file_path):
         self.fn = file_path
@@ -59,10 +61,11 @@ class RNStream:
                                 encoding)
             try:
                 dim_bytes = len(data_array.shape).to_bytes(dim_bytes_len, 'little')
-                shape_bytes = b''.join([s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
+                shape_bytes = b''.join(
+                    [s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
             except OverflowError:
                 raise Exception('RN requires its stream to have number of dimensions less than 2^40, '
-                      'and the size of any dimension to be less than the same number ')
+                                'and the size of any dimension to be less than the same number ')
             data_bytes = data_array.tobytes()
             ts_bytes = ts_array.tobytes()
             out_file.write(magic)
@@ -88,7 +91,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count / total_bytes, 2))), sep=' ',
+                      end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
@@ -134,7 +138,7 @@ class RNStream:
 
                     if stream_name not in buffer.keys():
                         buffer[stream_name] = [np.empty(shape=tuple(shape[:-1]) + (0,), dtype=stream_dytpe),
-                                                                np.empty(shape=(0,))]  # data first, timestamps second
+                                               np.empty(shape=(0,))]  # data first, timestamps second
                     buffer[stream_name][0] = np.concatenate([buffer[stream_name][0], data_array], axis=-1)
                     buffer[stream_name][1] = np.concatenate([buffer[stream_name][1], ts_array])
                 else:
@@ -158,7 +162,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Scanning stream in progress {}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+                print('Scanning stream in progress {}%'.format(str(round(100 * read_bytes_count / total_bytes, 2))),
+                      sep=' ', end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
@@ -220,9 +225,10 @@ class RNStream:
             raise Exception('target stream is not a video stream. It does not have 4 dims (height, width, color, time)'
                             'and/or the number of its color channel does not equal 3.')
         frame_size = (data[video_stream_name][0].shape[1], data[video_stream_name][0].shape[0])
-        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0], video_stream_name)) if output_path == '' else output_path
+        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0],
+                                                                   video_stream_name)) if output_path == '' else output_path
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'),frate, frame_size)
+        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'), frate, frame_size)
 
         for i in range(frame_count):
             print('Creating video progress {}%'.format(str(round(100 * i / frame_count, 2))), sep=' ', end='\r',
@@ -240,20 +246,21 @@ def plot_stream(stream, timestamps):
     plt.xlabel('Time (sec)')
     plt.show()
 
+
 def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
     assert i1 < i2
-    assert abs(coverage - (i2 - i1) )<= tolerance
+    assert abs(coverage - (i2 - i1)) <= tolerance
     is_modifying_i1 = True
     if i2 - i1 > coverage:
-        while i2- i1 != coverage:
+        while i2 - i1 != coverage:
             if is_modifying_i1:
                 i1 += 1
             else:
                 i2 -= 1
         print('Modified')
 
-    elif i2- i1 < coverage:
-        while i2- i1 != coverage:
+    elif i2 - i1 < coverage:
+        while i2 - i1 != coverage:
             if is_modifying_i1:
                 i1 -= 1
             else:
@@ -264,11 +271,18 @@ def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
 
 
 def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_stimulus_time, post_stimulus_time,
-                 EEG_stream_preset, notch_f0=60., notch_band_demoninator=200, EEG_fresample = 50, baselining=True):
+                 EEG_stream_preset, lowcut=0.5, highcut=50., notch_band_demoninator=200, EEG_fresample=50,
+                 baselining=True):
     EEG_num_sample_per_trail = int(EEG_stream_preset['NominalSamplingRate'] * (post_stimulus_time - pre_stimulus_time))
     EEG_num_sample_per_trail_RESAMPLED = int(EEG_fresample * (post_stimulus_time - pre_stimulus_time))
     EEG_num_chan = EEG_stream_preset['GroupChannelsInPlot'][1] - EEG_stream_preset['GroupChannelsInPlot'][0]
     epoched_EEG = np.empty(shape=(0, EEG_num_chan, EEG_num_sample_per_trail))
+    biosemi_64_montage = mne.channels.make_standard_montage('biosemi64')
+    EEG_chan_names = biosemi_64_montage.ch_names
+    events = np.empty(shape=(0, 3), dtype=int)
+    reject = dict(eeg=180e-6)
+    evoked_target_all_session = []
+    evoked_nontarget_all_session = []
 
     for fp in file_path:
 
@@ -299,26 +313,37 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
         # plt.show()
 
         # take out the electrode channels
-        stream_EEG_preprocessed = stream_EEG[
-                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
-                                  :]
-        # baseline correction
-        if baselining:
-            print('Performing baseline correction, this may take a while')
-            stream_EEG_preprocessed = baseline_correction(stream_EEG_preprocessed, lam=10, p=0.05)
+        array_EEG = stream_EEG[
+                    EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
+                    :]
+        # not worrying about the timeoffset in mne data structure as we use our own timestamps
+        array_EEG = mne.io.RawArray(array_EEG, mne.create_info(EEG_chan_names, EEG_stream_preset['NominalSamplingRate'],
+                                                               ch_types='eeg'))
+        array_EEG.set_montage(biosemi_64_montage)
+        # notch filter
+        # stream_EEG_preprocessed = notch_filter(stream_EEG_preprocessed, notch_f0, notch_f0 / notch_band_demoninator,
+        #                                        EEG_stream_preset['NominalSamplingRate'], channel_format='first')
+        array_EEG, _ = mne.set_eeg_reference(array_EEG, 'average',
+                                             projection=False)  # re-reference using average as the reference
+        # bandpass filter
+        array_EEG = array_EEG.filter(l_freq=lowcut, h_freq=highcut)  # re-reference using average as the reference
+
+        # stream_EEG_preprocessed = butter_bandpass_filter(stream_EEG_preprocessed, lowcut=lowcut, highcut=highcut, fs=EEG_stream_preset['NominalSamplingRate'])
+
+        # [plt.plot(timestamps_EEG[:15000], array_EEG.get_data()[i, :15000]) for i in range(EEG_num_chan)]
+        # plt.show()
+        # if baselining:
+        #     print('Performing baseline correction, this may take a while')
+        #     stream_EEG_preprocessed = baseline_correction(stream_EEG_preprocessed, lam=10, p=0.05)
 
         for tl in target_labels:
-            array_target_onset_EM_indices = np.logical_and(array_event_label == tl,
-                                                           np.concatenate([np.array([0]), np.diff(array_event_label)]) != 0)
-            print('Number of trials is {0} for label {1}'.format(np.count_nonzero(array_target_onset_EM_indices), tl))
-            array_target_PRE_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices] + pre_stimulus_time
-            array_target_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices]
-            array_target_POST_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices] + post_stimulus_time
-
-            # preprocess eeg ##############################################################################################
-            # notch filter
-            stream_EEG_preprocessed = notch_filter(stream_EEG_preprocessed, notch_f0, notch_f0 / notch_band_demoninator,
-                                                   EEG_stream_preset['NominalSamplingRate'], channel_format='first')
+            array_target_onset_EM = np.logical_and(array_event_label == tl,
+                                                   np.concatenate([np.array([0]), np.diff(array_event_label)]) != 0)
+            print('Number of trials is {0} for label {1}'.format(np.count_nonzero(array_target_onset_EM), tl))
+            array_target_PRE_onset_EM_timestamps = timestamps_EM[array_target_onset_EM] + pre_stimulus_time
+            array_target_onset_EM_timestamps = timestamps_EM[array_target_onset_EM]
+            array_target_POST_onset_EM_timestamps = timestamps_EM[array_target_onset_EM] + post_stimulus_time
+            array_target_onset_EM_indices = np.argwhere(array_target_onset_EM)[:, 0]
 
             # find the nearest timestamp index in eeg #####################################################
             array_target_PRE_onset_EEG_indices = np.array(
@@ -327,7 +352,6 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
                 [(np.abs(timestamps_EEG - x)).argmin() for x in array_target_onset_EM_timestamps])
             array_target_POST_onset_EEG_indices = np.array(
                 [(np.abs(timestamps_EEG - x)).argmin() for x in array_target_POST_onset_EM_timestamps])
-
             array_target_onset_EEG_timestamps = timestamps_EEG[array_target_onset_EEG_indices]
             print('EM-EEG target onset timestamp discrepency: mean {0}, std {1}'.format(
                 np.mean(array_target_onset_EM_timestamps - array_target_onset_EEG_timestamps),
@@ -336,27 +360,65 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
             # epoch eeg data #############################################
             # modify pre and post indices for possible remaining jitter
 
-            array_prepost_target_onset_i = [modify_indice_to_cover(pre_onset_i, post_onset_i, EEG_num_sample_per_trail) for
+            array_prepost_target_onset_i = [modify_indice_to_cover(pre_onset_i, post_onset_i, EEG_num_sample_per_trail)
+                                            for
                                             pre_onset_i, post_onset_i in
-                                            zip(array_target_PRE_onset_EEG_indices, array_target_POST_onset_EEG_indices)]
-            epoched_EEG_new = np.array([stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
-                                    array_prepost_target_onset_i])
-            epoched_EEG = np.concatenate([epoched_EEG, epoched_EEG_new], axis=0)
+                                            zip(array_target_PRE_onset_EEG_indices,
+                                                array_target_POST_onset_EEG_indices)]
+
+            # epoching using mne
+            # manually construct event array based on https://mne.tools/stable/generated/mne.find_events.html#mne.find_events
+            ems = np.ones(shape=array_target_onset_EEG_indices.shape) * tl
+            new_events = np.array(
+                [array_target_onset_EEG_indices, array_event_label[array_target_onset_EM_indices - 1], ems],
+                dtype=int).T
+            events = np.concatenate([events, new_events], axis=0)
+        events = np.sort(events, axis=0)
+        ##################################################################
+        epochs_params = dict(events=events, event_id=3, tmin=pre_stimulus_time, tmax=post_stimulus_time,
+                             baseline=(-0.2, 0.)
+                             # reject=reject
+                             )
+        evoked_target = mne.Epochs(raw=array_EEG, **epochs_params)
+        evoked_target_all_session.append(evoked_target)
+        epochs_params = dict(events=events, event_id=[2, 4, 5, 6], tmin=pre_stimulus_time, tmax=post_stimulus_time,
+                             baseline=(-0.2, 0.)
+                             # reject=reject
+                             )
+        evoked_nontarget = mne.Epochs(raw=array_EEG, **epochs_params)
+        evoked_nontarget_all_session.append(evoked_nontarget)
+
+        # epoched_EEG_new = np.array([stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
+        #                         array_prepost_target_onset_i])
+        # epoched_EEG = np.concatenate([epoched_EEG, epoched_EEG_new], axis=0)
         print('Total number of trials for label {0} is {1}'.format(str(target_labels), len(epoched_EEG)))
 
-    # down sample the epoch eeg
-    epoched_EEG_RESAMPLED = resample(epoched_EEG, EEG_num_sample_per_trail_RESAMPLED, axis=-1)
+    evoked_target_all_session = mne.concatenate_epochs(evoked_target_all_session).average().resample(sfreq=EEG_fresample)
+    evoked_nontarget_all_session = mne.concatenate_epochs(evoked_nontarget_all_session).average().resample(sfreq=EEG_fresample)
 
-    # averaging
-    epoched_EEG_average_trial = np.mean(epoched_EEG_RESAMPLED, axis=0)
-    epoched_EEG_average_trial_chan = np.mean(epoched_EEG_average_trial, axis=0)
+    title = 'EEG Targets'
+    # evoked_target_all_session.plot(titles=dict(eeg=title), time_unit='s')
+    evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.))
+    evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
-    epoched_EEG_max_trial = np.max(epoched_EEG_RESAMPLED, axis=0)
-    epoched_EEG_max_trial_chan = np.max(epoched_EEG_max_trial, axis=0)
+    title = 'EEG Nontargets'
+    # evoked_nontarget_all_session.plot(titles=dict(eeg=title), time_unit='s')
+    evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.))
+    evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
-    epoched_EEG_min_trial = np.min(epoched_EEG_RESAMPLED, axis=0)
-    epoched_EEG_min_trial_chan = np.min(epoched_EEG_min_trial, axis=0)
-
-    epoched_EEG_timevector = np.linspace(pre_stimulus_time, post_stimulus_time, EEG_num_sample_per_trail_RESAMPLED)
-
-    return epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan
+    pass
+    # # down sample the epoch eeg
+    # epoched_EEG_RESAMPLED = resample(epoched_EEG, EEG_num_sample_per_trail_RESAMPLED, axis=-1)
+    #
+    # # averaging
+    # epoched_EEG_average_trial = np.mean(epoched_EEG_RESAMPLED, axis=0)
+    # epoched_EEG_average_trial_chan = np.mean(epoched_EEG_average_trial, axis=0)
+    #
+    # epoched_EEG_max_trial = np.max(epoched_EEG_RESAMPLED, axis=0)
+    # epoched_EEG_max_trial_chan = np.max(epoched_EEG_max_trial, axis=0)
+    #
+    # epoched_EEG_min_trial = np.min(epoched_EEG_RESAMPLED, axis=0)
+    # epoched_EEG_min_trial_chan = np.min(epoched_EEG_min_trial, axis=0)
+    #
+    # epoched_EEG_timevector = np.linspace(pre_stimulus_time, post_stimulus_time, EEG_num_sample_per_trail_RESAMPLED)
+    # return epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan

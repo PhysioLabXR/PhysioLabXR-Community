@@ -17,6 +17,25 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
+def butter_bandpass(lowcut, highcut, fs, order):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    return b, a
+
+
+def butter_bandpass_filter(data, lowcut, highcut, fs, order=2, channel_format='first'):
+    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
+
+    if channel_format == 'last':
+        output_data = np.array([lfilter(b, a, data[:, i]) for i in range(data.shape[-1])])
+    elif channel_format == 'first':
+        output_data = np.array([lfilter(b, a, data[i, :]) for i in range(data.shape[0])])
+    else:
+        raise Exception('Unrecognized channgel format, must be either "first" or "last"')
+    return output_data
+
 
 def notch_filter(data, w0, bw, fs, channel_format='first'):
     assert len(data.shape) == 2
@@ -25,12 +44,12 @@ def notch_filter(data, w0, bw, fs, channel_format='first'):
     b, a = iirnotch(w0, quality_factor, fs)
 
     if channel_format == 'last':
-        output_signal = np.array([filtfilt(b, a, data[:, i]) for i in range(data.shape[-1])])
+        output_data = np.array([filtfilt(b, a, data[:, i]) for i in range(data.shape[-1])])
     elif channel_format == 'first':
-        output_signal = np.array([filtfilt(b, a, data[i, :]) for i in range(data.shape[0])])
+        output_data = np.array([filtfilt(b, a, data[i, :]) for i in range(data.shape[0])])
     else:
         raise Exception('Unrecognized channgel format, must be either "first" or "last"')
-    return output_signal
+    return output_data
 
 
 def baseline_als(y, lam, p, niter):
@@ -60,5 +79,5 @@ def baseline_correction(data, lam, p, niter=10, channel_format='first', njobs=20
         # output_signal = np.array([baseline_als(data[i, :], lam, p, niter) for i in range(data.shape[0])])
     else:
         raise Exception('Unrecognized channgel format, must be either "first" or "last"')
-    output_signal = np.array(pool_result)
-    return output_signal
+    output_data = np.array(pool_result)
+    return output_data
