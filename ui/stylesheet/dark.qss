@@ -677,20 +677,6 @@ QPushButton:pressed
     border-style: outset;
 }
 
-QComboBox,
-QComboBox:focus
-{
-    selection-background-color: #3daee9;
-    border-style: solid;
-    border: 0.1ex solid #76797c;
-    border-radius: 0.2ex;
-    padding: 0.5ex;
-    min-width: 7.5ex;
-
-    border-width: 2px;
-    border-color: #76797c;
-    border-style: outset;
-}
 
 QPushButton:checked
 {
@@ -715,6 +701,23 @@ QPushButton:checked:hover
     border: 0.1ex solid #3daee9;
     color: #eff0f1;
 }
+
+QComboBox,
+QComboBox:focus
+{
+    selection-background-color: #3daee9;
+    border-style: solid;
+    border: 0.1ex solid #76797c;
+    border-radius: 0.2ex;
+    padding: 0.5ex;
+    min-width: 7.5ex;
+
+    border-width: 2px;
+    border-color: #76797c;
+    border-style: outset;
+}
+
+
 
 
 
