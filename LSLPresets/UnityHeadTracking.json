@@ -1,0 +1,7 @@
+{ "StreamName":"Unity.HeadTracker",
+  "ChannelNames":[
+    "Head Yaw", "Head Pitch", "Head Roll",
+    "Head Displacement X", "Head Displacement Y", "Head Displacement Z"
+  ],
+  "NominalSamplingRate":  70,
+  "GroupChannelsInPlot":  [3]}

@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
 from PyQt5.QtWidgets import QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 
 import config_ui
 
@@ -106,6 +107,8 @@ def init_combo_box(parent, label, item_list):
 
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+    container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
+
     camera_img_label = QLabel()
     _, label_btn_layout = init_container(parent=layout, vertical=False)
     cam_id_label = QLabel(label_string)
@@ -138,19 +141,29 @@ def init_spec_view(parent, label, graph=None):
 
 
 def init_sensor_or_lsl_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, label=config_ui.sensors_type_ui_name_dict[
-        label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string,
-                                              insert_position=insert_position)
+    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+
+    _, top_layout = init_container(parent=layout, vertical=False)
+    ql = QLabel(config_ui.sensors_type_ui_name_dict[
+                    label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+    ql.setStyleSheet("font: bold 14px;")
+    pop_window_btn = init_button(parent=top_layout, label='Pop Window')
+    pop_window_btn.setFixedWidth(200)
+
+    top_layout.addWidget(ql)
+    top_layout.addWidget(pop_window_btn)
+
     start_stream_btn = init_button(parent=layout, label='Start Stream')
     stop_stream_btn = init_button(parent=layout, label='Stop Stream')
-    return container_widget, layout, start_stream_btn, stop_stream_btn
+    return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn
 
 
 def init_add_widget(parent, lsl_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
-    container.setFixedWidth(600)
+    container.setFixedWidth(700)
 
-    container_add_camera, layout_add_camera = init_container(parent=layout, label='Select a Camera(ID) or Screen Capture to add',
+    container_add_camera, layout_add_camera = init_container(parent=layout,
+                                                             label='Select a Camera(ID) or Screen Capture to add',
                                                              vertical=False)
     # detect camera
     cameras = get_working_camera_id()
@@ -169,20 +182,20 @@ def init_add_widget(parent, lsl_presets: dict):
                                           lsl_presets.keys()) + list(config_ui.sensors_type_ui_name_dict.values()))
 
     add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
+    reload_presets_btn = init_button(parent=layout_add_sensor, label='Reload Presets')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
-    _, lsl_num_chan_input = init_inputBox(parent=layout_add_lsl, default_input=1)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, lsl_num_chan_input, add_lsl_btn
+    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn
 
 
 class CustomDialog(QDialog):
-    def __init__(self, msg, parent=None):
+    def __init__(self, title, msg, parent=None):
         super().__init__(parent=parent)
 
-        self.setWindowTitle("Warning")
+        self.setWindowTitle(title)
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
 
@@ -197,10 +210,10 @@ class CustomDialog(QDialog):
         self.setLayout(self.layout)
 
 
-def dialog_popup(msg):
-    dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
+def dialog_popup(msg, title='Warning'):
+    dlg = CustomDialog(title, msg)  # If you pass self, the dialog will be centered over the main window as before.
     if dlg.exec_():
-        print("Success!")
+        print("Dialog popup")
     else:
         print("Cancel!")
 
@@ -226,8 +239,9 @@ def convert_cv_qt(cv_img):
     h, w, ch = rgb_image.shape
     bytes_per_line = ch * w
     convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    p = convert_to_Qt_format.scaled(config_ui.cam_disply_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
-    return QPixmap.fromImage(p)
+    # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
+    return QPixmap.fromImage(convert_to_Qt_format)
+
 
 def get_working_camera_id():
     # checks the first 10 indexes.
@@ -243,3 +257,25 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
+
+class AnotherWindow(QWidget):
+    """
+    This "window" is a QWidget. If it has no parent, it
+    will appear as a free-floating window as we want.
+    """
+
+    def __init__(self, widget_to_add: QWidget, close_function):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(widget_to_add)
+        self.close_function = close_function
+        self.setLayout(layout)
+
+    def closeEvent(self, event):
+        # do stuff
+        print('Window closed')
+        if self.close_function():
+            event.accept()  # let the window close
+        else:
+            event.ignore()

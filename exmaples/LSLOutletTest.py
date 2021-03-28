@@ -1,7 +1,9 @@
 """Example program to demonstrate how to send a multi-channel time series to
 LSL."""
+import random
 import sys
 import getopt
+import string
 
 import time
 from random import random as rand
@@ -10,8 +12,12 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
 def main(argv):
+    letters = string.digits
+    id = (''.join(random.choice(letters) for i in range(3)))
+
     srate = 100
-    name = 'BioSemi'
+    name = 'Dummy-BioSemi-8Chan-' + id
+    print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 8
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'

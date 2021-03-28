@@ -1,5 +1,7 @@
+import time
+
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, sip
+from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QLabel
 from scipy.signal import decimate
@@ -7,18 +9,17 @@ from scipy.signal import decimate
 import config
 import config_ui
 import threadings.workers as workers
-from interfaces.SimulationInterface import SimulationInterface
-from interfaces.LSLInletInterface import LSLInletInterface
-from interfaces.AIYVoiceInterface import AIYVoiceInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
-from interfaces.UnityLSLInterface import UnityLSLInterface
+#from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.CloudTab import CloudTab
 from ui.RecordingsTab import RecordingsTab
 from utils.data_utils import window_slice
-from utils.general import load_all_LSL_presets
+from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_plot_group, \
+    process_preset_create_interface
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
-    get_distinct_colors, init_camera_widget, convert_cv_qt
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -68,33 +69,41 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_num_visualized_results = int(
             config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
-        self.lsl_presets = load_all_LSL_presets()
+        self.lsl_presets_dict = load_all_LSL_presets()
         # add camera and add sensor widget initialization
-        self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_sensor_btn, \
-        self.lsl_stream_name_input, self.lsl_num_chan_input, self.add_lsl_btn = init_add_widget(
-            parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets)
+        self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_preset_sensor_btn, \
+        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn = init_add_widget(
+            parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict)
         self.add_camera_btn.clicked.connect(self.add_camera_clicked)
-        self.add_sensor_btn.clicked.connect(self.add_sensor_clicked)
-        self.add_lsl_btn.clicked.connect(self.add_lsl_clicked)
+        self.add_preset_sensor_btn.clicked.connect(self.add_preset_sensor_clicked)
+        self.add_lsl_btn.clicked.connect(self.add_user_defined_lsl_clicked)
+        self.reload_presets_btn.clicked.connect(self.reload_all_presets)
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
         self.LSL_data_buffer_dicts = {}
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
-        self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
+
+        # self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
         # inference buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
-        self.recordingTab = RecordingsTab(self, self.LSL_data_buffer_dicts)
+        self.recordingTab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
         self.cloudTab = CloudTab(self, self.LSL_data_buffer_dicts)
         self.cloud_tab_vertical_layout.addWidget(self.cloudTab)
+        # windows
+        self.pop_windows = {}
+        self.test_ts_buffer = []
 
     def add_camera_clicked(self):
+        if self.recordingTab.is_recording:
+            dialog_popup(msg='Cannot add capture while recording.')
+            return
         selected_camera_id = self.camera_combo_box.currentText()
         self.init_camera(selected_camera_id)
 
@@ -118,11 +127,15 @@ class MainWindow(QtWidgets.QMainWindow):
             wkr.change_pixmap_signal.connect(self.visualize_cam)
 
             def remove_cam():
+                if self.recordingTab.is_recording:
+                    dialog_popup(msg='Cannot remove stream while recording.')
+                    return False
                 worker_thread.exit()
                 self.cam_workers.pop(cam_id)
                 self.cam_displays.pop(cam_id)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
                 sip.delete(camera_widget)
+                return True
 
             remove_cam_btn.clicked.connect(remove_cam)
             self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
@@ -130,59 +143,57 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
-    def visualize_cam(self, cam_id_cv_img):
-        cam_id, cv_img = cam_id_cv_img
+    def visualize_cam(self, cam_id_cv_img_timestamp):
+        cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         if cam_id in self.cam_displays.keys():
             qt_img = convert_cv_qt(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
+            self.test_ts_buffer.append(time.time())
+            self.recordingTab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
-    def add_sensor_clicked(self):
+    def add_preset_sensor_clicked(self):
+        if self.recordingTab.is_recording:
+            dialog_popup(msg='Cannot add stream while recording.')
+            return
         selected_text = str(self.sensor_combo_box.currentText())
-        if selected_text in self.lsl_presets.keys():
-            self.init_lsl(selected_text, self.lsl_presets[selected_text]['NumChannels'],
-                          self.lsl_presets[selected_text]['ChannelNames'],
-                          self.lsl_presets[selected_text]['PlotGroupSlices'])
+        if selected_text in self.lsl_presets_dict.keys():
+            self.init_lsl(self.lsl_presets_dict[selected_text])
         else:
             sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
             if sensor_type not in self.sensor_workers.keys():
                 self.init_sensor(
                     sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
             else:
-                msg = 'MainWindow: sensor type ' + sensor_type + ' is already added.'
-                dlg = CustomDialog(msg)  # If you pass self, the dialog will be centered over the main window as before.
-                if dlg.exec_():
-                    print("Success!")
-                else:
-                    print("Cancel!")
+                msg = 'Sensor type ' + sensor_type + ' is already added.'
+                dialog_popup(msg)
 
-    def add_lsl_clicked(self):
+    def add_user_defined_lsl_clicked(self):
         lsl_stream_name = self.lsl_stream_name_input.text()
-        lsl_num_chan = int(self.lsl_num_chan_input.text())
+        preset_dict = create_LSL_preset(lsl_stream_name)
+        if self.init_lsl(preset_dict):
+            self.lsl_presets_dict[lsl_stream_name] = preset_dict
+            self.update_presets_combo_box()  # add the new user-defined stream to presets dropdown
 
-        self.init_lsl(lsl_stream_name, lsl_num_chan)
-
-    def init_lsl(self, lsl_stream_name, lsl_num_chan, lsl_chan_names=None, plot_group_slices=None):
-        if lsl_stream_name not in self.lsl_workers.keys():
+    def init_lsl(self, preset, lsl_chan_names=None, plot_group_slices=None):
+        lsl_stream_name = preset['StreamName']
+        if lsl_stream_name not in self.lsl_workers.keys(): # if this inlet hasn't been already added
             try:
-                if lsl_stream_name.lower().endswith('simulation'):
-                    interface = SimulationInterface(lsl_stream_name, lsl_num_chan,
-                                                    self.lsl_presets[lsl_stream_name]["NominalSamplingRate"])
-                elif lsl_stream_name.lower() == 'aiyvoice':
-                    interface = AIYVoiceInterface(lsl_stream_name, lsl_num_chan)
-                else:
-                    interface = LSLInletInterface(lsl_stream_name, lsl_num_chan)
-            except AttributeError:
-                dialog_popup('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
-                return
-
-            if lsl_stream_name.lower().startswith('deap'):
+                preset, interface = process_preset_create_interface(preset)
+            except AssertionError as e:
+                dialog_popup(str(e))
+                return None
+            lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
+                                                              preset['ChannelNames'], \
+                                                              preset['PlotGroupSlices']
+            if lsl_stream_name.lower().endswith('simulation'):
                 self.lsl_workers[lsl_stream_name] = workers.DEAPWorker(interface)
             elif lsl_stream_name.lower() == 'aiyvoice':
                 self.lsl_workers[lsl_stream_name] = workers.AIYWorker(interface)
             else:
                 self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
+
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
+            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
                 parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
                 insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             lsl_widget.setObjectName(lsl_widget_name)
@@ -190,29 +201,59 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[lsl_stream_name] = worker_thread
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
+
             self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(parent=lsl_layout,
                                                                                                num_chan=lsl_num_chan,
                                                                                                chan_names=lsl_chan_names,
                                                                                                plot_group_slices=plot_group_slices)
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
-            self.lsl_presets[lsl_stream_name]["num_samples_to_plot"] = int(
-                self.lsl_presets[lsl_stream_name]["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
-            self.lsl_presets[lsl_stream_name]["ActualSamplingRate"] = self.lsl_presets[lsl_stream_name][
-                "NominalSamplingRate"]
-            self.lsl_presets[lsl_stream_name]["timevector"] = np.linspace(0., config.PLOT_RETAIN_HISTORY,
-                                                                          self.lsl_presets[lsl_stream_name][
+            preset["num_samples_to_plot"] = int(
+                preset["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
+            preset["ActualSamplingRate"] = preset[
+                "NominalSamplingRate"]  # actual sampling rate is updated during runtime
+            preset["timevector"] = np.linspace(0., config.PLOT_RETAIN_HISTORY,
+                                               preset[
                                                                               "num_samples_to_plot"])
 
+            # pop window actions
+            def dock_window():
+                self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1, lsl_widget)
+                pop_window_btn.clicked.disconnect()
+                pop_window_btn.clicked.connect(pop_window)
+                pop_window_btn.setText('Pop Window')
+                self.pop_windows[lsl_stream_name].hide()  # tetentive measures
+                self.pop_windows.pop(lsl_stream_name)
+
+            def pop_window():
+                w = AnotherWindow(lsl_widget, remove_lsl)
+                self.pop_windows[lsl_stream_name] = w
+                w.setWindowTitle(lsl_stream_name)
+                pop_window_btn.setText('Dock Window')
+                w.show()
+                pop_window_btn.clicked.disconnect()
+                pop_window_btn.clicked.connect(dock_window)
+
+            pop_window_btn.clicked.connect(pop_window)
+
             def remove_lsl():
+                if self.recordingTab.is_recording:
+                    dialog_popup(msg='Cannot remove stream while recording.')
+                    return False
                 # fire stop streaming first
                 stop_stream_btn.click()
                 worker_thread.exit()
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
-                sip.delete(lsl_widget)
+                # close window if popped
+                if lsl_stream_name in self.pop_windows.keys():
+                    self.pop_windows[lsl_stream_name].hide()
+                    self.pop_windows.pop(lsl_stream_name)
+                else:  # use recursive delete if docked
+                    sip.delete(lsl_widget)
                 self.LSL_data_buffer_dicts.pop(lsl_stream_name)
+                return True
 
             #     worker_thread
             init_button(parent=lsl_layout, label='Remove Stream',
@@ -220,12 +261,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
+            return preset
         else:
             dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
+            return None
 
     def init_sensor(self, sensor_type):
         sensor_widget_name = sensor_type + '_widget'
-        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn = init_sensor_or_lsl_widget(
+        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
             parent=self.sensorTabSensorsHorizontalLayout, label_string=sensor_type,
             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         sensor_widget.setObjectName(sensor_widget_name)
@@ -238,12 +281,13 @@ class MainWindow(QtWidgets.QMainWindow):
             stop_stream_btn.clicked.connect(self.stop_eeg)
             self.init_visualize_eeg_data(parent=sensor_layout)
             self.sensor_workers[sensor_type].signal_data.connect(self.visualize_eeg_data)
-        elif sensor_type == config.sensors[1]:
-            interface = UnityLSLInterface()
-            self.sensor_workers[sensor_type] = workers.UnityLSLWorker(interface)
-            stop_stream_btn.clicked.connect(self.stop_unityLSL)
-            self.init_visualize_unityLSL_data(parent=sensor_layout)
-            self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
+
+        # elif sensor_type == config.sensors[1]:
+        #     interface = UnityLSLInterface()
+        #     self.sensor_workers[sensor_type] = workers.UnityLSLWorker(interface)
+        #     stop_stream_btn.clicked.connect(self.stop_unityLSL)
+        #     self.init_visualize_unityLSL_data(parent=sensor_layout)
+        #     self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
 
         def remove_sensor():
             # fire stop streaming first
@@ -313,22 +357,22 @@ class MainWindow(QtWidgets.QMainWindow):
         print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
         self.init_eeg_buffer()
 
-    def stop_unityLSL(self):
-        self.sensor_workers[config.sensors[1]].stop_stream()
-        f_sample = self.unityLSL_data_buffer.shape[-1] / (
-                self.sensor_workers[config.sensors[1]].end_time - self.sensor_workers[config.sensors[1]].start_time)
-        print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
-        self.init_unityLSL_buffer()
+    # def stop_unityLSL(self):
+    #     self.sensor_workers[config.sensors[1]].stop_stream()
+    #     f_sample = self.unityLSL_data_buffer.shape[-1] / (
+    #             self.sensor_workers[config.sensors[1]].end_time - self.sensor_workers[config.sensors[1]].start_time)
+    #     print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
+    #     self.init_unityLSL_buffer()
 
     def init_visualize_eeg_data(self, parent):
         eeg_plot_widgets = [pg.PlotWidget() for i in range(config.OPENBCI_EEG_USEFUL_CHANNELS_NUM)]
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_unityLSL_data(self, parent):
-        unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
-        [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
-        self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
+    # def init_visualize_unityLSL_data(self, parent):
+    #     unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
+    #     [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
+    #     self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
 
     # def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names):
     #     plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
@@ -392,7 +436,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
     def process_LSLStream_data(self, data_dict):
-        samples_to_plot = self.lsl_presets[data_dict['lsl_data_type']]["num_samples_to_plot"]
+        samples_to_plot = self.lsl_presets_dict[data_dict['lsl_data_type']]["num_samples_to_plot"]
         if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
             buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
             try:
@@ -414,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # main window only retains the most recent 10 seconds for visualization purposes
             self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
-            self.lsl_presets[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
+            self.lsl_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
             self.recordingTab.update_buffers(data_dict)
             # notify the internal buffer in cloud tab
@@ -426,9 +470,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def visualize_LSLStream_data(self):
 
         for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-            time_vector = self.lsl_presets[lsl_stream_name]["timevector"]
+            time_vector = self.lsl_presets_dict[lsl_stream_name]["timevector"]
             if data_to_plot.shape[-1] == len(time_vector):
-                actual_sampling_rate = self.lsl_presets[lsl_stream_name]["ActualSamplingRate"]
+                actual_sampling_rate = self.lsl_presets_dict[lsl_stream_name]["ActualSamplingRate"]
                 max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
 
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
@@ -442,23 +486,23 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
 
-    def visualize_unityLSL_data(self, data_dict):
-        if len(data_dict['data']) > 0:
-            self.unityLSL_data_buffer = np.concatenate((self.unityLSL_data_buffer, data_dict['data']),
-                                                       axis=-1)  # get all data and remove it from internal buffer
-
-            if self.unityLSL_data_buffer.shape[-1] < self.unityLSL_num_visualized_sample:
-                unityLSL_data_to_plot = np.concatenate((np.zeros(shape=(
-                    config.UNITY_LSL_CHANNEL_SIZE,
-                    self.unityLSL_num_visualized_sample - self.unityLSL_data_buffer.shape[-1])),
-                                                        self.unityLSL_data_buffer), axis=-1)
-            else:
-                unityLSL_data_to_plot = self.unityLSL_data_buffer[:,
-                                        -self.unityLSL_num_visualized_sample:]  # plot the most recent 10 seconds
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
-            unityLSL_data_to_plot = unityLSL_data_to_plot[
-                config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
-            [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
+    # def visualize_unityLSL_data(self, data_dict):
+    #     if len(data_dict['data']) > 0:
+    #         self.unityLSL_data_buffer = np.concatenate((self.unityLSL_data_buffer, data_dict['data']),
+    #                                                    axis=-1)  # get all data and remove it from internal buffer
+    #
+    #         if self.unityLSL_data_buffer.shape[-1] < self.unityLSL_num_visualized_sample:
+    #             unityLSL_data_to_plot = np.concatenate((np.zeros(shape=(
+    #                 config.UNITY_LSL_CHANNEL_SIZE,
+    #                 self.unityLSL_num_visualized_sample - self.unityLSL_data_buffer.shape[-1])),
+    #                                                     self.unityLSL_data_buffer), axis=-1)
+    #         else:
+    #             unityLSL_data_to_plot = self.unityLSL_data_buffer[:,
+    #                                     -self.unityLSL_num_visualized_sample:]  # plot the most recent 10 seconds
+    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.unityLSL_num_visualized_sample)
+    #         unityLSL_data_to_plot = unityLSL_data_to_plot[
+    #             config.UNITY_LSL_USEFUL_CHANNELS]  ## keep only the useful channels
+    #         [up.setData(time_vector, unityLSL_data_to_plot[i, :]) for i, up in enumerate(self.unityLSL_plots)]
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
@@ -481,3 +525,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_unityLSL_buffer(self):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
+
+    def reload_all_presets(self):
+        if len(self.lsl_workers) > 0:
+            dialog_popup('Remove all streams before reloading presets!', title='Warning')
+        else:
+            self.lsl_presets_dict = load_all_LSL_presets()
+            self.update_presets_combo_box()
+            dialog_popup('Reloaded all presets', title='Info')
+
+    def update_presets_combo_box(self):
+        self.sensor_combo_box.clear()
+        self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())

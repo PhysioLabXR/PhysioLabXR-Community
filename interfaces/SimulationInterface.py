@@ -82,6 +82,12 @@ class SimulationInterface:
     def info(self):
         return self.inlet.info()
 
+    def get_num_chan(self):
+        return self.lsl_num_channels
+
+    def get_nominal_srate(self):
+        return self.streams[0].nominal_srate()
+
 
 def run_test():
     data = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
