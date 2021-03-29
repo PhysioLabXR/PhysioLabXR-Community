@@ -27,17 +27,28 @@ class SettingsTab(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
 
         self.theme = config_ui.default_theme
+        # 'light' or 'dark'
+        if self.theme == 'light':
+            self.LightThemeBtn.setEnabled(False)
+        else:
+            self.DarkThemeBtn.setEnabled(False)
 
-        self.ToggleThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
+        self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
+        self.DarkThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
 
     def toggle_theme_btn_pressed(self):
         print("toggle theme")
 
         if self.theme == 'dark':
+            self.LightThemeBtn.setEnabled(False)
+            self.DarkThemeBtn.setEnabled(True)
+
             url = 'ui/stylesheet/light.qss'
             stream_stylesheet(url)
             self.theme = 'light'
         else:
+            self.LightThemeBtn.setEnabled(True)
+            self.DarkThemeBtn.setEnabled(False)
             url = 'ui/stylesheet/dark.qss'
             stream_stylesheet(url)
             self.theme = 'dark'

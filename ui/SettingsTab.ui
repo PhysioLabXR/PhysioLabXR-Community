@@ -23,15 +23,28 @@
          <item>
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Scence Mode</string>
+            <string>Choose App Color</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="ToggleThemeBtn">
-           <property name="text">
-            <string>Toggle Theme</string>
-           </property>
+          <widget class="QWidget" name="widget_6" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QPushButton" name="LightThemeBtn">
+              <property name="text">
+               <string>Light Theme</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="DarkThemeBtn">
+              <property name="text">
+               <string>Dark Theme</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>
