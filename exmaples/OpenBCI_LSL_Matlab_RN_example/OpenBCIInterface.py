@@ -24,7 +24,7 @@ class OpenBCIInterface:
         params.file = ''
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
-
+        self.board_id = board_id
         self.info_eeg = None
         self.info_aux = None
         self.outlet_eeg = None
@@ -100,16 +100,16 @@ class OpenBCIInterface:
 
 
     def infor_test(self):
-        print(self.board.get_eeg_names(2))
+        print(self.board.get_eeg_names(self.board_id))
         print(self.board.get_board_id())
-        print(self.board.get_package_num_channel(2))
-        print(self.board.get_timestamp_channel(2))
-        print(self.board.get_eeg_channels(2))
-        print(self.board.get_accel_channels(2))
-        print(self.board.get_marker_channel(2))
-        print(self.board.get_other_channels(2))
-        print(self.board.get_analog_channels(2))
-        print(self.board.get_other_channels(2))
+        print(self.board.get_package_num_channel(self.board_id))
+        print(self.board.get_timestamp_channel(self.board_id))
+        print(self.board.get_eeg_channels(self.board_id))
+        print(self.board.get_accel_channels(self.board_id))
+        print(self.board.get_marker_channel(self.board_id))
+        print(self.board.get_other_channels(self.board_id))
+        print(self.board.get_analog_channels(self.board_id))
+        print(self.board.get_other_channels(self.board_id))
 
 
 # def run_test():
