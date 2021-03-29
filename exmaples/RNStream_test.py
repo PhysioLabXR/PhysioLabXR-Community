@@ -6,8 +6,6 @@ from utils.data_utils import RNStream
 
 # rns.stream_out(recording_buffer)
 
-
-
 rns = RNStream('C:/Recordings/03_22_2021_00_00_55-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
 print('String names are {0}'.format(str(rns.get_stream_names())))
 

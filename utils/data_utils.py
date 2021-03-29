@@ -272,7 +272,7 @@ def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
 
 def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_stimulus_time, post_stimulus_time,
                  EEG_stream_preset, lowcut=0.5, highcut=50., notch_band_demoninator=200, EEG_fresample=50,
-                 baselining=True):
+                 baselining=True, notes=''):
     EEG_num_sample_per_trail = int(EEG_stream_preset['NominalSamplingRate'] * (post_stimulus_time - pre_stimulus_time))
     EEG_num_sample_per_trail_RESAMPLED = int(EEG_fresample * (post_stimulus_time - pre_stimulus_time))
     EEG_num_chan = EEG_stream_preset['GroupChannelsInPlot'][1] - EEG_stream_preset['GroupChannelsInPlot'][0]
@@ -403,14 +403,20 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
     evoked_nontarget_all_session = mne.concatenate_epochs(_evoked_nontarget_all_session).average().resample(sfreq=EEG_fresample)
     print('{0}/{1} was dropped for NonTarget.'.format(nontarget_count - mne.concatenate_epochs(_evoked_nontarget_all_session).get_data().shape[0], nontarget_count))
 
-    title = 'EEG Targets'
+    evoked_all = np.concatenate([evoked_target_all_session.data, evoked_nontarget_all_session.data])
+    vmax = np.max(evoked_all)
+    vmin = np.min(evoked_all)
+
+    title = notes + ' Targets'
     # evoked_target_all_session.plot(titles=dict(eeg=title), time_unit='s')
-    evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.))
+    evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
+    # get_animated_topomap(evoked_target_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
     evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
-    title = 'EEG Nontargets'
+    title = notes + ' Non-targets'
     # evoked_nontarget_all_session.plot(titles=dict(eeg=title), time_unit='s')
-    evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.))
+    evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
+    # get_animated_topomap(evoked_nontarget_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
     evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
     pass
@@ -429,3 +435,18 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
     #
     # epoched_EEG_timevector = np.linspace(pre_stimulus_time, post_stimulus_time, EEG_num_sample_per_trail_RESAMPLED)
     # return epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan
+
+
+def get_animated_topomap(evoked, preT, postT, vmax, vmin, title, fps=30):
+    num_frame = int((postT - preT) * fps)
+    interval = 1 / fps
+    fig_array_list = []
+
+    for i in range(num_frame):
+        time = preT + i * interval
+        fig = evoked.plot_topomap(times=[time], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
+        fig_array = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        fig_array = fig_array.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        fig_array_list.append(fig_array)
+    import imageio
+    imageio.mimsave('{0}_animated.gif'.format(title), fig_array_list, fps=5)  # slow down plotting

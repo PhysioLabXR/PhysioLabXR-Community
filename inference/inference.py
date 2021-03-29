@@ -14,7 +14,7 @@ def load_model_params():
     model = load_model(os.path.join(os.getcwd(), config.EYE_INFERENCE_MODEL_PATH))
     return model, y_encoder, data_downsampled_min, data_downsampled_max
 
-def preprocess_eye_samples(samples, data_downsampled_max, data_downsampled_min, downsample_to_hz=20):
+def preprocess_eye_samples(sampcles, data_downsampled_max, data_downsampled_min, downsample_to_hz=20):
     samples_downsampled = resample(samples, int(config.EYE_INFERENCE_WINDOW_TIMESTEPS * downsample_to_hz / config.UNITY_LSL_SAMPLING_RATE),
                                    axis=1)  # resample to 20 hz
     # min-max normalize
