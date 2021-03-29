@@ -9,6 +9,10 @@ button_style_classic = "background-color: " + button_color + "; border-style: ou
                                                              "border-radius: 10px; " \
                                                              "border-color: gray; font: 12px; min-width: 10em; " \
                                                              "padding: 6px; "
+
+default_theme = 'dark'
+
+inference_button_style = "max_width: 250px;, min_width: 100px; font: bold 14px"
 sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
                              # 'RNUnityEyeLSL': 'Vive Pro eye-tracking (Unity)',
                              }

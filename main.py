@@ -9,11 +9,12 @@ from PyQt5.QtWidgets import QLabel
 from MainWindow import MainWindow
 from interfaces.InferenceInterface import InferenceInterface
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QFile, QTextStream
+
+app = None
 
 if __name__ == '__main__':
     # Define the sensor interfaces
-
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
@@ -27,8 +28,16 @@ if __name__ == '__main__':
     splash.show()
 
     # main window init
+
     inference_interface = InferenceInterface()
     window = MainWindow(inference_interface=inference_interface)
+
+    # stylesheet init
+
+    stylesheet = QFile('ui/stylesheet/dark.qss')
+    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stream = QTextStream(stylesheet)
+    app.setStyleSheet(stream.readAll())
 
     # splash screen destroy
     splash.destroy()
@@ -36,4 +45,3 @@ if __name__ == '__main__':
     window.show()
     app.exec_()
     print('Resuming Console Interaction.')
-

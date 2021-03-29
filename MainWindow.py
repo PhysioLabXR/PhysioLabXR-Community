@@ -3,7 +3,7 @@ import time
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QMessageBox
 from scipy.signal import decimate
 
 import config
@@ -13,6 +13,7 @@ from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
 # from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
+from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_plot_group, \
     process_preset_create_interface
@@ -93,6 +94,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # add other tabs
         self.recordingTab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+
+        self.settingTab = SettingsTab(self)
+        self.settings_tab_vertical_layout.addWidget(self.settingTab)
 
         # windows
         self.pop_windows = {}
@@ -311,6 +315,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
         self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
 
+        # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
         inference_thread.start()
 
     def ticks(self):
@@ -528,3 +533,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_presets_combo_box(self):
         self.sensor_combo_box.clear()
         self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            event.accept()
+            print('Window closed')
+        else:
+            event.ignore()
