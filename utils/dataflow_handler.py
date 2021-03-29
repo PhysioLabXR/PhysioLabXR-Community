@@ -120,5 +120,4 @@ if __name__ == "__main__":  # noqa
         known_args.input_topic,
         known_args.output_path,
         known_args.window_size,
-        pipeline_args,
     )

@@ -80,6 +80,7 @@ class CloudTab(QtWidgets.QWidget):
             lsl_data_type = data_dict['lsl_data_type']  # what is the type of the newly-come data
             buffered_data = data_dict['frames'][0]
             buffered_timestamps = data_dict['frames'][1]
-            self.dataflow.send_data(lsl_data_type=lsl_data_type, stream_data=buffered_data, timestamps=buffered_timestamps)
+            self.dataflow.send_data(lsl_data_type=lsl_data_type, stream_data=buffered_data,
+                                    timestamps=buffered_timestamps)
 
             pass
