@@ -3,7 +3,7 @@ import time
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QMessageBox
 from scipy.signal import decimate
 
 import config
@@ -533,3 +533,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_presets_combo_box(self):
         self.sensor_combo_box.clear()
         self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
+
+    # def closeEvent(self, event):
+    #     reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
+    #                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+    #
+    #     if reply == QMessageBox.Yes:
+    #         event.accept()
+    #         print('Window closed')
+    #     else:
+    #         event.ignore()
