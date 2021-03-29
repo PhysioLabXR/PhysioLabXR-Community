@@ -72,7 +72,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    unityLSL_inferface = LSLInletInterface()
+    unityLSL_inferface = AIYVoiceInterface()
     unityLSL_inferface.start_sensor()
     data = run_test()
     unityLSL_inferface.stop_sensor()
