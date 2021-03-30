@@ -99,6 +99,12 @@
        </attribute>
        <layout class="QVBoxLayout" name="recordings_tab_vertical_layout"/>
       </widget>
+      <widget class="QWidget" name="settings_tab">
+       <attribute name="title">
+        <string>Settings </string>
+       </attribute>
+       <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>
+      </widget>
       <widget class="QWidget" name="help_tab">
        <attribute name="title">
         <string>Help</string>
