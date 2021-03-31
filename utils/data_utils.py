@@ -408,16 +408,14 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
     vmin = np.min(evoked_all)
 
     title = notes + ' Targets'
-    # evoked_target_all_session.plot(titles=dict(eeg=title), time_unit='s')
-    evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
+    # evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
     # get_animated_topomap(evoked_target_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
     evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
     title = notes + ' Non-targets'
-    # evoked_nontarget_all_session.plot(titles=dict(eeg=title), time_unit='s')
-    evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
+    # evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
     # get_animated_topomap(evoked_nontarget_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
-    evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
+    # evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-20, 20]), titles=dict(eeg=title), scalings=dict(eeg=1.))
 
     pass
     # # down sample the epoch eeg
@@ -450,3 +448,21 @@ def get_animated_topomap(evoked, preT, postT, vmax, vmin, title, fps=30):
         fig_array_list.append(fig_array)
     import imageio
     imageio.mimsave('{0}_animated.gif'.format(title), fig_array_list, fps=5)  # slow down plotting
+
+
+def get_channel_data(evoked_target_all_session, evoked_nontarget_all_session, channel_names, vmax, vmin):
+    picks = ['Fz', 'Cz', 'POz', 'Oz']
+    target_midline = evoked_target_all_session.pick_channels(picks).data
+    nontarget_midline = evoked_nontarget_all_session.pick_channels(picks).data
+    time_vector = np.linspace(-0.5, 1., target_midline.shape[-1])
+    for i, (target_chan_data, nontarget_chan_data) in enumerate(zip(target_midline, nontarget_midline)):
+        plt.plot(time_vector, target_chan_data, c='r', label='{0} Target '.format(picks[i]) + r'$N_{avg}$=' + str(evoked_target_all_session.nave))
+        plt.plot(time_vector, nontarget_chan_data, c='b', label='{0} Non-target '.format(picks[i]) + r'$N_{avg}$=' + str(evoked_nontarget_all_session.nave))
+        plt.ylim([vmin, vmax])
+        plt.legend()
+        plt.xlabel('Time (sec)')
+        plt.ylabel('\u03bcV')
+        plt.title('Interleaved Sessions')
+        # plt.title('All Sessions (interleave + block) ')
+        plt.show()
+
