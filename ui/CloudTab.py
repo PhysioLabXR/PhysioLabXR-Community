@@ -58,28 +58,14 @@ class CloudTab(QtWidgets.QWidget):
 
     def stop_recording_btn_pressed(self):
         self.is_recording = False
-        os.makedirs(self.auth_file.toPlainText(), exist_ok=True)
-
-        # datetime object containing current date and time
-        now = datetime.now()
-        dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
-
-        save_path = os.path.join(self.saveRootTextEdit.toPlainText(), '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}.p'.format(dt_string,
-                                                                                                      self.experimentNameTextEdit.toPlainText(),
-                                                                                                      self.subjectTagTextEdit.toPlainText(),
-                                                                                                      self.sessionTagTextEdit.toPlainText()))
-        #pickle.dump(self.recording_buffer, open(save_path, 'wb'))
-        print('Saved to {0}'.format(save_path))
-        dialog_popup('Saved to {0}'.format(save_path))
-
         self.StopRecordingBtn.setEnabled(False)
         self.StartRecordingBtn.setEnabled(True)
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
             lsl_data_type = data_dict['lsl_data_type']  # what is the type of the newly-come data
-            buffered_data = data_dict['frames'][0]
-            buffered_timestamps = data_dict['frames'][1]
+            buffered_data = data_dict['frames']
+            buffered_timestamps = data_dict['timestamps']
             self.dataflow.send_data(lsl_data_type=lsl_data_type, stream_data=buffered_data,
                                     timestamps=buffered_timestamps)
 

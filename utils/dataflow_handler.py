@@ -8,7 +8,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 import apache_beam.transforms.window as window
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:/Users/Munna/Documents/Github/RealityNavigation/auth/Sharath's Project-a05c51bd881f.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:/Users/LIINC/OneDrive/Documents/Sharath/RealityNavigation/auth/Sharath's Project-a05c51bd881f.json"
 PROJECT='serene-athlete-271523'
 BUCKET='dataflow-eeg'
 REGION='us-central1'

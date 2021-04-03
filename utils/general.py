@@ -56,13 +56,15 @@ def process_LSL_plot_group(preset_dict):
 def process_preset_create_interface(preset_dict):
     lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset_dict['StreamName'], preset_dict['ChannelNames'], \
                                                          preset_dict['GroupChannelsInPlot']
-    lsl_num_chan = preset_dict['NumChannels']
+
     lsl_nominal_sampling_rate = preset_dict['NominalSamplingRate']
     try:
         if lsl_stream_name.lower().endswith('simulation'):
+            lsl_num_chan = preset_dict['NumChannels']
             interface = SimulationInterface(lsl_stream_name, lsl_num_chan,
                                             lsl_nominal_sampling_rate)
         elif lsl_stream_name.lower() == 'aiyvoice':
+            lsl_num_chan = preset_dict['NumChannels']
             interface = AIYVoiceInterface(lsl_stream_name, lsl_num_chan)
         else:
             interface = LSLInletInterface(lsl_stream_name)

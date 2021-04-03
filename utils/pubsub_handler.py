@@ -92,7 +92,7 @@ class DataFlow:
             runner='DataflowRunner', temp_location="gs://" + self.BUCKET + "/temp", project=self.project_id, region=self.REGION,
             streaming=True, save_main_session=True
         )
-
+        print('self.output_path',self.output_path)
         with beam.Pipeline(options=pipeline_options) as pipeline:
             (
                     pipeline
@@ -108,11 +108,9 @@ class DataFlow:
         # The `topic_path` method creates a fully qualified identifier
         # in the form `projects/{project_id}/topics/{topic_id}`
         topic_path = publisher.topic_path(self.project_id, self.topic_id)
-
         #if self.count < 10:
-        print('timestamps',datetime.datetime.fromtimestamp(timestamps[0]))
         data = "Message number " + str(self.count) + "; Data type " + lsl_data_type + ": " + \
-               json.dumps(stream_data.tolist()) + '; Timestamps: ' + json.dumps(timestamps.tolist())
+               json.dumps(stream_data.tolist()) + '; Timestamps: ' + json.dumps(timestamps)
         self.count += 1
         # Data must be a bytestring
         data = data.encode("utf-8")
