@@ -6,6 +6,7 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from brainflow.data_filter import DataFilter, FilterTypes, AggOperations
 from pylsl import StreamInfo, StreamOutlet
 import random
+from utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass
 
 
 class OpenBCIInterface:
@@ -63,7 +64,6 @@ class OpenBCIInterface:
         except brainflow.board_shim.BrainFlowError as e:
             print(e)
 
-
     def create_lsl(self, name='OpenBCI_Cyton_8', type='EEG', channel_count=8,
                    nominal_srate=250.0, channel_format='float32',
                    source_id='Cyton_0'):
@@ -98,9 +98,9 @@ class OpenBCIInterface:
     def push_sample(self, samples):
         self.outlet_eeg.push_sample(samples)
 
-
     def infor_test(self):
         print(self.board.get_eeg_names(self.board_id))
+        print(self.board.get_sampling_rate(self.board_id))
         print(self.board.get_board_id())
         print(self.board.get_package_num_channel(self.board_id))
         print(self.board.get_timestamp_channel(self.board_id))
@@ -130,6 +130,8 @@ def run_test():
     # data = np.empty(shape=(24, 0))
     print('Started streaming')
     start_time = time.time()
+    notch = RealtimeNotch(w0=60, Q=25, fs=250)
+    butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=8)
     while 1:
         try:
             new_data = openBCI_interface.process_frames()
@@ -137,8 +139,11 @@ def run_test():
             for data in new_data.T:
                 eeg_data = data[1:9]
                 aux_data = data[9:12]
+                # ######### notch and butter
+                eeg_data = notch.process_data(eeg_data)
+                eeg_data = butter_bandpass.process_data(eeg_data)
+                # push sample to lsl
                 openBCI_interface.push_sample(samples=eeg_data)
-
 
         except KeyboardInterrupt:
             # f_sample = data.shape[-1] / (time.time() - start_time)
