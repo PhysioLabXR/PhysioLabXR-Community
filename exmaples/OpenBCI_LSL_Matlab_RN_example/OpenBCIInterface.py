@@ -83,7 +83,7 @@ class OpenBCIInterface:
             ch.append_child_value('type', 'EEG')
 
         self.info_eeg.desc().append_child_value('manufacturer', 'OpenBCI Inc.')
-        self.outlet_eeg = StreamOutlet(self.info_eeg)
+        self.outlet_eeg = StreamOutlet(self.info_eeg, max_buffered=8)
 
         print("--------------------------------------\n" + \
               "LSL Configuration: \n" + \
