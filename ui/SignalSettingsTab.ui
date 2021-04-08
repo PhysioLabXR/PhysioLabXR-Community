@@ -38,11 +38,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QFontComboBox" name="SelectFilterBox">
-               <property name="currentText">
-                <string>Select Filter</string>
-               </property>
-              </widget>
+              <widget class="QComboBox" name="SelectFilterTypeComboBox"/>
              </item>
             </layout>
            </widget>
@@ -52,7 +48,7 @@
        </item>
        <item>
         <widget class="QWidget" name="FilterParameterWidget" native="true">
-         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <layout class="QVBoxLayout" name="FilterParameterVerticalLayout">
           <item>
            <widget class="QLabel" name="label_2">
             <property name="text">
@@ -61,23 +57,28 @@
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="ChannelSelectionWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_4">
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>TextLabel</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="SelectAllChannelsCheckBox">
-               <property name="text">
-                <string>Select All</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+           <widget class="QWidget" name="FilterParameterInputWidget" native="true">
+            <layout class="QHBoxLayout" name="FilterParameterInputVerticalLayout"/>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="ChannelSelectionWidget" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Select Channels</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="SelectAllChannelsCheckBox">
+            <property name="text">
+             <string>Select All</string>
+            </property>
            </widget>
           </item>
          </layout>
