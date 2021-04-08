@@ -20,7 +20,7 @@ from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_p
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
-
+from ui.SignalSettingsTab import SignalSettingsTab
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -189,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                               preset['PlotGroupSlices']
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
+            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
                 parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
                 insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             lsl_widget.setObjectName(lsl_widget_name)
@@ -211,6 +211,19 @@ class MainWindow(QtWidgets.QMainWindow):
             preset["timevector"] = np.linspace(0., config.PLOT_RETAIN_HISTORY,
                                                preset[
                                                                               "num_samples_to_plot"])
+
+
+
+            def signal_settings_window():
+                print("signal settings btn clicked")
+                signal_settings_window = SignalSettingsTab()
+                if signal_settings_window.exec_():
+                    print("signal setting window open")
+                else:
+                    print("Cancel!")
+
+
+            signal_settings_btn.clicked.connect(signal_settings_window)
 
             # pop window actions
             def dock_window():
@@ -264,7 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_sensor(self, sensor_type):
         sensor_widget_name = sensor_type + '_widget'
-        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn = init_sensor_or_lsl_widget(
+        sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
             parent=self.sensorTabSensorsHorizontalLayout, label_string=sensor_type,
             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         sensor_widget.setObjectName(sensor_widget_name)
