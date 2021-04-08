@@ -534,12 +534,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sensor_combo_box.clear()
         self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
 
-    # def closeEvent(self, event):
-    #     reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
-    #                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-    #
-    #     if reply == QMessageBox.Yes:
-    #         event.accept()
-    #         print('Window closed')
-    #     else:
-    #         event.ignore()
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            event.accept()
+            print('Window closed')
+        else:
+            event.ignore()
