@@ -476,9 +476,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
                                             axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-                [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                 enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+                # change dtype to float64 before ploting
+                # data_to_plot = np.asarray(data_to_plot, dtype='float64')
+                # if (data_to_plot.dtype != '<u32')
+                try:
+                    [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+                     enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+                except TypeError:
+                    pass
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
 

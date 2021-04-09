@@ -10,6 +10,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import resample
 
+from utils import nslr_hmm
 from utils.sig_proc_utils import notch_filter, baseline_correction, butter_bandpass_filter
 
 
@@ -275,7 +276,8 @@ def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
 
 def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_stimulus_time, post_stimulus_time,
                  EEG_stream_preset, lowcut=0.5, highcut=50., notch_band_demoninator=200, EEG_fresample=50,
-                 baselining=True, notes='', target_label=4, nontarget_labels = [2, 3, 5, 6]):
+                 baselining=True, notes='', target_label=4, nontarget_labels=(2, 3, 5, 6),
+                 baseline_tmin=-0.5, baseline_tmax=0.1, pupil_channels=['Pupil Left', 'Pupil Right']):
     EEG_num_sample_per_trail = int(EEG_stream_preset['NominalSamplingRate'] * (post_stimulus_time - pre_stimulus_time))
     EEG_num_sample_per_trail_RESAMPLED = int(EEG_fresample * (post_stimulus_time - pre_stimulus_time))
     EEG_num_chan = EEG_stream_preset['GroupChannelsInPlot'][1] - EEG_stream_preset['GroupChannelsInPlot'][0]
@@ -284,8 +286,12 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
     EEG_chan_names = biosemi_64_montage.ch_names
     events_EEG = np.empty(shape=(0, 3), dtype=int)
     reject = dict(eeg=600.)
-    _evoked_target_all_session = []
-    _evoked_nontarget_all_session = []
+    _evoked_target_all_session_EEG = []
+    _evoked_nontarget_all_session_EEG = []
+    _evoked_trial_starts_all_session_EEG = []
+
+    _evoked_target_all_session_PUPIL = []
+    _evoked_nontarget_all_session_PUPIL = []
 
     target_count = 0
     nontarget_count = 0
@@ -308,6 +314,10 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
         stream_EEG = data[EEG_stream_name][0]
         timestamps_EEG = data[EEG_stream_name][1]
         array_event_label = stream_EM[-1, :]
+        stream_EYE = data['Unity.ViveSREyeTracking'][0]
+        timestamps_EYE = data['Unity.ViveSREyeTracking'][1]
+        array_left_gaze = stream_EYE[4:6, :]
+
         # event label sanity check #############################################################################################
         # target_label = 1
         # target_onset_em = np.logical_and(event_label_stream == target_label, np.concatenate([np.array([0]), np.diff(event_label_stream)]) != 0)
@@ -322,26 +332,30 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
         array_EEG = stream_EEG[
                     EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
                     :]
+        array_PUPIL = stream_EYE[0:2]
+
+        # create STIM stream from stream EM ############################################
+        array_STIM_for_EEG = create_stim_channel(array_event_label, timestamps_EM, timestamps_EEG)
+        array_STIM_for_eye = create_stim_channel(array_event_label, timestamps_EM, timestamps_EYE)
+
+        # concatenate EEG and its STIM channel
+        array_EEG = np.concatenate([array_EEG, array_STIM_for_EEG], axis=0)
+        array_PUPIL = np.concatenate([array_PUPIL, array_STIM_for_eye], axis=0)
         # not worrying about the timeoffset in mne data structure as we use our own timestamps
-        array_EEG = mne.io.RawArray(array_EEG, mne.create_info(EEG_chan_names, EEG_stream_preset['NominalSamplingRate'],
-                                                               ch_types='eeg'))
+        array_EEG = mne.io.RawArray(array_EEG, mne.create_info(EEG_chan_names  + ['stim'], EEG_stream_preset['NominalSamplingRate'],
+                                                               ch_types=['eeg'] * len(EEG_chan_names) + ['stim']))
+        array_PUPIL = mne.io.RawArray(array_PUPIL, mne.create_info(pupil_channels + ['stim'], 70,
+                                                               ch_types=['misc', 'misc'] + ['stim']))
+
         array_EEG.set_montage(biosemi_64_montage)
-        # notch filter
-        # stream_EEG_preprocessed = notch_filter(stream_EEG_preprocessed, notch_f0, notch_f0 / notch_band_demoninator,
-        #                                        EEG_stream_preset['NominalSamplingRate'], channel_format='first')
         array_EEG, _ = mne.set_eeg_reference(array_EEG, 'average',
                                              projection=False)  # re-reference using average as the reference
-        # bandpass filter
-        array_EEG = array_EEG.filter(l_freq=lowcut, h_freq=highcut)  # re-reference using average as the reference
 
-        # stream_EEG_preprocessed = butter_bandpass_filter(stream_EEG_preprocessed, lowcut=lowcut, highcut=highcut, fs=EEG_stream_preset['NominalSamplingRate'])
-
-        # [plt.plot(timestamps_EEG[:15000], array_EEG.get_data()[i, :15000]) for i in range(EEG_num_chan)]
-        # plt.show()
-        # if baselining:
-        #     print('Performing baseline correction, this may take a while')
-        #     stream_EEG_preprocessed = baseline_correction(stream_EEG_preprocessed, lam=10, p=0.05)
+        array_EEG = array_EEG.filter(l_freq=lowcut, h_freq=highcut)  # bandpass filter
+        array_EEG = array_EEG.notch_filter(freqs=np.arange(60, 241, 60), filter_length='auto')
+        array_PUPIL = array_PUPIL.filter(picks=pupil_channels, l_freq=None, h_freq=20.)
         evoked_foveate_dict = {}
+        evoked_GAZE_dict = {}
 
         for tl in target_labels:
             array_target_ONSET_EM = np.logical_and(array_event_label == tl,
@@ -436,71 +450,127 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
                 dtype=int).T
             events_EEG = np.concatenate([events_EEG, new_events], axis=0)
 
+            # classify eye movement
+            target_PRE_ONSET_EYE_indices = np.array(
+                [(np.abs(timestamps_EYE - x)).argmin() for x in target_PRE_ONSET_EM_timestamps])
+            target_ONSET_EYE_indices = np.array(
+                [(np.abs(timestamps_EYE - x)).argmin() for x in target_ONSET_EM_timestamps])
+            target_POST_ONSET_EYE_indices = np.array(
+                [(np.abs(timestamps_EYE - x)).argmin() for x in target_POST_ONSET_EM_timestamps])
+            target_ONSET_EYE_timestamps = timestamps_EYE[target_ONSET_EYE_indices]
+            print('EM-EEG target onset timestamp discrepency: mean {0}, std {1}'.format(
+                np.mean(target_ONSET_EM_timestamps - target_ONSET_EEG_timestamps),
+                np.std(target_ONSET_EM_timestamps - target_ONSET_EEG_timestamps)))
+            evoked_target_GAZE_list = [array_left_gaze[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in zip(target_PRE_ONSET_EYE_indices, target_POST_ONSET_EYE_indices) ]
+            if tl not in evoked_GAZE_dict.keys():
+                evoked_GAZE_dict[tl] = evoked_target_GAZE_list
+            else:
+                evoked_GAZE_dict[tl] += evoked_target_GAZE_list
+
         events_EEG = np.sort(events_EEG, axis=0)
         target_count += np.count_nonzero(events_EEG[:, 2] == target_label)
         nontarget_count += np.count_nonzero(np.isin(events_EEG[:, 2], nontarget_labels))
 
         ##################################################################
         epochs_params = dict(events=events_EEG, event_id=target_label, tmin=pre_stimulus_time, tmax=post_stimulus_time,
-                             baseline=(-0.2, 0.), reject=reject)
-        evoked_target = mne.Epochs(raw=array_EEG, **epochs_params)
-        _evoked_target_all_session.append(evoked_target)
-        epochs_params = dict(events=events_EEG, event_id=nontarget_labels, tmin=pre_stimulus_time, tmax=post_stimulus_time,
-                             baseline=(-0.2, 0.), reject=reject)
-        evoked_nontarget = mne.Epochs(raw=array_EEG, **epochs_params)
-        _evoked_nontarget_all_session.append(evoked_nontarget)
-
-        # epoched_EEG_new = np.array([stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
-        #                         array_prepost_target_onset_i])
-        # epoched_EEG = np.concatenate([epoched_EEG, epoched_EEG_new], axis=0)
+                             baseline=(baseline_tmin, baseline_tmax), reject=reject)
+        evoked_target_EEG = mne.Epochs(raw=array_EEG, **epochs_params)
+        epochs_params = dict(events=events_EEG, event_id=list(nontarget_labels), tmin=pre_stimulus_time, tmax=post_stimulus_time,
+                             baseline=(baseline_tmin, baseline_tmax), reject=reject)
+        evoked_nontarget_EEG = mne.Epochs(raw=array_EEG, **epochs_params)
         print('Total number of trials for label {0} is {1}'.format(str(target_labels), len(epoched_EEG)))
 
+        # find the base line period ##########################################
+        mne_events_EEG = mne.find_events(array_EEG, ['stim'])
+        epochs_params = dict(events=mne_events_EEG, event_id=1, tmin=-0.2, tmax=0., baseline=None, reject=reject)
+        evoked_trial_starts = mne.Epochs(raw=array_EEG, **epochs_params)
+
+        _evoked_trial_starts_all_session_EEG.append(evoked_trial_starts)
+        _evoked_target_all_session_EEG.append(evoked_target_EEG)
+        _evoked_nontarget_all_session_EEG.append(evoked_nontarget_EEG)
+
+        # Pupil data #####################################################
+        mne_events_PUPIL = mne.find_events(array_PUPIL, ['stim'])
+        evoked_target_PUPIL = mne.Epochs(raw=array_PUPIL, **dict(events=mne_events_PUPIL, event_id=target_label, tmin=-.5, tmax=2.,  baseline=(-0.1, 0.1)))
+        evoked_nontarget_PUPIL = mne.Epochs(raw=array_PUPIL, **dict(events=mne_events_PUPIL, event_id=list(nontarget_labels), tmin=-.5, tmax=2.,  baseline=(-0.1, 0.1)))
+        _evoked_target_all_session_PUPIL.append(evoked_target_PUPIL)
+        _evoked_nontarget_all_session_PUPIL.append(evoked_nontarget_PUPIL)
 
     print('{0}/{1} FOVEATE was dropped for Target.-----------------------'.format(bad_foveate_count_target, target_count))
     print('{0}/{1} FOVEATE was dropped for NonTarget.--------------------'.format(bad_foveate_count_nontarget, nontarget_count))
 
-    evoked_target_all_session = mne.concatenate_epochs(_evoked_target_all_session).average().resample(
-        sfreq=EEG_fresample)
-    print('{0}/{1} was dropped for Target.'.format(
-        target_count - mne.concatenate_epochs(_evoked_target_all_session).get_data().shape[0], target_count))
-    print('---------------------loading nonTargets')
-    evoked_nontarget_all_session = mne.concatenate_epochs(_evoked_nontarget_all_session).average().resample(
-        sfreq=EEG_fresample)
-    print('{0}/{1} was dropped for NonTarget.'.format(
-        nontarget_count - mne.concatenate_epochs(_evoked_nontarget_all_session).get_data().shape[0], nontarget_count))
+    # manual baseline correction
+    # baseline_data = np.average(mne.concatenate_epochs(_evoked_trial_starts_all_session).average().data, axis=-1)
 
-    evoked_all = np.concatenate([evoked_target_all_session.data, evoked_nontarget_all_session.data])
-    vmax = np.max(evoked_all)
-    vmin = np.min(evoked_all)
+    ######################################################################################################################
+    evoked_target_all_session_EEG = mne.concatenate_epochs(_evoked_target_all_session_EEG).resample(sfreq=EEG_fresample)
+    # evoked_target_all_session.data = np.array([ts - ch_b for ts, ch_b in zip(evoked_target_all_session.data, baseline_data)])
+    print('{0}/{1} was dropped for Target.'.format(
+        target_count - mne.concatenate_epochs(_evoked_target_all_session_EEG).get_data().shape[0], target_count))
+
+    print('---------------------loading nonTargets')
+    evoked_nontarget_all_session_EEG = mne.concatenate_epochs(_evoked_nontarget_all_session_EEG).resample(sfreq=EEG_fresample)
+    # evoked_nontarget_all_session.data = np.array([ts - ch_b for ts, ch_b in zip(evoked_nontarget_all_session.data, baseline_data)])
+    print('{0}/{1} was dropped for NonTarget.'.format(
+        nontarget_count - mne.concatenate_epochs(_evoked_nontarget_all_session_EEG).get_data().shape[0], nontarget_count))
+
+    evoked_all_EEG = np.concatenate([evoked_target_all_session_EEG.average().data, evoked_nontarget_all_session_EEG.average().data])
+    vmax_EEG = np.max(evoked_all_EEG)
+    vmin_EEG = np.min(evoked_all_EEG)
+
+    ######################################################################################################################
+    time_vector_pupil = np.linspace(-.5, 2., 50)
+    evoked_target_all_session_PUPIL = mne.concatenate_epochs(_evoked_target_all_session_PUPIL).resample(sfreq=20.)
+    evoked_target_all_session_PUPIL = evoked_target_all_session_PUPIL.get_data(picks=pupil_channels)
+    evoked_target_all_session_PUPIL = np.average(evoked_target_all_session_PUPIL, axis=1)  # average left and right
+
+    evoked_nontarget_all_session_PUPIL = mne.concatenate_epochs(_evoked_nontarget_all_session_PUPIL).resample(sfreq=20.)
+    evoked_nontarget_all_session_PUPIL = evoked_nontarget_all_session_PUPIL.get_data(picks=pupil_channels)
+    evoked_nontarget_all_session_PUPIL = np.average(evoked_nontarget_all_session_PUPIL, axis=1)
+
+    title = notes + ' Targets; Baseline [{0}, {1}]'.format(-0.1, 0.1)
+
+    plt.plot(time_vector_pupil, np.average(evoked_target_all_session_PUPIL, axis=0), c='r', label='Targets')
+    y2 = np.average(evoked_target_all_session_PUPIL, axis=0) + np.std(evoked_target_all_session_PUPIL, axis=0)
+    y1 = np.average(evoked_target_all_session_PUPIL, axis=0) - np.std(evoked_target_all_session_PUPIL, axis=0)
+    plt.fill_between(time_vector_pupil, y2, y1, where=y2 >= y1, facecolor='r', interpolate=True, alpha=0.5)
+
+    plt.plot(time_vector_pupil, np.average(evoked_nontarget_all_session_PUPIL, axis=0), c='b', label='Non-targets')
+    y2 = np.average(evoked_nontarget_all_session_PUPIL, axis=0) + np.std(evoked_nontarget_all_session_PUPIL, axis=0)
+    y1 = np.average(evoked_nontarget_all_session_PUPIL, axis=0) - np.std(evoked_nontarget_all_session_PUPIL, axis=0)
+    plt.fill_between(time_vector_pupil, y2, y1, where=y2 >= y1, facecolor='b', interpolate=True, alpha=0.5)
+
+    plt.title(title)
+    plt.xlabel('Time (sec)')
+    plt.ylabel('Baselined Pupil Diameter (mm)')
+    plt.legend()
+    plt.show()
+
+
+    evoked_all_PUPIL = np.concatenate([evoked_target_all_session_PUPIL.data, evoked_nontarget_all_session_PUPIL.data])
+    vmax_PUPIL = np.max(evoked_all_PUPIL)
+    vmin_PUPIL= np.min(evoked_all_PUPIL)
+
+    # plot pupil #################################################################
+    title = notes + ' Targets; Baseline [{0}, {1}]'.format(-0.1, 0.1)
+
+
+
+
+
 
     title = notes + ' Targets'
     # evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
-    get_animated_topomap(evoked_target_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
+    get_animated_topomap(evoked_target_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
     # evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-40, 20]), titles=dict(eeg=title),
     #                                scalings=dict(eeg=1.))
 
     title = notes + ' Non-targets'
     # evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
-    get_animated_topomap(evoked_nontarget_all_session, pre_stimulus_time, post_stimulus_time, vmax, vmin, title)  # create gif
+    get_animated_topomap(evoked_nontarget_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
     # evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-40, 20]), titles=dict(eeg=title),
     #                                   scalings=dict(eeg=1.))
 
-    pass
-    # # down sample the epoch eeg
-    # epoched_EEG_RESAMPLED = resample(epoched_EEG, EEG_num_sample_per_trail_RESAMPLED, axis=-1)
-    #
-    # # averaging
-    # epoched_EEG_average_trial = np.mean(epoched_EEG_RESAMPLED, axis=0)
-    # epoched_EEG_average_trial_chan = np.mean(epoched_EEG_average_trial, axis=0)
-    #
-    # epoched_EEG_max_trial = np.max(epoched_EEG_RESAMPLED, axis=0)
-    # epoched_EEG_max_trial_chan = np.max(epoched_EEG_max_trial, axis=0)
-    #
-    # epoched_EEG_min_trial = np.min(epoched_EEG_RESAMPLED, axis=0)
-    # epoched_EEG_min_trial_chan = np.min(epoched_EEG_min_trial, axis=0)
-    #
-    # epoched_EEG_timevector = np.linspace(pre_stimulus_time, post_stimulus_time, EEG_num_sample_per_trail_RESAMPLED)
-    # return epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan
 
 
 def get_animated_topomap(evoked, preT, postT, vmax, vmin, title, fps=30):
@@ -538,50 +608,79 @@ def get_channel_data(evoked_target_all_session, evoked_nontarget_all_session, ch
         plt.show()
 
 
-def plot_eeg_with_fustum_foveate_trace(evoked_target_all_session, evoked_nontarget_all_session, pre_stimulus_time, post_stimulus_time,
-                                       evoked_foveate_dict, target_label, nontarget_labels, notes):
+def plot_eeg_with_fustum_foveate_trace(evoked_target_all_session_EEG, evoked_nontarget_all_session_EEG, evoked_target_all_session_PUPIL, evoked_nontarget_all_session_PUPIL, pre_stimulus_time, post_stimulus_time,
+                                        EEG_fresample, _evoked_target_all_session_EEG, _evoked_nontarget_all_session_EEG,
+                                       evoked_foveate_dict, evoked_GAZE_dict, target_label, nontarget_labels, baseline_tmin, baseline_tmax, pupil_channels, notes):
     timesteps_FOVEATE = mode([len(x) for x in evoked_foveate_dict[target_label]])
-    timesteps_EEG = evoked_target_all_session.data.shape[-1]
+    timesteps_GAZE = mode([x.shape[-1] for x in evoked_GAZE_dict[target_label]])
+    timesteps_EEG = evoked_target_all_session_EEG.average().data.shape[-1]
+
     time_vec_EEG = np.linspace(pre_stimulus_time, post_stimulus_time, num=timesteps_EEG)
+    time_vec_GAZE = np.linspace(pre_stimulus_time, post_stimulus_time, num=timesteps_GAZE)
 
     # foveate data
     time_vec_FOVEATE = np.linspace(pre_stimulus_time, post_stimulus_time, num=timesteps_FOVEATE)
-
     evoked_target_foveate_list = [[x if x != 0 else np.NAN for x in seq] for seq in evoked_foveate_dict[target_label] if len(seq) == timesteps_FOVEATE]
     evoked_nontarget_foveate_list = []
     for nontarget_l in nontarget_labels:
         evoked_nontarget_foveate_list += [[x if x != 0 else np.NAN for x in seq] for seq in evoked_foveate_dict[nontarget_l] if len(seq) == timesteps_FOVEATE]
-
     evoked_target_foveate_array = np.array(evoked_target_foveate_list)
     evoked_nontarget_foveate_array = np.array(evoked_nontarget_foveate_list)
 
+    # gaze data  #################################################
+    COLORS = {
+        nslr_hmm.FIXATION: 'blue',
+        nslr_hmm.SACCADE: 'black',
+        nslr_hmm.SMOOTH_PURSUIT: 'green',
+        nslr_hmm.PSO: 'yellow',
+    }
+    eye = np.copy(evoked_GAZE_dict[4][3])
+    # eye = np.array([interp_zero(x) for x in eye])
+    eye = eye.transpose()
+    eye = eye * 10.
+    plt.plot(eye[:, 1])
+    plt.plot(eye[:, 0])
+    plt.show()
+
+    sample_class, segmentation, seg_class = nslr_hmm.classify_gaze(time_vec_GAZE, eye)
+    plt.plot(time_vec_GAZE, eye[:, 0], '.')
+    for i, seg in enumerate(segmentation.segments):
+        cls = seg_class[i]
+        plt.plot(seg.t, np.array(seg.x)[:, 0], color=COLORS[cls])
+
+    plt.show()
+
     # visualization
     color = 'tab:red'
+    # picks = ['Fpz', 'AFz', 'Fz', 'FCz', 'Cz', 'CPz', 'Pz', 'POz', 'Oz']
+    picks = ['Fpz', 'Fz',  'Cz', 'Pz', 'Oz']
 
-    # for targets
-    title = notes + ' Targets'
-    fig = evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-30, 20]),
-                                         titles=dict(eeg=title), scalings=dict(eeg=1.), show=False)
+    # for targets #########################################################################
+    title = notes + ' Targets; Baseline [{0}, {1}]'.format(baseline_tmin, baseline_tmax)
+    fig = evoked_target_all_session_EEG.average().plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-30, 20]),
+                                             titles=dict(eeg=title), scalings=dict(eeg=1.), show=False)
+    fig.set_size_inches(8, 3)
     ax2 = fig.axes[0].twinx()
     ax2.set_ylabel('Foveate value', color=color)
-    y1 = np.nanmin(evoked_target_foveate_array, axis=0)
-    y2 = np.nanmax(evoked_target_foveate_array, axis=0)
+    y1 = np.nanmean(evoked_target_foveate_array, axis=0) - np.nanstd(evoked_target_foveate_array, axis=0)
+    y2 = np.nanmean(evoked_target_foveate_array, axis=0) + np.nanstd(evoked_target_foveate_array, axis=0)
     ax2.fill_between(time_vec_FOVEATE, y2, y1, where=y2 >= y1, facecolor=color, interpolate=True, alpha=0.5)
     ax2.plot(time_vec_FOVEATE, np.nanmean(evoked_target_foveate_array, axis=0), c=color)
-    # [ax2.plot(time_vec_FOVEATE, x, c=color) for x in evoked_target_foveate_array]
     ax2.tick_params(axis='y', labelcolor=color)
     ax2.set_ylim(-1., 1.)
     fig.tight_layout()
     plt.show()
 
-    # for nontargets
-    title = notes + ' Non-targets'
-    fig = evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-30, 20]),
-                                         titles=dict(eeg=title), scalings=dict(eeg=1.), show=False)
+
+    # for nontargets #########################################################################
+    title = notes + ' Non-targets; BL [{0}, {1}]'.format(baseline_tmin, baseline_tmax)
+    fig = evoked_nontarget_all_session_EEG.average().plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-30, 20]),
+                                                titles=dict(eeg=title), scalings=dict(eeg=1.), show=False)
+    fig.set_size_inches(8, 3)
     ax2 = fig.axes[0].twinx()
     ax2.set_ylabel('Foveate value', color=color)
-    y1 = np.nanmin(evoked_nontarget_foveate_array, axis=0)
-    y2 = np.nanmax(evoked_nontarget_foveate_array, axis=0)
+    y1 = np.nanmean(evoked_nontarget_foveate_array, axis=0) - np.nanstd(evoked_nontarget_foveate_array, axis=0)
+    y2 = np.nanmean(evoked_nontarget_foveate_array, axis=0) + np.nanstd(evoked_nontarget_foveate_array, axis=0)
     ax2.fill_between(time_vec_FOVEATE, y2, y1, where=y2 >= y1, facecolor=color, interpolate=True, alpha=0.5)
     ax2.plot(time_vec_FOVEATE, np.nanmean(evoked_nontarget_foveate_array, axis=0), c=color)
     ax2.tick_params(axis='y', labelcolor=color)
@@ -589,7 +688,34 @@ def plot_eeg_with_fustum_foveate_trace(evoked_target_all_session, evoked_nontarg
     fig.tight_layout()
     plt.show()
 
-    # [fig.axes[0].plot(time_vec, trial_x * 15., c='grey') for trial_x in evoked_target_foveate_list]
+    # plot for different channels #########
+    for ch in picks:
+        title = notes + ' Targets; Baseline [{0}, {1}]; Channel {2}'.format(baseline_tmin, baseline_tmax, ch)
+        evoked_target_all_session_EEG = mne.concatenate_epochs(_evoked_target_all_session_EEG).resample(
+            sfreq=EEG_fresample)
+        evoked_nontarget_all_session_EEG = mne.concatenate_epochs(_evoked_nontarget_all_session_EEG).resample(
+            sfreq=EEG_fresample)
+
+        fig, ax = plt.subplots()
+
+        y = evoked_target_all_session_EEG.pick_channels([ch]).get_data().reshape((-1, len(time_vec_EEG)))
+        y1 = np.mean(y, axis=0) + np.std(y, axis=0)
+        y2 = np.mean(y, axis=0) - np.std(y, axis=0)
+        ax.plot(time_vec_EEG, np.mean(y, axis=0), c='r', label='Target')
+        ax.fill_between(time_vec_EEG, y1, y2, where=y2 <= y1, facecolor='r', interpolate=True, alpha=0.5)
+
+        y = evoked_nontarget_all_session_EEG.pick_channels([ch]).get_data().reshape((-1, len(time_vec_EEG)))
+        y1 = np.mean(y, axis=0) + np.std(y, axis=0)
+        y2 = np.mean(y, axis=0) - np.std(y, axis=0)
+        ax.plot(time_vec_EEG, np.mean(y, axis=0), c='b', label='Non-target')
+        ax.fill_between(time_vec_EEG, y1, y2, where=y2 <= y1, facecolor='b', interpolate=True, alpha=0.5)
+
+        ax.set_title(title)
+        ax.set_xlabel('Time (sec)')
+        ax.set_ylabel('\u03BCV')
+        plt.legend()
+        # fig.set_size_inches(8, 3)
+        plt.show()
 
 
 def interp_zero(y):
@@ -611,3 +737,59 @@ def interp_zero(y):
 # ax2.set_ylim(-1., 1.)
 # ax2.set_title(title)
 # plt.show()
+
+def create_stim_channel(array_event_label, timestamps_EM, timestamps_sensor):
+    trial_num = 24
+    item_event_labels = [2,3,4,5,6]
+    target_label = 4
+
+    array_event_label_altered = np.zeros(len(array_event_label))
+
+    trial_start_idx = [i for i, x in enumerate(array_event_label) if x == 1 and np.all(array_event_label[i-50:i] == 0)]
+    array_event_label_altered[trial_start_idx] = 1
+    # assert len(trial_start_idx) == trial_num
+
+    for il in item_event_labels:
+        item_ONSET_idx = np.argwhere(np.logical_and(array_event_label == il, np.concatenate([np.array([0]), np.diff(array_event_label)]) != 0))[:, 0]
+        # assert len(item_ONSET_idx) == trial_num
+        array_event_label_altered[item_ONSET_idx] = il
+
+    timestamps_EM_events = timestamps_EM[np.argwhere(array_event_label_altered)]  # the EM timestamps at when something happened
+    # assert len(timestamps_EM_events) == trial_num * (len(item_event_labels) + 1)
+
+    # find the corresponding EEG timestamps
+    target_ONSET_EEG_indices = np.array(
+        [(np.abs(timestamps_sensor - x)).argmin() for x in timestamps_EM_events])
+    target_ONSET_EEG_timestamps = timestamps_sensor[target_ONSET_EEG_indices]
+    print('EM target onset timestamp discrepency: mean {0}, std {1}'.format(
+        np.mean(timestamps_EM_events - target_ONSET_EEG_timestamps),
+        np.std(timestamps_EM_events - target_ONSET_EEG_timestamps)))
+
+    array_eeg_stim = np.zeros(len(timestamps_sensor))
+    array_eeg_stim[target_ONSET_EEG_indices] = array_event_label_altered[np.argwhere(array_event_label_altered)[:, 0]]
+
+    return np.expand_dims(array_eeg_stim, axis=0)
+    # sanity checks
+
+    plt.plot(timestamps_EM[1400:1700], array_event_label[1400:1700])
+    plt.show()
+
+    # plt.plot(array_event_label[1400:1700])
+    # plt.plot(array_event_label_altered[1400:1700])
+    # plt.show()
+    #
+    # plt.plot(array_event_label[1000:1800])
+    # plt.plot(array_event_label_altered[1000:1800])
+    # plt.show()
+    #
+    # plt.plot(array_event_label[1000:8000])
+    # plt.plot(array_event_label_altered[1000:8000])
+    # plt.show()
+    #
+    # plt.plot(array_eeg_stim[74600:74900])
+    # plt.show()
+    #
+    # plt.plot(array_eeg_stim[74600:74600 + 2048 * 10])
+    # plt.show()
+
+# def project_gaze_vector():
