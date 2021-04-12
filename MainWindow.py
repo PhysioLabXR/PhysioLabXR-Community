@@ -317,6 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
         inference_thread.start()
+        self.inference_widget.hide()
 
     def ticks(self):
         """
