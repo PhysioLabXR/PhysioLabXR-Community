@@ -38,8 +38,11 @@ class RecordingsTab(QtWidgets.QWidget):
         self.StopRecordingBtn.setEnabled(False)
         self.parent = parent
 
+        self.data_dir = config.DEFAULT_DATA_DIR
         self.save_path = ''
         self.save_stream = None
+
+        self.saveRootTextEdit.setText(self.data_dir + '/')
 
         self.timer = QTimer()
         self.timer.setInterval(config.EVICTION_INTERVAL)
@@ -47,14 +50,15 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
 
-
     def select_data_dir_btn_pressed(self):
 
-        data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
-        print("Selected data dir: ", data_dir)
-        self.saveRootTextEdit.setText(data_dir+'/')
+        selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
 
+        if selected_data_dir != '':
+            self.data_dir = selected_data_dir
 
+        print("Selected data dir: ", self.data_dir)
+        self.saveRootTextEdit.setText(self.data_dir + '/')
 
     def start_recording_btn_ressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):

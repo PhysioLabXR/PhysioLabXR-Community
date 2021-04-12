@@ -1,7 +1,7 @@
 import cv2
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QFile, QTextStream
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
@@ -80,7 +80,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
     layout.addWidget(textbox)
-    textbox.setStyleSheet("background-color:white;")
+    # textbox.setStyleSheet("background-color:white;")
 
     return layout, textbox
 
@@ -90,7 +90,7 @@ def init_button(parent, label=None, function=None, style=config_ui.button_style_
     if function:
         btn.clicked.connect(function)
     parent.addWidget(btn)
-    btn.setStyleSheet(config_ui.button_style_classic)
+    # btn.setStyleSheet(config_ui.button_style_classic)
 
     return btn
 
@@ -256,6 +256,12 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
+def stream_stylesheet(stylesheet_url):
+    stylesheet = QFile(stylesheet_url)
+    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stream = QTextStream(stylesheet)
+    QtWidgets.qApp.setStyleSheet(stream.readAll())
 
 
 class AnotherWindow(QWidget):
