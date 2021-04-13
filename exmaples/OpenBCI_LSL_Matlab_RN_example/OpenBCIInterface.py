@@ -130,8 +130,11 @@ def run_test():
     # data = np.empty(shape=(24, 0))
     print('Started streaming')
     start_time = time.time()
-    notch = RealtimeNotch(w0=60, Q=25, fs=250)
+    notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
     butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=8)
+
+    # starting time
+    start_time = time.time()
     while 1:
         try:
             new_data = openBCI_interface.process_frames()
@@ -142,9 +145,12 @@ def run_test():
                 # ######### notch and butter
                 eeg_data = notch.process_data(eeg_data)
                 eeg_data = butter_bandpass.process_data(eeg_data)
-                # push sample to lsl
-                openBCI_interface.push_sample(samples=eeg_data)
 
+                # push sample to lsl with interval
+                # if time.time() - start_time > 0.3:
+                openBCI_interface.push_sample(samples=eeg_data)
+                #     print(eeg_data)
+                #     start_time = time.time()
         except KeyboardInterrupt:
             # f_sample = data.shape[-1] / (time.time() - start_time)
             print('Stopped streaming, sampling rate = ' + str())
