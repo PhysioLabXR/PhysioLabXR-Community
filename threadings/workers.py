@@ -185,8 +185,10 @@ class LSLInletWorker(QObject):
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
 
             self.num_samples += len(timestamps)
-            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
-
+            try:
+                sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+            except ZeroDivisionError:
+                sampling_rate = 0
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
