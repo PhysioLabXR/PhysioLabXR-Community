@@ -37,8 +37,8 @@ class RealtimeNotch:
         self.fs = fs
         self.channel_num = channel_num
         self.b, self.a = iirnotch(w0=w0, Q=self.Q, fs=self.fs)
-        self.x_tap = np.zeros((channel_num, len(self.b)))
-        self.y_tap = np.zeros((channel_num, len(self.a)))
+        self.x_tap = np.zeros((self.channel_num, len(self.b)))
+        self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
     def process_data(self, data):
         # perform realtime filter with tap
@@ -68,8 +68,8 @@ class RealtimeButterBandpass:
         self.order = order
         self.channel_num = channel_num
         self.b, self.a = self.butter_bandpass(lowcut=self.lowcut, highcut=self.highcut, fs=self.fs, order=self.order)
-        self.x_tap = np.zeros((channel_num, len(self.b)))
-        self.y_tap = np.zeros((channel_num, len(self.a)))
+        self.x_tap = np.zeros((self.channel_num, len(self.b)))
+        self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
     def process_data(self, data):
         # perform realtime filter with tap
@@ -96,3 +96,24 @@ class RealtimeButterBandpass:
     def reset_tap(self):
         self.x_tap.fill(0)
         self.y_tap.fill(0)
+
+
+class RealtimeVrms:
+    def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
+        self.fs = fs
+        self.channel_num = channel_num
+        self.interval_ms = interval_ms
+        self.offset_ms = offset_ms
+        self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
+        self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
+
+    # def init_buffer(self):
+    #     self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
+    #     self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
+
+    def process_data(self, data):
+        self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
+        self.data_buffer[:, 0] = data
+        vrms = np.sqrt(1/self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
+        print(vrms)
+        return vrms

@@ -6,7 +6,7 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from brainflow.data_filter import DataFilter, FilterTypes, AggOperations
 from pylsl import StreamInfo, StreamOutlet
 import random
-from utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass
+from utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 
 class OpenBCIInterface:
@@ -132,6 +132,7 @@ def run_test():
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
     butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=8)
+    vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
     start_time = time.time()
@@ -145,12 +146,12 @@ def run_test():
                 # ######### notch and butter
                 eeg_data = notch.process_data(eeg_data)
                 eeg_data = butter_bandpass.process_data(eeg_data)
-
+                eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
-                # if time.time() - start_time > 0.3:
+                # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
-                #     print(eeg_data)
-                #     start_time = time.time()
+                    # print(eeg_data)
+                    # start_time = time.time()
         except KeyboardInterrupt:
             # f_sample = data.shape[-1] / (time.time() - start_time)
             print('Stopped streaming, sampling rate = ' + str())
