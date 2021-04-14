@@ -105,27 +105,6 @@
        </attribute>
        <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>
       </widget>
-      <widget class="QWidget" name="help_tab">
-       <attribute name="title">
-        <string>Help</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Working in Progress</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="Check status">
-          <property name="text">
-           <string>Check Status</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
     <item>
@@ -146,16 +125,12 @@
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuRealityNavigation">
-    <property name="title">
-     <string>RealityNavigation</string>
-    </property>
-    <addaction name="actionAbout"/>
-   </widget>
    <widget class="QMenu" name="menufile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionShow_Recordings"/>
+    <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -171,8 +146,9 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionAbout_2"/>
+    <addaction name="actionDocumentation"/>
    </widget>
-   <addaction name="menuRealityNavigation"/>
    <addaction name="menufile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
@@ -182,6 +158,26 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionAbout_2">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionDocumentation">
+   <property name="text">
+    <string>Documentation</string>
+   </property>
+  </action>
+  <action name="actionShow_Recordings">
+   <property name="text">
+    <string>Show Recordings</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>
