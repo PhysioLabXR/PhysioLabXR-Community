@@ -6,8 +6,8 @@ from multiprocessing import freeze_support
 from utils.data_utils import process_data
 
 files = [
-    # 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats',
-    # 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1 CLEANED.dats',
+    'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats',
+    'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_16_52_54-Exp_realitynavigation-Sbj_0-Ssn_1 CLEANED.dats',
     'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_03_52-Exp_realitynavigation-Sbj_0-Ssn_2 CLEANED.dats',
     'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/03_22_2021_17_13_28-Exp_realitynavigation-Sbj_0-Ssn_3 CLEANED.dats',
 ]

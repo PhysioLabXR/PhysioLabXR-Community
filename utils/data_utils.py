@@ -561,13 +561,13 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
     title = notes + ' Targets'
     # evoked_target_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
-    get_animated_topomap(evoked_target_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
+    # get_animated_topomap(evoked_target_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
     # evoked_target_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-40, 20]), titles=dict(eeg=title),
     #                                scalings=dict(eeg=1.))
 
     title = notes + ' Non-targets'
     # evoked_nontarget_all_session.plot_topomap(times=[0.3], size=3., title=title, time_unit='s', scalings=dict(eeg=1.), vmax=vmax, vmin=vmin)
-    get_animated_topomap(evoked_nontarget_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
+    # get_animated_topomap(evoked_nontarget_all_session_EEG, pre_stimulus_time, post_stimulus_time, vmax_EEG, vmin_EEG, title)  # create gif
     # evoked_nontarget_all_session.plot(gfp=True, spatial_colors=True, ylim=dict(eeg=[-40, 20]), titles=dict(eeg=title),
     #                                   scalings=dict(eeg=1.))
 
