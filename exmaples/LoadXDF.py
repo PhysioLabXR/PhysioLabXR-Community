@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # data, header = pyxdf.load_xdf('C:/Recordings/CurrentStudy/exp1/untitled.xdf')
-data, header = pyxdf.load_xdf('D:/Recordings/sub-P001/ses-S001\eeg/sub-P001_ses-S001_task-Default_run-001_eeg.xdf')
+data, header = pyxdf.load_xdf('C:/Recordings/CurrentStudy/exp1/untitled.xdf')
 
 for stream in data:
     y = stream['time_series']

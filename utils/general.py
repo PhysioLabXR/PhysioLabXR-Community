@@ -28,6 +28,7 @@ def load_LSL_preset(preset_dict):
         preset_dict['ChannelNames'] = None
     if 'GroupChannelsInPlot' not in preset_dict.keys():
         preset_dict['GroupChannelsInPlot'] = None
+        preset_dict['PlotGroupSlices'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = None
     return preset_dict

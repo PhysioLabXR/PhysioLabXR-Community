@@ -4,6 +4,7 @@ import cv2
 import pyqtgraph as pg
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
+from pylsl import local_clock
 
 import config_ui
 from interfaces.InferenceInterface import InferenceInterface
@@ -184,8 +185,10 @@ class LSLInletWorker(QObject):
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
 
             self.num_samples += len(timestamps)
-            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
-
+            try:
+                sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+            except ZeroDivisionError:
+                sampling_rate = 0
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
@@ -225,7 +228,7 @@ class WebcamWorker(QObject):
         if ret:
             cv_img = cv_img.astype(np.uint8)
             cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-            self.change_pixmap_signal.emit((self.cam_id, cv_img, time.time()))
+            self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
 
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
@@ -243,4 +246,4 @@ class ScreenCaptureWorker(QObject):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = frame.astype(np.uint8)
         frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-        self.change_pixmap_signal.emit((self.screen_label, frame, time.time()))
+        self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
