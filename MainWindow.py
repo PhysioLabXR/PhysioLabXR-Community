@@ -24,10 +24,12 @@ import numpy as np
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, inference_interface, *args, **kwargs):
+    def __init__(self, app, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
+        self.app = app
+
         # create sensor threads, worker threads for different sensors
         self.worker_threads = {}
         self.sensor_workers = {}
@@ -79,6 +81,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_preset_sensor_btn.clicked.connect(self.add_preset_sensor_clicked)
         self.add_lsl_btn.clicked.connect(self.add_user_defined_lsl_clicked)
         self.reload_presets_btn.clicked.connect(self.reload_all_presets)
+
+        self.stream_ui_elements = {}
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -210,11 +214,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 "NominalSamplingRate"]  # actual sampling rate is updated during runtime
             preset["timevector"] = np.linspace(0., config.PLOT_RETAIN_HISTORY,
                                                preset[
-                                                                              "num_samples_to_plot"])
+                                                   "num_samples_to_plot"])
 
             # pop window actions
             def dock_window():
-                self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1, lsl_widget)
+                self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1,
+                                                                   lsl_widget)
                 pop_window_btn.clicked.disconnect()
                 pop_window_btn.clicked.connect(pop_window)
                 pop_window_btn.setText('Pop Window')
@@ -222,7 +227,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.pop_windows.pop(lsl_stream_name)
 
             def pop_window():
-                w = AnotherWindow(lsl_widget, remove_lsl)
+                w = AnotherWindow(lsl_widget, remove_stream)
                 self.pop_windows[lsl_stream_name] = w
                 w.setWindowTitle(lsl_stream_name)
                 pop_window_btn.setText('Dock Window')
@@ -232,15 +237,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
             pop_window_btn.clicked.connect(pop_window)
 
-            def remove_lsl():
+            def remove_stream():
                 if self.recordingTab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
-                # fire stop streaming first
-                stop_stream_btn.click()
+                stop_stream_btn.click()  # fire stop streaming first
                 worker_thread.exit()
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
+                self.stream_ui_elements.pop(lsl_stream_name)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
                 # close window if popped
                 if lsl_stream_name in self.pop_windows.keys():
@@ -252,8 +257,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 return True
 
             #     worker_thread
-            init_button(parent=lsl_layout, label='Remove Stream',
-                        function=remove_lsl)  # add delete sensor button after adding visualization
+            remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
+                                            function=remove_stream)  # add delete sensor button after adding visualization
+            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stream_btn': start_stream_btn,
+                                                        'stop_stream_btn': stop_stream_btn, 'remove_stream_btn': remove_stream_btn}
+
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
@@ -317,6 +325,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
         inference_thread.start()
+        self.inference_widget.hide()
 
     def ticks(self):
         """
@@ -544,7 +553,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
+            remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
+            [x.click() for x in remove_btns]
             event.accept()
-            print('Window closed')
+            self.app.quit()
         else:
             event.ignore()
