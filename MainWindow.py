@@ -245,7 +245,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 worker_thread.exit()
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
-                # self.stream_ui_elements.pop(lsl_stream_name)
+                self.stream_ui_elements.pop(lsl_stream_name)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
                 # close window if popped
                 if lsl_stream_name in self.pop_windows.keys():
@@ -548,10 +548,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
+            remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
+            [x.click() for x in remove_btns]
             event.accept()
-            for k, v in self.stream_ui_elements.items():
-                v['remove_stream_btn'].click()
-                print('{0} stream closed'.format(k))
             self.app.quit()
         else:
             event.ignore()
