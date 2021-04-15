@@ -16,11 +16,12 @@ from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_plot_group, \
-    process_preset_create_interface
+    process_preset_create_interface, load_all_Device_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
 from ui.SignalSettingsTab import SignalSettingsTab
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -73,10 +74,13 @@ class MainWindow(QtWidgets.QMainWindow):
             config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
         self.lsl_presets_dict = load_all_LSL_presets()
+        self.device_presets_dict = load_all_Device_presets()
         # add camera and add sensor widget initialization
         self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_preset_sensor_btn, \
-        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn = init_add_widget(
-            parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict)
+        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.devic_combo_box, self.add_device_btn = init_add_widget(
+            parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict,
+            device_presets=self.device_presets_dict)
+
         self.add_camera_btn.clicked.connect(self.add_camera_clicked)
         self.add_preset_sensor_btn.clicked.connect(self.add_preset_sensor_clicked)
         self.add_lsl_btn.clicked.connect(self.add_user_defined_lsl_clicked)
@@ -164,14 +168,14 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_text = str(self.sensor_combo_box.currentText())
         if selected_text in self.lsl_presets_dict.keys():
             self.init_lsl(self.lsl_presets_dict[selected_text])
-        else:
-            sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
-            if sensor_type not in self.sensor_workers.keys():
-                self.init_sensor(
-                    sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
-            else:
-                msg = 'Sensor type ' + sensor_type + ' is already added.'
-                dialog_popup(msg)
+        # else:
+        #     sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
+        #     if sensor_type not in self.sensor_workers.keys():
+        #         self.init_sensor(
+        #             sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
+        #     else:
+        #         msg = 'Sensor type ' + sensor_type + ' is already added.'
+        #         dialog_popup(msg)
 
     def add_user_defined_lsl_clicked(self):
         lsl_stream_name = self.lsl_stream_name_input.text()
@@ -216,8 +220,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                                preset[
                                                    "num_samples_to_plot"])
 
-
-
             def signal_settings_window():
                 print("signal settings btn clicked")
                 signal_settings_window = SignalSettingsTab()
@@ -225,7 +227,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     print("signal setting window open")
                 else:
                     print("Cancel!")
-
 
             signal_settings_btn.clicked.connect(signal_settings_window)
 
@@ -273,7 +274,8 @@ class MainWindow(QtWidgets.QMainWindow):
             remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
                                             function=remove_stream)  # add delete sensor button after adding visualization
             self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stream_btn': start_stream_btn,
-                                                        'stop_stream_btn': stop_stream_btn, 'remove_stream_btn': remove_stream_btn}
+                                                        'stop_stream_btn': stop_stream_btn,
+                                                        'remove_stream_btn': remove_stream_btn}
 
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)

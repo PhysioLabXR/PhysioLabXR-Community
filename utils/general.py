@@ -22,6 +22,17 @@ def load_all_LSL_presets(lsl_preset_roots='Presets/LSLPresets'):
         presets[stream_name] = preset_dict
     return presets
 
+def load_all_Device_presets(lsl_preset_roots='Presets/DevicePresets'):
+    preset_file_names = os.listdir(lsl_preset_roots)
+    preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
+    presets = {}
+    for pf_path in preset_file_paths:
+        loaded_preset_dict = json.load(open(pf_path))
+        preset_dict = load_LSL_preset(loaded_preset_dict)
+        stream_name = preset_dict['StreamName']
+        presets[stream_name] = preset_dict
+    return presets
+
 
 def load_LSL_preset(preset_dict):
     if 'ChannelNames' not in preset_dict.keys():

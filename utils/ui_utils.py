@@ -164,7 +164,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn
 
 
-def init_add_widget(parent, lsl_presets: dict):
+def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(700)
 
@@ -180,21 +180,27 @@ def init_add_widget(parent, lsl_presets: dict):
                                       item_list=camera_screen_cap_list)
     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
 
+    reload_presets_btn = init_button(parent=layout, label='Reload Presets')
     # add sensor container
     container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
                                                              vertical=False)
     sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,
                                       item_list=list(
-                                          lsl_presets.keys()) + list(config_ui.sensors_type_ui_name_dict.values()))
+                                          lsl_presets.keys()))
 
-    add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
-    reload_presets_btn = init_button(parent=layout_add_sensor, label='Reload Presets')
+    add_sensor_btn = init_button(parent=layout_add_sensor, label='Add Stream')
+
+    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a device to Connect', vertical=False)
+    device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
+                                      item_list=list(
+                                          device_presets.keys()))
+    add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn
+    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn, device_combo_box, add_device_btn
 
 
 class CustomDialog(QDialog):
