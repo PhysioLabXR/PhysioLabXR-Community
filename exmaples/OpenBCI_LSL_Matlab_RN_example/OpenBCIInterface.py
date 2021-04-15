@@ -146,7 +146,7 @@ def run_test():
                 # ######### notch and butter
                 eeg_data = notch.process_data(eeg_data)
                 eeg_data = butter_bandpass.process_data(eeg_data)
-                eeg_data = vrms_converter.process_data(eeg_data)
+                # eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)

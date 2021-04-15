@@ -11,7 +11,7 @@ def slice_len_for(slc, seqlen):
     return max(0, (stop - start + (step - (1 if step > 0 else -1))) // step)
 
 
-def load_all_LSL_presets(lsl_preset_roots='LSLPresets'):
+def load_all_LSL_presets(lsl_preset_roots='Presets/LSLPresets'):
     preset_file_names = os.listdir(lsl_preset_roots)
     preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
     presets = {}

@@ -115,5 +115,5 @@ class RealtimeVrms:
         self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
         self.data_buffer[:, 0] = data
         vrms = np.sqrt(1/self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
-        print(vrms)
+        # print(vrms)
         return vrms

@@ -46,7 +46,7 @@ class OpenBCIInterface:
 
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
-            self.infor_test()
+            self.info_print()
         except brainflow.board_shim.BrainFlowError:
             print('OpenBCIInterface: Board is not ready.')
 
@@ -98,7 +98,7 @@ class OpenBCIInterface:
     def push_sample(self, samples):
         self.outlet_eeg.push_sample(samples)
 
-    def infor_test(self):
+    def info_print(self):
         print(self.board.get_eeg_names(self.board_id))
         print(self.board.get_sampling_rate(self.board_id))
         print(self.board.get_board_id())
