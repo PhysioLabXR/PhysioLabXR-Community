@@ -1,5 +1,5 @@
 { "StreamName":"OpenBCI_Cyton_8",
-  "COM_Port": "COM50",
+  "COM": "COM50",
   "ChannelNames":[
     "Fp1", "Fp2",
     "C3", "C4",

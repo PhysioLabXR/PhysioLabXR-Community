@@ -77,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.device_presets_dict = load_all_Device_presets()
         # add camera and add sensor widget initialization
         self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_preset_sensor_btn, \
-        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.devic_combo_box, self.add_device_btn = init_add_widget(
+        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.device_combo_box, self.add_device_btn = init_add_widget(
             parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict,
             device_presets=self.device_presets_dict)
 
@@ -552,12 +552,16 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Remove all streams before reloading presets!', title='Warning')
         else:
             self.lsl_presets_dict = load_all_LSL_presets()
+            self.device_presets_dict = load_all_Device_presets()
             self.update_presets_combo_box()
             dialog_popup('Reloaded all presets', title='Info')
 
     def update_presets_combo_box(self):
         self.sensor_combo_box.clear()
         self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
+        self.device_combo_box.clear()
+        self.device_combo_box.addItems(self.device_presets_dict.keys())
+
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',

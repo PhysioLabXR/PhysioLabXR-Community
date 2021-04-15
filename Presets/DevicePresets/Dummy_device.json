@@ -1,0 +1,17 @@
+{ "StreamName":"Dummy-BioSemi-8Chan-991",
+  "COM":"COM10",
+  "ChannelNames":[
+    "C1",
+    "C2",
+    "C3",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown"
+  ],
+  "NominalSamplingRate":  100,
+  "GroupChannelsInPlot":  [2, 4, 6, 8]}
