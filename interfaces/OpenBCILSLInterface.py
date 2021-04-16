@@ -9,7 +9,7 @@ import random
 from utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 
-class OpenBCIInterface:
+class OpenBCILSLInterface:
 
     def __init__(self, serial_port='COM50', board_id=0, log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
@@ -36,11 +36,17 @@ class OpenBCIInterface:
         else:
             BoardShim.disable_board_logger()
 
-        self.board = BoardShim(board_id, params)
+        try:
+            self.board = BoardShim(board_id, params)
+        except brainflow.board_shim.BrainFlowError:
+            print('Cannot connect to board')
 
     def start_sensor(self):
         # tell the sensor to start sending frames
-        self.board.prepare_session()
+        try:
+            self.board.prepare_session()
+        except brainflow.board_shim.BrainFlowError:
+            raise AssertionError('Please check the sensor connection')
         print('OpenBCIInterface: connected to sensor')
         print(self.board.get_board_id())
 
@@ -160,7 +166,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIInterface()
+    openBCI_interface = OpenBCILSLInterface()
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test()

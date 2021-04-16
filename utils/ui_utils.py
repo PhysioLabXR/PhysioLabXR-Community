@@ -194,13 +194,13 @@ def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
     device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
                                       item_list=list(
                                           device_presets.keys()))
-    add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
+    add_preset_device_btn = init_button(parent=layout_connect_device, label='Add Device')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn, device_combo_box, add_device_btn
+    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn, device_combo_box, add_preset_device_btn
 
 
 class CustomDialog(QDialog):

@@ -1,9 +1,11 @@
 import json
 import os
 
+import brainflow
 import numpy as np
 
 from interfaces.LSLInletInterface import LSLInletInterface
+from interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 
 
 def slice_len_for(slc, seqlen):
@@ -21,6 +23,7 @@ def load_all_LSL_presets(lsl_preset_roots='Presets/LSLPresets'):
         stream_name = preset_dict['StreamName']
         presets[stream_name] = preset_dict
     return presets
+
 
 def load_all_Device_presets(lsl_preset_roots='Presets/DevicePresets'):
     preset_file_names = os.listdir(lsl_preset_roots)
@@ -63,9 +66,9 @@ def process_LSL_plot_group(preset_dict):
     return preset_dict
 
 
-def process_preset_create_interface(preset_dict):
+def process_preset_create_lsl_interface(preset_dict):
     lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset_dict['StreamName'], preset_dict['ChannelNames'], \
-                                                         preset_dict['GroupChannelsInPlot']
+                                                          preset_dict['GroupChannelsInPlot']
     try:
         interface = LSLInletInterface(lsl_stream_name)
     except AttributeError:
@@ -93,4 +96,15 @@ def process_preset_create_interface(preset_dict):
                 'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
                     lsl_stream_name))
         preset_dict = process_LSL_plot_group(preset_dict)
+    return preset_dict, interface
+
+
+def process_preset_create_openBCI_interface(preset_dict):
+
+    try:
+        interface = OpenBCILSLInterface()
+        interface.start_sensor()
+    except AssertionError as e:
+        raise AssertionError(e)
+
     return preset_dict, interface

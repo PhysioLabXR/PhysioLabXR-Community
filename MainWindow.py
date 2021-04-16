@@ -11,12 +11,13 @@ import config_ui
 import threadings.workers as workers
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCIInterface import OpenBCIInterface
+from interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 # from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_LSL_presets, create_LSL_preset, process_LSL_plot_group, \
-    process_preset_create_interface, load_all_Device_presets
+    process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
@@ -34,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # create sensor threads, worker threads for different sensors
         self.worker_threads = {}
         self.sensor_workers = {}
+        self.device_workers = {}
         self.lsl_workers = {}
         self.inference_worker = None
         self.cam_workers = {}
@@ -77,13 +79,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.device_presets_dict = load_all_Device_presets()
         # add camera and add sensor widget initialization
         self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_preset_sensor_btn, \
-        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.device_combo_box, self.add_device_btn = init_add_widget(
+        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn = init_add_widget(
             parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict,
             device_presets=self.device_presets_dict)
-
+        # add cam
         self.add_camera_btn.clicked.connect(self.add_camera_clicked)
+        # add lsl sensor
         self.add_preset_sensor_btn.clicked.connect(self.add_preset_sensor_clicked)
+        # add serial connection sensor
+        self.add_preset_device_btn.clicked.connect(self.add_preset_device_clicked)
+        # add user define lsl
         self.add_lsl_btn.clicked.connect(self.add_user_defined_lsl_clicked)
+        # reload all presets
         self.reload_presets_btn.clicked.connect(self.reload_all_presets)
 
         self.stream_ui_elements = {}
@@ -168,14 +175,24 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_text = str(self.sensor_combo_box.currentText())
         if selected_text in self.lsl_presets_dict.keys():
             self.init_lsl(self.lsl_presets_dict[selected_text])
-        # else:
-        #     sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
-        #     if sensor_type not in self.sensor_workers.keys():
-        #         self.init_sensor(
-        #             sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
-        #     else:
-        #         msg = 'Sensor type ' + sensor_type + ' is already added.'
-        #         dialog_popup(msg)
+        else:
+            sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
+            if sensor_type not in self.sensor_workers.keys():
+                self.init_sensor(
+                    sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
+            else:
+                msg = 'Sensor type ' + sensor_type + ' is already added.'
+                dialog_popup(msg)
+
+    def add_preset_device_clicked(self):
+        if self.recordingTab.is_recording:
+            dialog_popup(msg='Cannot add device while recording.')
+            return
+        selected_text = str(self.device_combo_box.currentText())
+        if selected_text in self.device_presets_dict.keys():
+            print('device found in device preset')
+            self.init_device(self.device_presets_dict[selected_text])
+
 
     def add_user_defined_lsl_clicked(self):
         lsl_stream_name = self.lsl_stream_name_input.text()
@@ -188,7 +205,7 @@ class MainWindow(QtWidgets.QMainWindow):
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
             try:
-                preset, interface = process_preset_create_interface(preset)
+                preset, interface = process_preset_create_lsl_interface(preset)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
@@ -285,7 +302,27 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
             return None
 
-    def init_sensor(self, sensor_type):
+    def init_device(self, presets):
+        device_name = presets['StreamName']
+        device_type = presets['DeviceType']
+        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
+            try:
+                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface(presets)
+            except AssertionError as e:
+                dialog_popup(str(e))
+                return None
+
+            self.device_workers[device_name] = workers.DeviceWorker(OpenBCILSLInterface)
+            worker_thread = pg.QtCore.QThread(self)
+            self.worker_threads[device_name] = worker_thread
+            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+            worker_thread.start()
+
+        else:
+            dialog_popup('We are not supporting this Device or the Device has been added')
+            return None
+
+
         # sensor_widget_name = sensor_type + '_widget'
         # sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
         #     parent=self.sensorTabSensorsHorizontalLayout, label_string=sensor_type,
@@ -326,7 +363,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #
         # worker_thread.start()
         # pass
-        pass
 
     def init_inference(self, inference_interface):
         inference_thread = pg.QtCore.QThread(self)
@@ -350,6 +386,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # pass
         [w.tick_signal.emit() for w in self.sensor_workers.values()]
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
+        [w.tick_signal.emit() for w in self.device_workers.values()]
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -548,7 +585,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
     def reload_all_presets(self):
-        if len(self.lsl_workers) > 0:
+        if len(self.lsl_workers) > 0 or len(self.device_workers)>0:
             dialog_popup('Remove all streams before reloading presets!', title='Warning')
         else:
             self.lsl_presets_dict = load_all_LSL_presets()

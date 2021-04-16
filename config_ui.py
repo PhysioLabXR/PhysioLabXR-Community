@@ -13,11 +13,11 @@ button_style_classic = "background-color: " + button_color + "; border-style: ou
 default_theme = 'dark'
 
 inference_button_style = "max_width: 250px;, min_width: 100px; font: bold 14px"
-# sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
-#                              # 'RNUnityEyeLSL': 'Vive Pro eye-tracking (Unity)',
-#                              }
-#
-# sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
+sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
+                             # 'RNUnityEyeLSL': 'Vive Pro eye-tracking (Unity)',
+                             }
+
+sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
 
 
 default_add_lsl_data_type = 'YourStreamName'
