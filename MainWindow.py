@@ -191,7 +191,7 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_text = str(self.device_combo_box.currentText())
         if selected_text in self.device_presets_dict.keys():
             print('device found in device preset')
-            self.init_device(self.device_presets_dict[selected_text])
+            device_lsl_preset = self.init_device(self.device_presets_dict[selected_text])
 
 
     def add_user_defined_lsl_clicked(self):
