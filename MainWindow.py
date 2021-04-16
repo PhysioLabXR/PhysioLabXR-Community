@@ -311,7 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
-
+            self.lsl_presets_dict[device_name] = openBCI_lsl_presets
             self.device_workers[device_name] = workers.DeviceWorker(OpenBCILSLInterface)
             worker_thread = pg.QtCore.QThread(self)
             self.worker_threads[device_name] = worker_thread
