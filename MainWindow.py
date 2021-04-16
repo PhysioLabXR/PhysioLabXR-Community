@@ -317,6 +317,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[device_name] = worker_thread
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
+            self.init_lsl(openBCI_lsl_presets)
 
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')

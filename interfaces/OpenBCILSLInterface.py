@@ -74,7 +74,8 @@ class OpenBCILSLInterface:
         # # frames = frames.astype('float32')
         # if frames.shape[0] > 0:
         #     self.push_frame(samples=frames)
-        # return frames
+
+        return frames
 
 
     def stop_sensor(self):
