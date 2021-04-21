@@ -12,7 +12,7 @@ from random import random as rand
 
 class OpenBCILSLInterface:
 
-    def __init__(self, serial_port='COM50', board_id=0, log='store_true', streamer_params='',
+    def __init__(self, serial_port='COM5', board_id=0, log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
         params = BrainFlowInputParams()
         params.serial_port = serial_port

@@ -1,6 +1,6 @@
 { "StreamName":"OpenBCI_Cyton_8",
   "DeviceType": "OpenBCI",
-  "COM": "COM50",
+  "COM": "COM5",
   "Board_id": 0,
   "ChannelNames":[
     "Fp1", "Fp2",
