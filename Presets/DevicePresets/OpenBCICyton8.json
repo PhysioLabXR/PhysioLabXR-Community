@@ -5,34 +5,11 @@
   "Board_id": 0,
   "ChannelNames":[
     "PackageNum",
-
-    "C1",
-    "C2",
-    "C3",
-    "C4",
-    "C5",
-    "C6",
-    "C7",
-    "C8",
-
-    "X",
-    "Y",
-    "Z",
-
-    "Other1",
-    "Other2",
-    "Other3",
-    "Other4",
-    "Other5",
-    "Other6",
-    "Other7",
-
-    "Analog1",
-    "Analog2",
-    "Analog3",
-
+    "C1","C2","C3","C4","C5","C6","C7","C8",
+    "X","Y","Z",
+    "Other1","Other2","Other3","Other4","Other5","Other6","Other7",
+    "Analog1","Analog2","Analog3",
     "TimeStamp",
-
     "Marker"
   ],
   "NominalSamplingRate":  250,
