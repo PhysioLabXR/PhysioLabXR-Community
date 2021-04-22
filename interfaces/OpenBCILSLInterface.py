@@ -38,7 +38,7 @@ class OpenBCILSLInterface:
             BoardShim.disable_board_logger()
 
         try:
-            self.board = BoardShim(board_id, self.params)
+            self.board = BoardShim(self.board_id, self.params)
             self.info_print()
 
         except brainflow.board_shim.BrainFlowError:
