@@ -12,7 +12,7 @@ from random import random as rand
 
 class OpenBCILSLInterface:
 
-    def __init__(self, stream_name='OpenBCI_Cyton_8', stream_type='EEG', serial_port='COM5', board_id=0,
+    def __init__(self, stream_name='OpenBCI_Cyton_8', stream_type='EEG', serial_port='COM5', board_id="0",
                  log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
         self.params = BrainFlowInputParams()
@@ -28,7 +28,7 @@ class OpenBCILSLInterface:
 
         self.stream_name = stream_name
         self.stream_type = stream_type
-        self.board_id = board_id
+        self.board_id = int(board_id)
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
 

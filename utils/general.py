@@ -102,13 +102,17 @@ def process_preset_create_lsl_interface(preset_dict):
     return preset_dict, interface
 
 
-def process_preset_create_openBCI_interface(preset_dict):
+def process_preset_create_openBCI_interface(devise_preset_dict):
     try:
-        interface = OpenBCILSLInterface()
+        interface = OpenBCILSLInterface(stream_name=devise_preset_dict['StreamName'],
+                                        stream_type=devise_preset_dict['StreamType'],
+                                        serial_port=devise_preset_dict["SerialPort"],
+                                        board_id=devise_preset_dict["Board_id"],
+                                        log='store_true', )
         interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
 
-    lsl_preset_dict = preset_dict
+    lsl_preset_dict = devise_preset_dict
 
     return lsl_preset_dict, interface
