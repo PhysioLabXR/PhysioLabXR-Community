@@ -80,12 +80,15 @@ def process_preset_create_lsl_interface(preset_dict):
     if not preset_dict['NominalSamplingRate']:  # try to find the nominal srate from lsl stream info if not provided
         preset_dict['NominalSamplingRate'] = interface.get_nominal_srate()
         if not preset_dict['NominalSamplingRate']:
-            raise AssertionError('Unable to load preset with name {0}, it does not have a nominal srate. RN requires all its streams to provide nominal srate for visualization purpose. You may manually define the NominalSamplingRate in presets.'.format(lsl_stream_name))
+            raise AssertionError(
+                'Unable to load preset with name {0}, it does not have a nominal srate. RN requires all its streams to provide nominal srate for visualization purpose. You may manually define the NominalSamplingRate in presets.'.format(
+                    lsl_stream_name))
 
     # process channel names ###########################
     if lsl_chan_names:
         if lsl_num_chan != len(lsl_chan_names):
-            raise AssertionError('Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
+            raise AssertionError(
+                'Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
                     lsl_stream_name))
     else:
         preset_dict['ChannelNames'] = ['Unknown'] * preset_dict['NumChannels']
@@ -100,11 +103,12 @@ def process_preset_create_lsl_interface(preset_dict):
 
 
 def process_preset_create_openBCI_interface(preset_dict):
-
     try:
         interface = OpenBCILSLInterface()
         interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
 
-    return preset_dict, interface
+    lsl_preset_dict = preset_dict
+
+    return lsl_preset_dict, interface

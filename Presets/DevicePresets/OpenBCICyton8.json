@@ -1,21 +1,39 @@
 { "StreamName":"OpenBCI_Cyton_8",
   "DeviceType": "OpenBCI",
-  "COM": "COM5",
+  "SerialPort": "COM5",
   "Board_id": 0,
   "ChannelNames":[
-    "Fp1", "Fp2",
-    "C3", "C4",
-    "T5", "T6",
-    "O1", "O2",
-        "Fp1", "Fp2",
-    "C3", "C4",
-    "T5", "T6",
-    "O1", "O2",
-        "Fp1", "Fp2",
-    "C3", "C4",
-    "T5", "T6",
-    "O1", "O2"
+    "PackageNum",
 
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8",
+
+    "X",
+    "Y",
+    "Z",
+
+    "Other1",
+    "Other2",
+    "Other3",
+    "Other4",
+    "Other5",
+    "Other6",
+    "Other7",
+
+    "Analog1",
+    "Analog2",
+    "Analog3",
+
+    "TimeStamp",
+
+    "Marker"
   ],
+  "TimeStamp": 11,
   "NominalSamplingRate":  250,
-  "GroupChannelsInPlot":  [2, 4, 6]}
+  "GroupChannelsInPlot":  [1, 9]}

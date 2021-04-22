@@ -276,6 +276,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 worker_thread.exit()
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
+                # if this lsl connect to a device:
+                if lsl_stream_name in self.device_workers.keys():
+                    self.device_workers[lsl_stream_name].stop_stream()
+                    self.device_workers.pop(lsl_stream_name)
+
                 self.stream_ui_elements.pop(lsl_stream_name)
                 self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
                 # close window if popped
@@ -302,12 +307,12 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
             return None
 
-    def init_device(self, presets):
-        device_name = presets['StreamName']
-        device_type = presets['DeviceType']
+    def init_device(self, device_presets):
+        device_name = device_presets['StreamName']
+        device_type = device_presets['DeviceType']
         if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
             try:
-                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface(presets)
+                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface(device_presets)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None

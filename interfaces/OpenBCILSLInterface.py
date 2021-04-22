@@ -12,25 +12,25 @@ from random import random as rand
 
 class OpenBCILSLInterface:
 
-    def __init__(self, serial_port='COM5', board_id=0, log='store_true', streamer_params='',
+    def __init__(self, stream_name='OpenBCI_Cyton_8', stream_type='EEG', serial_port='COM5', board_id=0,
+                 log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
-        params = BrainFlowInputParams()
-        params.serial_port = serial_port
-        params.ip_port = 0
-        params.mac_address = ''
-        params.other_info = ''
-        params.serial_number = ''
-        params.ip_address = ''
-        params.ip_protocol = 0
-        params.timeout = 0
-        params.file = ''
+        self.params = BrainFlowInputParams()
+        self.params.serial_port = serial_port
+        self.params.ip_port = 0
+        self.params.mac_address = ''
+        self.params.other_info = ''
+        self.params.serial_number = ''
+        self.params.ip_address = ''
+        self.params.ip_protocol = 0
+        self.params.timeout = 0
+        self.params.file = ''
+
+        self.stream_name = stream_name
+        self.stream_type = stream_type
+        self.board_id = board_id
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
-        self.board_id = board_id
-        # self.info_eeg = None
-        # self.info_aux = None
-        # self.outlet_eeg = None
-        # self.outlet_aux = None
 
         if (log):
             BoardShim.enable_dev_board_logger()
@@ -38,7 +38,7 @@ class OpenBCILSLInterface:
             BoardShim.disable_board_logger()
 
         try:
-            self.board = BoardShim(board_id, params)
+            self.board = BoardShim(board_id, self.params)
             self.info_print()
 
         except brainflow.board_shim.BrainFlowError:
@@ -51,15 +51,20 @@ class OpenBCILSLInterface:
         except brainflow.board_shim.BrainFlowError:
             raise AssertionError('Please check the sensor connection')
         print('OpenBCIInterface: connected to sensor')
-        print(self.board.get_board_id())
+
 
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
-            # self.info_print()
         except brainflow.board_shim.BrainFlowError:
-            print('OpenBCIInterface: Board is not ready.')
+            raise AssertionError('Please check the sensor connection')
+        print('OpenBCIInterface: connected to sensor')
 
-        self.create_lsl()
+        self.create_lsl(name=self.stream_name,
+                        type=self.stream_type,
+                        channel_count=24,
+                        nominal_srate=self.board.get_sampling_rate(self.board_id),
+                        channel_format='float32',
+                        source_id='Cyton_' + str(self.board_id))
 
     def process_frames(self):
         # return one or more frames of the sensor
@@ -77,7 +82,6 @@ class OpenBCILSLInterface:
 
         return frames
 
-
     def stop_sensor(self):
         try:
             self.board.stop_stream()
@@ -93,7 +97,7 @@ class OpenBCILSLInterface:
 
         self.info_eeg = StreamInfo(name=name, type=type, channel_count=channel_count,
                                    nominal_srate=nominal_srate, channel_format=channel_format,
-                                   source_id='')
+                                   source_id=source_id)
 
         # chns = self.info_eeg.desc().append_child('channels')
         #
@@ -106,7 +110,6 @@ class OpenBCILSLInterface:
         #     ch.append_child_value('type', 'EEG')
         #
         # self.info_eeg.desc().append_child_value('manufacturer', 'OpenBCI Inc.')
-
         self.outlet_eeg = StreamOutlet(self.info_eeg)
 
         print("--------------------------------------\n" + \
@@ -120,22 +123,20 @@ class OpenBCILSLInterface:
               "      Source Id: " + source_id + " \n")
 
     def push_frame(self, samples):
-        # self.outlet_eeg.push_chunk(samples)
         self.outlet_eeg.push_sample(samples)
 
-
     def info_print(self):
-        print(self.board.get_eeg_names(self.board_id))
-        print(self.board.get_sampling_rate(self.board_id))
-        print(self.board.get_board_id())
-        print(self.board.get_package_num_channel(self.board_id))
-        print(self.board.get_timestamp_channel(self.board_id))
-        print(self.board.get_eeg_channels(self.board_id))
-        print(self.board.get_accel_channels(self.board_id))
-        print(self.board.get_marker_channel(self.board_id))
-        print(self.board.get_other_channels(self.board_id))
-        print(self.board.get_analog_channels(self.board_id))
-        print(self.board.get_other_channels(self.board_id))
+        print("Board Information:")
+        print("Sampling Rate:", self.board.get_sampling_rate(self.board_id))
+        print("Board Id:", self.board.get_board_id())
+        print("EEG names:", self.board.get_eeg_names(self.board_id))
+        print("Package Num Channel: ", self.board.get_package_num_channel(self.board_id))
+        print("EEG Channels:", self.board.get_eeg_channels(self.board_id))
+        print("Accel Channels: ", self.board.get_accel_channels(self.board_id))
+        print("Other Channels:", self.board.get_other_channels(self.board_id))
+        print("Analog Channels: ", self.board.get_analog_channels(self.board_id))
+        print("TimeStamp: ", self.board.get_timestamp_channel(self.board_id))
+        print("Marker Channel: ", self.board.get_marker_channel(self.board_id))
 
 
 def run_test():
