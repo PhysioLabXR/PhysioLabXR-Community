@@ -246,7 +246,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     print("Cancel!")
 
             signal_settings_btn.clicked.connect(signal_settings_window)
-
+            #### TODO: signal processing button (hidded before finishing)
+            signal_settings_btn.hide()
+            #####
             # pop window actions
             def dock_window():
                 self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1,

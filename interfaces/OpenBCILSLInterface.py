@@ -52,7 +52,6 @@ class OpenBCILSLInterface:
             raise AssertionError('Please check the sensor connection')
         print('OpenBCIInterface: connected to sensor')
 
-
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
         except brainflow.board_shim.BrainFlowError:
