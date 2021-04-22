@@ -49,13 +49,13 @@ class OpenBCILSLInterface:
         try:
             self.board.prepare_session()
         except brainflow.board_shim.BrainFlowError:
-            raise AssertionError('Please check the sensor connection')
+            raise AssertionError('Unable to connect to device: please check the sensor connection')
         print('OpenBCIInterface: connected to sensor')
 
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
         except brainflow.board_shim.BrainFlowError:
-            raise AssertionError('Please check the sensor connection')
+            raise AssertionError('Unable to connect to device: please check the sensor connection')
         print('OpenBCIInterface: connected to sensor')
 
         self.create_lsl(name=self.stream_name,

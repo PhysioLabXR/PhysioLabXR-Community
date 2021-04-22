@@ -190,7 +190,8 @@ def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
 
     add_sensor_btn = init_button(parent=layout_add_sensor, label='Add Stream')
 
-    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a device to Connect', vertical=False)
+    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect', vertical=False)
+    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect', vertical=False)
     device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
                                       item_list=list(
                                           device_presets.keys()))
