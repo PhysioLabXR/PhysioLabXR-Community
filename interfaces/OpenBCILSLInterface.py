@@ -49,18 +49,17 @@ class OpenBCILSLInterface:
         try:
             self.board.prepare_session()
         except brainflow.board_shim.BrainFlowError:
-            raise AssertionError('Unable to connect to device: please check the sensor connection')
+            raise AssertionError('Unable to connect to device: please check the sensor connection or the COM port number in device preset.')
         print('OpenBCIInterface: connected to sensor')
 
         try:
             self.board.start_stream(self.ring_buffer_size, self.streamer_params)
         except brainflow.board_shim.BrainFlowError:
-            raise AssertionError('Unable to connect to device: please check the sensor connection')
+            raise AssertionError('Unable to connect to device: please check the sensor connection or the COM port number in device preset.')
         print('OpenBCIInterface: connected to sensor')
 
         self.create_lsl(name=self.stream_name,
                         type=self.stream_type,
-                        channel_count=24,
                         nominal_srate=self.board.get_sampling_rate(self.board_id),
                         channel_format='float32',
                         source_id='Cyton_' + str(self.board_id))
@@ -90,10 +89,11 @@ class OpenBCILSLInterface:
         except brainflow.board_shim.BrainFlowError as e:
             print(e)
 
-    def create_lsl(self, name='OpenBCI_Cyton_8', type='EEG', channel_count=24,
+    def create_lsl(self, name='OpenBCI_Cyton_8', type='EEG',
                    nominal_srate=250.0, channel_format='float32',
                    source_id='Cyton_0'):
 
+        channel_count = self.board.get_num_rows(self.board_id)
         self.info_eeg = StreamInfo(name=name, type=type, channel_count=channel_count,
                                    nominal_srate=nominal_srate, channel_format=channel_format,
                                    source_id=source_id)
