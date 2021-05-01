@@ -326,6 +326,8 @@ class MainWindow(QtWidgets.QMainWindow):
             worker_thread.start()
             self.init_lsl(openBCI_lsl_presets)
 
+        #TODO: TI mmWave connection
+
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
             return None
