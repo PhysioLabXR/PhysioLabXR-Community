@@ -193,7 +193,6 @@ class MainWindow(QtWidgets.QMainWindow):
             print('device found in device preset')
             device_lsl_preset = self.init_device(self.device_presets_dict[selected_text])
 
-
     def add_user_defined_lsl_clicked(self):
         lsl_stream_name = self.lsl_stream_name_input.text()
         preset_dict = create_LSL_preset(lsl_stream_name)
@@ -248,6 +247,7 @@ class MainWindow(QtWidgets.QMainWindow):
             signal_settings_btn.clicked.connect(signal_settings_window)
             #### TODO: signal processing button (hidded before finishing)
             signal_settings_btn.hide()
+
             #####
             # pop window actions
             def dock_window():
@@ -329,7 +329,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
             return None
-
 
         # sensor_widget_name = sensor_type + '_widget'
         # sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
@@ -593,7 +592,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
     def reload_all_presets(self):
-        if len(self.lsl_workers) > 0 or len(self.device_workers)>0:
+        if len(self.lsl_workers) > 0 or len(self.device_workers) > 0:
             dialog_popup('Remove all streams before reloading presets!', title='Warning')
         else:
             self.lsl_presets_dict = load_all_LSL_presets()
@@ -606,7 +605,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
         self.device_combo_box.clear()
         self.device_combo_box.addItems(self.device_presets_dict.keys())
-
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
