@@ -1,5 +1,6 @@
 import random
 import string
+import time
 
 import numpy as np
 from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet, local_clock, resolve_byprop
@@ -23,6 +24,8 @@ f_data = 120
 f_resample = 20
 time_window = 1.5  # in seconds
 adaptive_min_max_time_window = 3
+
+reconnect_patience = 1.  # in seconds
 
 def load_model_params():
     y_encoder = pickle.load(open(os.path.join(os.getcwd(), config.EYE_INFERENCE_Y_ENCODER_PATH), 'rb'))
@@ -60,20 +63,23 @@ def make_inference_on_sample(samples_preprocessed):
 
 
 def main():
-    print('Waiting for data stream with name {0} ...'.format(data_stream_name))
-    streams = resolve_byprop('name', data_stream_name)
 
-    if len(streams) < 0:
-        print('No stream found with name {0}, raising exception'.format(data_stream_name))
-        raise Exception('No stream found for given name')
-    # create a new inlet to read from the stream  ######################################################################
-    inlet = StreamInlet(streams[0])
-    print('Stream found: creating inference results out stream ...')
+    inlet = None
+    timestamp_accumulated = None
+    data_accumulated = None
+    no_data_duration = None
 
-    # create a outlet to relay the inference results  ##################################################################
+    # Create a outlet to relay the inference results  ##################################################################
+    if len(resolve_byprop('name', config.INFERENCE_LSL_RESULTS_NAME, timeout=0.5)) > 0:
+        print(
+            'Inference stream with name {0} alreayd exists, cannot start. Check if there are other same script running'.format(
+                config.INFERENCE_LSL_RESULTS_NAME))
+        raise Exception('Inference stream already exists')
+
     lsl_data_type = config.INFERENCE_LSL_RESULTS_TYPE
     lsl_data_name = config.INFERENCE_LSL_RESULTS_NAME
-    info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=inference_chann_count, channel_format='float32',
+    info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=inference_chann_count,
+                      channel_format='float32',
                       source_id=(''.join(random.choice(string.digits) for i in range(8))), nominal_srate=110)
     info.desc().append_child_value("apocalyvec", "RealityNavigation")
     chns = info.desc().append_child("inference")
@@ -81,24 +87,15 @@ def main():
     for label in channel_names:
         ch = chns.append_child("channel")
         ch.append_child_value("label", label)
-
     outlet = StreamOutlet(info, max_buffered=360)
-    start_time = local_clock()
+    print('Created inference results out stream ...')
 
-    # Load inference parameters ########################################################################################
-    # model, y_encoder, data_downsampled_min, data_downsampled_max = load_model_params()
-
-    # data buffers #####################################################################
-    timestamp_accumulated = []
-    data_accumulated = np.empty(shape=(data_chann_count, 0))
-
-    print('Entering inference loop')
+    # Main Loop ##################################################################################
     while True:
-        # get a new sample (you can also omit the timestamp part if you're not
-        # interested in it)
-        try:
+        if inlet:
             data, timestamp = inlet.pull_sample(timeout=1e-2)
             if data:
+                no_data_duration = 0  # received data,
                 timestamp_accumulated.append(timestamp)  # accumulate timestamps
                 data_accumulated = np.concatenate([data_accumulated, np.expand_dims(data, axis=-1)], axis=-1)  # take the most recent samples
 
@@ -123,13 +120,32 @@ def main():
                                                                                          timestamp_accumulated[
                                                                                              0] != 0. else 0.
                     print('Inference per second is ' + str(inference_per_second), end='\r', flush=True)
-        except KeyboardInterrupt:
-            pass
-            # if len(samples) > 1:
-            #     f_sample = 1. / ((samples[-1][0] - samples[0][0]) / len(samples))
-            #     print('Interrupted, f_sample is ' + str(f_sample))
-            # break
+            else:
+                no_data_duration += time.time() - current_time
+                if no_data_duration > reconnect_patience:
+                    print('No data seen on data stream with name {0}. Assume it is lost, trying to reconnect'.format(data_stream_name))
+                    inlet = None
 
+        else:
+            print('Waiting for data stream with name {0} ...'.format(data_stream_name))
+            streams = resolve_byprop('name', data_stream_name)
+            if len(streams) < 0:
+                print('No stream found with name {0}, cannot start.'.format(data_stream_name))
+                raise Exception('No stream found for given name')
+            # create a new inlet to read from the stream  ######################################################################
+            inlet = StreamInlet(streams[0])
+            print('Found data stream with name {0}'.format(data_stream_name))
+
+            # model, y_encoder, data_downsampled_min, data_downsampled_max = load_model_params()
+
+            # data buffers #####################################################################
+            timestamp_accumulated = []
+            data_accumulated = np.empty(shape=(data_chann_count, 0))
+            no_data_duration = 0.
+            print('Entering inference loop')
+            current_time = time.time()
+
+        current_time = time.time()
 
 if __name__ == '__main__':
     main()
