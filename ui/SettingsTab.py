@@ -19,7 +19,7 @@ import config_ui
 from utils.ui_utils import stream_stylesheet
 from utils.data_utils import RNStream
 from utils.ui_utils import dialog_popup
-
+import pyqtgraph as pg
 
 class SettingsTab(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -30,8 +30,10 @@ class SettingsTab(QtWidgets.QWidget):
         # 'light' or 'dark'
         if self.theme == 'light':
             self.LightThemeBtn.setEnabled(False)
+            pg.setConfigOption('background', 'w')
         else:
             self.DarkThemeBtn.setEnabled(False)
+            pg.setConfigOption('background', 'k')
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
         self.DarkThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -40,6 +42,8 @@ class SettingsTab(QtWidgets.QWidget):
         print("toggle theme")
 
         if self.theme == 'dark':
+            pg.setConfigOption('background', 'w')
+
             self.LightThemeBtn.setEnabled(False)
             self.DarkThemeBtn.setEnabled(True)
 
@@ -47,6 +51,8 @@ class SettingsTab(QtWidgets.QWidget):
             stream_stylesheet(url)
             self.theme = 'light'
         else:
+            pg.setConfigOption('background', 'k')
+
             self.LightThemeBtn.setEnabled(True)
             self.DarkThemeBtn.setEnabled(False)
             url = 'ui/stylesheet/dark.qss'

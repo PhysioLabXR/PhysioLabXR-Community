@@ -1,0 +1,9 @@
+{ "StreamName":"OpenBCI_Cyton_8",
+  "ChannelNames":[
+    "Fp1", "Fp2",
+    "C3", "C4",
+    "T5", "T6",
+    "O1", "O2"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupChannelsInPlot":  [1,2,3,4,5,6,7]}
