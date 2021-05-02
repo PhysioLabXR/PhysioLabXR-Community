@@ -793,3 +793,13 @@ def create_stim_channel(array_event_label, timestamps_EM, timestamps_sensor):
     # plt.show()
 
 # def project_gaze_vector():
+
+    return epoched_EEG_timevector, epoched_EEG_average_trial_chan, epoched_EEG_max_trial_chan, epoched_EEG_min_trial_chan
+
+
+def interp_negative(y):
+    idx = y<0
+    x = np.arange(len(y))
+    y_interp = np.copy(y)
+    y_interp[idx] = np.interp(x[idx], x[~idx], y[~idx])
+    return y_interp
