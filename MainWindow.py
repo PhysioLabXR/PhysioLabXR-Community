@@ -78,14 +78,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_presets_dict = load_all_LSL_presets()
         self.device_presets_dict = load_all_Device_presets()
         # add camera and add sensor widget initialization
-        self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.sensor_combo_box, self.add_preset_sensor_btn, \
-        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn = init_add_widget(
+        self.add_sensor_layout, self.camera_combo_box, self.add_camera_btn, self.stream_combo_box, self.add_preset_stream_btn, \
+        self.lsl_stream_name_input, self.add_lsl_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn, self.experiment_combo_box, self.add_experiment_btn = init_add_widget(
             parent=self.sensorTabSensorsHorizontalLayout, lsl_presets=self.lsl_presets_dict,
             device_presets=self.device_presets_dict)
         # add cam
         self.add_camera_btn.clicked.connect(self.add_camera_clicked)
         # add lsl sensor
-        self.add_preset_sensor_btn.clicked.connect(self.add_preset_sensor_clicked)
+        self.add_preset_stream_btn.clicked.connect(self.add_preset_sensor_clicked)
         # add serial connection sensor
         self.add_preset_device_btn.clicked.connect(self.add_preset_device_clicked)
         # add user define lsl
@@ -172,14 +172,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.recordingTab.is_recording:
             dialog_popup(msg='Cannot add stream while recording.')
             return
-        selected_text = str(self.sensor_combo_box.currentText())
+        selected_text = str(self.stream_combo_box.currentText())
         if selected_text in self.lsl_presets_dict.keys():
             self.init_lsl(self.lsl_presets_dict[selected_text])
         else:
             sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
             if sensor_type not in self.sensor_workers.keys():
                 self.init_sensor(
-                    sensor_type=config_ui.sensor_ui_name_type_dict[str(self.sensor_combo_box.currentText())])
+                    sensor_type=config_ui.sensor_ui_name_type_dict[str(self.stream_combo_box.currentText())])
             else:
                 msg = 'Sensor type ' + sensor_type + ' is already added.'
                 dialog_popup(msg)
@@ -601,8 +601,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Reloaded all presets', title='Info')
 
     def update_presets_combo_box(self):
-        self.sensor_combo_box.clear()
-        self.sensor_combo_box.addItems(self.lsl_presets_dict.keys())
+        self.stream_combo_box.clear()
+        self.stream_combo_box.addItems(self.lsl_presets_dict.keys())
         self.device_combo_box.clear()
         self.device_combo_box.addItems(self.device_presets_dict.keys())
 
