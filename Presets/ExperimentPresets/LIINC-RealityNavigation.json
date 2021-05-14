@@ -1,2 +1,3 @@
-{ "StreamPresets": ["BioSemiActiveTwo", "UnityHeadTracking", "UnityEyeData",
-  "UnityRotationWheelEventMarkers", "UnityVisualSearchEventMarkers.json"]}
+{"ExperimentName": "RealityNavigation",
+  "PresetStreamNames": ["BioSemiActiveTwo", "Unity.HeadTracker", "Unity.ViveSREyeTracking",
+  "Unity.RotationWheel.EventMarkers", "Unity.VisualSearch.EventMarkers"]}

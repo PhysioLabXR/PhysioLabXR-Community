@@ -1,0 +1,2 @@
+{"ExperimentName": "RealityNavigation",
+  "PresetStreamNames": ["Unity.HeadTracker", "Unity.ViveSREyeTracking"]}

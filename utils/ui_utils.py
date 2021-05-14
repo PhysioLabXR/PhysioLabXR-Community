@@ -162,7 +162,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn
 
 
-def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
+def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, experiment_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(700)
 
@@ -185,7 +185,7 @@ def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
                                                              vertical=False)
     stream_combo_box = init_combo_box(parent=layout_add_stream, label=None,
                                       item_list=list(
-                                          lsl_presets.keys()))
+                                          lslStream_presets.keys()))
     add_stream_btn = init_button(parent=layout_add_stream, label='Add Stream')
 
     # add device UI elements ######################
@@ -200,7 +200,7 @@ def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
                                                              vertical=False)
     experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
                                           item_list=list(
-                                              device_presets.keys()))
+                                              experiment_presets.keys()))
     add_experiment_btn = init_button(parent=layout_experiment, label='Connect Experiment Streams/Devices')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
