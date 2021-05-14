@@ -13,7 +13,7 @@ def slice_len_for(slc, seqlen):
     return max(0, (stop - start + (step - (1 if step > 0 else -1))) // step)
 
 
-def load_all_LSL_presets(lsl_preset_roots='Presets/LSLPresets'):
+def load_all_lslStream_presets(lsl_preset_roots='Presets/LSLPresets'):
     preset_file_names = os.listdir(lsl_preset_roots)
     preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
     presets = {}
@@ -25,15 +25,25 @@ def load_all_LSL_presets(lsl_preset_roots='Presets/LSLPresets'):
     return presets
 
 
-def load_all_Device_presets(lsl_preset_roots='Presets/DevicePresets'):
-    preset_file_names = os.listdir(lsl_preset_roots)
-    preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
+def load_all_Device_presets(device_preset_roots='Presets/DevicePresets'):
+    preset_file_names = os.listdir(device_preset_roots)
+    preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
         preset_dict = load_LSL_preset(loaded_preset_dict)
         stream_name = preset_dict['StreamName']
         presets[stream_name] = preset_dict
+    return presets
+
+
+def load_all_experiment_presets(exp_preset_roots='Presets/ExperimentPresets'):
+    preset_file_names = os.listdir(exp_preset_roots)
+    preset_file_paths = [os.path.join(exp_preset_roots, x) for x in preset_file_names]
+    presets = {}
+    for pf_path in preset_file_paths:
+        loaded_preset_dict = json.load(open(pf_path))
+        presets[loaded_preset_dict['ExperimentName']] = loaded_preset_dict['PresetStreamNames']
     return presets
 
 

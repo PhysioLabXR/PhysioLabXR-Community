@@ -153,18 +153,16 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     signal_settings_btn.setFixedWidth(200)
     pop_window_btn.setFixedWidth(200)
 
-
     top_layout.addWidget(ql)
     top_layout.addWidget(signal_settings_btn)
     top_layout.addWidget(pop_window_btn)
-
 
     start_stream_btn = init_button(parent=layout, label='Start Stream')
     stop_stream_btn = init_button(parent=layout, label='Stop Stream')
     return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn
 
 
-def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
+def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, experiment_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(700)
 
@@ -180,28 +178,37 @@ def init_add_widget(parent, lsl_presets: dict, device_presets: dict):
                                       item_list=camera_screen_cap_list)
     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
 
-    reload_presets_btn = init_button(parent=layout, label='Reload Presets')
-    # add sensor container
-    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
+    reload_presets_btn = init_button(parent=layout, label='Reload Stream/Device/Experiment Presets')
+
+    # add stream UI elements ######################
+    container_add_stream, layout_add_stream = init_container(parent=layout, label='Select a Stream to Add',
                                                              vertical=False)
-    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,
+    stream_combo_box = init_combo_box(parent=layout_add_stream, label=None,
                                       item_list=list(
-                                          lsl_presets.keys()))
+                                          lslStream_presets.keys()))
+    add_stream_btn = init_button(parent=layout_add_stream, label='Add Stream')
 
-    add_sensor_btn = init_button(parent=layout_add_sensor, label='Add Stream')
-
-    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect', vertical=False)
-    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect', vertical=False)
+    # add device UI elements ######################
+    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect',
+                                                                     vertical=False)
     device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
                                       item_list=list(
                                           device_presets.keys()))
-    add_preset_device_btn = init_button(parent=layout_connect_device, label='Add Device')
+    add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
+    # add experiment UI elements ######################
+    container_experiment, layout_experiment = init_container(parent=layout, label='Select an Experiment Preset to Start',
+                                                             vertical=False)
+    experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
+                                          item_list=list(
+                                              experiment_presets.keys()))
+    add_experiment_btn = init_button(parent=layout_experiment, label='Connect Experiment Streams/Devices')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn, device_combo_box, add_preset_device_btn
+    return layout, camera_combo_box, add_camera_btn, stream_combo_box, add_stream_btn, lsl_data_type_input, add_lsl_btn, \
+           reload_presets_btn, device_combo_box, add_device_btn,experiment_combo_box,add_experiment_btn
 
 
 class CustomDialog(QDialog):
@@ -229,7 +236,7 @@ def dialog_popup(msg, title='Warning'):
         print("Dialog popup")
     else:
         print("Cancel!")
-
+    return dlg
 
 import numpy as np
 import colorsys
@@ -269,6 +276,7 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
 
 def stream_stylesheet(stylesheet_url):
     stylesheet = QFile(stylesheet_url)
