@@ -196,7 +196,7 @@ def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, exper
                                           device_presets.keys()))
     add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
     # add experiment UI elements ######################
-    container_experiment, layout_experiment = init_container(parent=layout, label='Select a Experiment Preset to Start',
+    container_experiment, layout_experiment = init_container(parent=layout, label='Select an Experiment Preset to Start',
                                                              vertical=False)
     experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
                                           item_list=list(
