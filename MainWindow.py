@@ -90,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # add cam
         self.add_camera_btn.clicked.connect(self.add_camera_clicked)
         # add lsl sensor
-        self.add_preset_lslStream_btn.clicked.connect(self.add_preset_sensor_clicked)
+        self.add_preset_lslStream_btn.clicked.connect(self.add_preset_lslStream_clicked)
 
         self.add_preset_device_btn.clicked.connect(self.add_preset_device_clicked)  # add serial connection sensor
         self.add_lslStream_btn.clicked.connect(self.add_lslStream_clicked)
@@ -173,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.test_ts_buffer.append(time.time())
             self.recordingTab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
-    def add_preset_sensor_clicked(self):
+    def add_preset_lslStream_clicked(self):
         if self.recordingTab.is_recording:
             dialog_popup(msg='Cannot add stream while recording.')
             return
@@ -208,9 +208,26 @@ class MainWindow(QtWidgets.QMainWindow):
     def add_preset_experiment_clicked(self):
         selected_text = str(self.experiment_combo_box.currentText())
         if selected_text in self.experiment_presets_dict.keys():
-            # streams_for_experiment =
-            self.init_lsl(self.lslStream_presets_dict[selected_text])
-
+            streams_for_experiment = self.experiment_presets_dict[selected_text]
+            try:
+                assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in streams_for_experiment])
+            except AssertionError:
+                dialog_popup(msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset", title="Error")
+                return
+            loading_dlg = dialog_popup(
+                msg="Please wait while streams are being added...",
+                title="Info")
+            for stream_name in streams_for_experiment:
+                isLSL = stream_name in self.lslStream_presets_dict.keys()
+                if isLSL:
+                    index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                    self.preset_LSLStream_combo_box.setCurrentIndex(index)
+                    self.add_preset_lslStream_clicked()
+                else:
+                    index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                    self.device_combo_box.setCurrentIndex(index)
+                    self.add_preset_device_clicked()
+            loading_dlg.close()
     def init_lsl(self, preset):
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
@@ -341,47 +358,6 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('We are not supporting this Device or the Device has been added')
             return None
 
-        # sensor_widget_name = sensor_type + '_widget'
-        # sensor_widget, sensor_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
-        #     parent=self.sensorTabSensorsHorizontalLayout, label_string=sensor_type,
-        #     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        # sensor_widget.setObjectName(sensor_widget_name)
-        # worker_thread = pg.QtCore.QThread(self)
-        # self.worker_threads[sensor_type] = worker_thread
-        #
-        # if sensor_type == config.sensors[0]:
-        #     interface = OpenBCIInterface()
-        #     self.sensor_workers[sensor_type] = workers.EEGWorker(interface)
-        #     stop_stream_btn.clicked.connect(self.stop_eeg)
-        #     self.init_visualize_eeg_data(parent=sensor_layout)
-        #     self.sensor_workers[sensor_type].signal_data.connect(self.visualize_eeg_data)
-        #
-        # # elif sensor_type == config.sensors[1]:
-        # #     interface = UnityLSLInterface()
-        # #     self.sensor_workers[sensor_type] = workers.UnityLSLWorker(interface)
-        # #     stop_stream_btn.clicked.connect(self.stop_unityLSL)
-        # #     self.init_visualize_unityLSL_data(parent=sensor_layout)
-        # #     self.sensor_workers[sensor_type].signal_data.connect(self.visualize_unityLSL_data)
-        #
-        # def remove_sensor():
-        #     # fire stop streaming first
-        #     stop_stream_btn.click()
-        #     worker_thread.exit()
-        #     self.sensor_workers.pop(sensor_type)
-        #     self.worker_threads.pop(sensor_type)
-        #     self.sensorTabSensorsHorizontalLayout.removeWidget(sensor_widget)
-        #     sip.delete(sensor_widget)
-        #     # sensor_widget = None
-        #
-        # #     worker_thread
-        # init_button(parent=sensor_layout, label='Remove Sensor',
-        #             function=remove_sensor)  # add delete sensor button after adding visualization
-        # self.sensor_workers[sensor_type].moveToThread(self.worker_threads[sensor_type])
-        # start_stream_btn.clicked.connect(self.sensor_workers[sensor_type].start_stream)
-        #
-        # worker_thread.start()
-        # pass
-
     def init_inference(self, inference_interface):
         inference_thread = pg.QtCore.QThread(self)
         self.worker_threads['inference'] = inference_thread
@@ -434,33 +410,10 @@ class MainWindow(QtWidgets.QMainWindow):
         print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
         self.init_eeg_buffer()
 
-    # def stop_unityLSL(self):
-    #     self.sensor_workers[config.sensors[1]].stop_stream()
-    #     f_sample = self.unityLSL_data_buffer.shape[-1] / (
-    #             self.sensor_workers[config.sensors[1]].end_time - self.sensor_workers[config.sensors[1]].start_time)
-    #     print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
-    #     self.init_unityLSL_buffer()
-
     def init_visualize_eeg_data(self, parent):
         eeg_plot_widgets = [pg.PlotWidget() for i in range(config.OPENBCI_EEG_USEFUL_CHANNELS_NUM)]
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
-
-    # def init_visualize_unityLSL_data(self, parent):
-    #     unityLSL_plot_widgets = [pg.PlotWidget() for i in range(config.UNITY_LSL_USEFUL_CHANNELS_NUM)]
-    #     [parent.addWidget(upw) for upw in unityLSL_plot_widgets]
-    #     self.unityLSL_plots = [upw.plot([], [], pen=pg.mkPen(color=(255, 0, 0))) for upw in unityLSL_plot_widgets]
-
-    # def init_visualize_LSLInlet_data(self, parent, num_chan, chan_names):
-    #     plot_widgets = [pg.PlotWidget() for i in range(num_chan)]
-    #     plot_containing_layouts = [init_container(parent, vertical=False)[1] for i in range(num_chan)]
-    #
-    #     chan_names = ['Unknown'] * num_chan if chan_names is None else chan_names
-    #     [layout.addWidget(QtWidgets.QLineEdit(text=chan_name)) for layout, chan_name in zip(plot_containing_layouts, chan_names)]
-    #     [layout.addWidget(upw) for layout, upw in zip(plot_containing_layouts, plot_widgets)]
-    #
-    #     [pw.addLegend() for pw in plot_widgets]
-    #     return [pw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for pw in plot_widgets]
 
     def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices):
         fs_label = QLabel(text='Sampling rate = ')
