@@ -4,6 +4,7 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QLabel, QMessageBox
+from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 
 import config
@@ -17,8 +18,8 @@ from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
 from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
-    process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface, \
-    load_all_experiment_presets
+    process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
+    load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
@@ -210,9 +211,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if selected_text in self.experiment_presets_dict.keys():
             streams_for_experiment = self.experiment_presets_dict[selected_text]
             try:
-                assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in streams_for_experiment])
+                assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
+                               streams_for_experiment])
             except AssertionError:
-                dialog_popup(msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset", title="Error")
+                dialog_popup(
+                    msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                    title="Error")
                 return
             loading_dlg = dialog_popup(
                 msg="Please wait while streams are being added...",
@@ -228,6 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.device_combo_box.setCurrentIndex(index)
                     self.add_preset_device_clicked()
             loading_dlg.close()
+
     def init_lsl(self, preset):
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
@@ -239,6 +244,14 @@ class MainWindow(QtWidgets.QMainWindow):
             lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
                                                               preset['ChannelNames'], \
                                                               preset['PlotGroupSlices']
+
+            if 'GroupFormat' in preset.keys():
+                plot_group_format = preset['GroupFormat']
+            elif plot_group_slices is not None:
+                plot_group_format = ['time_series'] * (len(plot_group_slices))
+            else:
+                plot_group_format = ['time_series']
+
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
             lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
@@ -250,10 +263,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
-            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(parent=lsl_layout,
-                                                                                               num_chan=lsl_num_chan,
-                                                                                               chan_names=lsl_chan_names,
-                                                                                               plot_group_slices=plot_group_slices)
+            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
+                parent=lsl_layout,
+                num_chan=lsl_num_chan,
+                chan_names=lsl_chan_names,
+                plot_group_slices=plot_group_slices,
+                plot_group_format=plot_group_format
+            )
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             preset["num_samples_to_plot"] = int(
@@ -342,19 +358,35 @@ class MainWindow(QtWidgets.QMainWindow):
         device_type = device_presets['DeviceType']
         if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
             try:
-                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface(device_presets)
+                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(
+                    device_presets)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
             self.lslStream_presets_dict[device_name] = openBCI_lsl_presets
-            self.device_workers[device_name] = workers.DeviceWorker(OpenBCILSLInterface)
+            self.device_workers[device_name] = workers.TimeSeriesDeviceWorker(OpenBCILSLInterface)
             worker_thread = pg.QtCore.QThread(self)
             self.worker_threads[device_name] = worker_thread
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
             self.init_lsl(openBCI_lsl_presets)
 
-        #TODO: TI mmWave connection
+        # TODO: TI mmWave connection
+        if device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
+            print('mmWave test')
+            try:
+                # mmWave connect, send config, start sensor
+                mmWave_lsl_presets, MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
+                    device_presets)
+            except AssertionError as e:
+                dialog_popup(str(e))
+                return None
+            self.lslStream_presets_dict[device_name] = mmWave_lsl_presets
+            self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
+            worker_thread = pg.QtCore.QThread(self)
+            self.worker_threads[device_name] = worker_thread
+            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+            worker_thread.start()
 
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
@@ -417,11 +449,12 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices):
+    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices, plot_group_format):
         fs_label = QLabel(text='Sampling rate = ')
         parent.addWidget(fs_label)
         plot_widget = None
         if plot_group_slices:
+
             plots = []
             for pg_slice in plot_group_slices:  # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
                 plot_widget = pg.PlotWidget()
@@ -440,7 +473,7 @@ class MainWindow(QtWidgets.QMainWindow):
             plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
                      zip(distinct_colors, chan_names)]
 
-        [p.setDownsampling(auto=True, method='mean') for p in plots]
+        [p.setDownsampling(auto=True, method='mean') for p in plots if p == PlotDataItem]
         [p.setClipToView(clip=True) for p in plots]
 
         return plots, plot_widget, fs_label
@@ -538,7 +571,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_unityLSL_buffer(self):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
-
 
     def relaod_all_presets_btn_clicked(self):
         if self.reload_all_presets():

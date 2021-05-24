@@ -6,6 +6,7 @@ import numpy as np
 
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCILSLInterface import OpenBCILSLInterface
+from interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
 def slice_len_for(slc, seqlen):
@@ -112,7 +113,7 @@ def process_preset_create_lsl_interface(preset_dict):
     return preset_dict, interface
 
 
-def process_preset_create_openBCI_interface(devise_preset_dict):
+def process_preset_create_openBCI_interface_startsensor(devise_preset_dict):
     try:
         interface = OpenBCILSLInterface(stream_name=devise_preset_dict['StreamName'],
                                         stream_type=devise_preset_dict['StreamType'],
@@ -126,3 +127,39 @@ def process_preset_create_openBCI_interface(devise_preset_dict):
     lsl_preset_dict = devise_preset_dict
 
     return lsl_preset_dict, interface
+
+
+def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
+    # create interface
+    num_range_bin = device_preset_dict['NumRangeBin']
+    interface = MmWaveSensorLSLInterface(num_range_bin=num_range_bin)
+    # connect Uport Dport
+
+    try:
+        Dport = device_preset_dict['Dport(Standard)']
+        Uport = device_preset_dict['Uport(Enhanced)']
+
+        interface.connect(uport_name=Uport, dport_name=Dport)
+    except AssertionError as e:
+        raise AssertionError(e)
+
+    # send config
+    try:
+        config_path = device_preset_dict['ConfigPath']
+        if not os.path.exists(config_path):
+            raise AssertionError('The config file Does not exist: ', str(config_path))
+
+        interface.send_config(config_path)
+
+    except AssertionError as e:
+        raise AssertionError(e)
+
+
+    # start mmWave 6843 sensor
+    try:
+        interface.start_sensor()
+    except AssertionError as e:
+        raise AssertionError(e)
+
+
+    return device_preset_dict, interface

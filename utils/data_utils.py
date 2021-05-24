@@ -369,3 +369,11 @@ def interp_negative(y):
     y_interp = np.copy(y)
     y_interp[idx] = np.interp(x[idx], x[~idx], y[~idx])
     return y_interp
+
+
+def clutter_removal(cur_frame, clutter, signal_clutter_ratio):
+    if clutter is None:
+        clutter = cur_frame
+    else:
+        clutter = signal_clutter_ratio * clutter + (1 - signal_clutter_ratio) * cur_frame
+    return cur_frame - clutter, clutter
