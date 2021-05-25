@@ -525,6 +525,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
             self.lslStream_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
+
+            #reshape data_dict based on sensor interface
+
+
             self.recordingTab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
@@ -544,6 +548,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
                                             axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+
+                # change to loop with type condition
 
                 [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
                  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
