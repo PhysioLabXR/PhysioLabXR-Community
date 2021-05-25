@@ -501,6 +501,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
     def process_LSLStream_data(self, data_dict):
+        # print(data_dict)
         samples_to_plot = self.lslStream_presets_dict[data_dict['lsl_data_type']]["num_samples_to_plot"]
         if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
             buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
