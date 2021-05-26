@@ -327,11 +327,11 @@ class MmwWorker(QObject):
             print('None type mmw_interface, starting in simulation mode')
 
         self._mmw_interface = mmw_interface
-        self._is_running = True
+        self._is_streaming = True
 
     @pg.QtCore.pyqtSlot()
     def mmw_process_on_tick(self):
-        if self._is_running:
+        if self._is_streaming:
             if self._mmw_interface:
                 try:
                     start = time.time()
@@ -361,6 +361,15 @@ class MmwWorker(QObject):
                          'range_amplitude': range_amplitude}
             self.signal_data.emit(data_dict)
 
+    def stop_stream(self):
+        if self._mmw_interface:
+            self._is_streaming = False
+            time.sleep(0.1)
+            self._mmw_interface.close_connection()
+        else:
+            print('EEGWorker: Stop Simulating eeg data')
+            print('EEGWorker: frame rate calculation is not enabled in simulation mode')
+        self.end_time = time.time()
     # def start_mmw(self):
     #     if self._mmw_interface:  # if the sensor interface is established
     #         try:
