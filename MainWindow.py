@@ -481,7 +481,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
                 else:
-                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
+                    raise Exception('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
         else:
             plot_widget = pg.PlotWidget()
