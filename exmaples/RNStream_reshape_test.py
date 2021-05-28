@@ -29,7 +29,7 @@ from utils.data_utils import RNStream
 
 test_rns = RNStream('C:/Recordings/05_27_2021_18_46_38-Exp_myexperiment-Sbj_john-Ssn_0.dats')
 reshape_dict = {
-    'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1), (10,)]
+    'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]
                 }
 
 test_reloaded_data = test_rns.stream_in(reshape_stream_dict=reshape_dict)
