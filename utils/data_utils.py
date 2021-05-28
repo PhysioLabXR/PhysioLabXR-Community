@@ -38,6 +38,7 @@ encoding = 'utf-8'
 
 ts_dtype = 'float64'
 
+
 class RNStream:
     def __init__(self, file_path):
         self.fn = file_path
@@ -60,10 +61,11 @@ class RNStream:
                                 encoding)
             try:
                 dim_bytes = len(data_array.shape).to_bytes(dim_bytes_len, 'little')
-                shape_bytes = b''.join([s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
+                shape_bytes = b''.join(
+                    [s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
             except OverflowError:
                 raise Exception('RN requires its stream to have number of dimensions less than 2^40, '
-                      'and the size of any dimension to be less than the same number ')
+                                'and the size of any dimension to be less than the same number ')
             data_bytes = data_array.tobytes()
             ts_bytes = ts_array.tobytes()
             out_file.write(magic)
@@ -76,12 +78,13 @@ class RNStream:
         out_file.close()
         return len(magic + stream_label_bytes + dtype_bytes + dim_bytes + shape_bytes + data_bytes + ts_bytes)
 
-    def stream_in(self, ignore_stream=None, only_stream=None, jitter_removal=True):
+    def stream_in(self, ignore_stream=None, only_stream=None, jitter_removal=True, reshape_stream_dict=None):
         """
         different from LSL XDF importer, this jitter removal assumes no interruption in the data
         :param ignore_stream:
         :param only_stream:
         :param jitter_removal:
+        :param reshape_stream_dict:
         :return:
         """
         total_bytes = float(os.path.getsize(self.fn))  # use floats to avoid scalar type overflow
@@ -89,7 +92,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count / total_bytes, 2))), sep=' ',
+                      end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
@@ -135,7 +139,7 @@ class RNStream:
 
                     if stream_name not in buffer.keys():
                         buffer[stream_name] = [np.empty(shape=tuple(shape[:-1]) + (0,), dtype=stream_dytpe),
-                                                                np.empty(shape=(0,))]  # data first, timestamps second
+                                               np.empty(shape=(0,))]  # data first, timestamps second
                     buffer[stream_name][0] = np.concatenate([buffer[stream_name][0], data_array], axis=-1)
                     buffer[stream_name][1] = np.concatenate([buffer[stream_name][1], ts_array])
                 else:
@@ -150,6 +154,42 @@ class RNStream:
                 smoothed_ts_array = np.array([i * coefs[0] + coefs[1] for i in range(len(ts_array))])
                 buffer[stream_name][1] = smoothed_ts_array
 
+        # reshape img, time series, time frames data
+        if reshape_stream_dict is not None:
+            for reshape_stream_name in reshape_stream_dict:
+                if reshape_stream_name in buffer:  # reshape the stream[0] to [(a,b,c), (d, e), x, y] etc
+
+                    shapes = reshape_stream_dict[reshape_stream_name]
+                    # check if the number of channel matches the number of reshape channels
+                    total_reshape_channel_num = 0
+                    for shape_item in shapes: total_reshape_channel_num += np.prod(shape_item)
+                    if total_reshape_channel_num == buffer[reshape_stream_name][0].shape[0]:
+                        # number of channels matches, start reshaping
+                        reshape_data_buffer = {}
+                        offset = 0
+                        for index, shape_item in enumerate(shapes):
+                            reshape_channel_num = np.prod(shape_item)
+                            data_slice = buffer[reshape_stream_name][0][offset:offset + reshape_channel_num,
+                                         :]  # get the slice
+                            # reshape all column to shape_item
+                            print((shape_item + (-1,)))
+                            data_slice = data_slice.reshape((shape_item + (-1,)))
+                            reshape_data_buffer[index] = data_slice
+                            offset += reshape_channel_num
+
+                        #     replace buffer[stream_name][0] with new reshaped buffer
+                        buffer[reshape_stream_name][0] = reshape_data_buffer
+
+                    else:
+                        raise Exception(
+                            'Error: The given total number of reshape channel does not match the total number of saved '
+                            'channel for stream: ({0})'.format(reshape_stream_name))
+
+                else:
+                    raise Exception(
+                        'Error: The give target reshape stream ({0}) does not exist in the data buffer, please use ('
+                        'get_stream_names) function to check the stream names'.format(reshape_stream_name))
+
         print("Stream-in completed: {0}".format(self.fn))
         return buffer
 
@@ -159,7 +199,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Scanning stream in progress {}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+                print('Scanning stream in progress {}%'.format(str(round(100 * read_bytes_count / total_bytes, 2))),
+                      sep=' ', end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
@@ -221,9 +262,10 @@ class RNStream:
             raise Exception('target stream is not a video stream. It does not have 4 dims (height, width, color, time)'
                             'and/or the number of its color channel does not equal 3.')
         frame_size = (data[video_stream_name][0].shape[1], data[video_stream_name][0].shape[0])
-        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0], video_stream_name)) if output_path == '' else output_path
+        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0],
+                                                                   video_stream_name)) if output_path == '' else output_path
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'),frate, frame_size)
+        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'), frate, frame_size)
 
         for i in range(frame_count):
             print('Creating video progress {}%'.format(str(round(100 * i / frame_count, 2))), sep=' ', end='\r',
@@ -241,20 +283,21 @@ def plot_stream(stream, timestamps):
     plt.xlabel('Time (sec)')
     plt.show()
 
+
 def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
     assert i1 < i2
-    assert abs(coverage - (i2 - i1) )<= tolerance
+    assert abs(coverage - (i2 - i1)) <= tolerance
     is_modifying_i1 = True
     if i2 - i1 > coverage:
-        while i2- i1 != coverage:
+        while i2 - i1 != coverage:
             if is_modifying_i1:
                 i1 += 1
             else:
                 i2 -= 1
         print('Modified')
 
-    elif i2- i1 < coverage:
-        while i2- i1 != coverage:
+    elif i2 - i1 < coverage:
+        while i2 - i1 != coverage:
             if is_modifying_i1:
                 i1 -= 1
             else:
@@ -265,7 +308,7 @@ def modify_indice_to_cover(i1, i2, coverage, tolerance=3):
 
 
 def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_stimulus_time, post_stimulus_time,
-                 EEG_stream_preset, notch_f0=60., notch_band_demoninator=200, EEG_fresample = 50, baselining=True):
+                 EEG_stream_preset, notch_f0=60., notch_band_demoninator=200, EEG_fresample=50, baselining=True):
     EEG_num_sample_per_trail = int(EEG_stream_preset['NominalSamplingRate'] * (post_stimulus_time - pre_stimulus_time))
     EEG_num_sample_per_trail_RESAMPLED = int(EEG_fresample * (post_stimulus_time - pre_stimulus_time))
     EEG_num_chan = EEG_stream_preset['GroupChannelsInPlot'][1] - EEG_stream_preset['GroupChannelsInPlot'][0]
@@ -301,7 +344,8 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
         # take out the electrode channels
         stream_EEG_preprocessed = stream_EEG[
-                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
+                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][
+                                      1],
                                   :]
         # baseline correction
         if baselining:
@@ -310,7 +354,8 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
         for tl in target_labels:
             array_target_onset_EM_indices = np.logical_and(array_event_label == tl,
-                                                           np.concatenate([np.array([0]), np.diff(array_event_label)]) != 0)
+                                                           np.concatenate(
+                                                               [np.array([0]), np.diff(array_event_label)]) != 0)
             print('Number of trials is {0} for label {1}'.format(np.count_nonzero(array_target_onset_EM_indices), tl))
             array_target_PRE_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices] + pre_stimulus_time
             array_target_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices]
@@ -337,11 +382,14 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
             # epoch eeg data #############################################
             # modify pre and post indices for possible remaining jitter
 
-            array_prepost_target_onset_i = [modify_indice_to_cover(pre_onset_i, post_onset_i, EEG_num_sample_per_trail) for
+            array_prepost_target_onset_i = [modify_indice_to_cover(pre_onset_i, post_onset_i, EEG_num_sample_per_trail)
+                                            for
                                             pre_onset_i, post_onset_i in
-                                            zip(array_target_PRE_onset_EEG_indices, array_target_POST_onset_EEG_indices)]
-            epoched_EEG_new = np.array([stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
-                                    array_prepost_target_onset_i])
+                                            zip(array_target_PRE_onset_EEG_indices,
+                                                array_target_POST_onset_EEG_indices)]
+            epoched_EEG_new = np.array(
+                [stream_EEG_preprocessed[:, pre_onset_i:post_onset_i] for pre_onset_i, post_onset_i in
+                 array_prepost_target_onset_i])
             epoched_EEG = np.concatenate([epoched_EEG, epoched_EEG_new], axis=0)
         print('Total number of trials for label {0} is {1}'.format(str(target_labels), len(epoched_EEG)))
 
@@ -364,7 +412,7 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
 
 def interp_negative(y):
-    idx = y<0
+    idx = y < 0
     x = np.arange(len(y))
     y_interp = np.copy(y)
     y_interp[idx] = np.interp(x[idx], x[~idx], y[~idx])
