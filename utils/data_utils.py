@@ -425,3 +425,8 @@ def clutter_removal(cur_frame, clutter, signal_clutter_ratio):
     else:
         clutter = signal_clutter_ratio * clutter + (1 - signal_clutter_ratio) * cur_frame
     return cur_frame - clutter, clutter
+
+
+def integer_one_hot(a, num_classes):
+    a = a.astype(int)
+    return np.squeeze(np.eye(num_classes)[a.reshape(-1)]).astype(int)

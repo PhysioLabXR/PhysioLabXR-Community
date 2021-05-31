@@ -8,10 +8,13 @@ reshape_dict = {
     'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]
                 }
 
-test_reloaded_data = test_rns.stream_in(reshape_stream_dict=reshape_dict)
+mmWave_data = test_rns.stream_in(reshape_stream_dict=reshape_dict)
 
+rd = mmWave_data['TImmWave_6843AOP'][0][0]
+ra = mmWave_data['TImmWave_6843AOP'][0][1]
 
-
+rd = np.moveaxis(rd, -1, 0)
+test = np.squeeze(rd[0], axis=-1)
 
 
 
