@@ -3,7 +3,7 @@ import numpy as np
 from utils.data_utils import RNStream
 
 
-test_rns = RNStream('C:/Recordings/05_29_2021_03_03_16-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
+test_rns = RNStream('C:/Recordings/John_error_test_A-E/06_02_2021_00_44_53-Exp_John_error_test-Sbj_HW-Ssn_0.dats')
 reshape_dict = {
     'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]
                 }
@@ -18,4 +18,4 @@ test = np.squeeze(rd[0], axis=-1)
 
 
 
-
+np.std(np.diff(mmWave_data['IndexPen_30'][1][55:100]))

@@ -16,7 +16,7 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
     ExpErrorMarker = exp_info_dict['ExpErrorMarker']
 
     # one-hot encoder
-    all_categories = list(ExpLabelMarker.values())
+    all_categories = list([1, 2, 3, 4, 5])
     encoder = OneHotEncoder(categories='auto')
     encoder.fit(np.reshape(all_categories, (-1, 1)))
 

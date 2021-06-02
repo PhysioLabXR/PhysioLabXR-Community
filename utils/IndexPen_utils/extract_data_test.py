@@ -33,7 +33,7 @@ X_dict = dict()
 Y = []
 
 
-rs_stream = RNStream('C:/Recordings/05_30_2021_15_05_26-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
+rs_stream = RNStream('C:/Recordings/John_test_A-E/05_31_2021_15_53_21-Exp_IndexPen_test-Sbj_HW-Ssn_0.dats')
 
 
 
