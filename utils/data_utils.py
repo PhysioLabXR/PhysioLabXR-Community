@@ -44,15 +44,38 @@ class RNStream:
         self.fn = file_path
 
     def stream_out(self, buffer):
+        """
+        serialize the content of the buffer to the file path pointed by self.fn
+        :param buffer: a dictionary, key is a string for stream name, value is a iterable of two ndarray
+                        the first of the two ndarray is the data samples, the second of the two ndarray are the timestamps
+                        of the data samples. The time axis for the data array must be the last. The timestamp array must
+                         have exactly one dimension (the time dimension). The data and timestamps
+                        array must have the same length in their time dimensions.
+                        The timestamps array must also in a increasing order, otherwise a warning will be raised
+        :return: the total number of byptes that has been streamed out
+        """
         out_file = open(self.fn, "ab")
         stream_label_bytes, dtype_bytes, dim_bytes, shape_bytes, data_bytes, ts_bytes = \
             b'', b'', b'', b'', b'', b''
+        total_bytes = 0
         for stream_label, data_ts_array in buffer.items():
             data_array, ts_array = data_ts_array[0], data_ts_array[1]
+
+            # cast the arrays in
             if type(data_array) != np.ndarray:
                 data_array = np.array(data_array)
             if type(ts_array) != np.ndarray:
                 ts_array = np.array(ts_array)
+
+            try:
+                assert len(ts_array.shape) == 1
+            except AssertionError:
+                raise Exception('timestamps must have exactly one dimension.')
+
+            try:
+                assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
+            except AssertionError:
+                warnings.warn('timestamps must be in increasing order.', UserWarning)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)
@@ -60,7 +83,7 @@ class RNStream:
                 dtype_str = str(data_array.dtype)
                 assert len(dtype_str) < max_dtype_len
             except AssertionError:
-                raise Exception('dtype encoding exceeds 8 characters, please contact support')
+                raise Exception('dtype encoding exceeds max dtype length: {0}, please contact support'.format(max_dtype_len))
             dtype_bytes = bytes(dtype_str + "".join(" " for x in range(max_dtype_len - len(dtype_str))),
                                 encoding)
             try:
@@ -78,8 +101,9 @@ class RNStream:
             out_file.write(shape_bytes)
             out_file.write(data_bytes)
             out_file.write(ts_bytes)
+            total_bytes += len(magic) + len(stream_label_bytes) + len(dtype_bytes) + len(dim_bytes) + len(shape_bytes) + len(data_bytes) + len(ts_bytes)
         out_file.close()
-        return len(magic + stream_label_bytes + dtype_bytes + dim_bytes + shape_bytes + data_bytes + ts_bytes)
+        return total_bytes
 
     def stream_in(self, ignore_stream=None, only_stream=None, jitter_removal=True):
         """
@@ -94,7 +118,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+                if total_bytes:
+                    print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
