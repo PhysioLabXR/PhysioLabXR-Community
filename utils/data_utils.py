@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 
 import cv2
@@ -48,6 +49,10 @@ class RNStream:
             b'', b'', b'', b'', b'', b''
         for stream_label, data_ts_array in buffer.items():
             data_array, ts_array = data_ts_array[0], data_ts_array[1]
+            if type(data_array) != np.ndarray:
+                data_array = np.array(data_array)
+            if type(ts_array) != np.ndarray:
+                ts_array = np.array(ts_array)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)
@@ -144,6 +149,12 @@ class RNStream:
         if jitter_removal:
             i = 1
             for stream_name, (d_array, ts_array) in buffer.items():
+                if len(ts_array) < 2:
+                    print("Ignore jitter remove for stream {0}, because it has fewer than two samples".format(stream_name))
+                    continue
+                if np.std(ts_array) > 0.1:
+                    warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should"
+                                  "not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
                 print('Removing jitter for streams {0}/{1}'.format(i, len(buffer)), sep=' ',
                       end='\r', flush=True)
                 coefs = np.polyfit(list(range(len(ts_array))), ts_array, 1)
