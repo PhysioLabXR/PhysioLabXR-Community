@@ -5,7 +5,6 @@ from indexPen_model import make_model_dl_final, make_model_leo
 from preprocessing_utils import load_idp
 import numpy as np
 
-
 import datetime
 
 from sklearn.model_selection import train_test_split
@@ -24,13 +23,12 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ModelCheckpoint
 import matplotlib.pyplot as plt
 from tensorflow.python.client import device_lib
 import os
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc
 
 
 DataStreamName = 'TImmWave_6843AOP'
-data_dir_path = 'C:\Recordings\John_error_test_A-E'
+data_dir_path = 'C:\Recordings\John_data'
 exp_info_dict_json_path = 'C:/Users/HaowenWeiJohn/PycharmProjects/RealityNavigation/utils/IndexPen_utils/IndexPenExp.json'
-
-
 
 reshape_dict = {
     'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]
@@ -40,7 +38,6 @@ duration = 4
 sample_num = fs * duration
 
 X_dict, Y, encoder = load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num)
-
 
 X_mmw_rD = X_dict[0]
 X_mmw_rA = X_dict[1]
@@ -53,10 +50,8 @@ X_mmw_rD_train, X_mmw_rD_test, Y_train, Y_test = train_test_split(X_mmw_rD, Y, t
 X_mmw_rA_train, X_mmw_rA_test, Y_train, Y_test = train_test_split(X_mmw_rA, Y, test_size=0.20, random_state=3,
                                                                   shuffle=True)
 
-
-model = make_model_leo(classes=[1, 2, 3, 4, 5], points_per_sample=120)
-
-
+model = make_model_leo(classes=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], points_per_sample=sample_num)
+# model = make_model_dl_final()
 es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=10)
 mc = ModelCheckpoint(
     filepath='AutoSave/' + str(datetime.datetime.now()).replace(':', '-').replace(' ',
@@ -66,7 +61,7 @@ mc = ModelCheckpoint(
 history = model.fit([X_mmw_rD_train, X_mmw_rA_train], Y_train,
                     validation_data=([X_mmw_rD_test, X_mmw_rA_test], Y_test),
                     epochs=200,
-                    batch_size=16, callbacks=[es, mc], verbose=2, shuffle=True)
+                    batch_size=32, callbacks=[es, mc], verbose=2, shuffle=True)
 
 with open('log_hist.txt', 'w') as f:
     f.write(str(history.history))
@@ -87,3 +82,11 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
+
+Y_pred1 = model.predict([X_mmw_rD_test, X_mmw_rA_test])
+
+Y_pred = np.argmax(Y_pred1, axis=1)
+Y_test = np.argmax(Y_test, axis=1)
+test_acc = accuracy_score(Y_test, Y_pred)
+print(test_acc)
+cm = confusion_matrix(Y_test, Y_pred)

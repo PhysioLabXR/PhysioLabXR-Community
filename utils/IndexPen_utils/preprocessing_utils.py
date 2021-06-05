@@ -5,7 +5,7 @@ from utils.data_utils import RNStream, integer_one_hot
 from sklearn.preprocessing import OneHotEncoder
 
 
-def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num):
+def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num, all_categories=None):
     exp_info_dict = json.load(open(exp_info_dict_json_path))
     ExpID = exp_info_dict['ExpID']
     ExpLSLStreamName = exp_info_dict['ExpLSLStreamName']
@@ -16,7 +16,8 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
     ExpErrorMarker = exp_info_dict['ExpErrorMarker']
 
     # one-hot encoder
-    all_categories = list([1, 2, 3, 4, 5])
+    if all_categories is None:
+        all_categories = list(ExpLabelMarker.values())
     encoder = OneHotEncoder(categories='auto')
     encoder.fit(np.reshape(all_categories, (-1, 1)))
 
@@ -26,7 +27,18 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
     for file_name in os.listdir(data_dir_path):
         file_path = os.path.join(data_dir_path, file_name)
         rs_stream = RNStream(file_path)
-        data = rs_stream.stream_in(reshape_stream_dict=reshape_dict)
+
+        # lsl_data = rs_stream.stream_in(only_stream=DataStreamName, reshape_stream_dict=reshape_dict,
+        #                                jitter_removal=False)
+        # marker_data = rs_stream.stream_in(only_stream=ExpLSLStreamName, reshape_stream_dict=reshape_dict,
+        #                                   jitter_removal=False)
+        #
+        # data = {}
+        # data[DataStreamName] = lsl_data[DataStreamName]
+        # data[marker_data] = marker_data[ExpLSLStreamName]
+        #
+
+        data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, jitter_removal=False)
         data[DataStreamName][0][0] = np.moveaxis(data[DataStreamName][0][0], -1, 0)
         data[DataStreamName][0][1] = np.moveaxis(data[DataStreamName][0][1], -1, 0)
 
@@ -66,7 +78,7 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
         # loop through each label time stamp and find starting index for each label
 
         label_start_time_stamp_indexes = []
-        for time_stamp in label_start_time_stamps:
+        for time_stamp in label_start_time_stamps:  # index greater or equal to
             label_start_time_stamp_indexes.append(np.where(data[DataStreamName][1] > time_stamp)[0][0])
 
         # extract n frames for each stream after each time stamp
@@ -74,7 +86,7 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
         for ts_index in label_start_time_stamp_indexes:
             for channel in data[DataStreamName][0]:
                 if channel in X_dict:
-                    append_data = np.array(data[DataStreamName][0][channel][ts_index:ts_index + sample_num])
+                    # append_data = np.array(data[DataStreamName][0][channel][ts_index:ts_index + sample_num])
                     X_dict[channel] = np.concatenate([X_dict[channel],
                                                       np.expand_dims(np.array(data[DataStreamName][0][channel]
                                                                               [ts_index:ts_index + sample_num]), axis=0)
