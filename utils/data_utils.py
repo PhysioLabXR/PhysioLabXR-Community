@@ -430,3 +430,35 @@ def clutter_removal(cur_frame, clutter, signal_clutter_ratio):
 def integer_one_hot(a, num_classes):
     a = a.astype(int)
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)]).astype(int)
+
+
+def corrupt_frame_padding(time_series_data, min_threshold=np.NINF, max_threshold=np.PINF, frame_channel_first=True):
+    if not frame_channel_first:
+        time_series_data = np.moveaxis(time_series_data, -1, 0)
+
+    if np.max(time_series_data[0]) > max_threshold or np.min(time_series_data[0]) < min_threshold:
+        time_series_data[0] = time_series_data[1]
+    else:
+        print('first two frames are broken')
+        return
+
+    if np.max(time_series_data[-1]) > max_threshold or np.min(time_series_data[-1]) < min_threshold:
+        time_series_data[-1] = time_series_data[-2]
+    else:
+        print('last two frames are broken')
+        return
+
+    # check first and last frame
+    for frame_index in range(1, len(time_series_data) - 1):
+        if np.max(time_series_data[frame_index]) > max_threshold or np.min(time_series_data[frame_index]) < min_threshold:
+            # find broken frame, padding with frame +1 and frame -1
+            if np.max(time_series_data[frame_index+1]) > max_threshold or np.min(time_series_data[frame_index+1]) < min_threshold:
+                print('two continues broken frames with index ', frame_index)
+                return
+            else:
+                time_series_data[frame_index] = (time_series_data[frame_index - 1] + time_series_data[frame_index + 1]) * 0.5
+
+    if not frame_channel_first:
+        time_series_data = np.moveaxis(time_series_data, 0, -1)
+
+    return time_series_data
