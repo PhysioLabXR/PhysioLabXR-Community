@@ -104,6 +104,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # data buffers
         self.LSL_plots_fs_label_dict = {}
         self.LSL_data_buffer_dicts = {}
+        self.LSL_current_ts_dict = {}
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
 
@@ -452,7 +453,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices, plot_group_format):
         fs_label = QLabel(text='Sampling rate = ')
+        ts_label = QLabel(text='Current Time Stamp = ')
         parent.addWidget(fs_label)
+        parent.addWidget(ts_label)
         plot_widget = pg.PlotWidget()
         if plot_group_slices:
 
@@ -496,7 +499,7 @@ class MainWindow(QtWidgets.QMainWindow):
         [p.setDownsampling(auto=True, method='mean') for p in plots if p == PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for p in plots if p == PlotDataItem]
 
-        return plots, plot_widget, fs_label, plot_group_slices, plot_formats
+        return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -529,6 +532,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 buffered_data = np.concatenate(
                     (buffered_data, data_dict['frames']),
                     axis=-1)  # get all data and remove it from internal buffer
+                self.LSL_current_ts_dict[data_dict['lsl_data_type']] = data_dict['timestamps'][-1]
             except ValueError:
                 raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
                     data_dict['lsl_data_type']))
@@ -600,6 +604,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+                self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
+                    'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
