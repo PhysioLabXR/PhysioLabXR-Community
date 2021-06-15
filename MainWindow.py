@@ -575,13 +575,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # change to loop with type condition plot time_series and image
                 if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
+                    plot_channel_num_offset = 0
                     for plot_group_index, (plot_group, plot_format) in enumerate(zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
                                                        self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
                         if plot_format[0] == 'time' and plot_format[1] == 'series':
                             # plot corresponding time series data, range (a,b) is time series
-                            for i in range(plot_group[0], plot_group[1]):
+                            plot_group_channel_num = plot_group[1] - plot_group[0]
+                            for i in range(plot_channel_num_offset, plot_group_channel_num):
                                 self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
                                                                                             data_to_plot[i, :])
+                            plot_channel_num_offset += plot_group_channel_num
                         elif plot_format[0] == 'image':
                             image_shape = plot_format[1]
                             channel_num = image_shape[2]
@@ -590,13 +593,14 @@ class MainWindow(QtWidgets.QMainWindow):
                             img = plot_array.reshape(image_shape)
                             # display openCV image if channel_num = 3
                             # display heat map if channel_num = 1
-                            if channel_num==3:
+                            if channel_num == 3:
                                 img = convert_cv_qt(img)
-                            if channel_num==1:
+                            if channel_num == 1:
                                 img = np.squeeze(img, axis=-1)
                                 img = convert_heatmap_qt(img)
 
-                            self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_group_index].setPixmap(img)
+                            self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
+                            plot_channel_num_offset += 1
 
                 else:
                     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
