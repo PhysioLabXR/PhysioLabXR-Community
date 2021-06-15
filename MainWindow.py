@@ -264,13 +264,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
-            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
+
+            try:
+                self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
                 parent=lsl_layout,
                 num_chan=lsl_num_chan,
                 chan_names=lsl_chan_names,
                 plot_group_slices=plot_group_slices,
                 plot_group_format=plot_group_format
             )
+            except Exception as e:
+                dialog_popup(str(e))
+
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             preset["num_samples_to_plot"] = int(
@@ -476,6 +481,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 elif plot_group_format_info[0] == 'image':
                     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
+
+                    # check if the channel num matches:
+                    if pg_slice[1]-pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
+                        raise AssertionError('The number of channel in this slice does not match with the number of image pixels.'
+                                        'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info, pg_slice))
                     plot_formats.append(plot_group_format_info)
                     image_label = QLabel('Image_Label')
                     image_label.setAlignment(QtCore.Qt.AlignCenter)
