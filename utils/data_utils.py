@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 
 import cv2
@@ -44,11 +45,38 @@ class RNStream:
         self.fn = file_path
 
     def stream_out(self, buffer):
+        """
+        serialize the content of the buffer to the file path pointed by self.fn
+        :param buffer: a dictionary, key is a string for stream name, value is a iterable of two ndarray
+                        the first of the two ndarray is the data samples, the second of the two ndarray are the timestamps
+                        of the data samples. The time axis for the data array must be the last. The timestamp array must
+                         have exactly one dimension (the time dimension). The data and timestamps
+                        array must have the same length in their time dimensions.
+                        The timestamps array must also in a increasing order, otherwise a warning will be raised
+        :return: the total number of byptes that has been streamed out
+        """
         out_file = open(self.fn, "ab")
         stream_label_bytes, dtype_bytes, dim_bytes, shape_bytes, data_bytes, ts_bytes = \
             b'', b'', b'', b'', b'', b''
+        total_bytes = 0
         for stream_label, data_ts_array in buffer.items():
             data_array, ts_array = data_ts_array[0], data_ts_array[1]
+
+            # cast the arrays in
+            if type(data_array) != np.ndarray:
+                data_array = np.array(data_array)
+            if type(ts_array) != np.ndarray:
+                ts_array = np.array(ts_array)
+
+            try:
+                assert len(ts_array.shape) == 1
+            except AssertionError:
+                raise Exception('timestamps must have exactly one dimension.')
+
+            try:
+                assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
+            except AssertionError:
+                warnings.warn('timestamps must be in increasing order.', UserWarning)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)
@@ -56,7 +84,7 @@ class RNStream:
                 dtype_str = str(data_array.dtype)
                 assert len(dtype_str) < max_dtype_len
             except AssertionError:
-                raise Exception('dtype encoding exceeds 8 characters, please contact support')
+                raise Exception('dtype encoding exceeds max dtype length: {0}, please contact support'.format(max_dtype_len))
             dtype_bytes = bytes(dtype_str + "".join(" " for x in range(max_dtype_len - len(dtype_str))),
                                 encoding)
             try:
@@ -75,8 +103,9 @@ class RNStream:
             out_file.write(shape_bytes)
             out_file.write(data_bytes)
             out_file.write(ts_bytes)
+            total_bytes += len(magic) + len(stream_label_bytes) + len(dtype_bytes) + len(dim_bytes) + len(shape_bytes) + len(data_bytes) + len(ts_bytes)
         out_file.close()
-        return len(magic + stream_label_bytes + dtype_bytes + dim_bytes + shape_bytes + data_bytes + ts_bytes)
+        return total_bytes
 
     def stream_in(self, ignore_stream=None, only_stream=None, jitter_removal=True, reshape_stream_dict=None):
         """
@@ -92,8 +121,8 @@ class RNStream:
         read_bytes_count = 0.
         with open(self.fn, "rb") as file:
             while True:
-                print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count / total_bytes, 2))), sep=' ',
-                      end='\r', flush=True)
+                if total_bytes:
+                    print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
                 # read magic
                 read_bytes = file.read(len(magic))
                 read_bytes_count += len(read_bytes)
@@ -148,6 +177,12 @@ class RNStream:
         if jitter_removal:
             i = 1
             for stream_name, (d_array, ts_array) in buffer.items():
+                if len(ts_array) < 2:
+                    print("Ignore jitter remove for stream {0}, because it has fewer than two samples".format(stream_name))
+                    continue
+                if np.std(ts_array) > 0.1:
+                    warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should"
+                                  "not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
                 print('Removing jitter for streams {0}/{1}'.format(i, len(buffer)), sep=' ',
                       end='\r', flush=True)
                 coefs = np.polyfit(list(range(len(ts_array))), ts_array, 1)
@@ -262,10 +297,9 @@ class RNStream:
             raise Exception('target stream is not a video stream. It does not have 4 dims (height, width, color, time)'
                             'and/or the number of its color channel does not equal 3.')
         frame_size = (data[video_stream_name][0].shape[1], data[video_stream_name][0].shape[0])
-        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0],
-                                                                   video_stream_name)) if output_path == '' else output_path
+        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0], video_stream_name)) if output_path == '' else output_path
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'), frate, frame_size)
+        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'),frate, frame_size)
 
         for i in range(frame_count):
             print('Creating video progress {}%'.format(str(round(100 * i / frame_count, 2))), sep=' ', end='\r',
@@ -344,8 +378,7 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
         # take out the electrode channels
         stream_EEG_preprocessed = stream_EEG[
-                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][
-                                      1],
+                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
                                   :]
         # baseline correction
         if baselining:
@@ -354,8 +387,7 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
         for tl in target_labels:
             array_target_onset_EM_indices = np.logical_and(array_event_label == tl,
-                                                           np.concatenate(
-                                                               [np.array([0]), np.diff(array_event_label)]) != 0)
+                                                           np.concatenate([np.array([0]), np.diff(array_event_label)]) != 0)
             print('Number of trials is {0} for label {1}'.format(np.count_nonzero(array_target_onset_EM_indices), tl))
             array_target_PRE_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices] + pre_stimulus_time
             array_target_onset_EM_timestamps = timestamps_EM[array_target_onset_EM_indices]
