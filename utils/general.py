@@ -6,6 +6,8 @@ import numpy as np
 
 from interfaces.LSLInletInterface import LSLInletInterface
 from interfaces.OpenBCILSLInterface import OpenBCILSLInterface
+from interfaces.SimulationInterface import SimulationInterface
+from interfaces.AIYVoiceInterface import AIYVoiceInterface
 
 
 def slice_len_for(slc, seqlen):
@@ -80,7 +82,14 @@ def process_preset_create_lsl_interface(preset_dict):
     lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset_dict['StreamName'], preset_dict['ChannelNames'], \
                                                           preset_dict['GroupChannelsInPlot']
     try:
-        interface = LSLInletInterface(lsl_stream_name)
+        if lsl_stream_name.lower().endswith('simulation'):
+            lsl_num_chan = preset_dict['NumChannels']
+            interface = SimulationInterface(lsl_stream_name, lsl_num_chan, preset_dict['NominalSamplingRate'])
+        elif lsl_stream_name.lower() == 'aiyvoice':
+            lsl_num_chan = preset_dict['NumChannels']
+            interface = AIYVoiceInterface(lsl_stream_name, lsl_num_chan)
+        else:
+            interface = LSLInletInterface(lsl_stream_name)
     except AttributeError:
         raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
     lsl_num_chan = interface.get_num_chan()

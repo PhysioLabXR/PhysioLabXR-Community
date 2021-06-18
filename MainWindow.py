@@ -35,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # create sensor threads, worker threads for different sensors
         self.worker_threads = {}
         self.sensor_workers = {}
+        self.device_workers = {}
         self.lsl_workers = {}
         self.inference_worker = None
         self.cam_workers = {}
@@ -238,13 +239,15 @@ class MainWindow(QtWidgets.QMainWindow):
             loading_dlg.close()
 
     def init_lsl(self, preset):
+
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys(): # if this inlet hasn't been already added
             try:
-                preset, interface = process_preset_create_interface(preset)
+                preset, interface = process_preset_create_lsl_interface(preset)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
+            print('jlsfkdsjlkfdljkfdsjkl')
             lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
                                                               preset['ChannelNames'], \
                                                               preset['PlotGroupSlices']

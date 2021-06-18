@@ -9,6 +9,8 @@ from pylsl import local_clock
 import config_ui
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
+from interfaces.SimulationInterface import SimulationInterface
+from interfaces.AIYVoiceInterface import AIYVoiceInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
 import pyautogui

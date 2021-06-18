@@ -1,5 +1,5 @@
 brainflow
-numpy==1.19.2
+numpy
 PyQt5
 pyserial
 pylsl
