@@ -1,16 +1,16 @@
 import time
 
-#import cv2
+import cv2
 import pyqtgraph as pg
 from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
-from interfaces.SimulationInterface import SimulationInterface
-from interfaces.AIYVoiceInterface import AIYVoiceInterface
+from pylsl import local_clock
+
 import config_ui
 from interfaces.InferenceInterface import InferenceInterface
 from interfaces.LSLInletInterface import LSLInletInterface
 from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
-from pylsl import local_clock
+
 import pyautogui
 
 import numpy as np
@@ -29,8 +29,6 @@ class EEGWorker(QObject):
     def __init__(self, eeg_interface=None, *args, **kwargs):
         super(EEGWorker, self).__init__()
         self.tick_signal.connect(self.eeg_process_on_tick)
-        self.tick_signal.connect(self.test_google)
-
         if not eeg_interface:
             print('None type eeg_interface, starting in simulation mode')
 
@@ -45,7 +43,6 @@ class EEGWorker(QObject):
         if self._is_streaming:
             if self._eeg_interface:
                 data = self._eeg_interface.process_frames()  # get all data and remove it from internal buffer
-
             else:  # this is in simulation mode
                 # assume we only working with OpenBCI eeg
                 data = sim_openBCI_eeg()
@@ -53,11 +50,6 @@ class EEGWorker(QObject):
             # notify the eeg data for the radar tab
             data_dict = {'data': data}
             self.signal_data.emit(data_dict)
-
-    @pg.QtCore.pyqtSlot()
-    def test_google(self):
-        if self._is_streaming:
-            print('is streaming')
 
     def start_stream(self):
         if self._eeg_interface:  # if the sensor interfaces is established
@@ -183,6 +175,7 @@ class LSLInletWorker(QObject):
 
         self._lslInlet_interface = LSLInlet_interface
         self.is_streaming = False
+
         self.start_time = time.time()
         self.num_samples = 0
 
@@ -192,8 +185,10 @@ class LSLInletWorker(QObject):
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
 
             self.num_samples += len(timestamps)
-            sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
-
+            try:
+                sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
+            except ZeroDivisionError:
+                sampling_rate = 0
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
@@ -211,7 +206,6 @@ class LSLInletWorker(QObject):
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
-
 
 class WebcamWorker(QObject):
     tick_signal = pyqtSignal()
@@ -234,8 +228,7 @@ class WebcamWorker(QObject):
         if ret:
             cv_img = cv_img.astype(np.uint8)
             cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-            self.change_pixmap_signal.emit((self.cam_id, cv_img, time.time()))
-
+            self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
 
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
@@ -252,9 +245,62 @@ class ScreenCaptureWorker(QObject):
         frame = np.array(img)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = frame.astype(np.uint8)
-        frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height),
-                           interpolation=cv2.INTER_NEAREST)
-        self.change_pixmap_signal.emit((self.screen_label, frame, time.time()))
+        frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+        self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
+
+
+class DeviceWorker(QObject):
+    """
+
+    """
+    # for passing data to the gesture tab
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, eeg_interface=None, *args, **kwargs):
+        super(DeviceWorker, self).__init__()
+        self.tick_signal.connect(self.eeg_process_on_tick)
+        if not eeg_interface:
+            print('None type eeg_interface, starting in simulation mode')
+
+        self._eeg_interface = eeg_interface
+        self.is_streaming = True
+
+        self.start_time = time.time()
+        self.end_time = time.time()
+
+    @pg.QtCore.pyqtSlot()
+    def eeg_process_on_tick(self):
+        if self.is_streaming:
+            if self._eeg_interface:
+                data = self._eeg_interface.process_frames()  # get all data and remove it from internal buffer
+            else:  # this is in simulation mode
+                # assume we only working with OpenBCI eeg
+                data = sim_openBCI_eeg()
+
+            # notify the eeg data for the radar tab
+            data_dict = {'data': data}
+            self.signal_data.emit(data_dict)
+
+    def start_stream(self):
+        if self._eeg_interface:  # if the sensor interfaces is established
+            self._eeg_interface.start_sensor()
+        else:
+            print('EEGWorker: Start Simulating EEG data')
+        self.is_streaming = True
+        self.start_time = time.time()
+
+    def stop_stream(self):
+        if self._eeg_interface:
+            self._eeg_interface.stop_sensor()
+        else:
+            print('EEGWorker: Stop Simulating eeg data')
+            print('EEGWorker: frame rate calculation is not enabled in simulation mode')
+        self.is_streaming = False
+        self.end_time = time.time()
+
+    def is_streaming(self):
+        return self.is_streaming
 
 class AIYWorker(QObject):
 

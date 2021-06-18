@@ -1,7 +1,7 @@
-#import cv2
+import cv2
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QFile, QTextStream
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
@@ -80,7 +80,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     textbox.setContentsMargins(5, 0, 0, 0)
     textbox.setText(str(default_input))
     layout.addWidget(textbox)
-    textbox.setStyleSheet("background-color:white;")
+    # textbox.setStyleSheet("background-color:white;")
 
     return layout, textbox
 
@@ -90,7 +90,7 @@ def init_button(parent, label=None, function=None, style=config_ui.button_style_
     if function:
         btn.clicked.connect(function)
     parent.addWidget(btn)
-    btn.setStyleSheet(config_ui.button_style_classic)
+    # btn.setStyleSheet(config_ui.button_style_classic)
 
     return btn
 
@@ -147,18 +147,22 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     ql = QLabel(config_ui.sensors_type_ui_name_dict[
                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
     ql.setStyleSheet("font: bold 14px;")
+    signal_settings_btn = init_button(parent=top_layout, label='Signal Settings')
     pop_window_btn = init_button(parent=top_layout, label='Pop Window')
+
+    signal_settings_btn.setFixedWidth(200)
     pop_window_btn.setFixedWidth(200)
 
     top_layout.addWidget(ql)
+    top_layout.addWidget(signal_settings_btn)
     top_layout.addWidget(pop_window_btn)
 
     start_stream_btn = init_button(parent=layout, label='Start Stream')
     stop_stream_btn = init_button(parent=layout, label='Stop Stream')
-    return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn
+    return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn
 
 
-def init_add_widget(parent, lsl_presets: dict):
+def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, experiment_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
     container.setFixedWidth(700)
 
@@ -174,21 +178,37 @@ def init_add_widget(parent, lsl_presets: dict):
                                       item_list=camera_screen_cap_list)
     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
 
-    # add sensor container
-    container_add_sensor, layout_add_sensor = init_container(parent=layout, label='Select a Stream to Add',
-                                                             vertical=False)
-    sensor_combo_box = init_combo_box(parent=layout_add_sensor, label=None,
-                                      item_list=list(
-                                          lsl_presets.keys()) + list(config_ui.sensors_type_ui_name_dict.values()))
+    reload_presets_btn = init_button(parent=layout, label='Reload Stream/Device/Experiment Presets')
 
-    add_sensor_btn = init_button(parent=layout_add_sensor, label='Add')
-    reload_presets_btn = init_button(parent=layout_add_sensor, label='Reload Presets')
+    # add stream UI elements ######################
+    container_add_stream, layout_add_stream = init_container(parent=layout, label='Select a Stream to Add',
+                                                             vertical=False)
+    stream_combo_box = init_combo_box(parent=layout_add_stream, label=None,
+                                      item_list=list(
+                                          lslStream_presets.keys()))
+    add_stream_btn = init_button(parent=layout_add_stream, label='Add Stream')
+
+    # add device UI elements ######################
+    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect',
+                                                                     vertical=False)
+    device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
+                                      item_list=list(
+                                          device_presets.keys()))
+    add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
+    # add experiment UI elements ######################
+    container_experiment, layout_experiment = init_container(parent=layout, label='Select an Experiment Preset to Start',
+                                                             vertical=False)
+    experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
+                                          item_list=list(
+                                              experiment_presets.keys()))
+    add_experiment_btn = init_button(parent=layout_experiment, label='Connect Experiment Streams/Devices')
 
     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
 
-    return layout, camera_combo_box, add_camera_btn, sensor_combo_box, add_sensor_btn, lsl_data_type_input, add_lsl_btn, reload_presets_btn
+    return layout, camera_combo_box, add_camera_btn, stream_combo_box, add_stream_btn, lsl_data_type_input, add_lsl_btn, \
+           reload_presets_btn, device_combo_box, add_device_btn,experiment_combo_box,add_experiment_btn
 
 
 class CustomDialog(QDialog):
@@ -204,7 +224,7 @@ class CustomDialog(QDialog):
         self.buttonBox.rejected.connect(self.reject)
 
         self.layout = QVBoxLayout()
-        message = QLabel(msg)
+        message = QLabel(str(msg))
         self.layout.addWidget(message)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
@@ -216,7 +236,7 @@ def dialog_popup(msg, title='Warning'):
         print("Dialog popup")
     else:
         print("Cancel!")
-
+    return dlg
 
 import numpy as np
 import colorsys
@@ -248,8 +268,7 @@ def get_working_camera_id():
     index = 0
     arr = []
     i = 10
-    #while i > 0:
-    while False:
+    while i > 0:
         cap = cv2.VideoCapture(index)
         if cap.read()[0]:
             arr.append(index)
@@ -257,6 +276,13 @@ def get_working_camera_id():
         index += 1
         i -= 1
     return arr
+
+
+def stream_stylesheet(stylesheet_url):
+    stylesheet = QFile(stylesheet_url)
+    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stream = QTextStream(stylesheet)
+    QtWidgets.qApp.setStyleSheet(stream.readAll())
 
 
 class AnotherWindow(QWidget):
