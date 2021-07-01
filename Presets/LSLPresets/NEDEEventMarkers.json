@@ -1,0 +1,5 @@
+{ "StreamName":"Unity.NEDE.EventMarkers",
+  "ChannelNames":[
+    "EventMarker", "VehicleSpeed", "PlayerSpeed", "PlayDistanceFromVehicle"],
+  "NominalSamplingRate":  75,
+  "GroupChannelsInPlot":  [1, 3]}
