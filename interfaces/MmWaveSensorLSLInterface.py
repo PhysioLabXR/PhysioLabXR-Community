@@ -141,6 +141,7 @@ class MmWaveSensorLSLInterface:
 
             if is_packet_complete:
                 self.data_buffer = b'' + leftover_data
+                # print(np.max(azi_heatmap))
                 return detected_points, range_profile, rd_heatmap, azi_heatmap
             else:
                 return None, None, None, None

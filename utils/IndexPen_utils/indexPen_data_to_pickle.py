@@ -4,10 +4,12 @@ from preprocessing_utils import load_idp
 
 DataStreamName = 'TImmWave_6843AOP'
 # data_dir_path = 'C:\Recordings\John_F-J'
-data_dir_path = 'C:\Recordings\John_data'
+# data_dir_path = 'C:/Recordings/transfer_learning_test/transfer_learning_test_rnstream/John/old_gesture'
+data_dir_path = 'C:/Recordings/John_A-J_test/2'
 
-exp_info_dict_json_path = 'C:/Users/HaowenWeiJohn/PycharmProjects/RealityNavigation/utils/IndexPen_utils/IndexPenExp.json'
-save_data_dir = 'C:/Recordings/IndexPen_pickle/Haowen/test_data/test_A-J'
+exp_info_dict_json_path = 'C:/Users/Haowe/PycharmProjects/RealityNavigation/utils/IndexPen_utils/IndexPenExp.json'
+# save_data_dir = 'C:/Recordings/transfer_learning_test/transfer_learning_test_pickle/John/John_20_old_sample_transfer_learning_test'
+save_data_dir = 'C:/Recordings/John_A-J_test/2/C-G_test'
 
 reshape_dict = {
     'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]

@@ -449,21 +449,47 @@ def corrupt_frame_padding(time_series_data, min_threshold=np.NINF, max_threshold
 
     # check first and last frame
     for frame_index in range(1, len(time_series_data) - 1):
+        data = np.squeeze(time_series_data[frame_index], axis=-1)
         if np.min(time_series_data[frame_index]) < min_threshold or np.max(time_series_data[frame_index]) > max_threshold:
             # find broken frame, padding with frame +1 and frame -1
-            # broken_frame_before = time_series_data[frame_index - 1]
-            # broken_frame = time_series_data[frame_index]
-            # broken_frame_next = time_series_data[frame_index+1]
+            broken_frame_before = time_series_data[frame_index - 1]
+            broken_frame = time_series_data[frame_index]
+            broken_frame_next = time_series_data[frame_index+1]
             if np.min(time_series_data[frame_index+1]) >= min_threshold and np.max(time_series_data[frame_index+1]) < max_threshold:
                 time_series_data[frame_index] = (time_series_data[frame_index - 1] + time_series_data[frame_index + 1]) * 0.5
                 broken_frame_counter+=1
-                print(frame_index)
+                print('find broken frame at index:', frame_index, ' interpolate by the frame before and after.')
             else:
-                print('find two continues broken frames at index: ', frame_index)
-                return
+                time_series_data[frame_index] = time_series_data[frame_index - 1]
+                print('find two continues broken frames at index: ', frame_index, ', equalize with previous frame.')
+
 
     if not frame_channel_first:
         time_series_data = np.moveaxis(time_series_data, 0, -1)
 
     print('pad broken frame: ', broken_frame_counter)
+    return time_series_data
+
+def time_series_static_clutter_removal(time_series_data, init_clutter=None, signal_clutter_ratio=0.1, frame_channel_first=True):
+    if not frame_channel_first:
+        time_series_data = np.moveaxis(time_series_data, -1, 0)
+
+    clutter = None
+    if init_clutter:
+        clutter = init_clutter
+    else: # using first two frames as the init_clutter
+        clutter = (time_series_data[0]  + time_series_data[1]) * 0.5
+
+    for frame_index in range(1, len(time_series_data) - 1):
+        clutter_removal_frame, clutter = clutter_removal(
+            cur_frame=time_series_data[frame_index],
+            clutter=clutter,
+            signal_clutter_ratio=signal_clutter_ratio)
+
+        time_series_data[frame_index] = clutter_removal_frame
+
+
+    if not frame_channel_first:
+        time_series_data = np.moveaxis(time_series_data, 0, -1)
+
     return time_series_data
