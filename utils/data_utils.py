@@ -480,7 +480,7 @@ def time_series_static_clutter_removal(time_series_data, init_clutter=None, sign
     else: # using first two frames as the init_clutter
         clutter = (time_series_data[0]  + time_series_data[1]) * 0.5
 
-    for frame_index in range(1, len(time_series_data) - 1):
+    for frame_index in range(0, len(time_series_data)):
         clutter_removal_frame, clutter = clutter_removal(
             cur_frame=time_series_data[frame_index],
             clutter=clutter,
