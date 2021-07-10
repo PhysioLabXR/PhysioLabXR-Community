@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import json
-from utils.data_utils import RNStream, integer_one_hot, corrupt_frame_padding
+from utils.data_utils import RNStream, integer_one_hot, corrupt_frame_padding, time_series_static_clutter_removal
 from sklearn.preprocessing import OneHotEncoder
 
 
@@ -42,9 +42,15 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
         data[DataStreamName][0][0] = np.moveaxis(data[DataStreamName][0][0], -1, 0)
         data[DataStreamName][0][1] = np.moveaxis(data[DataStreamName][0][1], -1, 0)
 
+        # corrupt frame removal
         data[DataStreamName][0][0] = corrupt_frame_padding(data[DataStreamName][0][0], min_threshold=-1000, max_threshold=1500, frame_channel_first=True)
         data[DataStreamName][0][1] = corrupt_frame_padding(data[DataStreamName][0][1], min_threshold=0, max_threshold=2500, frame_channel_first=True)
 
+        # clutter removal
+        data[DataStreamName][0][0] = time_series_static_clutter_removal(data[DataStreamName][0][0],
+                                                                          signal_clutter_ratio=0.8)
+        data[DataStreamName][0][1] = time_series_static_clutter_removal(data[DataStreamName][0][1],
+                                                                      signal_clutter_ratio=0.6)
 
         index_buffer = []
         label_buffer = []
