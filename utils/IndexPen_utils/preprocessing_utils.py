@@ -5,7 +5,7 @@ from utils.data_utils import RNStream, integer_one_hot, corrupt_frame_padding, t
 from sklearn.preprocessing import OneHotEncoder
 
 
-def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num, all_categories=None):
+def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num, rd_cr_ratio=None, ra_cr_ratio=None, all_categories=None):
     exp_info_dict = json.load(open(exp_info_dict_json_path))
     ExpID = exp_info_dict['ExpID']
     ExpLSLStreamName = exp_info_dict['ExpLSLStreamName']
@@ -47,10 +47,14 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
         data[DataStreamName][0][1] = corrupt_frame_padding(data[DataStreamName][0][1], min_threshold=0, max_threshold=2500, frame_channel_first=True)
 
         # clutter removal
-        data[DataStreamName][0][0] = time_series_static_clutter_removal(data[DataStreamName][0][0],
-                                                                          signal_clutter_ratio=0.8)
-        data[DataStreamName][0][1] = time_series_static_clutter_removal(data[DataStreamName][0][1],
-                                                                      signal_clutter_ratio=0.6)
+        if rd_cr_ratio:
+            data[DataStreamName][0][0] = time_series_static_clutter_removal(data[DataStreamName][0][0],
+                                                                            signal_clutter_ratio=rd_cr_ratio)
+            print('rd_cr_ratio: ', rd_cr_ratio)
+        if ra_cr_ratio:
+            data[DataStreamName][0][1] = time_series_static_clutter_removal(data[DataStreamName][0][1],
+                                                                            signal_clutter_ratio=ra_cr_ratio)
+            print('ra_cr_ratio: ', ra_cr_ratio)
 
         index_buffer = []
         label_buffer = []
