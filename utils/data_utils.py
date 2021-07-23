@@ -493,3 +493,10 @@ def time_series_static_clutter_removal(time_series_data, init_clutter=None, sign
         time_series_data = np.moveaxis(time_series_data, 0, -1)
 
     return time_series_data
+
+def is_broken_frame(frame, min_threshold=np.NINF, max_threshold=np.PINF):
+    if np.min(frame) < min_threshold or np.max(frame) > max_threshold:
+        return True
+    else:
+        return False
+

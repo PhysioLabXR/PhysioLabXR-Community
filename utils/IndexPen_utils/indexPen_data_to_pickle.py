@@ -4,7 +4,7 @@ from preprocessing_utils import load_idp
 
 DataStreamName = 'TImmWave_6843AOP'
 # data_dir_path = 'C:\Recordings\John_F-J'
-data_dir_path = 'C:/Recordings/transfer_learning_test/transfer_learning_test_rnstream/John/new_gesture'
+data_dir_path = 'C:/Users/Haowe/OneDrive/Desktop/New folder'
 # data_dir_path = 'C:/Recordings/John_A-J_test/2'
 
 exp_info_dict_json_path = 'C:/Users/Haowe/PycharmProjects/RealityNavigation/utils/IndexPen_utils/IndexPenExp.json'
