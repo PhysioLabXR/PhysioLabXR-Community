@@ -13,7 +13,7 @@ gui_mmw_rd_rc_csr_default = mmw_rd_rc_csr * 100
 gui_mmw_ra_rc_csr_default = mmw_razi_rc_csr * 100
 
 
-indexpen_casses = ['A', 'B', 'C', 'D', 'E',
+indexpen_classes = ['A', 'B', 'C', 'D', 'E',
                     'F', 'G', 'H', 'I', 'J',
                     'K', 'L', 'M', 'N', 'O',
                     'P', 'Q', 'R', 'S', 'T',
