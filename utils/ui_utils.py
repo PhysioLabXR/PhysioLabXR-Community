@@ -53,7 +53,7 @@ def init_view(label, container, label_bold=True, position="centertop", vertical=
 
 def init_container(parent, label=None, label_position=None, label_bold=True, vertical=True, style=None, size=None,
                    insert_position=None):
-    container = QtGui.QWidget()
+    container = QtWidgets.QWidget()
 
     if size:
         container.setFixedWidth(size[0])
