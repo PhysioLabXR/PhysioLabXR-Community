@@ -15,6 +15,7 @@ from interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 # from interfaces.UnityLSLInterface import UnityLSLInterface
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
+from ui.ReplayTab import ReplayTab
 from utils.data_utils import window_slice
 from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface, \
@@ -23,13 +24,27 @@ from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDia
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
 import numpy as np
 from ui.SignalSettingsTab import SignalSettingsTab
+import os
+from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
+                          QThreadPool, pyqtSignal, pyqtSlot)
+from threadings.workers import LSLReplayWorker
 
+# Define function to import external files when using PyInstaller.
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, app, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ui = uic.loadUi("ui/mainwindow.ui", self)
+        self.ui = uic.loadUi(resource_path("ui/mainwindow.ui"), self)
         self.setWindowTitle('Reality Navigation')
         self.app = app
 
@@ -41,6 +56,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_worker = None
         self.cam_workers = {}
         self.cam_displays = {}
+        self.lsl_replay_worker = None
 
         # create workers for different sensors
         self.init_inference(inference_interface)
@@ -117,6 +133,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.settingTab = SettingsTab(self)
         self.settings_tab_vertical_layout.addWidget(self.settingTab)
+
+        self.replayTab = ReplayTab(self)
+        self.replay_tab_vertical_layout.addWidget(self.replayTab)
+        # self.lsl_replay_worker_thread = QThread(self)
+        # self.lsl_replay_worker_thread.start()
+        # self.lsl_replay_worker = LSLReplayWorker()
+        # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
+        # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
 
         # windows
         self.pop_windows = {}
