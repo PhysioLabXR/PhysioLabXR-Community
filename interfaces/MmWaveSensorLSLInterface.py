@@ -30,10 +30,10 @@ class MmWaveSensorLSLInterface:
         self.ra_clutter = None
         self.rd_signal_clutter_ratio = config_signal.mmw_rd_rc_csr
         self.ra_signal_clutter_ratio = config_signal.mmw_razi_rc_csr
-        self.IndexPenRealTimePredictor = IndexPenRealTimePredictor(model_path=os.path.abspath('resource/mmWave/indexPen_model/2021-07-17_22-18-53.145732.h5'),
-                                                                   classes=config_signal.indexpen_classes,
-                                                                   debouncer_threshold=15,
-                                                                   data_buffer_len=120)
+        # self.IndexPenRealTimePredictor = IndexPenRealTimePredictor(model_path=os.path.abspath('resource/mmWave/indexPen_model/2021-07-17_22-18-53.145732.h5'),
+        #                                                            classes=config_signal.indexpen_classes,
+        #                                                            debouncer_threshold=15,
+        #                                                            data_buffer_len=120)
 
     def send_config(self, config_path):
         try:
@@ -70,7 +70,7 @@ class MmWaveSensorLSLInterface:
                 if rd_heatmap is not None and azi_heatmap is not None:
 
                     # realtime prediction
-                    self.IndexPenRealTimePredictor.predict(current_rd=np.expand_dims(rd_heatmap,-1), currrent_ra=np.expand_dims(azi_heatmap,-1))
+                    # self.IndexPenRealTimePredictor.predict(current_rd=np.expand_dims(rd_heatmap,-1), currrent_ra=np.expand_dims(azi_heatmap,-1))
 
 
                     rd_heatmap_clutter_removed, self.rd_clutter = clutter_removal(cur_frame=rd_heatmap,
