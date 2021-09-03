@@ -55,7 +55,7 @@ reshape_dict = {
     'TImmWave_6843AOP': [(8, 16, 1), (8, 64, 1)]
 }
 
-rd_map_series, ra_map_series, time_stamp, label_start_time_stamp_indexes, labels = load_idp_raw(
+indexpen_raw, time_stamp, labels, label_start_time_stamp_indexes = load_idp_raw(
     data_file_path=data_file_path,
     DataStreamName=DataStreamName,
     reshape_dict=reshape_dict,
@@ -63,8 +63,10 @@ rd_map_series, ra_map_series, time_stamp, label_start_time_stamp_indexes, labels
     rd_cr_ratio=0.8,
     ra_cr_ratio=0.8,
     all_categories=None,
-    session_only=False
+    session_only=True
 )
+rd_map_series = indexpen_raw[0]
+ra_map_series = indexpen_raw[1]
 
 labels_index = np.array(labels).astype(int)-1
 grdt_chars = np.array(config_signal.indexpen_classes)[labels_index]
