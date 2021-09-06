@@ -3,18 +3,13 @@ import numpy as np
 from utils.IndexPen_utils.preprocessing_utils import load_idp, load_idp_file, load_idp_raw
 import pickle
 
-
 user_study2_data_dir = 'C:/Recordings/user_study2_data'
-user_study2_data_save_dir = 'C:/Users/Haowe/OneDrive/Desktop/IndexPen_User_Study_Data/UserStudy2Data'
+user_study2_data_save_dir = 'C:/Users/Haowe/PycharmProjects/IndexPen_Training/data/IndexPenData/IndexPenStudyData/UserStudy2Data'
 
-
-participant_dir = 'participant_0'
+participant_dir = 'participant_2'
 session_dir = 'session_1'
 
-
-
 full_session_dir_path = os.path.join(user_study2_data_dir, participant_dir, session_dir)
-
 
 exp_info_dict_json_path = '../../utils/IndexPen_utils/IndexPenExp.json'
 reshape_dict = {
@@ -29,8 +24,6 @@ sample_num = fs * duration
 session_data_dict = {}
 session_label_dict = {}
 
-
-
 trails_name = os.listdir(full_session_dir_path)
 for trail_index, trail_name in enumerate(trails_name):
     trail_data_dict = {}
@@ -38,7 +31,7 @@ for trail_index, trail_name in enumerate(trails_name):
     trail_path = os.path.join(full_session_dir_path, trail_name)
 
     indexpen_train = load_idp_file(trail_path, DataStreamName, reshape_dict, exp_info_dict_json_path,
-                                  sample_num, rd_cr_ratio=0.8, ra_cr_ratio=0.8, all_categories=None)
+                                   sample_num, rd_cr_ratio=0.8, ra_cr_ratio=0.8, all_categories=None)
 
     indexpen_raw = load_idp_raw(
         data_file_path=trail_path,
@@ -53,14 +46,9 @@ for trail_index, trail_name in enumerate(trails_name):
 
     session_data_dict[trail_index] = [indexpen_train, indexpen_raw]
 
-
-
-
-
-
 # # all data extraction done
 #
-with open(os.path.join(user_study2_data_save_dir, participant_dir,session_dir), 'wb') as f:
+with open(os.path.join(user_study2_data_save_dir, participant_dir, session_dir), 'wb') as f:
     pickle.dump(session_data_dict, f, protocol=4)
 
 # all_data_dir_path = 'C:/Recordings/transfer_learning_test/transfer_learning_test_rnstream'

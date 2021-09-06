@@ -159,10 +159,12 @@ def load_idp_raw(data_file_path, DataStreamName, reshape_dict, exp_info_dict_jso
     if session_only:
         event_markers = data[ExpLSLStreamName][0][0]
 
-        session_start_marker_index = np.where(event_markers == ExpStartMarker)[0][0]
+        session_start_marker_index = np.where(event_markers == ExpStartMarker)[0]
+        session_start_marker_index = np.array(session_start_marker_index)[-1]
         session_start_time_stamp = data[ExpLSLStreamName][1][session_start_marker_index]
 
-        session_end_marker_index = np.where(event_markers == ExpEndMarker)[0][0]
+        session_end_marker_index = np.where(event_markers == ExpEndMarker)[0]
+        session_end_marker_index = np.array(session_end_marker_index)[-1]
         session_end_time_stamp = data[ExpLSLStreamName][1][session_end_marker_index]
 
         session_start_data_index = np.where(data[DataStreamName][1] > session_start_time_stamp)[0][0]
