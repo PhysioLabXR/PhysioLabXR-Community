@@ -1,2 +1,2 @@
 {"ExperimentName": "NEDE-V2",
-  "PresetStreamNames": ["Unity.HeadTracker", "Unity.ViveSREyeTracking"]}
+  "PresetStreamNames": ["Unity.NEDE.EventMarkers", "Unity.HeadTracker", "Unity.ViveSREyeTracking"]}

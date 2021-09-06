@@ -1,14 +1,16 @@
+import os.path
 import time
 
 import numpy as np
 import serial
+from pylsl import StreamInfo, StreamOutlet
 
 import config_signal
 from exceptions.exceptions import BufferOverFlowError, DataPortNotOpenError, GeneralMmWError, PortsNotSetUpError
+from utils.IndexPen_utils.IndexPenPredictionUtils.IndexPenPredictor import IndexPenRealTimePredictor
 from utils.data_utils import clutter_removal
 from utils.mmWave_utils import serial_iwr6843
 from utils.mmWave_utils.parse_tlv import decode_iwr_tlv
-from pylsl import StreamInfo, StreamOutlet
 
 
 class MmWaveSensorLSLInterface:
@@ -28,6 +30,10 @@ class MmWaveSensorLSLInterface:
         self.ra_clutter = None
         self.rd_signal_clutter_ratio = config_signal.mmw_rd_rc_csr
         self.ra_signal_clutter_ratio = config_signal.mmw_razi_rc_csr
+        # self.IndexPenRealTimePredictor = IndexPenRealTimePredictor(model_path=os.path.abspath('resource/mmWave/indexPen_model/2021-07-17_22-18-53.145732.h5'),
+        #                                                            classes=config_signal.indexpen_classes,
+        #                                                            debouncer_threshold=15,
+        #                                                            data_buffer_len=120)
 
     def send_config(self, config_path):
         try:
@@ -62,6 +68,11 @@ class MmWaveSensorLSLInterface:
             try:
                 detected_points, range_profile, rd_heatmap, azi_heatmap = self.parse_stream()
                 if rd_heatmap is not None and azi_heatmap is not None:
+
+                    # realtime prediction
+                    # self.IndexPenRealTimePredictor.predict(current_rd=np.expand_dims(rd_heatmap,-1), currrent_ra=np.expand_dims(azi_heatmap,-1))
+
+
                     rd_heatmap_clutter_removed, self.rd_clutter = clutter_removal(cur_frame=rd_heatmap,
                                                                                   clutter=self.rd_clutter,
                                                                                   signal_clutter_ratio=self.rd_signal_clutter_ratio)
@@ -141,6 +152,7 @@ class MmWaveSensorLSLInterface:
 
             if is_packet_complete:
                 self.data_buffer = b'' + leftover_data
+                # print(np.max(azi_heatmap))
                 return detected_points, range_profile, rd_heatmap, azi_heatmap
             else:
                 return None, None, None, None
