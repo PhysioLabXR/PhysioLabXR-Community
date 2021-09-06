@@ -13,3 +13,4 @@ matplotlib
 pyxdf
 opencv-python
 pyautogui
+qimage2ndarray
