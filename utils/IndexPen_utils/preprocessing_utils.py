@@ -38,7 +38,7 @@ def load_idp(data_dir_path, DataStreamName, reshape_dict, exp_info_dict_json_pat
         # data[marker_data] = marker_data[ExpLSLStreamName]
         #
 
-        data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, jitter_removal=False)
+        data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, ignore_stream=('monitor1', '0'), jitter_removal=False)
         data[DataStreamName][0][0] = np.moveaxis(data[DataStreamName][0][0], -1, 0)
         data[DataStreamName][0][1] = np.moveaxis(data[DataStreamName][0][1], -1, 0)
 
@@ -135,7 +135,7 @@ def load_idp_raw(data_file_path, DataStreamName, reshape_dict, exp_info_dict_jso
 
     rs_stream = RNStream(data_file_path)
 
-    data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, jitter_removal=False)
+    data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, ignore_stream=('monitor1', '0'), jitter_removal=False)
     data[DataStreamName][0][0] = np.moveaxis(data[DataStreamName][0][0], -1, 0)
     data[DataStreamName][0][1] = np.moveaxis(data[DataStreamName][0][1], -1, 0)
 
@@ -254,7 +254,7 @@ def load_idp_file(file_path, DataStreamName, reshape_dict, exp_info_dict_json_pa
     # data[marker_data] = marker_data[ExpLSLStreamName]
     #
 
-    data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, jitter_removal=False)
+    data = rs_stream.stream_in(reshape_stream_dict=reshape_dict, ignore_stream=('monitor1', '0'), jitter_removal=False)
     data[DataStreamName][0][0] = np.moveaxis(data[DataStreamName][0][0], -1, 0)
     data[DataStreamName][0][1] = np.moveaxis(data[DataStreamName][0][1], -1, 0)
 

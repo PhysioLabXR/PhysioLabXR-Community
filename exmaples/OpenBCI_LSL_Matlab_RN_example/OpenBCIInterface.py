@@ -11,7 +11,7 @@ from utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVr
 
 class OpenBCIInterface:
 
-    def __init__(self, serial_port='COM5', board_id=0, log='store_true', streamer_params='',
+    def __init__(self, serial_port='COM6', board_id=0, log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
         params = BrainFlowInputParams()
         params.serial_port = serial_port
@@ -150,6 +150,7 @@ def run_test():
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
+                print(eeg_data)
                     # print(eeg_data)
                     # start_time = time.time()
         except KeyboardInterrupt:

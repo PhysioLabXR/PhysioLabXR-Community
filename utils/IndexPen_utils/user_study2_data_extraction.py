@@ -26,6 +26,8 @@ session_label_dict = {}
 
 trails_name = os.listdir(full_session_dir_path)
 for trail_index, trail_name in enumerate(trails_name):
+    file_name_info = os. path. splitext(trail_name)
+    trail_session_index = int(file_name_info[0].split('_')[-1])
     trail_data_dict = {}
 
     trail_path = os.path.join(full_session_dir_path, trail_name)
@@ -44,7 +46,7 @@ for trail_index, trail_name in enumerate(trails_name):
         session_only=True
     )
 
-    session_data_dict[trail_index] = [indexpen_train, indexpen_raw]
+    session_data_dict[trail_session_index] = [indexpen_train, indexpen_raw]
 
 # # all data extraction done
 #
