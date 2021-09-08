@@ -591,7 +591,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         if plot_format[0] == 'time' and plot_format[1] == 'series':
                             # plot corresponding time series data, range (a,b) is time series
                             plot_group_channel_num = plot_group[1] - plot_group[0]
-                            for i in range(plot_channel_num_offset, plot_group_channel_num):
+                            for i in range(plot_channel_num_offset, plot_channel_num_offset+plot_group_channel_num):
                                 self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
                                                                                             data_to_plot[i, :])
                             plot_channel_num_offset += plot_group_channel_num
