@@ -583,6 +583,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
+            if self.settings_window is not None:
+                self.settings_window.close()
             remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
             [x.click() for x in remove_btns]
             event.accept()
