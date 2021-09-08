@@ -1,4 +1,5 @@
 import time
+import webbrowser
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
@@ -20,7 +21,7 @@ from utils.general import load_all_lslStream_presets, create_LSL_preset, process
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface, \
     load_all_experiment_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
-    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window
 import numpy as np
 from ui.SignalSettingsTab import SignalSettingsTab
 
@@ -115,12 +116,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recordingTab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
 
-        self.settingTab = SettingsTab(self)
-        self.settings_tab_vertical_layout.addWidget(self.settingTab)
+        # self.settingTab = SettingsTab(self)
+        # self.settings_tab_vertical_layout.addWidget(self.settingTab)
 
         # windows
         self.pop_windows = {}
         self.test_ts_buffer = []
+
+        # actions for context menu
+        self.actionDocumentation.triggered.connect(self.fire_action_documentation)
+        self.actionRepo.triggered.connect(self.fire_action_repo)
+        self.actionShow_Recordings.triggered.connect(self.fire_action_show_recordings)
+        self.actionExit.triggered.connect(self.fire_action_exit)
+        self.actionSettings.triggered.connect(self.fire_action_settings)
+
+        # reserve windows
+        self.settings_window = None
 
     def add_camera_clicked(self):
         if self.recordingTab.is_recording:
@@ -572,9 +583,31 @@ class MainWindow(QtWidgets.QMainWindow):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
+            if self.settings_window is not None:
+                self.settings_window.close()
             remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
             [x.click() for x in remove_btns]
             event.accept()
             self.app.quit()
         else:
             event.ignore()
+
+    def fire_action_documentation(self):
+        webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
+
+    def fire_action_repo(self):
+        webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
+
+    def fire_action_show_recordings(self):
+        self.recordingTab.open_recording_directory()
+
+    def fire_action_exit(self):
+        self.close()
+
+    def fire_action_settings(self):
+        if self.settings_window is not None:
+            self.settings_window.close()
+        settings_tab = SettingsTab(self)
+        self.settings_window = another_window('Settings')
+        self.settings_window.get_layout().addWidget(settings_tab)
+        self.settings_window.show()

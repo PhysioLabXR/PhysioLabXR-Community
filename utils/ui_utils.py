@@ -305,3 +305,18 @@ class AnotherWindow(QWidget):
             event.accept()  # let the window close
         else:
             event.ignore()
+
+class another_window(QWidget):
+    """
+    This "window" is a QWidget. If it has no parent, it
+    will appear as a free-floating window as we want.
+    """
+    def __init__(self, window_title: str):
+        super().__init__()
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.setWindowTitle(window_title)
+
+    def get_layout(self):
+        return self.layout
+
