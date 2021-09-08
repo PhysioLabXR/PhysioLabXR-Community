@@ -99,12 +99,12 @@
        </attribute>
        <layout class="QVBoxLayout" name="recordings_tab_vertical_layout"/>
       </widget>
-      <widget class="QWidget" name="settings_tab">
-       <attribute name="title">
-        <string>Settings </string>
-       </attribute>
-       <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>
-      </widget>
+<!--      <widget class="QWidget" name="settings_tab">-->
+<!--       <attribute name="title">-->
+<!--        <string>Settings </string>-->
+<!--       </attribute>-->
+<!--       <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>-->
+<!--      </widget>-->
      </widget>
     </item>
     <item>
@@ -130,6 +130,8 @@
      <string>File</string>
     </property>
     <addaction name="actionShow_Recordings"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -166,6 +168,11 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>
