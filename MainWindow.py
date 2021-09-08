@@ -1,4 +1,5 @@
 import time
+import webbrowser
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
@@ -121,6 +122,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # windows
         self.pop_windows = {}
         self.test_ts_buffer = []
+
+        # actions for context menu
+        self.actionDocumentation.triggered.connect(self.fire_action_documentation)
+        self.actionRepo.triggered.connect(self.fire_action_repo)
+        self.actionShow_Recordings.triggered.connect(self.fire_action_show_recordings)
+        self.actionExit.triggered.connect(self.fire_action_exit)
 
     def add_camera_clicked(self):
         if self.recordingTab.is_recording:
@@ -578,3 +585,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.app.quit()
         else:
             event.ignore()
+
+    def fire_action_documentation(self):
+        webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
+
+    def fire_action_repo(self):
+        webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
+
+    def fire_action_show_recordings(self):
+        self.recordingTab.open_recording_directory()
+
+    def fire_action_exit(self):
+        self.close()

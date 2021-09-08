@@ -135,3 +135,9 @@ class RecordingsTab(QtWidgets.QWidget):
     def update_file_size_label(self):
         self.parent.recordingFileSizeLabel. \
             setText('    Recording file size: {0} Mb'.format(str(round(self.recording_byte_count / 10 ** 6, 2))))
+
+    def open_recording_directory(self):
+        try:
+            os.startfile(self.saveRootTextEdit.toPlainText())
+        except FileNotFoundError:
+            dialog_popup(msg="Recording directory does not exist. Please use a valid directory in the Recording Tab.", title="Error");
