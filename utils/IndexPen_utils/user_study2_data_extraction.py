@@ -6,8 +6,8 @@ import pickle
 user_study2_data_dir = 'C:/Recordings/user_study2_data'
 user_study2_data_save_dir = 'C:/Users/Haowe/PycharmProjects/IndexPen_Training/data/IndexPenData/IndexPenStudyData/UserStudy2Data'
 
-participant_dir = 'participant_2'
-session_dir = 'session_1'
+participant_dir = 'participant_1'
+session_dir = 'session_3'
 
 full_session_dir_path = os.path.join(user_study2_data_dir, participant_dir, session_dir)
 
