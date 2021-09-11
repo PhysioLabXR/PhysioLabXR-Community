@@ -21,7 +21,7 @@
        <cursorShape>ArrowCursor</cursorShape>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
@@ -136,28 +136,18 @@
      <string>File</string>
     </property>
     <addaction name="actionShow_Recordings"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>View</string>
-    </property>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout_2"/>
+    <addaction name="actionRepo"/>
     <addaction name="actionDocumentation"/>
    </widget>
    <addaction name="menufile"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -166,9 +156,9 @@
     <string>About</string>
    </property>
   </action>
-  <action name="actionAbout_2">
+  <action name="actionRepo">
    <property name="text">
-    <string>About</string>
+    <string>GitHub Page</string>
    </property>
   </action>
   <action name="actionDocumentation">
@@ -184,6 +174,11 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

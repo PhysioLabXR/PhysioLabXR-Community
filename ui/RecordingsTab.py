@@ -33,32 +33,19 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.StartRecordingBtn.clicked.connect(self.start_recording_btn_ressed)
         self.StopRecordingBtn.clicked.connect(self.stop_recording_btn_pressed)
-        self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
         self.StopRecordingBtn.setEnabled(False)
         self.parent = parent
 
-        self.data_dir = config.DEFAULT_DATA_DIR
-        self.save_path = ''
         self.save_stream = None
 
-        self.saveRootTextEdit.setText(self.data_dir + '/')
+        self.save_path = ''
 
         self.timer = QTimer()
         self.timer.setInterval(config.EVICTION_INTERVAL)
         self.timer.timeout.connect(self.evict_buffer)
 
         self.recording_byte_count = 0
-
-    def select_data_dir_btn_pressed(self):
-
-        selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
-
-        if selected_data_dir != '':
-            self.data_dir = selected_data_dir
-
-        print("Selected data dir: ", self.data_dir)
-        self.saveRootTextEdit.setText(self.data_dir + '/')
 
     def start_recording_btn_ressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):
@@ -117,11 +104,11 @@ class RecordingsTab(QtWidgets.QWidget):
             pass
 
     def generate_save_path(self):
-        os.makedirs(self.saveRootTextEdit.toPlainText(), exist_ok=True)
+        os.makedirs(config.USER_SETTINGS["USER_DATA_DIR"], exist_ok=True)
         # datetime object containing current date and time
         now = datetime.now()
         dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
-        return os.path.join(self.saveRootTextEdit.toPlainText(),
+        return os.path.join(config.USER_SETTINGS["USER_DATA_DIR"],
                             '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}.dats'.format(dt_string,
                                                                       self.experimentNameTextEdit.toPlainText(),
                                                                       self.subjectTagTextEdit.toPlainText(),
@@ -135,3 +122,9 @@ class RecordingsTab(QtWidgets.QWidget):
     def update_file_size_label(self):
         self.parent.recordingFileSizeLabel. \
             setText('    Recording file size: {0} Mb'.format(str(round(self.recording_byte_count / 10 ** 6, 2))))
+
+    def open_recording_directory(self):
+        try:
+            os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
+        except FileNotFoundError:
+            dialog_popup(msg="Recording directory does not exist. Please use a valid directory in the Recording Tab.", title="Error");
