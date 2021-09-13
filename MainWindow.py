@@ -235,6 +235,7 @@ class MainWindow(QtWidgets.QMainWindow):
             loading_dlg.close()
 
     def init_lsl(self, preset):
+        error_initialization = False
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
             try:
@@ -273,7 +274,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 plot_group_slices=plot_group_slices,
                 plot_group_format=plot_group_format
             )
-            except Exception as e:
+            except AssertionError as e:
+                error_initialization = True
                 dialog_popup(str(e))
 
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
@@ -354,6 +356,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
+            # if error initialization
+            if error_initialization:
+                remove_stream_btn.click()
             return preset
         else:
             dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
@@ -494,7 +499,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
                 else:
-                    raise Exception('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
+                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
         else:
             plot_widget = pg.PlotWidget()
