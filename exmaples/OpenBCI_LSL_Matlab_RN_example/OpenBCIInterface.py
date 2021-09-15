@@ -131,8 +131,8 @@ def run_test():
     print('Started streaming')
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=8)
-    vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
+    butter_bandpass = RealtimeButterBandpass(lowcut=7.5, highcut=12.5, fs=250, order=6, channel_num=8)
+    # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
     start_time = time.time()
@@ -146,7 +146,7 @@ def run_test():
                 # ######### notch and butter
                 eeg_data = notch.process_data(eeg_data)
                 eeg_data = butter_bandpass.process_data(eeg_data)
-                eeg_data = vrms_converter.process_data(eeg_data)
+                # eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
