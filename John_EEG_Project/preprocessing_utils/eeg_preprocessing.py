@@ -5,7 +5,7 @@ from utils.data_utils import RNStream, integer_one_hot, corrupt_frame_padding, t
 from sklearn.preprocessing import OneHotEncoder
 
 
-def load_idp_file(file_path, DataStreamName, reshape_dict, exp_info_dict_json_path, sample_num, rd_cr_ratio=None, ra_cr_ratio=None, all_categories=None):
+def load_idp_file(file_path, DataStreamName, exp_info_dict_json_path, all_categories=None):
     exp_info_dict = json.load(open(exp_info_dict_json_path))
     ExpID = exp_info_dict['ExpID']
     ExpLSLStreamName = exp_info_dict['ExpLSLStreamName']
@@ -14,3 +14,14 @@ def load_idp_file(file_path, DataStreamName, reshape_dict, exp_info_dict_json_pa
     ExpLabelMarker = exp_info_dict['ExpLabelMarker']
     ExpInterruptMarker = exp_info_dict['ExpInterruptMarker']
     ExpErrorMarker = exp_info_dict['ExpErrorMarker']
+
+    if all_categories is None:
+        all_categories = list(ExpLabelMarker.values())
+    encoder = OneHotEncoder(categories='auto')
+    encoder.fit(np.reshape(all_categories, (-1, 1)))
+
+
+
+
+
+
