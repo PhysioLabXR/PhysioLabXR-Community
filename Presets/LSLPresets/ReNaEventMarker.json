@@ -1,0 +1,4 @@
+{ "StreamName":"Unity.ReNa.EventMarkers",
+  "ChannelNames":[
+    "RSVPMarker", "CarouselMarker", "VSMarker", "TSMarker"],
+  "NominalSamplingRate":  75}
