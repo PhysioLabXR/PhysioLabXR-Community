@@ -80,6 +80,8 @@ class ReplayTab(QtWidgets.QWidget):
         self.parent.lsl_replay_worker.moveToThread(lsl_replay_thread)
         self.parent.lsl_replay_worker.stream_data = stream_data
         self.parent.lsl_replay_worker.tick_signal.emit()
+        stream_names = list(stream_data)
+        self.parent.add_streams_from_replay(stream_names)
 
         # self.parent.lsl_replay_worker_thread = QThread(self.parent)
         # self.parent.lsl_replay_worker_thread.start()

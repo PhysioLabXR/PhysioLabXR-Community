@@ -4,7 +4,7 @@ import webbrowser
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QLabel, QMessageBox
+from PyQt5.QtWidgets import QLabel, QMessageBox, QWidget
 from scipy.signal import decimate
 
 import config
@@ -244,25 +244,40 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_text = str(self.experiment_combo_box.currentText())
         if selected_text in self.experiment_presets_dict.keys():
             streams_for_experiment = self.experiment_presets_dict[selected_text]
-            try:
-                assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in streams_for_experiment])
-            except AssertionError:
-                dialog_popup(msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset", title="Error")
-                return
-            loading_dlg = dialog_popup(
-                msg="Please wait while streams are being added...",
-                title="Info")
-            for stream_name in streams_for_experiment:
-                isLSL = stream_name in self.lslStream_presets_dict.keys()
-                if isLSL:
-                    index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                    self.preset_LSLStream_combo_box.setCurrentIndex(index)
-                    self.add_preset_lslStream_clicked()
-                else:
-                    index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                    self.device_combo_box.setCurrentIndex(index)
-                    self.add_preset_device_clicked()
-            loading_dlg.close()
+            self.add_streams_to_visulaize(streams_for_experiment)
+
+    def add_streams_to_visulaize(self, stream_names):
+        try:
+            assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
+                           stream_names])
+        except AssertionError:
+            dialog_popup(
+                msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                title="Error")
+            return
+        loading_dlg = dialog_popup(
+            msg="Please wait while streams are being added...",
+            title="Info")
+        for stream_name in stream_names:
+            isLSL = stream_name in self.lslStream_presets_dict.keys()
+            if isLSL:
+                index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                self.preset_LSLStream_combo_box.setCurrentIndex(index)
+                self.add_preset_lslStream_clicked()
+            else:
+                index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                self.device_combo_box.setCurrentIndex(index)
+                self.add_preset_device_clicked()
+        loading_dlg.close()
+
+    def add_streams_from_replay(self, stream_names):
+        # switch tab to visulalization
+        self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        self.add_streams_to_visulaize(stream_names)
+        for stream_name in stream_names:
+            if stream_name in self.lsl_workers.keys():
+                self.lsl_workers[stream_name].start_stream()
+
     def init_lsl(self, preset):
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
@@ -541,6 +556,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
                 if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+                    data_to_plot = np.nan_to_num(data_to_plot, nan=0)
                     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
                                             axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
@@ -571,7 +587,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_unityLSL_buffer(self):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
-
 
     def relaod_all_presets_btn_clicked(self):
         if self.reload_all_presets():

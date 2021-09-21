@@ -21,7 +21,7 @@
        <cursorShape>ArrowCursor</cursorShape>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
@@ -104,12 +104,6 @@
         <string>Replay</string>
        </attribute>
        <layout class="QVBoxLayout" name="replay_tab_vertical_layout"/>
-      </widget>
-      <widget class="QWidget" name="settings_tab">
-       <attribute name="title">
-        <string>Settings </string>
-       </attribute>
-       <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>
       </widget>
      </widget>
     </item>
