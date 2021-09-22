@@ -6,8 +6,8 @@ import pickle
 user_study2_data_dir = 'C:/Recordings/user_study2_data'
 user_study2_data_save_dir = 'C:/Users/Haowe/PycharmProjects/IndexPen_Training/data/IndexPenData/IndexPenStudyData/UserStudy2Data'
 # user_study2_data_save_dir = 'D:/IndexPen_data_Study1_Study2/user_study2_data/'
-participant_dir = 'participant_1'
-session_dir = 'session_5'
+participant_dir = 'participant_3'
+session_dir = 'session_2'
 
 full_session_dir_path = os.path.join(user_study2_data_dir, participant_dir, session_dir)
 
@@ -51,7 +51,7 @@ for trail_index, trail_name in enumerate(trails_name):
 # # all data extraction done
 #
 with open(os.path.join(user_study2_data_save_dir, participant_dir, session_dir), 'wb') as f:
-    pickle.dump(session_data_dict, f, protocol=4)
+    pickle.dump([participant_dir, session_dir, session_data_dict], f, protocol=4)
 
 # all_data_dir_path = 'C:/Recordings/transfer_learning_test/transfer_learning_test_rnstream'
 # for root, subdirs, files in os.walk(all_data_dir_path):
