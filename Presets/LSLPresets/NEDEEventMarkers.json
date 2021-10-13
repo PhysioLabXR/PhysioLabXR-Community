@@ -1,5 +1,5 @@
 { "StreamName":"Unity.NEDE.EventMarkers",
   "ChannelNames":[
-    "EventMarker", "VehicleSpeed", "PlayerSpeed", "PlayDistanceFromVehicle", "DistanceToNextBillboard", "IsGazeInBillboard"],
+    "EventMarker", "VehicleSpeed", "PlayerSpeed", "PlayDistanceFromVehicle", "DistanceToNextBillboard", "IsGazeInBillboard", "AngleItemGaze", "AngleWorldGaze"],
   "NominalSamplingRate":  75,
   "GroupChannelsInPlot":  [1, 3, 4, 5]}
