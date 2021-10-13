@@ -1,3 +1,0 @@
-{"ExperimentName": "RealityNavigation",
-  "PresetStreamNames": ["BioSemi", "Unity.HeadTracker", "Unity.ViveSREyeTracking",
-  "Unity.RotationWheel.EventMarkers", "Unity.VisualSearch.EventMarkers"]}
