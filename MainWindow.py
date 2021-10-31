@@ -526,10 +526,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                             axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
-                [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                 enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+
+                [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+                 enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
