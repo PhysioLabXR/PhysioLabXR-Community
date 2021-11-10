@@ -177,8 +177,7 @@ class RNStream:
                     print("Ignore jitter remove for stream {0}, because it has fewer than two samples".format(stream_name))
                     continue
                 if np.std(ts_array) > 0.1:
-                    warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should"
-                                  "not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
+                    warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
                 print('Removing jitter for streams {0}/{1}'.format(i, len(buffer)), sep=' ',
                       end='\r', flush=True)
                 coefs = np.polyfit(list(range(len(ts_array))), ts_array, 1)
