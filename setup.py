@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="ReNaLabApp",
-    version="0.0.1 dev1",
+    version="0.0.1.dev3",
     author="ApocalyVec",
     author_email="s-vector.lee@hotmail.com",
     description="Reality Navigation Lab App",
@@ -21,7 +21,7 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": ""},
-    packages=setuptools.find_packages(),
+    package_dir={"rena": "src"},
+    packages=setuptools.find_packages(where="src"),
     python_requires=">=3.6",
 )
