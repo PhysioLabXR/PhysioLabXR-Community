@@ -3,5 +3,5 @@
     "RSVPMarker", "RSVPDistance", "-", "-",
     "CarouselMarker", "CarouselDistance", "CarouselAngularSpeed", "CarouselIncidentAngle",
     "VSMarker", "-", "-", "-",
-    "TSMarker", "-", "-", "-"],
+    "TSMarker", "GrabEvent", "ReleaseEvent", "EventItemID"],
   "GroupChannelsInPlot":  [4, 8, 12]}
