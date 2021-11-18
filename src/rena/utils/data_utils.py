@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
 
-from src.rena.utils.sig_proc_utils import notch_filter, baseline_correction
+from utils.sig_proc_utils import baseline_correction, notch_filter
 
 
 def window_slice(data, window_size, stride, channel_mode='channel_last'):

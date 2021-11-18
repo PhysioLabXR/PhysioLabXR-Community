@@ -128,7 +128,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # reserve windows
         self.settings_window = None
-        stream_stylesheet('src/ui/stylesheet/light.qss')
+        stream_stylesheet('ui/stylesheet/light.qss')
 
     def add_camera_clicked(self):
         if self.recordingTab.is_recording:

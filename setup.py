@@ -21,7 +21,7 @@ requires = ['numpy',
 
 setuptools.setup(
     name="ReNaLabApp",
-    version="0.0.1.dev7",
+    version="0.0.1.dev9",
     author="ApocalyVec",
     author_email="s-vector.lee@hotmail.com",
     description="Reality Navigation Lab App",

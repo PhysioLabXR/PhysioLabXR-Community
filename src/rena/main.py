@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
-from src.rena.interfaces import InferenceInterface
+from interfaces import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream
 
