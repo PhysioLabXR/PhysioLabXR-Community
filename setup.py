@@ -21,7 +21,7 @@ requires = ['numpy',
 
 setuptools.setup(
     name="ReNaLabApp",
-    version="0.0.1.dev9",
+    version="0.0.1.dev11",
     author="ApocalyVec",
     author_email="s-vector.lee@hotmail.com",
     description="Reality Navigation Lab App",
@@ -37,8 +37,7 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "src"},
-    packages=setuptools.find_packages(where="src"),
+    packages=setuptools.find_packages(),
     python_requires=">=3.7",
     install_requires=requires
 )
