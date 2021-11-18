@@ -139,3 +139,6 @@ cython_debug/
 
 # ReNa
 UserConfig.json
+
+# IDE
+.idea
