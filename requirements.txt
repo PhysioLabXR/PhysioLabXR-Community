@@ -3,7 +3,6 @@ numpy
 PyQt5
 pyserial
 pylsl
-tensorflow
 sklearn
 scipy
 mne

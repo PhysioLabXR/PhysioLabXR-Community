@@ -1,11 +1,27 @@
 import setuptools
+from pkg_resources import parse_requirements
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+requires = ['numpy',
+            'PyQt5',
+            'pyserial',
+            'pylsl',
+            'sklearn',
+            'scipy',
+            'brainflow',
+            'mne',
+            'pyqtgraph',
+            'Pillow',
+            'matplotlib',
+            'pyxdf',
+            'opencv-python',
+            'pyautogui']
+
 setuptools.setup(
     name="ReNaLabApp",
-    version="0.0.1.dev3",
+    version="0.0.1.dev7",
     author="ApocalyVec",
     author_email="s-vector.lee@hotmail.com",
     description="Reality Navigation Lab App",
@@ -21,7 +37,8 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Operating System :: OS Independent",
     ],
-    package_dir={"rena": "src"},
+    package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
+    install_requires=requires
 )
