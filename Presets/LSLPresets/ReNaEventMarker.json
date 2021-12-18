@@ -1,0 +1,7 @@
+{ "StreamName":"Unity.ReNa.EventMarkers",
+  "ChannelNames":[
+    "RSVPMarker", "RSVPDistance", "-", "-",
+    "CarouselMarker", "CarouselDistance", "CarouselAngularSpeed", "CarouselIncidentAngle",
+    "VSMarker", "-", "-", "-",
+    "TSMarker", "GrabEvent", "ReleaseEvent", "EventItemID"],
+  "GroupChannelsInPlot":  [4, 8, 12]}
