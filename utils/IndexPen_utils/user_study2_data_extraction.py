@@ -3,10 +3,11 @@ import numpy as np
 from utils.IndexPen_utils.preprocessing_utils import load_idp, load_idp_file, load_idp_raw
 import pickle
 
+# user_study2_data_dir = 'Z:/hwei/IndexPen_Data/user_study2_data'
 user_study2_data_dir = 'C:/Recordings/user_study2_data'
 user_study2_data_save_dir = 'C:/Users/Haowe/PycharmProjects/IndexPen_Training/data/IndexPenData/IndexPenStudyData/UserStudy2Data'
 # user_study2_data_save_dir = 'D:/IndexPen_data_Study1_Study2/user_study2_data/'
-participant_dir = 'participant_4'
+participant_dir = 'participant_3'
 session_dir = 'session_5'
 
 full_session_dir_path = os.path.join(user_study2_data_dir, participant_dir, session_dir)

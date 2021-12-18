@@ -174,6 +174,9 @@ def load_idp_raw(data_file_path, DataStreamName, reshape_dict, exp_info_dict_jso
             data[DataStreamName][0][stream] = data[DataStreamName][0][stream][session_start_data_index:session_end_data_index+120]
         data[DataStreamName][1] = data[DataStreamName][1][session_start_data_index:session_end_data_index+120]
 
+    else:
+        return data
+
     index_buffer = []
     label_buffer = []
 
