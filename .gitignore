@@ -140,5 +140,8 @@ cython_debug/
 # ReNa
 UserConfig.json
 
+# Haowen
+/John_EEG_Project/
+
 # IDE
 .idea

@@ -5,8 +5,9 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QLabel, QMessageBox
+from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
-
+from PyQt5 import QtCore
 import config
 import config_ui
 import threadings.workers as workers
@@ -14,6 +15,11 @@ import threadings.workers as workers
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from utils.data_utils import window_slice
+from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
+    process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
+    load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
+from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, convert_heatmap_qt
 from utils.general import load_all_lslStream_presets, create_LSL_preset, process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface, \
     load_all_experiment_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_button, dialog_popup, \
@@ -100,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # data buffers
         self.LSL_plots_fs_label_dict = {}
         self.LSL_data_buffer_dicts = {}
+        self.LSL_current_ts_dict = {}
 
         self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
 
@@ -221,9 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
                                streams_for_experiment])
             except AssertionError:
-                dialog_popup(
-                    msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
-                    title="Error")
+                dialog_popup(msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset", title="Error")
                 return
             loading_dlg = dialog_popup(
                 msg="Please wait while streams are being added...",
@@ -241,6 +246,7 @@ class MainWindow(QtWidgets.QMainWindow):
             loading_dlg.close()
 
     def init_lsl(self, preset):
+        error_initialization = False
         lsl_stream_name = preset['StreamName']
         if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
             try:
@@ -251,6 +257,14 @@ class MainWindow(QtWidgets.QMainWindow):
             lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
                                                               preset['ChannelNames'], \
                                                               preset['PlotGroupSlices']
+
+            if 'GroupFormat' in preset.keys():
+                plot_group_format = preset['GroupFormat']
+            elif plot_group_slices is not None:
+                plot_group_format = ['time_series'] * (len(plot_group_slices))
+            else:
+                plot_group_format = ['time_series']
+
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
             lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
@@ -262,10 +276,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
-            self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(parent=lsl_layout,
-                                                                                               num_chan=lsl_num_chan,
-                                                                                               chan_names=lsl_chan_names,
-                                                                                               plot_group_slices=plot_group_slices)
+
+            try:
+                self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
+                parent=lsl_layout,
+                num_chan=lsl_num_chan,
+                chan_names=lsl_chan_names,
+                plot_group_slices=plot_group_slices,
+                plot_group_format=plot_group_format
+            )
+            except AssertionError as e:
+                error_initialization = True
+                dialog_popup(str(e))
+
             self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
             self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             preset["num_samples_to_plot"] = int(
@@ -344,6 +367,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
+            # if error initialization
+            if error_initialization:
+                remove_stream_btn.click()
             return preset
         else:
             dialog_popup('LSL Stream with data type ' + lsl_stream_name + ' is already added.')
@@ -354,17 +380,36 @@ class MainWindow(QtWidgets.QMainWindow):
         device_type = device_presets['DeviceType']
         if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
             try:
-                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface(device_presets)
+                openBCI_lsl_presets, OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(
+                    device_presets)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
             self.lslStream_presets_dict[device_name] = openBCI_lsl_presets
-            self.device_workers[device_name] = workers.DeviceWorker(OpenBCILSLInterface)
+            self.device_workers[device_name] = workers.TimeSeriesDeviceWorker(OpenBCILSLInterface)
             worker_thread = pg.QtCore.QThread(self)
             self.worker_threads[device_name] = worker_thread
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
             self.init_lsl(openBCI_lsl_presets)
+
+        # TI mmWave connection
+        if device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
+            print('mmWave test')
+            try:
+                # mmWave connect, send config, start sensor
+                mmWave_lsl_presets, MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
+                    device_presets)
+            except AssertionError as e:
+                dialog_popup(str(e))
+                return None
+            self.lslStream_presets_dict[device_name] = mmWave_lsl_presets
+            self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
+            worker_thread = pg.QtCore.QThread(self)
+            self.worker_threads[device_name] = worker_thread
+            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+            worker_thread.start()
+            self.init_lsl(mmWave_lsl_presets)
 
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
@@ -427,20 +472,43 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices):
+    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices, plot_group_format):
         fs_label = QLabel(text='Sampling rate = ')
+        ts_label = QLabel(text='Current Time Stamp = ')
         parent.addWidget(fs_label)
-        plot_widget = None
+        parent.addWidget(ts_label)
+        plot_widget = pg.PlotWidget()
         if plot_group_slices:
             plots = []
-            for pg_slice in plot_group_slices:  # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-                plot_widget = pg.PlotWidget()
-                parent.addWidget(plot_widget)
+            plot_formats = []
+            for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
+                plot_group_format_info = channel_format.split('_')
+                # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
+                if plot_group_format_info[0] == 'time' and plot_group_format_info[1] == 'series':  # time_series plot
+                    plot_formats.append(plot_group_format_info)
+                    plot_widget = pg.PlotWidget()
+                    parent.addWidget(plot_widget)
 
-                distinct_colors = get_distinct_colors(pg_slice[1] - pg_slice[0])
-                plot_widget.addLegend()
-                plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                          zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
+                    distinct_colors = get_distinct_colors(pg_slice[1] - pg_slice[0])
+                    plot_widget.addLegend()
+                    plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+                              zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
+
+                elif plot_group_format_info[0] == 'image':
+                    plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
+
+                    # check if the channel num matches:
+                    if pg_slice[1]-pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
+                        raise AssertionError('The number of channel in this slice does not match with the number of image pixels.'
+                                        'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info, pg_slice))
+                    plot_formats.append(plot_group_format_info)
+                    image_label = QLabel('Image_Label')
+                    image_label.setAlignment(QtCore.Qt.AlignCenter)
+                    parent.addWidget(image_label)
+                    plots.append(image_label)
+                else:
+                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
+
         else:
             plot_widget = pg.PlotWidget()
             parent.addWidget(plot_widget)
@@ -449,11 +517,12 @@ class MainWindow(QtWidgets.QMainWindow):
             plot_widget.addLegend()
             plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
                      zip(distinct_colors, chan_names)]
+            plot_formats = [['time_series']]
 
-        [p.setDownsampling(auto=True, method='mean') for p in plots]
-        [p.setClipToView(clip=True) for p in plots]
+        [p.setDownsampling(auto=True, method='mean') for p in plots if p == PlotDataItem]
+        [p.setClipToView(clip=True) for p in plots for p in plots if p == PlotDataItem]
 
-        return plots, plot_widget, fs_label
+        return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -485,6 +554,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 buffered_data = np.concatenate(
                     (buffered_data, data_dict['frames']),
                     axis=-1)  # get all data and remove it from internal buffer
+                self.LSL_current_ts_dict[data_dict['lsl_data_type']] = data_dict['timestamps'][-1]
             except ValueError:
                 raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
                     data_dict['lsl_data_type']))
@@ -502,6 +572,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
             self.lslStream_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
+
+            # reshape data_dict based on sensor interface
             self.recordingTab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
@@ -523,11 +595,48 @@ class MainWindow(QtWidgets.QMainWindow):
                                             axis=1)  # resample to 100 hz with retain history of 10 sec
                     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
+                # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
+                #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+                #
+                # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+                #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+                # change to loop with type condition plot time_series and image
+                if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
+                    plot_channel_num_offset = 0
+                    for plot_group_index, (plot_group, plot_format) in enumerate(zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
+                                                       self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
+                        if plot_format[0] == 'time' and plot_format[1] == 'series':
+                            # plot corresponding time series data, range (a,b) is time series
+                            plot_group_channel_num = plot_group[1] - plot_group[0]
+                            for i in range(plot_channel_num_offset, plot_channel_num_offset+plot_group_channel_num):
+                                self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
+                                                                                            data_to_plot[i, :])
+                            plot_channel_num_offset += plot_group_channel_num
+                        elif plot_format[0] == 'image':
+                            image_shape = plot_format[1]
+                            channel_num = image_shape[2]
+                            plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
+
+                            img = plot_array.reshape(image_shape)
+                            # display openCV image if channel_num = 3
+                            # display heat map if channel_num = 1
+                            if channel_num == 3:
+                                img = convert_cv_qt(img)
+                            if channel_num == 1:
+                                img = np.squeeze(img, axis=-1)
+                                img = convert_heatmap_qt(img)
+
+                            self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
+                            plot_channel_num_offset += 1
+
+                else:
+                    [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+                     enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-
-                [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                 enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+                self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
+                    'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected

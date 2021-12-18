@@ -1,4 +1,5 @@
 import cv2
+import qimage2ndarray
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
@@ -6,9 +7,9 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
-
+import pyqtgraph as pg
 from rena import config_ui
-
+import matplotlib.pyplot as plt
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
     if vertical:
@@ -260,6 +261,19 @@ def convert_cv_qt(cv_img):
     convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
     # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(convert_to_Qt_format)
+
+def convert_heatmap_qt(spec_array, height=512, width=512):
+    heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
+    qpixmap = QPixmap(heatmap_qim)
+    qpixmap = qpixmap.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
+    return qpixmap
+
+def array_to_colormap_qim(a, normalize=True):
+    im = plt.imshow(a)
+    color_matrix = im.cmap(im.norm(im.get_array()))
+    qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
+    return qim
+
 
 
 def get_working_camera_id():

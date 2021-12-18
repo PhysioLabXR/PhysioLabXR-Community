@@ -1,5 +1,7 @@
-{ "StreamName":"Dummy-BioSemi-8Chan-142",
+{ "StreamName":"Dummy-BioSemi-8Chan-656",
   "ChannelNames":[
     "Fp1", "F7", "F8", "T4", "T6", "T5", "T3", "Fp2", "No", "01","13"],
   "NominalSamplingRate":  100,
-  "GroupChannelsInPlot":  [3, 8]}
+  "GroupChannelsInPlot":  [4, 5],
+  "GroupFormat": ["image_(2,2,1)", "time_series", "image_(2,3,1)"]
+}

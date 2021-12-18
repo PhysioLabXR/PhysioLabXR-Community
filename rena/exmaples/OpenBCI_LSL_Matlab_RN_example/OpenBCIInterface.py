@@ -8,7 +8,7 @@ from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, Realt
 
 class OpenBCIInterface:
 
-    def __init__(self, serial_port='COM5', board_id=0, log='store_true', streamer_params='',
+    def __init__(self, serial_port='COM6', board_id=0, log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
         params = BrainFlowInputParams()
         params.serial_port = serial_port
@@ -128,8 +128,8 @@ def run_test():
     print('Started streaming')
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=8)
-    vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
+    butter_bandpass = RealtimeButterBandpass(lowcut=8, highcut=12, fs=250, order=6, channel_num=8)
+    # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
     start_time = time.time()
@@ -141,12 +141,13 @@ def run_test():
                 eeg_data = data[1:9]
                 aux_data = data[9:12]
                 # ######### notch and butter
-                eeg_data = notch.process_data(eeg_data)
-                eeg_data = butter_bandpass.process_data(eeg_data)
-                eeg_data = vrms_converter.process_data(eeg_data)
+                # eeg_data = notch.process_data(eeg_data)
+                # eeg_data = butter_bandpass.process_data(eeg_data)
+                # eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
+                print(eeg_data)
                     # print(eeg_data)
                     # start_time = time.time()
         except KeyboardInterrupt:

@@ -9,7 +9,7 @@ from brainflow.data_filter import DataFilter, FilterTypes, AggOperations
 
 class OpenBCIInterface:
 
-    def __init__(self, serial_port='COM7', board_id=2, log='store_true', streamer_params='', ring_buffer_size=45000):  # default board_id 2 for Cyton
+    def __init__(self, serial_port='COM6', board_id=2, log='store_true', streamer_params='', ring_buffer_size=45000):  # default board_id 2 for Cyton
         params = BrainFlowInputParams()
         params.serial_port = serial_port
         params.ip_port = 0

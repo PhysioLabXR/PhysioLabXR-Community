@@ -1,0 +1,12 @@
+{
+  "StreamName":"XeThruX4M300",
+  "StreamType": "CIR",
+  "DeviceType": "OpenBCI",
+  "SerialPort": "COM20",
+  "ChannelNames":[
+    "@img_(8,16,1)@RD",
+    "@img_(8,64,1)@RA"
+  ],
+  "NominalSamplingRate":  30,
+  "GroupChannelsInPlot":  [1, 2]
+  }

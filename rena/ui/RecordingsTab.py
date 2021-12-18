@@ -111,6 +111,7 @@ class RecordingsTab(QtWidgets.QWidget):
                                                                       self.sessionTagTextEdit.toPlainText()))
 
     def evict_buffer(self):
+        # print(self.recording_buffer)
         self.recording_byte_count += self.save_stream.stream_out(self.recording_buffer)
         self.recording_buffer = {}
         self.update_file_size_label()
