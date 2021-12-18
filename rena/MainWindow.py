@@ -20,7 +20,8 @@ from utils.general import load_all_lslStream_presets, create_LSL_preset, process
     load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, convert_heatmap_qt
-from utils.general import load_all_lslStream_presets, create_LSL_preset, process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface, \
+from utils.general import load_all_lslStream_presets, create_LSL_preset, process_preset_create_lsl_interface, \
+    load_all_Device_presets, \
     load_all_experiment_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window, stream_stylesheet
@@ -228,7 +229,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
                                streams_for_experiment])
             except AssertionError:
-                dialog_popup(msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset", title="Error")
+                dialog_popup(
+                    msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                    title="Error")
                 return
             loading_dlg = dialog_popup(
                 msg="Please wait while streams are being added...",
@@ -276,15 +279,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
             stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
-
             try:
                 self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
-                parent=lsl_layout,
-                num_chan=lsl_num_chan,
-                chan_names=lsl_chan_names,
-                plot_group_slices=plot_group_slices,
-                plot_group_format=plot_group_format
-            )
+                    parent=lsl_layout,
+                    num_chan=lsl_num_chan,
+                    chan_names=lsl_chan_names,
+                    plot_group_slices=plot_group_slices,
+                    plot_group_format=plot_group_format
+                )
             except AssertionError as e:
                 error_initialization = True
                 dialog_popup(str(e))
@@ -498,9 +500,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
 
                     # check if the channel num matches:
-                    if pg_slice[1]-pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
-                        raise AssertionError('The number of channel in this slice does not match with the number of image pixels.'
-                                        'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info, pg_slice))
+                    if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
+                        raise AssertionError(
+                            'The number of channel in this slice does not match with the number of image pixels.'
+                            'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
+                                                                                             pg_slice))
                     plot_formats.append(plot_group_format_info)
                     image_label = QLabel('Image_Label')
                     image_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -603,12 +607,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # change to loop with type condition plot time_series and image
                 if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
                     plot_channel_num_offset = 0
-                    for plot_group_index, (plot_group, plot_format) in enumerate(zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
-                                                       self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
+                    for plot_group_index, (plot_group, plot_format) in enumerate(
+                            zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
+                                self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
                         if plot_format[0] == 'time' and plot_format[1] == 'series':
                             # plot corresponding time series data, range (a,b) is time series
                             plot_group_channel_num = plot_group[1] - plot_group[0]
-                            for i in range(plot_channel_num_offset, plot_channel_num_offset+plot_group_channel_num):
+                            for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
                                 self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
                                                                                             data_to_plot[i, :])
                             plot_channel_num_offset += plot_group_channel_num
