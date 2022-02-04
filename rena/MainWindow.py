@@ -100,7 +100,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_lslStream_btn.clicked.connect(self.add_lslStream_clicked)
         self.add_experiment_btn.clicked.connect(self.add_preset_experiment_clicked)
         # reload all presets
-        self.reload_presets_btn.clicked.connect(self.relaod_all_presets_btn_clicked)
+        self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
         self.stream_ui_elements = {}
 
@@ -665,7 +665,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_unityLSL_buffer(self):
         self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
-    def relaod_all_presets_btn_clicked(self):
+    def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
             self.update_presets_combo_box()
             dialog_popup('Reloaded all presets', title='Info')
