@@ -3,7 +3,6 @@ numpy
 PyQt5
 pyserial
 pylsl
-tensorflow
 sklearn
 scipy
 mne
@@ -13,3 +12,4 @@ matplotlib
 pyxdf
 opencv-python
 pyautogui
+qimage2ndarray
