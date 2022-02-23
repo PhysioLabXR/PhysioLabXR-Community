@@ -13,14 +13,15 @@ from datetime import datetime
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QFileDialog
 
-import config
-from utils.data_utils import RNStream
-from utils.ui_utils import dialog_popup
+import rena.config
+from rena import config
+from rena.utils.data_utils import RNStream
+from rena.utils.ui_utils import dialog_popup
 import pylsl
-from threadings.workers import LSLReplayWorker
+from rena.threadings.workers import LSLReplayWorker
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 import pyqtgraph as pg
-from ui.ReplaySeekBar import ReplaySeekBar
+from rena.ui.ReplaySeekBar import ReplaySeekBar
 
 class ReplayTab(QtWidgets.QWidget):
     def __init__(self, parent):

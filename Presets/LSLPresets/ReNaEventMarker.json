@@ -4,4 +4,6 @@
     "CarouselMarker", "CarouselDistance", "CarouselAngularSpeed", "CarouselIncidentAngle",
     "VSMarker", "-", "-", "-",
     "TSMarker", "GrabEvent", "ReleaseEvent", "EventItemID"],
-  "GroupChannelsInPlot":  [4, 8, 12]}
+  "GroupChannelsInPlot":  [4, 8, 12],
+  "NominalSamplingRate":  75
+}

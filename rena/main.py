@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
-from interfaces import InferenceInterface
+from rena.interfaces import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream
 
@@ -44,6 +44,7 @@ if __name__ == '__main__':
     # main window init
     inference_interface = InferenceInterface.InferenceInterface()
     window = MainWindow(app=app, inference_interface=inference_interface)
+
     window.setWindowIcon(QIcon('../media/logo/RN.png'))
     # make tray menu
     menu = QMenu()
