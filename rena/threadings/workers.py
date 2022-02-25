@@ -6,13 +6,13 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtCore import pyqtSignal
 from pylsl import local_clock
 
-import config_signal
-import config_ui
+import rena.config_signal
+import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
-from interfaces.InferenceInterface import InferenceInterface
-from interfaces.LSLInletInterface import LSLInletInterface
-from utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
-from rena import config_ui
+from rena.interfaces.InferenceInterface import InferenceInterface
+from rena.interfaces.LSLInletInterface import LSLInletInterface
+from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
+from rena import config_ui, config_signal
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
@@ -187,7 +187,9 @@ class LSLInletWorker(QObject):
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            t = time.time()
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            print("LSL interface process frame took {0} seconds".format(time.time() - t))
 
             self.num_samples += len(timestamps)
             try:
@@ -196,7 +198,6 @@ class LSLInletWorker(QObject):
                 sampling_rate = 0
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
-
     def start_stream(self):
         try:
             self._lslInlet_interface.start_sensor()

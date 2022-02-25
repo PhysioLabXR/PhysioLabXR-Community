@@ -16,6 +16,7 @@ class LSLInletInterface:
 
         self.lsl_stream_name = lsl_stream_name
         self.lsl_num_channels = self.inlet.channel_count
+        self.data_type = kwargs['data_type']
         pass
 
     def start_sensor(self):
@@ -37,8 +38,8 @@ class LSLInletInterface:
         except LostError:
             frames, timestamps = [], []
             pass  # TODO handle stream lost
-        frames = np.transpose(frames).astype()
-        return np.transpose(frames), timestamps
+        frames = np.transpose(frames).astype(self.data_type) if self.data_type is not None else np.transpose(frames)
+        return frames, timestamps
 
     def stop_sensor(self):
         if self.inlet:

@@ -57,6 +57,8 @@ def load_LSL_preset(preset_dict):
         preset_dict['NominalSamplingRate'] = None
     if 'DataType' not in preset_dict.keys():
         preset_dict['DataType'] = None
+    if 'Buffered' not in preset_dict.keys():
+        preset_dict['Buffered'] = True
 
     # turn datatype into np types
     if preset_dict['DataType'] == 'uint8':
@@ -90,10 +92,10 @@ def process_LSL_plot_group(preset_dict):
 
 
 def process_preset_create_lsl_interface(preset):
-    lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset['StreamName'], preset['ChannelNames'], \
-                                                          preset['GroupChannelsInPlot']
+    lsl_stream_name, lsl_chan_names, group_chan_in_plot, data_type = preset['StreamName'], preset['ChannelNames'], \
+                                                          preset['GroupChannelsInPlot'], preset['DataType']
     try:
-        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name, data_type=preset['DataType'])
+        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name, data_type=data_type)
     except AttributeError:
         raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
     lsl_num_chan = interface.get_num_chan()
