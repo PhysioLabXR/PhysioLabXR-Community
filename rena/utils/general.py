@@ -5,7 +5,7 @@ import numpy as np
 
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
-from interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
+from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
 def slice_len_for(slc, seqlen):
@@ -55,6 +55,19 @@ def load_LSL_preset(preset_dict):
         preset_dict['PlotGroupSlices'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = None
+    if 'DataType' not in preset_dict.keys():
+        preset_dict['DataType'] = None
+
+    # turn datatype into np types
+    if preset_dict['DataType'] == 'uint8':
+        preset_dict['DataType'] = np.uint8
+    elif preset_dict['DataType'] == 'float32':
+        preset_dict['DataType'] = np.float32
+    elif preset_dict['DataType'] is None:
+        pass
+    else:
+        print("general.py: load_LSL_preset: LSL stream {0} have unsupported data type {1}".format(preset_dict["StreamName"], preset_dict["DataType"]))
+
     return preset_dict
 
 
@@ -76,20 +89,20 @@ def process_LSL_plot_group(preset_dict):
     return preset_dict
 
 
-def process_preset_create_lsl_interface(preset_dict):
-    lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset_dict['StreamName'], preset_dict['ChannelNames'], \
-                                                          preset_dict['GroupChannelsInPlot']
+def process_preset_create_lsl_interface(preset):
+    lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset['StreamName'], preset['ChannelNames'], \
+                                                          preset['GroupChannelsInPlot']
     try:
-        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name)
+        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name, data_type=preset['DataType'])
     except AttributeError:
         raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
     lsl_num_chan = interface.get_num_chan()
-    preset_dict['NumChannels'] = lsl_num_chan
+    preset['NumChannels'] = lsl_num_chan
 
     # process srate
-    if not preset_dict['NominalSamplingRate']:  # try to find the nominal srate from lsl stream info if not provided
-        preset_dict['NominalSamplingRate'] = interface.get_nominal_srate()
-        if not preset_dict['NominalSamplingRate']:
+    if not preset['NominalSamplingRate']:  # try to find the nominal srate from lsl stream info if not provided
+        preset['NominalSamplingRate'] = interface.get_nominal_srate()
+        if not preset['NominalSamplingRate']:
             raise AssertionError(
                 'Unable to load preset with name {0}, it does not have a nominal srate. RN requires all its streams to provide nominal srate for visualization purpose. You may manually define the NominalSamplingRate in presets.'.format(
                     lsl_stream_name))
@@ -101,15 +114,15 @@ def process_preset_create_lsl_interface(preset_dict):
                 'Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
                     lsl_stream_name))
     else:
-        preset_dict['ChannelNames'] = ['Unknown'] * preset_dict['NumChannels']
+        preset['ChannelNames'] = ['Unknown'] * preset['NumChannels']
     # process lsl presets ###########################
     if group_chan_in_plot and len(group_chan_in_plot) > 0:
-        if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:
+        if np.max(preset['GroupChannelsInPlot']) > preset['NumChannels']:
             raise AssertionError(
                 'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
                     lsl_stream_name))
-        preset_dict = process_LSL_plot_group(preset_dict)
-    return preset_dict, interface
+        preset = process_LSL_plot_group(preset)
+    return preset, interface
 
 
 def process_preset_create_openBCI_interface_startsensor(devise_preset_dict):

@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
@@ -254,11 +256,21 @@ def get_distinct_colors(num_colors, depth=8):
 
 
 def convert_cv_qt(cv_img):
+    t = time.time()
+
     """Convert from an opencv image to QPixmap"""
-    rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-    h, w, ch = rgb_image.shape
+    if cv_img.shape[-1] == 1:  # if in greyscale
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        image_data = rgb_image.data
+    elif cv_img.shape[-1] == 3:  # if in colored
+        # image_data = (cv_img * 255).astype(np.uint8)
+        image_data = cv_img
+    else:
+        raise Exception("ui_utils: Unsupported image channel format {0}".format(cv_img.shape))
+
+    h, w, ch = image_data.shape
     bytes_per_line = ch * w
-    convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    convert_to_Qt_format = QtGui.QImage(image_data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
     # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(convert_to_Qt_format)
 

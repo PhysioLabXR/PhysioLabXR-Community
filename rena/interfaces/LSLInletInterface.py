@@ -8,24 +8,24 @@ from rena import config
 
 class LSLInletInterface:
 
-    def __init__(self, lsl_data_type):
-        self.streams = resolve_byprop('name', lsl_data_type, timeout=0.1)
+    def __init__(self, lsl_stream_name, **kwargs):
+        self.streams = resolve_byprop('name', lsl_stream_name, timeout=0.1)
         if len(self.streams) < 1:
-            raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_data_type))
+            raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_stream_name))
         self.inlet = StreamInlet(self.streams[0])
 
-        self.lsl_data_type = lsl_data_type
+        self.lsl_stream_name = lsl_stream_name
         self.lsl_num_channels = self.inlet.channel_count
         pass
 
     def start_sensor(self):
         # connect to the sensor
-        self.streams = resolve_byprop('name', self.lsl_data_type, timeout=0.1)
+        self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=0.1)
         if len(self.streams) < 1:
-            raise AttributeError('Unable to find LSL Stream with given type {0}'.format(self.lsl_data_type))
+            raise AttributeError('Unable to find LSL Stream with given type {0}'.format(self.lsl_stream_name))
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
-        print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_data_type)
+        print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
         # read the channel names is there's any
         # tell the sensor to start sending frames
@@ -37,6 +37,7 @@ class LSLInletInterface:
         except LostError:
             frames, timestamps = [], []
             pass  # TODO handle stream lost
+        frames = np.transpose(frames).astype()
         return np.transpose(frames), timestamps
 
     def stop_sensor(self):

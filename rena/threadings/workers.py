@@ -174,7 +174,7 @@ class LSLInletWorker(QObject):
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface, *args, **kwargs):
+    def __init__(self, LSLInlet_interface: LSLInletInterface,  *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.tick_signal.connect(self.process_on_tick)
 
@@ -194,7 +194,7 @@ class LSLInletWorker(QObject):
                 sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
             except ZeroDivisionError:
                 sampling_rate = 0
-            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_data_type, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
