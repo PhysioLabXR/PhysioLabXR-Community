@@ -14,6 +14,7 @@ import config
 import config_ui
 import threadings.workers as workers
 # from interfaces.UnityLSLInterface import UnityLSLInterface
+from rena.ui.InferenceTab import InferenceTab
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from ui.ReplayTab import ReplayTab
@@ -135,19 +136,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
-        self.recordingTab = RecordingsTab(self)
-        self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+        self.recording_tab = RecordingsTab(self)
+        self.recordings_tab_vertical_layout.addWidget(self.recording_tab)
 
         # self.settingTab = SettingsTab(self)
         # self.settings_tab_vertical_layout.addWidget(self.settingTab)
 
-        self.replayTab = ReplayTab(self)
-        self.replay_tab_vertical_layout.addWidget(self.replayTab)
+        self.replay_tab = ReplayTab(self)
+        self.replay_tab_vertical_layout.addWidget(self.replay_tab)
         # self.lsl_replay_worker_thread = QThread(self)
         # self.lsl_replay_worker_thread.start()
         # self.lsl_replay_worker = LSLReplayWorker()
         # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
         # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
+
+        self.inference_tab = InferenceTab(self)
+        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
         # windows
         self.pop_windows = {}
@@ -165,7 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_stylesheet('ui/stylesheet/light.qss')
 
     def add_camera_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add capture while recording.')
             return
         selected_camera_id = self.camera_combo_box.currentText()
@@ -191,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
             wkr.change_pixmap_signal.connect(self.visualize_cam)
 
             def remove_cam():
-                if self.recordingTab.is_recording:
+                if self.recording_tab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
                 worker_thread.exit()
@@ -213,10 +217,10 @@ class MainWindow(QtWidgets.QMainWindow):
             qt_img = convert_cv_qt(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
             self.test_ts_buffer.append(time.time())
-            self.recordingTab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
+            self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_preset_lslStream_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add stream while recording.')
             return
         selected_text = str(self.preset_LSLStream_combo_box.currentText())
@@ -232,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 dialog_popup(msg)
 
     def add_preset_device_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add device while recording.')
             return
         selected_text = str(self.device_combo_box.currentText())
@@ -373,7 +377,7 @@ class MainWindow(QtWidgets.QMainWindow):
             pop_window_btn.clicked.connect(pop_window)
 
             def remove_stream():
-                if self.recordingTab.is_recording:
+                if self.recording_tab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
                 stop_stream_btn.click()  # fire stop streaming first
@@ -615,7 +619,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # notify the internal buffer in recordings tab
 
             # reshape data_dict based on sensor interface
-            self.recordingTab.update_buffers(data_dict)
+            self.recording_tab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
@@ -752,7 +756,7 @@ class MainWindow(QtWidgets.QMainWindow):
         webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
 
     def fire_action_show_recordings(self):
-        self.recordingTab.open_recording_directory()
+        self.recording_tab.open_recording_directory()
 
     def fire_action_exit(self):
         self.close()

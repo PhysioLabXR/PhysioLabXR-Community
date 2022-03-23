@@ -105,6 +105,12 @@
        </attribute>
        <layout class="QVBoxLayout" name="replay_tab_vertical_layout"/>
       </widget>
+      <widget class="QWidget" name="inference_tab">
+       <attribute name="title">
+        <string>Inference</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="inference_tab_vertical_layout"/>
+      </widget>
      </widget>
     </item>
     <item>
