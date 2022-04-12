@@ -72,6 +72,7 @@ class RecordingsTab(QtWidgets.QWidget):
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
             lsl_data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+
             if lsl_data_type not in self.recording_buffer.keys():
                 self.recording_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
                                                         np.empty(shape=(0,))]  # data first, timestamps second
@@ -124,4 +125,6 @@ class RecordingsTab(QtWidgets.QWidget):
         try:
             os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
         except FileNotFoundError:
-            dialog_popup(msg="Recording directory does not exist. Please use a valid directory in the Recording Tab.", title="Error");
+            dialog_popup(msg="Recording directory does not exist. P"
+                             ""
+                             "lease use a valid directory in the Recording Tab.", title="Error");

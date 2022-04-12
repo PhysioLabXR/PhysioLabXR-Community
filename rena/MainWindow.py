@@ -621,6 +621,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # reshape data_dict based on sensor interface
             self.recording_tab.update_buffers(data_dict)
 
+            # inference tab
+            self.inference_tab.update_buffers(data_dict)
+
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
 
