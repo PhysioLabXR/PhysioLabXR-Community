@@ -48,6 +48,7 @@ class InferenceTab(QtWidgets.QWidget):
 
         # a ring-buffer that will hold data to be inferenced.
         self.inference_buffer = {}
+        self.buffer_size = 1000 # arbitrarily set to 1000 for now.
 
         # common initializations for tabs.
         self.parent = parent
@@ -57,9 +58,9 @@ class InferenceTab(QtWidgets.QWidget):
         self.timer.setInterval(500)
         self.timer.timeout.connect(self.emit_inference_data)
 
-        self.startInferenceBtn.clicked.connect(self.start_inference_btn_pressed)
-        self.stopInferenceBtn.clicked.connect(self.stop_inference_btn_pressed)
-        self.stopInferenceBtn.setEnabled(False)
+        self.StartInferenceBtn.clicked.connect(self.start_inference_btn_pressed)
+        self.StopInferenceBtn.clicked.connect(self.stop_inference_btn_pressed)
+        self.StopInferenceBtn.setEnabled(False)
 
 
     def select_model_file_btn_pressed(self):
@@ -73,14 +74,14 @@ class InferenceTab(QtWidgets.QWidget):
             return
         self.inference_buffer = {} # clear buffer
         self.is_inferencing = True
-        self.startInferenceBtn.setEnabled(False)
-        self.stopInferenceBtn.setenabled(True)
+        self.StartInferenceBtn.setEnabled(False)
+        self.StopInferenceBtn.setenabled(True)
         self.timer.start()
 
     def stop_inference_btn_pressed(self):
         self.is_inferencing = False
-        self.stopInferenceBtn.setEnabled(False)
-        self.startInferenceBtn.setEnabled(True)
+        self.StopInferenceBtn.setEnabled(False)
+        self.StartInferenceBtn.setEnabled(True)
 
         self.timer.stop()
 
@@ -100,13 +101,21 @@ class InferenceTab(QtWidgets.QWidget):
 
     def update_buffers(self, data_dict: dict):
         lsl_data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
-        if lsl_data_type not in self.recording_buffer.keys():
-            self.recording_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
+        if lsl_data_type not in self.inference_buffer.keys():
+            self.inference_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
                                                     np.empty(shape=(0,))]  # data first, timestamps second
 
-        buffered_data = self.recording_buffer[data_dict['lsl_data_type']][0]
-        buffered_timestamps = self.recording_buffer[data_dict['lsl_data_type']][1]
+        buffered_data = self.inference_buffer[data_dict['lsl_data_type']][0]
+        buffered_timestamps = self.inference_buffer[data_dict['lsl_data_type']][1]
 
-        self.recording_buffer[lsl_data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
-        self.recording_buffer[lsl_data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
-        pass
+        # TODO: ring buffer implementation
+        temp_data = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
+        temp_timestamps = np.concatenate([buffered_timestamps, data_dict['timestamps']])
+        # last <buffer_size> elements taken from the temp data buffer
+        size_adjusted_data = temp_data[-self.buffer_size:]
+        # last <buffer_size> elements taken from the temp timestamps buffer
+        size_adjusted_timestamps = temp_timestamps[-self.buffer_size:]
+
+        self.inference_buffer[lsl_data_type][0] = np.concatenate() # TODO: understand this line.
+        self.inference_buffer[lsl_data_type][0] = size_adjusted_data
+        self.inference_buffer[lsl_data_type][1] = size_adjusted_timestamps
