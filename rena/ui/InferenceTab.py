@@ -2,14 +2,18 @@
 import os
 import time
 
-from PyQt5 import QtWidgets, uic
-
-import numpy as np
 from datetime import datetime
 from abc import ABC, abstractmethod
 
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QFileDialog
+
+import numpy as np
+import tensorflow as tf
+
+# lsl related imports
+from pylsl import StreamInfo, StreamOutlet, local_clock
 
 from rena import config
 from rena.utils.data_utils import RNStream
@@ -20,15 +24,82 @@ class RealTimeModel(ABC):
     """
     An abstract class for implementing inference models.
     """
-    def preprocess(self, x, **kwargs):
+    expected_input_size = None
+    expected_preprocessed_input_size = None
+
+    @property
+    def model(self):
+        return self.__model
+
+    @model.setter
+    def model(self, new_model):
+        self.__model = new_model
+
+    @property
+    def data_min(self):
+        return self.__data_min
+
+    @data_min.setter
+    def data_min(self, value):
+        self.__data_min = value
+
+    @property
+    def data_max(self):
+        return self.__data_max
+
+    @data_max.setter
+    def data_max(self, value):
+        self.__data_max = value
+
+    @abstractmethod
+    def resample(self, input, freq):
+        """
+        Implement for model-specific resampling method.
+        This method will be used in preprocess().
+        """
         pass
 
-    def predict(self, x, **kwargs):
-        pass
+    def preprocess(self, input, window_size, time_step):
+        if input.shape != self.expected_input_size:
+            raise ValueError("Unexpected Input Size Provided.")
+
+        # resample
+        preprocessed = self.resample(input, __)
+
+        # min max normalization
+        preprocessed = (preprocessed - self.data_min) / (self.data_max - self.data_min)
+
+        # slice into samples
+
+        return preprocessed
+
+    def predict(self, input, **kwargs):
+        """
+        Have ML Model predict the probability of the data being a target,
+        a distractor, or a novelty.
+
+        Returns 3 probability values.
+        """
+        if input.shape != self.expected_preprocessed_input_size:
+            raise ValueError("Unexpected Expected Input Size Provided.")
+
+        y_hypo = self.model.predict(input)
+        return y_hypo
 
     def prepare_model(self, model_path, preprocess_params_path):
-        pass
+        self.model = tf.keras.models.load_model(model_path)
+        # self.data_min, self.data_max = load_params(preprocess_params_path)
 
+class EEGModel(RealTimeModel):
+    """
+    A concrete implementation of RealTimeModel for EEG data.
+    """
+    state = 2048
+    window = 500 # ms
+    num_channel = 64
+    # expected input size for EEG = [1024, 64]
+    # expected input size should be calculated
+    # TODO: override the methods for custom behaviors.
 
 class InferenceTab(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -48,7 +119,7 @@ class InferenceTab(QtWidgets.QWidget):
 
         # a ring-buffer that will hold data to be inferenced.
         self.inference_buffer = {}
-        self.buffer_size = 1000 # arbitrarily set to 1000 for now.
+        self.buffer_size = 5000 # arbitrarily set to 5000 for now.
 
         # common initializations for tabs.
         self.parent = parent
@@ -86,6 +157,16 @@ class InferenceTab(QtWidgets.QWidget):
         self.timer.stop()
 
     def emit_inference_data(self):
+        """
+        Emits inferenced data to a LSL stream outlet.
+        """
+        # create a new stream info
+        # info = StreamInfo(name, type_, n_channels, srate, 'float32', uuid_)
+
+        # make an outlet
+        outlet = StreamOutlet(info)
+
+        # while True:
         pass
 
     def process_on_tick(self, window_size, time_step):
@@ -116,6 +197,5 @@ class InferenceTab(QtWidgets.QWidget):
         # last <buffer_size> elements taken from the temp timestamps buffer
         size_adjusted_timestamps = temp_timestamps[-self.buffer_size:]
 
-        self.inference_buffer[lsl_data_type][0] = np.concatenate() # TODO: understand this line.
         self.inference_buffer[lsl_data_type][0] = size_adjusted_data
         self.inference_buffer[lsl_data_type][1] = size_adjusted_timestamps
