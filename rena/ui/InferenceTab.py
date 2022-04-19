@@ -51,27 +51,29 @@ class RealTimeModel(ABC):
     def data_max(self, value):
         self.__data_max = value
 
+    # @abstractmethod
+    # def resample(self, input, freq):
+    #     """
+    #     Implement for model-specific resampling method.
+    #     This method will be used in preprocess().
+    #     """
+    #     pass
+
     @abstractmethod
-    def resample(self, input, freq):
-        """
-        Implement for model-specific resampling method.
-        This method will be used in preprocess().
-        """
-        pass
-
-    def preprocess(self, input, window_size, time_step):
-        if input.shape != self.expected_input_size:
-            raise ValueError("Unexpected Input Size Provided.")
-
-        # resample
-        preprocessed = self.resample(input, __)
-
-        # min max normalization
-        preprocessed = (preprocessed - self.data_min) / (self.data_max - self.data_min)
-
-        # slice into samples
-
-        return preprocessed
+    def preprocess(self, input):
+        return input
+        # if input.shape != self.expected_input_size:
+        #     raise ValueError("Unexpected Input Size Provided.")
+        #
+        # # resample
+        # preprocessed = self.resample(input, __)
+        #
+        # # min max normalization
+        # preprocessed = (preprocessed - self.data_min) / (self.data_max - self.data_min)
+        #
+        # # slice into samples
+        #
+        # return preprocessed
 
     def predict(self, input, **kwargs):
         """
@@ -80,7 +82,7 @@ class RealTimeModel(ABC):
 
         Returns 3 probability values.
         """
-        if input.shape != self.expected_preprocessed_input_size:
+        if input.shape[1:] != self.expected_preprocessed_input_size:
             raise ValueError("Unexpected Expected Input Size Provided.")
 
         y_hypo = self.model.predict(input)
