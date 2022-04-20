@@ -3,7 +3,6 @@ import os
 import time
 
 from datetime import datetime
-from abc import ABC, abstractmethod
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
@@ -16,92 +15,21 @@ import tensorflow as tf
 from pylsl import StreamInfo, StreamOutlet, local_clock
 
 from rena import config
+from rena.inference.RealTimeModels.PupilTensorflowModel import PupilTensorflowModel
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 
 
-class RealTimeModel(ABC):
-    """
-    An abstract class for implementing inference models.
-    """
-    expected_input_size = None
-    expected_preprocessed_input_size = None
-
-    @property
-    def model(self):
-        return self.__model
-
-    @model.setter
-    def model(self, new_model):
-        self.__model = new_model
-
-    @property
-    def data_min(self):
-        return self.__data_min
-
-    @data_min.setter
-    def data_min(self, value):
-        self.__data_min = value
-
-    @property
-    def data_max(self):
-        return self.__data_max
-
-    @data_max.setter
-    def data_max(self, value):
-        self.__data_max = value
-
-    # @abstractmethod
-    # def resample(self, input, freq):
-    #     """
-    #     Implement for model-specific resampling method.
-    #     This method will be used in preprocess().
-    #     """
-    #     pass
-
-    @abstractmethod
-    def preprocess(self, input):
-        return input
-        # if input.shape != self.expected_input_size:
-        #     raise ValueError("Unexpected Input Size Provided.")
-        #
-        # # resample
-        # preprocessed = self.resample(input, __)
-        #
-        # # min max normalization
-        # preprocessed = (preprocessed - self.data_min) / (self.data_max - self.data_min)
-        #
-        # # slice into samples
-        #
-        # return preprocessed
-
-    def predict(self, input, **kwargs):
-        """
-        Have ML Model predict the probability of the data being a target,
-        a distractor, or a novelty.
-
-        Returns 3 probability values.
-        """
-        if input.shape[1:] != self.expected_preprocessed_input_size:
-            raise ValueError("Unexpected Expected Input Size Provided.")
-
-        y_hypo = self.model.predict(input)
-        return y_hypo
-
-    def prepare_model(self, model_path, preprocess_params_path):
-        self.model = tf.keras.models.load_model(model_path)
-        # self.data_min, self.data_max = load_params(preprocess_params_path)
-
-class EEGModel(RealTimeModel):
-    """
-    A concrete implementation of RealTimeModel for EEG data.
-    """
-    state = 2048
-    window = 500 # ms
-    num_channel = 64
-    # expected input size for EEG = [1024, 64]
-    # expected input size should be calculated
-    # TODO: override the methods for custom behaviors.
+# class EEGModel(RealTimeModel):
+#     """
+#     A concrete implementation of RealTimeModel for EEG data.
+#     """
+#     state = 2048
+#     window = 500 # ms
+#     num_channel = 64
+#     # expected input size for EEG = [1024, 64]
+#     # expected input size should be calculated
+#     # TODO: override the methods for custom behaviors.
 
 class InferenceTab(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -121,7 +49,7 @@ class InferenceTab(QtWidgets.QWidget):
 
         # a ring-buffer that will hold data to be inferenced.
         self.inference_buffer = {}
-        self.buffer_size = 5000 # arbitrarily set to 5000 for now.
+        self.buffer_size = 1242 # arbitrarily set to 5000 for now.
 
         # common initializations for tabs.
         self.parent = parent
@@ -135,20 +63,27 @@ class InferenceTab(QtWidgets.QWidget):
         self.StopInferenceBtn.clicked.connect(self.stop_inference_btn_pressed)
         self.StopInferenceBtn.setEnabled(False)
 
+        info = StreamInfo('PredictionResult', 'PredictionResult', 3, 8, 'float32', 'someuuid')
+        self.prediction_stream = StreamOutlet(info)
+
 
     def select_model_file_btn_pressed(self):
-        selected_model_file = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
-        if selected_model_file != '':
-            self.model_file_path = selected_model_file
+        selected_model_dir = QFileDialog.getExistingDirectory(self.widget_3, "Select Model Directory")
+        if selected_model_dir != '':
+            self.ModelFileText.setPlainText(selected_model_dir)
 
     def start_inference_btn_pressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1):
             dialog_popup('You need at least one LSL Stream opened to start inference!')
             return
         self.inference_buffer = {} # clear buffer
+
+        # prepare the model
+        self.model = PupilTensorflowModel('D:\PycharmProjects\ReNaAnalysis\Learning\Model\Pupil_ANN')  # TODO move this to the UI
+
         self.is_inferencing = True
         self.StartInferenceBtn.setEnabled(False)
-        self.StopInferenceBtn.setenabled(True)
+        self.StopInferenceBtn.setEnabled(True)
         self.timer.start()
 
     def stop_inference_btn_pressed(self):
@@ -160,15 +95,12 @@ class InferenceTab(QtWidgets.QWidget):
 
     def emit_inference_data(self):
         """
-        Emits inferenced data to a LSL stream outlet.
+        Emits inference results to a LSL stream outlet.
         """
-        # create a new stream info
-        # info = StreamInfo(name, type_, n_channels, srate, 'float32', uuid_)
-
-        # make an outlet
-        outlet = StreamOutlet(info)
-
-        # while True:
+        preprocessed_data = self.model.preprocess(self.inference_buffer[self.sourceStreamTextEdit.toPlainText()])
+        if preprocessed_data is not None:
+            y_pred = self.model.predict(preprocessed_data)
+            self.prediction_stream.push_chunk(y_pred)
         pass
 
     def process_on_tick(self, window_size, time_step):

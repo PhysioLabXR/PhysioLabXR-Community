@@ -65,12 +65,19 @@ class ReplayTab(QtWidgets.QWidget):
         #     dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
         #     return
         # self.save_path = self.generate_save_path()  # get a new save path
-        rns_stream = RNStream(self.file_loc)
-        self.is_replaying = True
-        self.StartReplayBtn.setEnabled(False)
+
 
         # TODO: add progress bar
-        stream_data = rns_stream.stream_in(ignore_stream=['0','monitor1'])
+        if self.file_loc.endswith('.dats'):
+            rns_stream = RNStream(self.file_loc)
+            stream_data = rns_stream.stream_in(ignore_stream=['0','monitor1'])
+        elif self.file_loc.endswith('.p'):
+            stream_data = pickle.load(open(self.file_loc, 'rb'))
+        else:
+            dialog_popup('Unsupported file type', title='WARNING')
+
+        self.is_replaying = True
+        self.StartReplayBtn.setEnabled(False)
         self.StopReplayBtn.setEnabled(True)
         self.is_replaying = True
 
