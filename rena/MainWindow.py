@@ -1,9 +1,11 @@
+import sys
 import time
 import webbrowser
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QLabel, QMessageBox, QWidget
 from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
@@ -12,8 +14,10 @@ import config
 import config_ui
 import threadings.workers as workers
 # from interfaces.UnityLSLInterface import UnityLSLInterface
+from rena.ui.InferenceTab import InferenceTab
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
+from ui.ReplayTab import ReplayTab
 from utils.data_utils import window_slice
 from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
@@ -27,7 +31,21 @@ from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_butt
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window, stream_stylesheet
 import numpy as np
 from ui.SignalSettingsTab import SignalSettingsTab
+import os
+from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
+                          QThreadPool, pyqtSignal, pyqtSlot)
+from threadings.workers import LSLReplayWorker
 
+# Define function to import external files when using PyInstaller.
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -45,6 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_worker = None
         self.cam_workers = {}
         self.cam_displays = {}
+        self.lsl_replay_worker = None
 
         # create workers for different sensors
         self.init_inference(inference_interface)
@@ -117,11 +136,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
-        self.recordingTab = RecordingsTab(self)
-        self.recordings_tab_vertical_layout.addWidget(self.recordingTab)
+        self.recording_tab = RecordingsTab(self)
+        self.recordings_tab_vertical_layout.addWidget(self.recording_tab)
 
         # self.settingTab = SettingsTab(self)
         # self.settings_tab_vertical_layout.addWidget(self.settingTab)
+
+        self.replay_tab = ReplayTab(self)
+        self.replay_tab_vertical_layout.addWidget(self.replay_tab)
+        # self.lsl_replay_worker_thread = QThread(self)
+        # self.lsl_replay_worker_thread.start()
+        # self.lsl_replay_worker = LSLReplayWorker()
+        # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
+        # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
+
+        self.inference_tab = InferenceTab(self)
+        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
         # windows
         self.pop_windows = {}
@@ -139,7 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_stylesheet('ui/stylesheet/light.qss')
 
     def add_camera_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add capture while recording.')
             return
         selected_camera_id = self.camera_combo_box.currentText()
@@ -165,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
             wkr.change_pixmap_signal.connect(self.visualize_cam)
 
             def remove_cam():
-                if self.recordingTab.is_recording:
+                if self.recording_tab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
                 worker_thread.exit()
@@ -187,10 +217,10 @@ class MainWindow(QtWidgets.QMainWindow):
             qt_img = convert_cv_qt(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
             self.test_ts_buffer.append(time.time())
-            self.recordingTab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
+            self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_preset_lslStream_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add stream while recording.')
             return
         selected_text = str(self.preset_LSLStream_combo_box.currentText())
@@ -206,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 dialog_popup(msg)
 
     def add_preset_device_clicked(self):
-        if self.recordingTab.is_recording:
+        if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add device while recording.')
             return
         selected_text = str(self.device_combo_box.currentText())
@@ -225,28 +255,39 @@ class MainWindow(QtWidgets.QMainWindow):
         selected_text = str(self.experiment_combo_box.currentText())
         if selected_text in self.experiment_presets_dict.keys():
             streams_for_experiment = self.experiment_presets_dict[selected_text]
-            try:
-                assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
-                               streams_for_experiment])
-            except AssertionError:
-                dialog_popup(
-                    msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
-                    title="Error")
-                return
-            loading_dlg = dialog_popup(
-                msg="Please wait while streams are being added...",
-                title="Info")
-            for stream_name in streams_for_experiment:
-                isLSL = stream_name in self.lslStream_presets_dict.keys()
-                if isLSL:
-                    index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                    self.preset_LSLStream_combo_box.setCurrentIndex(index)
-                    self.add_preset_lslStream_clicked()
-                else:
-                    index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                    self.device_combo_box.setCurrentIndex(index)
-                    self.add_preset_device_clicked()
-            loading_dlg.close()
+            self.add_streams_to_visulaize(streams_for_experiment)
+
+    def add_streams_to_visulaize(self, stream_names):
+        try:
+            assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
+                           stream_names])
+        except AssertionError:
+            dialog_popup(
+                msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                title="Error")
+            return
+        loading_dlg = dialog_popup(
+            msg="Please wait while streams are being added...",
+            title="Info")
+        for stream_name in stream_names:
+            isLSL = stream_name in self.lslStream_presets_dict.keys()
+            if isLSL:
+                index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                self.preset_LSLStream_combo_box.setCurrentIndex(index)
+                self.add_preset_lslStream_clicked()
+            else:
+                index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+                self.device_combo_box.setCurrentIndex(index)
+                self.add_preset_device_clicked()
+        loading_dlg.close()
+
+    def add_streams_from_replay(self, stream_names):
+        # switch tab to visulalization
+        self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        self.add_streams_to_visulaize(stream_names)
+        for stream_name in stream_names:
+            if stream_name in self.lsl_workers.keys():
+                self.lsl_workers[stream_name].start_stream()
 
     def init_lsl(self, preset):
         error_initialization = False
@@ -336,7 +377,7 @@ class MainWindow(QtWidgets.QMainWindow):
             pop_window_btn.clicked.connect(pop_window)
 
             def remove_stream():
-                if self.recordingTab.is_recording:
+                if self.recording_tab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
                 stop_stream_btn.click()  # fire stop streaming first
@@ -578,7 +619,10 @@ class MainWindow(QtWidgets.QMainWindow):
             # notify the internal buffer in recordings tab
 
             # reshape data_dict based on sensor interface
-            self.recordingTab.update_buffers(data_dict)
+            self.recording_tab.update_buffers(data_dict)
+
+            # inference tab
+            self.inference_tab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
@@ -715,7 +759,7 @@ class MainWindow(QtWidgets.QMainWindow):
         webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
 
     def fire_action_show_recordings(self):
-        self.recordingTab.open_recording_directory()
+        self.recording_tab.open_recording_directory()
 
     def fire_action_exit(self):
         self.close()

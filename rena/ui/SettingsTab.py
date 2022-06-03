@@ -55,7 +55,6 @@ class SettingsTab(QtWidgets.QWidget):
             self.theme = 'dark'
 
     def select_data_dir_btn_pressed(self):
-
         selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
         if selected_data_dir != '':
             self.save_dir = selected_data_dir

@@ -11,7 +11,7 @@ class TestCase(unittest.TestCase):
         inference_interface = InferenceInterface()
         window = MainWindow(inference_interface=inference_interface)
         window.hide()  # no need to display the window when unit testing
-        window.recordingTab.SelectDataDirBtn.click()
+        window.recording_tab.SelectDataDirBtn.click()
         # TODO complete the test case
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import numpy as np
 
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
-from interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
+from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
 def slice_len_for(slc, seqlen):
