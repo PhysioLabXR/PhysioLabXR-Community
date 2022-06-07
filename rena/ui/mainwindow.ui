@@ -114,11 +114,29 @@
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="recordingFileSizeLabel">
-      <property name="text">
-       <string>    Recording file size: </string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="visualizationFPSLabel">
+        <property name="text">
+         <string>   Visualization FPS </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="tickFrequencyLabel">
+        <property name="text">
+         <string>   Tick Frequency: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="recordingFileSizeLabel">
+        <property name="text">
+         <string>    Recording file size: </string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -128,7 +146,7 @@
      <x>0</x>
      <y>0</y>
      <width>1600</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menufile">

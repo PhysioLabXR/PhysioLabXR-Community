@@ -23,6 +23,8 @@ sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
 default_add_lsl_data_type = 'YourStreamName'
 
 sampling_rate_decimal_places = 2
+visualization_fps_decimal_places = 2
+tick_frequency_decimal_places = 2
 
 cam_display_width = 640
 cam_display_height = 480

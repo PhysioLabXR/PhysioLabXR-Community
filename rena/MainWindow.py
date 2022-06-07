@@ -30,6 +30,7 @@ from utils.general import load_all_lslStream_presets, create_LSL_preset, process
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_button, dialog_popup, \
     get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window, stream_stylesheet
 import numpy as np
+import collections
 from ui.SignalSettingsTab import SignalSettingsTab
 import os
 from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
@@ -64,6 +65,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cam_workers = {}
         self.cam_displays = {}
         self.lsl_replay_worker = None
+        self.recent_visualization_refresh_timestamps = collections.deque(maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
+        self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
+        self.visualization_fps = 0
+        self.tick_rate = 0
 
         # create workers for different sensors
         self.init_inference(inference_interface)
@@ -482,6 +487,16 @@ class MainWindow(QtWidgets.QMainWindow):
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
         [w.tick_signal.emit() for w in self.device_workers.values()]
 
+
+        self.recent_tick_refresh_timestamps.append(time.time())
+        if len(self.recent_tick_refresh_timestamps)>2:
+            self.tick_rate = 1/((self.recent_tick_refresh_timestamps[-1]-self.recent_tick_refresh_timestamps[0])/(len(self.recent_tick_refresh_timestamps)-1))
+        # print('tick frequency:'+str(self.tick_rate))
+
+        self.tickFrequencyLabel.setText('Tick Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
+        # print("John")
+
+
     def inference_ticks(self):
         # only ticks if data is streaming
         if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
@@ -639,9 +654,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
                 if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
                     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                                            axis=1)  # resample to 100 hz with retain history of 10 sec
-                    time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+                # start = time.time()
+                # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
+                # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
+                data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+                                        axis=1)  # resample to 100 hz with retain history of 10 sec
+                # print(time.time()-start)
+                time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
                 # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                 #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
@@ -686,6 +705,17 @@ class MainWindow(QtWidgets.QMainWindow):
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
                 self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
                     'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
+
+        # calculate and update the frame rate
+        self.recent_visualization_refresh_timestamps.append(time.time())
+        if len(self.recent_visualization_refresh_timestamps)>2:
+            self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] - self.recent_visualization_refresh_timestamps[0]) / (len(self.recent_visualization_refresh_timestamps) - 1))
+        # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
+        # print("John")
+        self.visualizationFPSLabel.setText('Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
+
+
+
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
