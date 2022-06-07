@@ -13,3 +13,4 @@ pyxdf
 opencv-python
 pyautogui
 qimage2ndarray
+tensorflow
