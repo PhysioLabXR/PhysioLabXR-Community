@@ -292,7 +292,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_streams_to_visulaize(stream_names)
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys():
-                self.lsl_workers[stream_name].start_stream()
+                self.stream_ui_elements[stream_name]['start_stop_stream_btn'].click()
 
     def init_lsl(self, preset):
         error_initialization = False
@@ -316,14 +316,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
+            lsl_widget, lsl_layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn= init_sensor_or_lsl_widget(
                 parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
                 insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             lsl_widget.setObjectName(lsl_widget_name)
             worker_thread = pg.QtCore.QThread(self)
             self.worker_threads[lsl_stream_name] = worker_thread
 
-            stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
+            # stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
             try:
                 self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
@@ -381,11 +381,35 @@ class MainWindow(QtWidgets.QMainWindow):
 
             pop_window_btn.clicked.connect(pop_window)
 
+            def start_stop_stream_btn_clicked():
+                # check if is streaming
+
+                if self.lsl_workers[lsl_stream_name].is_streaming:
+                    self.lsl_workers[lsl_stream_name].stop_stream()
+                    if not self.lsl_workers[lsl_stream_name].is_streaming:
+                        # started
+                        print("sensor stopped")
+                        # toggle the icon
+                        start_stop_stream_btn.setText("Start Stream")
+                else:
+                    self.lsl_workers[lsl_stream_name].start_stream()
+                    if self.lsl_workers[lsl_stream_name].is_streaming:
+                        # started
+                        print("sensor stopped")
+                        # toggle the icon
+                        start_stop_stream_btn.setText("Stop Stream")
+            start_stop_stream_btn.clicked.connect(start_stop_stream_btn_clicked)
+
+
+
+
             def remove_stream():
                 if self.recording_tab.is_recording:
                     dialog_popup(msg='Cannot remove stream while recording.')
                     return False
-                stop_stream_btn.click()  # fire stop streaming first
+                # stop_stream_btn.click()  # fire stop streaming first
+                if self.lsl_workers[lsl_stream_name].is_streaming:
+                    self.lsl_workers[lsl_stream_name].stop_stream()
                 worker_thread.exit()
                 self.lsl_workers.pop(lsl_stream_name)
                 self.worker_threads.pop(lsl_stream_name)
@@ -406,14 +430,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 return True
 
             #     worker_thread
-            remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
-                                            function=remove_stream)  # add delete sensor button after adding visualization
-            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stream_btn': start_stream_btn,
-                                                        'stop_stream_btn': stop_stream_btn,
+            remove_stream_btn.clicked.connect(remove_stream)
+            # remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
+            #                                 function=remove_stream)  # add delete sensor button after adding visualization
+            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stop_stream_btn': start_stop_stream_btn,
                                                         'remove_stream_btn': remove_stream_btn}
 
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
-            start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
+            # start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
             worker_thread.start()
             # if error initialization
             if error_initialization:
@@ -654,13 +678,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # reduce the number of points to plot to the number of pixels in the corresponding plot widget
                 if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
                     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-                # start = time.time()
-                # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-                # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-                data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                                        axis=1)  # resample to 100 hz with retain history of 10 sec
-                # print(time.time()-start)
-                time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+                    # start = time.time()
+                    # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
+                    # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
+                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+                                            axis=1)  # resample to 100 hz with retain history of 10 sec
+                    # print(time.time()-start)
+                    time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
                 # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                 #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))

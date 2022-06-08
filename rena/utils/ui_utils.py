@@ -3,7 +3,7 @@ import qimage2ndarray
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
@@ -147,20 +147,47 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     ql = QLabel(config_ui.sensors_type_ui_name_dict[
                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
     ql.setStyleSheet("font: bold 14px;")
-    signal_settings_btn = init_button(parent=top_layout, label='Signal Settings')
-    pop_window_btn = init_button(parent=top_layout, label='Pop Window')
-
-    signal_settings_btn.setFixedWidth(200)
-    pop_window_btn.setFixedWidth(200)
-
     top_layout.addWidget(ql)
-    top_layout.addWidget(signal_settings_btn)
-    top_layout.addWidget(pop_window_btn)
+    signal_settings_btn = init_button(parent=top_layout, label=None)
+    start_stop_stream_btn = init_button(parent=top_layout, label=None)
+    pop_window_btn = init_button(parent=top_layout, label=None)
+    remove_stream_btn = init_button(parent=top_layout, label=None)
 
-    start_stream_btn = init_button(parent=layout, label='Start Stream')
-    stop_stream_btn = init_button(parent=layout, label='Stop Stream')
-    return container_widget, layout, start_stream_btn, stop_stream_btn, pop_window_btn, signal_settings_btn
 
+    # signal_settings_btn.setFixedWidth(200)
+    # pop_window_btn.setFixedWidth(200)
+    # remove_stream_btn.setFixedWidth(200)
+    # start_stop_stream_btn.setFixedWidth(200)
+    start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
+
+    # top_layout.addWidget(signal_settings_btn)
+    # top_layout.addWidget(pop_window_btn)
+
+
+
+    return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
+
+# def init_sensor_or_lsl_widget(parent, label_string, insert_position):
+#     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+#
+#     _, top_layout = init_container(parent=layout, vertical=False)
+#     ql = QLabel(config_ui.sensors_type_ui_name_dict[
+#                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+#     ql.setStyleSheet("font: bold 14px;")
+#     signal_settings_btn = init_button(parent=top_layout, label='Signal Settings')
+#     pop_window_btn = init_button(parent=top_layout, label='Pop Window')
+#
+#     signal_settings_btn.setFixedWidth(200)
+#     pop_window_btn.setFixedWidth(200)
+#
+#     top_layout.addWidget(ql)
+#     top_layout.addWidget(signal_settings_btn)
+#     top_layout.addWidget(pop_window_btn)
+#
+#     start_stop_stream_btn = init_button(parent=layout, label='Start Stream')
+#     # stop_stream_btn = init_button(parent=layout, label='Stop Stream')
+#     # stop_stream_btn.setIcon(QIcon('../media/icons/random.png'))
+#     return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn
 
 def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, experiment_presets: dict):
     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
