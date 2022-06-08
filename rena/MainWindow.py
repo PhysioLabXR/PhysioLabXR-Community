@@ -316,7 +316,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn = init_sensor_or_lsl_widget(
+            lsl_widget, lsl_layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn= init_sensor_or_lsl_widget(
                 parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
                 insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             lsl_widget.setObjectName(lsl_widget_name)
@@ -430,8 +430,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 return True
 
             #     worker_thread
-            remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
-                                            function=remove_stream)  # add delete sensor button after adding visualization
+            remove_stream_btn.clicked.connect(remove_stream)
+            # remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
+            #                                 function=remove_stream)  # add delete sensor button after adding visualization
             self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stop_stream_btn': start_stop_stream_btn,
                                                         'remove_stream_btn': remove_stream_btn}
 
