@@ -357,7 +357,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             signal_settings_btn.clicked.connect(signal_settings_window)
             #### TODO: signal processing button (hidded before finishing)
-            signal_settings_btn.hide()
+            # signal_settings_btn.hide()
 
             #####
             # pop window actions

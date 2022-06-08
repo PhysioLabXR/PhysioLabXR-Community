@@ -150,7 +150,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     top_layout.addWidget(ql)
 
     pop_window_btn = init_button(parent=top_layout, label=None)
-    remove_stream_btn = init_button(parent=layout, label=None)
+    remove_stream_btn = init_button(parent=top_layout, label=None)
     signal_settings_btn = init_button(parent=layout, label=None)
     start_stop_stream_btn = init_button(parent=layout, label=None)
 
