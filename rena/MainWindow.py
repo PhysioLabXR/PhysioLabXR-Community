@@ -291,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.add_streams_to_visulaize(stream_names)
         for stream_name in stream_names:
-            if stream_name in self.lsl_workers.keys():
+            if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
                 self.stream_ui_elements[stream_name]['start_stop_stream_btn'].click()
 
     def init_lsl(self, preset):
@@ -517,7 +517,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tick_rate = 1/((self.recent_tick_refresh_timestamps[-1]-self.recent_tick_refresh_timestamps[0])/(len(self.recent_tick_refresh_timestamps)-1))
         # print('tick frequency:'+str(self.tick_rate))
 
-        self.tickFrequencyLabel.setText('Tick Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
+        self.tickFrequencyLabel.setText('Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
         # print("John")
 
 

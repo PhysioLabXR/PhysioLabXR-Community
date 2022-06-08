@@ -148,20 +148,21 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
     ql.setStyleSheet("font: bold 14px;")
     top_layout.addWidget(ql)
-    signal_settings_btn = init_button(parent=top_layout, label=None)
-    start_stop_stream_btn = init_button(parent=top_layout, label=None)
-    pop_window_btn = init_button(parent=top_layout, label=None)
-    remove_stream_btn = init_button(parent=top_layout, label=None)
 
+    pop_window_btn = init_button(parent=top_layout, label=None)
+    remove_stream_btn = init_button(parent=layout, label=None)
+    signal_settings_btn = init_button(parent=layout, label=None)
+    start_stop_stream_btn = init_button(parent=layout, label=None)
 
     # signal_settings_btn.setFixedWidth(200)
     # pop_window_btn.setFixedWidth(200)
     # remove_stream_btn.setFixedWidth(200)
     # start_stop_stream_btn.setFixedWidth(200)
-    start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
-
-    # top_layout.addWidget(signal_settings_btn)
-    # top_layout.addWidget(pop_window_btn)
+    # start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
+    start_stop_stream_btn.setText("Start Stream")
+    remove_stream_btn.setText("Remove Stream")
+    pop_window_btn.setText("Pop Window")
+    signal_settings_btn.setText("Signal")
 
 
 
