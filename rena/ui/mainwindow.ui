@@ -125,7 +125,7 @@
       <item>
        <widget class="QLabel" name="tickFrequencyLabel">
         <property name="text">
-         <string>   Tick Frequency: </string>
+         <string>   Pull Data Frequency: </string>
         </property>
        </widget>
       </item>
