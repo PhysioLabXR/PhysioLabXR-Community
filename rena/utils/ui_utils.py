@@ -164,8 +164,6 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
     pop_window_btn.setText("Pop Window")
     signal_settings_btn.setText("Signal")
 
-
-
     return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
 
 # def init_sensor_or_lsl_widget(parent, label_string, insert_position):

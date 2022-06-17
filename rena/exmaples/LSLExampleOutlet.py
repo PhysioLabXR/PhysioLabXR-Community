@@ -15,11 +15,11 @@ def main(argv):
     letters = string.digits
     id = (''.join(random.choice(letters) for i in range(3)))
 
-    srate = 100
+    srate = 2048
     name = 'Dummy-BioSemi-8Chan-' + id
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 8
+    n_channels = 81
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])

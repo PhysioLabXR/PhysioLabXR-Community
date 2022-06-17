@@ -15,6 +15,7 @@ import config_ui
 import threadings.workers as workers
 # from interfaces.UnityLSLInterface import UnityLSLInterface
 from rena.ui.InferenceTab import InferenceTab
+from rena.ui.StreamWidget import StreamWidget
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from ui.ReplayTab import ReplayTab
@@ -37,6 +38,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 from threadings.workers import LSLReplayWorker
 
+
 # Define function to import external files when using PyInstaller.
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -47,6 +49,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -65,7 +68,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cam_workers = {}
         self.cam_displays = {}
         self.lsl_replay_worker = None
-        self.recent_visualization_refresh_timestamps = collections.deque(maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
+        self.recent_visualization_refresh_timestamps = collections.deque(
+            maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.visualization_fps = 0
         self.tick_rate = 0
@@ -314,12 +318,15 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 plot_group_format = ['time_series']
 
-            self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
+            # set up UI elements
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_widget, lsl_layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn= init_sensor_or_lsl_widget(
-                parent=self.sensorTabSensorsHorizontalLayout, label_string=lsl_stream_name,
-                insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-            lsl_widget.setObjectName(lsl_widget_name)
+            lsl_stream_widget = StreamWidget(parent=self.sensorTabSensorsHorizontalLayout, stream_name=lsl_stream_name, insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+            start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
+            lsl_layout = lsl_stream_widget.TopLayout
+            lsl_stream_widget.setObjectName(lsl_widget_name)
+
+            # set up workers
+            self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
             worker_thread = pg.QtCore.QThread(self)
             self.worker_threads[lsl_stream_name] = worker_thread
 
@@ -355,35 +362,36 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     print("Cancel!")
 
-            signal_settings_btn.clicked.connect(signal_settings_window)
+            # signal_settings_btn.clicked.connect(signal_settings_window)
             #### TODO: signal processing button (hidded before finishing)
-            signal_settings_btn.hide()
+            # signal_settings_btn.hide()
 
             #####
             # pop window actions
             def dock_window():
                 self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1,
-                                                                   lsl_widget)
+                                                                   lsl_stream_widget)
                 pop_window_btn.clicked.disconnect()
                 pop_window_btn.clicked.connect(pop_window)
                 pop_window_btn.setText('Pop Window')
                 self.pop_windows[lsl_stream_name].hide()  # tetentive measures
                 self.pop_windows.pop(lsl_stream_name)
+                lsl_stream_widget.set_button_icons()
 
             def pop_window():
-                w = AnotherWindow(lsl_widget, remove_stream)
+                w = AnotherWindow(lsl_stream_widget, remove_stream)
                 self.pop_windows[lsl_stream_name] = w
                 w.setWindowTitle(lsl_stream_name)
                 pop_window_btn.setText('Dock Window')
                 w.show()
                 pop_window_btn.clicked.disconnect()
                 pop_window_btn.clicked.connect(dock_window)
+                lsl_stream_widget.set_button_icons()
 
             pop_window_btn.clicked.connect(pop_window)
 
             def start_stop_stream_btn_clicked():
                 # check if is streaming
-
                 if self.lsl_workers[lsl_stream_name].is_streaming:
                     self.lsl_workers[lsl_stream_name].stop_stream()
                     if not self.lsl_workers[lsl_stream_name].is_streaming:
@@ -398,10 +406,10 @@ class MainWindow(QtWidgets.QMainWindow):
                         print("sensor stopped")
                         # toggle the icon
                         start_stop_stream_btn.setText("Stop Stream")
+                lsl_stream_widget.set_button_icons()
+
+
             start_stop_stream_btn.clicked.connect(start_stop_stream_btn_clicked)
-
-
-
 
             def remove_stream():
                 if self.recording_tab.is_recording:
@@ -419,13 +427,13 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.device_workers.pop(lsl_stream_name)
 
                 self.stream_ui_elements.pop(lsl_stream_name)
-                self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_widget)
+                self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_stream_widget)
                 # close window if popped
                 if lsl_stream_name in self.pop_windows.keys():
                     self.pop_windows[lsl_stream_name].hide()
                     self.pop_windows.pop(lsl_stream_name)
                 else:  # use recursive delete if docked
-                    sip.delete(lsl_widget)
+                    sip.delete(lsl_stream_widget)
                 self.LSL_data_buffer_dicts.pop(lsl_stream_name)
                 return True
 
@@ -433,7 +441,8 @@ class MainWindow(QtWidgets.QMainWindow):
             remove_stream_btn.clicked.connect(remove_stream)
             # remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
             #                                 function=remove_stream)  # add delete sensor button after adding visualization
-            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_widget, 'start_stop_stream_btn': start_stop_stream_btn,
+            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_stream_widget,
+                                                        'start_stop_stream_btn': start_stop_stream_btn,
                                                         'remove_stream_btn': remove_stream_btn}
 
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
@@ -511,15 +520,13 @@ class MainWindow(QtWidgets.QMainWindow):
         [w.tick_signal.emit() for w in self.lsl_workers.values()]
         [w.tick_signal.emit() for w in self.device_workers.values()]
 
-
         self.recent_tick_refresh_timestamps.append(time.time())
-        if len(self.recent_tick_refresh_timestamps)>2:
-            self.tick_rate = 1/((self.recent_tick_refresh_timestamps[-1]-self.recent_tick_refresh_timestamps[0])/(len(self.recent_tick_refresh_timestamps)-1))
-        # print('tick frequency:'+str(self.tick_rate))
+        if len(self.recent_tick_refresh_timestamps) > 2:
+            self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
+                        len(self.recent_tick_refresh_timestamps) - 1))
 
-        self.tickFrequencyLabel.setText('Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
-        # print("John")
-
+        self.tickFrequencyLabel.setText(
+            'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -650,7 +657,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                buffered_data), axis=-1)
             else:
                 data_to_plot = buffered_data[:,
-                               - samples_to_plot:]  # plot the most recent 10 seconds
+                               - samples_to_plot:]  # plot the most recent few seconds
 
             # main window only retains the most recent 10 seconds for visualization purposes
             self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
@@ -732,14 +739,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # calculate and update the frame rate
         self.recent_visualization_refresh_timestamps.append(time.time())
-        if len(self.recent_visualization_refresh_timestamps)>2:
-            self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] - self.recent_visualization_refresh_timestamps[0]) / (len(self.recent_visualization_refresh_timestamps) - 1))
+        if len(self.recent_visualization_refresh_timestamps) > 2:
+            self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
+                                           self.recent_visualization_refresh_timestamps[0]) / (
+                                                      len(self.recent_visualization_refresh_timestamps) - 1))
         # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
         # print("John")
-        self.visualizationFPSLabel.setText('Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
-
-
-
+        self.visualizationFPSLabel.setText(
+            'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
