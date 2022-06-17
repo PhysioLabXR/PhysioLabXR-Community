@@ -50,7 +50,7 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, inference_interface, *args, **kwargs):
+    def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
@@ -71,7 +71,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tick_rate = 0
 
         # create workers for different sensors
-        self.init_inference(inference_interface)
+        # self.init_inference(inference_interface)
 
         # timer
         self.timer = QTimer()
@@ -463,20 +463,20 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('We are not supporting this Device or the Device has been added')
             return None
 
-    def init_inference(self, inference_interface):
-        inference_thread = pg.QtCore.QThread(self)
-        self.worker_threads['inference'] = inference_thread
-        self.inference_worker = workers.InferenceWorker(inference_interface)
-        self.inference_worker.moveToThread(self.worker_threads['inference'])
-        self.init_visualize_inference_results()
-        self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-
-        self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-        self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-
-        # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
-        inference_thread.start()
-        self.inference_widget.hide()
+    # def init_inference(self, inference_interface):
+    #     inference_thread = pg.QtCore.QThread(self)
+    #     self.worker_threads['inference'] = inference_thread
+    #     self.inference_worker = workers.InferenceWorker(inference_interface)
+    #     self.inference_worker.moveToThread(self.worker_threads['inference'])
+    #     self.init_visualize_inference_results()
+    #     self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
+    #
+    #     self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
+    #     self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
+    #
+    #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
+    #     inference_thread.start()
+    #     self.inference_widget.hide()
 
     def ticks(self):
         """

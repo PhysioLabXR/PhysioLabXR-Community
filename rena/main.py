@@ -1,15 +1,13 @@
-import sys
 import os
-from PyQt5 import QtWidgets
+import subprocess
+import sys
 
-# Press the green button in the gutter to run the script.
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt, QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
+from PyQt5.QtWidgets import QLabel, QMenu
 
 from MainWindow import MainWindow
-from rena.interfaces import InferenceInterface
-
-from PyQt5.QtCore import Qt, QFile, QTextStream
 
 app = None
 
@@ -25,13 +23,8 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 if __name__ == '__main__':
-    # define icon
-
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
-    tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
-    tray_icon.setToolTip('RNApp')
-    tray_icon.show()
 
     # splash screen
     splash = QLabel()
@@ -41,15 +34,18 @@ if __name__ == '__main__':
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()
 
-    # main window init
-    inference_interface = InferenceInterface.InferenceInterface()
-    window = MainWindow(app=app, inference_interface=inference_interface)
+    # start server
+    env = os.environ.copy()
+    p = subprocess.Popen(['python', 'MainServer.py'], env=env)
 
-    window.setWindowIcon(QIcon('../media/logo/RN.png'))
+    # main window init
+    visualizer_window = MainWindow(app=app)
+    visualizer_window.setWindowIcon(QIcon('../media/logo/RN.png'))
+
     # make tray menu
     menu = QMenu()
     exit_action = menu.addAction('Exit')
-    exit_action.triggered.connect(window.close)
+    exit_action.triggered.connect(visualizer_window.close)
 
     # stylesheet init
 
@@ -60,7 +56,7 @@ if __name__ == '__main__':
     # splash screen destroy
     splash.destroy()
 
-    window.show()
+    visualizer_window.show()
     app.exec_()
     print('Resuming Console Interaction.')
 
