@@ -1,6 +1,7 @@
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
@@ -251,8 +252,11 @@ class CustomDialog(QDialog):
 
         self.layout = QVBoxLayout()
         message = QLabel(str(msg))
-        self.layout.addWidget(message)
-        self.layout.addWidget(self.buttonBox)
+
+        # center message and button
+        self.layout.addWidget(message, alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignCenter)
+        # self.layout.setAlignment(Qt.Align)
         self.setLayout(self.layout)
 
 

@@ -640,7 +640,7 @@ QPushButton
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 10em;
+    min-width: 5em;
 }
 
 QPushButton:disabled
@@ -656,7 +656,7 @@ QPushButton:disabled
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 10em;
+    min-width: 5em;
 }
 
 QPushButton:focus

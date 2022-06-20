@@ -2,7 +2,7 @@
 
 from PyQt5 import QtWidgets, uic
 
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon
+from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, settings_icon
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -20,7 +20,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.StreamNameLabel.setText(stream_name)
         self.set_button_icons()
+        self.SettingsBtn.setIcon(settings_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
+
 
 
     def set_button_icons(self):

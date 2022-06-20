@@ -70,7 +70,13 @@
            </property>
           </widget>
          </item>
-
+         <item>
+          <widget class="QPushButton" name="SettingsBtn">
+           <property name="text">
+            <string>Settings</string>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="PopWindowBtn">
            <property name="toolTip">
