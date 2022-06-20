@@ -71,9 +71,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="SettingsBtn">
+          <widget class="QPushButton" name="OptionsBtn">
            <property name="text">
-            <string>Settings</string>
+            <string>Options</string>
            </property>
           </widget>
          </item>
