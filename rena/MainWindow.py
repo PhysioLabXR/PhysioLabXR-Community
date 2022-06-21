@@ -340,6 +340,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     plot_group_slices=plot_group_slices,
                     plot_group_format=plot_group_format
                 )
+
             except AssertionError as e:
                 error_initialization = True
                 dialog_popup(str(e))

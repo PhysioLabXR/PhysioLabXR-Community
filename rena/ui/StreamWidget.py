@@ -2,6 +2,7 @@
 
 from PyQt5 import QtWidgets, uic
 
+from rena.ui.OptionsWindow import OptionsWindow
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, options_icon
 
 
@@ -18,11 +19,15 @@ class StreamWidget(QtWidgets.QWidget):
         else:
             parent.addWidget(self)
 
+        self.stream_name = stream_name
+
         self.StreamNameLabel.setText(stream_name)
         self.set_button_icons()
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
+        # connect btn
+        self.OptionsBtn.clicked.connect(self.options_btn_clicked)
 
 
     def set_button_icons(self):
@@ -35,3 +40,13 @@ class StreamWidget(QtWidgets.QWidget):
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
+
+
+    def options_btn_clicked(self):
+
+        print("Option window open")
+        signal_settings_window = OptionsWindow(parent=self)
+        if signal_settings_window.exec_():
+            print("signal setting window open")
+        else:
+            print("Cancel!")
