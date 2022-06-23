@@ -61,9 +61,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # create sensor threads, worker threads for different sensors
 
-        ########
-        self.stream_widgets = {}
-        ########
         self.worker_threads = {}
         self.sensor_workers = {}
         self.device_workers = {}
@@ -134,7 +131,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # reload all presets
         self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
-        self.stream_ui_elements = {}
+        ############
+        self.stream_widgets = {}
+        ############
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -300,7 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_streams_to_visulaize(stream_names)
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
-                self.stream_ui_elements[stream_name]['start_stop_stream_btn'].click()
+                self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
     def init_lsl(self, preset):
         error_initialization = False
@@ -376,9 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_stream_widget,
-                                                        'start_stop_stream_btn': start_stop_stream_btn,
-                                                        'remove_stream_btn': remove_stream_btn}
+            self.stream_widgets[lsl_stream_name] = lsl_stream_widget
 
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             # start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
@@ -506,9 +503,9 @@ class MainWindow(QtWidgets.QMainWindow):
             plots = []
             plot_formats = []
             for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
-                plot_group_format_info = channel_format.split('_')
+                plot_group_format_info = channel_format
                 # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-                if plot_group_format_info[0] == 'time' and plot_group_format_info[1] == 'series':  # time_series plot
+                if plot_group_format_info=='time_series':  # time_series plot
                     plot_formats.append(plot_group_format_info)
                     plot_widget = pg.PlotWidget()
                     parent.addWidget(plot_widget)
@@ -639,7 +636,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     for plot_group_index, (plot_group, plot_format) in enumerate(
                             zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
                                 self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
-                        if plot_format[0] == 'time' and plot_format[1] == 'series':
+                        if plot_format=='time_series':
                             # plot corresponding time series data, range (a,b) is time series
                             plot_group_channel_num = plot_group[1] - plot_group[0]
                             for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
@@ -741,7 +738,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             if self.settings_window is not None:
                 self.settings_window.close()
-            remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
+            remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
             [x.click() for x in remove_btns]
             event.accept()
             self.app.quit()

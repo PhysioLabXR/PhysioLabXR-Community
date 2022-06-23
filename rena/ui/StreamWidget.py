@@ -142,7 +142,7 @@ class StreamWidget(QtWidgets.QWidget):
             self.main_parent.device_workers[self.stream_name].stop_stream()
             self.main_parent.device_workers.pop(self.stream_name)
 
-        self.main_parent.stream_ui_elements.pop(self.stream_name)
+        self.main_parent.stream_widgets.pop(self.stream_name)
         self.parent.removeWidget(self)
         # close window if popped
         if self.stream_name in self.main_parent.pop_windows.keys():
