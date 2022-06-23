@@ -310,16 +310,17 @@ class MainWindow(QtWidgets.QMainWindow):
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
-            lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
+            lsl_num_chan, lsl_chan_names, plot_group_slices,  plot_group_format= preset['NumChannels'], \
                                                               preset['ChannelNames'], \
-                                                              preset['PlotGroupSlices']
+                                                              preset['GroupChannelsInPlot'], \
+                                                              preset['GroupFormat']
 
-            if 'GroupFormat' in preset.keys():
-                plot_group_format = preset['GroupFormat']
-            elif plot_group_slices is not None:
-                plot_group_format = ['time_series'] * (len(plot_group_slices))
-            else:
-                plot_group_format = ['time_series']
+            # if 'GroupFormat' in preset.keys():
+            #     plot_group_format = preset['GroupFormat']
+            # elif plot_group_slices is not None:
+            #     plot_group_format = ['time_series'] * (len(plot_group_slices))
+            # else:
+            #     plot_group_format = ['time_series']
 
             # set up UI elements
             lsl_widget_name = lsl_stream_name + '_widget'
@@ -510,40 +511,42 @@ class MainWindow(QtWidgets.QMainWindow):
                     plot_widget = pg.PlotWidget()
                     parent.addWidget(plot_widget)
 
-                    distinct_colors = get_distinct_colors(pg_slice[1] - pg_slice[0])
+                    distinct_colors = get_distinct_colors(len(pg_slice))
                     plot_widget.addLegend()
-                    plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                              zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
+                    plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+                              zip(distinct_colors, [chan_names[i] for i in pg_slice])])
 
-                elif plot_group_format_info[0] == 'image':
-                    plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
 
-                    # check if the channel num matches:
-                    if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
-                        raise AssertionError(
-                            'The number of channel in this slice does not match with the number of image pixels.'
-                            'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
-                                                                                             pg_slice))
-                    plot_formats.append(plot_group_format_info)
-                    image_label = QLabel('Image_Label')
-                    image_label.setAlignment(QtCore.Qt.AlignCenter)
-                    parent.addWidget(image_label)
-                    plots.append(image_label)
+                # elif plot_group_format_info[0] == 'image':
+                #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
+                #
+                #     # check if the channel num matches:
+                #     if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
+                #         raise AssertionError(
+                #             'The number of channel in this slice does not match with the number of image pixels.'
+                #             'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
+                #                                                                              pg_slice))
+                #     plot_formats.append(plot_group_format_info)
+                #     image_label = QLabel('Image_Label')
+                #     image_label.setAlignment(QtCore.Qt.AlignCenter)
+                #     parent.addWidget(image_label)
+                #     plots.append(image_label)
                 else:
                     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
-        else:
-            plot_widget = pg.PlotWidget()
-            parent.addWidget(plot_widget)
+        # else:
+        #     plot_widget = pg.PlotWidget()
+        #     parent.addWidget(plot_widget)
+        #     plots = []
+        #
+        #     distinct_colors = get_distinct_colors(num_chan)
+        #     plot_widget.addLegend()
+        #     plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+        #              zip(distinct_colors, chan_names)])
+        #     plot_formats = [['time_series']]
 
-            distinct_colors = get_distinct_colors(num_chan)
-            plot_widget.addLegend()
-            plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                     zip(distinct_colors, chan_names)]
-            plot_formats = [['time_series']]
-
-        [p.setDownsampling(auto=True, method='mean') for p in plots if p == PlotDataItem]
-        [p.setClipToView(clip=True) for p in plots for p in plots if p == PlotDataItem]
+        [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
+        [p.setClipToView(clip=True) for p in plots for group in plots for p in group  if p == PlotDataItem]
 
         return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
 
@@ -638,31 +641,35 @@ class MainWindow(QtWidgets.QMainWindow):
                                 self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
                         if plot_format=='time_series':
                             # plot corresponding time series data, range (a,b) is time series
-                            plot_group_channel_num = plot_group[1] - plot_group[0]
-                            for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
-                                self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
-                                                                                            data_to_plot[i, :])
+                            plot_group_channel_num = len(plot_group)
+                            for index_in_group, stream_index in enumerate(plot_group):
+                                self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_group_index][index_in_group]\
+                                    .setData(time_vector,data_to_plot[stream_index, :])
+                            # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
+                            #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
+                            #                                                                 data_to_plot[i, :])
                             plot_channel_num_offset += plot_group_channel_num
-                        elif plot_format[0] == 'image':
-                            image_shape = plot_format[1]
-                            channel_num = image_shape[2]
-                            plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
+                        # elif plot_format[0] == 'image':
+                        #     image_shape = plot_format[1]
+                        #     channel_num = image_shape[2]
+                        #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
+                        #
+                        #     img = plot_array.reshape(image_shape)
+                        #     # display openCV image if channel_num = 3
+                        #     # display heat map if channel_num = 1
+                        #     if channel_num == 3:
+                        #         img = convert_cv_qt(img)
+                        #     if channel_num == 1:
+                        #         img = np.squeeze(img, axis=-1)
+                        #         img = convert_heatmap_qt(img)
+                        #
+                        #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
+                        #     plot_channel_num_offset += 1
 
-                            img = plot_array.reshape(image_shape)
-                            # display openCV image if channel_num = 3
-                            # display heat map if channel_num = 1
-                            if channel_num == 3:
-                                img = convert_cv_qt(img)
-                            if channel_num == 1:
-                                img = np.squeeze(img, axis=-1)
-                                img = convert_heatmap_qt(img)
-
-                            self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
-                            plot_channel_num_offset += 1
-
-                else:
-                    [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                     enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+        # TODO： remove this statement
+                # else:
+                #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+                #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
 
                 self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
                     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
