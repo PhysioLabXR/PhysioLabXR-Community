@@ -1,0 +1,8 @@
+{ "StreamName":"Dummy-BioSemi-8Chan-967",
+  "ChannelNames":[
+    "Fp1", "F7", "F8", "T4", "Fp1", "F7", "F8", "T4"],
+  "NominalSamplingRate":  100,
+  "GroupChannelsInPlot": [4,6]
+
+}
+

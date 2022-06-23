@@ -60,6 +60,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.app = app
 
         # create sensor threads, worker threads for different sensors
+
+        ########
+        self.stream_widgets = {}
+        ########
         self.worker_threads = {}
         self.sensor_workers = {}
         self.device_workers = {}
@@ -320,16 +324,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # set up UI elements
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_stream_widget = StreamWidget(main_parent=self, parent=self.sensorTabSensorsHorizontalLayout, stream_name=lsl_stream_name, insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+            lsl_stream_widget = StreamWidget(main_parent=self,
+                                             parent=self.sensorTabSensorsHorizontalLayout,
+                                             stream_name=lsl_stream_name,
+                                             interface=interface,
+                                             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
             lsl_layout = lsl_stream_widget.TopLayout
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
             # set up workers
-            self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
-            worker_thread = lsl_stream_widget.worker_thread
+            self.lsl_workers[lsl_stream_name] = lsl_stream_widget.lsl_worker
+            # worker_thread = lsl_stream_widget.worker_thread
             # worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[lsl_stream_name] = worker_thread
+            self.worker_threads[lsl_stream_name] = lsl_stream_widget.worker_thread
 
             # stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
@@ -373,7 +381,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             # start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
-            worker_thread.start()
+            lsl_stream_widget.worker_thread.start()
             # if error initialization
             if error_initialization:
                 remove_stream_btn.click()

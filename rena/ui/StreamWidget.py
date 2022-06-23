@@ -1,7 +1,10 @@
 # This Python file uses the following encoding: utf-8
+from copy import copy
 
 from PyQt5 import QtWidgets, uic, sip
 
+from rena.interfaces.LSLInletInterface import LSLInletInterface
+from rena.threadings import workers
 from rena.ui.OptionsWindow import OptionsWindow
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, options_icon
 from rena.utils.ui_utils import AnotherWindow, dialog_popup
@@ -25,7 +28,7 @@ import collections
 import os
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, insert_position=None):
+    def __init__(self, main_parent, parent, stream_name, interface, insert_position=None):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
@@ -57,6 +60,8 @@ class StreamWidget(QtWidgets.QWidget):
 
         # data elements
         self.worker_thread = pg.QtCore.QThread(self)
+        self.interface = interface
+        self.lsl_worker = workers.LSLInletWorker(interface)
 
 
     def set_button_icons(self):
@@ -142,9 +147,10 @@ class StreamWidget(QtWidgets.QWidget):
         # close window if popped
         if self.stream_name in self.main_parent.pop_windows.keys():
             self.main_parent.pop_windows[self.stream_name].hide()
-            self.main_parent.pop_windows.pop(self.stream_name)
+            # self.main_parent.pop_windows.pop(self.stream_name)
+            self.deleteLater()
         else:  # use recursive delete if docked
-            sip.delete(self)
+            self.deleteLater()
         self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
         return True
 
