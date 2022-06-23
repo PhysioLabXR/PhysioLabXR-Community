@@ -22,8 +22,13 @@ from rena.threadings.workers import LSLReplayWorker
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 import pyqtgraph as pg
 from rena.ui.ReplaySeekBar import ReplaySeekBar
+from rena.ui.PlayBackWidget import PlayBackWidget
+from rena.utils.ui_utils import AnotherWindow, another_window
 
 class ReplayTab(QtWidgets.QWidget):
+    playback_position_signal = pyqtSignal(int)
+    play_pause_signal = pyqtSignal(bool)
+
     def __init__(self, parent):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -46,6 +51,33 @@ class ReplayTab(QtWidgets.QWidget):
 
         self.seekBar = None
 
+        # Initialize replay worker
+        self.lsl_replay_worker = LSLReplayWorker(
+            self, self.playback_position_signal, self.play_pause_signal)
+        # Move worker to thread
+        self.replay_timer = QTimer()
+        self.replay_timer.setInterval(config.REFRESH_INTERVAL)
+        self.replay_timer.timeout.connect(self.ticks)
+
+    def _open_playback_widget(self):
+        self._init_playback_widget()
+        print("did this start? playback")
+        # open in a separate window
+        # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
+        self.playback_window = another_window('Playback')
+        self.playback_window.get_layout().addWidget(self.playback_widget)
+        self.playback_window.setFixedWidth(620)
+        self.playback_window.setFixedHeight(300)
+        self.playback_window.show()
+        self.playback_window.activateWindow()
+        print("shown yet?")
+
+    def _init_playback_widget(self):
+        self.playback_widget = PlayBackWidget(self)
+        self.playback_widget.playback_signal.connect(self.on_playback_slider_changed)
+        self.playback_widget.play_pause_signal.connect(self.on_play_pause_toggle)
+        self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
+
     def select_data_dir_btn_pressed(self):
 
         selected_data_dir = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
@@ -59,7 +91,6 @@ class ReplayTab(QtWidgets.QWidget):
         self.ReplayFileLoc.setText(self.file_loc + '/')
         self.StartReplayBtn.setEnabled(True)
 
-
     def start_replay_btn_pressed(self):
         # if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):
         #     dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
@@ -67,6 +98,8 @@ class ReplayTab(QtWidgets.QWidget):
         # self.save_path = self.generate_save_path()  # get a new save path
 
         # TODO: add progress bar
+        self._open_playback_widget()
+
         if self.file_loc.endswith('.dats'):
             rns_stream = RNStream(self.file_loc)
             stream_data = rns_stream.stream_in(ignore_stream=['0','monitor1'])
@@ -82,11 +115,14 @@ class ReplayTab(QtWidgets.QWidget):
 
         lsl_replay_thread = pg.QtCore.QThread(self.parent)
         lsl_replay_thread.start()
+
         self.parent.worker_threads['lsl_replay'] = lsl_replay_thread
-        self.parent.lsl_replay_worker = LSLReplayWorker()
-        self.parent.lsl_replay_worker.moveToThread(lsl_replay_thread)
-        self.parent.lsl_replay_worker.stream_data = stream_data
-        self.parent.lsl_replay_worker.tick_signal.emit()
+        self.lsl_replay_worker.moveToThread(lsl_replay_thread)
+        self.lsl_replay_worker.stream_data = stream_data
+        # self.lsl_replay_worker.tick_signal.emit()
+        self.lsl_replay_worker.setup_stream()
+        self.replay_timer.start()
+
         stream_names = list(stream_data)
         self.parent.add_streams_from_replay(stream_names)
 
@@ -222,3 +258,21 @@ class ReplayTab(QtWidgets.QWidget):
 
         print(datetime.now())
         self.stop_replay_btn_pressed()
+
+    def openWindow(self):
+        self.window = QtWidgets.QMainWindow()
+
+    def ticks(self):
+        self.lsl_replay_worker.replay()
+
+    def on_play_pause_toggle(self):
+        print("toggle!")
+        if self.is_replaying:
+            self.is_replaying = False
+        else:
+            self.is_replaying = True
+        self.play_pause_signal.emit(self.is_replaying)
+
+    def on_playback_slider_changed(self, new_playback_position):
+        print("adjust playback position to:", new_playback_position)
+        self.playback_position_signal.emit(new_playback_position)
