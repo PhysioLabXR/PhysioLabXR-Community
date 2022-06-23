@@ -330,7 +330,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                              interface=interface,
                                              insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
-            lsl_layout = lsl_stream_widget.TopLayout
+            lsl_layout = lsl_stream_widget.TimeSeriesPlotsLayout
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
             # set up workers
@@ -344,6 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
             try:
                 self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
                     parent=lsl_layout,
+                    metainfo_parent = lsl_stream_widget.MetaInfoVerticalLayout,
                     num_chan=lsl_num_chan,
                     chan_names=lsl_chan_names,
                     plot_group_slices=plot_group_slices,
@@ -495,11 +496,11 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices, plot_group_format):
+    def init_visualize_LSLStream_data(self, parent, metainfo_parent,  num_chan, chan_names, plot_group_slices, plot_group_format):
         fs_label = QLabel(text='Sampling rate = ')
         ts_label = QLabel(text='Current Time Stamp = ')
-        parent.addWidget(fs_label)
-        parent.addWidget(ts_label)
+        metainfo_parent.addWidget(fs_label)
+        metainfo_parent.addWidget(ts_label)
         plot_widget = pg.PlotWidget()
         if plot_group_slices:
             plots = []

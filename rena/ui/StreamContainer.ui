@@ -112,6 +112,35 @@
      </layout>
     </widget>
    </item>
+   <item>
+    <widget class="QWidget" name="MetaInfoWidget" native="true">
+     <layout class="QVBoxLayout" name="MetaInfoVerticalLayout"/>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="VisualizationWidget" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <item>
+       <widget class="QTabWidget" name="PlotsTabWidget">
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="TimeSeriesPlotsWidget">
+         <attribute name="title">
+          <string>Time Series</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout"/>
+        </widget>
+        <widget class="QWidget" name="BarChartWidget">
+         <attribute name="title">
+          <string>BarChart</string>
+         </attribute>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>
