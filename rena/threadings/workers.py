@@ -451,13 +451,154 @@ class MmwWorker(QObject):
     # #         # raise exceptions.InterfaceNotExistError
 
 class LSLReplayWorker(QObject):
-    tick_signal = pyqtSignal()
-    def __init__(self):
+    # tick_signal = pyqtSignal()
+    def __init__(self, parent, playback_position_signal, play_pause_signal):
         super(LSLReplayWorker, self).__init__()
+        playback_position_signal.connect(self.on_playback_position_changed)
+        play_pause_signal.connect(self.on_play_pause_toggle)
+        self.is_playing = False
+        self.start_time = None
+
         # rns_stream = RNStream('C:/Recordings/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats')
         self.stream_data = None#rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
-        self.tick_signal.connect(self.start_stream)
+        # self.tick_signal.connect(self.start_stream)
         self.stop_signal = False
+
+        # stream related initializations
+        self.stream_names = None
+        self.virtual_clock = None
+        self.virtual_clock_offset = None
+        self.outlets = []
+        self.next_sample_of_stream = [] # index of the next sample of each stream that will be send
+        self.chunk_sizes = [] # how many samples should be published at once
+        self.selected_stream_indices = None
+
+    def on_playback_position_changed(self, new_position):
+        # set the virtual clock according to the new playback position
+        # problem: we don't know the end time. What if we want to go forward?
+        self.virtual_clock = ((self.virtual_clock - self.start_time) * (new_position/100)) + self.start_time
+
+    def on_play_pause_toggle(self, is_playing):
+        # play and pause accordingly
+        self.is_playing = is_playing
+
+    def setup_stream(self):
+        # setup the streams
+        self.stream_names = list(self.stream_data)
+
+        for i in range(0, len(self.stream_names)):
+            self.outlets.append(None)
+            self.next_sample_of_stream.append(0)
+            self.chunk_sizes.append(1)
+
+        print("Creating outlets")
+        print("\t[index]\t[name]")
+
+        def isStreamVideo(stream):
+            if stream.isdigit():
+                return True
+            if ("monitor" in stream) or ("video" in stream):
+                return True
+            return False
+
+        self.selected_stream_indices = list(range(0, len(self.stream_names)))
+
+        for streamIndex, stream_name in enumerate(self.stream_names):
+            if not isStreamVideo(stream_name):
+                stream_channel_count = self.stream_data[stream_name][0].shape[0]
+                stream_channel_format = 'double64'
+                stream_source_id = 'Replay Stream - ' + stream_name
+
+                outletInfo = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
+                                              stream_source_id)
+
+                self.outlets[streamIndex] = pylsl.StreamOutlet(outletInfo)
+                print("\t" + str(streamIndex) + "\t" + stream_name)
+
+        self.virtual_clock_offset = 0
+
+        for stream in self.stream_names:
+            if self.virtual_clock is None or self.stream_data[stream][1][0] < self.virtual_clock:
+                # determine when the recording started
+                self.virtual_clock = self.stream_data[stream][1][0]
+                self.start_time = self.virtual_clock
+
+        self.virtual_clock_offset = pylsl.local_clock() - self.virtual_clock
+        print("Offsetting replayed timestamps by " + str(self.virtual_clock_offset))
+
+        print(datetime.now())
+
+    def replay(self):
+        if self.is_playing:
+            # run the stream
+            nextStreamIndex = None
+            nextBlockingTimestamp = None
+
+            if self.stop_signal:
+                return
+
+            # determine which stream to send next
+            for i, stream_name in enumerate(self.stream_names):
+                stream = self.stream_data[stream_name]
+                # when a chunk can be send depends on it's last sample's timestamp
+                blockingElementIdx = self.next_sample_of_stream[i] + self.chunk_sizes[i] - 1
+                try:
+                    blockingTimestamp = stream[1][blockingElementIdx]
+                except Exception as e:
+                    print(e)
+                if nextBlockingTimestamp is None or blockingTimestamp <= nextBlockingTimestamp:
+                    nextStreamIndex = i
+                    nextBlockingTimestamp = blockingTimestamp
+
+            # retrieve the data and timestamps to be send
+            nextStream = self.stream_data[self.stream_names[nextStreamIndex]]
+            chunkSize = self.chunk_sizes[nextStreamIndex]
+
+            nextChunkRangeStart = self.next_sample_of_stream[nextStreamIndex]
+            nextChunkRangeEnd = nextChunkRangeStart + chunkSize
+
+            nextChunkTimestamps = nextStream[1][nextChunkRangeStart: nextChunkRangeEnd]
+            nextChunkValues = (nextStream[0][:, nextChunkRangeStart: nextChunkRangeEnd]).transpose()
+
+            # prepare the data (if necessary)
+            if isinstance(nextChunkValues, np.ndarray):
+                # load_xdf loads numbers into numpy arrays (strings will be put into lists). however, LSL doesn't seem to
+                # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
+                # are converted to lists
+                nextChunkValues = nextChunkValues.tolist()
+            self.next_sample_of_stream[nextStreamIndex] += chunkSize
+
+            stream_length = nextStream[0].shape[-1]
+            # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
+            if stream_length < self.next_sample_of_stream[nextStreamIndex] + chunkSize:
+                self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
+
+            virtualTime = pylsl.local_clock() - self.virtual_clock_offset
+            # TODO: fix this
+            sleepDuration = nextBlockingTimestamp - virtualTime
+            if sleepDuration > 0:
+                time.sleep(sleepDuration)
+
+            outlet = self.outlets[nextStreamIndex]
+            nextStreamName = self.stream_names[nextStreamIndex]
+            if chunkSize == 1:
+                # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
+                outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
+            else:
+                # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
+                outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + self.virtual_clock_offset)
+                # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
+                # would make the terminal output unreadable
+
+            # remove this stream from the list if there are no remaining samples
+            if self.next_sample_of_stream[nextStreamIndex] >= stream_length:
+                self.selected_stream_indices.remove(self.selected_stream_indices[nextStreamIndex])
+                self.outlets.remove(self.outlets[nextStreamIndex])
+                self.next_sample_of_stream.remove(self.next_sample_of_stream[nextStreamIndex])
+                self.chunk_sizes.remove(self.chunk_sizes[nextStreamIndex])
+                self.stream_names.remove(self.stream_names[nextStreamIndex])
+
+        print(datetime.now())
 
     @pg.QtCore.pyqtSlot()
     def start_stream(self):
@@ -503,6 +644,10 @@ class LSLReplayWorker(QObject):
             if virtualTime is None or self.stream_data[stream][1][0] < virtualTime:
                 # determine when the recording started
                 virtualTime = self.stream_data[stream][1][0]
+
+        # temp
+        if virtualTime is None:
+            virtualTime = 0
 
         virtualTimeOffset = pylsl.local_clock() - virtualTime
         print("Offsetting replayed timestamps by " + str(virtualTimeOffset))
