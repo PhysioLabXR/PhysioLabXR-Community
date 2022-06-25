@@ -7,8 +7,12 @@ import os
 User parameters:
 Use these parameters to set the RN App to your preference
 '''
-REFRESH_INTERVAL = 1  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
-VISUALIZATION_REFRESH_INTERVAL = 33  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
+REFRESH_INTERVAL = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+REFRESH_FREQUENCY_RETAIN_FRAMES = 50
+
+VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
+VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
+
 CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
 PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 

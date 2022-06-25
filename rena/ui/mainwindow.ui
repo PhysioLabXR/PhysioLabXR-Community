@@ -21,7 +21,7 @@
        <cursorShape>ArrowCursor</cursorShape>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
@@ -99,20 +99,44 @@
        </attribute>
        <layout class="QVBoxLayout" name="recordings_tab_vertical_layout"/>
       </widget>
-<!--      <widget class="QWidget" name="settings_tab">-->
-<!--       <attribute name="title">-->
-<!--        <string>Settings </string>-->
-<!--       </attribute>-->
-<!--       <layout class="QVBoxLayout" name="settings_tab_vertical_layout"/>-->
-<!--      </widget>-->
+      <widget class="QWidget" name="replay_tab">
+       <attribute name="title">
+        <string>Replay</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="replay_tab_vertical_layout"/>
+      </widget>
+      <widget class="QWidget" name="inference_tab">
+       <attribute name="title">
+        <string>Inference</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="inference_tab_vertical_layout"/>
+      </widget>
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="recordingFileSizeLabel">
-      <property name="text">
-       <string>    Recording file size: </string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="visualizationFPSLabel">
+        <property name="text">
+         <string>   Visualization FPS </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="tickFrequencyLabel">
+        <property name="text">
+         <string>   Pull Data Frequency: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="recordingFileSizeLabel">
+        <property name="text">
+         <string>    Recording file size: </string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -176,6 +200,11 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>disconnect_inference_btn</tabstop>
+  <tabstop>connect_inference_btn</tabstop>
+  <tabstop>tabWidget</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

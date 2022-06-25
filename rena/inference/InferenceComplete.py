@@ -63,7 +63,6 @@ def make_inference_on_sample(samples_preprocessed):
 
 
 def main():
-
     inlet = None
     timestamp_accumulated = None
     data_accumulated = None
