@@ -327,6 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
             lsl_stream_widget = StreamWidget(main_parent=self,
                                              parent=self.sensorTabSensorsHorizontalLayout,
                                              stream_name=lsl_stream_name,
+                                             preset = preset,
                                              interface=interface,
                                              insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
