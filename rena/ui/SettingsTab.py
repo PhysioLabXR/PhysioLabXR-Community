@@ -17,45 +17,46 @@ class SettingsTab(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
 
-        self.theme = None
         self.find_theme()
-        self.set_theme()
+        self.set_theme(config.settings.value('theme'))
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
         self.DarkThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
 
+        # resolve save directory
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
         self.save_dir = config.DEFAULT_DATA_DIR if not os.path.isdir(config.USER_SETTINGS["USER_DATA_DIR"]) else config.USER_SETTINGS["USER_DATA_DIR"]
         self.saveRootTextEdit.setText(self.save_dir + '/')
 
-        for file_format in config_ui.recording_file_formats:
+        # resolve recording file format
+        for file_format in config.FILE_FORMATS:
             self.saveFormatComboBox.addItem(file_format)
+        self.find_recording_file_format()
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
         self.resetDefaultBtn.clicked.connect(self.reset_default)
 
     def toggle_theme_btn_pressed(self):
-        print("toggle theme")
+        print("toggling theme")
 
-        if self.theme == 'dark':
-            pg.setConfigOption('background', 'w')
+        if config.settings.value('theme') == 'dark':
+            config.settings.setValue('theme', 'light')
+        else:
+            config.settings.setValue('theme', 'dark')
+        self.set_theme(config.settings.value('theme'))
+
+    def set_theme(self, theme):
+        if theme == 'light':
             self.LightThemeBtn.setEnabled(False)
             self.DarkThemeBtn.setEnabled(True)
-            self.theme = 'light'
-            self.set_theme()
+            pg.setConfigOption('background', 'w')
         else:
-            pg.setConfigOption('background', 'k')
-
             self.LightThemeBtn.setEnabled(True)
             self.DarkThemeBtn.setEnabled(False)
-            self.theme = 'dark'
-            self.set_theme()
+            pg.setConfigOption('background', 'k')
 
-    def set_theme(self):
-        assert self.theme == 'light' or self.theme == 'dark'
-        url = 'ui/stylesheet/light.qss' if self.theme == 'light' else 'ui/stylesheet/dark.qss'
+        url = 'ui/stylesheet/light.qss' if theme == 'light' else 'ui/stylesheet/dark.qss'
         stream_stylesheet(url)
-        config.settings.setValue('theme', self.theme)
 
     def select_data_dir_btn_pressed(self):
         selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
@@ -70,17 +71,20 @@ class SettingsTab(QtWidgets.QWidget):
     def recording_file_format_change(self):
         # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
         if self.saveFormatComboBox.currentText() != "Rena Native (.dats)":
-            dialog_popup('Using data format other than Rena Native will result in a conversion time'
-                         ' after finishing a recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
+            dialog_popup('Using data format other than Rena Native will result in a conversion time after finishing a '
+                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
+        config.settings.setValue('file_format', self.saveFormatComboBox.currentText())
 
     def reset_default(self):
         config.settings.clear()
         self.find_theme()
-        self.set_theme()
+        self.set_theme(config.settings.value('theme'))
 
     def find_theme(self):
-        if config.settings.contains('theme'):
-            self.theme = config.settings.value('theme')
-        else:
+        if not config.settings.contains('theme'):
             config.settings.setValue('theme', config_ui.default_theme)
-            self.theme = config.settings.value('theme')
+
+    def find_recording_file_format(self):
+        if not config.settings.contains('file_format'):
+            config.settings.setValue('file_format', config.DEFAULT_FILE_FORMAT)
+        self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))

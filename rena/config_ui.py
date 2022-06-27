@@ -32,4 +32,3 @@ cam_display_height = 480
 capture_display_width = 640
 capture_display_height = 480
 
-recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]

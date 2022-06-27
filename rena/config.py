@@ -31,6 +31,9 @@ data file parameters:
 data recording settings
 '''
 DEFAULT_DATA_DIR = 'C:/Recordings'
+FILE_FORMATS = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
+DEFAULT_FILE_FORMAT = FILE_FORMATS[0]
+
 DEFAULT_EXPERIMENT_NAME = 'my experiment'
 DEFAULT_SUBJECT_TAG = 'someone'
 DEFAULT_SESSION_TAG = '0'
