@@ -331,7 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                              interface=interface,
                                              insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
-            lsl_layout = lsl_stream_widget.TimeSeriesPlotsLayout
+            # lsl_layout = lsl_stream_widget.TimeSeriesPlotsLayout
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
             # set up workers

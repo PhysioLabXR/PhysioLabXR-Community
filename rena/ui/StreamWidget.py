@@ -178,32 +178,33 @@ class StreamWidget(QtWidgets.QWidget):
 
     def init_visualize_LSLStream_data(self, parent, metainfo_parent, preset):
 
-        lsl_num_chan, channel_names, plot_group_slices, plot_group_format = preset['NumChannels'], \
-                                                                            preset['ChannelNames'], \
-                                                                            preset['GroupChannelsInPlot'], \
-                                                                            preset['GroupFormat']
+        # init stream view with LSL
+        # lsl_num_chan, channel_names, group_channels_in_plot = preset['NumChannels'], \
+        #                                                                     preset['ChannelNames'], \
+        #                                                                     preset['GroupChannelsInPlot']
 
         fs_label = QLabel(text='Sampling rate = ')
         ts_label = QLabel(text='Current Time Stamp = ')
         metainfo_parent.addWidget(fs_label)
         metainfo_parent.addWidget(ts_label)
-        if plot_group_slices:
-            plot_widgets = []
-            plots = []
-            plot_formats = []
-            for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
-                plot_group_format_info = channel_format
-                # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-                if plot_group_format_info == 'time_series':  # time_series plot
-                    plot_formats.append(plot_group_format_info)
-                    plot_widget = pg.PlotWidget()
-                    parent.addWidget(plot_widget)
+        # if plot_group_slices:
+        plot_widgets = []
+        plots = []
+        # plot_formats = []
+        for group_name in preset['GroupChannelsInPlot']:
+            plot_group_info = preset['GroupChannelsInPlot'][group_name]
+            plot_format = plot_group_info['plot_format']
+            # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
+            if plot_format == 'time_series':  # time_series plot
+                # plot_formats.append(plot_group_format_info)
+                plot_widget = pg.PlotWidget()
+                parent.addWidget(plot_widget)
 
-                    distinct_colors = get_distinct_colors(len(pg_slice))
-                    plot_widget.addLegend()
-                    plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                                  zip(distinct_colors, [channel_names[i] for i in pg_slice])])
-                    plot_widgets.append(plot_widget)
+                distinct_colors = get_distinct_colors(len(plot_group_info['channels']))
+                plot_widget.addLegend()
+                plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+                              zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
+                plot_widgets.append(plot_widget)
 
 
                 # elif plot_group_format_info[0] == 'image':
@@ -220,8 +221,8 @@ class StreamWidget(QtWidgets.QWidget):
                 #     image_label.setAlignment(QtCore.Qt.AlignCenter)
                 #     parent.addWidget(image_label)
                 #     plots.append(image_label)
-                else:
-                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
+                # else:
+                #     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
         # else:
         #     plot_widget = pg.PlotWidget()
@@ -237,17 +238,16 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p == PlotDataItem]
 
-        return fs_label, ts_label, plot_widgets, plots, plot_group_slices, plot_formats
+        return fs_label, ts_label, plot_widgets, plots, preset
 
     def create_stream_widget_visualization_component(self):
         # TODO: try catch group format error
-        fs_label, ts_label, plot_widgets, plots, plot_group_slices, plot_formats = \
+        fs_label, ts_label, plot_widgets, plots, preset = \
             self.init_visualize_LSLStream_data(parent=self.TimeSeriesPlotsLayout,
                                                metainfo_parent=self.MetaInfoVerticalLayout,
                                                preset=self.preset)
         self.stream_widget_visualization_component = \
-            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots, plot_group_slices,
-                                                plot_formats)
+            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots, preset)
 
     def process_LSLStream_data(self, data_dict):
         samples_to_plot = self.preset["num_samples_to_plot"]
@@ -314,15 +314,14 @@ class StreamWidget(QtWidgets.QWidget):
                 # change to loop with type condition plot time_series and image
                 # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
                     # plot_channel_num_offset = 0
-                for plot_group_index, (plot_group, plot_format) in enumerate(
-                        zip(self.stream_widget_visualization_component.plot_group_slices,
-                            self.stream_widget_visualization_component.plot_formats)):
-                    if plot_format=='time_series':
+                for plot_group_index, (group_name) in enumerate(self.preset["GroupChannelsInPlot"]):
+                    plot_group_info = self.preset["GroupChannelsInPlot"][group_name]
+                    if plot_group_info["plot_format"] == 'time_series':
                         # plot corresponding time series data, range (a,b) is time series
-                        plot_group_channel_num = len(plot_group)
-                        for index_in_group, stream_index in enumerate(plot_group):
+                        # plot_group_channel_num = len(plot_group_info['channels'])
+                        for index_in_group, channel_index in enumerate(plot_group_info['channels']):
                             self.stream_widget_visualization_component.plots[plot_group_index][index_in_group]\
-                                .setData(time_vector,data_to_plot[stream_index, :])
+                                .setData(time_vector,data_to_plot[channel_index, :])
                             # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
                             #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
                             #                                                                 data_to_plot[i, :])

@@ -78,13 +78,22 @@ def process_LSL_plot_group(preset_dict):
     # if head != preset_dict['NumChannels']:
     #     preset_dict["PlotGroupSlices"].append(
     #         (head, preset_dict['NumChannels']))  # append the last group
+    # if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
+    #     # create GroupChannelsInPlot from 0 to x
+    #     preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
+    #
+    # if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
+    #     preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
+
     if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
         # create GroupChannelsInPlot from 0 to x
-        preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
-
-    if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
-        preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
-
+        preset_dict['GroupChannelsInPlot'] = {
+            "Group1": {
+                "group_index": 1,
+                "plot_format": "time_series",
+                "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]
+            }
+        }
 
     return preset_dict
 
@@ -169,12 +178,10 @@ def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
     except AssertionError as e:
         raise AssertionError(e)
 
-
     # start mmWave 6843 sensor
     try:
         interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
-
 
     return device_preset_dict, interface
