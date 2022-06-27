@@ -10,6 +10,7 @@ from MainWindow import MainWindow
 from rena.interfaces import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
+import config
 
 app = None
 
@@ -27,9 +28,6 @@ def resource_path(relative_path):
 
 
 if __name__ == '__main__':
-    # load user settings
-    settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
-
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
     tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
@@ -46,7 +44,7 @@ if __name__ == '__main__':
 
     # main window init
     inference_interface = InferenceInterface.InferenceInterface()
-    window = MainWindow(app=app, inference_interface=inference_interface, settings=settings)
+    window = MainWindow(app=app, inference_interface=inference_interface)
 
     window.setWindowIcon(QIcon('../media/logo/RN.png'))
     # make tray menu

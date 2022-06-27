@@ -9,20 +9,19 @@ from PyQt5.QtWidgets import QFileDialog
 
 from rena import config_ui, config
 
-from rena.utils.ui_utils import stream_stylesheet
+from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
 
 class SettingsTab(QtWidgets.QWidget):
-    def __init__(self, parent, settings):
+    def __init__(self, parent):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
-        self.settings = settings
 
-        if self.settings.contains('theme'):
-            self.theme = self.settings.value('theme')
+        if config.settings.contains('theme'):
+            self.theme = config.settings.value('theme')
         else:
-            self.settings.setValue('theme', config_ui.default_theme)
-            self.theme = self.settings.value('theme')
+            config.settings.setValue('theme', config_ui.default_theme)
+            self.theme = config.settings.value('theme')
         self.set_theme()
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -31,6 +30,10 @@ class SettingsTab(QtWidgets.QWidget):
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
         self.save_dir = config.DEFAULT_DATA_DIR if not os.path.isdir(config.USER_SETTINGS["USER_DATA_DIR"]) else config.USER_SETTINGS["USER_DATA_DIR"]
         self.saveRootTextEdit.setText(self.save_dir + '/')
+
+        for file_format in config_ui.recording_file_formats:
+            self.saveFormatComboBox.addItem(file_format)
+        self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
     def toggle_theme_btn_pressed(self):
         print("toggle theme")
@@ -48,7 +51,7 @@ class SettingsTab(QtWidgets.QWidget):
             self.DarkThemeBtn.setEnabled(False)
             self.theme = 'dark'
             self.set_theme()
-        self.settings.setValue('theme', self.theme)
+        config.settings.setValue('theme', self.theme)
 
     def set_theme(self):
         assert self.theme == 'light' or self.theme == 'dark'
@@ -64,3 +67,9 @@ class SettingsTab(QtWidgets.QWidget):
         self.saveRootTextEdit.setText(self.save_dir + '/')
         config.USER_SETTINGS["USER_DATA_DIR"] = self.save_dir
         json.dump(config.USER_SETTINGS, open(config.USER_SETTINGS_PATH, 'w'))
+
+    def recording_file_format_change(self):
+        # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
+        if self.saveFormatComboBox.currentText() != "Rena Native (.dats)":
+            dialog_popup('Using data format other than Rena Native will result in a conversion time'
+                         ' after finishing a recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)

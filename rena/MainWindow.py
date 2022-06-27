@@ -53,7 +53,7 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, inference_interface, settings, *args, **kwargs):
+    def __init__(self, app, inference_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
@@ -174,8 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
         # create the settings window
-        self.settings = settings
-        settings_tab = SettingsTab(self, settings)
+        settings_tab = SettingsTab(self)
         self.settings_window = another_window('Settings')
         self.settings_window.get_layout().addWidget(settings_tab)
         self.settings_window.hide()
@@ -830,3 +829,4 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def fire_action_settings(self):
         self.settings_window.show()
+        self.settings_window.activateWindow()

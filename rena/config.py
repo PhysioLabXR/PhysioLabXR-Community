@@ -1,6 +1,7 @@
 import json
 import os
 
+from PyQt5.QtCore import QSettings
 
 '''
 ########################################################################################################################
@@ -91,3 +92,5 @@ if not os.path.exists(USER_SETTINGS_PATH):
     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
 else:
     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
+
+settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
