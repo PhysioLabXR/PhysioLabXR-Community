@@ -54,12 +54,6 @@ if __name__ == '__main__':
     exit_action = menu.addAction('Exit')
     exit_action.triggered.connect(window.close)
 
-    # stylesheet init
-
-    stylesheet = QFile('ui/stylesheet/dark.qss')
-    stylesheet.open(QFile.ReadOnly | QFile.Text)
-    stream = QTextStream(stylesheet)
-    app.setStyleSheet(stream.readAll())
     # splash screen destroy
     splash.destroy()
 

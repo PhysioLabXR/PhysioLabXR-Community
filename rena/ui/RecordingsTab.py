@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import os
+import sys
 import time
 
 from PyQt5 import QtWidgets, uic
@@ -12,7 +13,7 @@ from PyQt5.QtCore import QTimer, QSettings
 from rena import config
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
-
+import subprocess
 
 class RecordingsTab(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -124,7 +125,12 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def open_recording_directory(self):
         try:
-            os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
+            if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'msys':
+                os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
+
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, config.USER_SETTINGS["USER_DATA_DIR"]])
         except FileNotFoundError:
             dialog_popup(msg="Recording directory does not exist. P"
                              ""

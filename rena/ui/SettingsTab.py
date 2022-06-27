@@ -17,9 +17,10 @@ class SettingsTab(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
         self.settings = settings
-        try:
+
+        if self.settings.contains('theme'):
             self.theme = self.settings.value('theme')
-        except AttributeError:
+        else:
             self.settings.setValue('theme', config_ui.default_theme)
             self.theme = self.settings.value('theme')
         self.set_theme()

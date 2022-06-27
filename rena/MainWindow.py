@@ -176,7 +176,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # create the settings window
         self.settings = settings
         settings_tab = SettingsTab(self, settings)
-        settings_tab.set_theme()
         self.settings_window = another_window('Settings')
         self.settings_window.get_layout().addWidget(settings_tab)
         self.settings_window.hide()
