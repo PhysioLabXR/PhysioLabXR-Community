@@ -25,8 +25,7 @@ class SettingsTab(QtWidgets.QWidget):
 
         # resolve save directory
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
-        self.save_dir = config.DEFAULT_DATA_DIR if not os.path.isdir(config.USER_SETTINGS["USER_DATA_DIR"]) else config.USER_SETTINGS["USER_DATA_DIR"]
-        self.saveRootTextEdit.setText(self.save_dir + '/')
+        self.set_recording_file_location()
 
         # resolve recording file format
         for file_format in config.FILE_FORMATS:
@@ -59,14 +58,11 @@ class SettingsTab(QtWidgets.QWidget):
         stream_stylesheet(url)
 
     def select_data_dir_btn_pressed(self):
-        selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
+        selected_data_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         if selected_data_dir != '':
-            self.save_dir = selected_data_dir
-
-        print("Selected data dir: ", self.save_dir)
-        self.saveRootTextEdit.setText(self.save_dir + '/')
-        config.USER_SETTINGS["USER_DATA_DIR"] = self.save_dir
-        json.dump(config.USER_SETTINGS, open(config.USER_SETTINGS_PATH, 'w'))
+            config.settings.setValue('recording_file_location', selected_data_dir)
+        print("Selected data dir: ", config.settings.value('recording_file_location'))
+        self.set_recording_file_location()
 
     def recording_file_format_change(self):
         # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
@@ -81,6 +77,10 @@ class SettingsTab(QtWidgets.QWidget):
 
         self.set_theme(config.settings.value('theme'))
         self.set_recording_file_format()
+        self.set_recording_file_location()
 
     def set_recording_file_format(self):
         self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))
+
+    def set_recording_file_location(self):
+        self.saveRootTextEdit.setText(config.settings.value('recording_file_location'))

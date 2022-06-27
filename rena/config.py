@@ -2,6 +2,7 @@ import json
 import os
 
 from PyQt5.QtCore import QSettings
+from sys import platform
 
 '''
 ########################################################################################################################
@@ -30,7 +31,13 @@ EVICTION_INTERVAL = 1000.  # in seconds, large eviction interval means laggier a
 data file parameters:
 data recording settings
 '''
-DEFAULT_DATA_DIR = 'C:/Recordings'
+# if platform == "linux" or platform == "linux2":
+#     # linux
+# elif platform == "darwin":
+#     # OS X
+# elif platform == "win32":
+#     # Windows...
+DEFAULT_DATA_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Recordings')
 FILE_FORMATS = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
 DEFAULT_FILE_FORMAT = FILE_FORMATS[0]
 
@@ -88,12 +95,12 @@ EYE_SAMPLES_PER_INFERENCE = int((EYE_INFERENCE_TOTAL_TIMESTEPS - EYE_INFERENCE_W
 EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDOW_TIMESTEPS * 2  # 2 for two eyes
 
 
-USER_SETTINGS_PATH = "../UserConfig.json"
-if not os.path.exists(USER_SETTINGS_PATH):
-    # create default user config
-    USER_SETTINGS = {"USER_DATA_DIR": DEFAULT_DATA_DIR}
-    json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
-else:
-    USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
+# USER_SETTINGS_PATH = "../UserConfig.json"
+# if not os.path.exists(USER_SETTINGS_PATH):
+#     # create default user config
+#     USER_SETTINGS = {"USER_DATA_DIR": DEFAULT_DATA_DIR}
+#     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
+# else:
+#     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
