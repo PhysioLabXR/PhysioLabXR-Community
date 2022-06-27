@@ -17,11 +17,8 @@ class SettingsTab(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
 
-        if config.settings.contains('theme'):
-            self.theme = config.settings.value('theme')
-        else:
-            config.settings.setValue('theme', config_ui.default_theme)
-            self.theme = config.settings.value('theme')
+        self.theme = None
+        self.find_theme()
         self.set_theme()
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -34,6 +31,8 @@ class SettingsTab(QtWidgets.QWidget):
         for file_format in config_ui.recording_file_formats:
             self.saveFormatComboBox.addItem(file_format)
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
+
+        self.resetDefaultBtn.clicked.connect(self.reset_default)
 
     def toggle_theme_btn_pressed(self):
         print("toggle theme")
@@ -51,12 +50,12 @@ class SettingsTab(QtWidgets.QWidget):
             self.DarkThemeBtn.setEnabled(False)
             self.theme = 'dark'
             self.set_theme()
-        config.settings.setValue('theme', self.theme)
 
     def set_theme(self):
         assert self.theme == 'light' or self.theme == 'dark'
         url = 'ui/stylesheet/light.qss' if self.theme == 'light' else 'ui/stylesheet/dark.qss'
         stream_stylesheet(url)
+        config.settings.setValue('theme', self.theme)
 
     def select_data_dir_btn_pressed(self):
         selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))
@@ -73,3 +72,15 @@ class SettingsTab(QtWidgets.QWidget):
         if self.saveFormatComboBox.currentText() != "Rena Native (.dats)":
             dialog_popup('Using data format other than Rena Native will result in a conversion time'
                          ' after finishing a recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
+
+    def reset_default(self):
+        config.settings.clear()
+        self.find_theme()
+        self.set_theme()
+
+    def find_theme(self):
+        if config.settings.contains('theme'):
+            self.theme = config.settings.value('theme')
+        else:
+            config.settings.setValue('theme', config_ui.default_theme)
+            self.theme = config.settings.value('theme')
