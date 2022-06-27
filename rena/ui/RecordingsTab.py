@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, uic
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QSettings
 
 from rena import config
 from rena.utils.data_utils import RNStream
@@ -22,6 +22,7 @@ class RecordingsTab(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi("ui/RecordingsTab.ui", self)
+        self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
         self.recording_buffer = {}
 

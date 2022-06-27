@@ -3,6 +3,7 @@ import json
 import os
 
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QSettings
 
 from PyQt5.QtWidgets import QFileDialog
 
@@ -12,19 +13,16 @@ from rena.utils.ui_utils import stream_stylesheet
 import pyqtgraph as pg
 
 class SettingsTab(QtWidgets.QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, settings):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
-
-        self.theme = config_ui.default_theme
-        # 'light' or 'dark'
-        if self.theme == 'light':
-            self.LightThemeBtn.setEnabled(False)
-            pg.setConfigOption('background', 'w')
-
-        else:
-            self.DarkThemeBtn.setEnabled(False)
-            pg.setConfigOption('background', 'k')
+        self.settings = settings
+        try:
+            self.theme = self.settings.value('theme')
+        except AttributeError:
+            self.settings.setValue('theme', config_ui.default_theme)
+            self.theme = self.settings.value('theme')
+        self.set_theme()
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
         self.DarkThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -38,21 +36,23 @@ class SettingsTab(QtWidgets.QWidget):
 
         if self.theme == 'dark':
             pg.setConfigOption('background', 'w')
-
             self.LightThemeBtn.setEnabled(False)
             self.DarkThemeBtn.setEnabled(True)
-
-            url = 'ui/stylesheet/light.qss'
-            stream_stylesheet(url)
             self.theme = 'light'
+            self.set_theme()
         else:
             pg.setConfigOption('background', 'k')
 
             self.LightThemeBtn.setEnabled(True)
             self.DarkThemeBtn.setEnabled(False)
-            url = 'ui/stylesheet/dark.qss'
-            stream_stylesheet(url)
             self.theme = 'dark'
+            self.set_theme()
+        self.settings.setValue('theme', self.theme)
+
+    def set_theme(self):
+        assert self.theme == 'light' or self.theme == 'dark'
+        url = 'ui/stylesheet/light.qss' if self.theme == 'light' else 'ui/stylesheet/dark.qss'
+        stream_stylesheet(url)
 
     def select_data_dir_btn_pressed(self):
         selected_data_dir = str(QFileDialog.getExistingDirectory(self.widget_3, "Select Directory"))

@@ -29,7 +29,7 @@ from utils.general import load_all_lslStream_presets, create_LSL_preset, process
     load_all_Device_presets, \
     load_all_experiment_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_button, dialog_popup, \
-    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window, stream_stylesheet
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window
 import numpy as np
 import collections
 from ui.SignalSettingsTab import SignalSettingsTab
@@ -53,7 +53,7 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, inference_interface, *args, **kwargs):
+    def __init__(self, app, inference_interface, settings, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
@@ -173,9 +173,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionExit.triggered.connect(self.fire_action_exit)
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
-        # reserve windows
-        self.settings_window = None
-        stream_stylesheet('ui/stylesheet/light.qss')
+        # create the settings window
+        self.settings = settings
+        settings_tab = SettingsTab(self, settings)
+        settings_tab.set_theme()
+        self.settings_window = another_window('Settings')
+        self.settings_window.get_layout().addWidget(settings_tab)
+        self.settings_window.hide()
 
     def add_camera_clicked(self):
         if self.recording_tab.is_recording:
@@ -826,9 +830,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()
 
     def fire_action_settings(self):
-        if self.settings_window is not None:
-            self.settings_window.close()
-        settings_tab = SettingsTab(self)
-        self.settings_window = another_window('Settings')
-        self.settings_window.get_layout().addWidget(settings_tab)
         self.settings_window.show()
