@@ -53,6 +53,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
+        # timers
+
+
+
+
+
         # connect btn
         self.StartStopStreamBtn.clicked.connect(self.start_stop_stream_btn_clicked)
         self.OptionsBtn.clicked.connect(self.options_btn_clicked)
@@ -89,16 +95,16 @@ class StreamWidget(QtWidgets.QWidget):
 
     def start_stop_stream_btn_clicked(self):
         # check if is streaming
-        if self.main_parent.lsl_workers[self.stream_name].is_streaming:
-            self.main_parent.lsl_workers[self.stream_name].stop_stream()
-            if not self.main_parent.lsl_workers[self.stream_name].is_streaming:
+        if self.lsl_worker.is_streaming:
+            self.lsl_worker.stop_stream()
+            if not self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
                 # toggle the icon
                 self.StartStopStreamBtn.setText("Start Stream")
         else:
-            self.main_parent.lsl_workers[self.stream_name].start_stream()
-            if self.main_parent.lsl_workers[self.stream_name].is_streaming:
+            self.lsl_worker.start_stream()
+            if self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
                 # toggle the icon
@@ -130,15 +136,17 @@ class StreamWidget(QtWidgets.QWidget):
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
         # stop_stream_btn.click()  # fire stop streaming first
-        if self.main_parent.lsl_workers[self.stream_name].is_streaming:
-            self.main_parent.lsl_workers[self.stream_name].stop_stream()
+        if self.lsl_worker.is_streaming:
+            self.lsl_worker.stop_stream()
         self.worker_thread.exit()
         self.main_parent.lsl_workers.pop(self.stream_name)
         self.main_parent.worker_threads.pop(self.stream_name)
         # if this lsl connect to a device:
-        if self.stream_name in self.main_parent.device_workers.keys():
-            self.main_parent.device_workers[self.stream_name].stop_stream()
-            self.main_parent.device_workers.pop(self.stream_name)
+
+        # TODO: we do not consider device at this stage
+        # if self.stream_name in self.main_parent.device_workers.keys():
+        #     self.main_parent.device_workers[self.stream_name].stop_stream()
+        #     self.main_parent.device_workers.pop(self.stream_name)
 
         self.main_parent.stream_widgets.pop(self.stream_name)
         self.parent.removeWidget(self)
