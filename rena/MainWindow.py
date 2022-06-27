@@ -71,24 +71,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_replay_worker = None
         self.recent_visualization_refresh_timestamps = collections.deque(
             maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
+        # self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.visualization_fps = 0
         self.tick_rate = 0
 
         # create workers for different sensors
         self.init_inference(inference_interface)
 
-        # timer
-        self.timer = QTimer()
-        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
-        self.timer.timeout.connect(self.ticks)
-        self.timer.start()
-
-        # visualization timer
-        self.v_timer = QTimer()
-        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.v_timer.timeout.connect(self.visualize_LSLStream_data)
-        self.v_timer.start()
+        # # timer
+        # self.timer = QTimer()
+        # self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
+        # self.timer.timeout.connect(self.ticks)
+        # self.timer.start()
+        #
+        # # visualization timer
+        # self.v_timer = QTimer()
+        # self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        # self.v_timer.timeout.connect(self.visualize_LSLStream_data)
+        # self.v_timer.start()
 
         # camera/screen capture timer
         self.c_timer = QTimer()
@@ -304,16 +304,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_lsl(self, preset):
         error_initialization = False
         lsl_stream_name = preset['StreamName']
-        if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
+        if lsl_stream_name not in self.stream_widgets.keys():  # if this inlet hasn't been already added
             try:
                 preset, interface = process_preset_create_lsl_interface(preset)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
-            lsl_num_chan, lsl_chan_names, plot_group_slices,  plot_group_format= preset['NumChannels'], \
-                                                              preset['ChannelNames'], \
-                                                              preset['GroupChannelsInPlot'], \
-                                                              preset['GroupFormat']
+            # lsl_num_chan, lsl_chan_names, plot_group_slices,  plot_group_format= preset['NumChannels'], \
+            #                                                   preset['ChannelNames'], \
+            #                                                   preset['GroupChannelsInPlot'], \
+            #                                                   preset['GroupFormat']
 
             # if 'GroupFormat' in preset.keys():
             #     plot_group_format = preset['GroupFormat']
@@ -335,29 +335,31 @@ class MainWindow(QtWidgets.QMainWindow):
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
             # set up workers
-            self.lsl_workers[lsl_stream_name] = lsl_stream_widget.lsl_worker
+            # self.lsl_workers[lsl_stream_name] = lsl_stream_widget.lsl_worker
             # worker_thread = lsl_stream_widget.worker_thread
             # worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[lsl_stream_name] = lsl_stream_widget.worker_thread
+            # self.worker_threads[lsl_stream_name] = lsl_stream_widget.worker_thread
 
             # stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
 
-            try:
-                self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
-                    parent=lsl_layout,
-                    metainfo_parent = lsl_stream_widget.MetaInfoVerticalLayout,
-                    num_chan=lsl_num_chan,
-                    chan_names=lsl_chan_names,
-                    plot_group_slices=plot_group_slices,
-                    plot_group_format=plot_group_format
-                )
+            # try:
+            #     self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
+            #         parent=lsl_layout,
+            #         metainfo_parent = lsl_stream_widget.MetaInfoVerticalLayout,
+            #         num_chan=lsl_num_chan,
+            #         chan_names=lsl_chan_names,
+            #         plot_group_slices=plot_group_slices,
+            #         plot_group_format=plot_group_format
+            #     )
+            #
+            # except AssertionError as e:
+            #     error_initialization = True
+            #     dialog_popup(str(e))
 
-            except AssertionError as e:
-                error_initialization = True
-                dialog_popup(str(e))
+            lsl_stream_widget.create_stream_widget_visualization_component()
 
-            self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
-            self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
+            # self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
+            # self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             preset["num_samples_to_plot"] = int(
                 preset["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
             preset["ActualSamplingRate"] = preset[
@@ -366,22 +368,22 @@ class MainWindow(QtWidgets.QMainWindow):
                                                preset[
                                                    "num_samples_to_plot"])
 
-            def signal_settings_window():
-                print("signal settings btn clicked")
-                signal_settings_window = SignalSettingsTab()
-                if signal_settings_window.exec_():
-                    print("signal setting window open")
-                else:
-                    print("Cancel!")
+            # def signal_settings_window():
+            #     print("signal settings btn clicked")
+            #     signal_settings_window = SignalSettingsTab()
+            #     if signal_settings_window.exec_():
+            #         print("signal setting window open")
+            #     else:
+            #         print("Cancel!")
 
 
 
 
             self.stream_widgets[lsl_stream_name] = lsl_stream_widget
 
-            self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
+            # self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
             # start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
-            lsl_stream_widget.worker_thread.start()
+            # lsl_stream_widget.worker_thread.start()
             # if error initialization
             if error_initialization:
                 remove_stream_btn.click()
@@ -445,22 +447,22 @@ class MainWindow(QtWidgets.QMainWindow):
         inference_thread.start()
         self.inference_widget.hide()
 
-    def ticks(self):
-        """
-        ticks every 'refresh' milliseconds
-        """
-        # pass
-        [w.tick_signal.emit() for w in self.sensor_workers.values()]
-        [w.tick_signal.emit() for w in self.lsl_workers.values()]
-        [w.tick_signal.emit() for w in self.device_workers.values()]
-
-        self.recent_tick_refresh_timestamps.append(time.time())
-        if len(self.recent_tick_refresh_timestamps) > 2:
-            self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-                        len(self.recent_tick_refresh_timestamps) - 1))
-
-        self.tickFrequencyLabel.setText(
-            'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
+    # def ticks(self):
+    #     """
+    #     ticks every 'refresh' milliseconds
+    #     """
+    #     # pass
+    #     [w.tick_signal.emit() for w in self.sensor_workers.values()]
+    #     [w.tick_signal.emit() for w in self.lsl_workers.values()]
+    #     [w.tick_signal.emit() for w in self.device_workers.values()]
+    #
+    #     self.recent_tick_refresh_timestamps.append(time.time())
+    #     if len(self.recent_tick_refresh_timestamps) > 2:
+    #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
+    #                     len(self.recent_tick_refresh_timestamps) - 1))
+    #
+    #     self.tickFrequencyLabel.setText(
+    #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -495,61 +497,61 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_LSLStream_data(self, parent, metainfo_parent,  num_chan, chan_names, plot_group_slices, plot_group_format):
-        fs_label = QLabel(text='Sampling rate = ')
-        ts_label = QLabel(text='Current Time Stamp = ')
-        metainfo_parent.addWidget(fs_label)
-        metainfo_parent.addWidget(ts_label)
-        plot_widget = pg.PlotWidget()
-        if plot_group_slices:
-            plots = []
-            plot_formats = []
-            for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
-                plot_group_format_info = channel_format
-                # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-                if plot_group_format_info=='time_series':  # time_series plot
-                    plot_formats.append(plot_group_format_info)
-                    plot_widget = pg.PlotWidget()
-                    parent.addWidget(plot_widget)
-
-                    distinct_colors = get_distinct_colors(len(pg_slice))
-                    plot_widget.addLegend()
-                    plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                              zip(distinct_colors, [chan_names[i] for i in pg_slice])])
-
-
-                # elif plot_group_format_info[0] == 'image':
-                #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
-                #
-                #     # check if the channel num matches:
-                #     if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
-                #         raise AssertionError(
-                #             'The number of channel in this slice does not match with the number of image pixels.'
-                #             'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
-                #                                                                              pg_slice))
-                #     plot_formats.append(plot_group_format_info)
-                #     image_label = QLabel('Image_Label')
-                #     image_label.setAlignment(QtCore.Qt.AlignCenter)
-                #     parent.addWidget(image_label)
-                #     plots.append(image_label)
-                else:
-                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
-
-        # else:
-        #     plot_widget = pg.PlotWidget()
-        #     parent.addWidget(plot_widget)
-        #     plots = []
-        #
-        #     distinct_colors = get_distinct_colors(num_chan)
-        #     plot_widget.addLegend()
-        #     plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-        #              zip(distinct_colors, chan_names)])
-        #     plot_formats = [['time_series']]
-
-        [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
-        [p.setClipToView(clip=True) for p in plots for group in plots for p in group  if p == PlotDataItem]
-
-        return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
+    # def init_visualize_LSLStream_data(self, parent, metainfo_parent,  num_chan, chan_names, plot_group_slices, plot_group_format):
+    #     fs_label = QLabel(text='Sampling rate = ')
+    #     ts_label = QLabel(text='Current Time Stamp = ')
+    #     metainfo_parent.addWidget(fs_label)
+    #     metainfo_parent.addWidget(ts_label)
+    #     plot_widget = pg.PlotWidget()
+    #     if plot_group_slices:
+    #         plots = []
+    #         plot_formats = []
+    #         for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
+    #             plot_group_format_info = channel_format
+    #             # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
+    #             if plot_group_format_info=='time_series':  # time_series plot
+    #                 plot_formats.append(plot_group_format_info)
+    #                 plot_widget = pg.PlotWidget()
+    #                 parent.addWidget(plot_widget)
+    #
+    #                 distinct_colors = get_distinct_colors(len(pg_slice))
+    #                 plot_widget.addLegend()
+    #                 plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+    #                           zip(distinct_colors, [chan_names[i] for i in pg_slice])])
+    #
+    #
+    #             # elif plot_group_format_info[0] == 'image':
+    #             #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
+    #             #
+    #             #     # check if the channel num matches:
+    #             #     if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
+    #             #         raise AssertionError(
+    #             #             'The number of channel in this slice does not match with the number of image pixels.'
+    #             #             'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
+    #             #                                                                              pg_slice))
+    #             #     plot_formats.append(plot_group_format_info)
+    #             #     image_label = QLabel('Image_Label')
+    #             #     image_label.setAlignment(QtCore.Qt.AlignCenter)
+    #             #     parent.addWidget(image_label)
+    #             #     plots.append(image_label)
+    #             else:
+    #                 raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
+    #
+    #     # else:
+    #     #     plot_widget = pg.PlotWidget()
+    #     #     parent.addWidget(plot_widget)
+    #     #     plots = []
+    #     #
+    #     #     distinct_colors = get_distinct_colors(num_chan)
+    #     #     plot_widget.addLegend()
+    #     #     plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+    #     #              zip(distinct_colors, chan_names)])
+    #     #     plot_formats = [['time_series']]
+    #
+    #     [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
+    #     [p.setClipToView(clip=True) for p in plots for group in plots for p in group  if p == PlotDataItem]
+    #
+    #     return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -573,120 +575,120 @@ class MainWindow(QtWidgets.QMainWindow):
             [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
             # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
-    def process_LSLStream_data(self, data_dict):
-        samples_to_plot = self.lslStream_presets_dict[data_dict['lsl_data_type']]["num_samples_to_plot"]
-        if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
-            buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
-            try:
-                buffered_data = np.concatenate(
-                    (buffered_data, data_dict['frames']),
-                    axis=-1)  # get all data and remove it from internal buffer
-                self.LSL_current_ts_dict[data_dict['lsl_data_type']] = data_dict['timestamps'][-1]
-            except ValueError:
-                raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
-                    data_dict['lsl_data_type']))
-            if buffered_data.shape[-1] < samples_to_plot:
-                data_to_plot = np.concatenate((np.zeros(shape=(
-                    buffered_data.shape[0],
-                    samples_to_plot -
-                    buffered_data.shape[-1])),
-                                               buffered_data), axis=-1)
-            else:
-                data_to_plot = buffered_data[:,
-                               - samples_to_plot:]  # plot the most recent few seconds
-
-            # main window only retains the most recent 10 seconds for visualization purposes
-            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
-            self.lslStream_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
-            # notify the internal buffer in recordings tab
-
-            # reshape data_dict based on sensor interface
-            self.recording_tab.update_buffers(data_dict)
-
-            # inference tab
-            self.inference_tab.update_buffers(data_dict)
+    # def process_LSLStream_data(self, data_dict):
+    #     samples_to_plot = self.lslStream_presets_dict[data_dict['lsl_data_type']]["num_samples_to_plot"]
+    #     if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
+    #         buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
+    #         try:
+    #             buffered_data = np.concatenate(
+    #                 (buffered_data, data_dict['frames']),
+    #                 axis=-1)  # get all data and remove it from internal buffer
+    #             self.LSL_current_ts_dict[data_dict['lsl_data_type']] = data_dict['timestamps'][-1]
+    #         except ValueError:
+    #             raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
+    #                 data_dict['lsl_data_type']))
+    #         if buffered_data.shape[-1] < samples_to_plot:
+    #             data_to_plot = np.concatenate((np.zeros(shape=(
+    #                 buffered_data.shape[0],
+    #                 samples_to_plot -
+    #                 buffered_data.shape[-1])),
+    #                                            buffered_data), axis=-1)
+    #         else:
+    #             data_to_plot = buffered_data[:,
+    #                            - samples_to_plot:]  # plot the most recent few seconds
+    #
+    #         # main window only retains the most recent 10 seconds for visualization purposes
+    #         self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
+    #         self.lslStream_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
+    #         # notify the internal buffer in recordings tab
+    #
+    #         # reshape data_dict based on sensor interface
+    #         self.recording_tab.update_buffers(data_dict)
+    #
+    #         # inference tab
+    #         self.inference_tab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
 
-    def visualize_LSLStream_data(self):
-
-        for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-            time_vector = self.lslStream_presets_dict[lsl_stream_name]["timevector"]
-
-            if data_to_plot.shape[-1] == len(time_vector):
-                actual_sampling_rate = self.lslStream_presets_dict[lsl_stream_name]["ActualSamplingRate"]
-                max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
-
-                # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-                if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-                    data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-                    # start = time.time()
-                    # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-                    # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                                            axis=1)  # resample to 100 hz with retain history of 10 sec
-                    # print(time.time()-start)
-                    time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-                # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-                #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                #
-                # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-                # change to loop with type condition plot time_series and image
-                if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-                    plot_channel_num_offset = 0
-                    for plot_group_index, (plot_group, plot_format) in enumerate(
-                            zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
-                                self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
-                        if plot_format=='time_series':
-                            # plot corresponding time series data, range (a,b) is time series
-                            plot_group_channel_num = len(plot_group)
-                            for index_in_group, stream_index in enumerate(plot_group):
-                                self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_group_index][index_in_group]\
-                                    .setData(time_vector,data_to_plot[stream_index, :])
-                            # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
-                            #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
-                            #                                                                 data_to_plot[i, :])
-                            plot_channel_num_offset += plot_group_channel_num
-                        # elif plot_format[0] == 'image':
-                        #     image_shape = plot_format[1]
-                        #     channel_num = image_shape[2]
-                        #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
-                        #
-                        #     img = plot_array.reshape(image_shape)
-                        #     # display openCV image if channel_num = 3
-                        #     # display heat map if channel_num = 1
-                        #     if channel_num == 3:
-                        #         img = convert_cv_qt(img)
-                        #     if channel_num == 1:
-                        #         img = np.squeeze(img, axis=-1)
-                        #         img = convert_heatmap_qt(img)
-                        #
-                        #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
-                        #     plot_channel_num_offset += 1
-
-        # TODO： remove this statement
-                # else:
-                #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-
-                self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-                    'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
-                    'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
-
-        # calculate and update the frame rate
-        self.recent_visualization_refresh_timestamps.append(time.time())
-        if len(self.recent_visualization_refresh_timestamps) > 2:
-            self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
-                                           self.recent_visualization_refresh_timestamps[0]) / (
-                                                      len(self.recent_visualization_refresh_timestamps) - 1))
-        # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
-        # print("John")
-        self.visualizationFPSLabel.setText(
-            'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
+    # def visualize_LSLStream_data(self):
+    #
+    #     for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
+    #         time_vector = self.lslStream_presets_dict[lsl_stream_name]["timevector"]
+    #
+    #         if data_to_plot.shape[-1] == len(time_vector):
+    #             actual_sampling_rate = self.lslStream_presets_dict[lsl_stream_name]["ActualSamplingRate"]
+    #             max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
+    #
+    #             # reduce the number of points to plot to the number of pixels in the corresponding plot widget
+    #             if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+    #                 data_to_plot = np.nan_to_num(data_to_plot, nan=0)
+    #                 # start = time.time()
+    #                 # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
+    #                 # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
+    #                 data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+    #                                         axis=1)  # resample to 100 hz with retain history of 10 sec
+    #                 # print(time.time()-start)
+    #                 time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+    #
+    #             # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
+    #             #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+    #             #
+    #             # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+    #             #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+    #             # change to loop with type condition plot time_series and image
+    #             if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
+    #                 plot_channel_num_offset = 0
+    #                 for plot_group_index, (plot_group, plot_format) in enumerate(
+    #                         zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
+    #                             self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
+    #                     if plot_format=='time_series':
+    #                         # plot corresponding time series data, range (a,b) is time series
+    #                         plot_group_channel_num = len(plot_group)
+    #                         for index_in_group, stream_index in enumerate(plot_group):
+    #                             self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_group_index][index_in_group]\
+    #                                 .setData(time_vector,data_to_plot[stream_index, :])
+    #                         # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
+    #                         #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
+    #                         #                                                                 data_to_plot[i, :])
+    #                         plot_channel_num_offset += plot_group_channel_num
+    #                     # elif plot_format[0] == 'image':
+    #                     #     image_shape = plot_format[1]
+    #                     #     channel_num = image_shape[2]
+    #                     #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
+    #                     #
+    #                     #     img = plot_array.reshape(image_shape)
+    #                     #     # display openCV image if channel_num = 3
+    #                     #     # display heat map if channel_num = 1
+    #                     #     if channel_num == 3:
+    #                     #         img = convert_cv_qt(img)
+    #                     #     if channel_num == 1:
+    #                     #         img = np.squeeze(img, axis=-1)
+    #                     #         img = convert_heatmap_qt(img)
+    #                     #
+    #                     #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
+    #                     #     plot_channel_num_offset += 1
+    #
+    #     # TODO： remove this statement
+    #             # else:
+    #             #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+    #             #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+    #
+    #             self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
+    #                 'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+    #             self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
+    #                 'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
+    #
+    #     # calculate and update the frame rate
+    #     self.recent_visualization_refresh_timestamps.append(time.time())
+    #     if len(self.recent_visualization_refresh_timestamps) > 2:
+    #         self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
+    #                                        self.recent_visualization_refresh_timestamps[0]) / (
+    #                                                   len(self.recent_visualization_refresh_timestamps) - 1))
+    #     # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
+    #     # print("John")
+    #     self.visualizationFPSLabel.setText(
+    #         'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
