@@ -271,7 +271,7 @@ class CustomDialog(QDialog):
             config.settings.setValue('show_' + self.dialog_name, False)
             print('will NOT show ' + self.dialog_name)
         else:
-            config.settings.SetValue('show_' + self.dialog_name, True)
+            config.settings.setValue('show_' + self.dialog_name, True)
             print('will show ' + self.dialog_name)
 
 
