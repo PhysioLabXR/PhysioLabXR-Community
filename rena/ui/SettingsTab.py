@@ -8,6 +8,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QFileDialog
 
 from rena import config_ui, config
+from rena.startup import load_default_settings
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
@@ -17,7 +18,6 @@ class SettingsTab(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
 
-        self.find_theme()
         self.set_theme(config.settings.value('theme'))
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -31,7 +31,7 @@ class SettingsTab(QtWidgets.QWidget):
         # resolve recording file format
         for file_format in config.FILE_FORMATS:
             self.saveFormatComboBox.addItem(file_format)
-        self.find_recording_file_format()
+        self.set_recording_file_format()
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
         self.resetDefaultBtn.clicked.connect(self.reset_default)
@@ -77,14 +77,10 @@ class SettingsTab(QtWidgets.QWidget):
 
     def reset_default(self):
         config.settings.clear()
-        self.find_theme()
+        load_default_settings()
+
         self.set_theme(config.settings.value('theme'))
+        self.set_recording_file_format()
 
-    def find_theme(self):
-        if not config.settings.contains('theme'):
-            config.settings.setValue('theme', config_ui.default_theme)
-
-    def find_recording_file_format(self):
-        if not config.settings.contains('file_format'):
-            config.settings.setValue('file_format', config.DEFAULT_FILE_FORMAT)
+    def set_recording_file_format(self):
         self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))

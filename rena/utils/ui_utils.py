@@ -384,6 +384,7 @@ class AnotherWindow(QWidget):
         else:
             event.ignore()
 
+
 class another_window(QWidget):
     """
     This "window" is a QWidget. If it has no parent, it

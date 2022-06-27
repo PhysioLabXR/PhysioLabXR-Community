@@ -7,10 +7,12 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
+from rena import config_ui
 from rena.interfaces import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
 import config
+from rena.startup import load_default_settings
 
 app = None
 
@@ -28,6 +30,9 @@ def resource_path(relative_path):
 
 
 if __name__ == '__main__':
+    # load default settings
+    load_default_settings()
+
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
     tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
