@@ -37,7 +37,6 @@ if __name__ == '__main__':
     # splash screen
     splash = QLabel()
     pixmap = QPixmap('../media/logo/RN.png')
-    # pixmap = pixmap.scaled(640, 640)
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()
@@ -56,5 +55,11 @@ if __name__ == '__main__':
     splash.destroy()
 
     window.show()
-    app.exec_()
-    print('Resuming Console Interaction.')
+
+    try:
+        app.exec_()
+        print('App closed by user')
+        sys.exit()
+    except KeyboardInterrupt:
+        print('App terminate by KeybaordInterrupt')
+        sys.exit()
