@@ -103,11 +103,10 @@ class RecordingsTab(QtWidgets.QWidget):
             pass
 
     def generate_save_path(self):
-        os.makedirs(config.USER_SETTINGS["USER_DATA_DIR"], exist_ok=True)
         # datetime object containing current date and time
         now = datetime.now()
         dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
-        return os.path.join(config.USER_SETTINGS["USER_DATA_DIR"],
+        return os.path.join(config.settings.value('recording_file_location'),
                             '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}.dats'.format(dt_string,
                                                                       self.experimentNameTextEdit.toPlainText(),
                                                                       self.subjectTagTextEdit.toPlainText(),
@@ -126,12 +125,10 @@ class RecordingsTab(QtWidgets.QWidget):
     def open_recording_directory(self):
         try:
             if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'msys':
-                os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
-
+                os.startfile(config.settings.value('recording_file_location'))
             else:
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
-                subprocess.call([opener, "-R", config.USER_SETTINGS["USER_DATA_DIR"]])
+                subprocess.call([opener, "-R", config.settings.value('recording_file_location')])
         except FileNotFoundError:
-            dialog_popup(msg="Recording directory does not exist. P"
-                             ""
-                             "lease use a valid directory in the Recording Tab.", title="Error");
+            dialog_popup(msg="Recording directory does not exist. "
+                             "Please use a valid directory in the Recording Tab.", title="Error")

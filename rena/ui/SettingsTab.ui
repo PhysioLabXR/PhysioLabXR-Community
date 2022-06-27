@@ -24,30 +24,43 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Appearance</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QWidget" name="widget_6" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
-             <widget class="QPushButton" name="LightThemeBtn">
+             <widget class="QLabel" name="label">
               <property name="text">
-               <string>Light Theme</string>
+               <string>Appearance</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="DarkThemeBtn">
-              <property name="text">
-               <string>Dark Theme</string>
-              </property>
+             <widget class="QWidget" name="widget_10" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QPushButton" name="DarkThemeBtn">
+                 <property name="text">
+                  <string>Dark Theme</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="LightThemeBtn">
+                 <property name="text">
+                  <string>Light Theme</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
           </widget>
          </item>
          <item>

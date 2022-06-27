@@ -66,7 +66,6 @@ class ReplayTab(QtWidgets.QWidget):
         #     return
         # self.save_path = self.generate_save_path()  # get a new save path
 
-
         # TODO: add progress bar
         if self.file_loc.endswith('.dats'):
             rns_stream = RNStream(self.file_loc)
