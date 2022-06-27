@@ -130,7 +130,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
             else:
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
-                subprocess.call([opener, config.USER_SETTINGS["USER_DATA_DIR"]])
+                subprocess.call([opener, "-R", config.USER_SETTINGS["USER_DATA_DIR"]])
         except FileNotFoundError:
             dialog_popup(msg="Recording directory does not exist. P"
                              ""
