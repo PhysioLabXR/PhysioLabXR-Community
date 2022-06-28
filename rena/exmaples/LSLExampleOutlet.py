@@ -15,7 +15,7 @@ def main(argv):
     letters = string.digits
     id = (''.join(random.choice(letters) for i in range(3)))
 
-    srate = 2048
+    srate = 100
     name = 'Dummy-BioSemi-8Chan-' + id
     print('Stream name is ' + name)
     type = 'EEG'

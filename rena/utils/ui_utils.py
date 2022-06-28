@@ -293,6 +293,7 @@ def dialog_popup(msg, title='Warning', dialog_name=None, enable_dont_show=False)
         print("Cancel!")
     return dlg
 
+
 import numpy as np
 import colorsys
 

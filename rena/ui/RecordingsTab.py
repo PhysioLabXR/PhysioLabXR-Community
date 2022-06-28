@@ -4,13 +4,15 @@ import sys
 import time
 
 from PyQt5 import QtWidgets, uic
+import pyqtgraph as pg
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer, QSettings
+from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
 
 from rena import config
+from rena.ui.RecordingConversionDialog import RecordingConversionDialog
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import subprocess
@@ -69,7 +71,12 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
         self.update_file_size_label()
-        dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
+
+        # convert file format
+        if config.settings.value('file_format') != config.FILE_FORMATS[0]:
+            self.convert_file_format(self.save_path, config.settings.value('file_format'))
+        else:
+            dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
@@ -132,3 +139,11 @@ class RecordingsTab(QtWidgets.QWidget):
         except FileNotFoundError:
             dialog_popup(msg="Recording directory does not exist. "
                              "Please use a valid directory in the Recording Tab.", title="Error")
+
+    def convert_file_format(self, file_path, file_format):
+        #first load the .dats back
+        recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
+        recordingConversionDialog.show()
+
+
+

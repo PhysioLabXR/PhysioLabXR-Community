@@ -38,7 +38,8 @@ data recording settings
 # elif platform == "win32":
 #     # Windows...
 DEFAULT_DATA_DIR = os.path.join(os.path.expanduser('~/Documents'), 'Recordings')
-FILE_FORMATS = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
+FILE_FORMATS = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)"]
+# FILE_FORMATS = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
 DEFAULT_FILE_FORMAT = FILE_FORMATS[0]
 
 DEFAULT_EXPERIMENT_NAME = 'my experiment'
@@ -104,3 +105,4 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 #     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
+
