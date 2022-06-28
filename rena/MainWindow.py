@@ -313,9 +313,6 @@ class MainWindow(QtWidgets.QMainWindow):
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
-
-
-
             preset["num_samples_to_plot"] = int(
                 preset["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
             preset["ActualSamplingRate"] = preset[

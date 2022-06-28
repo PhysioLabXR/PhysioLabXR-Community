@@ -8,7 +8,7 @@ from rena import config
 
 class LSLInletInterface:
 
-    def __init__(self, lsl_stream_name, **kwargs):
+    def __init__(self, lsl_stream_name):
         self.streams = resolve_byprop('name', lsl_stream_name, timeout=0.1)
         if len(self.streams) < 1:
             raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_stream_name))

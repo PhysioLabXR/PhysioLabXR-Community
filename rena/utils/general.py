@@ -102,7 +102,7 @@ def process_preset_create_lsl_interface(preset):
     lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset['StreamName'], preset['ChannelNames'], \
                                                           preset['GroupChannelsInPlot']
     try:
-        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name, data_type=preset['DataType'])
+        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name)
     except AttributeError:
         raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
     lsl_num_chan = interface.get_num_chan()
