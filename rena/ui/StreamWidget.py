@@ -44,7 +44,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.current_timestamp = 0
         self.lsl_data_buffer = np.empty(shape=(self.preset['NumChannels'], 0))
 
-
         # timer
         self.timer = QTimer()
         self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
@@ -56,7 +55,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.v_timer.timeout.connect(self.visualize_LSLStream_data)
         self.v_timer.start()
-
 
         # connect btn
         self.StartStopStreamBtn.clicked.connect(self.start_stop_stream_btn_clicked)
@@ -74,7 +72,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
-
 
         # create visualization component:
         self.create_visualization_component()
@@ -178,7 +175,7 @@ class StreamWidget(QtWidgets.QWidget):
         metainfo_parent.addWidget(fs_label)
         metainfo_parent.addWidget(ts_label)
         # if plot_group_slices:
-        plot_widgets = []
+        plot_widgets = {}
         plots = []
         # plot_formats = []
         for group_name in preset['GroupChannelsInPlot']:
@@ -194,8 +191,9 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widget.addLegend()
                 plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
                               zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
-                plot_widgets.append(plot_widget)
-
+                if plot_group_info['group_display'] == 0:
+                    plot_widget.hide()
+                plot_widgets[group_name] = plot_widget
 
                 # elif plot_group_format_info[0] == 'image':
                 #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
@@ -213,7 +211,6 @@ class StreamWidget(QtWidgets.QWidget):
                 #     plots.append(image_label)
                 # else:
                 #     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
-
 
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p == PlotDataItem]
@@ -262,88 +259,85 @@ class StreamWidget(QtWidgets.QWidget):
             # inference tab
             self.main_parent.inference_tab.update_buffers(data_dict)
 
-
-
     def visualize_LSLStream_data(self):
 
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-            time_vector = self.preset["timevector"]
-            data_to_plot = self.lsl_data_buffer
-            if data_to_plot.shape[-1] == len(time_vector):
-                actual_sampling_rate = self.preset["ActualSamplingRate"]
-                max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
+        time_vector = self.preset["timevector"]
+        data_to_plot = self.lsl_data_buffer
+        if data_to_plot.shape[-1] == len(time_vector):
+            actual_sampling_rate = self.preset["ActualSamplingRate"]
+            # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
 
+            # reduce the number of points to plot to the number of pixels in the corresponding plot widget
 
-                # reduce the number of points to plot to the number of pixels in the corresponding plot widget
+            # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+            #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
+            #     # start = time.time()
+            #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
+            #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
+            #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+            #                             axis=1)  # resample to 100 hz with retain history of 10 sec
+            #     # print(time.time()-start)
+            #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
 
-                # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-                #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-                #     # start = time.time()
-                #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-                #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-                #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                #                             axis=1)  # resample to 100 hz with retain history of 10 sec
-                #     # print(time.time()-start)
-                #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+            # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
+            #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+            #
+            # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+            #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+            # change to loop with type condition plot time_series and image
+            # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
+            # plot_channel_num_offset = 0
+            for plot_group_index, (group_name) in enumerate(self.preset["GroupChannelsInPlot"]):
+                plot_group_info = self.preset["GroupChannelsInPlot"][group_name]
+                if plot_group_info["plot_format"] == 'time_series':
+                    # plot corresponding time series data, range (a,b) is time series
+                    # plot_group_channel_num = len(plot_group_info['channels'])
+                    for index_in_group, channel_index in enumerate(plot_group_info['channels']):
+                        if plot_group_info['channels_display'][index_in_group]:
+                            self.stream_widget_visualization_component.plots[plot_group_index][index_in_group] \
+                                .setData(time_vector, data_to_plot[channel_index, :])
+                        # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
+                        #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
+                        #                                                                 data_to_plot[i, :])
+                        # plot_channel_num_offset += plot_group_channel_num
+                    # elif plot_format[0] == 'image':
+                    #     image_shape = plot_format[1]
+                    #     channel_num = image_shape[2]
+                    #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
+                    #
+                    #     img = plot_array.reshape(image_shape)
+                    #     # display openCV image if channel_num = 3
+                    #     # display heat map if channel_num = 1
+                    #     if channel_num == 3:
+                    #         img = convert_cv_qt(img)
+                    #     if channel_num == 1:
+                    #         img = np.squeeze(img, axis=-1)
+                    #         img = convert_heatmap_qt(img)
+                    #
+                    #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
+                    #     plot_channel_num_offset += 1
 
-                # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-                #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                #
-                # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-                # change to loop with type condition plot time_series and image
-                # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-                    # plot_channel_num_offset = 0
-                for plot_group_index, (group_name) in enumerate(self.preset["GroupChannelsInPlot"]):
-                    plot_group_info = self.preset["GroupChannelsInPlot"][group_name]
-                    if plot_group_info["plot_format"] == 'time_series':
-                        # plot corresponding time series data, range (a,b) is time series
-                        # plot_group_channel_num = len(plot_group_info['channels'])
-                        for index_in_group, channel_index in enumerate(plot_group_info['channels']):
-                            self.stream_widget_visualization_component.plots[plot_group_index][index_in_group]\
-                                .setData(time_vector,data_to_plot[channel_index, :])
-                            # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
-                            #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
-                            #                                                                 data_to_plot[i, :])
-                            # plot_channel_num_offset += plot_group_channel_num
-                        # elif plot_format[0] == 'image':
-                        #     image_shape = plot_format[1]
-                        #     channel_num = image_shape[2]
-                        #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
-                        #
-                        #     img = plot_array.reshape(image_shape)
-                        #     # display openCV image if channel_num = 3
-                        #     # display heat map if channel_num = 1
-                        #     if channel_num == 3:
-                        #         img = convert_cv_qt(img)
-                        #     if channel_num == 1:
-                        #         img = np.squeeze(img, axis=-1)
-                        #         img = convert_heatmap_qt(img)
-                        #
-                        #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
-                        #     plot_channel_num_offset += 1
+            # TODO： remove this statement
+            # else:
+            #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+            #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
 
-        # TODO： remove this statement
-                # else:
-                #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+            self.stream_widget_visualization_component.fs_label.setText(
+                'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+            self.stream_widget_visualization_component.ts_label.setText(
+                'Current Time Stamp = {0}'.format(self.current_timestamp))
 
-                self.stream_widget_visualization_component.fs_label.setText(
-                    'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                self.stream_widget_visualization_component.ts_label.setText(
-                    'Current Time Stamp = {0}'.format(self.current_timestamp))
-
-        # calculate and update the frame rate
-        # self.recent_visualization_refresh_timestamps.append(time.time())
-        # if len(self.recent_visualization_refresh_timestamps) > 2:
-        #     self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
-        #                                    self.recent_visualization_refresh_timestamps[0]) / (
-        #                                               len(self.recent_visualization_refresh_timestamps) - 1))
-        # # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
-        # # print("John")
-        # self.visualizationFPSLabel.setText(
-        #     'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
-
+    # calculate and update the frame rate
+    # self.recent_visualization_refresh_timestamps.append(time.time())
+    # if len(self.recent_visualization_refresh_timestamps) > 2:
+    #     self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
+    #                                    self.recent_visualization_refresh_timestamps[0]) / (
+    #                                               len(self.recent_visualization_refresh_timestamps) - 1))
+    # # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
+    # # print("John")
+    # self.visualizationFPSLabel.setText(
+    #     'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
 
     def ticks(self):
         self.lsl_worker.tick_signal.emit()
