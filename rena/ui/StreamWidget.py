@@ -1,33 +1,19 @@
 # This Python file uses the following encoding: utf-8
-from copy import copy
 
-from PyQt5 import QtWidgets, uic, sip
+import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QLabel
+from pyqtgraph import PlotDataItem
 
 from rena import config, config_ui
-from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
 from rena.ui.OptionsWindow import OptionsWindow
 from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
-
-import sys
-import time
-import webbrowser
-
-import pyqtgraph as pg
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QLabel, QMessageBox, QWidget
-from PyQt5.QtWidgets import QLabel, QMessageBox
-from pyqtgraph import PlotDataItem
-from scipy.signal import decimate
-from PyQt5 import QtCore
-
-import numpy as np
-import collections
-
-import os
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -224,16 +210,6 @@ class StreamWidget(QtWidgets.QWidget):
                 # else:
                 #     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
-        # else:
-        #     plot_widget = pg.PlotWidget()
-        #     parent.addWidget(plot_widget)
-        #     plots = []
-        #
-        #     distinct_colors = get_distinct_colors(num_chan)
-        #     plot_widget.addLegend()
-        #     plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-        #              zip(distinct_colors, chan_names)])
-        #     plot_formats = [['time_series']]
 
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p == PlotDataItem]
@@ -367,3 +343,10 @@ class StreamWidget(QtWidgets.QWidget):
 
     def ticks(self):
         self.lsl_worker.tick_signal.emit()
+        #     self.recent_tick_refresh_timestamps.append(time.time())
+        #     if len(self.recent_tick_refresh_timestamps) > 2:
+        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
+        #                     len(self.recent_tick_refresh_timestamps) - 1))
+        #
+        #     self.tickFrequencyLabel.setText(
+        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
