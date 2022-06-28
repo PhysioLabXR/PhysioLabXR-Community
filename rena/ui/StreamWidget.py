@@ -75,6 +75,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
+
+        # create visualization component:
+        self.create_visualization_component()
+
     def set_button_icons(self):
         if 'Start' in self.StartStopStreamBtn.text():
             self.StartStopStreamBtn.setIcon(start_stream_icon)
@@ -216,7 +220,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         return fs_label, ts_label, plot_widgets, plots, preset
 
-    def create_stream_widget_visualization_component(self):
+    def create_visualization_component(self):
         # TODO: try catch group format error
         fs_label, ts_label, plot_widgets, plots, preset = \
             self.init_visualize_LSLStream_data(parent=self.TimeSeriesPlotsLayout,
