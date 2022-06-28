@@ -91,7 +91,9 @@ def process_LSL_plot_group(preset_dict):
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
-                "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]
+                "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))],
+                "channels_display": [1 for channel_num in range(0, len(preset_dict['ChannelNames']))],
+                "group_display": 1
             }
         }
 
