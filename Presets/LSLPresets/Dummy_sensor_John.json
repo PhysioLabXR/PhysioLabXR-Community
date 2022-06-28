@@ -1,0 +1,24 @@
+{ "StreamName":"Dummy-BioSemi-8Chan-384",
+  "ChannelNames":[
+    "Fp1", "F7", "F8", "T4", "Fp1", "F7", "F8", "T4"],
+  "NominalSamplingRate":  100,
+  "GroupChannelsInPlot": {
+    "Group1": {
+      "group_index": 1,
+      "plot_format": "time_series",
+      "channels": [0,1,2,3]
+    },
+    "Group2": {
+      "group_index": 2,
+      "plot_format": "time_series",
+      "channels": [4,5]
+    },
+    "Group3": {
+      "group_index": 3,
+      "plot_format": "time_series",
+      "channels": [6,7]
+    }
+  }
+
+}
+

@@ -19,32 +19,48 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QWidget" name="widget_4" native="true">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Appearance</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QWidget" name="widget_6" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
-             <widget class="QPushButton" name="LightThemeBtn">
+             <widget class="QLabel" name="label">
               <property name="text">
-               <string>Light Theme</string>
+               <string>Appearance</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="DarkThemeBtn">
-              <property name="text">
-               <string>Dark Theme</string>
-              </property>
+             <widget class="QWidget" name="widget_10" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QPushButton" name="DarkThemeBtn">
+                 <property name="text">
+                  <string>Dark Theme</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="LightThemeBtn">
+                 <property name="text">
+                  <string>Light Theme</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
           </widget>
          </item>
          <item>
@@ -58,8 +74,31 @@
              </widget>
             </item>
             <item>
+             <widget class="QWidget" name="widget_9" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Recording file format</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="saveFormatComboBox"/>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <widget class="QWidget" name="widget_8" native="true">
               <layout class="QHBoxLayout" name="horizontalLayout_3">
+               <item>
+                <widget class="QLabel" name="label_3">
+                 <property name="text">
+                  <string>Save records to</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QTextEdit" name="saveRootTextEdit">
                  <property name="sizePolicy">
@@ -90,6 +129,22 @@
              </widget>
             </item>
            </layout>
+          </widget>
+         </item>
+         <item alignment="Qt::AlignRight">
+          <widget class="QPushButton" name="resetDefaultBtn">
+           <property name="maximumSize">
+            <size>
+             <width>256</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="text">
+            <string>Reset Default</string>
+           </property>
           </widget>
          </item>
         </layout>

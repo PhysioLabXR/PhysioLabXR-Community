@@ -1,14 +1,17 @@
+import time
+
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene
+    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
-from rena import config_ui
+from rena import config_ui, config
 import matplotlib.pyplot as plt
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
@@ -238,10 +241,11 @@ def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, exper
 
 
 class CustomDialog(QDialog):
-    def __init__(self, title, msg, parent=None):
+    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)
+        self.dialog_name = dialog_name
 
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
 
@@ -251,18 +255,46 @@ class CustomDialog(QDialog):
 
         self.layout = QVBoxLayout()
         message = QLabel(str(msg))
-        self.layout.addWidget(message)
-        self.layout.addWidget(self.buttonBox)
+
+        # center message and button
+        self.layout.addWidget(message, alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignCenter)
+
+        if enable_dont_show:
+            # self.dont_show_button = QPushButton()
+            self.dont_show_button = QCheckBox("Don't show this again")
+            self.layout.addWidget(self.dont_show_button)
+            self.dont_show_button.stateChanged.connect(self.toggle_dont_show)
+
         self.setLayout(self.layout)
 
+    def toggle_dont_show(self):
+        if self.dont_show_button.isChecked():
+            config.settings.setValue('show_' + self.dialog_name, False)
+            print('will NOT show ' + self.dialog_name)
+        else:
+            config.settings.setValue('show_' + self.dialog_name, True)
+            print('will show ' + self.dialog_name)
 
-def dialog_popup(msg, title='Warning'):
-    dlg = CustomDialog(title, msg)  # If you pass self, the dialog will be centered over the main window as before.
+
+def dialog_popup(msg, title='Warning', dialog_name=None, enable_dont_show=False):
+    if enable_dont_show:
+        try:
+            assert dialog_name is not None
+        except AssertionError:
+            print("dev: to use enable_dont_show, the dialog must have a unique identifier. Add the identifier by giving"
+                  "the dialog_name parameter")
+            raise AttributeError
+        if config.settings.contains('show_' + dialog_name) and config.settings.value('show_' + dialog_name) == 'false':
+            print('Skipping showing dialog ' + dialog_name)
+            return
+    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
     if dlg.exec_():
         print("Dialog popup")
     else:
         print("Cancel!")
     return dlg
+
 
 import numpy as np
 import colorsys
@@ -280,11 +312,21 @@ def get_distinct_colors(num_colors, depth=8):
 
 
 def convert_cv_qt(cv_img):
+    t = time.time()
+
     """Convert from an opencv image to QPixmap"""
-    rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-    h, w, ch = rgb_image.shape
+    if cv_img.shape[-1] == 1:  # if in greyscale
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        image_data = rgb_image.data
+    elif cv_img.shape[-1] == 3:  # if in colored
+        # image_data = (cv_img * 255).astype(np.uint8)
+        image_data = cv_img
+    else:
+        raise Exception("ui_utils: Unsupported image channel format {0}".format(cv_img.shape))
+
+    h, w, ch = image_data.shape
     bytes_per_line = ch * w
-    convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    convert_to_Qt_format = QtGui.QImage(image_data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
     # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(convert_to_Qt_format)
 
@@ -344,6 +386,7 @@ class AnotherWindow(QWidget):
             event.accept()  # let the window close
         else:
             event.ignore()
+
 
 class another_window(QWidget):
     """

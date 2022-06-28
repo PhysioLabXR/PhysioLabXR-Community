@@ -31,3 +31,4 @@ cam_display_height = 480
 
 capture_display_width = 640
 capture_display_height = 480
+

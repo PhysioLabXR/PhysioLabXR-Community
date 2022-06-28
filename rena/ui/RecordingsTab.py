@@ -1,18 +1,21 @@
 # This Python file uses the following encoding: utf-8
 import os
+import sys
 import time
 
 from PyQt5 import QtWidgets, uic
+import pyqtgraph as pg
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
 
 from rena import config
+from rena.ui.RecordingConversionDialog import RecordingConversionDialog
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
-
+import subprocess
 
 class RecordingsTab(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -22,6 +25,7 @@ class RecordingsTab(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi("ui/RecordingsTab.ui", self)
+        self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
         self.recording_buffer = {}
 
@@ -67,7 +71,12 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
         self.update_file_size_label()
-        dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
+
+        # convert file format
+        if config.settings.value('file_format') != config.FILE_FORMATS[0]:
+            self.convert_file_format(self.save_path, config.settings.value('file_format'))
+        else:
+            dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
@@ -101,11 +110,10 @@ class RecordingsTab(QtWidgets.QWidget):
             pass
 
     def generate_save_path(self):
-        os.makedirs(config.USER_SETTINGS["USER_DATA_DIR"], exist_ok=True)
         # datetime object containing current date and time
         now = datetime.now()
         dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
-        return os.path.join(config.USER_SETTINGS["USER_DATA_DIR"],
+        return os.path.join(config.settings.value('recording_file_location'),
                             '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}.dats'.format(dt_string,
                                                                       self.experimentNameTextEdit.toPlainText(),
                                                                       self.subjectTagTextEdit.toPlainText(),
@@ -123,8 +131,19 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def open_recording_directory(self):
         try:
-            os.startfile(config.USER_SETTINGS["USER_DATA_DIR"])
+            if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'msys':
+                os.startfile(config.settings.value('recording_file_location'))
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, "-R", config.settings.value('recording_file_location')])
         except FileNotFoundError:
-            dialog_popup(msg="Recording directory does not exist. P"
-                             ""
-                             "lease use a valid directory in the Recording Tab.", title="Error");
+            dialog_popup(msg="Recording directory does not exist. "
+                             "Please use a valid directory in the Recording Tab.", title="Error")
+
+    def convert_file_format(self, file_path, file_format):
+        #first load the .dats back
+        recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
+        recordingConversionDialog.show()
+
+
+
