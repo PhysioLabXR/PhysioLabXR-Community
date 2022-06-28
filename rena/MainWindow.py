@@ -60,6 +60,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.app = app
 
         # create sensor threads, worker threads for different sensors
+        ############
+        self.stream_widgets = {}
+        ############
 
         self.worker_threads = {}
         self.sensor_workers = {}
@@ -120,9 +123,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # reload all presets
         self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
-        ############
-        self.stream_widgets = {}
-        ############
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -476,7 +476,7 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Reloaded all presets', title='Info')
 
     def reload_all_presets(self):
-        if len(self.lsl_workers) > 0 or len(self.device_workers) > 0:
+        if len(self.lsl_workers) > 0 or len(self.device_workers) > 0 or len(self.stream_widgets)!=0:
             dialog_popup('Remove all streams before reloading presets!', title='Warning')
             return False
         else:
