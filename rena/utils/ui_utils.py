@@ -3,6 +3,7 @@ import time
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
@@ -255,7 +256,9 @@ class CustomDialog(QDialog):
         self.layout = QVBoxLayout()
         message = QLabel(str(msg))
 
-        self.layout.addWidget(message)
+        # center message and button
+        self.layout.addWidget(message, alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignCenter)
 
         if enable_dont_show:
             # self.dont_show_button = QPushButton()
@@ -263,7 +266,6 @@ class CustomDialog(QDialog):
             self.layout.addWidget(self.dont_show_button)
             self.dont_show_button.stateChanged.connect(self.toggle_dont_show)
 
-        self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
     def toggle_dont_show(self):

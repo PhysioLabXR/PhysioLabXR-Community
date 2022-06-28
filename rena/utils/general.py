@@ -52,40 +52,49 @@ def load_LSL_preset(preset_dict):
         preset_dict['ChannelNames'] = None
     if 'GroupChannelsInPlot' not in preset_dict.keys():
         preset_dict['GroupChannelsInPlot'] = None
-        preset_dict['PlotGroupSlices'] = None
+        preset_dict['GroupFormat'] = None
+    if 'GroupFormat' not in preset_dict.keys():
+        preset_dict['GroupFormat'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = None
-    if 'DataType' not in preset_dict.keys():
-        preset_dict['DataType'] = None
-
-    # turn datatype into np types
-    if preset_dict['DataType'] == 'uint8':
-        preset_dict['DataType'] = np.uint8
-    elif preset_dict['DataType'] == 'float32':
-        preset_dict['DataType'] = np.float32
-    elif preset_dict['DataType'] is None:
-        pass
-    else:
-        print("general.py: load_LSL_preset: LSL stream {0} have unsupported data type {1}".format(preset_dict["StreamName"], preset_dict["DataType"]))
-
     return preset_dict
 
 
-def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None):
-    preset_dict = {'StreamName': stream_name, 'ChannelNames': channel_names, 'PlotGroupSlices': plot_group_slices}
+def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, plot_group_formats=None):
+    preset_dict = {'StreamName': stream_name,
+                   'ChannelNames': channel_names,
+                   'GroupChannelsInPlot': plot_group_slices,
+                   'GroupFormat': plot_group_formats}
     preset_dict = load_LSL_preset(preset_dict)
     return preset_dict
 
 
 def process_LSL_plot_group(preset_dict):
-    preset_dict["PlotGroupSlices"] = []
-    head = 0
-    for x in preset_dict['GroupChannelsInPlot']:
-        preset_dict["PlotGroupSlices"].append((head, x))
-        head = x
-    if head != preset_dict['NumChannels']:
-        preset_dict["PlotGroupSlices"].append(
-            (head, preset_dict['NumChannels']))  # append the last group
+    # preset_dict["PlotGroupSlices"] = []
+    # head = 0
+    # for x in preset_dict['GroupChannelsInPlot']:
+    #     preset_dict["PlotGroupSlices"].append((head, x))
+    #     head = x
+    # if head != preset_dict['NumChannels']:
+    #     preset_dict["PlotGroupSlices"].append(
+    #         (head, preset_dict['NumChannels']))  # append the last group
+    # if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
+    #     # create GroupChannelsInPlot from 0 to x
+    #     preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
+    #
+    # if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
+    #     preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
+
+    if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
+        # create GroupChannelsInPlot from 0 to x
+        preset_dict['GroupChannelsInPlot'] = {
+            "Group1": {
+                "group_index": 1,
+                "plot_format": "time_series",
+                "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]
+            }
+        }
+
     return preset_dict
 
 
@@ -116,13 +125,16 @@ def process_preset_create_lsl_interface(preset):
     else:
         preset['ChannelNames'] = ['Unknown'] * preset['NumChannels']
     # process lsl presets ###########################
-    if group_chan_in_plot and len(group_chan_in_plot) > 0:
-        if np.max(preset['GroupChannelsInPlot']) > preset['NumChannels']:
-            raise AssertionError(
-                'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
-                    lsl_stream_name))
-        preset = process_LSL_plot_group(preset)
-    return preset, interface
+    # if group_chan_in_plot and len(group_chan_in_plot) > 0:
+    #     # if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:
+    #     #     raise AssertionError(
+    #     #         'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
+    #     #             lsl_stream_name))
+    #     preset_dict = process_LSL_plot_group(preset_dict)
+
+    # now always create time series data format and set group channels from 0 to x if no group channels
+    preset_dict = process_LSL_plot_group(preset)
+    return preset_dict, interface
 
 
 def process_preset_create_openBCI_interface_startsensor(devise_preset_dict):
@@ -166,12 +178,10 @@ def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
     except AssertionError as e:
         raise AssertionError(e)
 
-
     # start mmWave 6843 sensor
     try:
         interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
-
 
     return device_preset_dict, interface
