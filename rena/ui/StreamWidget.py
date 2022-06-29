@@ -90,7 +90,7 @@ class StreamWidget(QtWidgets.QWidget):
     def options_btn_clicked(self):
 
         print("Option window open")
-        signal_settings_window = OptionsWindow(parent=self)
+        signal_settings_window = OptionsWindow(parent=self, preset=self.preset)
         if signal_settings_window.exec_():
             print("signal setting window open")
         else:

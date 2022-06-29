@@ -44,7 +44,7 @@
            <property name="widgetResizable">
             <bool>true</bool>
            </property>
-           <widget class="QWidget" name="scrollAreaWidgetContents">
+           <widget class="QWidget" name="SignalTreeViewArea">
             <property name="geometry">
              <rect>
               <x>0</x>
@@ -53,11 +53,7 @@
               <height>1105</height>
              </rect>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_5">
-             <item>
-              <widget class="QTreeView" name="signalTreeView"/>
-             </item>
-            </layout>
+            <layout class="QVBoxLayout" name="verticalLayout_5"/>
            </widget>
           </widget>
          </item>
