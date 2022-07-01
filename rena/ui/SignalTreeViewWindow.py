@@ -16,6 +16,9 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.header().setDefaultSectionSize(180)
         self.setHeaderHidden(True)
         # self.setModel(self.model)
+        self.channel_groups_widgets = []
+        self.channel_widgets = []
+
         self.createTreeView()
         self.expandAll()
         # self.show()
@@ -30,34 +33,52 @@ class SignalTreeViewWindow(QTreeWidget):
         channel_groups_information = self.preset['GroupChannelsInPlot']
         print(channel_groups_information)
         for group_name in channel_groups_information:
-            parent = QTreeWidgetItem(self)
-            parent.setText(0, group_name)
-            parent.setText(1, group_name)
-            parent.setFlags(parent.flags() |
+            channel_group = QTreeWidgetItem(self)
+            channel_group.setText(0, group_name)
+            channel_group.setText(1, group_name)
+            channel_group.setFlags(channel_group.flags() |
                             Qt.ItemIsTristate | Qt.ItemIsUserCheckable | Qt.ItemIsEditable |
                             Qt.ItemIsDragEnabled)
+            channel_group.setData(0, Qt.DisplayRole, 'group')
 
             for channel_index in channel_groups_information[group_name]['channels']:
-                child = QTreeWidgetItem(parent)
-                child.setFlags(child.flags()
+                channel = QTreeWidgetItem(channel_group)
+                channel.setFlags(channel.flags()
                 # | Qt.ItemIsTristate
                 | Qt.ItemIsUserCheckable| Qt.ItemIsEditable
                 | Qt.ItemIsDragEnabled
                 )
-                child.setText(0, self.preset['ChannelNames'][channel_index])
-                child.setCheckState(0, Qt.Unchecked)
-
+                channel.setText(0, self.preset['ChannelNames'][channel_index])
+                channel.setCheckState(0, Qt.Unchecked)
+                channel.setData(0, Qt.DisplayRole, 'channel')
+                self.channel_widgets.append(channel)
+            self.channel_groups_widgets.append(channel_group)
     def startDrag(self, actions):
         # row = self.selectedItems()[0]
         # prev_parent = row.parent()
         # what_move = row.data(0,0)
         # a = prev_parent.data(0,0)
         # print(a)
+        dragged = self.selectedItems()
+        [c.setDisabled(True) for c in self.channel_widgets if c not in dragged]
+
+        is_any_group_dragged = False
+        for d in dragged:
+            if d.data(0, Qt.DisplayRole) == 'group':
+                is_any_group_dragged = True
+                break
+        if is_any_group_dragged:
+            [g.setDisabled(True) for g in self.channel_groups_widgets if g not in dragged]
+
         return QTreeWidget.startDrag(self, actions)
+
     def dropEvent(self, event):
         # widgetItemThatMoved = event.source().currentItem()
         # parentThatReceivedIt = self.itemAt(event.pos())
         # my_custom_collback(self._prev_parent, self._what_move, self._new_parent)  # <- that what i needed
+        [c.setDisabled(True) for c in self.channel_widgets]
+        [g.setDisabled(True) for g in self.channel_groups_widgets]
+
         return QTreeWidget.dropEvent(self, event)
 
 
