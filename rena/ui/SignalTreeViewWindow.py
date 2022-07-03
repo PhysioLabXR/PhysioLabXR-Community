@@ -4,6 +4,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
+from rena.config_ui import color_green, color_white
+from rena.utils.ui_utils import dialog_popup
+
+
 class SignalTreeViewWindow(QTreeWidget):
     def __init__(self, parent, preset):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
@@ -16,7 +20,7 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.header().setDefaultSectionSize(180)
         self.setHeaderHidden(True)
         # self.setModel(self.model)
-        self.channel_groups_widgets = []
+        self.groups_widgets = []
         self.channel_widgets = []
 
         self.createTreeView()
@@ -24,108 +28,165 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.show()
 
         # self.setSelectionMode(self.SingleSelection)
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setDragDropMode(QAbstractItemView.InternalMove)
-        # self.setDragEnabled(True)
+        # self.setAcceptDrops(False)
         # self.setAcceptDrops(True)
         # self.setDropIndicatorShown(True)
+        # self.setWindowFlag(Qt.ItemIsDropEnabled)
+        self.selectionModel().selectionChanged.connect(self.update_info_box)
+
+        self.itemChanged[QTreeWidgetItem, int].connect(self.get_item)
+    def get_item(self, item, column):
+        if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
+            item.setForeground(0, QBrush(QColor(color_green)))
+        else:
+            item.setForeground(0, QBrush(QColor(color_white)))
+    # def itemChanged(self, QTreeWidgetItem, p_int):
+    #     " Slot is called when the selection has been changed "
+    #     # if selected.indexes():
+    #     #     self.selectedIndex = selected.indexes()[0]
+    #     # else:
+    #     #     self.selectedIndex = None
+    #     super(SignalTreeViewWindow, self).itemChanged(QTreeWidgetItem, p_int)
+    #     return
 
     def createTreeView(self):
+
+        self.stream_root = QTreeWidgetItem(self)
+        self.stream_root.setText(0, self.preset['StreamName'])
+        self.stream_root.setFlags(self.stream_root.flags()
+                                  & (~Qt.ItemIsDragEnabled)
+                                  & (~Qt.ItemIsSelectable))
         channel_groups_information = self.preset['GroupChannelsInPlot']
         print(channel_groups_information)
+
         for group_name in channel_groups_information:
-            channel_group = QTreeWidgetItem(self)
-            channel_group.setText(0, group_name)
-            channel_group.setText(1, group_name)
-            channel_group.setFlags(channel_group.flags() |
-                            Qt.ItemIsTristate | Qt.ItemIsUserCheckable | Qt.ItemIsEditable |
-                            Qt.ItemIsDragEnabled)
-            channel_group.setData(0, Qt.DisplayRole, 'group')
+            group_info = channel_groups_information[group_name]
+            channel_group = self.add_item(parent_item=self.stream_root,
+                                          display_text=group_name,
+                                          plot_format=group_info['plot_format'],
+                                          item_type='group',
+                                          display=group_info['group_display'])
 
-            for channel_index in channel_groups_information[group_name]['channels']:
-                channel = QTreeWidgetItem(channel_group)
-                channel.setFlags(channel.flags()
-                # | Qt.ItemIsTristate
-                | Qt.ItemIsUserCheckable| Qt.ItemIsEditable
-                | Qt.ItemIsDragEnabled
-                )
-                channel.setText(0, self.preset['ChannelNames'][channel_index])
-                channel.setCheckState(0, Qt.Unchecked)
-                channel.setData(0, Qt.DisplayRole, 'channel')
+            for channel_index_in_group, channel_index in enumerate(group_info['channels']):
+                channel = self.add_item(parent_item=channel_group,
+                                        display_text=self.preset['ChannelNames'][channel_index],
+                                        item_type='channel', display=group_info['channels_display'][channel_index_in_group],
+                                        item_index=channel_index)
+
+                channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 self.channel_widgets.append(channel)
-            self.channel_groups_widgets.append(channel_group)
-    def startDrag(self, actions):
-        # row = self.selectedItems()[0]
-        # prev_parent = row.parent()
-        # what_move = row.data(0,0)
-        # a = prev_parent.data(0,0)
-        # print(a)
-        dragged = self.selectedItems()
-        [c.setDisabled(True) for c in self.channel_widgets if c not in dragged]
+            self.groups_widgets.append(channel_group)
 
-        is_any_group_dragged = False
-        for d in dragged:
-            if d.data(0, Qt.DisplayRole) == 'group':
-                is_any_group_dragged = True
-                break
-        if is_any_group_dragged:
-            [g.setDisabled(True) for g in self.channel_groups_widgets if g not in dragged]
+    def startDrag(self, actions):
+
+        self.selected_items = self.selectedItems()
+        # cannot drag groups and items at the same time:
+        self.moving_groups = False
+        self.moving_channels = False
+        for selected_item in self.selected_items:
+            if selected_item.item_type == 'group':
+                self.moving_groups = True
+            if selected_item.item_type == 'channel':
+                self.moving_channels = True
+
+        if self.moving_groups and self.moving_channels:
+            dialog_popup('Cannot move group and channels at the same time')
+            self.clearSelection()
+            return
+        if self.moving_groups:  # is moving groups, we cannot drag one group into another
+            [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
+             self.groups_widgets]
+
+        if self.moving_channels:
+            self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
 
         return QTreeWidget.startDrag(self, actions)
 
     def dropEvent(self, event):
-        # widgetItemThatMoved = event.source().currentItem()
-        # parentThatReceivedIt = self.itemAt(event.pos())
-        # my_custom_collback(self._prev_parent, self._what_move, self._new_parent)  # <- that what i needed
-        [c.setDisabled(True) for c in self.channel_widgets]
-        [g.setDisabled(True) for g in self.channel_groups_widgets]
+        drop_target = self.itemAt(event.pos())
+        if drop_target == None:
+            self.reset_drag_drop()
+            return
+        elif drop_target.data(0, 0) == self.preset['StreamName']:
+            self.reset_drag_drop()
+            return
+        else:
+            QTreeWidget.dropEvent(self, event)
+            self.reset_drag_drop()
 
-        return QTreeWidget.dropEvent(self, event)
+            # check empty group
+            self.remove_empty_groups()
+            print(drop_target.checkState(0))
 
+    def mousePressEvent(self, *args, **kwargs):
+        super(SignalTreeViewWindow, self).mousePressEvent(*args, **kwargs)
+        self.reset_drag_drop()
 
-        # print(e.dropAction(), 'baseact', Qt.CopyAction)
-        # # if e.keyboardModifiers() & QtCore.Qt.AltModifier:
-        # #     #e.setDropAction(QtCore.Qt.CopyAction)
-        # #     print('copy')
-        # # else:
-        # #     #e.setDropAction(QtCore.Qt.MoveAction)
-        # #     print("drop")
-        #
-        # print(e.dropAction())
-        # #super(Tree, self).dropEvent(e)
-        # index = self.indexAt(e.pos())
-        # parent = index.parent()
-        # print('in', index.row())
-        # self.model().dropMimeData(e.mimeData(), e.dropAction(), index.row(), index.column(), parent)
-        #
-        # e.accept()
+    def reset_drag_drop(self):
+        self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
+        [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
+         self.groups_widgets]
 
-        # def dropEvent(self, event):
-        #     if event.mimeData().hasUrls:
-        #         event.setDropAction(QtCore.Qt.CopyAction)
-        #         event.accept()
-        #         # to get a list of files:
-        #         drop_list = []
-        #         for url in event.mimeData().urls():
-        #             drop_list.append(str(url.toLocalFile()))
-        #         # handle the list here
-        #     else:
-        #         event.ignore()
-        # def dropEvent(self, event):
-        #     """
-        #     Event handler for `QDropEvent` events.
-        #
-        #     If an icon is dropped on a free area of the tree view then the
-        #     icon URL is converted to a path (which we assume to be an `HDF5`
-        #     file path) and ``ViTables`` tries to open it.
-        #
-        #     :Parameter event: the event being processed.
-        #     """
-        #
-        #     mime_data = event.mimeData()
-        #     if mime_data.hasFormat('text/uri-list'):
-        #         if self.dbt_model.dropMimeData(mime_data, Qt.CopyAction, -1, -1, self.currentIndex()):
-        #             event.setDropAction(Qt.CopyAction)
-        #             event.accept()
-        #             self.setFocus(True)
-        #     else:
-        #         QTreeView.dropEvent(self, event)
+        self.moving_groups = False
+        self.moving_channels = False
+        # self.stream_root.setCheckState(0, Qt.Checked)
+
+    def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
+        item = QTreeWidgetItem(parent_item)
+        item.setText(0, display_text)
+        item.item_type = item_type
+        item.display = display
+        if plot_format:
+            item.plot_format='time_series'
+        if item_index:
+            item.item_index = item_index
+        if display:
+            item.setForeground(0, QBrush(QColor(color_green)))
+            item.setCheckState(0, Qt.Checked)
+        else:
+            item.setCheckState(0, Qt.Unchecked)
+        # item.setForeground(0, QBrush(QColor("#123456")))
+        # channel.setCheckState(0, Qt.Unchecked)
+        # channel_group.setText(1, group_name)
+        # channel_group.setEditable(False)
+        item.setFlags(
+            item.flags()
+            | Qt.ItemIsTristate
+            | Qt.ItemIsUserCheckable
+            | Qt.ItemIsEditable
+            | Qt.ItemIsDragEnabled
+            | Qt.ItemIsDropEnabled
+        )
+
+        return item
+
+    def add_group(self, display_text, item_type='group', display=1, item_index=None):
+        new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display, item_index=item_index)
+        return new_group
+
+    def get_group_names(self):
+        group_names = []
+        for index in range(0, self.stream_root.childCount()):
+            group_names.append(self.stream_root.child(index).data(0,0))
+        return group_names
+
+    def remove_empty_groups(self):
+        children_num = self.stream_root.childCount()
+        empty_groups = []
+        for child_index in range(0, children_num):
+            group = self.stream_root.child(child_index)
+            if group.childCount() == 0:
+                empty_groups.append(group)
+        for empty_group in empty_groups:
+            self.stream_root.removeChild(empty_group)
+
+    def change_parent(self, item, new_parent):
+        old_parent = item.parent()
+        ix = old_parent.indexOfChild(item)
+        item_without_parent = old_parent.takeChild(ix)
+        new_parent.addChild(item_without_parent)
+
+    def update_info_box(self):
+        print("John")

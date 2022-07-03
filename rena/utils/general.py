@@ -93,7 +93,8 @@ def process_LSL_plot_group(preset_dict):
                 "plot_format": "time_series",
                 "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))],
                 "channels_display": [1 for channel_num in range(0, len(preset_dict['ChannelNames']))],
-                "group_display": 1
+                "group_display": 1,
+                "group_description": ""
             }
         }
 
@@ -125,7 +126,7 @@ def process_preset_create_lsl_interface(preset):
                 'Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
                     lsl_stream_name))
     else:
-        preset['ChannelNames'] = ['Unknown'] * preset['NumChannels']
+        preset['ChannelNames'] = ['channel_'+str(i) for i in list(range(0,preset['NumChannels'] ))] #['Unknown'] * preset['NumChannels']
     # process lsl presets ###########################
     # if group_chan_in_plot and len(group_chan_in_plot) > 0:
     #     # if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:

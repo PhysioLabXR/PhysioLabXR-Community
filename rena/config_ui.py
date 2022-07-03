@@ -2,6 +2,7 @@ color_pink = '#fff5f6'
 color_white = '#ffffff'
 color_gray = '#f0f0f0'
 color_bright = '#E8E9EB'
+color_green = "#03fc4e"
 
 button_color = color_white
 
