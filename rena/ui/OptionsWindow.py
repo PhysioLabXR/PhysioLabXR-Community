@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 from rena import config_signal
 from rena.config_ui import *
 from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
-from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label
+from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button
 
 
 class OptionsWindow(QDialog):
@@ -29,12 +29,63 @@ class OptionsWindow(QDialog):
         self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
         self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
-        self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
+        # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
         self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
 
 
+    def update_info_box(self):
+        selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
+        self.clearLayout(self.actionsWidgetLayout)
 
-    def newGropBtn_clicked(self):
+        if selection_state == nothing_selected:
+            text = 'Nothing selected'
+            init_label(parent=self.actionsWidgetLayout, text=text)
+        elif selection_state == channel_selected:
+            text = ('Channel Name: '+selected_channels[0].data(0,0))\
+                   +('\nChannel Index: '+str(selected_channels[0].item_index))\
+                   +('\nChannel Display: '+ str(selected_channels[0].display))
+            init_label(parent=self.actionsWidgetLayout, text=text)
+            self.init_create_new_group_widget()
+
+        elif selection_state == mix_selected:
+            text = 'Cannot select groups and channels'
+            init_label(parent=self.actionsWidgetLayout, text=text)
+        elif selection_state == channels_selected:
+            self.init_create_new_group_widget()
+
+        elif selection_state == group_selected:
+            text = ('Group Name: '+selected_groups[0].data(0,0))\
+                   +('\nGroup Display: '+ str(selected_groups[0].display))\
+                   +('\nChannel Count: '+ str(selected_groups[0].childCount()))\
+                   +('\nPlot Format: '+ str(selected_groups[0].plot_format))
+            init_label(parent=self.actionsWidgetLayout, text=text)
+
+
+        elif selection_state == groups_selected:
+            merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups', function=self.merge_groups_btn_clicked)
+
+    def merge_groups_btn_clicked(self):
+        selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
+        root_group = selected_groups[0]
+        other_groups = selected_groups[1:]
+        for other_group in other_groups:
+            # other_group_children = [child for child in other_group.get in range(0,)]
+            other_group_children = self.signalTreeView.get_all_child(other_group)
+            for other_group_child in other_group_children:
+                self.signalTreeView.change_parent(other_group_child, root_group)
+        self.signalTreeView.remove_empty_groups()
+
+
+    def init_create_new_group_widget(self):
+        container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
+                                                               label='Create New Group from Selected Channels',
+                                                               vertical=False, label_position='lefttop')
+        _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
+                                                    default_input='')
+        add_group_btn = init_button(parent=layout_add_group, label='Create')
+        add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
+
+    def create_new_group_btn_clicked(self):
         group_names = self.signalTreeView.get_group_names()
         new_group_name = self.newGroupNameTextbox.text()
         selected_items = self.signalTreeView.selectedItems()
@@ -61,34 +112,6 @@ class OptionsWindow(QDialog):
             dialog_popup('please enter your group name first')
             return
 
-    def update_info_box(self):
-        selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
-        self.clearLayout(self.actionsWidgetLayout)
-
-        if selection_state == nothing_selected:
-            text = 'Nothing selected'
-            init_label(parent=self.actionsWidgetLayout, text=text)
-        elif selection_state == channel_selected:
-            text = ('Channel Name: '+selected_channels[0].data(0,0))\
-                   +('\nChannel Index: '+str(selected_channels[0].item_index))\
-                   +('\nChannel Display: '+ str(selected_channels[0].display))
-            init_label(parent=self.actionsWidgetLayout, text=text)
-        elif selection_state == mix_selected:
-            text = 'Cannot select groups and channels'
-            init_label(parent=self.actionsWidgetLayout, text=text)
-
-
-
-        # selected_items = self.signalTreeView.selectedItems()
-        # selected_item_num = len(selected_items)
-        # selected_groups = []
-        # selected_channels = []
-        # for selected_item in selected_items:
-        #     if selected_item.item_type == 'group':
-        #         selected_groups.append(selected_item)
-        #     elif selected_item.item_type == 'channel':
-        #         selected_channels.append(selected_item)
-
     def clearLayout(self, layout):
         if layout is not None:
             while layout.count():
@@ -99,20 +122,3 @@ class OptionsWindow(QDialog):
                 else:
                     self.clearLayout(item.layout())
 
-
-
-
-
-
-
-
-
-        # tree_view_selection
-        # select group: apply filter, add descriptions, change plotting format
-        # select groups: apply merge group
-        # select channel: add description, display channel index
-        # select channels: create new groups
-        # select group(s) and channel(s): display nothing
-
-    def description(self):
-        pass

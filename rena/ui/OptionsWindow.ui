@@ -25,7 +25,7 @@
     <widget class="QWidget" name="signal_widget" native="true">
      <property name="minimumSize">
       <size>
-       <width>500</width>
+       <width>0</width>
        <height>350</height>
       </size>
      </property>
@@ -38,6 +38,12 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QWidget" name="signal_group_widget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QWidget" name="signalTreeViewArea" native="true">
@@ -46,22 +52,7 @@
          </item>
          <item>
           <widget class="QWidget" name="signalTreeViewBts" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <item>
-             <widget class="QPushButton" name="newGroupBtn">
-              <property name="text">
-               <string>New Group</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="newGroupNameTextbox">
-              <property name="placeholderText">
-               <string>New group name</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <layout class="QHBoxLayout" name="horizontalLayout"/>
           </widget>
          </item>
         </layout>
@@ -71,21 +62,24 @@
        <widget class="QWidget" name="signal_info_widget" native="true">
         <property name="minimumSize">
          <size>
-          <width>200</width>
+          <width>500</width>
           <height>0</height>
          </size>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
           <widget class="QLabel" name="actionsLabel">
            <property name="maximumSize">
             <size>
-             <width>100</width>
-             <height>100</height>
+             <width>200</width>
+             <height>50</height>
             </size>
            </property>
            <property name="text">
-            <string>Actions</string>
+            <string>Information and Actions</string>
            </property>
           </widget>
          </item>

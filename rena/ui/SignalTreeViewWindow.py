@@ -171,6 +171,13 @@ class SignalTreeViewWindow(QTreeWidget):
             group_names.append(self.stream_root.child(index).data(0, 0))
         return group_names
 
+    def get_all_child(self, item):
+        child_count = item.childCount()
+        children = []
+        for child_index in range(child_count):
+            children.append(item.child(child_index))
+        return children
+
     def remove_empty_groups(self):
         children_num = self.stream_root.childCount()
         empty_groups = []
@@ -179,6 +186,7 @@ class SignalTreeViewWindow(QTreeWidget):
             if group.childCount() == 0:
                 empty_groups.append(group)
         for empty_group in empty_groups:
+            self.groups_widgets.remove(empty_group)
             self.stream_root.removeChild(empty_group)
 
     def change_parent(self, item, new_parent):
