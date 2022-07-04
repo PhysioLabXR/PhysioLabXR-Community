@@ -33,7 +33,9 @@ class OptionsWindow(QDialog):
         self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
 
 
+
     def update_info_box(self):
+        self.actionsWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
         self.clearLayout(self.actionsWidgetLayout)
 
@@ -64,6 +66,8 @@ class OptionsWindow(QDialog):
         elif selection_state == groups_selected:
             merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups', function=self.merge_groups_btn_clicked)
 
+        self.actionsWidgetLayout.addStretch()
+
     def merge_groups_btn_clicked(self):
         selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
         root_group = selected_groups[0]
@@ -78,8 +82,9 @@ class OptionsWindow(QDialog):
 
     def init_create_new_group_widget(self):
         container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
-                                                               label='Create New Group from Selected Channels',
-                                                               vertical=False, label_position='lefttop')
+                                                               label='New Group from Selected Channels',
+                                                               vertical=False,
+                                                               label_position='centertop')
         _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
                                                     default_input='')
         add_group_btn = init_button(parent=layout_add_group, label='Create')
