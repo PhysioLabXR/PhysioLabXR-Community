@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="signalGroupsLabel">
      <property name="text">
-      <string>Signal Groups</string>
+      <string>Stream Settings</string>
      </property>
     </widget>
    </item>
@@ -69,11 +69,35 @@
       </item>
       <item>
        <widget class="QWidget" name="signal_info_widget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>0</height>
+         </size>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
-          <widget class="QLabel" name="discription_label">
+          <widget class="QLabel" name="actionsLabel">
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>100</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Information</string>
+            <string>Actions</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="actionsWidget" native="true">
+           <layout class="QVBoxLayout" name="actionsWidgetLayout"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string/>
            </property>
           </widget>
          </item>

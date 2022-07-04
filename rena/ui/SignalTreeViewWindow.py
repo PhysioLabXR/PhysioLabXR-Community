@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-from rena.config_ui import color_green, color_white
+from rena.config_ui import *
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -34,22 +34,17 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.setAcceptDrops(True)
         # self.setDropIndicatorShown(True)
         # self.setWindowFlag(Qt.ItemIsDropEnabled)
-        self.selectionModel().selectionChanged.connect(self.update_info_box)
 
         self.itemChanged[QTreeWidgetItem, int].connect(self.get_item)
+
     def get_item(self, item, column):
         if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
             item.setForeground(0, QBrush(QColor(color_green)))
+            item.display = 1
         else:
             item.setForeground(0, QBrush(QColor(color_white)))
-    # def itemChanged(self, QTreeWidgetItem, p_int):
-    #     " Slot is called when the selection has been changed "
-    #     # if selected.indexes():
-    #     #     self.selectedIndex = selected.indexes()[0]
-    #     # else:
-    #     #     self.selectedIndex = None
-    #     super(SignalTreeViewWindow, self).itemChanged(QTreeWidgetItem, p_int)
-    #     return
+            item.display = 0
+
 
     def createTreeView(self):
 
@@ -68,16 +63,18 @@ class SignalTreeViewWindow(QTreeWidget):
                                           plot_format=group_info['plot_format'],
                                           item_type='group',
                                           display=group_info['group_display'])
-
+            self.groups_widgets.append(channel_group)
             for channel_index_in_group, channel_index in enumerate(group_info['channels']):
+                print(channel_index)
                 channel = self.add_item(parent_item=channel_group,
                                         display_text=self.preset['ChannelNames'][channel_index],
-                                        item_type='channel', display=group_info['channels_display'][channel_index_in_group],
+                                        item_type='channel',
+                                        display=group_info['channels_display'][channel_index_in_group],
                                         item_index=channel_index)
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 self.channel_widgets.append(channel)
-            self.groups_widgets.append(channel_group)
+
 
     def startDrag(self, actions):
 
@@ -138,11 +135,11 @@ class SignalTreeViewWindow(QTreeWidget):
         item.setText(0, display_text)
         item.item_type = item_type
         item.display = display
-        if plot_format:
-            item.plot_format='time_series'
-        if item_index:
+        if plot_format is not None:
+            item.plot_format = 'time_series'
+        if item_index is not None:
             item.item_index = item_index
-        if display:
+        if display is not None:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)
         else:
@@ -163,13 +160,15 @@ class SignalTreeViewWindow(QTreeWidget):
         return item
 
     def add_group(self, display_text, item_type='group', display=1, item_index=None):
-        new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display, item_index=item_index)
+        new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display,
+                                  item_index=item_index)
+        self.groups_widgets.append(new_group)
         return new_group
 
     def get_group_names(self):
         group_names = []
         for index in range(0, self.stream_root.childCount()):
-            group_names.append(self.stream_root.child(index).data(0,0))
+            group_names.append(self.stream_root.child(index).data(0, 0))
         return group_names
 
     def remove_empty_groups(self):
@@ -188,5 +187,29 @@ class SignalTreeViewWindow(QTreeWidget):
         item_without_parent = old_parent.takeChild(ix)
         new_parent.addChild(item_without_parent)
 
-    def update_info_box(self):
-        print("John")
+    def return_selection_state(self):
+        selected_items = self.selectedItems()
+        selected_item_num = len(selected_items)
+        selected_groups = []
+        selected_channels = []
+        for selected_item in selected_items:
+            if selected_item.item_type == 'group':
+                selected_groups.append(selected_item)
+            elif selected_item.item_type == 'channel':
+                selected_channels.append(selected_item)
+
+        if selected_item_num == 0:
+            return nothing_selected, selected_groups, selected_channels
+
+        if len(selected_channels) == 1 and len(selected_groups) == 0:
+            return channel_selected, selected_groups, selected_channels
+        elif len(selected_channels) > 1 and len(selected_groups) == 0:
+            return channels_selected, selected_groups, selected_channels
+        elif len(selected_channels) == 0 and len(selected_groups) == 1:
+            return group_selected, selected_groups, selected_channels
+        elif len(selected_channels) == 0 and len(selected_groups) > 1:
+            return groups_selected, selected_groups, selected_channels
+        elif len(selected_channels) > 0 and len(selected_groups) > 0:
+            return mix_selected, selected_groups, selected_channels
+        else:
+            print(": ) What are you doing???")

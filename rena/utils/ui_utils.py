@@ -107,6 +107,15 @@ def init_combo_box(parent, label, item_list):
 
     return combo_box
 
+def init_label(parent, text, max_width=None, max_hight=None, size=None):
+    label = QLabel(text)
+
+    parent.addWidget(label)
+    if max_width:
+        label.setMaximumWidth(max_width)
+    if max_hight:
+        label.setMaximumHeight(max_hight)
+
 
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
