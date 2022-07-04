@@ -27,6 +27,7 @@ class OptionsWindow(QDialog):
         self.resize(1000, 1000)
 
         self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
+        self.setNominalSamplingRateTextBox()
         self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
@@ -50,9 +51,15 @@ class OptionsWindow(QDialog):
             self.init_create_new_group_widget()
 
         elif selection_state == mix_selected:
-            text = 'Cannot select groups and channels'
+            text = 'Cannot select both groups and channels'
             init_label(parent=self.actionsWidgetLayout, text=text)
         elif selection_state == channels_selected:
+            text = ''
+            for channel in selected_channels:
+                text+= ('\nChannel Name: '+channel.data(0,0))\
+                   +('   LSL Channel Index: '+str(channel.item_index))
+            init_label(parent=self.actionsWidgetLayout, text=text)
+
             self.init_create_new_group_widget()
 
         elif selection_state == group_selected:
@@ -116,6 +123,10 @@ class OptionsWindow(QDialog):
         else:
             dialog_popup('please enter your group name first')
             return
+
+    def set_nominal_sampling_rate_textbox(self):
+        pass
+
 
     def clearLayout(self, layout):
         if layout is not None:

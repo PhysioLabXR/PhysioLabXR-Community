@@ -52,7 +52,18 @@
          </item>
          <item>
           <widget class="QWidget" name="signalTreeViewBts" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout"/>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Nominal Sampling Rate:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="nominalSamplingRateInputbox"/>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>

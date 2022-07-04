@@ -52,7 +52,8 @@ class SignalTreeViewWindow(QTreeWidget):
         self.stream_root.setText(0, self.preset['StreamName'])
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
-                                  & (~Qt.ItemIsSelectable))
+                                  & (~Qt.ItemIsSelectable)| Qt.ItemIsEditable)
+        # self.stream_root.channel_group.setEditable(False)
         channel_groups_information = self.preset['GroupChannelsInPlot']
         print(channel_groups_information)
 
