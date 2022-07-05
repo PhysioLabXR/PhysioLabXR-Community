@@ -9,7 +9,7 @@ from rena import config_signal
 from rena.config_ui import *
 from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
-
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 class OptionsWindow(QDialog):
     def __init__(self, parent, preset):
@@ -28,14 +28,14 @@ class OptionsWindow(QDialog):
 
         self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
         self.set_nominal_sampling_rate_textbox()
+        self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.signalTreeView.selection_changed_signal.connect(self.update_info_box)
-        self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
         # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
         self.signalTreeView.item_changed_signal.connect(self.update_info_box)
 
-
+    @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
         self.actionsWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = \
