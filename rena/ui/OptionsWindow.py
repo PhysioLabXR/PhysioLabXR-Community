@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 from rena import config_signal
 from rena.config_ui import *
 from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
-from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button
+from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 
 
 class OptionsWindow(QDialog):
@@ -27,7 +27,7 @@ class OptionsWindow(QDialog):
         self.resize(1000, 1000)
 
         self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
-        self.setNominalSamplingRateTextBox()
+        self.set_nominal_sampling_rate_textbox()
         self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
@@ -42,23 +42,23 @@ class OptionsWindow(QDialog):
 
         if selection_state == nothing_selected:
             text = 'Nothing selected'
-            init_label(parent=self.actionsWidgetLayout, text=text)
+            init_scroll_label(parent=self.actionsWidgetLayout, text=text)
         elif selection_state == channel_selected:
             text = ('Channel Name: '+selected_channels[0].data(0,0))\
                    +('\nChannel Index: '+str(selected_channels[0].item_index))\
                    +('\nChannel Display: '+ str(selected_channels[0].display))
-            init_label(parent=self.actionsWidgetLayout, text=text)
+            init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
 
         elif selection_state == mix_selected:
             text = 'Cannot select both groups and channels'
-            init_label(parent=self.actionsWidgetLayout, text=text)
+            init_scroll_label(parent=self.actionsWidgetLayout, text=text)
         elif selection_state == channels_selected:
             text = ''
             for channel in selected_channels:
                 text+= ('\nChannel Name: '+channel.data(0,0))\
                    +('   LSL Channel Index: '+str(channel.item_index))
-            init_label(parent=self.actionsWidgetLayout, text=text)
+            init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
             self.init_create_new_group_widget()
 
@@ -67,7 +67,7 @@ class OptionsWindow(QDialog):
                    +('\nGroup Display: '+ str(selected_groups[0].display))\
                    +('\nChannel Count: '+ str(selected_groups[0].childCount()))\
                    +('\nPlot Format: '+ str(selected_groups[0].plot_format))
-            init_label(parent=self.actionsWidgetLayout, text=text)
+            init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
 
         elif selection_state == groups_selected:
@@ -125,7 +125,7 @@ class OptionsWindow(QDialog):
             return
 
     def set_nominal_sampling_rate_textbox(self):
-        pass
+        self.nominalSamplingRateInputbox.setText(str(self.preset['NominalSamplingRate']))
 
 
     def clearLayout(self, layout):

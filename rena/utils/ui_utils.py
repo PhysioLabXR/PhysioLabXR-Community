@@ -8,7 +8,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton
+    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
 from rena import config_ui, config
@@ -115,6 +115,17 @@ def init_label(parent, text, max_width=None, max_hight=None, size=None):
         label.setMaximumWidth(max_width)
     if max_hight:
         label.setMaximumHeight(max_hight)
+
+def init_scroll_label(parent, text, max_width=None, max_hight=None, size=None):
+    label = ScrollLabel()
+    label.setText(text=text)
+
+    parent.addWidget(label)
+    if max_width:
+        label.setMaximumWidth(max_width)
+    if max_hight:
+        label.setMaximumHeight(max_hight)
+
 
 
 def init_camera_widget(parent, label_string, insert_position):
@@ -411,3 +422,37 @@ class another_window(QWidget):
     def get_layout(self):
         return self.layout
 
+
+# class for scrollable label
+class ScrollLabel(QScrollArea):
+
+    # constructor
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+
+        # making widget resizable
+        self.setWidgetResizable(True)
+
+        # making qwidget object
+        content = QWidget(self)
+        self.setWidget(content)
+
+        # vertical box layout
+        lay = QVBoxLayout(content)
+
+        # creating label
+        self.label = QLabel(content)
+
+        # setting alignment to the text
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        # making label multi-line
+        self.label.setWordWrap(True)
+
+        # adding label to the layout
+        lay.addWidget(self.label)
+
+    # the setText method
+    def setText(self, text):
+        # setting text to the label
+        self.label.setText(text)
