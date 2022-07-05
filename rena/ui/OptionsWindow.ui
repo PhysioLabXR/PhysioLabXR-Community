@@ -66,6 +66,20 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="exportPresetBtn">
+           <property name="text">
+            <string>Export Preset .json</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="exportPresetAndReloadStreamBtn">
+           <property name="text">
+            <string>Export Preset .json &amp; Reload Stream</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>

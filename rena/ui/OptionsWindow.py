@@ -45,7 +45,7 @@ class OptionsWindow(QDialog):
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
         elif selection_state == channel_selected:
             text = ('Channel Name: '+selected_channels[0].data(0,0))\
-                   +('\nChannel Index: '+str(selected_channels[0].item_index))\
+                   +('\nLSL Channel Index: '+str(selected_channels[0].item_index))\
                    +('\nChannel Display: '+ str(selected_channels[0].display))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
@@ -138,3 +138,5 @@ class OptionsWindow(QDialog):
                 else:
                     self.clearLayout(item.layout())
 
+    def export_preset(self):
+        pass
