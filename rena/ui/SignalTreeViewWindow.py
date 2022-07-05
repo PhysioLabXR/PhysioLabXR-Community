@@ -213,29 +213,29 @@ class SignalTreeViewWindow(QTreeWidget):
 
         self.selected_groups, self.selected_channels = selected_groups, selected_channels
         if selected_item_num == 0:
-            self.selection_state = channel_selected
+            self.selection_state = nothing_selected
             # return nothing_selected, selected_groups, selected_channels
         elif len(selected_channels) == 1 and len(selected_groups) == 0:
             self.selection_state = channel_selected
             # return channel_selected, selected_groups, selected_channels
         elif len(selected_channels) > 1 and len(selected_groups) == 0:
-            self.selection_state = channel_selected
+            self.selection_state = channels_selected
             # return channels_selected, selected_groups, selected_channels
         elif len(selected_channels) == 0 and len(selected_groups) == 1:
-            self.selection_state = channel_selected
+            self.selection_state = group_selected
             # return group_selected, selected_groups, selected_channels
         elif len(selected_channels) == 0 and len(selected_groups) > 1:
-            self.selection_state = channel_selected
+            self.selection_state = groups_selected
             # return groups_selected, selected_groups, selected_channels
         elif len(selected_channels) > 0 and len(selected_groups) > 0:
-            self.selection_state = channel_selected
+            self.selection_state = mix_selected
             # return mix_selected, selected_groups, selected_channels
         else:
             print(": ) What are you doing???")
 
         self.selection_changed_signal.emit("Selection Changed")
 
-    @QtCore.pyqtSlot()
+    # @QtCore.pyqtSlot()
     def item_changed(self, item, column):  # check box on change
         if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
             item.setForeground(0, QBrush(QColor(color_green)))
