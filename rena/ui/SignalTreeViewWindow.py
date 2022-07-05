@@ -10,13 +10,16 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class SignalTreeViewWindow(QTreeWidget):
+
+    selection_changed_signal = QtCore.pyqtSignal(str)
+    item_changed_signal = QtCore.pyqtSignal(str)
+
     def __init__(self, parent, preset):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent
         self.preset = preset
-        self.selection_changed_signal = QtCore.pyqtSignal(str)
-        self.item_changed_signal = QtCore.pyqtSignal(str)
+
         # self.model = QStandardItemModel()
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
 

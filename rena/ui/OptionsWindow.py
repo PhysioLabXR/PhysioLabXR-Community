@@ -39,7 +39,7 @@ class OptionsWindow(QDialog):
     def update_info_box(self, info):
         self.actionsWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = \
-            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_groups
+            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
         self.clearLayout(self.actionsWidgetLayout)
 
         if selection_state == nothing_selected:
@@ -78,7 +78,9 @@ class OptionsWindow(QDialog):
         self.actionsWidgetLayout.addStretch()
 
     def merge_groups_btn_clicked(self):
-        selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
+        selection_state, selected_groups, selected_channels = \
+            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
+
         root_group = selected_groups[0]
         other_groups = selected_groups[1:]
         for other_group in other_groups:
