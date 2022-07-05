@@ -28,16 +28,18 @@ class OptionsWindow(QDialog):
 
         self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
         self.set_nominal_sampling_rate_textbox()
-        self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
+        # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
+        self.signalTreeView.selection_changed_signal.connect(self.update_info_box)
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
-        self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
+        # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
+        self.signalTreeView.item_changed_signal.connect(self.update_info_box)
 
 
-
-    def update_info_box(self):
+    def update_info_box(self, info):
         self.actionsWidgetLayout.addStretch()
-        selection_state, selected_groups, selected_channels = self.signalTreeView.return_selection_state()
+        selection_state, selected_groups, selected_channels = \
+            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_groups
         self.clearLayout(self.actionsWidgetLayout)
 
         if selection_state == nothing_selected:

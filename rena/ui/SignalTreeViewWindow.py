@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 
 from rena.config_ui import *
 from rena.utils.ui_utils import dialog_popup
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class SignalTreeViewWindow(QTreeWidget):
@@ -14,6 +15,8 @@ class SignalTreeViewWindow(QTreeWidget):
         super().__init__()
         self.parent = parent
         self.preset = preset
+        self.selection_changed_signal = QtCore.pyqtSignal(str)
+        self.item_changed_signal = QtCore.pyqtSignal(str)
         # self.model = QStandardItemModel()
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
 
@@ -23,36 +26,34 @@ class SignalTreeViewWindow(QTreeWidget):
         self.groups_widgets = []
         self.channel_widgets = []
 
-        self.createTreeView()
+        self.create_tree_view()
         self.expandAll()
-        # self.show()
 
         # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setDragDropMode(QAbstractItemView.InternalMove)
+
+        # selections:
+        self.selection_state = nothing_selected
+        self.selected_groups = []
+        self.selected_channels = []
+        self.selectionModel().selectionChanged.connect(self.selection_changed)
         # self.setAcceptDrops(False)
         # self.setAcceptDrops(True)
         # self.setDropIndicatorShown(True)
         # self.setWindowFlag(Qt.ItemIsDropEnabled)
 
-        self.itemChanged[QTreeWidgetItem, int].connect(self.get_item)
-
-    def get_item(self, item, column):
-        if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
-            item.setForeground(0, QBrush(QColor(color_green)))
-            item.display = 1
-        else:
-            item.setForeground(0, QBrush(QColor(color_white)))
-            item.display = 0
+        self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
 
 
-    def createTreeView(self):
+
+    def create_tree_view(self):
 
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.setText(0, self.preset['StreamName'])
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
-                                  & (~Qt.ItemIsSelectable)| Qt.ItemIsEditable)
+                                  & (~Qt.ItemIsSelectable) | Qt.ItemIsEditable)
         # self.stream_root.channel_group.setEditable(False)
         channel_groups_information = self.preset['GroupChannelsInPlot']
         print(channel_groups_information)
@@ -75,7 +76,6 @@ class SignalTreeViewWindow(QTreeWidget):
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 self.channel_widgets.append(channel)
-
 
     def startDrag(self, actions):
 
@@ -196,7 +196,8 @@ class SignalTreeViewWindow(QTreeWidget):
         item_without_parent = old_parent.takeChild(ix)
         new_parent.addChild(item_without_parent)
 
-    def return_selection_state(self):
+    @QtCore.pyqtSlot()
+    def selection_changed(self):
         selected_items = self.selectedItems()
         selected_item_num = len(selected_items)
         selected_groups = []
@@ -207,18 +208,37 @@ class SignalTreeViewWindow(QTreeWidget):
             elif selected_item.item_type == 'channel':
                 selected_channels.append(selected_item)
 
+        self.selected_groups, self.selected_channels = selected_groups, selected_channels
         if selected_item_num == 0:
-            return nothing_selected, selected_groups, selected_channels
-
-        if len(selected_channels) == 1 and len(selected_groups) == 0:
-            return channel_selected, selected_groups, selected_channels
+            self.selection_state = channel_selected
+            # return nothing_selected, selected_groups, selected_channels
+        elif len(selected_channels) == 1 and len(selected_groups) == 0:
+            self.selection_state = channel_selected
+            # return channel_selected, selected_groups, selected_channels
         elif len(selected_channels) > 1 and len(selected_groups) == 0:
-            return channels_selected, selected_groups, selected_channels
+            self.selection_state = channel_selected
+            # return channels_selected, selected_groups, selected_channels
         elif len(selected_channels) == 0 and len(selected_groups) == 1:
-            return group_selected, selected_groups, selected_channels
+            self.selection_state = channel_selected
+            # return group_selected, selected_groups, selected_channels
         elif len(selected_channels) == 0 and len(selected_groups) > 1:
-            return groups_selected, selected_groups, selected_channels
+            self.selection_state = channel_selected
+            # return groups_selected, selected_groups, selected_channels
         elif len(selected_channels) > 0 and len(selected_groups) > 0:
-            return mix_selected, selected_groups, selected_channels
+            self.selection_state = channel_selected
+            # return mix_selected, selected_groups, selected_channels
         else:
             print(": ) What are you doing???")
+
+        self.selection_changed_signal.emit("Selection Changed")
+
+    @QtCore.pyqtSlot()
+    def item_changed(self, item, column):  # check box on change
+        if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
+            item.setForeground(0, QBrush(QColor(color_green)))
+            item.display = 1
+        else:
+            item.setForeground(0, QBrush(QColor(color_white)))
+            item.display = 0
+
+        self.item_changed_signal.emit('check box on change')
