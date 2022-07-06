@@ -11,6 +11,7 @@ from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class OptionsWindow(QDialog):
     def __init__(self, parent, preset):
         super().__init__(parent=parent)
@@ -46,9 +47,9 @@ class OptionsWindow(QDialog):
             text = 'Nothing selected'
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
         elif selection_state == channel_selected:
-            text = ('Channel Name: '+selected_channels[0].data(0,0))\
-                   +('\nLSL Channel Index: '+str(selected_channels[0].item_index))\
-                   +('\nChannel Display: '+ str(selected_channels[0].display))
+            text = ('Channel Name: ' + selected_channels[0].data(0, 0)) \
+                   + ('\nLSL Channel Index: ' + str(selected_channels[0].item_index)) \
+                   + ('\nChannel Display: ' + str(selected_channels[0].display))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
 
@@ -58,22 +59,23 @@ class OptionsWindow(QDialog):
         elif selection_state == channels_selected:
             text = ''
             for channel in selected_channels:
-                text+= ('\nChannel Name: '+channel.data(0,0))\
-                   +('   LSL Channel Index: '+str(channel.item_index))
+                text += ('\nChannel Name: ' + channel.data(0, 0)) \
+                        + ('   LSL Channel Index: ' + str(channel.item_index))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
             self.init_create_new_group_widget()
 
         elif selection_state == group_selected:
-            text = ('Group Name: '+selected_groups[0].data(0,0))\
-                   +('\nGroup Display: '+ str(selected_groups[0].display))\
-                   +('\nChannel Count: '+ str(selected_groups[0].childCount()))\
-                   +('\nPlot Format: '+ str(selected_groups[0].plot_format))
+            text = ('Group Name: ' + selected_groups[0].data(0, 0)) \
+                   + ('\nGroup Display: ' + str(selected_groups[0].display)) \
+                   + ('\nChannel Count: ' + str(selected_groups[0].childCount())) \
+                   + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
 
         elif selection_state == groups_selected:
-            merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups', function=self.merge_groups_btn_clicked)
+            merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups',
+                                           function=self.merge_groups_btn_clicked)
 
         self.actionsWidgetLayout.addStretch()
 
@@ -89,7 +91,6 @@ class OptionsWindow(QDialog):
             for other_group_child in other_group_children:
                 self.signalTreeView.change_parent(other_group_child, root_group)
         self.signalTreeView.remove_empty_groups()
-
 
     def init_create_new_group_widget(self):
         container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
@@ -131,7 +132,6 @@ class OptionsWindow(QDialog):
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(str(self.preset['NominalSamplingRate']))
 
-
     def clearLayout(self, layout):
         if layout is not None:
             while layout.count():
@@ -143,4 +143,8 @@ class OptionsWindow(QDialog):
                     self.clearLayout(item.layout())
 
     def export_preset(self):
-        pass
+        stream_root = self.signalTreeView.stream_root
+
+
+
+
