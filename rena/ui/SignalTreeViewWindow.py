@@ -144,8 +144,11 @@ class SignalTreeViewWindow(QTreeWidget):
         if item_index is not None:
             item.item_index = item_index
         if display is not None:
-            item.setForeground(0, QBrush(QColor(color_green)))
-            item.setCheckState(0, Qt.Checked)
+            if display == 1:
+                item.setForeground(0, QBrush(QColor(color_green)))
+                item.setCheckState(0, Qt.Checked)
+            else:
+                item.setCheckState(0, Qt.Unchecked)
         else:
             item.setCheckState(0, Qt.Unchecked)
         # item.setForeground(0, QBrush(QColor("#123456")))

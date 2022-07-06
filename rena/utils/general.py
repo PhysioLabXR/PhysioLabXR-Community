@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 
+from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -87,12 +88,20 @@ def process_LSL_plot_group(preset_dict):
 
     if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
         # create GroupChannelsInPlot from 0 to x
+        # if channel num is greater than 100, we hide the rest
+        channel_num = len(preset_dict['ChannelNames'])
+        if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
+            channels_display = [1 for channel in range(0, channel_num)]
+        else:
+            channels_display = [1 for channel in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
+            channels_display.extend([0 for channel in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
+
         preset_dict['GroupChannelsInPlot'] = {
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
                 "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))],
-                "channels_display": [1 for channel_num in range(0, len(preset_dict['ChannelNames']))],
+                "channels_display": channels_display,
                 "group_display": 1,
                 "group_description": ""
             }
@@ -126,7 +135,8 @@ def process_preset_create_lsl_interface(preset):
                 'Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
                     lsl_stream_name))
     else:
-        preset['ChannelNames'] = ['channel_'+str(i) for i in list(range(0,preset['NumChannels'] ))] #['Unknown'] * preset['NumChannels']
+        preset['ChannelNames'] = ['channel_' + str(i) for i in
+                                  list(range(0, preset['NumChannels']))]  # ['Unknown'] * preset['NumChannels']
     # process lsl presets ###########################
     # if group_chan_in_plot and len(group_chan_in_plot) > 0:
     #     # if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:

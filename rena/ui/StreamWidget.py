@@ -189,8 +189,22 @@ class StreamWidget(QtWidgets.QWidget):
 
                 distinct_colors = get_distinct_colors(len(plot_group_info['channels']))
                 plot_widget.addLegend()
-                plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                              zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
+
+                plot_data_items = []
+                for channel_index_in_group, channel_name in enumerate([preset['ChannelNames'][i] for i in plot_group_info['channels']]):
+                    if plot_group_info['channels_display'][channel_index_in_group]: # if display is 1
+                        plot_data_items.append(plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name))
+                    else:
+                        plot_data_items.append(None)
+
+                plots.append(plot_data_items)
+
+                # for plot_index, (color, c_name) in enumerate(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']]):
+                #     print("John")
+                #
+                # plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
+                #               zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
+
                 if plot_group_info['group_display'] == 0:
                     plot_widget.hide()
                 plot_widgets[group_name] = plot_widget
@@ -212,8 +226,8 @@ class StreamWidget(QtWidgets.QWidget):
                 # else:
                 #     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
 
-        [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p == PlotDataItem]
-        [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p == PlotDataItem]
+        [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
+        [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
         return fs_label, ts_label, plot_widgets, plots, preset
 
@@ -295,6 +309,7 @@ class StreamWidget(QtWidgets.QWidget):
                     # plot_group_channel_num = len(plot_group_info['channels'])
                     for index_in_group, channel_index in enumerate(plot_group_info['channels']):
                         if plot_group_info['channels_display'][index_in_group]:
+                            # print(channel_index)
                             self.stream_widget_visualization_component.plots[plot_group_index][index_in_group] \
                                 .setData(time_vector, data_to_plot[channel_index, :])
                         # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
