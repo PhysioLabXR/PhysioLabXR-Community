@@ -103,31 +103,34 @@ class OptionsWindow(QDialog):
         add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
 
     def create_new_group_btn_clicked(self):
-        group_names = self.signalTreeView.get_group_names()
+        # group_names = self.signalTreeView.get_group_names()
+        # selected_items = self.signalTreeView.selectedItems()
         new_group_name = self.newGroupNameTextbox.text()
-        selected_items = self.signalTreeView.selectedItems()
 
-        if new_group_name:
-            if len(selected_items) == 0:
-                dialog_popup('please select at least one channel to create a group')
-            elif new_group_name in group_names:
-                dialog_popup('Cannot Have duplicated Group Names')
-                return
-            else:
+        self.signalTreeView.create_new_group(new_group_name=new_group_name)
 
-                for selected_item in selected_items:
-                    if selected_item.item_type == 'group':
-                        dialog_popup('group item cannot be selected while creating new group')
-                        return
-                new_group = self.signalTreeView.add_group(new_group_name)
-                for selected_item in selected_items:
-                    self.signalTreeView.change_parent(item=selected_item, new_parent=new_group)
-                    selected_item.setCheckState(0, Qt.Checked)
-            self.signalTreeView.remove_empty_groups()
-            self.signalTreeView.expandAll()
-        else:
-            dialog_popup('please enter your group name first')
-            return
+        #
+        # if new_group_name:
+        #     if len(selected_items) == 0:
+        #         dialog_popup('please select at least one channel to create a group')
+        #     elif new_group_name in group_names:
+        #         dialog_popup('Cannot Have duplicated Group Names')
+        #         return
+        #     else:
+        #
+        #         for selected_item in selected_items:
+        #             if selected_item.item_type == 'group':
+        #                 dialog_popup('group item cannot be selected while creating new group')
+        #                 return
+        #         new_group = self.signalTreeView.add_group(new_group_name)
+        #         for selected_item in selected_items:
+        #             self.signalTreeView.change_parent(item=selected_item, new_parent=new_group)
+        #             selected_item.setCheckState(0, Qt.Checked)
+        #     self.signalTreeView.remove_empty_groups()
+        #     self.signalTreeView.expandAll()
+        # else:
+        #     dialog_popup('please enter your group name first')
+        #     return
 
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(str(self.preset['NominalSamplingRate']))

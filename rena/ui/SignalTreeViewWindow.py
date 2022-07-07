@@ -10,7 +10,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class SignalTreeViewWindow(QTreeWidget):
-
     selection_changed_signal = QtCore.pyqtSignal(str)
     item_changed_signal = QtCore.pyqtSignal(str)
 
@@ -28,7 +27,6 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.setModel(self.model)
         self.groups_widgets = []
         self.channel_widgets = []
-
         self.create_tree_view()
         self.expandAll()
 
@@ -41,18 +39,12 @@ class SignalTreeViewWindow(QTreeWidget):
         self.selected_groups = []
         self.selected_channels = []
         self.selectionModel().selectionChanged.connect(self.selection_changed)
-        # self.setAcceptDrops(False)
-        # self.setAcceptDrops(True)
-        # self.setDropIndicatorShown(True)
-        # self.setWindowFlag(Qt.ItemIsDropEnabled)
-
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
-
-
 
     def create_tree_view(self):
 
         self.stream_root = QTreeWidgetItem(self)
+        self.stream_root.item_type = 'stream_root'
         self.stream_root.setText(0, self.preset['StreamName'])
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
@@ -70,7 +62,7 @@ class SignalTreeViewWindow(QTreeWidget):
                                           display=group_info['group_display'])
             self.groups_widgets.append(channel_group)
             for channel_index_in_group, channel_index in enumerate(group_info['channels']):
-                print(channel_index)
+                # print(channel_index)
                 channel = self.add_item(parent_item=channel_group,
                                         display_text=self.preset['ChannelNames'][channel_index],
                                         item_type='channel',
@@ -99,13 +91,15 @@ class SignalTreeViewWindow(QTreeWidget):
         if self.moving_groups:  # is moving groups, we cannot drag one group into another
             [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
              self.groups_widgets]
-
         if self.moving_channels:
             self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
 
-        return QTreeWidget.startDrag(self, actions)
+        self.disconnect_selection_changed()
+        QTreeWidget.startDrag(self, actions)
+        self.reconnect_selection_changed()
 
     def dropEvent(self, event):
+        # print("LISA")
         drop_target = self.itemAt(event.pos())
         if drop_target == None:
             self.reset_drag_drop()
@@ -237,9 +231,14 @@ class SignalTreeViewWindow(QTreeWidget):
             print(": ) What are you doing???")
 
         self.selection_changed_signal.emit("Selection Changed")
+        print("Selection Changed")
 
     # @QtCore.pyqtSlot()
     def item_changed(self, item, column):  # check box on change
+        # if hasattr(item, 'attribute')::
+        # print(item.data(0,0))
+        if hasattr(item, 'item_type') and item.item_type == 'stream_root':
+            self.item_changed_signal.emit('Item changed')
         if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.display = 1
@@ -247,4 +246,43 @@ class SignalTreeViewWindow(QTreeWidget):
             item.setForeground(0, QBrush(QColor(color_white)))
             item.display = 0
 
-        self.item_changed_signal.emit('check box on change')
+        # print(item.data(0, 0))
+
+    def create_new_group(self, new_group_name):
+        group_names = self.get_group_names()
+        selected_items = self.selectedItems()
+        # new_group_name = self.newGroupNameTextbox.text()
+
+        if new_group_name:
+            if len(selected_items) == 0:
+                dialog_popup('please select at least one channel to create a group')
+            elif new_group_name in group_names:
+                dialog_popup('Cannot Have duplicated Group Names')
+                return
+            else:
+                for selected_item in selected_items:
+                    if selected_item.item_type == 'group':
+                        dialog_popup('group item cannot be selected while creating new group')
+                        return
+                # create new group:
+
+                self.disconnect_selection_changed()
+
+                new_group = self.add_group(new_group_name)
+                for selected_item in selected_items:
+                    self.change_parent(item=selected_item, new_parent=new_group)
+
+                self.reconnect_selection_changed()
+
+            self.remove_empty_groups()
+            self.expandAll()
+        else:
+            dialog_popup('please enter your group name first')
+            return
+
+    def disconnect_selection_changed(self):
+        self.selectionModel().selectionChanged.disconnect(self.selection_changed)
+
+    def reconnect_selection_changed(self):
+        self.selectionModel().selectionChanged.connect(self.selection_changed)
+        self.selection_changed()

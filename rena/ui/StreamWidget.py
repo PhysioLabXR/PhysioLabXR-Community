@@ -271,7 +271,7 @@ class StreamWidget(QtWidgets.QWidget):
             self.main_parent.recording_tab.update_buffers(data_dict)
 
             # inference tab
-            self.main_parent.inference_tab.update_buffers(data_dict)
+            # self.main_parent.inference_tab.update_buffers(data_dict)
 
     def visualize_LSLStream_data(self):
 
