@@ -23,7 +23,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal
 import pyqtgraph as pg
 from rena.ui.ReplaySeekBar import ReplaySeekBar
 from rena.ui.PlayBackWidget import PlayBackWidget
-from rena.utils.ui_utils import AnotherWindow
+from rena.utils.ui_utils import AnotherWindow, another_window
 
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
@@ -63,8 +63,10 @@ class ReplayTab(QtWidgets.QWidget):
         self._init_playback_widget()
         print("did this start? playback")
         # open in a separate window
-        window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
-        window.show()
+        # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
+        self.playback_window = another_window('Playback')
+        self.playback_window.get_layout().addWidget(self.playback_widget)
+        self.playback_window.show()
         print("shown yet?")
 
     def _init_playback_widget(self):

@@ -1,5 +1,5 @@
 import time
-
+import math
 import cv2
 import pyqtgraph as pg
 from PyQt5.QtCore import QObject
@@ -457,7 +457,8 @@ class LSLReplayWorker(QObject):
         playback_position_signal.connect(self.on_playback_position_changed)
         play_pause_signal.connect(self.on_play_pause_toggle)
         self.is_playing = False
-        self.start_time = None
+        self.start_time, self.end_time = math.inf, -math.inf
+        self.total_time = None
 
         # rns_stream = RNStream('C:/Recordings/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats')
         self.stream_data = None#rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
@@ -475,8 +476,8 @@ class LSLReplayWorker(QObject):
 
     def on_playback_position_changed(self, new_position):
         # set the virtual clock according to the new playback position
-        # problem: we don't know the end time. What if we want to go forward?
-        self.virtual_clock = ((self.virtual_clock - self.start_time) * (new_position/100)) + self.start_time
+        # TODO: do not hardcode playback range (100)
+        self.virtual_clock = (self.total_time * (new_position/100)) + self.start_time
 
     def on_play_pause_toggle(self, is_playing):
         # play and pause accordingly
@@ -518,15 +519,22 @@ class LSLReplayWorker(QObject):
         self.virtual_clock_offset = 0
 
         for stream in self.stream_names:
+            # find the start time
             if self.virtual_clock is None or self.stream_data[stream][1][0] < self.virtual_clock:
-                # determine when the recording started
+                # virtual clock will be set to the timestamp of the first received stream data
                 self.virtual_clock = self.stream_data[stream][1][0]
                 self.start_time = self.virtual_clock
+
+            # find the end time
+            if self.stream_data[stream][1][-1] > self.end_time:
+                self.end_time = self.stream_data[stream][1][-1]
+
+            self.total_time = self.end_time - self.start_time
 
         self.virtual_clock_offset = pylsl.local_clock() - self.virtual_clock
         print("Offsetting replayed timestamps by " + str(self.virtual_clock_offset))
 
-        print(datetime.now())
+        print("start time and end time ", self.start_time, self.end_time)
 
     def replay(self):
         if self.is_playing:
@@ -598,7 +606,7 @@ class LSLReplayWorker(QObject):
                 self.chunk_sizes.remove(self.chunk_sizes[nextStreamIndex])
                 self.stream_names.remove(self.stream_names[nextStreamIndex])
 
-        print(datetime.now())
+        # print(datetime.now())
 
     @pg.QtCore.pyqtSlot()
     def start_stream(self):
@@ -646,8 +654,8 @@ class LSLReplayWorker(QObject):
                 virtualTime = self.stream_data[stream][1][0]
 
         # temp
-        if virtualTime is None:
-            virtualTime = 0
+        # if virtualTime is None:
+        #     virtualTime = 0
 
         virtualTimeOffset = pylsl.local_clock() - virtualTime
         print("Offsetting replayed timestamps by " + str(virtualTimeOffset))
