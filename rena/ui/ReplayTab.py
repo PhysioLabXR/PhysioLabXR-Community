@@ -66,7 +66,10 @@ class ReplayTab(QtWidgets.QWidget):
         # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
         self.playback_window = another_window('Playback')
         self.playback_window.get_layout().addWidget(self.playback_widget)
+        self.playback_window.setFixedWidth(620)
+        self.playback_window.setFixedHeight(300)
         self.playback_window.show()
+        self.playback_window.activateWindow()
         print("shown yet?")
 
     def _init_playback_widget(self):

@@ -538,6 +538,7 @@ class LSLReplayWorker(QObject):
 
     def replay(self):
         if self.is_playing:
+            print("replay ticking in progress")
             # run the stream
             nextStreamIndex = None
             nextBlockingTimestamp = None
