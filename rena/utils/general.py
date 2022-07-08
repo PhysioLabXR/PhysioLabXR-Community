@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import numpy as np
 
@@ -193,3 +194,15 @@ def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
         raise AssertionError(e)
 
     return device_preset_dict, interface
+
+
+# Define function to import external files when using PyInstaller.
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
