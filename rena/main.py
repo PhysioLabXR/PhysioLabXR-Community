@@ -7,15 +7,21 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
+from rena import config_ui
 from rena.interfaces import InferenceInterface
 
-from PyQt5.QtCore import Qt, QFile, QTextStream
+from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
+import config
+from rena.startup import load_default_settings
 
 app = None
 
 
 
+
 if __name__ == '__main__':
+    # load default settings
+    load_default_settings()
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
@@ -26,7 +32,6 @@ if __name__ == '__main__':
     # splash screen
     splash = QLabel()
     pixmap = QPixmap('../media/logo/RN.png')
-    # pixmap = pixmap.scaled(640, 640)
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()
@@ -41,16 +46,15 @@ if __name__ == '__main__':
     exit_action = menu.addAction('Exit')
     exit_action.triggered.connect(window.close)
 
-    # stylesheet init
-
-    stylesheet = QFile('ui/stylesheet/dark.qss')
-    stylesheet.open(QFile.ReadOnly | QFile.Text)
-    stream = QTextStream(stylesheet)
-    app.setStyleSheet(stream.readAll())
     # splash screen destroy
     splash.destroy()
 
     window.show()
-    app.exec_()
-    print('Resuming Console Interaction.')
 
+    try:
+        app.exec_()
+        print('App closed by user')
+        sys.exit()
+    except KeyboardInterrupt:
+        print('App terminate by KeybaordInterrupt')
+        sys.exit()

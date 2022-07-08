@@ -6,6 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
+import pandas as pd
 
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
 
@@ -225,6 +226,120 @@ class RNStream:
 
         print("Stream-in completed: {0}".format(self.fn))
         return buffer
+
+    def stream_in_stepwise(self, file, buffer, read_bytes_count, ignore_stream=None, only_stream=None, jitter_removal=True, reshape_stream_dict=None):
+        total_bytes = float(os.path.getsize(self.fn))  # use floats to avoid scalar type overflow
+        buffer = {} if buffer is None else buffer
+        read_bytes_count = 0. if read_bytes_count is None else read_bytes_count
+        file = open(self.fn, "rb") if file is None else file
+        finished = False
+
+        if total_bytes:
+            print('Streaming in progress {0}%'.format(str(round(100 * read_bytes_count/total_bytes, 2))), sep=' ', end='\r', flush=True)
+        # read magic
+        read_bytes = file.read(len(magic))
+        read_bytes_count += len(read_bytes)
+        if len(read_bytes) == 0:
+            finished = True
+        if not finished:
+            try:
+                assert read_bytes == magic
+            except AssertionError:
+                raise Exception('Data invalid, magic sequence not found')
+            # read stream_label
+            read_bytes = file.read(max_label_len)
+            read_bytes_count += len(read_bytes)
+            stream_name = str(read_bytes, encoding).strip(' ')
+            # read read_bytes
+            read_bytes = file.read(max_dtype_len)
+            read_bytes_count += len(read_bytes)
+            stream_dytpe = str(read_bytes, encoding).strip(' ')
+            # read number of dimensions
+            read_bytes = file.read(dim_bytes_len)
+            read_bytes_count += len(read_bytes)
+            dims = int.from_bytes(read_bytes, 'little')
+            # read number of np shape
+            shape = []
+            for i in range(dims):
+                read_bytes = file.read(shape_bytes_len)
+                read_bytes_count += len(read_bytes)
+                shape.append(int.from_bytes(read_bytes, 'little'))
+
+            data_array_num_bytes = np.prod(shape) * np.dtype(stream_dytpe).itemsize
+            timestamp_array_num_bytes = shape[-1] * np.dtype(ts_dtype).itemsize
+
+            this_in_only_stream = (stream_name in only_stream) if only_stream else True
+            not_ignore_this_stream = (stream_name not in ignore_stream) if ignore_stream else True
+            if not_ignore_this_stream and this_in_only_stream:
+                # read data array
+                read_bytes = file.read(data_array_num_bytes)
+                read_bytes_count += len(read_bytes)
+                data_array = np.frombuffer(read_bytes, dtype=stream_dytpe)
+                data_array = np.reshape(data_array, newshape=shape)
+                # read timestamp array
+                read_bytes = file.read(timestamp_array_num_bytes)
+                ts_array = np.frombuffer(read_bytes, dtype=ts_dtype)
+
+                if stream_name not in buffer.keys():
+                    buffer[stream_name] = [np.empty(shape=tuple(shape[:-1]) + (0,), dtype=stream_dytpe),
+                                           np.empty(shape=(0,))]  # data first, timestamps second
+                buffer[stream_name][0] = np.concatenate([buffer[stream_name][0], data_array], axis=-1)
+                buffer[stream_name][1] = np.concatenate([buffer[stream_name][1], ts_array])
+            else:
+                file.read(data_array_num_bytes + timestamp_array_num_bytes)
+                read_bytes_count += data_array_num_bytes + timestamp_array_num_bytes
+        if finished:
+            if jitter_removal:
+                i = 1
+                for stream_name, (d_array, ts_array) in buffer.items():
+                    if len(ts_array) < 2:
+                        print("Ignore jitter remove for stream {0}, because it has fewer than two samples".format(stream_name))
+                        continue
+                    if np.std(ts_array) > 0.1:
+                        warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
+                    print('Removing jitter for streams {0}/{1}'.format(i, len(buffer)), sep=' ',
+                          end='\r', flush=True)
+                    coefs = np.polyfit(list(range(len(ts_array))), ts_array, 1)
+                    smoothed_ts_array = np.array([i * coefs[0] + coefs[1] for i in range(len(ts_array))])
+                    buffer[stream_name][1] = smoothed_ts_array
+
+            # reshape img, time series, time frames data
+            if reshape_stream_dict is not None:
+                for reshape_stream_name in reshape_stream_dict:
+                    if reshape_stream_name in buffer:  # reshape the stream[0] to [(a,b,c), (d, e), x, y] etc
+
+                        shapes = reshape_stream_dict[reshape_stream_name]
+                        # check if the number of channel matches the number of reshape channels
+                        total_reshape_channel_num = 0
+                        for shape_item in shapes: total_reshape_channel_num += np.prod(shape_item)
+                        if total_reshape_channel_num == buffer[reshape_stream_name][0].shape[0]:
+                            # number of channels matches, start reshaping
+                            reshape_data_buffer = {}
+                            offset = 0
+                            for index, shape_item in enumerate(shapes):
+                                reshape_channel_num = np.prod(shape_item)
+                                data_slice = buffer[reshape_stream_name][0][offset:offset + reshape_channel_num,
+                                             :]  # get the slice
+                                # reshape all column to shape_item
+                                print((shape_item + (-1,)))
+                                data_slice = data_slice.reshape((shape_item + (-1,)))
+                                reshape_data_buffer[index] = data_slice
+                                offset += reshape_channel_num
+
+                            #     replace buffer[stream_name][0] with new reshaped buffer
+                            buffer[reshape_stream_name][0] = reshape_data_buffer
+
+                        else:
+                            raise Exception(
+                                'Error: The given total number of reshape channel does not match the total number of saved '
+                                'channel for stream: ({0})'.format(reshape_stream_name))
+
+                    else:
+                        raise Exception(
+                            'Error: The give target reshape stream ({0}) does not exist in the data buffer, please use ('
+                            'get_stream_names) function to check the stream names'.format(reshape_stream_name))
+
+        return file, buffer, read_bytes_count, total_bytes, finished
 
     def get_stream_names(self):
         total_bytes = float(os.path.getsize(self.fn))  # use floats to avoid scalar type overflow
@@ -583,3 +698,8 @@ def replace_special(target_str: str, replacement_dict):
         # print('replacing ' + special)
         target_str = target_str.replace(special, replacement)
     return target_str
+
+def dats_to_csv(buffer):
+    df = pd.DataFrame()
+    for stream_name, (data, timestamps) in buffer.items():
+        pass

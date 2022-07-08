@@ -20,7 +20,7 @@ from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from ui.ReplayTab import ReplayTab
 from utils.data_utils import window_slice
-from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
+from utils.general import load_all_lslStream_presets, create_LSL_preset, process_plot_group, \
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
     load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
@@ -29,7 +29,7 @@ from utils.general import load_all_lslStream_presets, create_LSL_preset, process
     load_all_Device_presets, \
     load_all_experiment_presets
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_button, dialog_popup, \
-    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window, stream_stylesheet
+    get_distinct_colors, init_camera_widget, convert_cv_qt, AnotherWindow, another_window
 import numpy as np
 import collections
 from ui.SignalSettingsTab import SignalSettingsTab
@@ -60,6 +60,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.app = app
 
         # create sensor threads, worker threads for different sensors
+        ############
+        self.stream_widgets = {}
+        ############
+
         self.worker_threads = {}
         self.sensor_workers = {}
         self.device_workers = {}
@@ -70,24 +74,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_replay_worker = None
         self.recent_visualization_refresh_timestamps = collections.deque(
             maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
+        # self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.visualization_fps = 0
         self.tick_rate = 0
 
         # create workers for different sensors
         self.init_inference(inference_interface)
 
-        # timer
-        self.timer = QTimer()
-        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
-        self.timer.timeout.connect(self.ticks)
-        self.timer.start()
-
-        # visualization timer
-        self.v_timer = QTimer()
-        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.v_timer.timeout.connect(self.visualize_LSLStream_data)
-        self.v_timer.start()
 
         # camera/screen capture timer
         self.c_timer = QTimer()
@@ -130,7 +123,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # reload all presets
         self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
-        self.stream_ui_elements = {}
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -173,9 +165,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionExit.triggered.connect(self.fire_action_exit)
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
-        # reserve windows
-        self.settings_window = None
-        stream_stylesheet('ui/stylesheet/light.qss')
+        # create the settings window
+        settings_tab = SettingsTab(self)
+        self.settings_window = another_window('Settings')
+        self.settings_window.get_layout().addWidget(settings_tab)
+        self.settings_window.hide()
 
     def add_camera_clicked(self):
         if self.recording_tab.is_recording:
@@ -296,56 +290,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.add_streams_to_visulaize(stream_names)
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
-                self.stream_ui_elements[stream_name]['start_stop_stream_btn'].click()
+                self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
     def init_lsl(self, preset):
         error_initialization = False
         lsl_stream_name = preset['StreamName']
-        if lsl_stream_name not in self.lsl_workers.keys():  # if this inlet hasn't been already added
+        if lsl_stream_name not in self.stream_widgets.keys():  # if this inlet hasn't been already added
             try:
                 preset, interface = process_preset_create_lsl_interface(preset)
             except AssertionError as e:
                 dialog_popup(str(e))
                 return None
-            lsl_num_chan, lsl_chan_names, plot_group_slices = preset['NumChannels'], \
-                                                              preset['ChannelNames'], \
-                                                              preset['PlotGroupSlices']
-
-            if 'GroupFormat' in preset.keys():
-                plot_group_format = preset['GroupFormat']
-            elif plot_group_slices is not None:
-                plot_group_format = ['time_series'] * (len(plot_group_slices))
-            else:
-                plot_group_format = ['time_series']
 
             # set up UI elements
             lsl_widget_name = lsl_stream_name + '_widget'
-            lsl_stream_widget = StreamWidget(parent=self.sensorTabSensorsHorizontalLayout, stream_name=lsl_stream_name, insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+            lsl_stream_widget = StreamWidget(main_parent=self,
+                                             parent=self.sensorTabSensorsHorizontalLayout,
+                                             stream_name=lsl_stream_name,
+                                             preset=preset,
+                                             interface=interface,
+                                             insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
-            lsl_layout = lsl_stream_widget.TopLayout
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
-            # set up workers
-            self.lsl_workers[lsl_stream_name] = workers.LSLInletWorker(interface)
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[lsl_stream_name] = worker_thread
-
-            # stop_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].stop_stream)
-
-            try:
-                self.LSL_plots_fs_label_dict[lsl_stream_name] = self.init_visualize_LSLStream_data(
-                    parent=lsl_layout,
-                    num_chan=lsl_num_chan,
-                    chan_names=lsl_chan_names,
-                    plot_group_slices=plot_group_slices,
-                    plot_group_format=plot_group_format
-                )
-            except AssertionError as e:
-                error_initialization = True
-                dialog_popup(str(e))
-
-            self.lsl_workers[lsl_stream_name].signal_data.connect(self.process_LSLStream_data)
-            self.LSL_data_buffer_dicts[lsl_stream_name] = np.empty(shape=(lsl_num_chan, 0))
             preset["num_samples_to_plot"] = int(
                 preset["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
             preset["ActualSamplingRate"] = preset[
@@ -354,101 +321,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                                preset[
                                                    "num_samples_to_plot"])
 
-            def signal_settings_window():
-                print("signal settings btn clicked")
-                signal_settings_window = SignalSettingsTab()
-                if signal_settings_window.exec_():
-                    print("signal setting window open")
-                else:
-                    print("Cancel!")
+            self.stream_widgets[lsl_stream_name] = lsl_stream_widget
 
-            # signal_settings_btn.clicked.connect(signal_settings_window)
-            #### TODO: signal processing button (hidded before finishing)
-            # signal_settings_btn.hide()
-
-            #####
-            # pop window actions
-            def dock_window():
-                self.sensorTabSensorsHorizontalLayout.insertWidget(self.sensorTabSensorsHorizontalLayout.count() - 1,
-                                                                   lsl_stream_widget)
-                pop_window_btn.clicked.disconnect()
-                pop_window_btn.clicked.connect(pop_window)
-                pop_window_btn.setText('Pop Window')
-                self.pop_windows[lsl_stream_name].hide()  # tetentive measures
-                self.pop_windows.pop(lsl_stream_name)
-                lsl_stream_widget.set_button_icons()
-
-            def pop_window():
-                w = AnotherWindow(lsl_stream_widget, remove_stream)
-                self.pop_windows[lsl_stream_name] = w
-                w.setWindowTitle(lsl_stream_name)
-                pop_window_btn.setText('Dock Window')
-                w.show()
-                pop_window_btn.clicked.disconnect()
-                pop_window_btn.clicked.connect(dock_window)
-                lsl_stream_widget.set_button_icons()
-
-            pop_window_btn.clicked.connect(pop_window)
-
-            def start_stop_stream_btn_clicked():
-                # check if is streaming
-                if self.lsl_workers[lsl_stream_name].is_streaming:
-                    self.lsl_workers[lsl_stream_name].stop_stream()
-                    if not self.lsl_workers[lsl_stream_name].is_streaming:
-                        # started
-                        print("sensor stopped")
-                        # toggle the icon
-                        start_stop_stream_btn.setText("Start Stream")
-                else:
-                    self.lsl_workers[lsl_stream_name].start_stream()
-                    if self.lsl_workers[lsl_stream_name].is_streaming:
-                        # started
-                        print("sensor stopped")
-                        # toggle the icon
-                        start_stop_stream_btn.setText("Stop Stream")
-                lsl_stream_widget.set_button_icons()
-
-
-            start_stop_stream_btn.clicked.connect(start_stop_stream_btn_clicked)
-
-            def remove_stream():
-                if self.recording_tab.is_recording:
-                    dialog_popup(msg='Cannot remove stream while recording.')
-                    return False
-                # stop_stream_btn.click()  # fire stop streaming first
-                if self.lsl_workers[lsl_stream_name].is_streaming:
-                    self.lsl_workers[lsl_stream_name].stop_stream()
-                worker_thread.exit()
-                self.lsl_workers.pop(lsl_stream_name)
-                self.worker_threads.pop(lsl_stream_name)
-                # if this lsl connect to a device:
-                if lsl_stream_name in self.device_workers.keys():
-                    self.device_workers[lsl_stream_name].stop_stream()
-                    self.device_workers.pop(lsl_stream_name)
-
-                self.stream_ui_elements.pop(lsl_stream_name)
-                self.sensorTabSensorsHorizontalLayout.removeWidget(lsl_stream_widget)
-                # close window if popped
-                if lsl_stream_name in self.pop_windows.keys():
-                    self.pop_windows[lsl_stream_name].hide()
-                    self.pop_windows.pop(lsl_stream_name)
-                else:  # use recursive delete if docked
-                    sip.delete(lsl_stream_widget)
-                self.LSL_data_buffer_dicts.pop(lsl_stream_name)
-                return True
-
-            #     worker_thread
-            remove_stream_btn.clicked.connect(remove_stream)
-            # remove_stream_btn = init_button(parent=lsl_layout, label='Remove Stream',
-            #                                 function=remove_stream)  # add delete sensor button after adding visualization
-            self.stream_ui_elements[lsl_stream_name] = {'lsl_widget': lsl_stream_widget,
-                                                        'start_stop_stream_btn': start_stop_stream_btn,
-                                                        'remove_stream_btn': remove_stream_btn}
-
-            self.lsl_workers[lsl_stream_name].moveToThread(self.worker_threads[lsl_stream_name])
-            # start_stream_btn.clicked.connect(self.lsl_workers[lsl_stream_name].start_stream)
-            worker_thread.start()
-            # if error initialization
             if error_initialization:
                 remove_stream_btn.click()
             return preset
@@ -511,22 +385,6 @@ class MainWindow(QtWidgets.QMainWindow):
         inference_thread.start()
         self.inference_widget.hide()
 
-    def ticks(self):
-        """
-        ticks every 'refresh' milliseconds
-        """
-        # pass
-        [w.tick_signal.emit() for w in self.sensor_workers.values()]
-        [w.tick_signal.emit() for w in self.lsl_workers.values()]
-        [w.tick_signal.emit() for w in self.device_workers.values()]
-
-        self.recent_tick_refresh_timestamps.append(time.time())
-        if len(self.recent_tick_refresh_timestamps) > 2:
-            self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-                        len(self.recent_tick_refresh_timestamps) - 1))
-
-        self.tickFrequencyLabel.setText(
-            'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -561,59 +419,6 @@ class MainWindow(QtWidgets.QMainWindow):
         [parent.addWidget(epw) for epw in eeg_plot_widgets]
         self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
 
-    def init_visualize_LSLStream_data(self, parent, num_chan, chan_names, plot_group_slices, plot_group_format):
-        fs_label = QLabel(text='Sampling rate = ')
-        ts_label = QLabel(text='Current Time Stamp = ')
-        parent.addWidget(fs_label)
-        parent.addWidget(ts_label)
-        plot_widget = pg.PlotWidget()
-        if plot_group_slices:
-            plots = []
-            plot_formats = []
-            for pg_slice, channel_format in zip(plot_group_slices, plot_group_format):
-                plot_group_format_info = channel_format.split('_')
-                # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-                if plot_group_format_info[0] == 'time' and plot_group_format_info[1] == 'series':  # time_series plot
-                    plot_formats.append(plot_group_format_info)
-                    plot_widget = pg.PlotWidget()
-                    parent.addWidget(plot_widget)
-
-                    distinct_colors = get_distinct_colors(pg_slice[1] - pg_slice[0])
-                    plot_widget.addLegend()
-                    plots += [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                              zip(distinct_colors, chan_names[pg_slice[0]:pg_slice[1]])]
-
-                elif plot_group_format_info[0] == 'image':
-                    plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
-
-                    # check if the channel num matches:
-                    if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
-                        raise AssertionError(
-                            'The number of channel in this slice does not match with the number of image pixels.'
-                            'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
-                                                                                             pg_slice))
-                    plot_formats.append(plot_group_format_info)
-                    image_label = QLabel('Image_Label')
-                    image_label.setAlignment(QtCore.Qt.AlignCenter)
-                    parent.addWidget(image_label)
-                    plots.append(image_label)
-                else:
-                    raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
-
-        else:
-            plot_widget = pg.PlotWidget()
-            parent.addWidget(plot_widget)
-
-            distinct_colors = get_distinct_colors(num_chan)
-            plot_widget.addLegend()
-            plots = [plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                     zip(distinct_colors, chan_names)]
-            plot_formats = [['time_series']]
-
-        [p.setDownsampling(auto=True, method='mean') for p in plots if p == PlotDataItem]
-        [p.setClipToView(clip=True) for p in plots for p in plots if p == PlotDataItem]
-
-        return plots, plot_widget, fs_label, plot_group_slices, plot_formats, ts_label
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -637,116 +442,10 @@ class MainWindow(QtWidgets.QMainWindow):
             [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
             # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
 
-    def process_LSLStream_data(self, data_dict):
-        samples_to_plot = self.lslStream_presets_dict[data_dict['lsl_data_type']]["num_samples_to_plot"]
-        if data_dict['frames'].shape[-1] > 0 and data_dict['lsl_data_type'] in self.LSL_data_buffer_dicts.keys():
-            buffered_data = self.LSL_data_buffer_dicts[data_dict['lsl_data_type']]
-            try:
-                buffered_data = np.concatenate(
-                    (buffered_data, data_dict['frames']),
-                    axis=-1)  # get all data and remove it from internal buffer
-                self.LSL_current_ts_dict[data_dict['lsl_data_type']] = data_dict['timestamps'][-1]
-            except ValueError:
-                raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
-                    data_dict['lsl_data_type']))
-            if buffered_data.shape[-1] < samples_to_plot:
-                data_to_plot = np.concatenate((np.zeros(shape=(
-                    buffered_data.shape[0],
-                    samples_to_plot -
-                    buffered_data.shape[-1])),
-                                               buffered_data), axis=-1)
-            else:
-                data_to_plot = buffered_data[:,
-                               - samples_to_plot:]  # plot the most recent few seconds
-
-            # main window only retains the most recent 10 seconds for visualization purposes
-            self.LSL_data_buffer_dicts[data_dict['lsl_data_type']] = data_to_plot
-            self.lslStream_presets_dict[data_dict['lsl_data_type']]["ActualSamplingRate"] = data_dict['sampling_rate']
-            # notify the internal buffer in recordings tab
-
-            # reshape data_dict based on sensor interface
-            self.recording_tab.update_buffers(data_dict)
-
-            # inference tab
-            self.inference_tab.update_buffers(data_dict)
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
 
-    def visualize_LSLStream_data(self):
-
-        for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-            time_vector = self.lslStream_presets_dict[lsl_stream_name]["timevector"]
-
-            if data_to_plot.shape[-1] == len(time_vector):
-                actual_sampling_rate = self.lslStream_presets_dict[lsl_stream_name]["ActualSamplingRate"]
-                max_display_datapoint_num = self.LSL_plots_fs_label_dict[lsl_stream_name][1].size().width()
-
-                # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-                if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-                    data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-                    # start = time.time()
-                    # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-                    # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-                    data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-                                            axis=1)  # resample to 100 hz with retain history of 10 sec
-                    # print(time.time()-start)
-                    time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-                # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-                #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                #
-                # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-                # change to loop with type condition plot time_series and image
-                if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-                    plot_channel_num_offset = 0
-                    for plot_group_index, (plot_group, plot_format) in enumerate(
-                            zip(self.LSL_plots_fs_label_dict[lsl_stream_name][3],
-                                self.LSL_plots_fs_label_dict[lsl_stream_name][4])):
-                        if plot_format[0] == 'time' and plot_format[1] == 'series':
-                            # plot corresponding time series data, range (a,b) is time series
-                            plot_group_channel_num = plot_group[1] - plot_group[0]
-                            for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
-                                self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
-                                                                                            data_to_plot[i, :])
-                            plot_channel_num_offset += plot_group_channel_num
-                        elif plot_format[0] == 'image':
-                            image_shape = plot_format[1]
-                            channel_num = image_shape[2]
-                            plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
-
-                            img = plot_array.reshape(image_shape)
-                            # display openCV image if channel_num = 3
-                            # display heat map if channel_num = 1
-                            if channel_num == 3:
-                                img = convert_cv_qt(img)
-                            if channel_num == 1:
-                                img = np.squeeze(img, axis=-1)
-                                img = convert_heatmap_qt(img)
-
-                            self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
-                            plot_channel_num_offset += 1
-
-                else:
-                    [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-                     enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-
-                self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-                    'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-                self.LSL_plots_fs_label_dict[lsl_stream_name][-1].setText(
-                    'Current Time Stamp = {0}'.format(self.LSL_current_ts_dict[lsl_stream_name]))
-
-        # calculate and update the frame rate
-        self.recent_visualization_refresh_timestamps.append(time.time())
-        if len(self.recent_visualization_refresh_timestamps) > 2:
-            self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
-                                           self.recent_visualization_refresh_timestamps[0]) / (
-                                                      len(self.recent_visualization_refresh_timestamps) - 1))
-        # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
-        # print("John")
-        self.visualizationFPSLabel.setText(
-            'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
 
     def visualize_inference_results(self, inference_results):
         # results will be -1 if inference is not connected
@@ -776,7 +475,7 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Reloaded all presets', title='Info')
 
     def reload_all_presets(self):
-        if len(self.lsl_workers) > 0 or len(self.device_workers) > 0:
+        if len(self.lsl_workers) > 0 or len(self.device_workers) > 0 or len(self.stream_widgets)!=0:
             dialog_popup('Remove all streams before reloading presets!', title='Warning')
             return False
         else:
@@ -806,7 +505,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             if self.settings_window is not None:
                 self.settings_window.close()
-            remove_btns = [x['remove_stream_btn'] for x in self.stream_ui_elements.values()]
+            remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
             [x.click() for x in remove_btns]
             event.accept()
             self.app.quit()
@@ -826,9 +525,5 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()
 
     def fire_action_settings(self):
-        if self.settings_window is not None:
-            self.settings_window.close()
-        settings_tab = SettingsTab(self)
-        self.settings_window = another_window('Settings')
-        self.settings_window.get_layout().addWidget(settings_tab)
         self.settings_window.show()
+        self.settings_window.activateWindow()
