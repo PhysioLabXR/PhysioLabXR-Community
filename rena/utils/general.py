@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import numpy as np
 
@@ -70,22 +71,7 @@ def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, p
     return preset_dict
 
 
-def process_LSL_plot_group(preset_dict):
-    # preset_dict["PlotGroupSlices"] = []
-    # head = 0
-    # for x in preset_dict['GroupChannelsInPlot']:
-    #     preset_dict["PlotGroupSlices"].append((head, x))
-    #     head = x
-    # if head != preset_dict['NumChannels']:
-    #     preset_dict["PlotGroupSlices"].append(
-    #         (head, preset_dict['NumChannels']))  # append the last group
-    # if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
-    #     # create GroupChannelsInPlot from 0 to x
-    #     preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
-    #
-    # if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
-    #     preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
-
+def process_plot_group(preset_dict):
     if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
         # create GroupChannelsInPlot from 0 to x
         # if channel num is greater than 100, we hide the rest
@@ -106,6 +92,29 @@ def process_LSL_plot_group(preset_dict):
                 "group_description": ""
             }
         }
+    else:
+        plot_group_slice = []
+        head = 0
+        for x in preset_dict['GroupChannelsInPlot']:
+            plot_group_slice.append((head, x))
+            head = x
+        if head != preset_dict['NumChannels']:
+            plot_group_slice.append(
+                (head, preset_dict['NumChannels']))  # append the last group
+            # create GroupChannelsInPlot from 0 to x
+            # preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
+
+        if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
+            preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
+
+        preset_dict['GroupChannelsInPlot'] = dict()
+        for i, group in enumerate(plot_group_slice):
+            preset_dict['GroupChannelsInPlot']["Group{0}".format(i)] = \
+                {
+                    "group_index": list(range(*group)),
+                    "plot_format": "time_series",
+                    "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]
+                }
 
     return preset_dict
 
@@ -146,7 +155,7 @@ def process_preset_create_lsl_interface(preset):
     #     preset_dict = process_LSL_plot_group(preset_dict)
 
     # now always create time series data format and set group channels from 0 to x if no group channels
-    preset_dict = process_LSL_plot_group(preset)
+    preset_dict = process_plot_group(preset)
     return preset_dict, interface
 
 
@@ -198,3 +207,15 @@ def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
         raise AssertionError(e)
 
     return device_preset_dict, interface
+
+
+# Define function to import external files when using PyInstaller.
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)

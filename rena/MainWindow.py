@@ -1,6 +1,7 @@
 import sys
 import time
 import webbrowser
+import os
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
@@ -10,7 +11,11 @@ from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 from PyQt5 import QtCore
-import config
+try:
+    import config
+except ModuleNotFoundError as e:
+    print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
+    raise e
 import config_ui
 import threadings.workers as workers
 # from interfaces.UnityLSLInterface import UnityLSLInterface
@@ -20,7 +25,7 @@ from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from ui.ReplayTab import ReplayTab
 from utils.data_utils import window_slice
-from utils.general import load_all_lslStream_presets, create_LSL_preset, process_LSL_plot_group, \
+from utils.general import load_all_lslStream_presets, create_LSL_preset, process_plot_group, \
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
     load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
@@ -33,7 +38,6 @@ from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, init_butt
 import numpy as np
 import collections
 from ui.SignalSettingsTab import SignalSettingsTab
-import os
 from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 from threadings.workers import LSLReplayWorker
