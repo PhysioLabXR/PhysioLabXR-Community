@@ -66,8 +66,10 @@ class OptionsWindow(QDialog):
             self.init_create_new_group_widget()
 
         elif selection_state == group_selected:
+
+            is_group_displaying_msg = '\nIs Plotted: {0}'.format('Yes'if selected_groups[0].display else 'No')
             text = ('Group Name: ' + selected_groups[0].data(0, 0)) \
-                   + ('\nGroup Display: ' + str(selected_groups[0].display)) \
+                   + is_group_displaying_msg \
                    + ('\nChannel Count: ' + str(selected_groups[0].childCount())) \
                    + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)

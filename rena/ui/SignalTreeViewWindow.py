@@ -209,24 +209,18 @@ class SignalTreeViewWindow(QTreeWidget):
                 selected_channels.append(selected_item)
 
         self.selected_groups, self.selected_channels = selected_groups, selected_channels
-        if selected_item_num == 0:
+        if selected_item_num == 0:  # nothing is selected
             self.selection_state = nothing_selected
-            # return nothing_selected, selected_groups, selected_channels
-        elif len(selected_channels) == 1 and len(selected_groups) == 0:
+        elif len(selected_channels) == 1 and len(selected_groups) == 0:  # just one channel
             self.selection_state = channel_selected
-            # return channel_selected, selected_groups, selected_channels
-        elif len(selected_channels) > 1 and len(selected_groups) == 0:
+        elif len(selected_channels) > 1 and len(selected_groups) == 0:  # multiple channels and no group
             self.selection_state = channels_selected
-            # return channels_selected, selected_groups, selected_channels
-        elif len(selected_channels) == 0 and len(selected_groups) == 1:
+        elif len(selected_channels) == 0 and len(selected_groups) == 1:  # just one group
             self.selection_state = group_selected
-            # return group_selected, selected_groups, selected_channels
-        elif len(selected_channels) == 0 and len(selected_groups) > 1:
+        elif len(selected_channels) == 0 and len(selected_groups) > 1:  # multiple groups and no channel
             self.selection_state = groups_selected
-            # return groups_selected, selected_groups, selected_channels
-        elif len(selected_channels) > 0 and len(selected_groups) > 0:
+        elif len(selected_channels) > 0 and len(selected_groups) > 0:  # channel(s) and group(s)
             self.selection_state = mix_selected
-            # return mix_selected, selected_groups, selected_channels
         else:
             print(": ) What are you doing???")
 
@@ -237,14 +231,16 @@ class SignalTreeViewWindow(QTreeWidget):
     def item_changed(self, item, column):  # check box on change
         # if hasattr(item, 'attribute')::
         # print(item.data(0,0))
-        if hasattr(item, 'item_type') and item.item_type == 'stream_root':
-            self.item_changed_signal.emit('Item changed')
+        # if hasattr(item, 'item_type') and item.item_type == 'group':
+        #     self.item_changed_signal.emit('Item changed')
         if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.display = 1
         else:
             item.setForeground(0, QBrush(QColor(color_white)))
             item.display = 0
+        if hasattr(item, 'item_type') and item.item_type == 'group':
+            self.item_changed_signal.emit('Item changed')
 
         # print(item.data(0, 0))
 

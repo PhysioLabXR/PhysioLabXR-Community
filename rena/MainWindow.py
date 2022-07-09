@@ -490,7 +490,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.experiment_presets_dict = load_all_experiment_presets()
             except KeyError as e:
                 dialog_popup(
-                    msg='Unknown preset specifier, {0}\n Please check the example presets for list of valid specifiers: '.format(
+                    msg='Unknown preset specifier, {0}\n Please check the examples presets for list of valid specifiers: '.format(
                         e), title='Error')
                 return False
         return True
