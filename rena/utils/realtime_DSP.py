@@ -13,6 +13,9 @@ class DataProcessor:
     def process_data(self, data):
         pass
 
+    def reset_tap(self):
+        pass
+
 
 class IIRFilter(DataProcessor):
 
@@ -130,3 +133,7 @@ class RealtimeVrms(DataProcessor):
         # vrms = np.mean(self.data_buffer, axis=1)
         # print(vrms)
         return vrms
+
+    def reset_tap(self):
+        self.data_buffer.fill(0)
+

@@ -28,6 +28,22 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 
+class RENAWorker(QObject):
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        pass
+
+    def start_stream(self):
+        pass
+
+    def stop_stream(self):
+        pass
+
 
 class EEGWorker(QObject):
     """
@@ -174,11 +190,12 @@ class InferenceWorker(QObject):
                 self.signal_inference_results.emit(inference_results)
 
 
-class LSLInletWorker(QObject):
+class LSLInletWorker(RENAWorker):
 
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
+
 
     def __init__(self, LSLInlet_interface: LSLInletInterface,  *args, **kwargs):
         super(LSLInletWorker, self).__init__()
