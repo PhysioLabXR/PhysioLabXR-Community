@@ -6,9 +6,18 @@ from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
 
 
-class IIRFilter:
+class DataProcessor:
+    def __init__(self):
+        pass
+
+    def process_data(self, data):
+        pass
+
+
+class IIRFilter(DataProcessor):
 
     def __init__(self):
+        super().__init__()
         self.a = None
         self.b = None
         self.x_tap = None
@@ -30,8 +39,9 @@ class IIRFilter:
         return data
 
 
-class RealtimeNotch:
+class RealtimeNotch(DataProcessor):
     def __init__(self, w0=60, Q=20, fs=250, channel_num=8):
+        super().__init__()
         self.w0 = w0
         self.Q = Q
         self.fs = fs
@@ -60,8 +70,9 @@ class RealtimeNotch:
         self.y_tap.fill(0)
 
 
-class RealtimeButterBandpass:
+class RealtimeButterBandpass(DataProcessor):
     def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
+        super().__init__()
         self.lowcut = lowcut
         self.highcut = highcut
         self.fs = fs
@@ -98,8 +109,9 @@ class RealtimeButterBandpass:
         self.y_tap.fill(0)
 
 
-class RealtimeVrms:
+class RealtimeVrms(DataProcessor):
     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
+        super().__init__()
         self.fs = fs
         self.channel_num = channel_num
         self.interval_ms = interval_ms
@@ -114,7 +126,7 @@ class RealtimeVrms:
     def process_data(self, data):
         self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
         self.data_buffer[:, 0] = data
-        vrms = np.sqrt(1/self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
+        vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
         # vrms = np.mean(self.data_buffer, axis=1)
         # print(vrms)
         return vrms

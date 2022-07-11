@@ -1,6 +1,6 @@
 import json
 import os
-
+import numpy as np
 from PyQt5.QtCore import QSettings
 from sys import platform
 
@@ -106,4 +106,6 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 DEFAULT_CHANNEL_DISPLAY_NUM = 50
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
+
+sub_process_index = np.arange(1,100000)
 
