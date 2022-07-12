@@ -479,9 +479,10 @@ class LSLReplayWorker(QObject):
         # TODO: do not hardcode playback range (100)
         self.virtual_clock = (self.total_time * (new_position/100)) + self.start_time
 
-    def on_play_pause_toggle(self, is_playing):
+    def on_play_pause_toggle(self): # is_playing
+        print("on play pause toggle from workers.py - next status is ")
         # play and pause accordingly
-        self.is_playing = is_playing
+        self.is_playing = not self.is_playing
 
     def setup_stream(self):
         # setup the streams
@@ -537,6 +538,7 @@ class LSLReplayWorker(QObject):
         print("start time and end time ", self.start_time, self.end_time)
 
     def replay(self):
+        # print("is_playing process: ", self.is_playing)
         if self.is_playing:
             print("replay ticking in progress")
             # run the stream

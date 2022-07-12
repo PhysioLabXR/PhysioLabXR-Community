@@ -109,9 +109,9 @@ class ReplayTab(QtWidgets.QWidget):
             dialog_popup('Unsupported file type', title='WARNING')
 
         self.is_replaying = True
+        self.on_play_pause_toggle(True) # because worker's is_playing status should be set to True as well
         self.StartReplayBtn.setEnabled(False)
         self.StopReplayBtn.setEnabled(True)
-        self.is_replaying = True
 
         lsl_replay_thread = pg.QtCore.QThread(self.parent)
         lsl_replay_thread.start()
@@ -137,7 +137,7 @@ class ReplayTab(QtWidgets.QWidget):
 
     def stop_replay_btn_pressed(self):
         self.is_replaying = False
-        self.parent.lsl_replay_worker.stop_signal = True
+        self.lsl_replay_worker.stop_signal = True
         self.parent.worker_threads['lsl_replay'].exit()
         self.StopReplayBtn.setEnabled(False)
         self.StartReplayBtn.setEnabled(True)
@@ -265,12 +265,15 @@ class ReplayTab(QtWidgets.QWidget):
     def ticks(self):
         self.lsl_replay_worker.replay()
 
-    def on_play_pause_toggle(self):
+    def on_play_pause_toggle(self, is_playing):
         print("toggle!")
-        if self.is_replaying:
-            self.is_replaying = False
-        else:
-            self.is_replaying = True
+        # if self.is_replaying:
+        #     print("this should not be hit!!!")
+        #     self.is_replaying = False
+        # else:
+        #     print("this should be hit!!!!!")
+        #     self.is_replaying = True
+        self.is_replaying = is_playing
         self.play_pause_signal.emit(self.is_replaying)
 
     def on_playback_slider_changed(self, new_playback_position):
