@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from TCPInterface import RENATCPServer, RENATCPInterface
+from rena.sub_process.TCPInterface import RENATCPServer, RENATCPInterface
 
 # send a processing object
 from rena.utils.realtime_DSP import *

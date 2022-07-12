@@ -39,6 +39,7 @@ class RENAWorker(QObject):
         # self.dsp_processor = None
         self.dsp_server_process = None
         self.dsp_client = None
+        self.init_dsp_client_server('John')
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
@@ -53,11 +54,12 @@ class RENAWorker(QObject):
     def init_dsp_client_server(self, stream_name):
         self.dsp_server_process = Process(target=dsp_processor,
                                           args=(stream_name,))
+        self.dsp_server_process.start()
+        print('dsp_server_process pid: ', str(self.dsp_server_process.pid))
         dsp_client_interface = RENATCPInterface(stream_name=stream_name,
                                                 port_id=self.dsp_server_process.pid,
                                                 identity='client')
         self.dsp_client = RENATCPClient(RENATCPInterface=dsp_client_interface)
-
         # create a server and get it's pid
         # server_interface = RENATCPInterface()
         # clint_interface = RENATCPInterface()
@@ -236,6 +238,9 @@ class LSLInletWorker(RENAWorker):
             except ZeroDivisionError:
                 sampling_rate = 0
 
+
+            if self.dsp_on:
+                receive_obj = self.dsp_client.process_data(data=RENATCPObject(data=frames))
             # insert professor
             # insert dsp processor
             # if self.dsp_on:

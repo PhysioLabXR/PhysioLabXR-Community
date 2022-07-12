@@ -1,7 +1,7 @@
 import time
 import zmq
 import numpy as np
-from pyzmq_utils import *
+from rena.sub_process.pyzmq_utils import *
 
 
 class RENATCPObject:
@@ -80,7 +80,7 @@ class RENATCPClient:
     def stop_stream(self):
         self.is_streaming = False
 
-    def process_data(self, data):
+    def process_data(self, data: RENATCPObject):
         if self.is_streaming:
             try:
                 send = self.tcp_interface.send_obj(data)
