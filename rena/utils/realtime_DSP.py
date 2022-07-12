@@ -41,6 +41,9 @@ class IIRFilter(DataProcessor):
         data = self.y_tap[:, 0]
         return data
 
+    def reset_tap(self):
+        self.x_tap.fill(0)
+        self.y_tap.fill(0)
 
 class RealtimeNotch(DataProcessor):
     def __init__(self, w0=60, Q=20, fs=250, channel_num=8):

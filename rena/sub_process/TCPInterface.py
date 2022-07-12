@@ -4,7 +4,14 @@ import numpy as np
 from pyzmq_utils import *
 
 
-class TCPInterface:
+class RENATCPObject:
+    def __init__(self, data, processor_dict=None, exit_process=False):
+        self.data = data
+        self.processor_dict = processor_dict
+        self.exit_process = exit_process
+
+
+class RENATCPInterface:
     def __init__(self, stream_name, port_id, identity):
         self.bind_header = 'tcp://*:'
         self.connect_header = 'tcp://localhost:'
@@ -13,7 +20,6 @@ class TCPInterface:
         self.port_id = port_id
         self.identity = identity
         # self.is_streaming = False
-
 
         if identity == 'server':
             self.context = zmq.Context()
@@ -43,12 +49,29 @@ class TCPInterface:
         received_array = recv_array(socket=self.socket, flags=flags, copy=copy, track=track)
         return received_array
 
+    def send_obj(self, obj, flags=0, protocol=-1):
+        """pickle an object, and zip the pickle before sending it"""
+
+        sent = send_zipped_pickle(socket=self.socket, obj=obj, flags=0, protocol=-1)
+        return sent
+        # p = pickle.dumps(obj, protocol)
+        # z = zlib.compress(p)
+        # sent = self.socket.send(z, flags=flags)
+
+    def recv_obj(self, flags=0, protocol=-1):
+        received_obj = recv_zipped_pickle(socket=self.socket, flags=flags, protocol=-1)
+        return received_obj
+        # z = self.socket.recv(flags)
+        # p = zlib.decompress(z)
+        # return pickle.loads(p)
+
     def process_data(self):
         pass
 
-class TCPProcessor:
-    def __init__(self, TCPInterface: TCPInterface):
-        self.tcp_interface = TCPInterface
+
+class RENATCPClient:
+    def __init__(self, RENATCPInterface: RENATCPInterface):
+        self.tcp_interface = RENATCPInterface
         self.is_streaming = False
 
     def start_stream(self):
@@ -57,77 +80,73 @@ class TCPProcessor:
     def stop_stream(self):
         self.is_streaming = False
 
-    def send_data(self, data):
+    def process_data(self, data):
         if self.is_streaming:
-            self.tcp_interface.send_array(data)
+            try:
+                send = self.tcp_interface.send_obj(data)
+                print('client data sent')
+                data = self.tcp_interface.recv_obj()
+                print('client data received')
+            except:  # unknown type exception
+                print("DSP Server or Client Crashed")
 
-    # def receive_data(self, data):
-    #     if self.is_streaming:
-    #
+            return data
 
+    def process_array(self, data):
+        if self.is_streaming:
+            try:
+                send = self.tcp_interface.send_array(data)
+                data = self.tcp_interface.recv_array()
+                # data = DSP.process_data(data)
 
+            except:  # unknown type exception
+                print("DSP Server or Client Crashed")
 
-
-# def receive_data(self):
-#     pass
-
-# def process_data(self):
-#     pass
-
-# def start_process(self):
-#     self.is_streaming = True
-#
-# def stop_process(self):
-#     self.is_streaming = False
-
-# class TCPInterfacesServer(TCPInterface):
-#
-#     # create signal data to client
-#
-#     def __init__(self, stream_name, port_id, identity='server'):  # identity: server or client
-#         super(TCPInterfacesServer, self).__init__(stream_name=stream_name, port_id=port_id, identity='server')
+            return data
 
 
-# class TCPInterfacesClient(TCPInterface):
-#
-#     # create signal data to client
-#
-#     def __init__(self, stream_name, port_id, identity='client'):  # identity: server or client
-#         super().__init__()
-#
-#
-#
-#     def connect_socket(self):
-#         connection = self.connect_header + str(self.port_id)
-#         self.socket.connect(connection)
-#
-#     def send_data(self):
-#         pass
-#
-#     def receive_data(self):
-#         pass
-#
-#     def process_data(self):
-#         pass
-#
-#     def start_process(self):
-#         self.is_streaming = True
-#
-#     def stop_process(self):
-#         self.is_streaming = False
-#
-# # def connect_socket(self):
-# context = zmq.Context()
-# socket = context.socket(zmq.REP)
-# socket.bind("tcp://*:5555")
-#
-# while True:
-#     #  Wait for next request from client
-#     message = socket.recv()
-#     print("Received request: %s" % message)
-#
-#     #  Do some 'work'
-#     time.sleep(1)
-#
-#     #  Send reply back to client
-#     socket.send(b"World")
+class RENATCPServer:
+    def __init__(self, RENATCPInterface: RENATCPInterface):
+        self.tcp_interface = RENATCPInterface
+        self.is_streaming = False
+        self.dsp_processors = None
+
+    def start_stream(self):
+        self.is_streaming = True
+
+    def stop_stream(self):
+        self.is_streaming = False
+
+    def process_data(self):
+        if self.is_streaming:
+            try:
+                data = self.tcp_interface.recv_obj()
+                print('server data received')
+                # data = DSP.process_data(data)
+                #
+                #
+                #
+                #
+                #
+                send = self.tcp_interface.send_obj(data)
+                print('server data sent')
+            except:  # unknown type exception
+                print("DSP Server or Client Crashed")
+
+    def process_array(self, data):
+        if self.is_streaming:
+            try:
+                data = self.tcp_interface.recv_array()
+                # data = DSP.process_data(data)
+                #
+                #
+                #
+                #
+                #
+                send = self.tcp_interface.send_array(data)
+            except:  # unknown type exception
+                print("DSP Server or Client Crashed")
+        # return data
+
+    def update_renaserverinterface_processor(self, RENATCPObject: RENATCPObject):
+        self.dsp_processors = RENATCPObject.processor_dict

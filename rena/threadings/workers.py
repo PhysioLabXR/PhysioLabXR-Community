@@ -33,6 +33,10 @@ class RENAWorker(QObject):
     tick_signal = pyqtSignal()
     def __init__(self):
         super().__init__()
+        self.dsp_on = False
+        # self.dsp_processor = None
+        self.dsp_client = None
+        self.dsp_server = None
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
@@ -42,6 +46,9 @@ class RENAWorker(QObject):
         pass
 
     def stop_stream(self):
+        pass
+
+    def init_dsp_processor(self):
         pass
 
 
@@ -217,6 +224,12 @@ class LSLInletWorker(RENAWorker):
                 sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
             except ZeroDivisionError:
                 sampling_rate = 0
+
+            # insert professor
+            # insert dsp processor
+            # if self.dsp_on:
+            #     self
+
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
