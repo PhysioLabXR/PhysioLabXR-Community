@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from TCPInterface import RENATCPServer, RENATCPInterface
 
@@ -9,24 +11,15 @@ from rena.utils.realtime_DSP import *
 #     print("Server Created")
 
 
-
-def dsp_processor(stream_name, port_id, identity):
-
+def dsp_processor(stream_name, port_id=None, identity='server'):
     def exit_process():
         pass
 
-    # class RENATCPInterface:
-    #     def __init__(self, stream_name, port_id, identity):
-    tcp_interface = RENATCPInterface(stream_name, port_id, identity='server')
+    if port_id is None:
+        port_id = os.getpid()
+    tcp_interface = RENATCPInterface(stream_name, port_id, identity=identity)
     tcp_server = RENATCPServer(RENATCPInterface=tcp_interface)
-
-
+    print('server started')
     # start process
     while True:
         tcp_server.process_data()
-
-
-
-
-
-

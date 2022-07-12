@@ -11,6 +11,8 @@ import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
+from rena.sub_process.TCPInterface import RENATCPClient, RENATCPServer, RENATCPObject, RENATCPInterface
+from rena.sub_process.processor import dsp_processor
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal
 from rena.interfaces import InferenceInterface, LSLInletInterface
@@ -27,7 +29,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
-
+from multiprocessing import Process
 class RENAWorker(QObject):
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
@@ -35,8 +37,8 @@ class RENAWorker(QObject):
         super().__init__()
         self.dsp_on = False
         # self.dsp_processor = None
+        self.dsp_server_process = None
         self.dsp_client = None
-        self.dsp_server = None
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
@@ -48,9 +50,18 @@ class RENAWorker(QObject):
     def stop_stream(self):
         pass
 
-    def init_dsp_processor(self):
-        pass
+    def init_dsp_client_server(self, stream_name):
+        self.dsp_server_process = Process(target=dsp_processor,
+                                          args=(stream_name,))
+        dsp_client_interface = RENATCPInterface(stream_name=stream_name,
+                                                port_id=self.dsp_server_process.pid,
+                                                identity='client')
+        self.dsp_client = RENATCPClient(RENATCPInterface=dsp_client_interface)
 
+        # create a server and get it's pid
+        # server_interface = RENATCPInterface()
+        # clint_interface = RENATCPInterface()
+        # tcp_client = RENATCP
 
 class EEGWorker(QObject):
     """
