@@ -4,12 +4,13 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets, uic, sip
 from PyQt5.QtWidgets import QSlider, QLabel
 from PyQt5.QtCore import pyqtSignal, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 
 import numpy as np
 from datetime import datetime
 
 from rena import config
+from rena.ui_shared import start_stream_icon, stop_stream_icon
 
 class PlayBackWidget(QtWidgets.QWidget):
     playback_signal = pyqtSignal(int)
@@ -31,11 +32,11 @@ class PlayBackWidget(QtWidgets.QWidget):
         print("Its clicked in playbackwidget")
         self.is_playing = not self.is_playing
         if self.is_playing:
-            self.playPauseButton.setIcon(QIcon('../media/icons/play.png'))
-            self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
+            self.playPauseButton.setIcon(stop_stream_icon)
+            # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
         else:
-            self.playPauseButton.setIcon(QIcon('../media/icons/pause.png'))
-            self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
+            self.playPauseButton.setIcon(start_stream_icon)
+            # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
         self.play_pause_signal.emit(self.is_playing)
 
     def emit_playback_stop(self):
@@ -46,3 +47,7 @@ class PlayBackWidget(QtWidgets.QWidget):
     def emit_playback_position(self, event):
         # use signal
         self.playback_signal.emit(event)
+
+    def on_replay_tick(self, replay_progress):
+        print("slider value is being updated!!", replay_progress)
+        self.horizontalSlider.setValue(replay_progress)

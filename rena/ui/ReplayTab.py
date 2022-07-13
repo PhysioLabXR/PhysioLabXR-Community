@@ -78,6 +78,9 @@ class ReplayTab(QtWidgets.QWidget):
         self.playback_widget.play_pause_signal.connect(self.on_play_pause_toggle)
         self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
 
+        # connect signal emitted from the replayworker to playback widget
+        self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
+
     def select_data_dir_btn_pressed(self):
 
         selected_data_dir = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]

@@ -451,7 +451,8 @@ class MmwWorker(QObject):
     # #         # raise exceptions.InterfaceNotExistError
 
 class LSLReplayWorker(QObject):
-    # tick_signal = pyqtSignal()
+    replay_progress_signal = pyqtSignal(float)
+
     def __init__(self, parent, playback_position_signal, play_pause_signal):
         super(LSLReplayWorker, self).__init__()
         playback_position_signal.connect(self.on_playback_position_changed)
@@ -474,10 +475,18 @@ class LSLReplayWorker(QObject):
         self.chunk_sizes = [] # how many samples should be published at once
         self.selected_stream_indices = None
 
+    def virtual_time_to_playback_position_value(self):
+        # TODO: do not hardcode playback range (100)
+        return (self.virtual_clock - self.start_time) * 100 / self.total_time
+
+    def playback_position_value_to_virtual_time(self, position_value):
+        # TODO: do not hardcode playback range (100)
+        print("on_playback_position_changed", position_value)
+        return (self.total_time * (position_value / 100)) + self.start_time
+
     def on_playback_position_changed(self, new_position):
         # set the virtual clock according to the new playback position
-        # TODO: do not hardcode playback range (100)
-        self.virtual_clock = (self.total_time * (new_position/100)) + self.start_time
+        self.virtual_clock = self.playback_position_value_to_virtual_time(new_position)
 
     def on_play_pause_toggle(self): # is_playing
         print("on play pause toggle from workers.py - next status is ")
@@ -584,9 +593,9 @@ class LSLReplayWorker(QObject):
             if stream_length < self.next_sample_of_stream[nextStreamIndex] + chunkSize:
                 self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
 
-            virtualTime = pylsl.local_clock() - self.virtual_clock_offset
+            self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset
             # TODO: fix this
-            sleepDuration = nextBlockingTimestamp - virtualTime
+            sleepDuration = nextBlockingTimestamp - self.virtual_clock
             if sleepDuration > 0:
                 time.sleep(sleepDuration)
 
@@ -595,9 +604,11 @@ class LSLReplayWorker(QObject):
             if chunkSize == 1:
                 # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
                 outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
+                print("pushed, chunk size 1")
             else:
                 # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
                 outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + self.virtual_clock_offset)
+                print("pushed else")
                 # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
                 # would make the terminal output unreadable
 
@@ -608,6 +619,10 @@ class LSLReplayWorker(QObject):
                 self.next_sample_of_stream.remove(self.next_sample_of_stream[nextStreamIndex])
                 self.chunk_sizes.remove(self.chunk_sizes[nextStreamIndex])
                 self.stream_names.remove(self.stream_names[nextStreamIndex])
+
+            playback_position = self.virtual_time_to_playback_position_value()
+            self.replay_progress_signal.emit(playback_position)
+            print("virtual clock time: ", self.virtual_clock)
 
         # print(datetime.now())
 
