@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 
+from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
@@ -50,6 +51,14 @@ def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets')
 
 
 def load_LSL_preset(preset_dict):
+    if 'GroupChannelsInPlot' in preset_dict.keys():
+        try:
+            assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
+        except AssertionError:
+            raise ValueError('Preset with stream name {0} has GroupChnanlesInPlot field. In this case, this preset must also have either ChannelNmaes field or NumChannels field'
+                             '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
+    if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
+        preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
     if 'ChannelNames' not in preset_dict.keys():
         preset_dict['ChannelNames'] = None
     if 'GroupChannelsInPlot' not in preset_dict.keys():
@@ -72,10 +81,10 @@ def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, p
 
 
 def process_plot_group(preset_dict):
+    channel_num = preset_dict['NumChannels']
     if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
         # create GroupChannelsInPlot from 0 to x
         # if channel num is greater than 100, we hide the rest
-        channel_num = len(preset_dict['ChannelNames'])
         if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
             channels_display = [1 for channel in range(0, channel_num)]
         else:
@@ -86,7 +95,7 @@ def process_plot_group(preset_dict):
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
-                "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))],
+                "channels": [channel_index for channel_index in range(0, channel_num)],
                 "channels_display": channels_display,
                 "group_display": 1,
                 "group_description": ""
@@ -98,9 +107,9 @@ def process_plot_group(preset_dict):
         for x in preset_dict['GroupChannelsInPlot']:
             plot_group_slice.append((head, x))
             head = x
-        if head != preset_dict['NumChannels']:
+        if head != channel_num:
             plot_group_slice.append(
-                (head, preset_dict['NumChannels']))  # append the last group
+                (head, channel_num))  # append the last group
             # create GroupChannelsInPlot from 0 to x
             # preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
 
@@ -111,9 +120,9 @@ def process_plot_group(preset_dict):
         for i, group in enumerate(plot_group_slice):
             preset_dict['GroupChannelsInPlot']["Group{0}".format(i)] = \
                 {
-                    "group_index": list(range(*group)),
+                    "group_index": i,
                     "plot_format": "time_series",
-                    "channels": [channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]
+                    "channels": list(range(*group))
                 }
 
     return preset_dict
@@ -146,13 +155,6 @@ def process_preset_create_lsl_interface(preset):
     else:
         preset['ChannelNames'] = ['channel_' + str(i) for i in
                                   list(range(0, preset['NumChannels']))]  # ['Unknown'] * preset['NumChannels']
-    # process lsl presets ###########################
-    # if group_chan_in_plot and len(group_chan_in_plot) > 0:
-    #     # if np.max(preset_dict['GroupChannelsInPlot']) > preset_dict['NumChannels']:
-    #     #     raise AssertionError(
-    #     #         'Unable to load preset with name {0}, GroupChannelsInPlot max must be less than the number of channels.'.format(
-    #     #             lsl_stream_name))
-    #     preset_dict = process_LSL_plot_group(preset_dict)
 
     # now always create time series data format and set group channels from 0 to x if no group channels
     preset_dict = process_plot_group(preset)
@@ -219,3 +221,19 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+def export_preset_to_settings(preset, setting_category):
+    assert setting_category == 'lslpresets' or  setting_category == 'devicepresets' or setting_category == 'experimentpresets'
+    if setting_category == 'experimentpresets':
+        pass
+    else:
+        config.settings.setValue('presets/lslpresets/{0}/StreamName'.format(preset['StreamName']), preset['StreamName'])
+        config.settings.setValue('presets/lslpresets/{0}/ChannelNames'.format(preset['StreamName']), preset['ChannelNames'])
+        config.settings.setValue('presets/lslpresets/{0}/NominalSamplingRate'.format(preset['StreamName']), preset['NominalSamplingRate'])
+        config.settings.setValue('presets/lslpresets/{0}/NumChannels'.format(preset['StreamName']), preset['NumChannels'])
+        config.settings.setValue('presets/lslpresets/{0}/GroupFormat'.format(preset['StreamName']), preset['GroupFormat'])
+
+        for group_name, group_info_dict in preset['GroupChannelsInPlot'].items():
+            for group_info_key, group_info_value in group_info_dict.items():
+                config.settings.setValue('presets/lslpresets/{0}/GroupChannelsInPlot/{1}'.format(preset['StreamName'], group_info_key), group_info_value)
+

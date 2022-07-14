@@ -8,5 +8,6 @@
   "ConfigPath": "resource/mmWave/aop/30fps_rdHeatmap_aziHeatmap_scatteroff.cfg",
   "NominalSamplingRate":  30,
   "GroupChannelsInPlot":  [128],
+  "NumChannels": 640,
   "GroupFormat": ["image_(8,16,1)", "image_(8,64,1)"]
   }

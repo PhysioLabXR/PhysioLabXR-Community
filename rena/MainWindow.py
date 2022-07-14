@@ -25,7 +25,7 @@ from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
 from ui.ReplayTab import ReplayTab
 from utils.data_utils import window_slice
-from utils.general import load_all_lslStream_presets, create_LSL_preset, process_plot_group, \
+from utils.general import load_all_lslStream_presets, create_LSL_preset, \
     process_preset_create_lsl_interface, load_all_Device_presets, process_preset_create_openBCI_interface_startsensor, \
     load_all_experiment_presets, process_preset_create_TImmWave_interface_startsensor
 from utils.ui_utils import init_sensor_or_lsl_widget, init_add_widget, CustomDialog, init_button, dialog_popup, \
