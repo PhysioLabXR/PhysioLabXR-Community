@@ -85,7 +85,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # create workers for different sensors
         self.init_inference(inference_interface)
 
-
         # camera/screen capture timer
         self.c_timer = QTimer()
         self.c_timer.setInterval(config.CAMERA_SCREENCAPTURE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
@@ -127,15 +126,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # reload all presets
         self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
-
         # data buffers
         self.LSL_plots_fs_label_dict = {}
         self.LSL_data_buffer_dicts = {}
         self.LSL_current_ts_dict = {}
-
-        self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
-
-        # self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
         # inference buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
@@ -411,42 +405,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 samples_dict = {'eye': eye_samples}
                 self.inference_worker.tick_signal.emit(samples_dict)
 
-    def stop_eeg(self):
-        self.sensor_workers[config.sensors[0]].stop_stream()
-        # MUST calculate f sample after stream is stopped, for the end time is recorded when calling worker.stop_stream
-        f_sample = self.eeg_data_buffer.shape[-1] / (
-                self.sensor_workers[config.sensors[0]].end_time - self.sensor_workers[config.sensors[0]].start_time)
-        print('MainWindow: Stopped eeg streaming, sampling rate = ' + str(f_sample) + '; Buffer cleared')
-        self.init_eeg_buffer()
-
-    def init_visualize_eeg_data(self, parent):
-        eeg_plot_widgets = [pg.PlotWidget() for i in range(config.OPENBCI_EEG_USEFUL_CHANNELS_NUM)]
-        [parent.addWidget(epw) for epw in eeg_plot_widgets]
-        self.eeg_plots = [epw.plot([], [], pen=pg.mkPen(color=(255, 255, 255))) for epw in eeg_plot_widgets]
-
-
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
         [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
         self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
                                         inference_results_plot_widgets]
-
-    def visualize_eeg_data(self, data_dict):
-        if config.sensors[0] in self.sensor_workers.keys():
-            self.eeg_data_buffer = np.concatenate((self.eeg_data_buffer, data_dict['data']),
-                                                  axis=-1)  # get all data and remove it from internal buffer
-            if self.eeg_data_buffer.shape[-1] < self.eeg_num_visualized_sample:
-                eeg_data_to_plot = np.concatenate((np.zeros(shape=(
-                    config.OPENBCI_EEG_CHANNEL_SIZE, self.eeg_num_visualized_sample - self.eeg_data_buffer.shape[-1])),
-                                                   self.eeg_data_buffer), axis=-1)
-            else:
-                eeg_data_to_plot = self.eeg_data_buffer[:,
-                                   -self.eeg_num_visualized_sample:]  # plot the most recent 10 seconds
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.eeg_num_visualized_sample)
-            eeg_data_to_plot = eeg_data_to_plot[config.OPENBCI_EEG_USEFUL_CHANNELS]  ## keep only the useful channels
-            [ep.setData(time_vector, eeg_data_to_plot[i, :]) for i, ep in enumerate(self.eeg_plots)]
-            # print('MainWindow: update eeg graphs, eeg_data_buffer shape is ' + str(self.eeg_data_buffer.shape))
-
 
     def camera_screen_capture_tick(self):
         [w.tick_signal.emit() for w in self.cam_workers.values()]
@@ -468,11 +431,6 @@ class MainWindow(QtWidgets.QMainWindow):
             time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
             [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
-    def init_eeg_buffer(self):
-        self.eeg_data_buffer = np.empty(shape=(config.OPENBCI_EEG_CHANNEL_SIZE, 0))
-
-    def init_unityLSL_buffer(self):
-        self.unityLSL_data_buffer = np.empty(shape=(config.UNITY_LSL_CHANNEL_SIZE, 0))
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
