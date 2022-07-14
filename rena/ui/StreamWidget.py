@@ -141,6 +141,8 @@ class StreamWidget(QtWidgets.QWidget):
         # stop_stream_btn.click()  # fire stop streaming first
         if self.lsl_worker.is_streaming:
             self.lsl_worker.stop_stream()
+        # if self.lsl_worker.dsp_on:
+        #     self.lsl_worker.remove_stream()
         self.worker_thread.exit()
         # self.main_parent.lsl_workers.pop(self.stream_name)
         # self.main_parent.worker_threads.pop(self.stream_name)

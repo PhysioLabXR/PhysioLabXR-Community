@@ -1,7 +1,8 @@
 import os
+import time
 
 import numpy as np
-from rena.sub_process.TCPInterface import RENATCPServer, RENATCPInterface
+from rena.sub_process.TCPInterface import RenaTCPServer, RenaTCPInterface
 
 # send a processing object
 from rena.utils.realtime_DSP import *
@@ -17,9 +18,17 @@ def dsp_processor(stream_name, port_id=None, identity='server'):
 
     if port_id is None:
         port_id = os.getpid()
-    tcp_interface = RENATCPInterface(stream_name, port_id, identity=identity)
-    tcp_server = RENATCPServer(RENATCPInterface=tcp_interface)
-    print('server started')
+        print('Server PID: ', str(port_id))
+    tcp_interface = RenaTCPInterface(stream_name, port_id, identity=identity)
+    tcp_server = RenaTCPServer(RENATCPInterface=tcp_interface)
+    print('Server Started')
+
+    exit_return = None
     # start process
-    while True:
-        tcp_server.process_data()
+    while exit_return is None:
+        exit_return = tcp_server.process_data()
+        # if exit_return:
+        #     print('Exit Server')
+
+    print('Exit Server')
+

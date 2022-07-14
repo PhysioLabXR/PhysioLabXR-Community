@@ -1,17 +1,18 @@
+import sys
 import time
 import zmq
 import numpy as np
 from rena.sub_process.pyzmq_utils import *
 
 
-class RENATCPObject:
+class RenaTCPObject:
     def __init__(self, data, processor_dict=None, exit_process=False):
         self.data = data
         self.processor_dict = processor_dict
         self.exit_process = exit_process
 
 
-class RENATCPInterface:
+class RenaTCPInterface:
     def __init__(self, stream_name, port_id, identity):
         self.bind_header = 'tcp://*:'
         self.connect_header = 'tcp://localhost:'
@@ -25,10 +26,12 @@ class RENATCPInterface:
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REP)
             self.bind_socket()
+            print('server connected: ', str(self.port_id))
         elif identity == 'client':
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
             self.connect_socket()
+            print('client connected: ', str(self.port_id))
         else:
             exit(1)
 
@@ -69,10 +72,10 @@ class RENATCPInterface:
         pass
 
 
-class RENATCPClient:
-    def __init__(self, RENATCPInterface: RENATCPInterface):
+class RenaTCPClient:
+    def __init__(self, RENATCPInterface: RenaTCPInterface):
         self.tcp_interface = RENATCPInterface
-        self.is_streaming = False
+        self.is_streaming = True
 
     def start_stream(self):
         self.is_streaming = True
@@ -80,7 +83,7 @@ class RENATCPClient:
     def stop_stream(self):
         self.is_streaming = False
 
-    def process_data(self, data: RENATCPObject):
+    def process_data(self, data: RenaTCPObject):
         if self.is_streaming:
             try:
                 send = self.tcp_interface.send_obj(data)
@@ -88,7 +91,7 @@ class RENATCPClient:
                 data = self.tcp_interface.recv_obj()
                 print('client data received')
             except:  # unknown type exception
-                print("DSP Server or Client Crashed")
+                print("Client Crashed")
 
             return data
 
@@ -100,15 +103,15 @@ class RENATCPClient:
                 # data = DSP.process_data(data)
 
             except:  # unknown type exception
-                print("DSP Server or Client Crashed")
+                print("Client Crashed")
 
             return data
 
 
-class RENATCPServer:
-    def __init__(self, RENATCPInterface: RENATCPInterface):
+class RenaTCPServer:
+    def __init__(self, RENATCPInterface: RenaTCPInterface):
         self.tcp_interface = RENATCPInterface
-        self.is_streaming = False
+        self.is_streaming = True
         self.dsp_processors = None
 
     def start_stream(self):
@@ -116,11 +119,17 @@ class RENATCPServer:
 
     def stop_stream(self):
         self.is_streaming = False
-
     def process_data(self):
         if self.is_streaming:
-            try:
+            # try:
+                print('server receiving data')
                 data = self.tcp_interface.recv_obj()
+
+                if data.exit_process:
+                    # print("Exit Server")
+                    return 0
+                    # sys.exit(0)
+
                 print('server data received')
                 # data = DSP.process_data(data)
                 #
@@ -130,8 +139,8 @@ class RENATCPServer:
                 #
                 send = self.tcp_interface.send_obj(data)
                 print('server data sent')
-            except:  # unknown type exception
-                print("DSP Server or Client Crashed")
+            # except:  # unknown type exception
+            #     print("DSP Server Crashed")
 
     def process_array(self, data):
         if self.is_streaming:
@@ -145,8 +154,8 @@ class RENATCPServer:
                 #
                 send = self.tcp_interface.send_array(data)
             except:  # unknown type exception
-                print("DSP Server or Client Crashed")
+                print("DSP Server Crashed")
         # return data
 
-    def update_renaserverinterface_processor(self, RENATCPObject: RENATCPObject):
+    def update_renaserverinterface_processor(self, RENATCPObject: RenaTCPObject):
         self.dsp_processors = RENATCPObject.processor_dict
