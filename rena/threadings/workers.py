@@ -572,6 +572,7 @@ class LSLReplayWorker(QObject):
 
             # retrieve the data and timestamps to be send
             nextStream = self.stream_data[self.stream_names[nextStreamIndex]]
+            print("chunk sizes: ", self.chunk_sizes)
             chunkSize = self.chunk_sizes[nextStreamIndex]
 
             nextChunkRangeStart = self.next_sample_of_stream[nextStreamIndex]
@@ -591,6 +592,7 @@ class LSLReplayWorker(QObject):
             stream_length = nextStream[0].shape[-1]
             # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
             if stream_length < self.next_sample_of_stream[nextStreamIndex] + chunkSize:
+                print("CHUNK UPDATE")
                 self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
 
             self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset
@@ -600,6 +602,7 @@ class LSLReplayWorker(QObject):
                 time.sleep(sleepDuration)
 
             outlet = self.outlets[nextStreamIndex]
+            print("outlet for this replay is: ", outlet)
             nextStreamName = self.stream_names[nextStreamIndex]
             if chunkSize == 1:
                 # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
