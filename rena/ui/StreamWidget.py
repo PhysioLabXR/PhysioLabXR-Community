@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import time
 
 import numpy as np
 import pyqtgraph as pg
@@ -8,6 +9,7 @@ from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
 
 from rena import config, config_ui
+from rena.sub_process.TCPInterface import RenaTCPRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.OptionsWindow import OptionsWindow
 from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
@@ -65,10 +67,15 @@ class StreamWidget(QtWidgets.QWidget):
         # visualization component
         self.stream_widget_visualization_component = None
 
+        self.init_server_client()
+
+
+
         # data elements
         self.worker_thread = pg.QtCore.QThread(self)
         self.interface = interface
-        self.lsl_worker = workers.LSLInletWorker(interface)
+        self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=interface,
+                                                 RenaTCPInterface=self.dsp_client_interface)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
@@ -193,9 +200,12 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widget.addLegend()
 
                 plot_data_items = []
-                for channel_index_in_group, channel_name in enumerate([preset['ChannelNames'][i] for i in plot_group_info['channels']]):
-                    if plot_group_info['channels_display'][channel_index_in_group]: # if display is 1
-                        plot_data_items.append(plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name))
+                for channel_index_in_group, channel_name in enumerate(
+                        [preset['ChannelNames'][i] for i in plot_group_info['channels']]):
+                    if plot_group_info['channels_display'][channel_index_in_group]:  # if display is 1
+                        plot_data_items.append(
+                            plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),
+                                             name=channel_name))
                     else:
                         plot_data_items.append(None)
 
@@ -365,3 +375,19 @@ class StreamWidget(QtWidgets.QWidget):
         #
         #     self.tickFrequencyLabel.setText(
         #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
+
+    def init_server_client(self):
+        print('John')
+
+        # dummy preset for now:
+        stream_name = 'OpenBCI'
+        port_id = int(time.time())
+        identity = 'server'
+        processor_dic = {}
+        rena_tcp_request_object = RenaTCPRequestObject(stream_name, port_id, identity, processor_dic)
+        self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
+        rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
+        print('DSP worker created')
+        self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
+
+        # send to server

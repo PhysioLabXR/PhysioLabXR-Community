@@ -49,33 +49,79 @@
     # # complete the processes
     # for proc in procs:
     #     proc.join()
-import sys
-import time
-from multiprocessing import Process
-import os
+# import sys
+# import time
+# from multiprocessing import Process
+# import os
+#
+# def info(title):
+#     print(title)
+#     print('module name:', __name__)
+#     print('parent process:', os.getppid())
+#     print('process id:', os.getpid())
+#
+# def f(name):
+#     info('function f')
+#     print('hello', name)
+#     time.sleep(5)
+#     print("Ready to Exit")
+#     sys.exit(0)
+#     # return 0
+#
+# if __name__ == '__main__':
+#     info('main line')
+#     p = Process(target=f, args=('bob',))
+#     p.start()
+#     # p.join()
+#     print('John')
+#     print('asdfassfd')
+#     # p.join()
+#     print('aLEX')
+#     time.sleep(10)
+#     print('Haowen')
 
-def info(title):
-    print(title)
-    print('module name:', __name__)
-    print('parent process:', os.getppid())
-    print('process id:', os.getpid())
 
-def f(name):
-    info('function f')
-    print('hello', name)
-    time.sleep(5)
-    print("Ready to Exit")
-    sys.exit(0)
-    # return 0
+# Python program to illustrate the concept
+# of threading
+# importing the threading module
+import threading
+from time import sleep
 
-if __name__ == '__main__':
-    info('main line')
-    p = Process(target=f, args=('bob',))
-    p.start()
-    # p.join()
-    print('John')
-    print('asdfassfd')
-    # p.join()
-    print('aLEX')
-    time.sleep(10)
-    print('Haowen')
+
+def print_cube(num):
+    """
+    function to print cube of given num
+    """
+    sleep(5)
+    print("Cube: {}".format(num * num * num))
+
+
+def print_square(num):
+    """
+    function to print square of given num
+    """
+    sleep(6)
+    print("Square: {}".format(num * num))
+
+
+if __name__ == "__main__":
+    # creating thread
+    t1 = threading.Thread(target=print_square, args=(10,))
+    t2 = threading.Thread(target=print_cube, args=(10,))
+
+    # starting thread 1
+    t1.start()
+    # starting thread 2
+    t2.start()
+
+    sleep(2)
+    # t1.exit()
+
+    # # wait until thread 1 is completely executed
+    # t1.join()
+    # # wait until thread 2 is completely executed
+    # t2.join()
+
+
+    # both threads completely executed
+    print("Done!")

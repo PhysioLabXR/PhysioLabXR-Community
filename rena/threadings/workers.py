@@ -11,8 +11,7 @@ import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
-from rena.sub_process.TCPInterface import RenaTCPClient, RenaTCPServer, RenaTCPObject, RenaTCPInterface
-from rena.sub_process.processor import dsp_processor
+from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPRequestObject, RenaTCPObject
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal
 from rena.interfaces import InferenceInterface, LSLInletInterface
@@ -37,8 +36,8 @@ class RENAWorker(QObject):
         super().__init__()
         # self.dsp_on = True
         # self.dsp_processor = None
-        self.dsp_server_process = None
-        self.dsp_client = None
+        # self.dsp_server_process = None
+        # self.dsp_client = None
         # self.init_dsp_client_server('John')
 
     @pg.QtCore.pyqtSlot()
@@ -50,6 +49,15 @@ class RENAWorker(QObject):
 
     def stop_stream(self):
         pass
+
+    # def init_client(self, rena_tcp_request_object:RenaTCPRequestObject):
+    #     print('creating client')
+    #     self.rena_tcp_client_interface = RenaTCPInterface(stream_name=rena_tcp_request_object.stream_name,
+    #                                                  port_id=rena_tcp_request_object.port_id,
+    #                                                  identity='client')
+
+
+        # self.rena_tcp_client_interface = RenaTCPInterface(stream_name=, port_id=, identity=)
 
     # def init_dsp_client_server(self, stream_name):
     #
@@ -220,12 +228,14 @@ class LSLInletWorker(RENAWorker):
     tick_signal = pyqtSignal()
 
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface,  *args, **kwargs):
+    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface: RenaTCPInterface, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.tick_signal.connect(self.process_on_tick)
 
         self._lslInlet_interface = LSLInlet_interface
+        self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
+        self.dsp_on = True
 
         self.start_time = time.time()
         self.num_samples = 0
@@ -235,6 +245,8 @@ class LSLInletWorker(RENAWorker):
     def process_on_tick(self):
         if self.is_streaming:
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            if frames.shape[-1] == 0:
+                return
 
             self.num_samples += len(timestamps)
             try:
@@ -242,6 +254,18 @@ class LSLInletWorker(RENAWorker):
             except ZeroDivisionError:
                 sampling_rate = 0
 
+
+            if self.dsp_on:
+                current_time = time.time()
+                self._rena_tcp_interface.send_array(frames)
+                # self._rena_tcp_interface.send_obj(RenaTCPObject(data=frames))
+                # send the data
+                frames = self._rena_tcp_interface.recv_array()
+                print('time: ', time.time()-current_time)
+
+                # receive the data
+                # frames = rena_tcp_object.data
+                # print(frames)
 
             # if self.dsp_on:
             #     receive_obj = self.dsp_client.process_data(data=RenaTCPObject(data=frames))

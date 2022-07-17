@@ -26,7 +26,7 @@ def dsp_processor(stream_name, port_id=None, identity='server'):
     exit_return = None
     # start process
     while exit_return is None:
-        exit_return = tcp_server.process_data()
+        exit_return = tcp_server.process_sample()
         # if exit_return:
         #     print('Exit Server')
 

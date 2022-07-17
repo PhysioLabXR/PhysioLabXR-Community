@@ -10,8 +10,15 @@ class DataProcessor:
     def __init__(self):
         pass
 
-    def process_data(self, data):
-        pass
+    def process_sample(self, data):
+
+        return data
+
+    def process_buffer(self, data):
+        output_buffer = np.empty(shape=data.shape)
+        for index in range(0, data.shape[1]):
+            output_buffer[:, index] = self.process_sample(data[:, index])
+        return output_buffer
 
     def reset_tap(self):
         pass
@@ -26,7 +33,7 @@ class IIRFilter(DataProcessor):
         self.x_tap = None
         self.y_tap = None
 
-    def process_data(self, data):
+    def process_sample(self, data):
         # perform realtime filter with tap
 
         # push x
@@ -56,7 +63,7 @@ class RealtimeNotch(DataProcessor):
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
-    def process_data(self, data):
+    def process_sample(self, data):
         # perform realtime filter with tap
 
         # push x
@@ -88,7 +95,7 @@ class RealtimeButterBandpass(DataProcessor):
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
-    def process_data(self, data):
+    def process_sample(self, data):
         # perform realtime filter with tap
 
         # push x
@@ -129,7 +136,7 @@ class RealtimeVrms(DataProcessor):
     #     self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
     #     self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
 
-    def process_data(self, data):
+    def process_sample(self, data):
         self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
         self.data_buffer[:, 0] = data
         vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
