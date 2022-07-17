@@ -35,7 +35,8 @@ class DSPServerWorker(DSPWorker):
         self.rena_tcp_interface = RenaTCPInterface
         self.identity = self.rena_tcp_interface.identity  # identity must be server
         self.is_streaming = True
-        # self.filter1 = RealtimeButterBandpass(fs=2500, channel_num=80)
+        self.filter1 = RealtimeButterBandpass(fs=5000, channel_num=20)
+
         # self.filter2 = RealtimeButterBandpass(fs=5000, channel_num=100)
         # self.filter3 = RealtimeButterBandpass(fs=5000, channel_num=100)
         # self.processor_run()
@@ -67,10 +68,22 @@ class DSPServerWorker(DSPWorker):
 
             current_time = time.time()
             # if len(data) != 0:
+            data = self.filter1.process_buffer(data)
+            data = self.filter1.process_buffer(data)
+            data = self.filter1.process_buffer(data)
+            data = self.filter1.process_buffer(data)
+            self.filter1.reset_tap()
+            # data = self.filter1.process_buffer(data)
+            # data = self.filter1.process_buffer(data)
+            # data = self.filter1.process_buffer(data)
             # data = self.filter1.process_buffer(data)
             # data = self.filter1.process_buffer(data)
 
+
+            # data = self.filter1.process_buffer(data)
+
             print(time.time() - current_time)
+            print(data.shape[-1])
             # time.sleep(0.5)
             # print('data received')
             send = self.rena_tcp_interface.send_array(data)
