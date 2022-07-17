@@ -58,7 +58,7 @@ def main(argv):
         for sample_ix in range(required_samples):
             # make a new random n_channels sample; this is converted into a
             # pylsl.vectorf (the data type that is expected by push_sample)
-            mysample = [np.random.normal(0, 1) for _ in range(n_channels)]
+            mysample = [rand() for _ in range(n_channels)]
             # now send it
             outlet.push_sample(mysample)
         sent_samples += required_samples
