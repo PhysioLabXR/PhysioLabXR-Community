@@ -87,18 +87,18 @@ def process_plot_group(preset_dict):
         # create GroupChannelsInPlot from 0 to x
         # if channel num is greater than 100, we hide the rest
         if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
-            channels_display = [1 for channel in range(0, channel_num)]
+            is_channels_shown = [1 for c in range(0, channel_num)]
         else:
-            channels_display = [1 for channel in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
-            channels_display.extend([0 for channel in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
+            is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
+            is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
 
         preset_dict['GroupChannelsInPlot'] = {
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
                 "channels": [channel_index for channel_index in range(0, channel_num)],
-                "channels_display": channels_display,
-                "group_display": 1,
+                "is_channels_shown": is_channels_shown,
+                "is_group_shown": 1,
                 "group_description": ""
             }
         }
@@ -118,12 +118,25 @@ def process_plot_group(preset_dict):
             preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
 
         preset_dict['GroupChannelsInPlot'] = dict()
+        num_shown_channel = 0
         for i, group in enumerate(plot_group_slice):
+            channel_indices = list(range(*group))
+            num_available_ch_shown = DEFAULT_CHANNEL_DISPLAY_NUM - num_shown_channel
+            if num_available_ch_shown <= 0:
+                is_channels_shown = [0 for c in range(len(channel_indices))]
+            else:
+                is_channels_shown = [1 for c in range(min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
+                is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
+                num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
+
             preset_dict['GroupChannelsInPlot']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
                     "plot_format": "time_series",
-                    "channels": list(range(*group))
+                    "channels": channel_indices,
+                    "is_channels_shown": is_channels_shown,
+                    "is_group_shown": 1,
+                    "group_description": ""
                 }
 
     return preset_dict
@@ -232,16 +245,16 @@ def get_working_camera_ports():
         camera = cv2.VideoCapture(dev_port)
         if not camera.isOpened():
             non_working_ports.append(dev_port)
-            print("Port %s is not working." %dev_port)
+            print("Video device port %s is not working." %dev_port)
         else:
             is_reading, img = camera.read()
             w = camera.get(3)
             h = camera.get(4)
             if is_reading:
-                print("Port %s is working and reads images (%s x %s)" %(dev_port,h,w))
+                print("Video device port %s is working and reads images (%s x %s)" %(dev_port,h,w))
                 working_ports.append(dev_port)
             else:
-                print("Port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
+                print("Video device port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
                 available_ports.append(dev_port)
         dev_port +=1
         camera.release()
