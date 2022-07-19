@@ -11,6 +11,9 @@ from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 from PyQt5 import QtCore
+
+from rena.sub_process.TCPInterface import RenaTCPInterface
+
 try:
     import config
 except ModuleNotFoundError as e:
@@ -75,6 +78,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_worker = None
         self.cam_workers = {}
         self.cam_displays = {}
+
+        ######### init server
+        print('Creating Rena Client')
+        self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
+                                                port_id=config.rena_server_port,
+                                                identity='client')
+
+        #########
+
         self.lsl_replay_worker = None
         self.recent_visualization_refresh_timestamps = collections.deque(
             maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
@@ -317,6 +329,7 @@ class MainWindow(QtWidgets.QMainWindow):
             start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
             lsl_stream_widget.setObjectName(lsl_widget_name)
 
+            # TODO: remove those meta information
             preset["num_samples_to_plot"] = int(
                 preset["NominalSamplingRate"] * config.PLOT_RETAIN_HISTORY)
             preset["ActualSamplingRate"] = preset[
@@ -489,7 +502,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.experiment_presets_dict = load_all_experiment_presets()
             except KeyError as e:
                 dialog_popup(
-                    msg='Unknown preset specifier, {0}\n Please check the example presets for list of valid specifiers: '.format(
+                    msg='Unknown preset specifier, {0}\n Please check the examples presets for list of valid specifiers: '.format(
                         e), title='Error')
                 return False
         return True

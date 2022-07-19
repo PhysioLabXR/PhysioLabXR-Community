@@ -12,11 +12,12 @@ import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
+from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPRequestObject, RenaTCPObject
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
-
+import multiprocessing as mp
 import pyautogui
 
 import numpy as np
@@ -28,7 +29,53 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
                           QThreadPool, pyqtSignal, pyqtSlot)
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
+from multiprocessing import Process
+class RENAWorker(QObject):
+    signal_data = pyqtSignal(dict)
+    tick_signal = pyqtSignal()
+    def __init__(self):
+        super().__init__()
+        # self.dsp_on = True
+        # self.dsp_processor = None
+        # self.dsp_server_process = None
+        # self.dsp_client = None
+        # self.init_dsp_client_server('John')
 
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        pass
+
+    def start_stream(self):
+        pass
+
+    def stop_stream(self):
+        pass
+
+    # def init_client(self, rena_tcp_request_object:RenaTCPRequestObject):
+    #     print('creating client')
+    #     self.rena_tcp_client_interface = RenaTCPInterface(stream_name=rena_tcp_request_object.stream_name,
+    #                                                  port_id=rena_tcp_request_object.port_id,
+    #                                                  identity='client')
+
+
+        # self.rena_tcp_client_interface = RenaTCPInterface(stream_name=, port_id=, identity=)
+
+    # def init_dsp_client_server(self, stream_name):
+    #
+    #     self.dsp_server_process = Process(target=dsp_processor,
+    #                                       args=(stream_name,))
+    #     # mp.set_start_method(method='spawn')
+    #     self.dsp_server_process.start()
+    #     print('dsp_server_process pid: ', str(self.dsp_server_process.pid))
+    #
+    #     dsp_client_interface = RenaTCPInterface(stream_name=stream_name,
+    #                                             port_id=self.dsp_server_process.pid,
+    #                                             identity='client')
+    #     self.dsp_client = RenaTCPClient(RENATCPInterface=dsp_client_interface)
+        # create a server and get it's pid
+        # server_interface = RENATCPInterface()
+        # clint_interface = RENATCPInterface()
+        # tcp_client = RENATCP
 
 class EEGWorker(QObject):
     """
@@ -175,32 +222,60 @@ class InferenceWorker(QObject):
                 self.signal_inference_results.emit(inference_results)
 
 
-class LSLInletWorker(QObject):
+class LSLInletWorker(RENAWorker):
 
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface,  *args, **kwargs):
+
+    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface: RenaTCPInterface, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.tick_signal.connect(self.process_on_tick)
 
         self._lslInlet_interface = LSLInlet_interface
+        self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
+        self.dsp_on = True
 
         self.start_time = time.time()
         self.num_samples = 0
+        # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            if frames.shape[-1] == 0:
+                return
 
             self.num_samples += len(timestamps)
             try:
                 sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
             except ZeroDivisionError:
                 sampling_rate = 0
+
+
+            if self.dsp_on:
+                current_time = time.time()
+                self._rena_tcp_interface.send_array(frames)
+                # self._rena_tcp_interface.send_obj(RenaTCPObject(data=frames))
+                # send the data
+                frames = self._rena_tcp_interface.recv_array()
+                print('time: ', time.time()-current_time)
+
+                # receive the data
+                # frames = rena_tcp_object.data
+                # print(frames)
+
+            # if self.dsp_on:
+            #     receive_obj = self.dsp_client.process_data(data=RenaTCPObject(data=frames))
+            #     print(receive_obj.data)
+            # insert professor
+            # insert dsp processor
+            # if self.dsp_on:
+            #     self
+
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
@@ -218,6 +293,19 @@ class LSLInletWorker(QObject):
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
+
+    # def remove_stream(self):
+    #     # self.stop_stream()
+    #     # kill server
+    #     if self.dsp_server_process:
+    #         self.dsp_client.tcp_interface.send_obj(RenaTCPObject(data=None, exit_process=True))
+    #         self.dsp_server_process.join()
+            # self.dsp_server_process.terminate()
+            # while self.dsp_server_process.exitcode is None:
+            #     self.dsp_server_process.close()
+            #     break
+            # self.dsp_server_process.close()
+
 
 class WebcamWorker(QObject):
     tick_signal = pyqtSignal()

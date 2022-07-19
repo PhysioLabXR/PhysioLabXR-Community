@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="signalGroupsLabel">
      <property name="text">
-      <string>Signal Groups</string>
+      <string>Stream Settings</string>
      </property>
     </widget>
    </item>
@@ -25,7 +25,7 @@
     <widget class="QWidget" name="signal_widget" native="true">
      <property name="minimumSize">
       <size>
-       <width>500</width>
+       <width>0</width>
        <height>350</height>
       </size>
      </property>
@@ -38,27 +38,46 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QWidget" name="signal_group_widget" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QScrollArea" name="TreeViewScrollArea">
-           <property name="widgetResizable">
-            <bool>true</bool>
+          <widget class="QWidget" name="signalTreeViewArea" native="true">
+           <layout class="QVBoxLayout" name="SignalTreeViewLayout"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="signalTreeViewBts" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Nominal Sampling Rate:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="nominalSamplingRateInputbox"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="exportPresetBtn">
+           <property name="text">
+            <string>Export Preset .json</string>
            </property>
-           <widget class="QWidget" name="scrollAreaWidgetContents">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>1425</width>
-              <height>1105</height>
-             </rect>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_5">
-             <item>
-              <widget class="QTreeView" name="signalTreeView"/>
-             </item>
-            </layout>
-           </widget>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="exportPresetAndReloadStreamBtn">
+           <property name="text">
+            <string>Export Preset .json &amp; Reload Stream</string>
+           </property>
           </widget>
          </item>
         </layout>
@@ -66,11 +85,38 @@
       </item>
       <item>
        <widget class="QWidget" name="signal_info_widget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>500</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
-          <widget class="QLabel" name="discription_label">
+          <widget class="QLabel" name="actionsLabel">
+           <property name="maximumSize">
+            <size>
+             <width>200</width>
+             <height>50</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Information</string>
+            <string>Information and Actions</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="actionsWidget" native="true">
+           <layout class="QVBoxLayout" name="actionsWidgetLayout"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string/>
            </property>
           </widget>
          </item>
