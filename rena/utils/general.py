@@ -96,7 +96,7 @@ def process_plot_group(preset_dict):
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
-                "channels": [channel_index for channel_index in range(0, channel_num)],
+                "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
                 "is_group_shown": 1,
                 "group_description": ""
@@ -133,7 +133,7 @@ def process_plot_group(preset_dict):
                 {
                     "group_index": i,
                     "plot_format": "time_series",
-                    "channels": channel_indices,
+                    "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
                     "is_group_shown": 1,
                     "group_description": ""
@@ -170,23 +170,18 @@ def process_preset_create_openBCI_interface_startsensor(device_name, serial_port
     return interface
 
 
-def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
+def process_preset_create_TImmWave_interface_startsensor(num_range_bin, Dport, Uport, config_path):
     # create interface
-    num_range_bin = device_preset_dict['NumRangeBin']
     interface = MmWaveSensorLSLInterface(num_range_bin=num_range_bin)
     # connect Uport Dport
 
     try:
-        Dport = device_preset_dict['Dport(Standard)']
-        Uport = device_preset_dict['Uport(Enhanced)']
-
         interface.connect(uport_name=Uport, dport_name=Dport)
     except AssertionError as e:
         raise AssertionError(e)
 
     # send config
     try:
-        config_path = device_preset_dict['ConfigPath']
         if not os.path.exists(config_path):
             raise AssertionError('The config file Does not exist: ', str(config_path))
 
@@ -201,7 +196,7 @@ def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
     except AssertionError as e:
         raise AssertionError(e)
 
-    return device_preset_dict, interface
+    return interface
 
 
 # Define function to import external files when using PyInstaller.

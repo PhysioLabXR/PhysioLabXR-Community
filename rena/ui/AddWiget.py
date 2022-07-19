@@ -4,7 +4,7 @@ from rena import config
 from rena.utils.settings_utils import get_all_presets
 
 
-class AddWidget(QtWidgets.QWidget):
+class AddStreamWidget(QtWidgets.QWidget):
     def __init__(self, ):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.

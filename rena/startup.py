@@ -29,12 +29,13 @@ def load_default_settings():
     LSLStream_presets_dict = load_all_lslStream_presets()
     device_presets_dict = load_all_Device_presets()
     experiment_presets_dict = load_all_experiment_presets()
+
+    stream_presets_dict = {**LSLStream_presets_dict, **device_presets_dict}  # merge the lsl and device presets
     # add plot groups
-    LSLStream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in LSLStream_presets_dict.items()])
-    device_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in device_presets_dict.items()])
+    stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])
 
     [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
-    [export_preset_to_settings(p, 'streampresets') for p in {**LSLStream_presets_dict, **device_presets_dict}.values()]
+    [export_preset_to_settings(p, 'streampresets') for p in stream_presets_dict.values()]
 
     config.settings.sync()
 

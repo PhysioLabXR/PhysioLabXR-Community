@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
+from rena import config
 from rena.config_ui import *
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -13,11 +14,11 @@ class SignalTreeViewWindow(QTreeWidget):
     selection_changed_signal = QtCore.pyqtSignal(str)
     item_changed_signal = QtCore.pyqtSignal(str)
 
-    def __init__(self, parent, preset):
+    def __init__(self, parent, lsl_name):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent
-        self.preset = preset
+        self.lsl_name = lsl_name
 
         # self.model = QStandardItemModel()
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
@@ -45,14 +46,13 @@ class SignalTreeViewWindow(QTreeWidget):
 
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.item_type = 'stream_root'
-        self.stream_root.setText(0, self.preset['StreamName'])
+        self.stream_root.setText(0, self.lsl_name)
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
                                   & (~Qt.ItemIsSelectable) | Qt.ItemIsEditable)
         # self.stream_root.channel_group.setEditable(False)
-        channel_groups_information = self.preset['GroupChannelsInPlot']
-        print(channel_groups_information)
 
+        # get_childGroups_for_group('presets/')
         for group_name in channel_groups_information:
             group_info = channel_groups_information[group_name]
             channel_group = self.add_item(parent_item=self.stream_root,
