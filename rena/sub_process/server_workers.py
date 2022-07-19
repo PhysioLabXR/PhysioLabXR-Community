@@ -35,7 +35,7 @@ class DSPServerWorker(DSPWorker):
         self.rena_tcp_interface = RenaTCPInterface
         self.identity = self.rena_tcp_interface.identity  # identity must be server
         self.is_streaming = True
-        self.filter1 = RealtimeButterBandpass(fs=5000, channel_num=20)
+        self.filter1 = RealtimeButterBandpass(fs=5000, channel_num=200)
 
         # self.filter2 = RealtimeButterBandpass(fs=5000, channel_num=100)
         # self.filter3 = RealtimeButterBandpass(fs=5000, channel_num=100)
