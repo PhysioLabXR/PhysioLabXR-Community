@@ -608,6 +608,7 @@ class LSLReplayWorker(QObject):
                 # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
                 outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
                 print("pushed, chunk size 1")
+                print(nextChunkValues)
             else:
                 # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
                 outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + self.virtual_clock_offset)
