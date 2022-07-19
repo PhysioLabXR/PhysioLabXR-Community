@@ -129,53 +129,32 @@ def process_plot_group(preset_dict):
     return preset_dict
 
 
-def process_preset_create_lsl_interface(preset):
-    lsl_stream_name, lsl_chan_names, group_chan_in_plot = preset['StreamName'], preset['ChannelNames'], \
-                                                          preset['GroupChannelsInPlot']
+def create_lsl_interface(lsl_name, channel_names):
     try:
-        interface = LSLInletInterface.LSLInletInterface(lsl_stream_name)
+        interface = LSLInletInterface.LSLInletInterface(lsl_name)
     except AttributeError:
-        raise AssertionError('Unable to find LSL Stream with given type {0}.'.format(lsl_stream_name))
+        raise AssertionError('Unable to find LSL Stream in LAN.')
     lsl_num_chan = interface.get_num_chan()
-    preset['NumChannels'] = lsl_num_chan
 
-    # process srate
-    if not preset['NominalSamplingRate']:  # try to find the nominal srate from lsl stream info if not provided
-        preset['NominalSamplingRate'] = interface.get_nominal_srate()
-        if not preset['NominalSamplingRate']:
-            raise AssertionError(
-                'Unable to load preset with name {0}, it does not have a nominal srate. RN requires all its streams to provide nominal srate for visualization purpose. You may manually define the NominalSamplingRate in presets.'.format(
-                    lsl_stream_name))
-
-    # process channel names ###########################
-    if lsl_chan_names:
-        if lsl_num_chan != len(lsl_chan_names):
-            raise AssertionError(
-                'Unable to load preset with name {0}, number of channels mismatch the number of channel names.'.format(
-                    lsl_stream_name))
-    else:
-        preset['ChannelNames'] = ['channel_' + str(i) for i in
-                                  list(range(0, preset['NumChannels']))]  # ['Unknown'] * preset['NumChannels']
-
-    # now always create time series data format and set group channels from 0 to x if no group channels
-    preset_dict = process_plot_group(preset)
-    return preset_dict, interface
-
-
-def process_preset_create_openBCI_interface_startsensor(devise_preset_dict):
     try:
-        interface = OpenBCILSLInterface(stream_name=devise_preset_dict['StreamName'],
-                                        stream_type=devise_preset_dict['StreamType'],
-                                        serial_port=devise_preset_dict["SerialPort"],
-                                        board_id=devise_preset_dict["Board_id"],
-                                        log='store_true', )
+        assert lsl_num_chan == len(channel_names)
+    except AssertionError:
+        raise ValueError('The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(len(channel_names), lsl_num_chan))
+
+    return interface
+
+
+def process_preset_create_openBCI_interface_startsensor(device_name, serial_port, board_id):
+    try:
+        interface = OpenBCILSLInterface(stream_name=device_name,
+                                        serial_port=serial_port,
+                                        board_id=board_id,
+                                        log='store_false', )
         interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
 
-    lsl_preset_dict = devise_preset_dict
-
-    return lsl_preset_dict, interface
+    return interface
 
 
 def process_preset_create_TImmWave_interface_startsensor(device_preset_dict):
@@ -222,23 +201,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-
-def export_preset_to_settings(preset, setting_category):
-    assert setting_category == 'lslpresets' or setting_category == 'devicepresets' or setting_category == 'experimentpresets'
-    if setting_category == 'experimentpresets':
-        config.settings.setValue('presets/experimentpresets/{0}/PresetStreamNames'.format(preset[0]), preset[1])
-    else:
-        config.settings.beginGroup('presets/{0}'.format(setting_category))
-
-        for preset_key, value in preset.items():
-            if preset_key != 'GroupChannelsInPlot':
-                config.settings.setValue('{0}/{1}'.format(preset['StreamName'], preset_key), value)
-
-        for group_name, group_info_dict in preset['GroupChannelsInPlot'].items():
-            for group_info_key, group_info_value in group_info_dict.items():
-                config.settings.setValue('{0}/GroupChannelsInPlot/{1}'.format(preset['StreamName'], group_info_key), group_info_value)
-        config.settings.endGroup()
-
 
 def get_working_camera_id():
     """
