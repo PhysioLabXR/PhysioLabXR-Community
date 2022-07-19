@@ -1,24 +1,15 @@
-import time
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import pyqtSignal
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets, uic, sip
-from PyQt5.QtWidgets import QSlider, QLabel
-from PyQt5.QtCore import pyqtSignal, QSize
-from PyQt5.QtGui import QIcon, QPixmap
-
-import numpy as np
-from datetime import datetime
-
-from rena import config
-from rena.ui.ReplayTab import ReplayTab
 from rena.ui_shared import start_stream_icon, stop_stream_icon
+
 
 class PlayBackWidget(QtWidgets.QWidget):
     playback_signal = pyqtSignal(int)
     play_pause_signal = pyqtSignal(bool)
     stop_signal = pyqtSignal()
 
-    def __init__(self, parent: ReplayTab):
+    def __init__(self, parent):
         super().__init__()
         self.ui = uic.loadUi("ui/PlayBackWidget.ui", self)
         self.parent = parent

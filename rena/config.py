@@ -111,7 +111,6 @@ rena_server_port = 9999999
 rena_server_name = 'RENA_SERVER'
 rena_server_worker_ports = np.arange(1,100)
 
-replay_server_port = 9999998
-replay_server_name = 'RENA_REPLAY_SERVER'
+replay_port = 5556
 
 

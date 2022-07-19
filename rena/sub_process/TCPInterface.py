@@ -49,6 +49,10 @@ class RenaTCPInterface:
         else:
             exit(1)
 
+        # create poller object, so we can poll msg with a timeout
+        self.poller = zmq.Poller()
+        self.poller.register(self.socket, zmq.POLLIN)
+
     def bind_socket(self):
         binder = self.bind_header + str(self.port_id)
         self.socket.bind(binder)

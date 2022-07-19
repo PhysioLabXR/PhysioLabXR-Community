@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QFileDialog
 import rena.config
 from rena import config
 from rena.sub_process.ReplayClient import start_replay_client
+from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import pylsl
@@ -26,6 +27,7 @@ import pyqtgraph as pg
 from rena.ui.ReplaySeekBar import ReplaySeekBar
 from rena.ui.PlayBackWidget import PlayBackWidget
 from rena.utils.ui_utils import AnotherWindow, another_window
+
 
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
@@ -66,7 +68,12 @@ class ReplayTab(QtWidgets.QWidget):
         self.replay_timer.timeout.connect(self.ticks)
 
         # start replay client
+        self.send_command_interface = RenaTCPInterface(stream_name='RENA_REPLAY_CLIENT',
+                                                       port_id=config.replay_port,
+                                                       identity='server',
+                                                       pattern='pipeline')
         self.replay_client_process = Process(target=start_replay_client)
+        self.replay_client_process.start()
 
     def _open_playback_widget(self):
         self._init_playback_widget()
@@ -114,7 +121,7 @@ class ReplayTab(QtWidgets.QWidget):
 
         if self.file_loc.endswith('.dats'):
             rns_stream = RNStream(self.file_loc)
-            stream_data = rns_stream.stream_in(ignore_stream=['0','monitor1'])
+            stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
         elif self.file_loc.endswith('.p'):
             stream_data = pickle.load(open(self.file_loc, 'rb'))
         else:
@@ -138,7 +145,6 @@ class ReplayTab(QtWidgets.QWidget):
         self.StartReplayBtn.setEnabled(False)
         self.StopReplayBtn.setEnabled(True)
         self.on_play_pause_toggle()  # because worker's is_playing status should be set to True as well
-
 
     def stop_replay_btn_pressed(self):
         self.is_replaying = False

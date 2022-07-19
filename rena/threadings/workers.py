@@ -545,7 +545,7 @@ class LSLReplayWorker(QObject):
     def __init__(self, parent, playback_position_signal, play_pause_signal):
         super(LSLReplayWorker, self).__init__()
         playback_position_signal.connect(self.on_playback_position_changed)
-        play_pause_signal.connect(self.on_play_pause_toggle)
+        # play_pause_signal.connect(self.on_play_pause_toggle)
         # self.is_playing = False
         self.start_time, self.end_time = math.inf, -math.inf
         self.total_time = None
