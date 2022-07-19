@@ -2,6 +2,7 @@ import os.path
 
 from rena import config, config_ui
 from rena.utils.general import *
+from rena.utils.settings_utils import export_preset_to_settings
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -33,8 +34,7 @@ def load_default_settings():
     device_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in device_presets_dict.items()])
 
     [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
-    [export_preset_to_settings(p, 'lslpresets') for p in LSLStream_presets_dict.values()]
-    [export_preset_to_settings(p, 'devicepresets') for p in device_presets_dict.values()]
+    [export_preset_to_settings(p, 'streampresets') for p in {**LSLStream_presets_dict, **device_presets_dict}.values()]
 
     config.settings.sync()
 
