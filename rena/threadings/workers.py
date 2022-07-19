@@ -1,3 +1,4 @@
+from collections import deque
 import time
 import math
 import cv2
@@ -457,12 +458,12 @@ class LSLReplayWorker(QObject):
         super(LSLReplayWorker, self).__init__()
         playback_position_signal.connect(self.on_playback_position_changed)
         play_pause_signal.connect(self.on_play_pause_toggle)
-        self.is_playing = False
+        # self.is_playing = False
         self.start_time, self.end_time = math.inf, -math.inf
         self.total_time = None
 
         # rns_stream = RNStream('C:/Recordings/03_22_2021_16_43_45-Exp_realitynavigation-Sbj_0-Ssn_0 CLEANED.dats')
-        self.stream_data = None#rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
+        self.stream_data = None # rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
         # self.tick_signal.connect(self.start_stream)
         self.stop_signal = False
 
@@ -474,6 +475,9 @@ class LSLReplayWorker(QObject):
         self.next_sample_of_stream = [] # index of the next sample of each stream that will be send
         self.chunk_sizes = [] # how many samples should be published at once
         self.selected_stream_indices = None
+
+        # fps counter
+        self.tick_times = deque(maxlen=50)
 
     def virtual_time_to_playback_position_value(self):
         # TODO: do not hardcode playback range (100)
@@ -488,10 +492,10 @@ class LSLReplayWorker(QObject):
         # set the virtual clock according to the new playback position
         self.virtual_clock = self.playback_position_value_to_virtual_time(new_position)
 
-    def on_play_pause_toggle(self): # is_playing
-        print("on play pause toggle from workers.py - next status is ")
-        # play and pause accordingly
-        self.is_playing = not self.is_playing
+    # def on_play_pause_toggle(self): # is_playing
+    #     print("on play pause toggle from workers.py - next status is ")
+    #     # play and pause accordingly
+    #     self.is_playing = not self.is_playing
 
     def setup_stream(self):
         # setup the streams
@@ -546,8 +550,10 @@ class LSLReplayWorker(QObject):
 
         print("start time and end time ", self.start_time, self.end_time)
 
+    @pg.QtCore.pyqtSlot()
     def replay(self):
-        # print("is_playing process: ", self.is_playing)
+        self.tick_times.append(time.time())
+        print("is_playing process: FPS is {0}".format(self.get_fps()))
         if self.is_playing:
             print("replay ticking in progress")
             # run the stream
@@ -753,5 +759,10 @@ class LSLReplayWorker(QObject):
                 chunk_sizes.remove(chunk_sizes[nextStreamIndex])
                 stream_names.remove(stream_names[nextStreamIndex])
 
-        print(datetime.now())
         # self.stop_replay_btn_pressed()
+
+    def get_fps(self):
+        try:
+            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+        except ZeroDivisionError:
+            return 0

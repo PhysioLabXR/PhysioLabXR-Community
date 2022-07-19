@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 
 from rena import config
+from rena.ui.ReplayTab import ReplayTab
 from rena.ui_shared import start_stream_icon, stop_stream_icon
 
 class PlayBackWidget(QtWidgets.QWidget):
@@ -17,11 +18,10 @@ class PlayBackWidget(QtWidgets.QWidget):
     play_pause_signal = pyqtSignal(bool)
     stop_signal = pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, parent: ReplayTab):
         super().__init__()
         self.ui = uic.loadUi("ui/PlayBackWidget.ui", self)
         self.parent = parent
-        self.is_playing = True # default : True (widget is created when the replay begins)
 
         # playback status
         self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
@@ -30,8 +30,7 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def emit_play_pause_button_clicked(self):
         print("Its clicked in playbackwidget")
-        self.is_playing = not self.is_playing
-        if self.is_playing:
+        if not self.parent.is_replaying:  # set in reverse
             self.playPauseButton.setIcon(stop_stream_icon)
             # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
         else:

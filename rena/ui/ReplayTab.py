@@ -55,6 +55,10 @@ class ReplayTab(QtWidgets.QWidget):
         self.lsl_replay_worker = LSLReplayWorker(
             self, self.playback_position_signal, self.play_pause_signal)
         # Move worker to thread
+        self.lsl_replay_thread = pg.QtCore.QThread(self.parent)
+        self.lsl_replay_thread.start()
+        self.lsl_replay_worker.moveToThread(self.lsl_replay_thread)
+
         self.replay_timer = QTimer()
         self.replay_timer.setInterval(config.REFRESH_INTERVAL)
         self.replay_timer.timeout.connect(self.ticks)
@@ -110,19 +114,8 @@ class ReplayTab(QtWidgets.QWidget):
             stream_data = pickle.load(open(self.file_loc, 'rb'))
         else:
             dialog_popup('Unsupported file type', title='WARNING')
+            return
 
-        self.is_replaying = True
-        self.on_play_pause_toggle(True) # because worker's is_playing status should be set to True as well
-        self.StartReplayBtn.setEnabled(False)
-        self.StopReplayBtn.setEnabled(True)
-
-        lsl_replay_thread = pg.QtCore.QThread(self.parent)
-        lsl_replay_thread.start()
-
-        self.parent.worker_threads['lsl_replay'] = lsl_replay_thread
-        self.lsl_replay_worker.moveToThread(lsl_replay_thread)
-        self.lsl_replay_worker.stream_data = stream_data
-        # self.lsl_replay_worker.tick_signal.emit()
         self.lsl_replay_worker.setup_stream()
         self.replay_timer.start()
 
@@ -137,6 +130,10 @@ class ReplayTab(QtWidgets.QWidget):
         # self.parent.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
 
         # self.lsl_replay_worker.start_stream()
+        self.StartReplayBtn.setEnabled(False)
+        self.StopReplayBtn.setEnabled(True)
+        self.on_play_pause_toggle()  # because worker's is_playing status should be set to True as well
+
 
     def stop_replay_btn_pressed(self):
         self.is_replaying = False
@@ -268,15 +265,9 @@ class ReplayTab(QtWidgets.QWidget):
     def ticks(self):
         self.lsl_replay_worker.replay()
 
-    def on_play_pause_toggle(self, is_playing):
-        print("toggle!")
-        # if self.is_replaying:
-        #     print("this should not be hit!!!")
-        #     self.is_replaying = False
-        # else:
-        #     print("this should be hit!!!!!")
-        #     self.is_replaying = True
-        self.is_replaying = is_playing
+    def on_play_pause_toggle(self):
+        print("ReplayTab: toggle is replaying")
+        self.is_replaying = not self.is_replaying
         self.play_pause_signal.emit(self.is_replaying)
 
     def on_playback_slider_changed(self, new_playback_position):
