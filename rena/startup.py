@@ -35,4 +35,10 @@ def load_default_settings():
     [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
     [export_preset_to_settings(p, 'lslpresets') for p in LSLStream_presets_dict.values()]
     [export_preset_to_settings(p, 'devicepresets') for p in device_presets_dict.values()]
-    print()
+
+    config.settings.sync()
+
+    print('Loading avaiable cameras')
+    cameras = get_working_camera_ports()
+    cameras = list(map(str, cameras[1]))
+    config.settings.setValue('cameras', cameras + ['monitor1'])
