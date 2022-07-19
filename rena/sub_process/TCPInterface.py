@@ -17,13 +17,6 @@ class RenaTCPRequestObject:
         self.identity = identity
         self.processor_dict = processor_dict
 
-
-
-
-
-
-
-
 class RenaTCPInterface:
     def __init__(self, stream_name, port_id, identity, pattern='request-reply'):
         self.bind_header = 'tcp://*:'

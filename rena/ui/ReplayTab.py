@@ -2,6 +2,7 @@
 import os
 import pickle
 import time
+from multiprocessing import Process
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -15,6 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 
 import rena.config
 from rena import config
+from rena.sub_process.ReplayClient import start_replay_client
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import pylsl
@@ -62,6 +64,9 @@ class ReplayTab(QtWidgets.QWidget):
         self.replay_timer = QTimer()
         self.replay_timer.setInterval(config.REFRESH_INTERVAL)
         self.replay_timer.timeout.connect(self.ticks)
+
+        # start replay client
+        self.replay_client_process = Process(target=start_replay_client)
 
     def _open_playback_widget(self):
         self._init_playback_widget()
