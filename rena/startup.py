@@ -22,14 +22,17 @@ def load_default_settings():
                                  'start recording.'.format(config.settings.value('recording_file_location')), title='Warning')
         print("Using default recording location {0}".format(config.settings.value('recording_file_location')))
 
-    # load the presets
+    print('Reloading presets from Preset directory to persistent settings')
+    # load the presets, reload from local directory the default LSL, device and experiment presets
     config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
     LSLStream_presets_dict = load_all_lslStream_presets()
     device_presets_dict = load_all_Device_presets()
     experiment_presets_dict = load_all_experiment_presets()
     # add plot groups
     LSLStream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in LSLStream_presets_dict.items()])
+    device_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in device_presets_dict.items()])
 
+    [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
     [export_preset_to_settings(p, 'lslpresets') for p in LSLStream_presets_dict.values()]
     [export_preset_to_settings(p, 'devicepresets') for p in device_presets_dict.values()]
     print()
