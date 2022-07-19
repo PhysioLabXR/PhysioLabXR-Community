@@ -1,9 +1,9 @@
-class MGesFError(Exception):
+class RenaError(Exception):
     """Base class for other exceptions"""
     pass
 
 
-class DataPortNotOpenError(MGesFError):
+class DataPortNotOpenError(RenaError):
     def __str__(self):
         return 'attempting to read from unopened data port'
 
@@ -11,7 +11,7 @@ class DataPortNotOpenError(MGesFError):
     pass
 
 
-class PortsNotSetUpError(MGesFError):
+class PortsNotSetUpError(RenaError):
     def __str__(self):
         return 'CLI Ports are not set up'
 
@@ -19,14 +19,14 @@ class PortsNotSetUpError(MGesFError):
     pass
 
 
-class GeneralMmWError(MGesFError):
+class GeneralMmWError(RenaError):
     def __str__(self):
         return 'general mmWave error occurred, please debug the tlv buffer and decoder'
 
     pass
 
 
-class BufferOverFlowError(MGesFError):
+class BufferOverFlowError(RenaError):
     """Raised when data buffer overflows """
 
     def __str__(self):
@@ -35,7 +35,7 @@ class BufferOverFlowError(MGesFError):
     pass
 
 
-class InterfaceNotExistError(MGesFError):
+class InterfaceNotExistError(RenaError):
     """Rasied when an interface doesn't exist when in use"""
 
     def __str__(self):
@@ -44,7 +44,7 @@ class InterfaceNotExistError(MGesFError):
     pass
 
 
-class StoragePathInvalidError(MGesFError):
+class StoragePathInvalidError(RenaError):
     """Raised when the path given is invalid"""
 
     def __str__(self):
@@ -53,10 +53,16 @@ class StoragePathInvalidError(MGesFError):
     pass
 
 
-class LeapPortTimeoutError(MGesFError):
+class LeapPortTimeoutError(RenaError):
     """Raised when LeapInterface is running without LeapMouse"""
 
     def __str__(self):
         return 'LeapMouse is not running'
+
+    pass
+
+class AlreadyAddedError(RenaError):
+    def __str__(self):
+        return 'Failed to add. The target is already in the app.'
 
     pass
