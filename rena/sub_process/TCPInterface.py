@@ -1,3 +1,5 @@
+import zmq
+
 from rena.sub_process.pyzmq_utils import *
 
 
@@ -23,7 +25,7 @@ class RenaTCPRequestObject:
 
 
 class RenaTCPInterface:
-    def __init__(self, stream_name, port_id, identity):
+    def __init__(self, stream_name, port_id, identity, pattern='request-reply'):
         self.bind_header = 'tcp://*:'
         self.connect_header = 'tcp://localhost:'
 
@@ -32,13 +34,22 @@ class RenaTCPInterface:
         self.identity = identity
         # self.is_streaming = False
 
+        if pattern == 'request-reply' and identity == 'server': socket_type = zmq.REP
+        elif pattern == 'request-reply' and identity == 'client': socket_type = zmq.REQ
+        elif pattern == 'pipeline' and identity == 'client': socket_type = zmq.PULL
+        elif pattern == 'pipeline' and identity == 'server': socket_type = zmq.PUSH
+        else: raise AttributeError('Unsupported interface pattern: {0}'.format(pattern))
+
+        self.context = zmq.Context()
+        self.socket = self.context.socket(socket_type)
+        if identity == 'server': self.bind_socket()
+        elif identity == 'client': self.connect_socket()
+        else: raise AttributeError('Unsupported interface identity: {0}'.format(identity))
+
         if identity == 'server':
-            self.context = zmq.Context()
-            self.socket = self.context.socket(zmq.REP)
             self.bind_socket()
             print('server connected: ', str(self.port_id))
         elif identity == 'client':
-            self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
             self.connect_socket()
             print('client connected: ', str(self.port_id))
