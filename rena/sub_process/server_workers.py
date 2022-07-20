@@ -6,7 +6,7 @@ from PyQt5.QtCore import (QObject, pyqtSignal)
 
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.realtime_DSP import RealtimeButterBandpass
-
+from rena.config import *
 
 class DSPWorker(threading.Thread):
     # signal_data = pyqtSignal(object)
@@ -104,22 +104,39 @@ class DSPServerWorker(DSPWorker):
 #         self.worker_thread.start()
 
 
-class RenaDSPMaster(threading.Thread):
+class RenaDSPServerMasterWorker(threading.Thread):
 
     def __init__(self, RenaTCPInterface:RenaTCPInterface):
-        self._rena_tcp_interface = RenaTCPInterface
-        self.running = True
         super().__init__()
+        self._rena_tcp_interface = RenaTCPInterface
+        self.dsp_server_workers = {} # DSPServerWorker use stream name as the key
+        self.running = True
+
+
 
 
     def run(self):
         while self.running:
             request_object = self._rena_tcp_interface.recv_obj()
-            request_type = request_object
+
             # classify the request type
             # 1. add worker
             # 2. remove a worker # mutex applied
             # 3. add filter or change group format # mutex applied
+            if request_object.request_type is rena_server_add_dsp_worker_request:
+                pass
+            elif request_object.request_type is rena_server_update_worker_request:
+                pass
+            elif request_object.request_type is rena_server_remove_worker_request:
+                pass
+            elif request_object.request_type is rena_server_exit_request:
+                pass
+            else:
+                print('Wrong request type, please check with client')
+
+
+
+
 
 
 
