@@ -1,6 +1,6 @@
 from rena import config
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.sub_process.server_workers import RenaDSPUnit, DSPServerWorker
+from rena.sub_process.server_workers import DSPServerWorker
 
 if __name__ == '__main__':
     print("Server Started")

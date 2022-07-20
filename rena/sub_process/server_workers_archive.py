@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from PyQt5.QtCore import (QObject, pyqtSignal)
 
-from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPRequestObject
+from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
 
 
 class DSPWorker(QObject):
@@ -70,7 +70,7 @@ class DSPServerWorker(DSPWorker):
 
 
 class RenaDSPUnit(QObject):
-    def __init__(self, rena_request_object: RenaTCPRequestObject):
+    def __init__(self, rena_request_object: RenaTCPAddDSPWorkerRequestObject):
         super().__init__()
         # create worker
         self.worker_thread = pg.QtCore.QThread(self)

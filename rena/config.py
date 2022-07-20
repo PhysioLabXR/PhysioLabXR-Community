@@ -111,4 +111,7 @@ rena_server_port = 9999999
 rena_server_name = 'RENA_SERVER'
 rena_server_worker_ports = np.arange(1,100)
 
-
+rena_server_add_dsp_worker_request = 1
+rena_server_update_worker_request = 2
+rena_server_remove_worker_request = 3
+rena_server_exit_request = 4

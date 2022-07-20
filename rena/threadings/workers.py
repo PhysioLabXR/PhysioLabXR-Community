@@ -11,7 +11,7 @@ import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
-from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPRequestObject, RenaTCPObject
+from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal
 from rena.interfaces import InferenceInterface, LSLInletInterface

@@ -1,3 +1,4 @@
+from rena.config import *
 from rena.sub_process.pyzmq_utils import *
 
 
@@ -9,13 +10,37 @@ class RenaTCPObject:
 
 
 class RenaTCPRequestObject:
+    def __init__(self, request_type):
+        self.request_type = request_type
+
+
+class RenaTCPAddDSPWorkerRequestObject(RenaTCPRequestObject):
     def __init__(self, stream_name, port_id, identity, processor_dict):
+        super().__init__(request_type=rena_server_add_dsp_worker_request)
         self.stream_name = stream_name
         self.port_id = port_id
         self.identity = identity
         self.processor_dict = processor_dict
 
 
+class RenaTCPUpdateDSPWorkerRequestObject(RenaTCPRequestObject):
+    def __init__(self, stream_name, group_format, processor_dict):
+        super().__init__(request_type=rena_server_update_worker_request)
+        self.stream_name = stream_name
+        self.group_format = group_format
+        self.processor_dict = processor_dict
+
+
+class RenaTCPRemoveWorkerRequestObject(RenaTCPRequestObject):
+    def __init__(self, stream_name, group_format, processor_dict):
+        super().__init__(request_type=rena_server_remove_worker_request)
+        self.stream_name = stream_name
+        self.group_format = group_format
+        self.processor_dict = processor_dict
+
+class RenaTCPExitServerRequestObject(RenaTCPRequestObject):
+    def __init__(self):
+        super().__init__(request_type=rena_server_exit_request)
 
 
 
@@ -116,7 +141,6 @@ class RenaTCPClient:
                 print("Client Crashed")
 
             return data
-
 
 # class RenaTCPServer:
 #     def __init__(self, RENATCPInterface: RenaTCPInterface):
