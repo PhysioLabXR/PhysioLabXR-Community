@@ -11,6 +11,7 @@ class RenaTCPObject:
         self.exit_process = exit_process
 
 
+
 class RenaTCPRequestObject:
     def __init__(self, request_type):
         self.request_type = request_type
@@ -45,8 +46,11 @@ class RenaTCPExitServerRequestObject(RenaTCPRequestObject):
         super().__init__(request_type=rena_server_exit_request)
 
 
-
-
+class RenaTCPRequestDoneObject(RenaTCPRequestObject):
+    def __init__(self, request_done=True, message='Request Processed'):
+        super().__init__(request_type=rena_server_request_done_request)
+        self.request_done = request_done
+        self.message = message
 
 
 class RenaTCPInterface:
