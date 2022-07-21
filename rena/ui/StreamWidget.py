@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
 
 from rena import config, config_ui
-from rena.sub_process.TCPInterface import RenaTCPRequestObject, RenaTCPInterface
+from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
 from rena.ui.OptionsWindow import OptionsWindow
@@ -393,7 +393,7 @@ class StreamWidget(QtWidgets.QWidget):
         port_id = int(time.time())
         identity = 'server'
         processor_dic = {}
-        rena_tcp_request_object = RenaTCPRequestObject(stream_name, port_id, identity, processor_dic)
+        rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
         self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
         rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
         print('DSP worker created')

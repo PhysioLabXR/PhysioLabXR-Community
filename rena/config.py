@@ -115,3 +115,7 @@ replay_port_command = 9998
 replay_port_info = 9997
 
 
+rena_server_add_dsp_worker_request = 1
+rena_server_update_worker_request = 2
+rena_server_remove_worker_request = 3
+rena_server_exit_request = 4
