@@ -1,15 +1,13 @@
 import math
 import pickle
+import threading
 import time
 
 import numpy as np
 from pylsl import pylsl
 
 from rena import config, shared
-import threading
-
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.sub_process.server_workers import RenaDSPUnit, DSPServerWorker
 from rena.utils.data_utils import RNStream
 
 
