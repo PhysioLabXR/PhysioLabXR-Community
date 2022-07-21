@@ -15,7 +15,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QFileDialog
 
 import rena.config
-from rena import config
+from rena import config, shared
 from rena.sub_process.ReplayClient import start_replay_client
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import RNStream
@@ -69,11 +69,15 @@ class ReplayTab(QtWidgets.QWidget):
 
         # start replay client
         self.send_command_interface = RenaTCPInterface(stream_name='RENA_REPLAY_CLIENT',
-                                                       port_id=config.replay_port,
+                                                       port_id=config.replay_port_command,
                                                        identity='server',
                                                        pattern='pipeline')
-        self.replay_client_process = Process(target=start_replay_client)
-        self.replay_client_process.start()
+        self.receive_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY_CLIENT',
+                                                       port_id=config.replay_port_info,
+                                                       identity='client',
+                                                       pattern='pipeline')
+        # self.replay_client_process = Process(target=start_replay_client)
+        # self.replay_client_process.start()
 
     def _open_playback_widget(self):
         self._init_playback_widget()
@@ -118,33 +122,23 @@ class ReplayTab(QtWidgets.QWidget):
 
         # TODO: add progress bar
         self._open_playback_widget()
-
-        if self.file_loc.endswith('.dats'):
-            rns_stream = RNStream(self.file_loc)
-            stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])
-        elif self.file_loc.endswith('.p'):
-            stream_data = pickle.load(open(self.file_loc, 'rb'))
+        print('Sending start command with file location to ReplayClient')  # TODO change the send to a progress bar
+        self.send_command_interface.socket.send_string(shared.START_COMMAND + self.file_loc)
+        client_info = self.receive_info_interface.socket.recv_string()
+        if client_info.startswith(shared.FAIL_INFO):
+            dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
+        elif client_info.startswith(shared.SUCCESS_INFO):
+            print('Received replay start success from ReplayClient')  # TODO change the send to a progress bar
         else:
-            dialog_popup('Unsupported file type', title='WARNING')
-            return
+            raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
+        # self.lsl_replay_worker.setup_stream()
+        # self.replay_timer.start()
 
-        self.lsl_replay_worker.setup_stream()
-        self.replay_timer.start()
-
-        stream_names = list(stream_data)
-        self.parent.add_streams_from_replay(stream_names)
-
-        # self.parent.lsl_replay_worker_thread = QThread(self.parent)
-        # self.parent.lsl_replay_worker_thread.start()
-        # self.parent.lsl_replay_worker = LSLReplayWorker(stream_data)
-        # self.parent.lsl_replay_worker.moveToThread(self.parent.lsl_replay_worker_thread)
-        # self.parent.lsl_replay_worker.start_stream(stream_data)
-        # self.parent.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
-
-        # self.lsl_replay_worker.start_stream()
-        self.StartReplayBtn.setEnabled(False)
-        self.StopReplayBtn.setEnabled(True)
-        self.on_play_pause_toggle()  # because worker's is_playing status should be set to True as well
+        # stream_names = list(stream_data)
+        # self.parent.add_streams_from_replay(stream_names)
+        # self.StartReplayBtn.setEnabled(False)
+        # self.StopReplayBtn.setEnabled(True)
+        # self.on_play_pause_toggle()  # because worker's is_playing status should be set to True as well
 
     def stop_replay_btn_pressed(self):
         self.is_replaying = False

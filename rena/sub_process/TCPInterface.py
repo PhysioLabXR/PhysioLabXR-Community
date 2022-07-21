@@ -45,7 +45,6 @@ class RenaTCPInterface:
 
     def bind_socket(self):
         binder = self.bind_header % self.port_id
-        print("Trying to bind to ", binder)
         self.socket.bind(binder)
 
     def connect_socket(self):
