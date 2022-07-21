@@ -229,14 +229,14 @@ class LSLInletWorker(RENAWorker):
     tick_signal = pyqtSignal()
 
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface: RenaTCPInterface, *args, **kwargs):
+    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.tick_signal.connect(self.process_on_tick)
 
         self._lslInlet_interface = LSLInlet_interface
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
-        self.dsp_on = True
+        # self.dsp_on = True
 
         self.start_time = time.time()
         self.num_samples = 0
@@ -256,13 +256,13 @@ class LSLInletWorker(RENAWorker):
                 sampling_rate = 0
 
 
-            if self.dsp_on:
-                current_time = time.time()
-                self._rena_tcp_interface.send_array(frames)
-                # self._rena_tcp_interface.send_obj(RenaTCPObject(data=frames))
-                # send the data
-                frames = self._rena_tcp_interface.recv_array()
-                print('time: ', time.time()-current_time)
+            # if self.dsp_on:
+            #     current_time = time.time()
+            #     self._rena_tcp_interface.send_array(frames)
+            #     # self._rena_tcp_interface.send_obj(RenaTCPObject(data=frames))
+            #     # send the data
+            #     frames = self._rena_tcp_interface.recv_array()
+            #     print('time: ', time.time()-current_time)
 
                 # receive the data
                 # frames = rena_tcp_object.data

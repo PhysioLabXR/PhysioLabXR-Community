@@ -75,7 +75,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread = pg.QtCore.QThread(self)
         self.interface = interface
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=interface,
-                                                 RenaTCPInterface=self.dsp_client_interface)
+                                                 RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
