@@ -202,8 +202,10 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 raise NotImplementedError()  # TODO
 
-        except AttributeError or ValueError as error:
-            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
+        except Exception as error:
+            exception_type = type(error)
+            exception_name = exception_type.__name__
+            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(exception_name)+': '+str(error)), title='Error')
 
     # def add_camera_clicked(self):
     #     if self.recording_tab.is_recording:
