@@ -67,7 +67,7 @@ class StreamWidget(QtWidgets.QWidget):
         # visualization component
         self.stream_widget_visualization_component = None
 
-        self.init_server_client()
+        # self.init_server_client()
 
 
 
