@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import webbrowser
+from multiprocessing import Lock
 
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
@@ -77,9 +78,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ######### init server
         print('Creating Rena Client')
+        self.rena_dsp_client_request_mutex = Lock()
+
         self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
                                                 port_id=config.rena_server_port,
                                                 identity='client')
+
 
         #########
 
