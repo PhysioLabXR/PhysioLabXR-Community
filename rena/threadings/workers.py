@@ -255,7 +255,6 @@ class LSLInletWorker(RENAWorker):
             except ZeroDivisionError:
                 sampling_rate = 0
 
-
             if self.dsp_on:
                 current_time = time.time()
                 self._rena_tcp_interface.send_array(frames)

@@ -146,7 +146,7 @@ def create_lsl_interface(lsl_name, channel_names):
     try:
         interface = LSLInletInterface.LSLInletInterface(lsl_name)
     except AttributeError:
-        raise AssertionError('Unable to find LSL Stream in LAN.')
+        raise ValueError('Unable to find LSL Stream in LAN.')
     lsl_num_chan = interface.get_num_chan()
 
     try:

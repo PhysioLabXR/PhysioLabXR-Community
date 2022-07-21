@@ -147,7 +147,6 @@ class ReplayClient(threading.Thread):
 
         # setup the streams
         self.stream_names = list(self.stream_data)
-
         for i in range(0, len(self.stream_names)):
             self.outlets.append(None)
             self.next_sample_of_stream.append(0)
