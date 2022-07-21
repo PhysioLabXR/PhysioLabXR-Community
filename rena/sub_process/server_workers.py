@@ -8,6 +8,7 @@ from rena.sub_process.TCPInterface import *
 from rena.utils.realtime_DSP import RealtimeButterBandpass
 from rena.config import *
 
+
 class DSPWorker(threading.Thread):
     # signal_data = pyqtSignal(object)
     # tick_signal = pyqtSignal()
@@ -67,8 +68,10 @@ class DSPServerWorker(DSPWorker):
         while self.running:
             # lock cretical region
             self.processor_mutex.acquire()
+            data = self.rena_tcp_interface.recv_array()
+            # process the data
             try:
-                data = self.rena_tcp_interface.recv_array()
+                # apply processor_dict
                 current_time = time.time()
                 # if len(data) != 0:
                 # data = self.filter1.process_buffer(data)
@@ -87,11 +90,13 @@ class DSPServerWorker(DSPWorker):
                 print(data.shape[-1])
                 # time.sleep(0.5)
                 # print('data received')
-                send = self.rena_tcp_interface.send_array(data)
+
 
             finally:
                 # release mutex
                 self.processor_mutex.release()
+
+            send = self.rena_tcp_interface.send_array(data)
 
         print('Worker Stopped')
 
@@ -111,10 +116,10 @@ class DSPServerWorker(DSPWorker):
 
 class RenaDSPServerMasterWorker(threading.Thread):
 
-    def __init__(self, RenaTCPInterface:RenaTCPInterface):
+    def __init__(self, RenaTCPInterface: RenaTCPInterface):
         super().__init__()
         self._rena_tcp_interface = RenaTCPInterface
-        self.dsp_server_workers = {} # DSPServerWorker use stream name as the key
+        self.dsp_server_workers = {}  # DSPServerWorker use stream name as the key
         self.running = True
 
     def add_dsp_worker(self, request_object: RenaTCPAddDSPWorkerRequestObject):
@@ -128,7 +133,6 @@ class RenaDSPServerMasterWorker(threading.Thread):
         self.dsp_server_workers[rena_tcp_server_interface.stream_name].start()
         # reply request done
         self._rena_tcp_interface.send_obj(RenaTCPRequestDoneObject(request_done=True))
-
 
     def update_dsp_worker(self, request_object: RenaTCPUpdateDSPWorkerRequestObject):
         # lock the worker mutex
@@ -154,11 +158,6 @@ class RenaDSPServerMasterWorker(threading.Thread):
     def exit_server(self, request_object: RenaTCPExitServerRequestObject):
         self.running = False
         self._rena_tcp_interface.send_obj(RenaTCPRequestDoneObject(request_done=True))
-
-
-
-
-
 
     def run(self):
         while self.running:
@@ -191,12 +190,3 @@ class RenaDSPServerMasterWorker(threading.Thread):
                 print('Wrong request type, please check with client')
 
         print('dsp_server.running==False, Exit Server!')
-
-
-
-
-
-
-
-
-
