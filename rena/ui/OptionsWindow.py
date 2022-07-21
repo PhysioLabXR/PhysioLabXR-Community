@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 
-from rena import config_signal
+from rena import config_signal, config
 from rena.config_ui import *
 from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
@@ -13,21 +13,20 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class OptionsWindow(QDialog):
-    def __init__(self, parent, preset):
+    def __init__(self, parent, lsl_name):
         super().__init__(parent=parent)
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
-
         self.setWindowTitle('Options')
         self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
         self.parent = parent
-        self.preset = preset
         # add supported filter list
         self.resize(1000, 1000)
 
-        self.signalTreeView = SignalTreeViewWindow(parent=self, preset=self.preset)
+        self.lsl_name = lsl_name
+        self.signalTreeView = SignalTreeViewWindow(parent=self, lsl_name=lsl_name)
         self.set_nominal_sampling_rate_textbox()
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
@@ -135,7 +134,8 @@ class OptionsWindow(QDialog):
         #     return
 
     def set_nominal_sampling_rate_textbox(self):
-        self.nominalSamplingRateInputbox.setText(str(self.preset['NominalSamplingRate']))
+        self.nominalSamplingRateInputbox.setText(
+            str(config.settings.value('presets/lslpresets/{0}/NominalSamplingRate'.format(self.lsl_name))))
 
     def clearLayout(self, layout):
         if layout is not None:
