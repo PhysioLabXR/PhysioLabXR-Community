@@ -21,7 +21,7 @@ from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import pylsl
-from rena.threadings.workers import LSLReplayWorker
+from rena.threadings.workers import PlaybackWorker
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 import pyqtgraph as pg
 from rena.ui.ReplaySeekBar import ReplaySeekBar
@@ -53,44 +53,35 @@ class ReplayTab(QtWidgets.QWidget):
         self.file_loc = config.DEFAULT_DATA_DIR
         self.ReplayFileLoc.setText('')
 
-        self.seekBar = None
-
-        # Initialize replay worker
-        self.lsl_replay_worker = LSLReplayWorker(
-            self, self.playback_position_signal, self.play_pause_signal)
-        # Move worker to thread
-        self.lsl_replay_thread = pg.QtCore.QThread(self.parent)
-        self.lsl_replay_thread.start()
-        self.lsl_replay_worker.moveToThread(self.lsl_replay_thread)
-
-        self.replay_timer = QTimer()
-        self.replay_timer.setInterval(config.REFRESH_INTERVAL)
-        self.replay_timer.timeout.connect(self.ticks)
 
         # start replay client
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
                                                        port_id=config.replay_port,
                                                        identity='client',
                                                        pattern='router-dealer')
+        self._create_playback_widget()
+
+        # self.replay_timer = QTimer()
+        # self.replay_timer.setInterval(config.REFRESH_INTERVAL)
+        # self.replay_timer.timeout.connect(self.ticks)
 
         # self.replay_client_process = Process(target=start_replay_client)
         # self.replay_client_process.start()
 
-    def _open_playback_widget(self):
+    def _create_playback_widget(self):
         self._init_playback_widget()
-        print("did this start? playback")
+        # print("did this start? playback")
         # open in a separate window
         # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
         self.playback_window = another_window('Playback')
         self.playback_window.get_layout().addWidget(self.playback_widget)
         self.playback_window.setFixedWidth(620)
         self.playback_window.setFixedHeight(300)
-        self.playback_window.show()
-        self.playback_window.activateWindow()
-        print("shown yet?")
+        self.playback_window.hide()
+        # print("shown yet?")
 
     def _init_playback_widget(self):
-        self.playback_widget = PlayBackWidget(self)
+        self.playback_widget = PlayBackWidget(self, self.command_info_interface)
         self.playback_widget.playback_signal.connect(self.on_playback_slider_changed)
         self.playback_widget.play_pause_signal.connect(self.on_play_pause_toggle)
         self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
@@ -118,7 +109,6 @@ class ReplayTab(QtWidgets.QWidget):
         # self.save_path = self.generate_save_path()  # get a new save path
 
         # TODO: add progress bar
-        self._open_playback_widget()
         print('Sending start command with file location to ReplayClient')  # TODO change the send to a progress bar
         self.command_info_interface.send_string(shared.START_COMMAND + self.file_loc)
         client_info = self.command_info_interface.recv_string()
@@ -128,6 +118,10 @@ class ReplayTab(QtWidgets.QWidget):
             print('Received replay start success from ReplayClient')  # TODO change the send to a progress bar
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
+
+        self.playback_window.show()
+        self.playback_window.activateWindow()
+        self.playback_widget.start_replay()
         # self.lsl_replay_worker.setup_stream()
         # self.replay_timer.start()
 
@@ -265,7 +259,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.window = QtWidgets.QMainWindow()
 
     # def ticks(self):
-    #     self.lsl_replay_worker.replay()
+    #     self.lsl_replay_worker.tick_signal.emit()
 
     def on_play_pause_toggle(self):
         print("ReplayTab: toggle is replaying")
