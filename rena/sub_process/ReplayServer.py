@@ -2,6 +2,7 @@ import math
 import pickle
 import threading
 import time
+from collections import deque
 
 import numpy as np
 import zmq
@@ -36,6 +37,9 @@ class ReplayServer(threading.Thread):
         self.running = True
         self.main_program_routing_id = None
 
+        # fps counter
+        self.tick_times = deque(maxlen=50)
+
     def run(self):
         while self.running:
             if not self.is_replaying:
@@ -62,6 +66,9 @@ class ReplayServer(threading.Thread):
                     self.setup_stream()
             else:
                 while len(self.selected_stream_indices) > 0:
+                    self.tick_times.append(time.time())
+                    print("Replay FPS {0}".format(self.get_fps()), end='\r', flush=True)
+
                     # streams get removed from the list if there are no samples left to play
                     command = self.recv_string(is_block=False)
                     # print('Poll result is ' + str(a))
@@ -139,6 +146,7 @@ class ReplayServer(threading.Thread):
             self.stream_names.remove(self.stream_names[nextStreamIndex])
 
         playback_position = self.virtual_time_to_playback_position_value()
+        self.send(playback_position)
         # self.replay_progress_signal.emit(playback_position) # TODO add another TCP interface to communicate back
         # print("virtual clock time: ", self.virtual_clock)
 
@@ -204,6 +212,10 @@ class ReplayServer(threading.Thread):
         self.command_info_interface.socket.send_multipart(
             [self.main_program_routing_id, string.encode('utf-8')])
 
+    def send(self, data):
+        self.command_info_interface.socket.send_multipart(
+            [self.main_program_routing_id, data])
+
     def recv_string(self, is_block):
         if is_block:
             self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=0)
@@ -215,6 +227,11 @@ class ReplayServer(threading.Thread):
             except zmq.error.Again:
                 return None  # no message has arrived at the socket yet
 
+    def get_fps(self):
+        try:
+            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+        except ZeroDivisionError:
+            return 0
 
 def start_replay_client():
     print("Replay Client Started")
