@@ -113,8 +113,14 @@ if __name__ == "__main__":
     t1.start()
     # starting thread 2
     t2.start()
-
+    threads = {
+        'thread1': t1,
+        'thread2': t2,
+    }
+    threads.pop('thread1')
     sleep(2)
+    t1.terminate()
+    # t1.exit()
     # t1.exit()
 
     # # wait until thread 1 is completely executed
