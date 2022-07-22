@@ -77,7 +77,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cam_displays = {}
 
         ######### init server
-        print('Creating Rena Client')
+        print('init rena_dsp_client_request_mutex and rena_dsp_client')
         self.rena_dsp_client_request_mutex = Lock()
 
         self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
