@@ -122,7 +122,7 @@ class RenaTCPClient:
         self.tcp_interface = RENATCPInterface
         self.request_mutex = Lock()
 
-    def request_object(self, request_object: RenaTCPRequestObject):
+    def send_request(self, request_object: RenaTCPRequestObject):
 
         self.request_mutex.acquire()
         try:
