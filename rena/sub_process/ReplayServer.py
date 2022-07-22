@@ -67,11 +67,10 @@ class ReplayServer(threading.Thread):
             else:
                 while len(self.selected_stream_indices) > 0:
                     self.tick_times.append(time.time())
-                    print("Replay FPS {0}".format(self.get_fps()), end='\r', flush=True)
-
+                    print("Replay FPS {0}".format(self.get_fps()), end='\r')
                     # streams get removed from the list if there are no samples left to play
                     command = self.recv_string(is_block=False)
-                    # print('Poll result is ' + str(a))
+                    # print('Poll result is ' + str(command))
                     self.replay()
 
     def replay(self):
