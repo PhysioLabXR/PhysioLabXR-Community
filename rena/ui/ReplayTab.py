@@ -96,7 +96,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
 
         # connect signal emitted from the replayworker to playback widget
-        self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
+        # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
 
@@ -139,133 +139,133 @@ class ReplayTab(QtWidgets.QWidget):
 
     def stop_replay_btn_pressed(self):
         self.is_replaying = False
-        self.lsl_replay_worker.stop_signal = True
+        # self.lsl_replay_worker.stop_signal = True
         self.parent.worker_threads['lsl_replay'].exit()
         self.StopReplayBtn.setEnabled(False)
         self.StartReplayBtn.setEnabled(True)
 
-    def lsl_replay(self, stream_data):
-        stream_names = list(stream_data)
-
-        outlets = []
-        nextSampleOfStream = []  # index of the next sample of each stream that will be send
-        chunk_sizes = []  # how many samples should be published at once
-        for i in range(0, len(stream_names)):
-            outlets.append(None)
-            nextSampleOfStream.append(0)
-            chunk_sizes.append(1)
-
-        print("Creating outlets")
-        print("\t[index]\t[name]")
-
-        def isStreamVideo(stream):
-            if stream.isdigit():
-                return True
-            if ("monitor" in stream) or ("video" in stream):
-                return True
-            return False
-
-        selectedStreamIndices = list(range(0, len(stream_names)))
-
-        for streamIndex, stream_name in enumerate(stream_names):
-            if not isStreamVideo(stream_name):
-                stream_channel_count = stream_data[stream_name][0].shape[0]
-                stream_channel_format = 'double64'
-                stream_source_id = 'Replay Stream - ' + stream_name
-
-                outletInfo = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
-                                              stream_source_id)
-
-                outlets[streamIndex] = pylsl.StreamOutlet(outletInfo)
-                print("\t" + str(streamIndex) + "\t" + stream_name)
-
-        virtualTimeOffset = 0
-        virtualTime = None
-
-        for stream in stream_names:
-            if virtualTime is None or stream_data[stream][1][0] < virtualTime:
-                # determine when the recording started
-                virtualTime = stream_data[stream][1][0]
-
-        virtualTimeOffset = pylsl.local_clock() - virtualTime
-        print("Offsetting replayed timestamps by " + str(virtualTimeOffset))
-
-        print(datetime.now())
-        # replay the recording
-        while len(selectedStreamIndices) > 0:  # streams get removed from the list if there are no samples left to play
-
-            nextStreamIndex = None
-            nextBlockingTimestamp = None
-
-            # determine which stream to send next
-            for i, stream_name in enumerate(stream_names):
-                stream = stream_data[stream_name]
-                # when a chunk can be send depends on it's last sample's timestamp
-                blockingElementIdx = nextSampleOfStream[i] + chunk_sizes[i] - 1
-                try:
-                    blockingTimestamp = stream[1][blockingElementIdx]
-                except Exception as e:
-                    print(e)
-                if nextBlockingTimestamp is None or blockingTimestamp <= nextBlockingTimestamp:
-                    nextStreamIndex = i
-                    nextBlockingTimestamp = blockingTimestamp
-
-            # retrieve the data and timestamps to be send
-            nextStream = stream_data[stream_names[nextStreamIndex]]
-            chunkSize = chunk_sizes[nextStreamIndex]
-
-            nextChunkRangeStart = nextSampleOfStream[nextStreamIndex]
-            nextChunkRangeEnd = nextChunkRangeStart + chunkSize
-
-            nextChunkTimestamps = nextStream[1][nextChunkRangeStart: nextChunkRangeEnd]
-            nextChunkValues = (nextStream[0][:, nextChunkRangeStart: nextChunkRangeEnd]).transpose()
-
-            # prepare the data (if necessary)
-            if isinstance(nextChunkValues, np.ndarray):
-                # load_xdf loads numbers into numpy arrays (strings will be put into lists). however, LSL doesn't seem to
-                # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
-                # are converted to lists
-                nextChunkValues = nextChunkValues.tolist()
-            nextSampleOfStream[nextStreamIndex] += chunkSize
-
-            stream_length = nextStream[0].shape[-1]
-            # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
-            if stream_length < nextSampleOfStream[nextStreamIndex] + chunkSize:
-                chunk_sizes[nextStreamIndex] = stream_length - nextSampleOfStream[nextStreamIndex]
-
-            virtualTime = pylsl.local_clock() - virtualTimeOffset
-            # TODO: fix this
-            sleepDuration = nextBlockingTimestamp - virtualTime
-            if sleepDuration > 0:
-                time.sleep(sleepDuration)
-
-            outlet = outlets[nextStreamIndex]
-            nextStreamName = stream_names[nextStreamIndex]
-            if chunkSize == 1:
-                # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
-                outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + virtualTimeOffset)
-            else:
-                # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
-                outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + virtualTimeOffset)
-                # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
-                # would make the terminal output unreadable
-
-            # remove this stream from the list if there are no remaining samples
-            if nextSampleOfStream[nextStreamIndex] >= stream_length:
-                selectedStreamIndices.remove(selectedStreamIndices[nextStreamIndex])
-                outlets.remove(outlets[nextStreamIndex])
-                nextSampleOfStream.remove(nextSampleOfStream[nextStreamIndex])
-                chunk_sizes.remove(chunk_sizes[nextStreamIndex])
-                stream_names.remove(stream_names[nextStreamIndex])
-
-        print(datetime.now())
-        self.stop_replay_btn_pressed()
+    # def lsl_replay(self, stream_data):
+    #     stream_names = list(stream_data)
+    #
+    #     outlets = []
+    #     nextSampleOfStream = []  # index of the next sample of each stream that will be send
+    #     chunk_sizes = []  # how many samples should be published at once
+    #     for i in range(0, len(stream_names)):
+    #         outlets.append(None)
+    #         nextSampleOfStream.append(0)
+    #         chunk_sizes.append(1)
+    #
+    #     print("Creating outlets")
+    #     print("\t[index]\t[name]")
+    #
+    #     def isStreamVideo(stream):
+    #         if stream.isdigit():
+    #             return True
+    #         if ("monitor" in stream) or ("video" in stream):
+    #             return True
+    #         return False
+    #
+    #     selectedStreamIndices = list(range(0, len(stream_names)))
+    #
+    #     for streamIndex, stream_name in enumerate(stream_names):
+    #         if not isStreamVideo(stream_name):
+    #             stream_channel_count = stream_data[stream_name][0].shape[0]
+    #             stream_channel_format = 'double64'
+    #             stream_source_id = 'Replay Stream - ' + stream_name
+    #
+    #             outletInfo = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
+    #                                           stream_source_id)
+    #
+    #             outlets[streamIndex] = pylsl.StreamOutlet(outletInfo)
+    #             print("\t" + str(streamIndex) + "\t" + stream_name)
+    #
+    #     virtualTimeOffset = 0
+    #     virtualTime = None
+    #
+    #     for stream in stream_names:
+    #         if virtualTime is None or stream_data[stream][1][0] < virtualTime:
+    #             # determine when the recording started
+    #             virtualTime = stream_data[stream][1][0]
+    #
+    #     virtualTimeOffset = pylsl.local_clock() - virtualTime
+    #     print("Offsetting replayed timestamps by " + str(virtualTimeOffset))
+    #
+    #     print(datetime.now())
+    #     # replay the recording
+    #     while len(selectedStreamIndices) > 0:  # streams get removed from the list if there are no samples left to play
+    #
+    #         nextStreamIndex = None
+    #         nextBlockingTimestamp = None
+    #
+    #         # determine which stream to send next
+    #         for i, stream_name in enumerate(stream_names):
+    #             stream = stream_data[stream_name]
+    #             # when a chunk can be send depends on it's last sample's timestamp
+    #             blockingElementIdx = nextSampleOfStream[i] + chunk_sizes[i] - 1
+    #             try:
+    #                 blockingTimestamp = stream[1][blockingElementIdx]
+    #             except Exception as e:
+    #                 print(e)
+    #             if nextBlockingTimestamp is None or blockingTimestamp <= nextBlockingTimestamp:
+    #                 nextStreamIndex = i
+    #                 nextBlockingTimestamp = blockingTimestamp
+    #
+    #         # retrieve the data and timestamps to be send
+    #         nextStream = stream_data[stream_names[nextStreamIndex]]
+    #         chunkSize = chunk_sizes[nextStreamIndex]
+    #
+    #         nextChunkRangeStart = nextSampleOfStream[nextStreamIndex]
+    #         nextChunkRangeEnd = nextChunkRangeStart + chunkSize
+    #
+    #         nextChunkTimestamps = nextStream[1][nextChunkRangeStart: nextChunkRangeEnd]
+    #         nextChunkValues = (nextStream[0][:, nextChunkRangeStart: nextChunkRangeEnd]).transpose()
+    #
+    #         # prepare the data (if necessary)
+    #         if isinstance(nextChunkValues, np.ndarray):
+    #             # load_xdf loads numbers into numpy arrays (strings will be put into lists). however, LSL doesn't seem to
+    #             # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
+    #             # are converted to lists
+    #             nextChunkValues = nextChunkValues.tolist()
+    #         nextSampleOfStream[nextStreamIndex] += chunkSize
+    #
+    #         stream_length = nextStream[0].shape[-1]
+    #         # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
+    #         if stream_length < nextSampleOfStream[nextStreamIndex] + chunkSize:
+    #             chunk_sizes[nextStreamIndex] = stream_length - nextSampleOfStream[nextStreamIndex]
+    #
+    #         virtualTime = pylsl.local_clock() - virtualTimeOffset
+    #         # TODO: fix this
+    #         sleepDuration = nextBlockingTimestamp - virtualTime
+    #         if sleepDuration > 0:
+    #             time.sleep(sleepDuration)
+    #
+    #         outlet = outlets[nextStreamIndex]
+    #         nextStreamName = stream_names[nextStreamIndex]
+    #         if chunkSize == 1:
+    #             # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
+    #             outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + virtualTimeOffset)
+    #         else:
+    #             # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
+    #             outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + virtualTimeOffset)
+    #             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
+    #             # would make the terminal output unreadable
+    #
+    #         # remove this stream from the list if there are no remaining samples
+    #         if nextSampleOfStream[nextStreamIndex] >= stream_length:
+    #             selectedStreamIndices.remove(selectedStreamIndices[nextStreamIndex])
+    #             outlets.remove(outlets[nextStreamIndex])
+    #             nextSampleOfStream.remove(nextSampleOfStream[nextStreamIndex])
+    #             chunk_sizes.remove(chunk_sizes[nextStreamIndex])
+    #             stream_names.remove(stream_names[nextStreamIndex])
+    #
+    #     print(datetime.now())
+    #     self.stop_replay_btn_pressed()
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()
 
-    def ticks(self):
-        self.lsl_replay_worker.replay()
+    # def ticks(self):
+    #     self.lsl_replay_worker.replay()
 
     def on_play_pause_toggle(self):
         print("ReplayTab: toggle is replaying")

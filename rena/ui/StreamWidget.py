@@ -38,6 +38,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.parent = parent
         self.main_parent = main_parent
         self.stream_name = stream_name
+        self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
         self.set_button_icons()

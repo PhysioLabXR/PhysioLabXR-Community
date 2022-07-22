@@ -4,6 +4,7 @@ import threading
 import time
 
 import numpy as np
+import zmq
 from pylsl import pylsl
 
 from rena import config, shared
@@ -39,7 +40,7 @@ class ReplayServer(threading.Thread):
         while self.running:
             if not self.is_replaying:
                 print('ReplayClient: not replaying, pending on start replay command')
-                command = self.recv_string()
+                command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
                     try:
@@ -62,8 +63,8 @@ class ReplayServer(threading.Thread):
             else:
                 while len(self.selected_stream_indices) > 0:
                     # streams get removed from the list if there are no samples left to play
-                    a = self.command_info_interface.poller.poll(timeout=1)
-                    print('Poll result is ' + str(a))
+                    command = self.recv_string(is_block=False)
+                    # print('Poll result is ' + str(a))
                     self.replay()
 
     def replay(self):
@@ -85,7 +86,7 @@ class ReplayServer(threading.Thread):
 
         # retrieve the data and timestamps to be send
         nextStream = self.stream_data[self.stream_names[nextStreamIndex]]
-        print("chunk sizes: ", self.chunk_sizes)
+        # print("chunk sizes: ", self.chunk_sizes)
         chunkSize = self.chunk_sizes[nextStreamIndex]
 
         nextChunkRangeStart = self.next_sample_of_stream[nextStreamIndex]
@@ -105,7 +106,7 @@ class ReplayServer(threading.Thread):
         stream_length = nextStream[0].shape[-1]
         # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
         if stream_length < self.next_sample_of_stream[nextStreamIndex] + chunkSize:
-            print("CHUNK UPDATE")
+            # print("CHUNK UPDATE")
             self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
 
         self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset
@@ -115,17 +116,17 @@ class ReplayServer(threading.Thread):
             time.sleep(sleepDuration)
 
         outlet = self.outlets[nextStreamIndex]
-        print("outlet for this replay is: ", outlet)
+        # print("outlet for this replay is: ", outlet)
         nextStreamName = self.stream_names[nextStreamIndex]
         if chunkSize == 1:
             # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
             outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
-            print("pushed, chunk size 1")
-            print(nextChunkValues)
+            # print("pushed, chunk size 1")
+            # print(nextChunkValues)
         else:
             # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
             outlet.push_chunk(nextChunkValues, nextChunkTimestamps[-1] + self.virtual_clock_offset)
-            print("pushed else")
+            # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable
 
@@ -139,7 +140,7 @@ class ReplayServer(threading.Thread):
 
         playback_position = self.virtual_time_to_playback_position_value()
         # self.replay_progress_signal.emit(playback_position) # TODO add another TCP interface to communicate back
-        print("virtual clock time: ", self.virtual_clock)
+        # print("virtual clock time: ", self.virtual_clock)
 
     def virtual_time_to_playback_position_value(self):
         # TODO: do not hardcode playback range (100)
@@ -203,9 +204,16 @@ class ReplayServer(threading.Thread):
         self.command_info_interface.socket.send_multipart(
             [self.main_program_routing_id, string.encode('utf-8')])
 
-    def recv_string(self):
-        self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart()
-        return command.decode('utf-8')
+    def recv_string(self, is_block):
+        if is_block:
+            self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=0)
+            return command.decode('utf-8')
+        else:
+            try:
+                self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
+                    flags=zmq.NOBLOCK)
+            except zmq.error.Again:
+                return None  # no message has arrived at the socket yet
 
 
 def start_replay_client():
