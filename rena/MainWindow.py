@@ -13,7 +13,7 @@ from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 from PyQt5 import QtCore
 
-from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPClient
 
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
@@ -78,11 +78,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ######### init server
         print('init rena_dsp_client_request_mutex and rena_dsp_client')
-        self.rena_dsp_client_request_mutex = Lock()
 
-        self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
+        self.rena_client_interface = RenaTCPInterface(stream_name=config.rena_server_name,
                                                 port_id=config.rena_server_port,
                                                 identity='client')
+        self.rena_client = RenaTCPClient(RENATCPInterface=self.rena_client_interface)
 
 
         #########
@@ -354,6 +354,7 @@ class MainWindow(QtWidgets.QMainWindow):
         lsl_stream_widget = StreamWidget(main_parent=self,
                                          parent=self.sensorTabSensorsHorizontalLayout,
                                          stream_name=lsl_name,
+                                         rena_client=self.rena_client,
                                          interface=interface,
                                          insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn

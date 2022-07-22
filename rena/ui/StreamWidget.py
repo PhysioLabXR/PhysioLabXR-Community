@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
 
 from rena import config, config_ui
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
+from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface, RenaTCPClient
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
 from rena.ui.OptionsWindow import OptionsWindow
@@ -22,7 +22,7 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, interface: LSLInletInterface, insert_position=None):
+    def __init__(self, main_parent, parent, stream_name, interface: LSLInletInterface, rena_client: RenaTCPClient, insert_position=None):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
@@ -68,6 +68,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_widget_visualization_component = None
 
         # self.init_server_client()
+        # rena client
+        self.rena_client = rena_client
 
 
 
@@ -386,17 +388,18 @@ class StreamWidget(QtWidgets.QWidget):
         #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def init_server_client(self):
-        print('John')
-
-        # dummy preset for now:
-        stream_name = 'OpenBCI'
-        port_id = int(time.time())
-        identity = 'server'
-        processor_dic = {}
-        rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
-        self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
-        rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
-        print('DSP worker created')
-        self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
+        # print('John')
+        #
+        # # dummy preset for now:
+        # stream_name = 'OpenBCI'
+        # port_id = int(time.time())
+        # identity = 'server'
+        # processor_dic = {}
+        # rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
+        # self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
+        # rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
+        # print('DSP worker created')
+        # self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
 
         # send to server
+        pass

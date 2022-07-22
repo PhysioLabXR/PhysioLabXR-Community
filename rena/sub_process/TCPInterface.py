@@ -1,3 +1,5 @@
+from threading import Lock
+
 from rena.config import *
 import zmq
 
@@ -115,8 +117,24 @@ class RenaTCPInterface:
     def process_data(self):
         pass
 
-
 class RenaTCPClient:
+    def __init__(self, RENATCPInterface: RenaTCPInterface):
+        self.tcp_interface = RENATCPInterface
+        self.request_mutex = Lock()
+
+    def request_object(self, request_object: RenaTCPRequestObject):
+
+        self.request_mutex.acquire()
+        try:
+            self.tcp_interface.send_obj(obj=request_object)
+            processed_obj = self.tcp_interface.recv_obj()
+            print(processed_obj.message)
+        finally:
+            self.request_mutex.release()
+
+
+
+class RenaTCPClientArchive:
     def __init__(self, RENATCPInterface: RenaTCPInterface):
         self.tcp_interface = RENATCPInterface
         self.is_streaming = True
