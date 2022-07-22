@@ -111,8 +111,7 @@ rena_server_port = 9999999
 rena_server_name = 'RENA_SERVER'
 rena_server_worker_ports = np.arange(1,100)
 
-replay_port_command = 9998
-replay_port_info = 9997
+replay_port = 9997
 
 
 rena_server_add_dsp_worker_request = 1

@@ -44,12 +44,8 @@ class RenaTCPExitServerRequestObject(RenaTCPRequestObject):
     def __init__(self):
         super().__init__(request_type=rena_server_exit_request)
 
-
-
-
-
-
 class RenaTCPInterface:
+
     def __init__(self, stream_name, port_id, identity, pattern='request-reply'):
         self.bind_header = "tcp://*:%s"
         self.connect_header = 'tcp://localhost:'
@@ -57,13 +53,15 @@ class RenaTCPInterface:
         self.stream_name = stream_name
         self.port_id = port_id
         self.identity = identity
-        # self.is_streaming = False
 
+        self.pattern = pattern
         if pattern == 'request-reply' and identity == 'server': socket_type = zmq.REP
         elif pattern == 'request-reply' and identity == 'client': socket_type = zmq.REQ
         elif pattern == 'pipeline' and identity == 'client': socket_type = zmq.PULL
         elif pattern == 'pipeline' and identity == 'server': socket_type = zmq.PUSH
-        else: raise AttributeError('Unsupported interface pattern: {0}'.format(pattern))
+        elif pattern == 'router-dealer' and identity == 'client': socket_type = zmq.DEALER
+        elif pattern == 'router-dealer' and identity == 'server': socket_type = zmq.ROUTER
+        else: raise AttributeError('Unsupported interface pattern: {0} or identity {1}'.format(pattern, identity))
 
         self.context = zmq.Context()
         self.socket = self.context.socket(socket_type)
@@ -110,6 +108,12 @@ class RenaTCPInterface:
 
     def process_data(self):
         pass
+
+    def send_string(self, data: str, *args, **kwargs):
+        self.socket.send(data.encode('utf-8'), *args, **kwargs)
+
+    def recv_string(self, *args, **kwargs):
+        return self.socket.recv(*args, **kwargs).decode('utf-8')
 
 
 class RenaTCPClient:
