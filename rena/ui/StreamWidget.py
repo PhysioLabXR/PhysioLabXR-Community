@@ -38,6 +38,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.parent = parent
         self.main_parent = main_parent
         self.stream_name = stream_name
+        self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
         self.set_button_icons()
@@ -67,13 +68,13 @@ class StreamWidget(QtWidgets.QWidget):
         # visualization component
         self.stream_widget_visualization_component = None
 
-        self.init_server_client()
+        # self.init_server_client()
 
         # data elements
         self.worker_thread = pg.QtCore.QThread(self)
         self.interface = interface
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=interface,
-                                                 RenaTCPInterface=self.dsp_client_interface)
+                                                 RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
@@ -246,7 +247,7 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
-        self.num_samples_to_plot =  int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate') * config.PLOT_RETAIN_HISTORY)
+        self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)
         self.viz_time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.num_samples_to_plot)
         return fs_label, ts_label, plot_widgets, plots
 

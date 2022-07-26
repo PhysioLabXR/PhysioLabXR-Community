@@ -66,3 +66,9 @@ class AlreadyAddedError(RenaError):
         return 'Failed to add. The target is already in the app.'
 
     pass
+
+class LSLStreamNotFoundError(RenaError):
+    def __str__(self):
+        return 'Unable to find to LSL stream'
+
+    pass

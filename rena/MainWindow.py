@@ -12,6 +12,7 @@ from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 from PyQt5 import QtCore
 
+from exceptions.exceptions import RenaError
 from rena.sub_process.TCPInterface import RenaTCPInterface
 
 from PyQt5.QtWidgets import QMessageBox
@@ -202,8 +203,8 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 raise NotImplementedError()  # TODO
 
-        except AttributeError or ValueError as error:
-            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='ERROR')
+        except RenaError as error:
+            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
 
     # def add_camera_clicked(self):
     #     if self.recording_tab.is_recording:
@@ -338,10 +339,10 @@ class MainWindow(QtWidgets.QMainWindow):
         nominal_sampling_rate = config.settings.value('NominalSamplingRate')
 
         interface = create_lsl_interface(lsl_name, channel_names)
-        if (actual_sampling_rate := interface.get_nominal_srate()) != nominal_sampling_rate:
+        if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
             print('The stream {0} found in LAN has sampling rate of {1}, '
-                  'overriding in settings: {2}'.format(lsl_name, actual_sampling_rate, nominal_sampling_rate))
-            config.settings.setValue('NominalSamplingRate', actual_sampling_rate)
+                  'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
+            config.settings.setValue('NominalSamplingRate', stream_srate)
 
         # set up UI elements
         lsl_widget_name = lsl_name + '_widget'
@@ -359,7 +360,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if error_initialization:
             remove_stream_btn.click()
         config.settings.endGroup()
-
 
     def init_device(self, device_name):
         config.settings.beginGroup('presets/streampresets/{0}',format(device_name))
