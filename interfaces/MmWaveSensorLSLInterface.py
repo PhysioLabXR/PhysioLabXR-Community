@@ -61,6 +61,7 @@ class MmWaveSensorLSLInterface:
         time.sleep(1)
         print('mmw Interface: started!')
         self.create_lsl()
+        self.create_lsl_cr()
 
     def process_frame(self):
         detected_points, range_profile, rd_heatmap, azi_heatmap, rd_heatmap_clutter_removed, azi_heatmap_clutter_removed = None, None, None, None, None, None
@@ -81,7 +82,9 @@ class MmWaveSensorLSLInterface:
                                                                                    signal_clutter_ratio=self.ra_signal_clutter_ratio)
                     # flatten and send rd and ra
                     flatten_data = np.append(rd_heatmap.flatten(), azi_heatmap.flatten())
+                    flatten_cr_data = np.append(rd_heatmap_clutter_removed.flatten(), azi_heatmap_clutter_removed.flatten())
                     self.outlet_mmWave.push_sample(flatten_data)
+                    self.outlet_mmWave_cr.push_sample(flatten_cr_data)
 
 
 
@@ -194,3 +197,30 @@ class MmWaveSensorLSLInterface:
               "      Sampling Rate: " + str(nominal_srate) + "\n" + \
               "      Channel Format: " + channel_format + " \n" + \
               "      Source Id: " + source_id + " \n")
+
+
+    def create_lsl_cr(self, name='TImmWave_6843AOP_CR', type='RD_RA_img_cr',
+                   nominal_srate=30, channel_format='float32',
+                   source_id='mmWave_6843'):
+
+        channel_count = config_signal.rd_shape[0] * config_signal.rd_shape[1] + \
+                        config_signal.ra_shape[0] * config_signal.ra_shape[1]
+                        # + \
+                        # config_signal.range_bins
+
+        self.info_mmWave_cr = StreamInfo(name=name, type=type, channel_count=channel_count,
+                                      nominal_srate=nominal_srate, channel_format=channel_format,
+                                      source_id=source_id)
+
+        self.outlet_mmWave_cr = StreamOutlet(self.info_mmWave_cr)
+
+        print("--------------------------------------\n" + \
+              "LSL Configuration: \n" + \
+              "  Stream 1: \n" + \
+              "      Name: " + name + " \n" + \
+              "      Type: " + type + " \n" + \
+              "      Channel Count: " + str(channel_count) + "\n" + \
+              "      Sampling Rate: " + str(nominal_srate) + "\n" + \
+              "      Channel Format: " + channel_format + " \n" + \
+              "      Source Id: " + source_id + " \n")
+
