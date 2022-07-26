@@ -199,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.init_lsl(selected_text)
             elif selected_text in get_presets_by_category('experimentpresets'):
                 streams_for_experiment = self.experiment_presets_dict[selected_text]
-                self.add_streams_to_visulaize(streams_for_experiment)
+                self.add_streams_to_visualize(streams_for_experiment)
             else:
                 raise NotImplementedError()  # TODO
 
@@ -299,7 +299,7 @@ class MainWindow(QtWidgets.QMainWindow):
     #         streams_for_experiment = self.experiment_presets_dict[selected_text]
     #         self.add_streams_to_visulaize(streams_for_experiment)
 
-    def add_streams_to_visulaize(self, stream_names):
+    def add_streams_to_visualize(self, stream_names):
         try:
             assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
                            stream_names])
@@ -326,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
-        self.add_streams_to_visulaize(stream_names)
+        self.add_streams_to_visualize(stream_names)
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
