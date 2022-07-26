@@ -70,8 +70,6 @@ class StreamWidget(QtWidgets.QWidget):
 
         # self.init_server_client()
 
-
-
         # data elements
         self.worker_thread = pg.QtCore.QThread(self)
         self.interface = interface
