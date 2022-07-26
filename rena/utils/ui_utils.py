@@ -14,7 +14,7 @@ import pyqtgraph as pg
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.general import get_working_camera_ports
+from rena.utils.video_capture_utils import get_working_camera_ports
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):

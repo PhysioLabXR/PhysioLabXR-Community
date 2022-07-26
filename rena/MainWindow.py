@@ -189,17 +189,18 @@ class MainWindow(QtWidgets.QMainWindow):
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text), title='Warning')
                 return
-            if selected_text in config.settings.value('cameras'):
+            if selected_text in config.settings.value('cameras'):  # add video device
                 self.init_camera(selected_text)
-            elif selected_text in get_presets_by_category('streampresets'):
+            elif selected_text in get_presets_by_category('streampresets'):  # add multiple streams from an experiment preset
                 if 'device_type' in get_childKeys_for_group('streampresets/{0}'.format(selected_text)):  # if this is a device preset
-                    device_lsl_preset = self.init_device(selected_text)
+                    device_lsl_preset = self.init_device(selected_text)  # add device stream
                 else:
-                    self.init_lsl(selected_text)
-            elif selected_text in get_presets_by_category('experimentpresets'):
+                    self.init_lsl(selected_text)  # add lsl stream
+            elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
                 streams_for_experiment = self.experiment_presets_dict[selected_text]
                 self.add_streams_to_visualize(streams_for_experiment)
-            else:
+            else:  # add a previous unknown lsl stream
+
                 raise NotImplementedError()  # TODO
 
         except RenaError as error:
