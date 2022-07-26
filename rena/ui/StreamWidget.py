@@ -4,7 +4,8 @@ import time
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
 
@@ -48,6 +49,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
+        self.is_stream_available = False
+
         # visualization data buffer
         self.current_timestamp = 0
 
@@ -67,6 +70,11 @@ class StreamWidget(QtWidgets.QWidget):
         self.PopWindowBtn.clicked.connect(self.pop_window)
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
+        # inefficient loading of assets TODO need to confirm creating Pixmap in ui_shared result in crash
+        self.stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
+        self.stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
+        self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+
         # visualization component
         self.stream_widget_visualization_component = None
 
@@ -83,7 +91,7 @@ class StreamWidget(QtWidgets.QWidget):
         # load default settings from settings
         self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
 
-        self.worker_thread = pg.QtCore.QThread(self)
+        self.worker_thread = QThread(self)
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
                                                  RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
@@ -105,7 +113,32 @@ class StreamWidget(QtWidgets.QWidget):
 
     def update_stream_availability(self, is_stream_available):
         print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available), end='\r')
+        self.is_stream_available = is_stream_available
+        if self.lsl_worker.is_streaming:
+            if is_stream_available:
+                if not self.StartStopStreamBtn.isEnabled(): self.StartStopStreamBtn.setEnabled(True)
+                self.StreamAvailablilityLabel.setPixmap(self.stream_active_pixmap)
+                self.StreamAvailablilityLabel.setToolTip("Stream {0} is being plotted".format(self.stream_name))
+            else:
+                self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
+                self.set_stream_unavailable()
+                dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning')
+        else:
+            # is the stream is not available
+            if is_stream_available:
+                self.set_stream_available()
+            else:
+                self.set_stream_unavailable()
 
+    def set_stream_unavailable(self):
+        self.StartStopStreamBtn.setEnabled(False)
+        self.StreamAvailablilityLabel.setPixmap(self.stream_unavailable_pixmap)
+        self.StreamAvailablilityLabel.setToolTip("Stream {0} is not available".format(self.stream_name))
+
+    def set_stream_available(self):
+        self.StartStopStreamBtn.setEnabled(True)
+        self.StreamAvailablilityLabel.setPixmap(self.stream_available_pixmap)
+        self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
     def set_button_icons(self):
         if 'Start' in self.StartStopStreamBtn.text():

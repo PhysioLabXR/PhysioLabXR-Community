@@ -249,6 +249,8 @@ class LSLInletWorker(RENAWorker):
         self.start_time = time.time()
         self.num_samples = 0
 
+        self.previous_availability = None
+
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
 
     @pg.QtCore.pyqtSlot()
@@ -288,7 +290,17 @@ class LSLInletWorker(RENAWorker):
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
-        self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())
+        """
+        only emit when the stream is not available
+        """
+        is_stream_availability = self._lslInlet_interface.is_stream_available()
+        if self.previous_availability is None:
+            self.previous_availability = is_stream_availability
+            self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())
+        else:
+            if is_stream_availability != self.previous_availability:
+                self.previous_availability = is_stream_availability
+                self.signal_stream_availability.emit(is_stream_availability)
 
     def start_stream(self):
         self._lslInlet_interface.start_sensor()
@@ -296,10 +308,12 @@ class LSLInletWorker(RENAWorker):
 
         self.num_samples = 0
         self.start_time = time.time()
+        self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
+
 
     # def remove_stream(self):
     #     # self.stop_stream()

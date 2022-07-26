@@ -38,3 +38,5 @@ channels_selected = 2
 group_selected = 3
 groups_selected = 4
 mix_selected = 5
+
+stream_widget_icon_size = [72, 72]

@@ -12,7 +12,7 @@ from rena.interfaces import InferenceInterface
 
 from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
 import config
-from rena.startup import load_default_settings
+from rena.startup import load_default_settings, load_ui_shared
 
 # import and init shared global variables
 import ui_shared

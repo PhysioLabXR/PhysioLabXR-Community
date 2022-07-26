@@ -1,5 +1,9 @@
 import os.path
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLabel
+
+from ui_shared import *
 from rena import config, config_ui
 from rena.utils.general import *
 from rena.utils.settings_utils import export_preset_to_settings
@@ -43,3 +47,19 @@ def load_default_settings():
     cameras = get_working_camera_ports()
     cameras = list(map(str, cameras[1]))
     config.settings.setValue('cameras', cameras + ['monitor1'])
+
+def load_ui_shared():
+    global stream_unavailable_pixmap
+    global stream_available_pixmap
+    global stream_active_pixmap
+    stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
+    stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
+    stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+
+def show_splash():
+    splash = QLabel()
+    pixmap = QPixmap('../media/logo/RN.png')
+    splash.setPixmap(pixmap)
+    splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
+    splash.show()
+    pass
