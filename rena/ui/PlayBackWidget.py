@@ -1,9 +1,10 @@
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 import pyqtgraph as pg
+from PyQt5.QtWidgets import QLabel
 
 from rena.threadings.workers import PlaybackWorker
-from rena.ui_shared import start_stream_icon, stop_stream_icon
+from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):
@@ -23,17 +24,41 @@ class PlayBackWidget(QtWidgets.QWidget):
         # self.stopButton.clicked.connect(self.emit_playback_stop)
 
         # create worker listening the playback position from the server
-        # Initialize replay worker
-        self.lsl_replay_thread = pg.QtCore.QThread(self.parent)
-        self.lsl_replay_worker = PlaybackWorker(self.command_info_interface)
-        self.lsl_replay_worker.moveToThread(self.lsl_replay_thread)
-        self.lsl_replay_thread.started.connect(self.lsl_replay_worker.run)
-        self.lsl_replay_thread.start()
+        # Initialize playback worker
+        self.playback_thread = pg.QtCore.QThread(self.parent)
+        self.playback_worker = PlaybackWorker(self.command_info_interface)
+        self.playback_worker.moveToThread(self.playback_thread)
+        self.playback_thread.started.connect(self.playback_worker.run)
+        self.playback_thread.start()
 
-        self.lsl_replay_worker.replay_progress_signal.connect(self.update_playback_position)
+        self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
+        self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 
-    def start_replay(self):
-        self.lsl_replay_worker.stop = False
+        # start the play pause button
+
+    def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
+        self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
+        self.playPauseButton.setIcon(pause_icon)
+        self.playback_worker.set_up_replay()
+
+    def play_pause_button_clicked(self):
+        # TODO add play pause feature
+        self.playback_worker.set_up_replay()
+
+    def virtual_time_to_playback_position_value(self, virtual_clock):
+        # TODO: do not hardcode playback range (100)
+        return (virtual_clock - self.start_time) * 100 / self.total_time
+
+    def update_playback_position(self, virtual_clock):
+        # print("slider value is being updated ", replay_progress)
+        playback_percent = self.virtual_time_to_playback_position_value(virtual_clock)
+        self.horizontalSlider.setValue(playback_percent)
+        self.currentTimestamplabel.setText('{:.2f}'.format(virtual_clock + self.virtual_clock_offset))
+        self.timeSinceStartedLabel.setText('{:.2f}/{:.2f}'.format(virtual_clock - self.start_time, self.total_time))
+        self.percentageReplayedLabel.setText('{:.1f} %'.format(playback_percent))
+        # print('Virtual Clock {0}'.format(virtual_clock))
+        # print('Time since start {0}/{1}'.format(virtual_clock - self.start_time, self.total_time))
+        # print('Playback percent {0}'.format(playback_percent))
 
     # def emit_play_pause_button_clicked(self):
     #     print("Its clicked in playbackwidget")
@@ -54,6 +79,4 @@ class PlayBackWidget(QtWidgets.QWidget):
     #     # use signal
     #     self.playback_signal.emit(event)
 
-    def update_playback_position(self, replay_progress):
-        # print("slider value is being updated ", replay_progress)
-        self.horizontalSlider.setValue(replay_progress)
+

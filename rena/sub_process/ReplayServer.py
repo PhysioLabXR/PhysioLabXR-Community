@@ -60,10 +60,10 @@ class ReplayServer(threading.Thread):
                     except FileNotFoundError:
                         self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
                         return
-
-                    self.send_string(shared.SUCCESS_INFO)
                     self.is_replaying = True
                     self.setup_stream()
+                    self.send_string(shared.SUCCESS_INFO + str(self.total_time))
+                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
             else:
                 while len(self.selected_stream_indices) > 0:
                     self.tick_times.append(time.time())
@@ -72,6 +72,7 @@ class ReplayServer(threading.Thread):
                     command = self.recv_string(is_block=False)
                     # print('Poll result is ' + str(command))
                     self.replay()
+                    self.send(self.virtual_clock)
 
     def replay(self):
         nextStreamIndex = None
@@ -144,14 +145,8 @@ class ReplayServer(threading.Thread):
             self.chunk_sizes.remove(self.chunk_sizes[nextStreamIndex])
             self.stream_names.remove(self.stream_names[nextStreamIndex])
 
-        playback_position = self.virtual_time_to_playback_position_value()
-        self.send(playback_position)
         # self.replay_progress_signal.emit(playback_position) # TODO add another TCP interface to communicate back
         # print("virtual clock time: ", self.virtual_clock)
-
-    def virtual_time_to_playback_position_value(self):
-        # TODO: do not hardcode playback range (100)
-        return (self.virtual_clock - self.start_time) * 100 / self.total_time
 
     def setup_stream(self):
         self.virtual_clock = math.inf

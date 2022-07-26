@@ -75,8 +75,8 @@ class ReplayTab(QtWidgets.QWidget):
         # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
         self.playback_window = another_window('Playback')
         self.playback_window.get_layout().addWidget(self.playback_widget)
-        self.playback_window.setFixedWidth(620)
-        self.playback_window.setFixedHeight(300)
+        # self.playback_window.setFixedWidth(620)
+        # self.playback_window.setFixedHeight(300)
         self.playback_window.hide()
         # print("shown yet?")
 
@@ -115,13 +115,15 @@ class ReplayTab(QtWidgets.QWidget):
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
         elif client_info.startswith(shared.SUCCESS_INFO):
-            print('Received replay start success from ReplayClient')  # TODO change the send to a progress bar
+            time_info = self.command_info_interface.socket.recv()
+            start_time, end_time, total_time, virtual_clock_offset = np.frombuffer(time_info)
+            print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+            self.playback_window.show()
+            self.playback_window.activateWindow()
+            self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
-        self.playback_window.show()
-        self.playback_window.activateWindow()
-        self.playback_widget.start_replay()
         # self.lsl_replay_worker.setup_stream()
         # self.replay_timer.start()
 

@@ -541,6 +541,9 @@ class MmwWorker(QObject):
     # #         # raise exceptions.InterfaceNotExistError
 
 class PlaybackWorker(QObject):
+    """
+    The playback worker listens from the replay process and emit the playback position
+    """
     replay_progress_signal = pyqtSignal(float)
 
     def __init__(self, command_info_interface):
@@ -551,12 +554,12 @@ class PlaybackWorker(QObject):
     def run(self):
         while True:
             if not self.stop:
-                playback_position = self.command_info_interface.socket.recv()
-                playback_position = np.frombuffer(playback_position)[0]
-                self.replay_progress_signal.emit(playback_position)
+                virtual_clock = self.command_info_interface.socket.recv()
+                virtual_clock = np.frombuffer(virtual_clock)[0]
+                self.replay_progress_signal.emit(virtual_clock)
 
-
-
+    def set_up_replay(self):
+        self.stop = False
 
 # class LSLReplayWorker(QObject):
 #     replay_progress_signal = pyqtSignal(float)
