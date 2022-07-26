@@ -7,14 +7,14 @@ from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 
 from rena import config_signal, config
 from rena.config_ui import *
-from rena.ui.SignalTreeViewWindow import SignalTreeViewWindow
+from rena.ui.StreamGroupView import StreamGroupView
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class OptionsWindow(QDialog):
-    def __init__(self, parent, lsl_name):
-        super().__init__(parent=parent)
+    def __init__(self, parent, lsl_name, group_info):
+        super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
@@ -26,7 +26,7 @@ class OptionsWindow(QDialog):
         self.resize(1000, 1000)
 
         self.lsl_name = lsl_name
-        self.signalTreeView = SignalTreeViewWindow(parent=self, lsl_name=lsl_name)
+        self.signalTreeView = StreamGroupView(parent=self, lsl_name=lsl_name, group_info=group_info)
         self.set_nominal_sampling_rate_textbox()
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)

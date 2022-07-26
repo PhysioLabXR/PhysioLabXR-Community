@@ -458,7 +458,7 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
                  EEG_stream_preset, notch_f0=60., notch_band_demoninator=200, EEG_fresample=50, baselining=True):
     EEG_num_sample_per_trail = int(EEG_stream_preset['NominalSamplingRate'] * (post_stimulus_time - pre_stimulus_time))
     EEG_num_sample_per_trail_RESAMPLED = int(EEG_fresample * (post_stimulus_time - pre_stimulus_time))
-    EEG_num_chan = EEG_stream_preset['GroupChannelsInPlot'][1] - EEG_stream_preset['GroupChannelsInPlot'][0]
+    EEG_num_chan = EEG_stream_preset['GroupInfo'][1] - EEG_stream_preset['GroupInfo'][0]
     epoched_EEG = np.empty(shape=(0, EEG_num_chan, EEG_num_sample_per_trail))
 
     for fp in file_path:
@@ -491,7 +491,7 @@ def process_data(file_path, EM_stream_name, EEG_stream_name, target_labels, pre_
 
         # take out the electrode channels
         stream_EEG_preprocessed = stream_EEG[
-                                  EEG_stream_preset['GroupChannelsInPlot'][0]:EEG_stream_preset['GroupChannelsInPlot'][1],
+                                  EEG_stream_preset['GroupInfo'][0]:EEG_stream_preset['GroupInfo'][1],
                                   :]
         # baseline correction
         if baselining:

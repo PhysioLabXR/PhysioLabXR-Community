@@ -52,7 +52,7 @@ def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets')
 
 
 def load_LSL_preset(preset_dict):
-    if 'GroupChannelsInPlot' in preset_dict.keys():
+    if 'GroupInfo' in preset_dict.keys():
         try:
             assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
         except AssertionError:
@@ -62,8 +62,8 @@ def load_LSL_preset(preset_dict):
         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
     if 'ChannelNames' not in preset_dict.keys():
         preset_dict['ChannelNames'] = None
-    if 'GroupChannelsInPlot' not in preset_dict.keys():
-        preset_dict['GroupChannelsInPlot'] = None
+    if 'GroupInfo' not in preset_dict.keys():
+        preset_dict['GroupInfo'] = None
         preset_dict['GroupFormat'] = None
     if 'GroupFormat' not in preset_dict.keys():
         preset_dict['GroupFormat'] = None
@@ -75,7 +75,7 @@ def load_LSL_preset(preset_dict):
 def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, plot_group_formats=None):
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': channel_names,
-                   'GroupChannelsInPlot': plot_group_slices,
+                   'GroupInfo': plot_group_slices,
                    'GroupFormat': plot_group_formats}
     preset_dict = load_LSL_preset(preset_dict)
     return preset_dict
@@ -83,8 +83,8 @@ def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, p
 
 def process_plot_group(preset_dict):
     channel_num = preset_dict['NumChannels']
-    if preset_dict['GroupChannelsInPlot'] is None or 'GroupChannelsInPlot' not in preset_dict:
-        # create GroupChannelsInPlot from 0 to x
+    if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:
+        # create groupinfo from 0 to x
         # if channel num is greater than 100, we hide the rest
         if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
             is_channels_shown = [1 for c in range(0, channel_num)]
@@ -92,7 +92,7 @@ def process_plot_group(preset_dict):
             is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
             is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
 
-        preset_dict['GroupChannelsInPlot'] = {
+        preset_dict['GroupInfo'] = {
             "Group1": {
                 "group_index": 1,
                 "plot_format": "time_series",
@@ -105,19 +105,19 @@ def process_plot_group(preset_dict):
     else:
         plot_group_slice = []
         head = 0
-        for x in preset_dict['GroupChannelsInPlot']:
+        for x in preset_dict['GroupInfo']:
             plot_group_slice.append((head, x))
             head = x
         if head != channel_num:
             plot_group_slice.append(
                 (head, channel_num))  # append the last group
-            # create GroupChannelsInPlot from 0 to x
-            # preset_dict['GroupChannelsInPlot'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
+            # create GroupInfo from 0 to x
+            # preset_dict['GroupInfo'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
 
         if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
-            preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupChannelsInPlot']))
+            preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupInfo']))
 
-        preset_dict['GroupChannelsInPlot'] = dict()
+        preset_dict['GroupInfo'] = dict()
         num_shown_channel = 0
         for i, group in enumerate(plot_group_slice):
             channel_indices = list(range(*group))
@@ -129,7 +129,7 @@ def process_plot_group(preset_dict):
                 is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
                 num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
 
-            preset_dict['GroupChannelsInPlot']["Group{0}".format(i)] = \
+            preset_dict['GroupInfo']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
                     "plot_format": "time_series",

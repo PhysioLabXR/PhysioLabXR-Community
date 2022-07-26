@@ -9,4 +9,4 @@
         "Gaze Combined Origin X", "Gaze Combined Origin Y", "Gaze Combined Origin Z", "Focal Distance", "Focal Stability"
   ],
   "NominalSamplingRate":  200,
-  "GroupChannelsInPlot":  [2, 5, 8, 11, 14, 17, 20]}
+  "GroupInfo":  [2, 5, 8, 11, 14, 17, 20]}

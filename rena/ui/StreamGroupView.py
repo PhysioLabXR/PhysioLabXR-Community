@@ -6,19 +6,20 @@ from PyQt5.QtCore import *
 
 from rena import config
 from rena.config_ui import *
+from rena.utils.settings_utils import get_stream_preset_info
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class SignalTreeViewWindow(QTreeWidget):
+class StreamGroupView(QTreeWidget):
     selection_changed_signal = QtCore.pyqtSignal(str)
     item_changed_signal = QtCore.pyqtSignal(str)
 
-    def __init__(self, parent, lsl_name):
+    def __init__(self, parent, lsl_name, group_info):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent
-        self.lsl_name = lsl_name
+        self.stream_name = lsl_name
 
         # self.model = QStandardItemModel()
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
@@ -28,7 +29,7 @@ class SignalTreeViewWindow(QTreeWidget):
         # self.setModel(self.model)
         self.groups_widgets = []
         self.channel_widgets = []
-        self.create_tree_view()
+        self.create_tree_view(group_info)
         self.expandAll()
 
         # self.setSelectionMode(self.SingleSelection)
@@ -42,31 +43,30 @@ class SignalTreeViewWindow(QTreeWidget):
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
 
-    def create_tree_view(self):
+    def create_tree_view(self, group_info):
 
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.item_type = 'stream_root'
-        self.stream_root.setText(0, self.lsl_name)
+        self.stream_root.setText(0, self.stream_name)
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
                                   & (~Qt.ItemIsSelectable) | Qt.ItemIsEditable)
         # self.stream_root.channel_group.setEditable(False)
 
         # get_childGroups_for_group('presets/')
-        for group_name in channel_groups_information:
-            group_info = channel_groups_information[group_name]
+        for group_name, group_values in group_info.items():
             channel_group = self.add_item(parent_item=self.stream_root,
                                           display_text=group_name,
-                                          plot_format=group_info['plot_format'],
+                                          plot_format=group_values['plot_format'],
                                           item_type='group',
-                                          display=group_info['group_display'])
+                                          display=group_values['is_group_shown'])
             self.groups_widgets.append(channel_group)
-            for channel_index_in_group, channel_index in enumerate(group_info['channels']):
+            for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
                 # print(channel_index)
                 channel = self.add_item(parent_item=channel_group,
-                                        display_text=self.preset['ChannelNames'][channel_index],
+                                        display_text=get_stream_preset_info(self.stream_name, key='ChannelNames')[int(channel_index)],
                                         item_type='channel',
-                                        display=group_info['channels_display'][channel_index_in_group],
+                                        display=group_values['is_channels_shown'][channel_index_in_group],
                                         item_index=channel_index)
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
@@ -116,7 +116,7 @@ class SignalTreeViewWindow(QTreeWidget):
             print(drop_target.checkState(0))
 
     def mousePressEvent(self, *args, **kwargs):
-        super(SignalTreeViewWindow, self).mousePressEvent(*args, **kwargs)
+        super(StreamGroupView, self).mousePressEvent(*args, **kwargs)
         self.reset_drag_drop()
 
     def reset_drag_drop(self):

@@ -105,7 +105,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.num_samples_to_plot, self.viz_time_vector = None, None
         self.create_visualization_component()
 
-        # TODO create the option window here and hide it
+        # create option window
+        self.signal_settings_window = OptionsWindow(parent=self, lsl_name=self.stream_name, group_info=self.group_info)
+        self.signal_settings_window.hide()
 
         # start the timers
         self.timer.start()
@@ -152,13 +154,9 @@ class StreamWidget(QtWidgets.QWidget):
             self.PopWindowBtn.setIcon(dock_window_icon)
 
     def options_btn_clicked(self):
-        # TODO show the option window that was created in init
         print("Option window open")
-        signal_settings_window = OptionsWindow(parent=self, preset=self.preset)
-        if signal_settings_window.exec_():
-            print("signal setting window open")
-        else:
-            print("Cancel!")
+        self.signal_settings_window.show()
+        self.signal_settings_window.activateWindow()
 
     def start_stop_stream_btn_clicked(self):
         # check if is streaming
@@ -237,9 +235,6 @@ class StreamWidget(QtWidgets.QWidget):
     def init_visualize_LSLStream_data(self):
 
         # init stream view with LSL
-        # lsl_num_chan, channel_names, group_channels_in_plot = preset['NumChannels'], \
-        #                                                                     preset['ChannelNames'], \
-        #                                                                     preset['GroupChannelsInPlot']
         parent = self.TimeSeriesPlotsLayout
         metainfo_parent = self.MetaInfoVerticalLayout
 
@@ -304,11 +299,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)
         self.viz_time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.num_samples_to_plot)
         return fs_label, ts_label, plot_widgets, plots
-
-
-    # def group_info(self, group_name, key):
-    #     return config.settings.value(
-    #         'presets/streampresets/{0}/GroupChannelsInPlot/{1}/{2}'.format(self.stream_name, group_name, key))
 
     def create_visualization_component(self):
         fs_label, ts_label, plot_widgets, plots = \

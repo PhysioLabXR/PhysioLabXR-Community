@@ -5,4 +5,4 @@
     "Head Position X", "Head Position Y", "Head Position Z"
   ],
   "NominalSamplingRate":  150,
-  "GroupChannelsInPlot":  [3, 6]}
+  "GroupInfo":  [3, 6]}

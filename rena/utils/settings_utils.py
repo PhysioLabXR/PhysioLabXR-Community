@@ -22,7 +22,7 @@ def get_stream_preset_info(stream_name, key):
 
 def collect_stream_group_info(stream_name):
     rtn = dict()
-    config.settings.beginGroup('presets/streampresets/{0}/GroupChannelsInPlot'.format(stream_name))
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
         config.settings.beginGroup(group_name)
         rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
@@ -53,10 +53,10 @@ def export_preset_to_settings(preset, setting_category):
         config.settings.beginGroup('presets/{0}'.format(setting_category))
 
         for preset_key, value in preset.items():
-            if preset_key != 'GroupChannelsInPlot':
+            if preset_key != 'GroupInfo':
                 config.settings.setValue('{0}/{1}'.format(preset['StreamName'], preset_key), value)
 
-        for group_name, group_info_dict in preset['GroupChannelsInPlot'].items():
+        for group_name, group_info_dict in preset['GroupInfo'].items():
             for group_info_key, group_info_value in group_info_dict.items():
-                config.settings.setValue('{0}/GroupChannelsInPlot/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
+                config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
         config.settings.endGroup()
