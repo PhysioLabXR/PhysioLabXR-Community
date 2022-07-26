@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 
 import rena.config
 from rena import config, shared
-from rena.sub_process.ReplayServer import start_replay_client
+from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
@@ -53,7 +53,6 @@ class ReplayTab(QtWidgets.QWidget):
         self.file_loc = config.DEFAULT_DATA_DIR
         self.ReplayFileLoc.setText('')
 
-
         # start replay client
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
                                                        port_id=config.replay_port,
@@ -65,8 +64,8 @@ class ReplayTab(QtWidgets.QWidget):
         # self.replay_timer.setInterval(config.REFRESH_INTERVAL)
         # self.replay_timer.timeout.connect(self.ticks)
 
-        # self.replay_client_process = Process(target=start_replay_client)
-        # self.replay_client_process.start()
+        self.replay_server_process = Process(target=start_replay_server)
+        self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -82,9 +81,9 @@ class ReplayTab(QtWidgets.QWidget):
 
     def _init_playback_widget(self):
         self.playback_widget = PlayBackWidget(self, self.command_info_interface)
-        self.playback_widget.playback_signal.connect(self.on_playback_slider_changed)
-        self.playback_widget.play_pause_signal.connect(self.on_play_pause_toggle)
-        self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
+        # self.playback_widget.playback_signal.connect(self.on_playback_slider_changed)
+        # self.playback_widget.play_pause_signal.connect(self.on_play_pause_toggle)
+        # self.playback_widget.stop_signal.connect(self.stop_replay_btn_pressed)
 
         # connect signal emitted from the replayworker to playback widget
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)

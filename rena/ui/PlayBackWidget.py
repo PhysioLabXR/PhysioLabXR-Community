@@ -8,9 +8,6 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):
-    playback_signal = pyqtSignal(int)
-    play_pause_signal = pyqtSignal(bool)
-    stop_signal = pyqtSignal()
 
     def __init__(self, parent, command_info_interface):
         super().__init__()
@@ -30,7 +27,6 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_worker.moveToThread(self.playback_thread)
         self.playback_thread.started.connect(self.playback_worker.run)
         self.playback_thread.start()
-
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 

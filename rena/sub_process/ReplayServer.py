@@ -70,7 +70,6 @@ class ReplayServer(threading.Thread):
                     print("Replay FPS {0}".format(self.get_fps()), end='\r')
                     # streams get removed from the list if there are no samples left to play
                     command = self.recv_string(is_block=False)
-                    # print('Poll result is ' + str(command))
                     self.replay()
                     self.send(self.virtual_clock)
 
@@ -227,7 +226,7 @@ class ReplayServer(threading.Thread):
         except ZeroDivisionError:
             return 0
 
-def start_replay_client():
+def start_replay_server():
     print("Replay Client Started")
     command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
                                               port_id=config.replay_port,
@@ -239,4 +238,4 @@ def start_replay_client():
 
 
 if __name__ == '__main__':
-    start_replay_client()
+    start_replay_server()
