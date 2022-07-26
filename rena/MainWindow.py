@@ -429,7 +429,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                            stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
 
                 samples_dict = {'eye': eye_samples}
-                self.inference_worker.tick_signal.emit(samples_dict)
+                self.inference_worker.signal_data_tick.emit(samples_dict)
 
     def init_visualize_inference_results(self):
         inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
@@ -438,7 +438,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                         inference_results_plot_widgets]
 
     def camera_screen_capture_tick(self):
-        [w.tick_signal.emit() for w in self.cam_workers.values()]
+        [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
 
     def visualize_inference_results(self, inference_results):

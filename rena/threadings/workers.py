@@ -37,7 +37,7 @@ from stream_shared import lsl_continuous_resolver
 
 class RENAWorker(QObject):
     signal_data = pyqtSignal(dict)
-    tick_signal = pyqtSignal()
+    signal_data_tick = pyqtSignal()
     def __init__(self):
         super().__init__()
         # self.dsp_on = True
@@ -231,12 +231,15 @@ class LSLInletWorker(RENAWorker):
 
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
-    tick_signal = pyqtSignal()
-    signal_stream_availibility = pyqtSignal(bool)
+    signal_data_tick = pyqtSignal()
+
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
 
     def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
-        self.tick_signal.connect(self.process_on_tick)
+        self.signal_data_tick.connect(self.process_on_tick)
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
         self._lslInlet_interface = LSLInlet_interface
         self._rena_tcp_interface = RenaTCPInterface
@@ -245,7 +248,6 @@ class LSLInletWorker(RENAWorker):
 
         self.start_time = time.time()
         self.num_samples = 0
-
 
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
 
@@ -283,8 +285,10 @@ class LSLInletWorker(RENAWorker):
 
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
-        else:
-            self.signal_stream_availibility.emit( self._lslInlet_interface.is_stream_available())
+
+    @pg.QtCore.pyqtSlot()
+    def process_stream_availability(self):
+        self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())
 
     def start_stream(self):
         self._lslInlet_interface.start_sensor()

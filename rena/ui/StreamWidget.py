@@ -83,12 +83,12 @@ class StreamWidget(QtWidgets.QWidget):
         # load default settings from settings
         self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
 
-
         self.worker_thread = pg.QtCore.QThread(self)
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
                                                  RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
-        self.lsl_worker.signal_stream_availibility.connect(self.update_stream_availability)
+        self.lsl_worker.signal_stream_availability.connect(self.update_stream_availability)
+        self.v_timer.timeout.connect(self.lsl_worker.signal_stream_availability_tick)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
@@ -104,7 +104,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.v_timer.start()
 
     def update_stream_availability(self, is_stream_available):
-        print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available))
+        print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available), end='\r')
 
 
     def set_button_icons(self):
@@ -396,7 +396,7 @@ class StreamWidget(QtWidgets.QWidget):
     #     'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
 
     def ticks(self):
-        self.lsl_worker.tick_signal.emit()
+        self.lsl_worker.signal_data_tick.emit()
         #     self.recent_tick_refresh_timestamps.append(time.time())
         #     if len(self.recent_tick_refresh_timestamps) > 2:
         #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
