@@ -4,7 +4,7 @@ import time
 import math
 import cv2
 import pyqtgraph as pg
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QTimer
 from PyQt5.QtCore import pyqtSignal
 from pylsl import local_clock
 
@@ -31,6 +31,10 @@ from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 from multiprocessing import Process
+
+from stream_shared import lsl_continuous_resolver
+
+
 class RENAWorker(QObject):
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
@@ -228,7 +232,7 @@ class LSLInletWorker(RENAWorker):
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
-
+    signal_stream_availibility = pyqtSignal(bool)
 
     def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
@@ -241,6 +245,8 @@ class LSLInletWorker(RENAWorker):
 
         self.start_time = time.time()
         self.num_samples = 0
+
+
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
 
     @pg.QtCore.pyqtSlot()
@@ -255,8 +261,6 @@ class LSLInletWorker(RENAWorker):
                 sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
             except ZeroDivisionError:
                 sampling_rate = 0
-
-
             # if self.dsp_on:
             #     current_time = time.time()
             #     self._rena_tcp_interface.send_array(frames)
@@ -279,13 +283,11 @@ class LSLInletWorker(RENAWorker):
 
             data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
+        else:
+            self.signal_stream_availibility.emit( self._lslInlet_interface.is_stream_available())
 
     def start_stream(self):
-        try:
-            self._lslInlet_interface.start_sensor()
-        except AttributeError as e:
-            dialog_popup(e)
-            return
+        self._lslInlet_interface.start_sensor()
         self.is_streaming = True
 
         self.num_samples = 0

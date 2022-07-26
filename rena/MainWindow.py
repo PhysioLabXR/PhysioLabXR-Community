@@ -27,7 +27,6 @@ except ModuleNotFoundError as e:
     print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
     raise e
 import threadings.workers as workers
-# from interfaces.UnityLSLInterface import UnityLSLInterface
 from rena.ui.InferenceTab import InferenceTab
 from rena.ui.StreamWidget import StreamWidget
 from ui.RecordingsTab import RecordingsTab
@@ -333,23 +332,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_lsl(self, lsl_name):
         error_initialization = False
-        config.settings.beginGroup('presets/streampresets/{0}'.format(lsl_name))
-
-        channel_names = config.settings.value('ChannelNames')
-        nominal_sampling_rate = config.settings.value('NominalSamplingRate')
-
-        interface = create_lsl_interface(lsl_name, channel_names)
-        if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
-            print('The stream {0} found in LAN has sampling rate of {1}, '
-                  'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
-            config.settings.setValue('NominalSamplingRate', stream_srate)
 
         # set up UI elements
         lsl_widget_name = lsl_name + '_widget'
         lsl_stream_widget = StreamWidget(main_parent=self,
                                          parent=self.sensorTabSensorsHorizontalLayout,
                                          stream_name=lsl_name,
-                                         interface=interface,
                                          insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
         lsl_stream_widget.setObjectName(lsl_widget_name)

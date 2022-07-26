@@ -143,17 +143,11 @@ def process_plot_group(preset_dict):
 
 
 def create_lsl_interface(lsl_name, channel_names):
-    try:
-        interface = LSLInletInterface.LSLInletInterface(lsl_name)
-    except AttributeError:
-        raise AssertionError('Unable to find LSL Stream in LAN.')
-    lsl_num_chan = interface.get_num_chan()
-
-    try:
-        assert lsl_num_chan == len(channel_names)
-    except AssertionError:
-        raise ValueError('The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(len(channel_names), lsl_num_chan))
-
+    # try:
+    #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
+    # except AttributeError:
+    #     raise AssertionError('Unable to find LSL Stream in LAN.')
+    interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
     return interface
 
 

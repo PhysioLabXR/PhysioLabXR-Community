@@ -14,10 +14,11 @@ from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
 import config
 from rena.startup import load_default_settings
 
+# import and init shared global variables
+import ui_shared
+import stream_shared
+
 app = None
-
-
-
 
 if __name__ == '__main__':
     # load default settings

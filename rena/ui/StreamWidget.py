@@ -8,6 +8,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
 
+from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
@@ -16,14 +17,16 @@ from rena.ui.OptionsWindow import OptionsWindow
 from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
+from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_group_info
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, interface: LSLInletInterface, insert_position=None):
+    def __init__(self, main_parent, parent, stream_name, insert_position=None):
         """
+        LSL interface is created in StreamWidget
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
@@ -47,7 +50,6 @@ class StreamWidget(QtWidgets.QWidget):
 
         # visualization data buffer
         self.current_timestamp = 0
-        self.lsl_data_buffer = np.empty(shape=(interface.get_num_chan(), 0))
 
         # timer
         self.timer = QTimer()
@@ -71,11 +73,22 @@ class StreamWidget(QtWidgets.QWidget):
         # self.init_server_client()
 
         # data elements
+        channel_names = get_stream_preset_info(stream_name, 'ChannelNames')
+        self.interface = create_lsl_interface(stream_name, channel_names)
+        # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
+        #     print('The stream {0} found in LAN has sampling rate of {1}, '
+        #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
+        #     config.settings.setValue('NominalSamplingRate', stream_srate)
+
+        # load default settings from settings
+        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
+
+
         self.worker_thread = pg.QtCore.QThread(self)
-        self.interface = interface
-        self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=interface,
+        self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
                                                  RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
+        self.lsl_worker.signal_stream_availibility.connect(self.update_stream_availability)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
@@ -89,6 +102,9 @@ class StreamWidget(QtWidgets.QWidget):
         # start the timers
         self.timer.start()
         self.v_timer.start()
+
+    def update_stream_availability(self, is_stream_available):
+        print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available))
 
 
     def set_button_icons(self):
@@ -121,7 +137,13 @@ class StreamWidget(QtWidgets.QWidget):
                 # toggle the icon
                 self.StartStopStreamBtn.setText("Start Stream")
         else:
-            self.lsl_worker.start_stream()
+            try:
+                self.lsl_worker.start_stream()
+            except Exception as e:
+                if type(e) == LSLStreamNotFoundError or type(e) == LSLChannelMismatchError:
+                    dialog_popup(msg=str(e), title='ERROR')
+                    return
+                else: raise UnsupportedErrorTypeError(str(e))
             if self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
@@ -130,8 +152,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.set_button_icons()
 
     def dock_window(self):
-        self.parent.insertWidget(self.parent.count() - 1,
-                                 self)
+        self.parent.insertWidget(self.parent.count() - 1, self)
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.pop_window)
         self.PopWindowBtn.setText('Pop Window')
