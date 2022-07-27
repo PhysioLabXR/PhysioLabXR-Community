@@ -8,11 +8,14 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton
+    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
 from rena import config_ui, config
 import matplotlib.pyplot as plt
+
+from rena.utils.video_capture_utils import get_working_camera_ports
+
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
     if vertical:
@@ -107,6 +110,26 @@ def init_combo_box(parent, label, item_list):
 
     return combo_box
 
+def init_label(parent, text, max_width=None, max_hight=None, size=None):
+    label = QLabel(text)
+
+    parent.addWidget(label)
+    if max_width:
+        label.setMaximumWidth(max_width)
+    if max_hight:
+        label.setMaximumHeight(max_hight)
+
+def init_scroll_label(parent, text, max_width=None, max_hight=None, size=None):
+    label = ScrollLabel()
+    label.setText(text=text)
+
+    parent.addWidget(label)
+    if max_width:
+        label.setMaximumWidth(max_width)
+    if max_hight:
+        label.setMaximumHeight(max_hight)
+
+
 
 def init_camera_widget(parent, label_string, insert_position):
     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
@@ -191,53 +214,58 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 #     # stop_stream_btn.setIcon(QIcon('../media/icons/random.png'))
 #     return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn
 
-def init_add_widget(parent, lslStream_presets: dict, device_presets: dict, experiment_presets: dict):
-    container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
-    container.setFixedWidth(700)
-
-    container_add_camera, layout_add_camera = init_container(parent=layout,
-                                                             label='Select a Camera(ID) or Screen Capture to add',
-                                                             vertical=False)
-    # detect camera
-    cameras = get_working_camera_id()
-    cameras = list(map(str, cameras))
-    camera_screen_cap_list = cameras + ['monitor1']
-    # add camera container
-    camera_combo_box = init_combo_box(parent=layout_add_camera, label=None,
-                                      item_list=camera_screen_cap_list)
-    add_camera_btn = init_button(parent=layout_add_camera, label='Add')
-
-    reload_presets_btn = init_button(parent=layout, label='Reload Stream/Device/Experiment Presets')
-
-    # add stream UI elements ######################
-    container_add_stream, layout_add_stream = init_container(parent=layout, label='Select a Stream to Add',
-                                                             vertical=False)
-    stream_combo_box = init_combo_box(parent=layout_add_stream, label=None,
-                                      item_list=list(
-                                          lslStream_presets.keys()))
-    add_stream_btn = init_button(parent=layout_add_stream, label='Add Stream')
-
-    # add device UI elements ######################
-    container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect',
-                                                                     vertical=False)
-    device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
-                                      item_list=list(
-                                          device_presets.keys()))
-    add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
-    # add experiment UI elements ######################
-    container_experiment, layout_experiment = init_container(parent=layout, label='Select an Experiment Preset to Start',
-                                                             vertical=False)
-    experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
-                                          item_list=list(
-                                              experiment_presets.keys()))
-    add_experiment_btn = init_button(parent=layout_experiment, label='Connect Experiment Streams/Devices')
-
-    container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
-    _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
-    add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
-
-    return layout, camera_combo_box, add_camera_btn, stream_combo_box, add_stream_btn, lsl_data_type_input, add_lsl_btn, \
-           reload_presets_btn, device_combo_box, add_device_btn,experiment_combo_box,add_experiment_btn
+# def init_add_widget(parent):
+#     container, layout = init_container(parent=parent, label='Add Stream', label_bold=True)
+#     container.setFixedWidth(700)
+#
+#     container_add_camera, layout_add_camera = init_container(parent=layout,
+#                                                              label='Select a Camera(ID) or Screen Capture to add',
+#                                                              vertical=False)
+#     # detect camera
+#     cameras = get_working_camera_ports()
+#     cameras = list(map(str, cameras))
+#     camera_screen_cap_list = cameras + ['monitor1']
+#     # add camera container
+#     camera_combo_box = init_combo_box(parent=layout_add_camera, label=None,
+#                                       item_list=camera_screen_cap_list)
+#     add_camera_btn = init_button(parent=layout_add_camera, label='Add')
+#
+#     reload_presets_btn = init_button(parent=layout, label='Reload Stream/Device/Experiment Presets')
+#
+#     # add LSL UI elements ######################
+#     container_add_stream, layout_add_stream = init_container(parent=layout, label='Select a Stream to Add',
+#                                                              vertical=False)
+#     config.settings.beginGroup('presets/lslpresets')
+#     stream_combo_box = init_combo_box(parent=layout_add_stream, label=None,
+#                                       item_list=list(config.settings.childGroups()))
+#     config.settings.endGroup()
+#     add_stream_btn = init_button(parent=layout_add_stream, label='Add LSL')
+#
+#     # add device UI elements ######################
+#     container_connect_device, layout_connect_device = init_container(parent=layout, label='Select a Device to Connect',
+#                                                                      vertical=False)
+#     config.settings.beginGroup('presets/devicepresets')
+#     device_combo_box = init_combo_box(parent=layout_connect_device, label=None,
+#                                       item_list=list(config.settings.childGroups()))
+#     config.settings.endGroup()
+#
+#     add_device_btn = init_button(parent=layout_connect_device, label='Add Device')
+#     # add experiment UI elements ######################
+#     container_experiment, layout_experiment = init_container(parent=layout, label='Select an Experiment Preset to Start',
+#                                                              vertical=False)
+#     config.settings.beginGroup('presets/experimentpresets')
+#     experiment_combo_box = init_combo_box(parent=layout_experiment, label=None,
+#                                           item_list=list(config.settings.childGroups()))
+#     config.settings.endGroup()
+#
+#     add_experiment_btn = init_button(parent=layout_experiment, label='Connect Experiment Streams/Devices')
+#
+#     container_add_lsl, layout_add_lsl = init_container(parent=layout, label='Define a Stream to Add', vertical=False)
+#     _, lsl_data_type_input = init_inputBox(parent=layout_add_lsl, default_input=config_ui.default_add_lsl_data_type)
+#     add_lsl_btn = init_button(parent=layout_add_lsl, label='Add')
+#
+#     return layout, camera_combo_box, add_camera_btn, stream_combo_box, add_stream_btn, lsl_data_type_input, add_lsl_btn, \
+#            reload_presets_btn, device_combo_box, add_device_btn,experiment_combo_box,add_experiment_btn
 
 
 class CustomDialog(QDialog):
@@ -342,23 +370,6 @@ def array_to_colormap_qim(a, normalize=True):
     qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
     return qim
 
-
-
-def get_working_camera_id():
-    # checks the first 10 indexes.
-    index = 0
-    arr = []
-    i = 10
-    while i > 0:
-        cap = cv2.VideoCapture(index)
-        if cap.read()[0]:
-            arr.append(index)
-            cap.release()
-        index += 1
-        i -= 1
-    return arr
-
-
 def stream_stylesheet(stylesheet_url):
     stylesheet = QFile(stylesheet_url)
     stylesheet.open(QFile.ReadOnly | QFile.Text)
@@ -402,3 +413,37 @@ class another_window(QWidget):
     def get_layout(self):
         return self.layout
 
+
+# class for scrollable label
+class ScrollLabel(QScrollArea):
+
+    # constructor
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+
+        # making widget resizable
+        self.setWidgetResizable(True)
+
+        # making qwidget object
+        content = QWidget(self)
+        self.setWidget(content)
+
+        # vertical box layout
+        lay = QVBoxLayout(content)
+
+        # creating label
+        self.label = QLabel(content)
+
+        # setting alignment to the text
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        # making label multi-line
+        self.label.setWordWrap(True)
+
+        # adding label to the layout
+        lay.addWidget(self.label)
+
+    # the setText method
+    def setText(self, text):
+        # setting text to the label
+        self.label.setText(text)

@@ -7,4 +7,4 @@
     "R Hand Position X", "R Hand Position Y", "R Hand Position Z"
   ],
   "NominalSamplingRate":  150,
-  "GroupChannelsInPlot":  [2, 5, 8, 11, 13]}
+  "GroupInfo":  [2, 5, 8, 11, 13]}

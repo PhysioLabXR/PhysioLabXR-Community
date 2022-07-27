@@ -17,7 +17,7 @@ import rena.config
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import pylsl
-from rena.threadings.workers import LSLReplayWorker
+from rena.threadings.workers import PlaybackWorker
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 
 class ReplaySeekBar(QtWidgets.QWidget):

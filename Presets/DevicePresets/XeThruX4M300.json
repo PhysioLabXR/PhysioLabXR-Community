@@ -8,5 +8,5 @@
     "@img_(8,64,1)@RA"
   ],
   "NominalSamplingRate":  30,
-  "GroupChannelsInPlot":  [1, 2]
+  "GroupInfo":  [1, 2]
   }

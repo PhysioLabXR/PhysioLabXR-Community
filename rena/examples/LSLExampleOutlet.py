@@ -4,7 +4,7 @@ import random
 import sys
 import getopt
 import string
-
+import numpy as np
 import time
 from random import random as rand
 
@@ -13,10 +13,9 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 def main(argv):
     letters = string.digits
-    id = (''.join(random.choice(letters) for i in range(3)))
 
-    srate = 100
-    name = 'Dummy-BioSemi-8Chan-' + id
+    srate = 128
+    name = 'Dummy-8Chan'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 8
