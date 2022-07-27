@@ -1,43 +1,78 @@
-import time
-
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets, uic, sip
-from PyQt5.QtWidgets import QSlider, QLabel
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QLabel
 
-import numpy as np
-from datetime import datetime
+from rena.threadings.workers import PlaybackWorker
+from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon
 
-from rena import config
 
 class PlayBackWidget(QtWidgets.QWidget):
-    playback_signal = pyqtSignal(int)
-    play_pause_signal = pyqtSignal()
-    stop_signal = pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, parent, command_info_interface):
         super().__init__()
         self.ui = uic.loadUi("ui/PlayBackWidget.ui", self)
         self.parent = parent
+        self.command_info_interface = command_info_interface
 
         # playback status
-        self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
-        self.playPauseButton.clicked.connect(self.emit_playback_stop)
-        self.stopButton.clicked.connect(self.emit_playback_stop)
+        # self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
+        # self.playPauseButton.clicked.connect(self.emit_play_pause_button_clicked)
+        # self.stopButton.clicked.connect(self.emit_playback_stop)
 
-    def emit_playback_stop(self):
-        self.play_pause_signal.emit()
-        # self.playing = not self.playing
-        # if self.playing:
-        #     self.parent.start_replay()
-        # else:
-        #     self.parent.pause_replay()
+        # create worker listening the playback position from the server
+        # Initialize playback worker
+        self.playback_thread = pg.QtCore.QThread(self.parent)
+        self.playback_worker = PlaybackWorker(self.command_info_interface)
+        self.playback_worker.moveToThread(self.playback_thread)
+        self.playback_thread.started.connect(self.playback_worker.run)
+        self.playback_thread.start()
+        self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
+        self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 
-    def emit_playback_stop(self):
-        # self.playing = False
-        # self.parent.stop_replay_btn_pressed()
-        self.stop_signal.emit()
+        # start the play pause button
 
-    def emit_playback_position(self, event):
-        # use signal
-        self.playback_signal.emit(event)
+    def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
+        self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
+        self.playPauseButton.setIcon(pause_icon)
+        self.playback_worker.set_up_replay()
+
+    def play_pause_button_clicked(self):
+        # TODO add play pause feature
+        self.playback_worker.set_up_replay()
+
+    def virtual_time_to_playback_position_value(self, virtual_clock):
+        # TODO: do not hardcode playback range (100)
+        return (virtual_clock - self.start_time) * 100 / self.total_time
+
+    def update_playback_position(self, virtual_clock):
+        # print("slider value is being updated ", replay_progress)
+        playback_percent = self.virtual_time_to_playback_position_value(virtual_clock)
+        self.horizontalSlider.setValue(playback_percent)
+        self.currentTimestamplabel.setText('{:.2f}'.format(virtual_clock + self.virtual_clock_offset))
+        self.timeSinceStartedLabel.setText('{:.2f}/{:.2f}'.format(virtual_clock - self.start_time, self.total_time))
+        self.percentageReplayedLabel.setText('{:.1f} %'.format(playback_percent))
+        # print('Virtual Clock {0}'.format(virtual_clock))
+        # print('Time since start {0}/{1}'.format(virtual_clock - self.start_time, self.total_time))
+        # print('Playback percent {0}'.format(playback_percent))
+
+    # def emit_play_pause_button_clicked(self):
+    #     print("Its clicked in playbackwidget")
+    #     if not self.parent.is_replaying:  # set in reverse
+    #         self.playPauseButton.setIcon(stop_stream_icon)
+    #         # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
+    #     else:
+    #         self.playPauseButton.setIcon(start_stream_icon)
+    #         # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
+    #     self.play_pause_signal.emit(self.is_playing)
+    #
+    # def emit_playback_stop(self):
+    #     # self.playing = False
+    #     # self.parent.stop_replay_btn_pressed()
+    #     self.stop_signal.emit()
+    #
+    # def emit_playback_position(self, event):
+    #     # use signal
+    #     self.playback_signal.emit(event)
+
+

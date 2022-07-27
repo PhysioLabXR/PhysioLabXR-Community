@@ -48,7 +48,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.recording_byte_count = 0
 
     def start_recording_btn_ressed(self):
-        if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1 or len(self.parent.cam_workers) >= 1):
+        if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
             dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
             return
         self.save_path = self.generate_save_path()  # get a new save path
