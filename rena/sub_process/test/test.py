@@ -88,26 +88,42 @@ import threading
 from time import sleep
 
 
-def print_cube(num):
-    """
-    function to print cube of given num
-    """
-    sleep(5)
-    print("Cube: {}".format(num * num * num))
+
+def print_cube(num, lock):
+    # lock = threading.Lock()
+    while True:
+        lock.acquire()
+        print('thread0 0\n')
+        print('thread0 1\n')
+        lock.release()
+    # """
+    # function to print cube of given num
+    # """
+    # sleep(5)
+    # print("Cube: {}".format(num * num * num))
 
 
-def print_square(num):
-    """
-    function to print square of given num
-    """
-    sleep(6)
-    print("Square: {}".format(num * num))
+def print_square(num, lock):
+
+
+    while True:
+        # with lock:
+        lock.acquire()
+        print('thread1 0\n')
+        print('thread1 1\n')
+        lock.release()
+    # """
+    # function to print square of given num
+    # """
+    # sleep(6)
+    # print("Square: {}".format(num * num))
 
 
 if __name__ == "__main__":
     # creating thread
-    t1 = threading.Thread(target=print_square, args=(10,))
-    t2 = threading.Thread(target=print_cube, args=(10,))
+    lock = threading.Lock()
+    t1 = threading.Thread(target=print_square, args=(10,lock))
+    t2 = threading.Thread(target=print_cube, args=(10,lock))
 
     # starting thread 1
     t1.start()
@@ -117,16 +133,14 @@ if __name__ == "__main__":
         'thread1': t1,
         'thread2': t2,
     }
-    threads.pop('thread1')
+    # threads.pop('thread1')
     sleep(2)
-    t1.terminate()
     # t1.exit()
     # t1.exit()
-
     # # wait until thread 1 is completely executed
-    # t1.join()
+    t1.join()
     # # wait until thread 2 is completely executed
-    # t2.join()
+    t2.join()
 
 
     # both threads completely executed
