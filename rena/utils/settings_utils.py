@@ -73,7 +73,7 @@ def load_all_lslStream_presets(lsl_preset_roots='../Presets/LSLPresets'):
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
-        preset_dict = load_LSL_preset(loaded_preset_dict)
+        preset_dict = add_keys_to_preset(loaded_preset_dict)
         stream_name = preset_dict['StreamName']
         presets[stream_name] = preset_dict
     return presets
@@ -85,7 +85,7 @@ def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
-        preset_dict = load_LSL_preset(loaded_preset_dict)
+        preset_dict = add_keys_to_preset(loaded_preset_dict)
         stream_name = preset_dict['StreamName']
         presets[stream_name] = preset_dict
     return presets
@@ -101,7 +101,7 @@ def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets')
     return presets
 
 
-def load_LSL_preset(preset_dict):
+def add_keys_to_preset(preset_dict):
     if 'GroupInfo' in preset_dict.keys():
         try:
             assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
@@ -118,16 +118,16 @@ def load_LSL_preset(preset_dict):
     if 'GroupFormat' not in preset_dict.keys():
         preset_dict['GroupFormat'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
-        preset_dict['NominalSamplingRate'] = None
+        preset_dict['NominalSamplingRate'] = 1
     return preset_dict
 
 
-def create_LSL_preset(stream_name, channel_names=None, plot_group_slices=None, plot_group_formats=None):
+def create_default_preset(stream_name):
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': channel_names,
-                   'GroupInfo': plot_group_slices,
-                   'GroupFormat': plot_group_formats}
-    preset_dict = load_LSL_preset(preset_dict)
+                   'ChannelNames': ['channel1']}
+    preset_dict = add_keys_to_preset(preset_dict)
+    preset_dict = process_plot_group(preset_dict)
+    export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
 
