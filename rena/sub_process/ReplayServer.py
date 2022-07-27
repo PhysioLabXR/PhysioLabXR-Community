@@ -69,9 +69,11 @@ class ReplayServer(threading.Thread):
                     self.tick_times.append(time.time())
                     print("Replay FPS {0}".format(self.get_fps()), end='\r')
                     # streams get removed from the list if there are no samples left to play
-                    command = self.recv_string(is_block=False)
                     self.replay()
-                    self.send(self.virtual_clock)
+
+                    command = self.recv_string(is_block=False)
+                    if command == shared.VIRTUAL_CLOCK_REQUEST:
+                        self.send(self.virtual_clock)
 
     def replay(self):
         nextStreamIndex = None
@@ -217,6 +219,7 @@ class ReplayServer(threading.Thread):
             try:
                 self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
                     flags=zmq.NOBLOCK)
+                return command.decode('utf-8')
             except zmq.error.Again:
                 return None  # no message has arrived at the socket yet
 

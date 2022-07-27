@@ -116,10 +116,10 @@ class ReplayTab(QtWidgets.QWidget):
         elif client_info.startswith(shared.SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             start_time, end_time, total_time, virtual_clock_offset = np.frombuffer(time_info)
-            print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
+            print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 

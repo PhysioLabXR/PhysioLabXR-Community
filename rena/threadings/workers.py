@@ -15,7 +15,7 @@ from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
-from rena import config_ui, config_signal
+from rena import config_ui, config_signal, shared
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 import multiprocessing as mp
@@ -544,22 +544,21 @@ class PlaybackWorker(QObject):
     """
     The playback worker listens from the replay process and emit the playback position
     """
+    playback_tick_signal = pyqtSignal()
     replay_progress_signal = pyqtSignal(float)
 
     def __init__(self, command_info_interface):
         super(PlaybackWorker, self).__init__()
         self.command_info_interface: RenaTCPInterface = command_info_interface
-        self.stop = True
+        self.playback_tick_signal.connect(self.run)
 
+    @pg.QtCore.pyqtSlot()
     def run(self):
-        while True:
-            if not self.stop:
-                virtual_clock = self.command_info_interface.socket.recv()
-                virtual_clock = np.frombuffer(virtual_clock)[0]
-                self.replay_progress_signal.emit(virtual_clock)
+        self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
+        virtual_clock = self.command_info_interface.socket.recv()
+        virtual_clock = np.frombuffer(virtual_clock)[0]
+        self.replay_progress_signal.emit(virtual_clock)
 
-    def set_up_replay(self):
-        self.stop = False
 
 # class LSLReplayWorker(QObject):
 #     replay_progress_signal = pyqtSignal(float)
