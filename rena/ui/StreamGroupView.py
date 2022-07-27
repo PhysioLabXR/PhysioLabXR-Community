@@ -43,6 +43,7 @@ class StreamGroupView(QTreeWidget):
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
 
+
     def create_tree_view(self, group_info):
 
         self.stream_root = QTreeWidgetItem(self)
@@ -99,12 +100,11 @@ class StreamGroupView(QTreeWidget):
         self.reconnect_selection_changed()
 
     def dropEvent(self, event):
-        # print("LISA")
         drop_target = self.itemAt(event.pos())
         if drop_target == None:
             self.reset_drag_drop()
             return
-        elif drop_target.data(0, 0) == self.preset['StreamName']:
+        elif drop_target.data(0, 0) == self.stream_name:
             self.reset_drag_drop()
             return
         else:

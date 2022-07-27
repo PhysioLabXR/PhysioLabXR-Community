@@ -294,7 +294,7 @@ class LSLInletWorker(RENAWorker):
         only emit when the stream is not available
         """
         is_stream_availability = self._lslInlet_interface.is_stream_available()
-        if self.previous_availability is None:
+        if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
             self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())
         else:

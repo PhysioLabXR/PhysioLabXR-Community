@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import time
+from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
@@ -96,7 +97,6 @@ class StreamWidget(QtWidgets.QWidget):
                                                  RenaTCPInterface=None)
         self.lsl_worker.signal_data.connect(self.process_LSLStream_data)
         self.lsl_worker.signal_stream_availability.connect(self.update_stream_availability)
-        self.v_timer.timeout.connect(self.lsl_worker.signal_stream_availability_tick)
         self.lsl_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
@@ -108,6 +108,9 @@ class StreamWidget(QtWidgets.QWidget):
         # create option window
         self.signal_settings_window = OptionsWindow(parent=self, lsl_name=self.stream_name, group_info=self.group_info)
         self.signal_settings_window.hide()
+
+        # FPS counter
+        self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
 
         # start the timers
         self.timer.start()
@@ -339,7 +342,9 @@ class StreamWidget(QtWidgets.QWidget):
             # self.main_parent.inference_tab.update_buffers(data_dict)
 
     def visualize_LSLStream_data(self):
-
+        self.tick_times.append(time.time())
+        print("Viz FPS {0}".format(self.get_fps()), end='\r')
+        self.lsl_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
         data_to_plot = self.lsl_data_buffer
         if data_to_plot.shape[-1] == len(self.viz_time_vector):
@@ -428,6 +433,7 @@ class StreamWidget(QtWidgets.QWidget):
         #     self.tickFrequencyLabel.setText(
         #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
+
     def init_server_client(self):
         print('John')
 
@@ -443,3 +449,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
 
         # send to server
+
+    def get_fps(self):
+        try:
+            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+        except ZeroDivisionError:
+            return 0
+
