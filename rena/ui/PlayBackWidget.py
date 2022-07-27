@@ -1,8 +1,9 @@
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QTimer
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QLabel
 
+from rena import config
 from rena.threadings.workers import PlaybackWorker
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon
 
@@ -22,12 +23,16 @@ class PlayBackWidget(QtWidgets.QWidget):
 
         # create worker listening the playback position from the server
         # Initialize playback worker
+        self.timer = QTimer()
+        self.timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
+        self.timer.timeout.connect(self.ticks)
+
         self.playback_thread = pg.QtCore.QThread(self.parent)
         self.playback_worker = PlaybackWorker(self.command_info_interface)
         self.playback_worker.moveToThread(self.playback_thread)
-        self.playback_thread.started.connect(self.playback_worker.run)
-        self.playback_thread.start()
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
+        self.playback_thread.start()
+
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 
         # start the play pause button
@@ -35,11 +40,11 @@ class PlayBackWidget(QtWidgets.QWidget):
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
         self.playPauseButton.setIcon(pause_icon)
-        self.playback_worker.set_up_replay()
+        self.timer.start()  # timer should stop when the replay is paused, over, or stopped
 
     def play_pause_button_clicked(self):
         # TODO add play pause feature
-        self.playback_worker.set_up_replay()
+        pass
 
     def virtual_time_to_playback_position_value(self, virtual_clock):
         # TODO: do not hardcode playback range (100)
@@ -74,5 +79,8 @@ class PlayBackWidget(QtWidgets.QWidget):
     # def emit_playback_position(self, event):
     #     # use signal
     #     self.playback_signal.emit(event)
+
+    def ticks(self):
+        self.playback_worker.playback_tick_signal.emit()
 
 
