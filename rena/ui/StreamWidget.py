@@ -5,7 +5,7 @@ from collections import deque
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer, QThread
+from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel
 from pyqtgraph import PlotDataItem
@@ -111,6 +111,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         # FPS counter
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
+
+        # mutex for not update the settings while plotting
+        self.setting_update_viz_mutex = QMutex()
 
         # start the timers
         self.timer.start()
@@ -299,7 +302,7 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
-        self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)
+        self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)  # TODO when the user change nominal sampling rate in the option window, update these two variables
         self.viz_time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.num_samples_to_plot)
         return fs_label, ts_label, plot_widgets, plots
 
@@ -341,7 +344,20 @@ class StreamWidget(QtWidgets.QWidget):
             # inference tab
             # self.main_parent.inference_tab.update_buffers(data_dict)
 
+    def OnNominalSamplingRateChange(self):
+        self.stream_settings_changed(("nominal_sampling_rate", 128))  # TODO
+
+    def stream_settings_changed(self, change):
+        self.setting_update_viz_mutex.lock()
+        # resolve the
+        if change[0] == "nominal_sampling_rate":
+            pass # TODO
+        # TODO add other changes such as plot format, plot order, etc...
+
+        self.setting_update_viz_mutex.unlock()
+
     def visualize_LSLStream_data(self):
+        self.setting_update_viz_mutex.lock()
         self.tick_times.append(time.time())
         print("Viz FPS {0}".format(self.get_fps()), end='\r')
         self.lsl_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
@@ -411,6 +427,7 @@ class StreamWidget(QtWidgets.QWidget):
                 'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
             self.stream_widget_visualization_component.ts_label.setText(
                 'Current Time Stamp = {0}'.format(self.current_timestamp))
+        self.setting_update_viz_mutex.unlock()
 
     # calculate and update the frame rate
     # self.recent_visualization_refresh_timestamps.append(time.time())

@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
 from rena.ui.AddWiget import AddStreamWidget
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group
+from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset
 
 try:
     import config
@@ -200,8 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = self.experiment_presets_dict[selected_text]
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
-
-                raise NotImplementedError()  # TODO
+                # create the preset
+                create_default_preset(stream_name=selected_text)
+                self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
 
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
