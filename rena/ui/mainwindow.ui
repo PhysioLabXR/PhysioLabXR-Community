@@ -21,7 +21,7 @@
        <cursorShape>ArrowCursor</cursorShape>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
@@ -122,16 +122,23 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Active Streams</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="visualizationFPSLabel">
         <property name="text">
-         <string>   Visualization FPS </string>
+         <string>Visualization FPS:</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="tickFrequencyLabel">
         <property name="text">
-         <string>   Pull Data Frequency: </string>
+         <string>   Pull Data Delay: </string>
         </property>
        </widget>
       </item>
@@ -139,6 +146,13 @@
        <widget class="QLabel" name="recordingFileSizeLabel">
         <property name="text">
          <string>    Recording file size: </string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Scripting Loop FPS</string>
         </property>
        </widget>
       </item>

@@ -25,3 +25,8 @@ stream_active_icon = QIcon('../media/icons/streamwidget_stream_viz_active.svg')
 # stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
 # stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
 # stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+
+# strings in Rena
+recording_tab_file_save_label_prefix = 'File will be saved as: '
+start_recording_text = 'Start Recording'
+stop_recording_text = 'Stop Recording'
