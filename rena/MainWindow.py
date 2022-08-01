@@ -162,6 +162,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_tab = InferenceTab(self)
         self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
+        self.inference_tab = InferenceTab(self)
+        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
+
+
         # windows
         self.pop_windows = {}
         self.test_ts_buffer = []
