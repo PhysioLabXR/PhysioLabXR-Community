@@ -64,6 +64,7 @@ class ReplayServer(threading.Thread):
                     self.setup_stream()
                     self.send_string(shared.SUCCESS_INFO + str(self.total_time))
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
+                    self.send_string('|'.join(self.stream_data.keys()))
             else:
                 while len(self.selected_stream_indices) > 0:
                     self.tick_times.append(time.time())

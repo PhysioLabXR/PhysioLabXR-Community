@@ -119,10 +119,11 @@ class ReplayTab(QtWidgets.QWidget):
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
+            stream_names = self.command_info_interface.recv_string().split('|')
+            self.parent.add_streams_from_replay(stream_names)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
-
         # self.lsl_replay_worker.setup_stream()
         # self.replay_timer.start()
 

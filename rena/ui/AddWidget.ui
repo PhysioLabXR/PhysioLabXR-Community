@@ -67,7 +67,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="add_combo_box">
+       <widget class="QComboBox" name="stream_name_combo_box">
         <property name="editable">
          <bool>true</bool>
         </property>

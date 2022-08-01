@@ -19,7 +19,8 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
 from rena.ui.AddWiget import AddStreamWidget
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset
+from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
+    get_all_lsl_device_preset_names
 
 try:
     import config
@@ -184,10 +185,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.hide()
 
     def add_btn_clicked(self):
+        """
+        This should be the only entry point to adding a stream widget
+        :return:
+        """
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text = self.addStreamWidget.add_combo_box.currentText()
+        selected_text = self.addStreamWidget.get_selected_stream_name()
 
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
@@ -306,27 +311,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_streams_to_visualize(self, stream_names):
         try:
-            assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
+            assert np.all([x in get_all_lsl_device_preset_names() for x in
                            stream_names])
         except AssertionError:
             dialog_popup(
-                msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
                 title="Error")
             return
-        loading_dlg = dialog_popup(
-            msg="Please wait while streams are being added...",
-            title="Info")
+        # loading_dlg = dialog_popup(
+        #     msg="Please wait while streams are being added...",
+        #     title="Info")
         for stream_name in stream_names:
-            isLSL = stream_name in self.lslStream_presets_dict.keys()
-            if isLSL:
-                index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                self.preset_LSLStream_combo_box.setCurrentIndex(index)
-                self.add_preset_lslStream_clicked()
-            else:
-                index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                self.device_combo_box.setCurrentIndex(index)
-                self.add_preset_device_clicked()
-        loading_dlg.close()
+            self.addStreamWidget.select_by_stream_name(stream_name)
+            self.add_btn_clicked()
+        # loading_dlg.close()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization

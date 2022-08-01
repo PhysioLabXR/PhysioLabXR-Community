@@ -1,6 +1,7 @@
 import json
 import os
 
+from exceptions.exceptions import InvalidPresetError
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM
 
@@ -48,6 +49,9 @@ def get_childGroups_for_group(group):
     rtn = config.settings.childGroups()
     config.settings.endGroup()
     return rtn
+
+def get_all_lsl_device_preset_names():
+    return get_childGroups_for_group('presets/streampresets')
 
 
 def export_preset_to_settings(preset, setting_category):
@@ -110,8 +114,10 @@ def add_keys_to_preset(preset_dict):
                              '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
     if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
-    if 'ChannelNames' not in preset_dict.keys():
-        preset_dict['ChannelNames'] = None
+    elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
+        preset_dict['ChannelNames'] = ['Channel'] + list(range(int(preset_dict['NumChannels'])))
+    else:
+        raise InvalidPresetError(preset_dict['stream_name'])
     if 'GroupInfo' not in preset_dict.keys():
         preset_dict['GroupInfo'] = None
         preset_dict['GroupFormat'] = None
