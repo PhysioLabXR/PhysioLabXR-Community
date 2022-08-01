@@ -137,6 +137,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.set_stream_available()
             else:
                 self.set_stream_unavailable()
+        self.main_parent.update_num_active_stream_label()
 
     def set_stream_unavailable(self):
         self.StartStopStreamBtn.setEnabled(False)
@@ -187,6 +188,7 @@ class StreamWidget(QtWidgets.QWidget):
                 # toggle the icon
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
+        self.main_parent.update_num_active_stream_label()
 
     def dock_window(self):
         self.parent.insertWidget(self.parent.count() - 1, self)
@@ -196,6 +198,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.main_parent.pop_windows[self.stream_name].hide()  # tetentive measures
         self.main_parent.pop_windows.pop(self.stream_name)
         self.set_button_icons()
+        self.main_parent.activateWindow()
 
     def pop_window(self):
         w = AnotherWindow(self, self.remove_stream)
@@ -227,7 +230,7 @@ class StreamWidget(QtWidgets.QWidget):
         #     self.main_parent.device_workers.pop(self.stream_name)
 
         self.main_parent.stream_widgets.pop(self.stream_name)
-        self.parent.removeWidget(self)
+        self.main_parent.remove_stream_widget(self)
         # close window if popped
         if self.stream_name in self.main_parent.pop_windows.keys():
             self.main_parent.pop_windows[self.stream_name].hide()
@@ -472,4 +475,7 @@ class StreamWidget(QtWidgets.QWidget):
             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
         except ZeroDivisionError:
             return 0
+
+    def is_widget_streaming(self):
+        return self.lsl_worker.is_streaming
 

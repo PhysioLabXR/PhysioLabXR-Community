@@ -52,6 +52,7 @@ class ReplayTab(QtWidgets.QWidget):
 
         self.file_loc = config.DEFAULT_DATA_DIR
         self.ReplayFileLoc.setText('')
+        self.stream_names = []
 
         # start replay client
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -119,8 +120,8 @@ class ReplayTab(QtWidgets.QWidget):
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
-            stream_names = self.command_info_interface.recv_string().split('|')
-            self.parent.add_streams_from_replay(stream_names)
+            self.stream_names = self.command_info_interface.recv_string().split('|')
+            self.parent.add_streams_from_replay(self.stream_names)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
@@ -271,3 +272,6 @@ class ReplayTab(QtWidgets.QWidget):
     def on_playback_slider_changed(self, new_playback_position):
         print("adjust playback position to:", new_playback_position)
         self.playback_position_signal.emit(new_playback_position)
+
+    def get_num_replay_channels(self):
+        return len(self.stream_names)

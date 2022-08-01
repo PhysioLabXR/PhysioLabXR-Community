@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     get_all_lsl_device_preset_names
 
@@ -206,22 +207,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.init_lsl(selected_text)  # add lsl stream
             elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = self.experiment_presets_dict[selected_text]
+                streams_for_experiment = self.experiment_presets_dict[selected_text] #TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
                 # create the preset
                 create_default_preset(stream_name=selected_text)
                 self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
-
+            self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
 
+    def remove_stream_widget(self, target):
+        self.sensorTabSensorsHorizontalLayout.removeWidget(target)
+        self.update_num_active_stream_label()
+
+    def update_num_active_stream_label(self):
+        available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
+        streaming_widget_count = len([x for x in self.stream_widgets.values() if x.is_widget_streaming()])
+        self.numActiveStreamsLabel.setText(num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count, streaming_widget_count, self.replay_tab.get_num_replay_channels()))
     # def add_camera_clicked(self):
     #     if self.recording_tab.is_recording:
     #         dialog_popup(msg='Cannot add capture while recording.')
     #         return
     #     selected_camera_id = self.camera_combo_box.currentText()
     #     self.init_camera(selected_camera_id)
+
+
 
     def init_camera(self, cam_id):
         if cam_id not in self.cam_workers.keys():
@@ -326,6 +337,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.add_btn_clicked()
         # loading_dlg.close()
 
+
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
@@ -333,6 +345,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
+
 
     def init_lsl(self, lsl_name):
         error_initialization = False
@@ -346,7 +359,6 @@ class MainWindow(QtWidgets.QMainWindow):
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
         lsl_stream_widget.setObjectName(lsl_widget_name)
 
-        # TODO: remove those meta information
         self.stream_widgets[lsl_name] = lsl_stream_widget
 
         if error_initialization:

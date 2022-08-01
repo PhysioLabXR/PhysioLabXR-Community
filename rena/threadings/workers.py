@@ -256,7 +256,7 @@ class LSLInletWorker(RENAWorker):
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
-            frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
             if frames.shape[-1] == 0:
                 return
 

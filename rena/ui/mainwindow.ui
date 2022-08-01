@@ -122,9 +122,15 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="numActiveStreamsLabel">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="text">
-         <string>Active Streams</string>
+         <string>Streams: 0 added, 0 available, 0 streaming, 0 replaying</string>
         </property>
        </widget>
       </item>
