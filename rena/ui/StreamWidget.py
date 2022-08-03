@@ -268,10 +268,10 @@ class StreamWidget(QtWidgets.QWidget):
 
                 plot_data_items = []
                 for channel_index_in_group, channel_name in enumerate([get_stream_preset_info(self.stream_name, 'ChannelNames')[int(i)] for i in self.group_info[group_name]['channel_indices']]):
-                    if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if display is 1
+                    # if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if display is 1
                         plot_data_items.append(plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name))
-                    else:
-                        plot_data_items.append(None)
+                    # else:
+                    #     plot_data_items.append(None)
 
                 plots.append(plot_data_items)
 
@@ -281,8 +281,11 @@ class StreamWidget(QtWidgets.QWidget):
                 # plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
                 #               zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
 
-                if self.group_info[group_name]['is_group_shown'] == 0:
+                if any(self.group_info[group_name]['is_channels_shown']):
+                    plot_widget.show() # TODO: remove this
+                else:
                     plot_widget.hide()
+
                 plot_widgets[group_name] = plot_widget
 
                 # elif plot_group_format_info[0] == 'image':

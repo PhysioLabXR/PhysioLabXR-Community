@@ -11,6 +11,22 @@ from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
+class StreamTreeGroupItem(QTreeWidgetItem):
+    item_type = 'group'
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+
+class StreamTreeChannelItem(QTreeWidgetItem):
+    item_type = 'channel'
+
+    def __init__(self, parent, plot_format):
+        super().__init__(parent)
+        plot_format = plot_format
+
+
+
 class StreamGroupView(QTreeWidget):
     selection_changed_signal = QtCore.pyqtSignal(str)
     item_changed_signal = QtCore.pyqtSignal(str)
@@ -42,7 +58,6 @@ class StreamGroupView(QTreeWidget):
         self.selected_channels = []
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
-
 
     def create_tree_view(self, group_info):
 
