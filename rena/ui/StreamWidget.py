@@ -344,7 +344,7 @@ class StreamWidget(QtWidgets.QWidget):
             # reshape data_dict based on sensor interface
             self.main_parent.recording_tab.update_buffers(data_dict)
 
-            # inference tab
+            # scripting tab
             # self.main_parent.inference_tab.update_buffers(data_dict)
 
     def OnNominalSamplingRateChange(self):

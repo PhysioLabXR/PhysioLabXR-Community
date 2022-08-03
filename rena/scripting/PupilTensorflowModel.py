@@ -3,7 +3,7 @@ import json
 import numpy as np
 import tensorflow as tf
 
-from rena.inference.RealTimeModels.RealTimeModel import RealTimeModel
+from rena.scripting.RealTimeModel import RealTimeModel
 from rena.utils.data_utils import window_slice
 
 

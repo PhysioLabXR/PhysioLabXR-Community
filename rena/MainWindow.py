@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     get_all_lsl_device_preset_names
@@ -101,7 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.c_timer.timeout.connect(self.camera_screen_capture_tick)
         self.c_timer.start()
 
-        # inference timer
+        # scripting timer
         self.inference_timer = QTimer()
         self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
         self.inference_timer.timeout.connect(self.inference_ticks)
@@ -143,7 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LSL_data_buffer_dicts = {}
         self.LSL_current_ts_dict = {}
 
-        # inference buffer
+        # scripting buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
@@ -164,9 +165,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_tab = InferenceTab(self)
         self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
-        self.inference_tab = InferenceTab(self)
-        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
-
+        self.scripting_tab = ScriptingTab(self)
+        self.scripting_tab_vertical_layout.addWidget(self.scripting_tab)
 
         # windows
         self.pop_windows = {}
@@ -413,9 +413,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_inference(self, inference_interface):
         inference_thread = pg.QtCore.QThread(self)
-        self.worker_threads['inference'] = inference_thread
+        self.worker_threads['scripting'] = inference_thread
         self.inference_worker = workers.InferenceWorker(inference_interface)
-        self.inference_worker.moveToThread(self.worker_threads['inference'])
+        self.inference_worker.moveToThread(self.worker_threads['scripting'])
         self.init_visualize_inference_results()
         self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
 
@@ -458,7 +458,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def visualize_inference_results(self, inference_results):
-        # results will be -1 if inference is not connected
+        # results will be -1 if scripting is not connected
         if self.inference_worker.is_connected and inference_results[0][0] >= 0:
             self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
 

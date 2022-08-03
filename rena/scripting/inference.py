@@ -28,21 +28,21 @@ def inference(samples_preprocessed, model, y_encoder):
     return results, results_decoded
 
 def main():
-    print("Waiting for inference sample data stream " + config.INFERENCE_LSL_NAME + '...')
+    print("Waiting for scripting sample data stream " + config.INFERENCE_LSL_NAME + '...')
     streams = resolve_byprop('type', config.INFERENCE_LSL_NAME)
 
     # create a new inlet to read from the stream  ######################################################################
     inlet = StreamInlet(streams[0])
     print('number of streams is ' + str(len(streams)))
 
-    # create a outlet to relay the inference results  ##################################################################
-    print('Sample stream found, creating inference results out stream ...')
+    # create a outlet to relay the scripting results  ##################################################################
+    print('Sample stream found, creating scripting results out stream ...')
     lsl_data_type = config.INFERENCE_LSL_RESULTS_TYPE
     lsl_data_name = config.INFERENCE_LSL_RESULTS_NAME
     info = StreamInfo(lsl_data_name, lsl_data_type, channel_count=config.INFERENCE_CLASS_NUM, channel_format='float32', source_id='myuid1234')
     info.desc().append_child_value("apocalyvec", "RealityNavigation")
 
-    chns = info.desc().append_child("inference")
+    chns = info.desc().append_child("scripting")
     channel_names = ['class' + str(i) for i in range(config.INFERENCE_CLASS_NUM)]
     for label in channel_names:
         ch = chns.append_child("channel")
@@ -51,13 +51,13 @@ def main():
     outlet = StreamOutlet(info, max_buffered=360)
     start_time = local_clock()
 
-    # Load inference parameters ########################################################################################
+    # Load scripting parameters ########################################################################################
     model, y_encoder, data_downsampled_min, data_downsampled_max = load_model_params()
 
     # data buffers #####################################################################
     timestamp_accumulated = []
 
-    print('Entering inference loop')
+    print('Entering scripting loop')
     while True:
         # get a new sample (you can also omit the timestamp part if you're not
         # interested in it)
@@ -68,11 +68,11 @@ def main():
                 samples = np.reshape(data, newshape=(
                     config.EYE_SAMPLES_PER_INFERENCE, config.EYE_INFERENCE_WINDOW_TIMESTEPS, 2))  # take the most recent samples
 
-                # conduct inference
+                # conduct scripting
                 samples_preprocessed = preprocess_eye_samples(samples, data_downsampled_max, data_downsampled_min)
                 results, results_decoded = inference(samples_preprocessed, model, y_encoder)
 
-                # send the inference results via LSL, only send out the not-decoded results
+                # send the scripting results via LSL, only send out the not-decoded results
                 results_moving_average = np.mean(results, axis=0)
                 print(results_moving_average)
                 outlet.push_sample(results_moving_average)

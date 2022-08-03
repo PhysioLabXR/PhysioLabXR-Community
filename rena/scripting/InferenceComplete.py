@@ -68,7 +68,7 @@ def main():
     data_accumulated = None
     no_data_duration = None
 
-    # Create a outlet to relay the inference results  ##################################################################
+    # Create a outlet to relay the scripting results  ##################################################################
     if len(resolve_byprop('name', config.INFERENCE_LSL_RESULTS_NAME, timeout=0.5)) > 0:
         print(
             'Inference stream with name {0} alreayd exists, cannot start. Check if there are other same script running'.format(
@@ -81,13 +81,13 @@ def main():
                       channel_format='float32',
                       source_id=(''.join(random.choice(string.digits) for i in range(8))), nominal_srate=110)
     info.desc().append_child_value("apocalyvec", "RealityNavigation")
-    chns = info.desc().append_child("inference")
+    chns = info.desc().append_child("scripting")
     channel_names = ['class' + str(i) for i in range(inference_chann_count)]
     for label in channel_names:
         ch = chns.append_child("channel")
         ch.append_child_value("label", label)
     outlet = StreamOutlet(info, max_buffered=360)
-    print('Created inference results out stream ...')
+    print('Created scripting results out stream ...')
 
     # Main Loop ##################################################################################
     while True:
@@ -98,7 +98,7 @@ def main():
                 timestamp_accumulated.append(timestamp)  # accumulate timestamps
                 data_accumulated = np.concatenate([data_accumulated, np.expand_dims(data, axis=-1)], axis=-1)  # take the most recent samples
 
-                # conduct inference
+                # conduct scripting
                 # simply take the tail of data
                 if data_accumulated.shape[-1] > f_data * time_window:
                     try:
@@ -112,7 +112,7 @@ def main():
                     samples_preprocessed = preprocess_eye_samples(samples, f_resample=f_resample, data_downsampled_min=data_downsampled_min, data_downsampled_max=data_downsampled_max)
                     results, _ = inference(samples_preprocessed)
 
-                    # send the inference results via LSL, only send out the not-decoded results
+                    # send the scripting results via LSL, only send out the not-decoded results
                     outlet.push_sample(results)
                     inference_per_second = len(timestamp_accumulated) / (
                                 timestamp_accumulated[-1] - timestamp_accumulated[0]) if timestamp_accumulated[-1] - \
@@ -141,7 +141,7 @@ def main():
             timestamp_accumulated = []
             data_accumulated = np.empty(shape=(data_chann_count, 0))
             no_data_duration = 0.
-            print('Entering inference loop')
+            print('Entering scripting loop')
             current_time = time.time()
 
         current_time = time.time()

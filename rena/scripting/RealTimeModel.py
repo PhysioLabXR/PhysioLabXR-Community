@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-import tensorflow as tf
+
 class RealTimeModel(ABC):
     """
-    An abstract class for implementing inference models.
+    An abstract class for implementing scripting models.
     """
     expected_input_size = None
     expected_preprocessed_input_size = None

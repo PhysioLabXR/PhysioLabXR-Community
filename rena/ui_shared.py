@@ -10,6 +10,10 @@ pop_window_icon = QIcon('../media/icons/popwindow.svg')
 dock_window_icon = QIcon('../media/icons/dockwindow.svg')
 remove_stream_icon = QIcon('../media/icons/removestream.svg')
 
+add_icon = QIcon('../media/icons/add.svg')
+minus_icon = QIcon('../media/icons/minus.svg')
+
+
 
 pause_icon = QIcon('../media/icons/pause.svg')
 

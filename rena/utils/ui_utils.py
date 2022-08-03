@@ -14,6 +14,7 @@ import pyqtgraph as pg
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
+from rena.utils.settings_utils import get_all_presets
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
@@ -376,6 +377,9 @@ def stream_stylesheet(stylesheet_url):
     stream = QTextStream(stylesheet)
     QtWidgets.qApp.setStyleSheet(stream.readAll())
 
+def add_presets_to_combobox(combobox):
+    for i in get_all_presets() + config.settings.value('cameras'):
+        combobox.addItem(i)
 
 class AnotherWindow(QWidget):
     """
@@ -447,3 +451,4 @@ class ScrollLabel(QScrollArea):
     def setText(self, text):
         # setting text to the label
         self.label.setText(text)
+

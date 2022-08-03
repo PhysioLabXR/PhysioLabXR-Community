@@ -21,7 +21,7 @@
        <cursorShape>ArrowCursor</cursorShape>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
@@ -115,7 +115,7 @@
        <attribute name="title">
         <string>Scripting</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_2"/>
+       <layout class="QVBoxLayout" name="scripting_tab_vertical_layout"/>
       </widget>
      </widget>
     </item>
