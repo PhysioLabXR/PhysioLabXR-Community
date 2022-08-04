@@ -17,7 +17,9 @@ class ScriptingTab(QtWidgets.QWidget):
 
     def add_script_clicked(self):
         script_widget = ScriptingWidget(self)
+        def remove_script_clicked():
+            self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
+            script_widget.deleteLater()
+        script_widget.set_remove_btn_callback(remove_script_clicked)
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
-    def remove_script_clicked(self):
-        pass

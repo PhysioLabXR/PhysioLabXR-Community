@@ -14,7 +14,7 @@ def get_presets_by_category(setting_category):
     config.settings.endGroup()
     return presets
 
-def get_all_presets():
+def get_all_preset_names():
     config.settings.beginGroup('presets/streampresets')
     stream_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()

@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, uic
 
 from rena import config
-from rena.utils.settings_utils import get_all_presets
+from rena.utils.settings_utils import get_all_preset_names
 import pyqtgraph as pg
 
 from rena.utils.ui_utils import add_presets_to_combobox
