@@ -163,7 +163,7 @@ def process_plot_group(preset_dict):
                 "plot_format": "time_series",
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
-                "is_group_shown": 1,
+                "is_group_shown": int(any(is_channels_shown)),
                 "group_description": ""
             }
         }
@@ -200,7 +200,7 @@ def process_plot_group(preset_dict):
                     "plot_format": "time_series",
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
-                    "is_group_shown": 1,
+                    "is_group_shown": int(any(is_channels_shown)),
                     "group_description": ""
                 }
 

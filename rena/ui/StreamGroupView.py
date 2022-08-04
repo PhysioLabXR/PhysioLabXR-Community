@@ -78,19 +78,27 @@ class StreamGroupView(QTreeWidget):
         for group_name, group_values in group_info.items():
             # channel_group = self.add_channel_item(parent_item=self.stream_root, display_text=group_name, display=group_values['plot_format'])
 
-            channel_group = self.add_item(parent_item=self.stream_root,
-                                          display_text=group_name,
-                                          plot_format=group_values['plot_format'],
-                                          item_type='group',
-                                          display=group_values['is_group_shown'])
-            self.groups_widgets.append(channel_group)
+            # group = self.add_item(parent_item=self.stream_root,
+            #                               display_text=group_name,
+            #                               plot_format=group_values['plot_format'],
+            #                               item_type='group',
+            #                               display=group_values['is_group_shown'])
+            group = self.add_group_item(parent_item=self.stream_root,
+                                        display_text=group_name,
+                                        display=group_values['is_group_shown'],
+                                        plot_format=group_values['plot_format'])
+            self.groups_widgets.append(group)
             for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
                 # print(channel_index)
-                channel = self.add_item(parent_item=channel_group,
-                                        display_text=get_stream_preset_info(self.stream_name, key='ChannelNames')[int(channel_index)],
-                                        item_type='channel',
-                                        display=group_values['is_channels_shown'][channel_index_in_group],
-                                        item_index=channel_index)
+                # channel = self.add_item(parent_item=group,
+                #                         display_text=get_stream_preset_info(self.stream_name, key='ChannelNames')[int(channel_index)],
+                #                         item_type='channel',
+                #                         display=group_values['is_channels_shown'][channel_index_in_group],
+                #                         item_index=channel_index)
+                channel = self.add_channel_item(parent_item=group,
+                                                display_text=get_stream_preset_info(self.stream_name, key='ChannelNames')[int(channel_index)],
+                                                display=group_values['is_channels_shown'][channel_index_in_group],
+                                                lsl_index=channel_index)
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 self.channel_widgets.append(channel)
@@ -182,8 +190,8 @@ class StreamGroupView(QTreeWidget):
 
         return item
 
-    def add_channel_item(self, parent_item, display_text, display, item_index):
-        item = StreamTreeChannelItem(parent=parent_item, display=display, lsl_index=item_index)
+    def add_channel_item(self, parent_item, display_text, display, lsl_index):
+        item = StreamTreeChannelItem(parent=parent_item, display=display, lsl_index=lsl_index)
         item.setText(0, display_text)
         if display == 1:
             item.setForeground(0, QBrush(QColor(color_green)))
