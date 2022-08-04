@@ -1,10 +1,10 @@
 from PyQt5 import QtWidgets, uic
 
 
-class LabelButtonWidget(QtWidgets.QWidget):
+class ScriptingInputWidget(QtWidgets.QWidget):
     def __init__(self, label_text):
         super().__init__()
-        self.ui = uic.loadUi("ui/LabelButtonWidget.ui", self)
+        self.ui = uic.loadUi("ui/ScriptingInputWidget.ui", self)
 
         self.label.setText(label_text)
 

@@ -23,6 +23,12 @@ def get_all_preset_names():
     config.settings.endGroup()
     return stream_preset_names + experiment_preset_names
 
+def get_stream_preset_names():
+    config.settings.beginGroup('presets/streampresets')
+    stream_preset_names = list(config.settings.childGroups())
+    config.settings.endGroup()
+    return stream_preset_names
+
 def get_stream_preset_info(stream_name, key):
     return config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
 

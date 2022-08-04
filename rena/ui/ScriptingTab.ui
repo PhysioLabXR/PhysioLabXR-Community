@@ -14,12 +14,12 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
+   <item alignment="Qt::AlignRight">
     <widget class="QWidget" name="widget_6" native="true">
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>150</height>
+       <height>36</height>
       </size>
      </property>
      <property name="maximumSize">
@@ -31,8 +31,27 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QPushButton" name="AddScriptBtn">
+        <property name="maximumSize">
+         <size>
+          <width>36</width>
+          <height>36</height>
+         </size>
+        </property>
         <property name="text">
          <string>Add</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="maximumSize">
+         <size>
+          <width>180</width>
+          <height>36</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Locate and Load</string>
         </property>
        </widget>
       </item>
@@ -53,7 +72,7 @@
            <x>0</x>
            <y>0</y>
            <width>1562</width>
-           <height>1006</height>
+           <height>1115</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="ScriptingWidgetScrollLayout"/>

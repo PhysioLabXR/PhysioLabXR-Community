@@ -174,7 +174,7 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="timeWindowInput">
+       <widget class="QLineEdit" name="timeWindowLineEdit">
         <property name="maximumSize">
          <size>
           <width>64</width>
@@ -187,7 +187,7 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="frequencyInput">
+       <widget class="QLineEdit" name="frequencyLineEdit">
         <property name="maximumSize">
          <size>
           <width>64</width>
@@ -309,7 +309,7 @@
               <height>134</height>
              </rect>
             </property>
-            <layout class="QFormLayout" name="inputFormLayout"/>
+            <layout class="QVBoxLayout" name="inputLayout"/>
            </widget>
           </widget>
          </item>
@@ -317,7 +317,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="widget_input" native="true">
+       <widget class="QWidget" name="widget_output" native="true">
         <layout class="QVBoxLayout" name="vboxlayout_1">
          <property name="leftMargin">
           <number>2</number>
@@ -348,7 +348,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_2"/>
+             <widget class="QLineEdit" name="output_lineEdit">
+              <property name="text">
+               <string>output1</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="addOutput_btn">
@@ -392,7 +396,7 @@
               <height>134</height>
              </rect>
             </property>
-            <layout class="QFormLayout" name="inputScrollLayout"/>
+            <layout class="QVBoxLayout" name="outputLayout"/>
            </widget>
           </widget>
          </item>
@@ -400,7 +404,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QWidget" name="widget_input" native="true">
+       <widget class="QWidget" name="widget_params" native="true">
         <layout class="QVBoxLayout" name="vboxlayout_1">
          <property name="leftMargin">
           <number>2</number>
@@ -475,7 +479,7 @@
               <height>134</height>
              </rect>
             </property>
-            <layout class="QFormLayout" name="inputScrollLayout"/>
+            <layout class="QVBoxLayout" name="paramsLayout"/>
            </widget>
           </widget>
          </item>

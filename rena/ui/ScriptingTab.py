@@ -3,6 +3,7 @@
 from PyQt5 import QtWidgets, uic
 
 from rena.ui.ScriptingWidget import ScriptingWidget
+from rena.ui_shared import add_icon
 
 
 class ScriptingTab(QtWidgets.QWidget):
@@ -13,6 +14,7 @@ class ScriptingTab(QtWidgets.QWidget):
 
         self.scripts = []
 
+        self.AddScriptBtn.setIcon(add_icon)
         self.AddScriptBtn.clicked.connect(self.add_script_clicked)
 
     def add_script_clicked(self):

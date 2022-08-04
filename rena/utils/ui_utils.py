@@ -14,7 +14,7 @@ import pyqtgraph as pg
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.settings_utils import get_all_preset_names
+from rena.utils.settings_utils import get_all_preset_names, get_stream_preset_names
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
@@ -379,6 +379,10 @@ def stream_stylesheet(stylesheet_url):
 
 def add_presets_to_combobox(combobox):
     for i in get_all_preset_names():
+        combobox.addItem(i)
+
+def add_stream_presets_to_combobox(combobox):
+    for i in get_stream_preset_names():
         combobox.addItem(i)
 
 class AnotherWindow(QWidget):
