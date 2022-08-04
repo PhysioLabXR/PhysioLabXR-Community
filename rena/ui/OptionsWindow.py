@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class OptionsWindow(QDialog):
-    def __init__(self, parent, lsl_name, group_info):
+    def __init__(self, parent, stream_name, group_info):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -25,8 +25,8 @@ class OptionsWindow(QDialog):
         # add supported filter list
         self.resize(1000, 1000)
 
-        self.lsl_name = lsl_name
-        self.signalTreeView = StreamGroupView(parent=self, lsl_name=lsl_name, group_info=group_info)
+        self.stream_name = stream_name
+        self.signalTreeView = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
         self.set_nominal_sampling_rate_textbox()
         self.SignalTreeViewLayout.addWidget(self.signalTreeView)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
@@ -135,7 +135,7 @@ class OptionsWindow(QDialog):
 
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(
-            str(config.settings.value('presets/lslpresets/{0}/NominalSamplingRate'.format(self.lsl_name))))
+            str(config.settings.value('presets/lslpresets/{0}/NominalSamplingRate'.format(self.stream_name))))
 
     def clearLayout(self, layout):
         if layout is not None:

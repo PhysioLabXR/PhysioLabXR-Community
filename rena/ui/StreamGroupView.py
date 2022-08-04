@@ -14,16 +14,21 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class StreamTreeGroupItem(QTreeWidgetItem):
     item_type = 'group'
 
-    def __init__(self, parent):
+    def __init__(self, parent, display, plot_format):
         super().__init__(parent)
+        self.display = display  # show the channel plot or not
+        self.plot_format = plot_format
+
+
 
 
 class StreamTreeChannelItem(QTreeWidgetItem):
     item_type = 'channel'
 
-    def __init__(self, parent, plot_format):
+    def __init__(self, parent, display, lsl_index):
         super().__init__(parent)
-        plot_format = plot_format
+        self.display = display # show the channel plot or not
+        self.lsl_index = lsl_index
 
 
 
@@ -31,11 +36,11 @@ class StreamGroupView(QTreeWidget):
     selection_changed_signal = QtCore.pyqtSignal(str)
     item_changed_signal = QtCore.pyqtSignal(str)
 
-    def __init__(self, parent, lsl_name, group_info):
+    def __init__(self, parent, stream_name, group_info):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent
-        self.stream_name = lsl_name
+        self.stream_name = stream_name
 
         # self.model = QStandardItemModel()
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
@@ -71,6 +76,8 @@ class StreamGroupView(QTreeWidget):
 
         # get_childGroups_for_group('presets/')
         for group_name, group_values in group_info.items():
+            # channel_group = self.add_channel_item(parent_item=self.stream_root, display_text=group_name, display=group_values['plot_format'])
+
             channel_group = self.add_item(parent_item=self.stream_root,
                                           display_text=group_name,
                                           plot_format=group_values['plot_format'],
@@ -174,6 +181,46 @@ class StreamGroupView(QTreeWidget):
         )
 
         return item
+
+    def add_channel_item(self, parent_item, display_text, display, item_index):
+        item = StreamTreeChannelItem(parent=parent_item, display=display, lsl_index=item_index)
+        item.setText(0, display_text)
+        if display == 1:
+            item.setForeground(0, QBrush(QColor(color_green)))
+            item.setCheckState(0, Qt.Checked)
+        else:
+            item.setCheckState(0, Qt.Unchecked)
+
+        item.setFlags(
+            item.flags()
+            | Qt.ItemIsTristate
+            | Qt.ItemIsUserCheckable
+            | Qt.ItemIsEditable
+            | Qt.ItemIsDragEnabled
+            | Qt.ItemIsDropEnabled
+        )
+        return item
+
+    def add_group_item(self, parent_item, display_text, display, plot_format):
+        item = StreamTreeGroupItem(parent=parent_item, display=display, plot_format=plot_format)
+        item.setText(0, display_text)
+        if display == 1:
+            item.setForeground(0, QBrush(QColor(color_green)))
+            item.setCheckState(0, Qt.Checked)
+        else:
+            item.setCheckState(0, Qt.Unchecked)
+
+        item.setFlags(
+            item.flags()
+            | Qt.ItemIsTristate
+            | Qt.ItemIsUserCheckable
+            | Qt.ItemIsEditable
+            | Qt.ItemIsDragEnabled
+            | Qt.ItemIsDropEnabled
+        )
+        return item
+
+
 
     def add_group(self, display_text, item_type='group', display=1, item_index=None):
         new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display,

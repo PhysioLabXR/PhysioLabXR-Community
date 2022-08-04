@@ -38,6 +38,15 @@ def collect_stream_group_info(stream_name):
     config.settings.endGroup()
     return rtn
 
+def get_complete_stream_preset_info(stream_name):
+    rtn = dict()
+    config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
+    for field in config.settings.childKeys():
+        rtn[field] = config.settings.value(field)
+    config.settings.endGroup()
+    rtn['GroupInfo'] = collect_stream_group_info(stream_name)
+    return rtn
+
 def get_childKeys_for_group(group):
     config.settings.beginGroup(group)
     rtn = config.settings.childKeys()

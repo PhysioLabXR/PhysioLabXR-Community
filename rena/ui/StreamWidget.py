@@ -21,7 +21,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_group_info
+    collect_stream_group_info, get_complete_stream_preset_info
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
@@ -42,7 +42,12 @@ class StreamWidget(QtWidgets.QWidget):
             parent.addWidget(self)
         self.parent = parent
         self.main_parent = main_parent
+
+        ##
         self.stream_name = stream_name
+        # self.preset = get_complete_stream_preset_info(self.stream_name)
+        ##
+
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
@@ -84,13 +89,14 @@ class StreamWidget(QtWidgets.QWidget):
         # data elements
         channel_names = get_stream_preset_info(stream_name, 'ChannelNames')
         self.interface = create_lsl_interface(stream_name, channel_names)
+        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
+
         # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
         #     print('The stream {0} found in LAN has sampling rate of {1}, '
         #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
         #     config.settings.setValue('NominalSamplingRate', stream_srate)
 
         # load default settings from settings
-        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
 
         self.worker_thread = QThread(self)
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
@@ -106,10 +112,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
         # create option window
-        self.signal_settings_window = OptionsWindow(parent=self, lsl_name=self.stream_name, group_info=self.group_info)
+        self.signal_settings_window = OptionsWindow(parent=self, stream_name=self.stream_name, group_info=self.group_info)
         self.signal_settings_window.hide()
 
-        # FPS counter
+        # FPS counter``
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
 
         # mutex for not update the settings while plotting
@@ -255,6 +261,7 @@ class StreamWidget(QtWidgets.QWidget):
         plot_widgets = {}
         plots = []
         # plot_formats = []
+        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         for group_name in self.group_info.keys():
             plot_format = self.group_info[group_name]['plot_format']
             # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
@@ -267,7 +274,7 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widget.addLegend()
 
                 plot_data_items = []
-                for channel_index_in_group, channel_name in enumerate([get_stream_preset_info(self.stream_name, 'ChannelNames')[int(i)] for i in self.group_info[group_name]['channel_indices']]):
+                for channel_index_in_group, channel_name in enumerate([channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]):
                     # if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if display is 1
                         plot_data_items.append(plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name))
                     # else:
