@@ -366,6 +366,20 @@ class StreamWidget(QtWidgets.QWidget):
     def OnNominalSamplingRateChange(self):
         self.stream_settings_changed(("nominal_sampling_rate", 128))  # TODO
 
+    '''
+    settings on change:
+    visualization can be changed while recording with mutex
+    1. lock settings on change
+    2. update visualization
+    3. save changes to RENA_Settings
+    4. release mutex
+        
+    data processing cannot be changed while recording
+    
+    # cannot add channels while streaming/recording
+    
+    
+    '''
     def stream_settings_changed(self, change):
         self.setting_update_viz_mutex.lock()
         # resolve the

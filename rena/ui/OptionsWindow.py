@@ -42,29 +42,29 @@ class OptionsWindow(QDialog):
             self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
         self.clearLayout(self.actionsWidgetLayout)
 
-        if selection_state == nothing_selected:
+        if selection_state == nothing_selected: # nothing selected
             text = 'Nothing selected'
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
-        elif selection_state == channel_selected:
+        elif selection_state == channel_selected: # only one channel selected
             text = ('Channel Name: ' + selected_channels[0].data(0, 0)) \
-                   + ('\nLSL Channel Index: ' + str(selected_channels[0].item_index)) \
+                   + ('\nLSL Channel Index: ' + str(selected_channels[0].lsl_index)) \
                    + ('\nChannel Display: ' + str(selected_channels[0].display))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
 
-        elif selection_state == mix_selected:
+        elif selection_state == mix_selected: #  both groups and channels are selected
             text = 'Cannot select both groups and channels'
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
-        elif selection_state == channels_selected:
+        elif selection_state == channels_selected: # channels selected
             text = ''
             for channel in selected_channels:
                 text += ('\nChannel Name: ' + channel.data(0, 0)) \
-                        + ('   LSL Channel Index: ' + str(channel.item_index))
+                        + ('   LSL Channel Index: ' + str(channel.lsl_index))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
             self.init_create_new_group_widget()
 
-        elif selection_state == group_selected:
+        elif selection_state == group_selected: # one group selected
 
             is_group_displaying_msg = '\nIs Plotted: {0}'.format('Yes'if selected_groups[0].display else 'No')
             text = ('Group Name: ' + selected_groups[0].data(0, 0)) \
@@ -73,8 +73,7 @@ class OptionsWindow(QDialog):
                    + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
-
-        elif selection_state == groups_selected:
+        elif selection_state == groups_selected: # multiple groups selected
             merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups',
                                            function=self.merge_groups_btn_clicked)
 
