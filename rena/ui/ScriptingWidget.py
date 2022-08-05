@@ -51,6 +51,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         self.removeBtn.setIcon(minus_icon)
 
+        # script widget sends
+
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
         input_widget = ScriptingInputWidget(input_preset_name)

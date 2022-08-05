@@ -585,7 +585,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Jitter {0}    Loop per second {1}    Average loop runtime {2}</string>
+      <string>Data delay {0}    Loop per second {1}    Average loop runtime {2}</string>
      </property>
     </widget>
    </item>

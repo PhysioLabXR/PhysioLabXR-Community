@@ -1,74 +1,54 @@
+import threading
 from abc import ABC, abstractmethod
 
-class RenaScript(ABC):
+class RenaScript(ABC, threading.Thread):
     """
     An abstract class for implementing scripting models.
     """
-    def __init__(self, inputs, outputs):
+    def __init__(self, inputs, outputs, params, port):
+        """
+
+        :param inputs:
+        :param outputs:
+        :param params:
+        :param port: the port to which we bind the
+        """
+        super().__init__()
+        # create
         input_streams = None
         expected_preprocessed_input_size = None
+        # self.command_info_interface = command_info_interface
 
-    @property
-    def model(self):
-        return self.__model
+        # create data buffers
 
-    @model.setter
-    def model(self, new_model):
-        self.__model = new_model
-
-    @property
-    def data_min(self):
-        return self.__data_min
-
-    @data_min.setter
-    def data_min(self, value):
-        self.__data_min = value
-
-    @property
-    def data_max(self):
-        return self.__data_max
-
-    @data_max.setter
-    def data_max(self, value):
-        self.__data_max = value
-
-    # @abstractmethod
-    # def resample(self, input, freq):
-    #     """
-    #     Implement for model-specific resampling method.
-    #     This method will be used in preprocess().
-    #     """
-    #     pass
 
     @abstractmethod
-    def preprocess(self, input):
-        return input
-        # if input.shape != self.expected_input_size:
-        #     raise ValueError("Unexpected Input Size Provided.")
-        #
-        # # resample
-        # preprocessed = self.resample(input, __)
-        #
-        # # min max normalization
-        # preprocessed = (preprocessed - self.data_min) / (self.data_max - self.data_min)
-        #
-        # # slice into samples
-        #
-        # return preprocessed
-
-    def predict(self, input, **kwargs):
+    def start(self):
         """
-        Have ML Model predict the probability of the data being a target,
-        a distractor, or a novelty.
-
-        Returns 3 probability values.
+        Start will be called once when the run button is hit.
         """
-        if input.shape[1:] != self.expected_preprocessed_input_size:
-            raise ValueError("Unexpected Expected Input Size Provided.")
+        pass
 
-        y_hypo = self.model.predict(input)
-        return y_hypo
+    @abstractmethod
+    def Loop(self):
+        """
+        Loop is called
+        """
+        pass
 
-    def prepare_model(self, model_path, preprocess_params_path):
-        self.model = tf.keras.models.load_model(model_path)
-        # self.data_min, self.data_max = load_params(preprocess_params_path)
+    def run(self):
+        self.start()
+        # start the loop here, accept interrupt command
+
+def start_replay_server():
+    print("Replay Client Started")
+    command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
+                                              port_id=config.replay_port,
+                                              identity='server',
+                                              pattern='router-dealer')
+
+    replay_client_thread = ReplayServer(command_info_interface)
+    replay_client_thread.start()
+
+if __name__ == '__main__':
+    start_replay_server()
