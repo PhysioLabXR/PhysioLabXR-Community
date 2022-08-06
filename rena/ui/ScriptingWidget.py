@@ -96,25 +96,15 @@ class ScriptingWidget(QtWidgets.QWidget):
                        'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                        'params': None, 'port': None, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
         if not self.is_running:
-            self.widget_input.setEnabled(False)
-            self.widget_output.setEnabled(False)
-            self.frequencyLineEdit.setEnabled(False)
-            self.timeWindowLineEdit.setEnabled(False)
-            self.widget_script_info.setEnabled(False)
-            self.runBtn.setText('Stop')
+            self.command_info_interface.send_string('')  # send an empty message, this is for setting up the routing id
             self.script_process = start_script(script_path, script_args, self.command_info_interface.port_id)
             self.create_scripting_worker()
         else:
-            self.widget_input.setEnabled(True)
-            self.widget_output.setEnabled(True)
-            self.frequencyLineEdit.setEnabled(True)
-            self.timeWindowLineEdit.setEnabled(True)
-            self.widget_script_info.setEnabled(True)
-
-            self.runBtn.setText('Run')
             stop_script(self.script_process)  # TODO implement closing of the script process
             #TODO close and stop the worker thread
+
         self.is_running = not self.is_running
+        self.change_ui_on_run_stop(self.is_running)
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
@@ -126,6 +116,14 @@ class ScriptingWidget(QtWidgets.QWidget):
         else:
             self.runBtn.setEnabled(False)
         print("Selected script path ", script_path)
+
+    def change_ui_on_run_stop(self, is_run):
+        self.widget_input.setEnabled(not is_run)
+        self.widget_output.setEnabled(not is_run)
+        self.frequencyLineEdit.setEnabled(not is_run)
+        self.timeWindowLineEdit.setEnabled(not is_run)
+        self.widget_script_info.setEnabled(not is_run)
+        self.runBtn.setText('Run' if is_run else 'Stop')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
