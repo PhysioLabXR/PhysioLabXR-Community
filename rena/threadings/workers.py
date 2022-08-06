@@ -14,6 +14,7 @@ from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
+from rena.utils.networking_utils import recv_string_router_dealer
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal, shared
 from rena.interfaces import InferenceInterface, LSLInletInterface
@@ -901,11 +902,14 @@ class ScriptingWorker(QObject):
     stdout_signal = pyqtSignal(str)
     tick_signal = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, socket_interface):
         super().__init__()
         self.tick_signal.connect(self.process_on_tick)
+        self.socket_interface = socket_interface
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        pass
+        msg = self.socket_interface.socket.recv(flags=0)
+        # _, msg = recv_string_router_dealer(self.socket_interface, True)
+        self.stdout_signal.emit(msg.decode('utf-8'))
 

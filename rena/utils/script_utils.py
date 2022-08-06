@@ -11,9 +11,9 @@ from multiprocessing import Process
 from rena import config
 from rena.scripting.RenaScript import RenaScript
 
-debugging = True
+debugging = False
 
-def start_script_server(script_path, script_args, port):
+def start_script_server(script_path, script_args):
     print("script process, starting script thread")
     # sys.stdout = Stream(newText=self.on_print)
 
@@ -66,14 +66,14 @@ def get_target_class_name(script_path):
     return classes[0]
 
 
-def start_script(script_path, script_args, port):
+def start_script(script_path, script_args):
     print('Script started')
     if not debugging:
-        script_process = Process(target=start_script_server, args=(script_path, script_args, port))
+        script_process = Process(target=start_script_server, args=(script_path, script_args))
         script_process.start()
         return script_process
     else:
-        pickle.dump([script_path, script_args, port], open('start_script_args.p', 'wb'))
+        pickle.dump([script_path, script_args], open('start_script_args.p', 'wb'))
 
 
 def stop_script(script_process):
@@ -87,5 +87,5 @@ if __name__ == '__main__':
     #                'params': None, 'port': None, 'run_frequency': None,
     #                'time_window': None}
     # script_path = '../scripting/IndexPen.py'
-    script_path, script_args, port = pickle.load(open('start_script_args.p', 'rb'))
-    start_script_server(script_path, script_args, port)
+    script_path, script_args = pickle.load(open('start_script_args.p', 'rb'))
+    start_script_server(script_path, script_args)

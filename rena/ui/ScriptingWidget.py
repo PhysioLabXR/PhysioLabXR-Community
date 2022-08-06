@@ -69,8 +69,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def create_scripting_worker(self):
         self.worker_thread = QThread(self)
-        self.scripting_worker = workers.ScriptingWorker()
-        self.scripting_worker.stdout_signal.connect(self.direct_script_stdout)
+        self.scripting_worker = workers.ScriptingWorker(self.command_info_interface)
+        self.scripting_worker.stdout_signal.connect(self.redirect_script_stdout)
         self.scripting_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
         self.worker_timer = QTimer()
@@ -78,7 +78,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.worker_timer.timeout.connect(self.scripting_worker.tick_signal.emit)
         self.worker_timer.start()
 
-    def direct_script_stdout(self, stdout_line: str):
+    def redirect_script_stdout(self, stdout_line: str):
         print('[Script]: ' + stdout_line)  # TODO move this console log
 
     def _validate_script_path(self, script_path):
@@ -94,10 +94,10 @@ class ScriptingWidget(QtWidgets.QWidget):
         if not self._validate_script_path(script_path): return
         script_args = {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
                        'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
-                       'params': None, 'port': None, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
+                       'params': None, 'port': self.command_info_interface.port_id, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
         if not self.is_running:
-            self.command_info_interface.send_string('')  # send an empty message, this is for setting up the routing id
-            self.script_process = start_script(script_path, script_args, self.command_info_interface.port_id)
+            self.command_info_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+            self.script_process = start_script(script_path, script_args)
             self.create_scripting_worker()
         else:
             stop_script(self.script_process)  # TODO implement closing of the script process
