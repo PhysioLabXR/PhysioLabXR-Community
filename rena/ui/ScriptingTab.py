@@ -2,6 +2,7 @@
 
 from PyQt5 import QtWidgets, uic
 
+from rena import config
 from rena.ui.ScriptingWidget import ScriptingWidget
 from rena.ui_shared import add_icon
 
@@ -26,7 +27,7 @@ class ScriptingTab(QtWidgets.QWidget):
 
 
     def add_script_clicked(self):
-        script_widget = ScriptingWidget(self)
+        script_widget = ScriptingWidget(self, port=config.scripting_port + len(self.script_widgets))
         def remove_script_clicked():
             self.script_widgets.remove(script_widget)
             self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
@@ -37,4 +38,3 @@ class ScriptingTab(QtWidgets.QWidget):
 
     def forward_data(self):
         pass
-

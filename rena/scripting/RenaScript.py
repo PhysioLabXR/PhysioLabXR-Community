@@ -1,3 +1,4 @@
+import sys
 import threading
 from abc import ABC, abstractmethod
 
@@ -27,7 +28,7 @@ class RenaScript(ABC, threading.Thread):
 
 
     @abstractmethod
-    def start(self):
+    def init(self):
         """
         Start will be called once when the run button is hit.
         """
@@ -41,7 +42,11 @@ class RenaScript(ABC, threading.Thread):
         pass
 
     def run(self):
-        self.start()
+        print('Base start function is called')
+        self.init()
+        sys.stdout.flush()
         # start the loop here, accept interrupt command
+        print('Entering loop')
         while True:
             self.loop()
+            sys.stdout.flush()

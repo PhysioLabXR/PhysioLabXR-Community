@@ -895,3 +895,17 @@ class PlaybackWorker(QObject):
 #             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
 #         except ZeroDivisionError:
 #             return 0
+
+
+class ScriptingWorker(QObject):
+    stdout_signal = pyqtSignal(str)
+    tick_signal = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.tick_signal.connect(self.process_on_tick)
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        pass
+

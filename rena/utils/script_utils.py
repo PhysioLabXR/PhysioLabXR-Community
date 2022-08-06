@@ -1,17 +1,24 @@
 import importlib.util
 import os.path
 import os
+import pickle
+import sys
 from inspect import isclass
 from exceptions.exceptions import InvalidScripPathError
 
 from multiprocessing import Process
 
+from rena import config
 from rena.scripting.RenaScript import RenaScript
 
+debugging = True
 
-def start_script_server(script_class, script_args):
+def start_script_server(script_path, script_args, port):
     print("script process, starting script thread")
-    replay_client_thread = script_class(**script_args)
+    # sys.stdout = Stream(newText=self.on_print)
+
+    target_class = get_target_class(script_path)
+    replay_client_thread = target_class(**script_args)
     replay_client_thread.start()
 
 def validate_script_path(script_path: str):
@@ -51,16 +58,34 @@ def get_target_class_name(script_path):
     spec.loader.exec_module(script_module)
     classes = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
+    # script_args = {'inputs': None, 'input_shapes': None,
+    #                'outputs': None, 'output_num_channels': None,
+    #                'params': None, 'port': None, 'run_frequency': None,
+    #                'time_window': None}
+
     return classes[0]
 
 
-def start_script(script_path, script_args):
+def start_script(script_path, script_args, port):
     print('Script started')
-    target_class = get_target_class(script_path)
-    script_process = Process(target=start_script_server, args=(target_class, script_args))
-    script_process.start()
-    return script_process
+    if not debugging:
+        script_process = Process(target=start_script_server, args=(script_path, script_args, port))
+        script_process.start()
+        return script_process
+    else:
+        pickle.dump([script_path, script_args, port], open('start_script_args.p', 'wb'))
 
 
 def stop_script(script_process):
     print('Script stopped')
+
+
+if __name__ == '__main__':
+    # this is for debugging
+    # script_args = {'inputs': None, 'input_shapes': None,
+    #                'outputs': None, 'output_num_channels': None,
+    #                'params': None, 'port': None, 'run_frequency': None,
+    #                'time_window': None}
+    # script_path = '../scripting/IndexPen.py'
+    script_path, script_args, port = pickle.load(open('start_script_args.p', 'rb'))
+    start_script_server(script_path, script_args, port)

@@ -3,7 +3,7 @@ import json
 import os
 
 from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtCore import QSettings, pyqtSignal
+from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QIntValidator
 
 from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton
@@ -11,6 +11,8 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton
 from exceptions.exceptions import RenaError
 from rena import config_ui, config
 from rena.startup import load_default_settings
+from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.threadings import workers
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon
@@ -23,7 +25,7 @@ import pyqtgraph as pg
 class ScriptingWidget(QtWidgets.QWidget):
     settings_changed_signal = pyqtSignal()  # TODO
 
-    def __init__(self, parent):
+    def __init__(self, parent, port):
         super().__init__()
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
         self.parent = parent
@@ -57,6 +59,27 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.is_running = False
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
         self.script_process = None
+        self.command_info_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING',
+                                                       port_id=port,
+                                                       identity='client',
+                                                       pattern='router-dealer')
+        # self.scripting_worker = None
+        # self.worker_thread = None
+        # self.worker_timer = None
+
+    def create_scripting_worker(self):
+        self.worker_thread = QThread(self)
+        self.scripting_worker = workers.ScriptingWorker()
+        self.scripting_worker.stdout_signal.connect(self.direct_script_stdout)
+        self.scripting_worker.moveToThread(self.worker_thread)
+        self.worker_thread.start()
+        self.worker_timer = QTimer()
+        self.worker_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)  # for 1000 Hz refresh rate
+        self.worker_timer.timeout.connect(self.scripting_worker.tick_signal.emit)
+        self.worker_timer.start()
+
+    def direct_script_stdout(self, stdout_line: str):
+        print('[Script]: ' + stdout_line)  # TODO move this console log
 
     def _validate_script_path(self, script_path):
         try:
@@ -79,7 +102,8 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.timeWindowLineEdit.setEnabled(False)
             self.widget_script_info.setEnabled(False)
             self.runBtn.setText('Stop')
-            self.script_process = start_script(script_path, script_args)
+            self.script_process = start_script(script_path, script_args, self.command_info_interface.port_id)
+            self.create_scripting_worker()
         else:
             self.widget_input.setEnabled(True)
             self.widget_output.setEnabled(True)
@@ -88,7 +112,8 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.widget_script_info.setEnabled(True)
 
             self.runBtn.setText('Run')
-            stop_script(self.script_process )
+            stop_script(self.script_process)  # TODO implement closing of the script process
+            #TODO close and stop the worker thread
         self.is_running = not self.is_running
 
     def on_locate_btn_clicked(self):
@@ -97,6 +122,9 @@ class ScriptingWidget(QtWidgets.QWidget):
             if not self._validate_script_path(script_path): return
             self.scriptPathLineEdit.setText(script_path)
             self.scriptNameLabel.setText(get_target_class_name(script_path))
+            self.runBtn.setEnabled(True)
+        else:
+            self.runBtn.setEnabled(False)
         print("Selected script path ", script_path)
 
     def add_input_clicked(self):

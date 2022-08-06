@@ -11,8 +11,8 @@ class IndexPen(RenaScript):
         super().__init__(*args, **kwargs)
 
     # Start will be called once when the run button is hit.
-    def start(self):
-        print('Start function is called')
+    def init(self):
+        pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
