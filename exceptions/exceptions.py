@@ -116,4 +116,4 @@ class InvalidScripPathError(RenaError):
         self.error = error
 
     def __str__(self):
-        return 'Invalid script path {0}. Error is {1}\n'.format(self.script_path, self.error)
+        return 'Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)

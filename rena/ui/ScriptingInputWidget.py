@@ -11,8 +11,11 @@ class ScriptingInputWidget(QtWidgets.QWidget):
     def set_button_callback(self, callback):
         self.button.clicked.connect(callback)
 
-    def set_label_2_text(self, text):
+    def set_input_info_text(self, text):
         self.label_2.setText(text)
 
-    def get_label_text(self):
+    def get_input_info_text(self):
+        return self.label_2.text
+
+    def get_input_name_text(self):
         return self.label.text()

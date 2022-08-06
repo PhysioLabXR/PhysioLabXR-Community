@@ -27,7 +27,7 @@
     <number>9</number>
    </property>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QWidget" name="widget_script_info" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -73,7 +73,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="currentTimestamplabel">
+       <widget class="QLabel" name="scriptNameLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -101,7 +101,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit_4"/>
+       <widget class="QLineEdit" name="scriptPathLineEdit"/>
       </item>
       <item>
        <widget class="QPushButton" name="locateBtn">

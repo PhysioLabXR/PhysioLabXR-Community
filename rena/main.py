@@ -1,22 +1,15 @@
 import sys
-import os
-from PyQt5 import QtWidgets
 
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 # Press the green button in the gutter to run the script.
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
-from rena import config_ui
-from rena.interfaces import InferenceInterface
-
-from PyQt5.QtCore import Qt, QFile, QTextStream, QSettings
-import config
-from rena.startup import load_default_settings, load_ui_shared
+from rena.startup import load_default_settings
 
 # import and init shared global variables
-import ui_shared
-import stream_shared
 
 app = None
 
@@ -38,8 +31,8 @@ if __name__ == '__main__':
     splash.show()
 
     # main window init
-    inference_interface = InferenceInterface.InferenceInterface()
-    window = MainWindow(app=app, inference_interface=inference_interface)
+    # inference_interface = InferenceInterface.InferenceInterface()
+    window = MainWindow(app=app)
 
     window.setWindowIcon(QIcon('../media/logo/RN.png'))
     # make tray menu

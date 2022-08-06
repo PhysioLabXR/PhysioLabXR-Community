@@ -5,7 +5,7 @@ class RenaScript(ABC, threading.Thread):
     """
     An abstract class for implementing scripting models.
     """
-    def __init__(self, inputs, outputs, params, port, run_frequency, time_window):
+    def __init__(self, inputs, input_shapes, outputs, output_num_channels, params, port, run_frequency, time_window):
         """
 
         :param inputs:

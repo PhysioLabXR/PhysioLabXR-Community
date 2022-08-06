@@ -53,42 +53,58 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         self.removeBtn.setIcon(minus_icon)
 
+        self.locateBtn.clicked.connect(self.on_locate_btn_clicked)
         self.is_running = False
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
+        self.script_process = None
 
-    def on_run_btn_clicked(self):
-        script_path = self.scriptPathLineEdit.text()
+    def _validate_script_path(self, script_path):
         try:
             validate_script_path(script_path)
         except RenaError as error:
             dialog_popup(str(error), title='Error')
-            return
+            return False
+        else: return True
 
-        if self.is_running:
+    def on_run_btn_clicked(self):
+        script_path = self.scriptPathLineEdit.text()
+        if not self._validate_script_path(script_path): return
+        script_args = {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
+                       'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
+                       'params': None, 'port': None, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
+        if not self.is_running:
             self.widget_input.setEnabled(False)
             self.widget_output.setEnabled(False)
+            self.frequencyLineEdit.setEnabled(False)
+            self.timeWindowLineEdit.setEnabled(False)
+            self.widget_script_info.setEnabled(False)
             self.runBtn.setText('Stop')
-            start_script(script_path)
+            self.script_process = start_script(script_path, script_args)
         else:
             self.widget_input.setEnabled(True)
             self.widget_output.setEnabled(True)
+            self.frequencyLineEdit.setEnabled(True)
+            self.timeWindowLineEdit.setEnabled(True)
+            self.widget_script_info.setEnabled(True)
+
             self.runBtn.setText('Run')
-            stop_script(script_path)
+            stop_script(self.script_process )
         self.is_running = not self.is_running
 
-
     def on_locate_btn_clicked(self):
-        selected_script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)"))
-        if selected_script_path != '':
-            self.scriptPathLineEdit.setText(selected_script_path)
-        print("Selected script path ", selected_script_path)
-
+        script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        if script_path != '':
+            if not self._validate_script_path(script_path): return
+            self.scriptPathLineEdit.setText(script_path)
+            self.scriptNameLabel.setText(get_target_class_name(script_path))
+        print("Selected script path ", script_path)
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
         input_widget = ScriptingInputWidget(input_preset_name)
-        input_widget.set_label_2_text(self.get_preset_input_info_text(input_preset_name))
+        input_widget.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
         self.inputLayout.addWidget(input_widget)
+
         def remove_btn_clicked():
             self.inputLayout.removeWidget(input_widget)
             input_widget.deleteLater()
@@ -117,10 +133,20 @@ class ScriptingWidget(QtWidgets.QWidget):
         print('Current items are {0}'.format(str(self.get_outputs())))
 
     def get_inputs(self):
-        return [w.get_label_text() for w in self.input_widgets]
+        return [w.get_input_name_text() for w in self.input_widgets]
+
+    def get_input_shapes(self):
+        rtn = []
+        for w in self.input_widgets:
+            input_preset_name = w.get_input_name_text()
+            rtn.append(self.get_preset_expected_shape(input_preset_name))
+        return rtn
 
     def get_outputs(self):
         return [w.get_label_text() for w in self.output_widgets]
+
+    def get_outputs_num_channels(self):
+        return [w.get_num_channels() for w in self.output_widgets]
 
     def check_can_add_input(self):
         """
@@ -147,13 +173,18 @@ class ScriptingWidget(QtWidgets.QWidget):
         update the information diplayed in the input box
         """
         for w in self.input_widgets:
-            input_preset_name = w.get_label_text()
-            w.set_label_2_text(self.get_preset_input_info_text(input_preset_name))
+            input_preset_name = w.get_input_name_text()
+            w.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
 
     def get_preset_input_info_text(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
         num_channel = get_stream_preset_info(preset_name, 'NumChannels')
         return '[{0}, {1}]'.format(num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate)
+
+    def get_preset_expected_shape(self, preset_name):
+        sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
+        num_channel = get_stream_preset_info(preset_name, 'NumChannels')
+        return num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate
 
     def on_settings_changed(self):
         """

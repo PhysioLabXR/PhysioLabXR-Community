@@ -21,3 +21,6 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
 
     def on_channel_num_changed(self):
         self.shapeLabel.setText('[1, {0}]'.format(self.numChan_lineEdit.text()))
+
+    def get_num_channels(self):
+        return int(self.numChan_lineEdit.text())

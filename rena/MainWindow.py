@@ -30,7 +30,6 @@ except ModuleNotFoundError as e:
     print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
     raise e
 import threadings.workers as workers
-from rena.ui.InferenceTab import InferenceTab
 from rena.ui.StreamWidget import StreamWidget
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
@@ -59,7 +58,7 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, inference_interface, *args, **kwargs):
+    def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
@@ -94,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tick_rate = 0
 
         # create workers for different sensors
-        self.init_inference(inference_interface)
+        # self.init_inference(inference_interface)
 
         # camera/screen capture timer
         self.c_timer = QTimer()
@@ -162,8 +161,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
         # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
 
-        self.inference_tab = InferenceTab(self)
-        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
+        # self.inference_tab = InferenceTab(self)
+        # self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
         self.scripting_tab = ScriptingTab(self)
         self.scripting_tab_vertical_layout.addWidget(self.scripting_tab)
