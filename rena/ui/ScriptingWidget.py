@@ -8,11 +8,13 @@ from PyQt5.QtGui import QIntValidator
 
 from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton
 
+from exceptions.exceptions import RenaError
 from rena import config_ui, config
 from rena.startup import load_default_settings
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon
+from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, add_stream_presets_to_combobox
@@ -51,7 +53,36 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         self.removeBtn.setIcon(minus_icon)
 
-        # script widget sends
+        self.is_running = False
+        self.runBtn.clicked.connect(self.on_run_btn_clicked)
+
+    def on_run_btn_clicked(self):
+        script_path = self.scriptPathLineEdit.text()
+        try:
+            validate_script_path(script_path)
+        except RenaError as error:
+            dialog_popup(str(error), title='Error')
+            return
+
+        if self.is_running:
+            self.widget_input.setEnabled(False)
+            self.widget_output.setEnabled(False)
+            self.runBtn.setText('Stop')
+            start_script(script_path)
+        else:
+            self.widget_input.setEnabled(True)
+            self.widget_output.setEnabled(True)
+            self.runBtn.setText('Run')
+            stop_script(script_path)
+        self.is_running = not self.is_running
+
+
+    def on_locate_btn_clicked(self):
+        selected_script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)"))
+        if selected_script_path != '':
+            self.scriptPathLineEdit.setText(selected_script_path)
+        print("Selected script path ", selected_script_path)
+
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
@@ -145,3 +176,4 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def on_output_lineEdit_changed(self):
         self.check_can_add_output()
+

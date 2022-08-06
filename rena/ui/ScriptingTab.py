@@ -35,3 +35,6 @@ class ScriptingTab(QtWidgets.QWidget):
         self.script_widgets.append(script_widget)
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
+    def forward_data(self):
+        pass
+

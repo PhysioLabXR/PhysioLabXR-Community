@@ -5,7 +5,7 @@ class RenaScript(ABC, threading.Thread):
     """
     An abstract class for implementing scripting models.
     """
-    def __init__(self, inputs, outputs, params, port):
+    def __init__(self, inputs, outputs, params, port, run_frequency, time_window):
         """
 
         :param inputs:
@@ -15,11 +15,15 @@ class RenaScript(ABC, threading.Thread):
         """
         super().__init__()
         # create
-        input_streams = None
-        expected_preprocessed_input_size = None
+        self.inputs = dict()
+        self.outputs = dict()
         # self.command_info_interface = command_info_interface
-
         # create data buffers
+
+        # command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
+        #                                           port_id=config.replay_port,
+        #                                           identity='server',
+        #                                           pattern='router-dealer')
 
 
     @abstractmethod
@@ -30,7 +34,7 @@ class RenaScript(ABC, threading.Thread):
         pass
 
     @abstractmethod
-    def Loop(self):
+    def loop(self):
         """
         Loop is called
         """
@@ -39,16 +43,5 @@ class RenaScript(ABC, threading.Thread):
     def run(self):
         self.start()
         # start the loop here, accept interrupt command
-
-def start_replay_server():
-    print("Replay Client Started")
-    command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                              port_id=config.replay_port,
-                                              identity='server',
-                                              pattern='router-dealer')
-
-    replay_client_thread = ReplayServer(command_info_interface)
-    replay_client_thread.start()
-
-if __name__ == '__main__':
-    start_replay_server()
+        while True:
+            self.loop()

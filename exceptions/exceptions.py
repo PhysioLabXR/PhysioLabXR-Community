@@ -108,3 +108,12 @@ class InvalidPresetError(RenaError):
         super().__init__(stream_name)
     def __str__(self):
         return 'The preset {0} does is not valid. Must have either Channelnames or NumChannels defined\n'.format(self.stream_name)
+
+class InvalidScripPathError(RenaError):
+    def __init__(self, script_path, error):
+        super().__init__(error)
+        self.script_path = script_path
+        self.error = error
+
+    def __str__(self):
+        return 'Invalid script path {0}. Error is {1}\n'.format(self.script_path, self.error)
