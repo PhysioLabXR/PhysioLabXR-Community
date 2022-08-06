@@ -138,7 +138,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.frequencyLineEdit.setEnabled(not is_run)
         self.timeWindowLineEdit.setEnabled(not is_run)
         self.widget_script_info.setEnabled(not is_run)
-        self.runBtn.setText('Run' if is_run else 'Stop')
+        self.runBtn.setText('Run' if not is_run else 'Stop')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
