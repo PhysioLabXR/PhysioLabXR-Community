@@ -81,7 +81,9 @@ def stop_script(script_process):
 
 
 if __name__ == '__main__':
-    # this is for debugging
+    """
+    Running this script is for debugging
+    """
     # script_args = {'inputs': None, 'input_shapes': None,
     #                'outputs': None, 'output_num_channels': None,
     #                'params': None, 'port': None, 'run_frequency': None,

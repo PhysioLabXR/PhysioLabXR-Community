@@ -13,13 +13,15 @@ from rena import config_ui, config
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
+from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
 
-from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, add_stream_presets_to_combobox
+from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
+    add_stream_presets_to_combobox, another_window
 import pyqtgraph as pg
 
 class ScriptingWidget(QtWidgets.QWidget):
@@ -66,6 +68,11 @@ class ScriptingWidget(QtWidgets.QWidget):
         # self.scripting_worker = None
         # self.worker_thread = None
         # self.worker_timer = None
+        self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
+        self.script_console_log = ScriptConsoleLog()
+        self.script_console_log_window = another_window('Console Log')
+        self.script_console_log_window.get_layout().addWidget(self.script_console_log)
+        self.script_console_log_window.hide()
 
     def create_scripting_worker(self):
         self.worker_thread = QThread(self)
@@ -79,7 +86,9 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.worker_timer.start()
 
     def redirect_script_stdout(self, stdout_line: str):
-        print('[Script]: ' + stdout_line)  # TODO move this console log
+        # print('[Script]: ' + stdout_line)
+        if stdout_line != '\n':
+            self.script_console_log.print_msg(stdout_line)
 
     def _validate_script_path(self, script_path):
         try:
@@ -96,15 +105,21 @@ class ScriptingWidget(QtWidgets.QWidget):
                        'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                        'params': None, 'port': self.command_info_interface.port_id, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
         if not self.is_running:
+            self.script_console_log_window.show()
             self.command_info_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
             self.script_process = start_script(script_path, script_args)
             self.create_scripting_worker()
         else:
+            self.script_console_log_window.hide()
             stop_script(self.script_process)  # TODO implement closing of the script process
             #TODO close and stop the worker thread
 
         self.is_running = not self.is_running
         self.change_ui_on_run_stop(self.is_running)
+
+    def on_console_log_btn_clicked(self):
+        self.script_console_log_window.show()
+        self.script_console_log_window.activateWindow()
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
