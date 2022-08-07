@@ -25,6 +25,9 @@ class OptionsWindow(QDialog):
         # add supported filter list
         self.resize(1000, 1000)
 
+        self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
+
+
         self.stream_name = stream_name
         self.signalTreeView = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
         self.set_nominal_sampling_rate_textbox()
@@ -34,7 +37,6 @@ class OptionsWindow(QDialog):
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
         # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
         self.signalTreeView.item_changed_signal.connect(self.update_info_box)
-
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
         self.actionsWidgetLayout.addStretch()
@@ -51,6 +53,8 @@ class OptionsWindow(QDialog):
                    + ('\nChannel Display: ' + str(selected_channels[0].display))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
+
+
 
         elif selection_state == mix_selected: #  both groups and channels are selected
             text = 'Cannot select both groups and channels'
@@ -72,6 +76,18 @@ class OptionsWindow(QDialog):
                    + ('\nChannel Count: ' + str(selected_groups[0].childCount())) \
                    + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
+
+
+
+            # init image settings
+            # time series check box
+            # image checkbox image size input (width , height , d) enable the checkbox
+            # barchart checkbox
+            # line checkbox
+
+
+
+
 
         elif selection_state == groups_selected: # multiple groups selected
             merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups',
@@ -134,7 +150,18 @@ class OptionsWindow(QDialog):
 
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(
-            str(config.settings.value('presets/lslpresets/{0}/NominalSamplingRate'.format(self.stream_name))))
+            str(config.settings.value('presets/streampresets/{0}/NominalSamplingRate'.format(self.stream_name))))
+
+    def set_nominal_sampling_rate_btn(self):
+        new_nominal_sampling_rate = self.nominalSamplingRateInputbox.text()
+        if new_nominal_sampling_rate.isnumeric():
+            new_nominal_sampling_rate = float(new_nominal_sampling_rate)
+            if new_nominal_sampling_rate > 0:
+                print(new_nominal_sampling_rate) # TODO: update in preset and GUI
+            else:
+                dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
+        else:
+            dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
 
     def clearLayout(self, layout):
         if layout is not None:
@@ -146,8 +173,9 @@ class OptionsWindow(QDialog):
                 else:
                     self.clearLayout(item.layout())
 
-    def export_preset(self):
-        stream_root = self.signalTreeView.stream_root
+    # def export_preset(self):
+    #     stream_root = self.signalTreeView.stream_root
+
 
 
 
