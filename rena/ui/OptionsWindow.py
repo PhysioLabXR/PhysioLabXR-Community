@@ -78,10 +78,10 @@ class OptionsWindow(QDialog):
             text = ('Group Name: ' + selected_groups[0].data(0, 0)) \
                    + is_group_displaying_msg \
                    + ('\nChannel Count: ' + str(selected_groups[0].childCount())) \
-                   + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
+                   # + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
-            self.init_plot_format_widget()
+            self.init_plot_format_widget(selected_group_name=selected_groups[0].data(0, 0))
 
             # init image settings
             # time series check box
@@ -151,10 +151,9 @@ class OptionsWindow(QDialog):
         # else:
         #     dialog_popup('please enter your group name first')
         #     return
-    def init_plot_format_widget(self):
-        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name)
+    def init_plot_format_widget(self, selected_group_name):
+        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
         self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
-
 
 
 

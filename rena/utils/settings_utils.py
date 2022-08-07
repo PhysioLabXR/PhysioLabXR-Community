@@ -26,7 +26,7 @@ def get_all_presets():
 def get_stream_preset_info(stream_name, key):
     return config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
 
-def collect_stream_group_info(stream_name):
+def collect_stream_all_groups_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
@@ -38,13 +38,31 @@ def collect_stream_group_info(stream_name):
     config.settings.endGroup()
     return rtn
 
+def collect_stream_group_info(stream_name, group_name):
+    rtn = dict()
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
+    for keys in config.settings.childKeys():
+        rtn[keys] = config.settings.value(keys)
+    # for value in config.settings.childGroups():
+    #     rtn[value] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+    #     rtn['is_group_shown'] = bool(int(rtn['is_group_shown']))
+    #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
+    config.settings.endGroup()
+    return rtn
+
+def collect_stream_group_plot_format(stream_name, group_name):
+    return config.settings.value('presets/streampresets/{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, 'plot_format'))
+
+
+
+
 def get_complete_stream_preset_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
     for field in config.settings.childKeys():
         rtn[field] = config.settings.value(field)
     config.settings.endGroup()
-    rtn['GroupInfo'] = collect_stream_group_info(stream_name)
+    rtn['GroupInfo'] = collect_stream_all_groups_info(stream_name)
     return rtn
 
 def get_childKeys_for_group(group):
@@ -152,20 +170,24 @@ def create_default_preset(stream_name):
 # bar plot : {}
 # }
 
-# plot_format = {
-#     'time_series':{'display':True},
-#     'image': {'display': False,
-#               'format': 'RGB',
-#               'width': 0,
-#               'height': 0,
-#               'depth': 0,
-#               },
-#     'bar_plot': {'display': False}
-# }
+
 
 
 
 def process_plot_group(preset_dict):
+
+    plot_format = {
+        'time_series': {'display': True},
+        'image': {'display': True,
+                  'format': 'Gray',
+                  'width': 2,
+                  'height': 2,
+                  'depth': 1,
+                  },
+        'bar_plot': {'display': False}
+    }
+
+
     channel_num = preset_dict['NumChannels']
     if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:
         # create groupinfo from 0 to x
@@ -179,7 +201,7 @@ def process_plot_group(preset_dict):
         preset_dict['GroupInfo'] = {
             "Group1": {
                 "group_index": 1,
-                "plot_format": "time_series",
+                "plot_format": plot_format,
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
                 "is_group_shown": int(any(is_channels_shown)),
@@ -216,7 +238,7 @@ def process_plot_group(preset_dict):
             preset_dict['GroupInfo']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
-                    "plot_format": "time_series",
+                    "plot_format": plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
                     "is_group_shown": int(any(is_channels_shown)),

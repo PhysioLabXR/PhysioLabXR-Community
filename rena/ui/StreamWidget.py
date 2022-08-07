@@ -21,7 +21,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_group_info, get_complete_stream_preset_info
+    collect_stream_all_groups_info, get_complete_stream_preset_info
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
@@ -107,7 +107,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create visualization component:
-        self.group_info = collect_stream_group_info(self.stream_name)
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
         self.num_samples_to_plot, self.viz_time_vector = None, None
         self.create_visualization_component()
 
@@ -267,7 +267,7 @@ class StreamWidget(QtWidgets.QWidget):
         for group_name in self.group_info.keys():
             plot_format = self.group_info[group_name]['plot_format']
             # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-            if plot_format == 'time_series':  # time_series plot
+            if plot_format['time_series']['display']:  # time_series plot
                 # plot_formats.append(plot_group_format_info)
                 plot_widget = pg.PlotWidget()
                 parent.addWidget(plot_widget)
@@ -299,6 +299,12 @@ class StreamWidget(QtWidgets.QWidget):
                     plot_widget.hide()
 
                 plot_widgets[group_name] = plot_widget
+
+            if plot_format['image']['display']:
+                pass
+
+            if plot_format['bar_plot']['display']:
+                pass
 
                 # elif plot_group_format_info[0] == 'image':
                 #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
@@ -422,7 +428,7 @@ class StreamWidget(QtWidgets.QWidget):
             # plot_channel_num_offset = 0
             for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
                 plot_group_info = self.group_info[group_name]
-                if plot_group_info["plot_format"] == 'time_series':
+                if plot_group_info["plot_format"]['time_series']:
                     # plot corresponding time series data, range (a,b) is time series
                     # plot_group_channel_num = len(plot_group_info['channels'])
                     for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
