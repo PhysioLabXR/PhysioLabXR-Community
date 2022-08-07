@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>790</width>
-    <height>358</height>
+    <width>1064</width>
+    <height>588</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,6 +30,19 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QWidget" name="TimeSeiresFormatInfoWidget" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_9">
+            <item>
+             <widget class="QPushButton" name="updateTimeSeriesFormatBtn">
+              <property name="text">
+               <string>Update Time Series Format</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -45,72 +58,85 @@
          </item>
          <item>
           <widget class="QWidget" name="ImageFormatInfoWidget" native="true">
-           <layout class="QHBoxLayout" name="horizontalLayout">
+           <layout class="QVBoxLayout" name="verticalLayout_8">
             <item>
-             <widget class="QWidget" name="widget_5" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_5">
+             <widget class="QWidget" name="widget_4" native="true">
+              <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="QLabel" name="label">
-                 <property name="text">
-                  <string>Width</string>
-                 </property>
+                <widget class="QWidget" name="widget_5" native="true">
+                 <layout class="QVBoxLayout" name="verticalLayout_5">
+                  <item>
+                   <widget class="QLabel" name="label">
+                    <property name="text">
+                     <string>Width</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLineEdit" name="ImageWidthTextEdit"/>
+                  </item>
+                 </layout>
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="ImageWidthTextEdit"/>
+                <widget class="QWidget" name="widget_6" native="true">
+                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                  <item>
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>Height</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLineEdit" name="ImageHeightTextEdit"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="widget_7" native="true">
+                 <layout class="QVBoxLayout" name="verticalLayout_7">
+                  <item>
+                   <widget class="QLabel" name="label_3">
+                    <property name="text">
+                     <string>Image Format</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QComboBox" name="imageFormatComboBox">
+                    <property name="editable">
+                     <bool>false</bool>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>PixelMap</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>RGB</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Gray</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widget_6" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_6">
-               <item>
-                <widget class="QLabel" name="label_2">
-                 <property name="text">
-                  <string>Height</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="ImageHeightTextEdit"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="widget_7" native="true">
-              <layout class="QVBoxLayout" name="verticalLayout_7">
-               <item>
-                <widget class="QLabel" name="label_3">
-                 <property name="text">
-                  <string>Image Format</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QComboBox" name="imageFormatComboBox">
-                 <property name="editable">
-                  <bool>false</bool>
-                 </property>
-                 <item>
-                  <property name="text">
-                   <string>PixelMap</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>RGB</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Gray</string>
-                  </property>
-                 </item>
-                </widget>
-               </item>
-              </layout>
+             <widget class="QPushButton" name="updateImageFormatBtn">
+              <property name="text">
+               <string>Update Image Format</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -129,17 +155,17 @@
            </property>
           </widget>
          </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QWidget" name="widget_8" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QPushButton" name="updatePlotFormatBtn">
-           <property name="text">
-            <string>Update Plot Format</string>
-           </property>
+          <widget class="QWidget" name="BarPlotFormatInfoWidget" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <widget class="QPushButton" name="updateBarPlotFormatBtn">
+              <property name="text">
+               <string>Update Bar Plot Format</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>

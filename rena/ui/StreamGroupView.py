@@ -142,60 +142,60 @@ class StreamGroupView(QTreeWidget):
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 # self.channel_widgets.append(channel)
 
-    # def startDrag(self, actions):
-    #
-    #     self.selected_items = self.selectedItems()
-    #     # cannot drag groups and items at the same time:
-    #     self.moving_groups = False
-    #     self.moving_channels = False
-    #     for selected_item in self.selected_items:
-    #         if selected_item.item_type == 'group':
-    #             self.moving_groups = True
-    #         if selected_item.item_type == 'channel':
-    #             self.moving_channels = True
-    #
-    #     if self.moving_groups and self.moving_channels:
-    #         dialog_popup('Cannot move group and channels at the same time')
-    #         self.clearSelection()
-    #         return
-    #     if self.moving_groups:  # is moving groups, we cannot drag one group into another
-    #         [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
-    #          self.groups_widgets]
-    #     if self.moving_channels:
-    #         self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
-    #
-    #     self.disconnect_selection_changed()
-    #     QTreeWidget.startDrag(self, actions)
-    #     self.reconnect_selection_changed()
-    #
-    # def dropEvent(self, event):
-    #     drop_target = self.itemAt(event.pos())
-    #     if drop_target == None:
-    #         self.reset_drag_drop()
-    #         return
-    #     elif drop_target.data(0, 0) == self.stream_name:
-    #         self.reset_drag_drop()
-    #         return
-    #     else:
-    #         QTreeWidget.dropEvent(self, event)
-    #         self.reset_drag_drop()
-    #
-    #         # check empty group
-    #         self.remove_empty_groups()
-    #         print(drop_target.checkState(0))
-    #
+    def startDrag(self, actions):
+
+        self.selected_items = self.selectedItems()
+        # cannot drag groups and items at the same time:
+        self.moving_groups = False
+        self.moving_channels = False
+        for selected_item in self.selected_items:
+            if selected_item.item_type == 'group':
+                self.moving_groups = True
+            if selected_item.item_type == 'channel':
+                self.moving_channels = True
+
+        if self.moving_groups and self.moving_channels:
+            dialog_popup('Cannot move group and channels at the same time')
+            self.clearSelection()
+            return
+        if self.moving_groups:  # is moving groups, we cannot drag one group into another
+            [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
+             self.groups_widgets]
+        if self.moving_channels:
+            self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
+
+        self.disconnect_selection_changed()
+        QTreeWidget.startDrag(self, actions)
+        self.reconnect_selection_changed()
+
+    def dropEvent(self, event):
+        drop_target = self.itemAt(event.pos())
+        if drop_target == None:
+            self.reset_drag_drop()
+            return
+        elif drop_target.data(0, 0) == self.stream_name:
+            self.reset_drag_drop()
+            return
+        else:
+            QTreeWidget.dropEvent(self, event)
+            self.reset_drag_drop()
+
+            # check empty group
+            self.remove_empty_groups()
+            print(drop_target.checkState(0))
+
     # def mousePressEvent(self, *args, **kwargs):
     #     super(StreamGroupView, self).mousePressEvent(*args, **kwargs)
     #     self.reset_drag_drop()
-    #
-    # def reset_drag_drop(self):
-    #     self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
-    #     [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
-    #      self.groups_widgets]
-    #
-    #     self.moving_groups = False
-    #     self.moving_channels = False
-    #     # self.stream_root.setCheckState(0, Qt.Checked)
+
+    def reset_drag_drop(self):
+        self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
+        [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
+         self.groups_widgets]
+
+        self.moving_groups = False
+        self.moving_channels = False
+        # self.stream_root.setCheckState(0, Qt.Checked)
 
     def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
         item = QTreeWidgetItem(parent_item)

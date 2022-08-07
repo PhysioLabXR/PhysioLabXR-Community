@@ -39,7 +39,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
 
 
-        self.updatePlotFormatBtn.clicked.connect(self.update_plot_format_btn_clicked)
+        # self.updatePlotFormatBtn.clicked.connect(self.update_plot_format_btn_clicked)
 
     # plot_format = {
     #     'time_series': {'display': True},
@@ -71,6 +71,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def init_plot_format_info(self):
         if self.group_info['plot_format']['time_series']['display']:
             self.TimeSeriesCheckBox.setCheckState(Qt.Checked)
+        else:
+            self.ImageCheckBox.setCheckState(Qt.Unchecked)
+            self.TimeSeiresFormatInfoWidget.setEnabled(False)
 
 
         ###################################################################
@@ -87,53 +90,68 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             self.ImageHeightTextEdit.setText(str(image_format['height']))
             self.imageFormatComboBox.setCurrentText(image_format['format'])
 
-        # else:
-        #     self.ImageFormatInfoWidget.hide()
+        else:
+            self.ImageCheckBox.setCheckState(Qt.Unchecked)
+            self.ImageFormatInfoWidget.setEnabled(False)
         #################################################################
 
         if self.group_info['plot_format']['bar_plot']['display']:
             self.BarPlotCheckbox.setCheckState(Qt.Checked)
+        else:
+            self.BarPlotCheckbox.setCheckState(Qt.Unchecked)
+            self.BarPlotFormatInfoWidget.setEnabled(False)
 
-    def update_plot_format_btn_clicked(self):
-        # get display status
-        if self.ImageCheckBox.isChecked():
-            image_width = self.ImageWidthTextEdit.text()
-            image_height = self.ImageHeightTextEdit.text()
-            if image_width.isnumeric() == False or image_height.isnumeric() == False:
-                dialog_popup('Please Enter a positive Integer for Width and Height')
-                # self.init_plot_format_info()
-                return
 
-            # if image pixel number does  not match
-            # image_format = self.group_info['plot_format']['image']
-            image_width=int(image_width)
-            image_height=int(image_height)
-            image_depth = image_depth_dict[self.imageFormatComboBox.currentText()]
-            if image_width * image_height * image_depth != len(self.group_info['channel_indices']):
-                dialog_popup('Image WxHxD must equal to the total number of channel')
-                # self.init_plot_format_info()
-                return
+    # def update_plot_format_btn_clicked(self):
+    #     # get display status
+    #     if self.ImageCheckBox.isChecked():
+    #         image_width = self.ImageWidthTextEdit.text()
+    #         image_height = self.ImageHeightTextEdit.text()
+    #         if image_width.isnumeric() == False or image_height.isnumeric() == False:
+    #             dialog_popup('Please Enter a positive Integer for Width and Height')
+    #             # self.init_plot_format_info()
+    #             return
+    #
+    #         # if image pixel number does  not match
+    #         # image_format = self.group_info['plot_format']['image']
+    #         image_width=int(image_width)
+    #         image_height=int(image_height)
+    #         image_depth = image_depth_dict[self.imageFormatComboBox.currentText()]
+    #         if image_width * image_height * image_depth != len(self.group_info['channel_indices']):
+    #             dialog_popup('Image WxHxD must equal to the total number of channel')
+    #             # self.init_plot_format_info()
+    #             return
 
 
 
 
 
     def TimeSeriesCheckBox_status_change(self, checkbox):
-        pass
+        if checkbox.isChecked():
+            self.TimeSeiresFormatInfoWidget.setEnabled(True)
+        else:
+            self.TimeSeiresFormatInfoWidget.setEnabled(False)
 
     def ImageCheckBox_status_change(self, checkbox):
         if checkbox.isChecked():
-            self.ImageFormatInfoWidget.show()
+            self.ImageFormatInfoWidget.setEnabled(True)
         else:
-            self.ImageFormatInfoWidget.hide()
+            self.ImageFormatInfoWidget.setEnabled(False)
 
     def BarPlotCheckbox_status_change(self, checkbox):
-        pass
+        if checkbox.isChecked():
+            self.BarPlotFormatInfoWidget.setEnabled(True)
+        else:
+            self.BarPlotFormatInfoWidget.setEnabled(False)
 
-    def update_plot_format_dict(self):
-        pass
+    # def update_plot_format_dict(self):
+    #     #
+    #     plot_format = dict()
+    #
+    #     if self.TimeSeriesCheckBox.isChecked():
+    #         plot_format['time_series']['display']=True
 
-        # if bool(self.TimeSeriesCheckBox.checkState()):
+
 
         # plot_format = dict()
         # if plot_format = True

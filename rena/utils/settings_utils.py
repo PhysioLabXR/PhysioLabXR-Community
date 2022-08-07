@@ -178,11 +178,11 @@ def process_plot_group(preset_dict):
 
     plot_format = {
         'time_series': {'display': True},
-        'image': {'display': True,
+        'image': {'display': False,
                   'format': 'Gray',
-                  'width': 2,
-                  'height': 2,
-                  'depth': 1,
+                  'width': None,
+                  'height': None,
+                  'depth': None,
                   },
         'bar_plot': {'display': False}
     }
