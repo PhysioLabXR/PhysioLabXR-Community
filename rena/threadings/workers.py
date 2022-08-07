@@ -1,42 +1,24 @@
-import struct
-from collections import deque
 import time
-import math
+import time
+
 import cv2
+import numpy as np
 import psutil as psutil
+import pyautogui
 import pyqtgraph as pg
-from PyQt5.QtCore import QObject, QTimer, QMutex
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QMutex
+from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
-import rena.config_signal
-import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
-from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
-from rena.interfaces.InferenceInterface import InferenceInterface
-from rena.interfaces.LSLInletInterface import LSLInletInterface
-from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST
-from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
-from rena.utils.networking_utils import recv_string_router, recv_string
-from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal, shared
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST
+from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.utils.networking_utils import recv_string
+from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
-import multiprocessing as mp
-import pyautogui
-
-import numpy as np
-
-from rena.utils.ui_utils import dialog_popup
-from datetime import datetime
-import pylsl
-from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
-                          QThreadPool, pyqtSignal, pyqtSlot)
-from rena.utils.data_utils import RNStream
-from rena.utils.ui_utils import dialog_popup
-from multiprocessing import Process
-
-from stream_shared import lsl_continuous_resolver
 
 
 class RENAWorker(QObject):
