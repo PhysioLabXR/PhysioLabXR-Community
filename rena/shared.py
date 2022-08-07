@@ -2,3 +2,7 @@ FAIL_INFO = 'fail!'
 START_COMMAND = 'start!'
 SUCCESS_INFO = 'success!'
 VIRTUAL_CLOCK_REQUEST = 'v'
+
+SCRIPT_STDOUT_MSG_PREFIX = 'S!'
+SCRIPT_STOP_REQUEST = 'stop'
+SCRIPT_STOP_SUCCESS = 'stopsuccess'

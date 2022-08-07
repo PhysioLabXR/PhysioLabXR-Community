@@ -10,6 +10,7 @@ from multiprocessing import Process
 
 from rena import config
 from rena.scripting.RenaScript import RenaScript
+from rena.shared import SCRIPT_STOP_REQUEST
 
 debugging = False
 
@@ -74,10 +75,6 @@ def start_script(script_path, script_args):
         return script_process
     else:
         pickle.dump([script_path, script_args], open('start_script_args.p', 'wb'))
-
-
-def stop_script(script_process):
-    print('Script stopped')
 
 
 if __name__ == '__main__':

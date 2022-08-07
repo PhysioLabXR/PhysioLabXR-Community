@@ -5,7 +5,7 @@ import math
 import cv2
 import psutil as psutil
 import pyqtgraph as pg
-from PyQt5.QtCore import QObject, QTimer
+from PyQt5.QtCore import QObject, QTimer, QMutex
 from PyQt5.QtCore import pyqtSignal
 from pylsl import local_clock
 
@@ -14,6 +14,7 @@ import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
 from rena.utils.networking_utils import recv_string_router_dealer, recv_string_router_dealer_without_routing
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
@@ -899,25 +900,37 @@ class PlaybackWorker(QObject):
 #             return 0
 
 
-class ScriptingWorker(QObject):
+class ScriptingStdoutWorker(QObject):
     stdout_signal = pyqtSignal(str)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, stdout_socket_interface):
+        super().__init__()
+        self.tick_signal.connect(self.process_stdout)
+        self.stdout_socket_interface = stdout_socket_interface
+
+    @pg.QtCore.pyqtSlot()
+    def process_stdout(self):
+        msg: str = recv_string_router_dealer_without_routing(self.stdout_socket_interface, is_block=True)  # this must not block otherwise check_pid won't get to run because they are on the same thread
+        # _, msg = recv_string_router_dealer(self.socket_interface, True)
+        if msg:
+            if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
+                msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
+                self.stdout_signal.emit(msg)  # send message if it's not None
+
+
+class ScriptCommandInfoWorker(QObject):
     abnormal_termination_signal = pyqtSignal()
     tick_signal = pyqtSignal()
 
-    def __init__(self, socket_interface, script_pid):
+    def __init__(self, command_info_socket_interface, script_pid):
         super().__init__()
-        self.tick_signal.connect(self.process_on_tick)
         self.tick_signal.connect(self.check_pid)
-        self.socket_interface = socket_interface
+        self.tick_signal.connect(self.request_get_info)
+        self.command_info_socket_interface = command_info_socket_interface
         self.script_pid = script_pid
         self.script_process_active = True
-
-    @pg.QtCore.pyqtSlot()
-    def process_on_tick(self):
-        msg = recv_string_router_dealer_without_routing(self.socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread
-        # _, msg = recv_string_router_dealer(self.socket_interface, True)
-        if msg: self.stdout_signal.emit(msg)  # send message if it's not None
-
+        self.command_info_mutex = QMutex()
 
     @pg.QtCore.pyqtSlot()
     def check_pid(self):
@@ -927,6 +940,22 @@ class ScriptingWorker(QObject):
         if not psutil.pid_exists(self.script_pid) and self.script_process_active:
             self.abnormal_termination_signal.emit()
             self.deactivate()
+
+    @pg.QtCore.pyqtSlot()
+    def request_get_info(self):
+        self.command_info_mutex.lock()
+        pass
+        self.command_info_mutex.unlock()
+
+    def notify_script_to_stop(self):
+        self.command_info_mutex.lock()
+        self.command_info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
+        msg = self.command_info_socket_interface.socket.recv().decode('utf-8')  # TODO use a poller here with a timeout
+        self.command_info_mutex.unlock()
+        if msg == SCRIPT_STOP_SUCCESS:
+            return True
+        else:
+            return False
 
     def deactivate(self):
         self.script_process_active = False

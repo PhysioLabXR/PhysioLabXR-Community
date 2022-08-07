@@ -18,3 +18,6 @@ class IndexPen(RenaScript):
     def loop(self):
         print('Loop function is called')
         time.sleep(1)
+
+    def cleanup(self):
+        print('Cleanup function is called')

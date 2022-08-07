@@ -27,7 +27,7 @@ class ScriptingTab(QtWidgets.QWidget):
 
 
     def add_script_clicked(self):
-        script_widget = ScriptingWidget(self, port=config.scripting_port + len(self.script_widgets))
+        script_widget = ScriptingWidget(self, port=config.scripting_port + 3 * len(self.script_widgets))  # reverse three ports for each scripting widget
         def remove_script_clicked():
             self.script_widgets.remove(script_widget)
             self.ScriptingWidgetScrollLayout.removeWidget(script_widget)

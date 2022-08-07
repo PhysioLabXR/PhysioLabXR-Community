@@ -16,3 +16,6 @@ class ExampleRenaScript(RenaScript):
     def loop(self):
         print('Loop function is called')
 
+
+    def cleanup(self):
+        print('Cleanup function is called')
