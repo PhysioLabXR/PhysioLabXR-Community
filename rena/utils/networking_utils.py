@@ -22,3 +22,15 @@ def recv_string_router_dealer(socket_interface, is_block):
             return message.decode('utf-8'), routing_id
         except zmq.error.Again:
             return None  # no message has arrived at the socket yet
+
+def recv_string_router_dealer_without_routing(socket_interface, is_block):
+    if is_block:
+        message = socket_interface.socket.recv_multipart(flags=0)[0]
+        return message.decode('utf-8')
+    else:
+        try:
+            message = socket_interface.socket.recv_multipart(
+                flags=zmq.NOBLOCK)[0]
+            return message.decode('utf-8')
+        except zmq.error.Again:
+            return None  # no message has arrived at the socket yet

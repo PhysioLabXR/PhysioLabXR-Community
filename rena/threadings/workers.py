@@ -3,6 +3,7 @@ from collections import deque
 import time
 import math
 import cv2
+import psutil as psutil
 import pyqtgraph as pg
 from PyQt5.QtCore import QObject, QTimer
 from PyQt5.QtCore import pyqtSignal
@@ -14,7 +15,7 @@ from exceptions.exceptions import DataPortNotOpenError
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
-from rena.utils.networking_utils import recv_string_router_dealer
+from rena.utils.networking_utils import recv_string_router_dealer, recv_string_router_dealer_without_routing
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal, shared
 from rena.interfaces import InferenceInterface, LSLInletInterface
@@ -900,16 +901,32 @@ class PlaybackWorker(QObject):
 
 class ScriptingWorker(QObject):
     stdout_signal = pyqtSignal(str)
+    abnormal_termination_signal = pyqtSignal()
     tick_signal = pyqtSignal()
 
-    def __init__(self, socket_interface):
+    def __init__(self, socket_interface, script_pid):
         super().__init__()
         self.tick_signal.connect(self.process_on_tick)
+        self.tick_signal.connect(self.check_pid)
         self.socket_interface = socket_interface
+        self.script_pid = script_pid
+        self.script_process_active = True
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        msg = self.socket_interface.socket.recv(flags=0)
+        msg = recv_string_router_dealer_without_routing(self.socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread
         # _, msg = recv_string_router_dealer(self.socket_interface, True)
-        self.stdout_signal.emit(msg.decode('utf-8'))
+        if msg: self.stdout_signal.emit(msg)  # send message if it's not None
 
+
+    @pg.QtCore.pyqtSlot()
+    def check_pid(self):
+        """
+        check if the script process is still running
+        """
+        if not psutil.pid_exists(self.script_pid) and self.script_process_active:
+            self.abnormal_termination_signal.emit()
+            self.deactivate()
+
+    def deactivate(self):
+        self.script_process_active = False

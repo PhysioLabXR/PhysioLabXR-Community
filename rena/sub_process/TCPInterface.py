@@ -115,6 +115,10 @@ class RenaTCPInterface:
     def recv_string(self, *args, **kwargs):
         return self.socket.recv(*args, **kwargs).decode('utf-8')
 
+    def __del__(self):
+        self.socket.close()
+        self.context.term()
+
 
 class RenaTCPClient:
     def __init__(self, RENATCPInterface: RenaTCPInterface):

@@ -18,7 +18,7 @@ VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for freque
 CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
 PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 
-SCRIPTING_UPDATE_REFRESH_INTERVA = 20
+SCRIPTING_UPDATE_REFRESH_INTERVA = 10
 
 '''
 ########################################################################################################################

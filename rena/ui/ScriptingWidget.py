@@ -17,6 +17,7 @@ from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon
+from rena.utils.networking_utils import recv_string_router_dealer
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
 
@@ -73,17 +74,33 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.script_console_log_window = another_window('Console Log')
         self.script_console_log_window.get_layout().addWidget(self.script_console_log)
         self.script_console_log_window.hide()
+        self.script_timer = None
+        self.script_worker = None
+        self.worker_thread = None
 
-    def create_scripting_worker(self):
+        self.script_pid = None
+
+    def setup_scripting_worker(self):
         self.worker_thread = QThread(self)
-        self.scripting_worker = workers.ScriptingWorker(self.command_info_interface)
-        self.scripting_worker.stdout_signal.connect(self.redirect_script_stdout)
-        self.scripting_worker.moveToThread(self.worker_thread)
+        self.script_worker = workers.ScriptingWorker(self.command_info_interface, self.script_pid)
+        self.script_worker.stdout_signal.connect(self.redirect_script_stdout)
+        self.script_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
+        self.script_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
-        self.worker_timer = QTimer()
-        self.worker_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)  # for 1000 Hz refresh rate
-        self.worker_timer.timeout.connect(self.scripting_worker.tick_signal.emit)
-        self.worker_timer.start()
+        self.script_timer = QTimer()
+        self.script_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)  # for 1000 Hz refresh rate
+        self.script_timer.timeout.connect(self.script_worker.tick_signal.emit)
+        self.script_timer.start()
+
+    def close_scripting_worker(self):
+        self.script_timer.stop()
+        self.script_worker.deactivate()
+        self.worker_thread.quit()
+        del self.script_timer, self.script_worker, self.worker_thread
+
+    def on_script_abnormal_termination(self):
+        dialog_popup('Script terminated abnormally.', title='ERROR')
+        self.on_run_btn_clicked()
 
     def redirect_script_stdout(self, stdout_line: str):
         # print('[Script]: ' + stdout_line)
@@ -99,20 +116,28 @@ class ScriptingWidget(QtWidgets.QWidget):
         else: return True
 
     def on_run_btn_clicked(self):
-        script_path = self.scriptPathLineEdit.text()
-        if not self._validate_script_path(script_path): return
-        script_args = {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
-                       'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
-                       'params': None, 'port': self.command_info_interface.port_id, 'run_frequency': int(self.frequencyLineEdit.text()), 'time_window': int(self.timeWindowLineEdit.text())}
         if not self.is_running:
+            script_path = self.scriptPathLineEdit.text()
+            if not self._validate_script_path(script_path): return
+            script_args = {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
+                           'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
+                           'params': None, 'port': self.command_info_interface.port_id,
+                           'run_frequency': int(self.frequencyLineEdit.text()),
+                           'time_window': int(self.timeWindowLineEdit.text())}
+
             self.script_console_log_window.show()
             self.command_info_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
             self.script_process = start_script(script_path, script_args)
-            self.create_scripting_worker()
+            self.script_pid = int(self.command_info_interface.socket.recv().decode('utf-8')) # receive the PID
+            print('User script started on process with PID {}'.format(self.script_pid))
+            self.setup_scripting_worker()
         else:
             self.script_console_log_window.hide()
             stop_script(self.script_process)  # TODO implement closing of the script process
             #TODO close and stop the worker thread
+            self.close_scripting_worker()
+            # close socket connection
+            del self.command_info_interface
 
         self.is_running = not self.is_running
         self.change_ui_on_run_stop(self.is_running)
