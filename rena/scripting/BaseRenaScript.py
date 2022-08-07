@@ -16,6 +16,6 @@ class ExampleRenaScript(RenaScript):
     def loop(self):
         print('Loop function is called')
 
-
+    # cleanup is called when the stop button is hit
     def cleanup(self):
         print('Cleanup function is called')

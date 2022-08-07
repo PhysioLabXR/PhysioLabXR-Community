@@ -543,6 +543,9 @@
           <height>16777215</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>Test your script with simulated input.</string>
+        </property>
         <property name="text">
          <string>Validate</string>
         </property>
@@ -577,7 +580,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="label_3">
+    <widget class="QLabel" name="realtimeInfoLabel">
      <property name="maximumSize">
       <size>
        <width>16777215</width>
@@ -585,7 +588,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Data delay {0}    Loop per second {1}    Average loop runtime {2}</string>
+      <string>Loop (with overheads) per second -    Average loop call runtime -</string>
      </property>
     </widget>
    </item>

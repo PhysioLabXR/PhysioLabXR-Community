@@ -12,11 +12,12 @@ from pylsl import local_clock
 import rena.config_signal
 import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces.InferenceInterface import InferenceInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
-from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
-from rena.utils.networking_utils import recv_string_router_dealer, recv_string_router_dealer_without_routing
+from rena.utils.networking_utils import recv_string_router, recv_string
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal, shared
 from rena.interfaces import InferenceInterface, LSLInletInterface
@@ -911,8 +912,7 @@ class ScriptingStdoutWorker(QObject):
 
     @pg.QtCore.pyqtSlot()
     def process_stdout(self):
-        msg: str = recv_string_router_dealer_without_routing(self.stdout_socket_interface, is_block=True)  # this must not block otherwise check_pid won't get to run because they are on the same thread
-        # _, msg = recv_string_router_dealer(self.socket_interface, True)
+        msg: str = recv_string(self.stdout_socket_interface, is_block=True)  # this must not block otherwise check_pid won't get to run because they are on the same thread
         if msg:
             if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
                 msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
@@ -922,6 +922,7 @@ class ScriptingStdoutWorker(QObject):
 class ScriptCommandInfoWorker(QObject):
     abnormal_termination_signal = pyqtSignal()
     tick_signal = pyqtSignal()
+    realtime_info_signal = pyqtSignal(list)
 
     def __init__(self, command_info_socket_interface, script_pid):
         super().__init__()
@@ -931,6 +932,7 @@ class ScriptCommandInfoWorker(QObject):
         self.script_pid = script_pid
         self.script_process_active = True
         self.command_info_mutex = QMutex()
+        self.send_info_requst = False
 
     @pg.QtCore.pyqtSlot()
     def check_pid(self):
@@ -944,13 +946,26 @@ class ScriptCommandInfoWorker(QObject):
     @pg.QtCore.pyqtSlot()
     def request_get_info(self):
         self.command_info_mutex.lock()
-        pass
+        if not self.send_info_requst:  # should not duplicate a request if the last request hasn't been answered yet
+            self.command_info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
+            self.send_info_requst = True
+
+        events = self.command_info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
+        if len(events):
+            self.send_info_requst = False
+            msg = self.command_info_socket_interface.socket.recv()
+            realtime_info = np.frombuffer(msg)
+            self.realtime_info_signal.emit(list(realtime_info))
         self.command_info_mutex.unlock()
 
     def notify_script_to_stop(self):
         self.command_info_mutex.lock()
         self.command_info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
-        msg = self.command_info_socket_interface.socket.recv().decode('utf-8')  # TODO use a poller here with a timeout
+        events = self.command_info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
+        if len(events) > 0:
+            msg = self.command_info_socket_interface.socket.recv().decode('utf-8')
+        else:
+            msg = None
         self.command_info_mutex.unlock()
         if msg == SCRIPT_STOP_SUCCESS:
             return True

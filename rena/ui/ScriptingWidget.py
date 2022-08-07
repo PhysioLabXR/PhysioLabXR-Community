@@ -16,8 +16,8 @@ from rena.threadings import workers
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
-from rena.ui_shared import add_icon, minus_icon
-from rena.utils.networking_utils import recv_string_router_dealer
+from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
+from rena.utils.networking_utils import recv_string_router
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
 
@@ -83,16 +83,16 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.command_info_worker = None
         self.script_pid = None
 
-
     def setup_command_info_worker(self, script_pid):
         self.command_info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
                                                               port_id=self.port + 1,
                                                               identity='client',
-                                                              pattern='router-dealer')
+                                                              pattern='router-dealer', add_poller=True)
         print('MainApp: Sending command info socket routing ID')
         self.command_info_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
         self.command_info_worker = workers.ScriptCommandInfoWorker(self.command_info_socket_interface, script_pid)
         self.command_info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
+        self.command_info_worker.realtime_info_signal.connect(self.show_realtime_info)
         self.command_info_thread = QThread(self)
         self.command_info_worker.moveToThread(self.command_info_thread)
         self.command_info_thread.start()
@@ -101,6 +101,9 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.command_info_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
         self.command_info_timer.timeout.connect(self.command_info_worker.tick_signal.emit)
         self.command_info_timer.start()
+
+    def show_realtime_info(self, realtime_info: list):
+        self.realtimeInfoLabel.setText(script_realtime_info_text.format(* realtime_info))
 
     def create_stdout_worker(self):
         self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',

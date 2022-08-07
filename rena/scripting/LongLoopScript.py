@@ -17,7 +17,8 @@ class IndexPen(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         print('Loop function is called')
-        time.sleep(.5)
+        for i in range(int(1e20)):
+            print('Running a very long loop ' + str(i))
 
     def cleanup(self):
         print('Cleanup function is called')

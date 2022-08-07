@@ -32,10 +32,13 @@ stream_active_icon = QIcon('../media/icons/streamwidget_stream_viz_active.svg')
 
 
 # strings in Rena
-# main window's
+# main window
 num_active_streams_label_text = 'Streams: {0} added, {1} available, {2} streaming, {3} replaying'
 
 # Recording tab
 recording_tab_file_save_label_prefix = 'File will be saved as: '
 start_recording_text = 'Start Recording'
 stop_recording_text = 'Stop Recording'
+
+# Scripting Widget
+script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loop call runtime {1}'

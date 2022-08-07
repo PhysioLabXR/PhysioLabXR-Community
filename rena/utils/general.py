@@ -11,6 +11,12 @@ def slice_len_for(slc, seqlen):
     return max(0, (stop - start + (step - (1 if step > 0 else -1))) // step)
 
 
+def get_fps(queue):
+    try:
+        return len(queue) / (queue[-1] - queue[0])
+    except ZeroDivisionError:
+        return 0
+
 def create_lsl_interface(lsl_name, channel_names):
     # try:
     #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
