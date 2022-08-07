@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 
 from rena import config_signal, config
 from rena.config_ui import *
+from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -43,10 +44,12 @@ class OptionsWindow(QDialog):
         selection_state, selected_groups, selected_channels = \
             self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
         self.clearLayout(self.actionsWidgetLayout)
-
+################################################################################
         if selection_state == nothing_selected: # nothing selected
             text = 'Nothing selected'
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
+
+################################################################################
         elif selection_state == channel_selected: # only one channel selected
             text = ('Channel Name: ' + selected_channels[0].data(0, 0)) \
                    + ('\nLSL Channel Index: ' + str(selected_channels[0].lsl_index)) \
@@ -54,20 +57,21 @@ class OptionsWindow(QDialog):
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
             self.init_create_new_group_widget()
 
-
-
+################################################################################
         elif selection_state == mix_selected: #  both groups and channels are selected
             text = 'Cannot select both groups and channels'
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
+
+################################################################################
         elif selection_state == channels_selected: # channels selected
             text = ''
             for channel in selected_channels:
                 text += ('\nChannel Name: ' + channel.data(0, 0)) \
                         + ('   LSL Channel Index: ' + str(channel.lsl_index))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
-
             self.init_create_new_group_widget()
 
+################################################################################
         elif selection_state == group_selected: # one group selected
 
             is_group_displaying_msg = '\nIs Plotted: {0}'.format('Yes'if selected_groups[0].display else 'No')
@@ -77,7 +81,7 @@ class OptionsWindow(QDialog):
                    + ('\nPlot Format: ' + str(selected_groups[0].plot_format))
             init_scroll_label(parent=self.actionsWidgetLayout, text=text)
 
-
+            self.init_plot_format_widget()
 
             # init image settings
             # time series check box
@@ -147,6 +151,12 @@ class OptionsWindow(QDialog):
         # else:
         #     dialog_popup('please enter your group name first')
         #     return
+    def init_plot_format_widget(self):
+        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name)
+        self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
+
+
+
 
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(

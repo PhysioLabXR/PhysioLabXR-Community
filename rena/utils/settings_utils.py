@@ -145,6 +145,25 @@ def create_default_preset(stream_name):
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
+# plot_format
+# {
+# time_series:{}
+# image: {}
+# bar plot : {}
+# }
+
+# plot_format = {
+#     'time_series':{'display':True},
+#     'image': {'display': False,
+#               'format': 'RGB',
+#               'width': 0,
+#               'height': 0,
+#               'depth': 0,
+#               },
+#     'bar_plot': {'display': False}
+# }
+
+
 
 def process_plot_group(preset_dict):
     channel_num = preset_dict['NumChannels']

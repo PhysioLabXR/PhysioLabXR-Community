@@ -353,7 +353,7 @@ class StreamGroupView(QTreeWidget):
         #     item.display = 0
         # if hasattr(item, 'item_type') and item.item_type == 'group':
         # print('John')
-        # print(item.data(0,0))
+        print(item.data(0,0))
         ## the color change due to the checkbox also induce a item_change signal
 
         if item.item_type == 'group':
