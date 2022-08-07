@@ -231,8 +231,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #     selected_camera_id = self.camera_combo_box.currentText()
     #     self.init_camera(selected_camera_id)
 
-
-
     def init_camera(self, cam_id):
         if cam_id not in self.cam_workers.keys():
             camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
@@ -410,20 +408,20 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
 
-    def init_inference(self, inference_interface):
-        inference_thread = pg.QtCore.QThread(self)
-        self.worker_threads['scripting'] = inference_thread
-        self.inference_worker = workers.InferenceWorker(inference_interface)
-        self.inference_worker.moveToThread(self.worker_threads['scripting'])
-        self.init_visualize_inference_results()
-        self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-
-        self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-        self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-
-        # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
-        inference_thread.start()
-        self.inference_widget.hide()
+    # def init_inference(self, inference_interface):
+    #     inference_thread = pg.QtCore.QThread(self)
+    #     self.worker_threads['scripting'] = inference_thread
+    #     self.inference_worker = workers.InferenceWorker(inference_interface)
+    #     self.inference_worker.moveToThread(self.worker_threads['scripting'])
+    #     self.init_visualize_inference_results()
+    #     self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
+    #
+    #     self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
+    #     self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
+    #
+    #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
+    #     inference_thread.start()
+    #     self.inference_widget.hide()
 
 
     def inference_ticks(self):

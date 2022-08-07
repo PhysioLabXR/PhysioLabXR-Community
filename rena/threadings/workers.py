@@ -901,20 +901,19 @@ class ScriptingStdoutWorker(QObject):
                 self.stdout_signal.emit(msg)  # send message if it's not None
 
 
-class ScriptCommandInfoWorker(QObject):
+class ScriptInfoWorker(QObject):
     abnormal_termination_signal = pyqtSignal()
     tick_signal = pyqtSignal()
     realtime_info_signal = pyqtSignal(list)
 
-    def __init__(self, command_info_socket_interface, script_pid):
+    def __init__(self, info_socket_interface, script_pid):
         super().__init__()
         self.tick_signal.connect(self.check_pid)
         self.tick_signal.connect(self.request_get_info)
-        self.command_info_socket_interface = command_info_socket_interface
+        self.info_socket_interface = info_socket_interface
         self.script_pid = script_pid
         self.script_process_active = True
-        self.command_info_mutex = QMutex()
-        self.send_info_requst = False
+        self.send_info_request = False
 
     @pg.QtCore.pyqtSlot()
     def check_pid(self):
@@ -927,32 +926,47 @@ class ScriptCommandInfoWorker(QObject):
 
     @pg.QtCore.pyqtSlot()
     def request_get_info(self):
-        self.command_info_mutex.lock()
-        if not self.send_info_requst:  # should not duplicate a request if the last request hasn't been answered yet
-            self.command_info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
-            self.send_info_requst = True
+        if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
+            self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
+            self.send_info_request = True
 
-        events = self.command_info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
+        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
         if len(events):
-            self.send_info_requst = False
-            msg = self.command_info_socket_interface.socket.recv()
+            self.send_info_request = False
+            msg = self.info_socket_interface.socket.recv()
             realtime_info = np.frombuffer(msg)
             self.realtime_info_signal.emit(list(realtime_info))
+
+    def deactivate(self):
+        self.script_process_active = False
+
+
+class ScriptCommandWorker(QObject):
+    command_signal = pyqtSignal(str)
+    command_return_signal = pyqtSignal(tuple)
+
+    def __init__(self, command_socket_interface):
+        super().__init__()
+        self.command_signal.connect(self.process_command)
+
+    @pg.QtCore.pyqtSlot()
+    def process_command(self, command):
+        self.command_info_mutex.lock()
+        if command == SCRIPT_STOP_REQUEST:
+            is_success = self.notify_script_to_stop()
+        else:
+            raise NotImplementedError
+        self.command_return_signal.emit((command, is_success))
         self.command_info_mutex.unlock()
 
     def notify_script_to_stop(self):
-        self.command_info_mutex.lock()
-        self.command_info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
-        events = self.command_info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
+        self.info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
+        events = self.info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
         if len(events) > 0:
-            msg = self.command_info_socket_interface.socket.recv().decode('utf-8')
+            msg = self.info_socket_interface.socket.recv().decode('utf-8')
         else:
             msg = None
-        self.command_info_mutex.unlock()
         if msg == SCRIPT_STOP_SUCCESS:
             return True
         else:
             return False
-
-    def deactivate(self):
-        self.script_process_active = False

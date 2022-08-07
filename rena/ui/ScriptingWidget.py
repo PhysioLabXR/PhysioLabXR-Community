@@ -10,6 +10,8 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton
 
 from exceptions.exceptions import RenaError
 from rena import config_ui, config
+from rena.config import STOP_PROCESS_KILL_TIMEOUT
+from rena.shared import SCRIPT_STOP_SUCCESS
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -17,7 +19,8 @@ from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
-from rena.utils.networking_utils import recv_string_router
+from rena.utils.general import DataBuffer
+from rena.utils.networking_utils import recv_string_router, send_data_buffer
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
 
@@ -78,32 +81,60 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_worker_thread = None
         self.create_stdout_worker()  # setup stdout worker
 
-        self.command_info_socket_interface = None
-        self.command_info_thread = None
-        self.command_info_worker = None
+        self.info_socket_interface = None
+        self.info_thread = None
+        self.info_worker = None
         self.script_pid = None
 
-    def setup_command_info_worker(self, script_pid):
-        self.command_info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
-                                                              port_id=self.port + 1,
-                                                              identity='client',
-                                                              pattern='router-dealer', add_poller=True)
-        print('MainApp: Sending command info socket routing ID')
-        self.command_info_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
-        self.command_info_worker = workers.ScriptCommandInfoWorker(self.command_info_socket_interface, script_pid)
-        self.command_info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
-        self.command_info_worker.realtime_info_signal.connect(self.show_realtime_info)
-        self.command_info_thread = QThread(self)
-        self.command_info_worker.moveToThread(self.command_info_thread)
-        self.command_info_thread.start()
+        self.forward_input_timer = QTimer()
+        self.forward_input_timer.timeout.connect(self.forward_input)
+        self.data_buffer = None
+        self.forward_input_socket_interface = None
 
-        self.command_info_timer = QTimer()
-        self.command_info_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
-        self.command_info_timer.timeout.connect(self.command_info_worker.tick_signal.emit)
-        self.command_info_timer.start()
+    def setup_command_info_worker(self, script_pid):
+        self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
+                                                      port_id=self.port + 1,
+                                                      identity='client',
+                                                      pattern='router-dealer', add_poller=True)
+        print('MainApp: Sending command info socket routing ID')
+        self.info_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+        self.info_worker = workers.ScriptInfoWorker(self.info_socket_interface, script_pid)
+        self.info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
+        self.info_worker.realtime_info_signal.connect(self.show_realtime_info)
+        self.info_thread = QThread(self)
+        self.info_worker.moveToThread(self.info_thread)
+        self.info_thread.start()
+
+        self.info_timer = QTimer()
+        self.info_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
+        self.info_timer.start()
+
+    def setup_forward_input(self, forward_interval, buffer_sizes):
+        self.forward_input_timer.setInterval(forward_interval)
+        self.data_buffer = DataBuffer(data_type_buffer_sizes=buffer_sizes)
+        self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
+                                                               port_id=self.port + 2,
+                                                               identity='client',
+                                                               pattern='router-dealer')
+        self.forward_input_timer.start()
+
+    def stop_forward_input(self):
+        self.forward_input_timer.stop()
+        del self.data_buffer, self.forward_input_socket_interface
+
+    def setup_command_interface(self):
+        self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
+                                                         port_id=self.port + 3,
+                                                         identity='client',
+                                                         pattern='router-dealer', add_poller=True)
+        self.command_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+
+    def close_command_interface(self):
+        del self.command_socket_interface
 
     def show_realtime_info(self, realtime_info: list):
-        self.realtimeInfoLabel.setText(script_realtime_info_text.format(* realtime_info))
+        self.realtimeInfoLabel.setText(script_realtime_info_text.format(*realtime_info))
 
     def create_stdout_worker(self):
         self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
@@ -120,11 +151,11 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_timer.timeout.connect(self.stdout_worker.tick_signal.emit)
         self.stdout_timer.start()
 
-    def close_command_info_worker(self):
-        self.command_info_timer.stop()
-        self.command_info_worker.deactivate()
-        self.command_info_thread.quit()
-        del self.command_info_timer, self.command_info_worker, self.command_info_thread
+    def close_info_worker(self):
+        self.info_timer.stop()
+        self.info_worker.deactivate()
+        self.info_thread.quit()
+        del self.info_timer, self.info_worker, self.info_thread
 
     def on_script_abnormal_termination(self):
         dialog_popup('Script terminated abnormally.', title='ERROR')
@@ -153,13 +184,20 @@ class ScriptingWidget(QtWidgets.QWidget):
                            'params': None, 'port': self.stdout_socket_interface.port_id,
                            'run_frequency': int(self.frequencyLineEdit.text()),
                            'time_window': int(self.timeWindowLineEdit.text())}
-
+            forward_interval = 1e3 / float(self.frequencyLineEdit.text())
+            buffer_sizes = [(input_name, input_shape[1] * 2) for input_name, input_shape in
+                            zip(self.get_inputs(), self.get_input_shapes())]
+            buffer_sizes = dict(buffer_sizes)
             self.script_console_log_window.show()
-            self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+            self.stdout_socket_interface.send_string(
+                'Go')  # send an empty message, this is for setting up the routing id
             self.script_process = start_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
             self.setup_command_info_worker(self.script_pid)
+            self.setup_command_interface()
+
+            self.setup_forward_input(forward_interval, buffer_sizes)
             self.is_running = True
             self.change_ui_on_run_stop(self.is_running)
         else:
@@ -167,16 +205,25 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def stop_run(self, is_abnormal_termination):
         if not is_abnormal_termination:
-            try:
-                assert self.command_info_worker.notify_script_to_stop()
-            except AssertionError:
-                dialog_popup('Failed to terminate script process. Killing it')
+            if not self.notify_script_to_stop():
+                dialog_popup('Timeout: Failed to terminate script process. Killing it')
                 self.script_process.kill()
-        self.close_command_info_worker()
-        del self.command_info_socket_interface
+        self.close_info_worker()
+        self.close_command_interface()
+        self.stop_forward_input()
+        del self.info_socket_interface
         self.script_console_log_window.hide()
         self.is_running = False
         self.change_ui_on_run_stop(self.is_running)
+
+    # def process_command_return(self, command_return):
+    #     command, is_success = command_return
+    #     if command == SCRIPT_STOP_REQUEST:
+    #         if not is_success:
+    #             dialog_popup('Failed to terminate script process. Killing it')
+    #             self.script_process.kill()
+    #     else:
+    #         raise NotImplementedError
 
     def on_console_log_btn_clicked(self):
         self.script_console_log_window.show()
@@ -312,3 +359,24 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def on_output_lineEdit_changed(self):
         self.check_can_add_output()
+
+    def buffer_input(self, data_dict):
+        self.data_buffer.update_buffers(data_dict)
+
+    def forward_input(self):
+        send_data_buffer(self.data_buffer.buffer, self.forward_input_socket_interface)
+
+    def notify_script_to_stop(self):
+        print("MainApp: sending stop command")
+        self.command_socket_interface.send_string(SCRIPT_STOP_REQUEST)
+        self.forward_input()  # run the loop so it can process the stop command
+        print("MainApp: waiting for stop success")
+        events = self.command_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
+        if len(events) > 0:
+            msg = self.command_socket_interface.socket.recv().decode('utf-8')
+        else:
+            msg = None
+        if msg == SCRIPT_STOP_SUCCESS:
+            return True
+        else:
+            return False

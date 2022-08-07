@@ -16,8 +16,7 @@ class IndexPen(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        print('Loop function is called')
-        time.sleep(.5)
+        print('Received input of shape ' + str(self.inputs['Dummy-8Chan'].shape))
 
     def cleanup(self):
         print('Cleanup function is called')

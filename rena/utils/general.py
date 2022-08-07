@@ -1,6 +1,8 @@
 import os
 import sys
 
+import numpy as np
+
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -16,6 +18,7 @@ def get_fps(queue):
         return len(queue) / (queue[-1] - queue[0])
     except ZeroDivisionError:
         return 0
+
 
 def create_lsl_interface(lsl_name, channel_names):
     # try:
@@ -80,3 +83,31 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+class DataBuffer():
+    def __init__(self, data_type_buffer_sizes:dict=None):
+        self.buffer = dict()
+        self.data_type_buffer_sizes = data_type_buffer_sizes if data_type_buffer_sizes else dict()
+
+    def update_buffers(self, data_dict: dict):
+        lsl_data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+
+        if lsl_data_type not in self.buffer.keys():
+            self.buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
+                                          np.empty(shape=(0,))]  # data first, timestamps second
+        buffered_data = self.buffer[data_dict['lsl_data_type']][0]
+        buffered_timestamps = self.buffer[data_dict['lsl_data_type']][1]
+
+        self.buffer[lsl_data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
+        self.buffer[lsl_data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
+
+        if lsl_data_type in self.data_type_buffer_sizes.keys(): # keep only the latest data according to the buffer size
+            buffer_time_points = self.buffer[lsl_data_type][0].shape[-1]
+            cut_to = -np.min([buffer_time_points, self.data_type_buffer_sizes[lsl_data_type]])
+            self.buffer[lsl_data_type][0] = self.buffer[lsl_data_type][0][:, cut_to:]
+            self.buffer[lsl_data_type][1] = self.buffer[lsl_data_type][1][cut_to:]
+
+    def clear_buffer(self):
+        self.buffer = dict()
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]

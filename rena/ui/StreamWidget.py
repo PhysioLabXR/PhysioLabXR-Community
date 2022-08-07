@@ -343,7 +343,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             # reshape data_dict based on sensor interface
             self.main_parent.recording_tab.update_buffers(data_dict)
-
+            self.main_parent.scripting_tab.forward_data(data_dict)
             # scripting tab
             # self.main_parent.inference_tab.update_buffers(data_dict)
 

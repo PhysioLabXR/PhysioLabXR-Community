@@ -19,7 +19,7 @@ CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
 PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 
 SCRIPTING_UPDATE_REFRESH_INTERVA = 10
-STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
+STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 5 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
 '''

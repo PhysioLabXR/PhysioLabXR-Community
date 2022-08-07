@@ -27,7 +27,7 @@ class ScriptingTab(QtWidgets.QWidget):
 
 
     def add_script_clicked(self):
-        script_widget = ScriptingWidget(self, port=config.scripting_port + 3 * len(self.script_widgets))  # reverse three ports for each scripting widget
+        script_widget = ScriptingWidget(self, port=config.scripting_port + 4 * len(self.script_widgets))  # reverse three ports for each scripting widget
         def remove_script_clicked():
             self.script_widgets.remove(script_widget)
             self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
@@ -36,5 +36,7 @@ class ScriptingTab(QtWidgets.QWidget):
         self.script_widgets.append(script_widget)
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
-    def forward_data(self):
-        pass
+    def forward_data(self, data_dict):
+        for script_widget in self.script_widgets:
+            if script_widget.is_running and data_dict['lsl_data_type'] in script_widget.get_inputs():
+                script_widget.buffer_input(data_dict)
