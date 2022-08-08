@@ -180,9 +180,9 @@ def process_plot_group(preset_dict):
         'time_series': {'display': True},
         'image': {'display': False,
                   'format': 'Gray',
-                  'width': None,
-                  'height': None,
-                  'depth': None,
+                  'width': 2,
+                  'height': 2,
+                  'depth': 1,
                   },
         'bar_plot': {'display': False}
     }

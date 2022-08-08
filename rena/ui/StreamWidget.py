@@ -12,6 +12,7 @@ from pyqtgraph import PlotDataItem
 
 from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
+from rena.config_ui import image_depth_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
@@ -252,7 +253,7 @@ class StreamWidget(QtWidgets.QWidget):
     def init_visualize_LSLStream_data(self):
 
         # init stream view with LSL
-        parent = self.TimeSeriesPlotsLayout
+        # time_series_widget = self.TimeSeriesPlotsLayout
         metainfo_parent = self.MetaInfoVerticalLayout
 
         fs_label = QLabel(text='Sampling rate = ')
@@ -270,7 +271,7 @@ class StreamWidget(QtWidgets.QWidget):
             if plot_format['time_series']['display']:  # time_series plot
                 # plot_formats.append(plot_group_format_info)
                 plot_widget = pg.PlotWidget()
-                parent.addWidget(plot_widget)
+                self.TimeSeriesPlotsLayout.addWidget(plot_widget)
 
                 distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
                 plot_widget.addLegend()
@@ -301,7 +302,12 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widgets[group_name] = plot_widget
 
             if plot_format['image']['display']:
-                pass
+                image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
+                image_label = QLabel('Image_Label')
+                self.ImageWidgetLayout.addWidget(image_label)
+
+                # image_label.setAlignment(QtCore.Qt.AlignCenter)
+                # pass
 
             if plot_format['bar_plot']['display']:
                 pass
@@ -428,7 +434,7 @@ class StreamWidget(QtWidgets.QWidget):
             # plot_channel_num_offset = 0
             for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
                 plot_group_info = self.group_info[group_name]
-                if plot_group_info["plot_format"]['time_series']:
+                if plot_group_info["plot_format"]['time_series']['display']:
                     # plot corresponding time series data, range (a,b) is time series
                     # plot_group_channel_num = len(plot_group_info['channels'])
                     for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):

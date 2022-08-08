@@ -144,6 +144,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         else:
             self.BarPlotFormatInfoWidget.setEnabled(False)
 
+
+
     # def update_plot_format_dict(self):
     #     #
     #     plot_format = dict()
