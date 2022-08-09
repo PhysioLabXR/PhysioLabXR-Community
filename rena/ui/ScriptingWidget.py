@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton
+from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 
 from exceptions.exceptions import RenaError
 from rena import config_ui, config
@@ -151,7 +151,12 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_timer.timeout.connect(self.stdout_worker.tick_signal.emit)
         self.stdout_timer.start()
 
-    def close_info_worker(self):
+    def close_stdout(self):
+        self.stdout_timer.stop()
+        self.stdout_worker_thread.quit()
+        del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
+
+    def close_info(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
         self.info_thread.quit()
@@ -208,7 +213,7 @@ class ScriptingWidget(QtWidgets.QWidget):
             if not self.notify_script_to_stop():
                 dialog_popup('Timeout: Failed to terminate script process. Killing it')
                 self.script_process.kill()
-        self.close_info_worker()
+        self.close_info()
         self.close_command_interface()
         self.stop_forward_input()
         del self.info_socket_interface
@@ -347,9 +352,17 @@ class ScriptingWidget(QtWidgets.QWidget):
     def on_time_window_chagned(self):
         self.update_input_info()
 
-    def closeEvent(self, event):
+    def try_close(self):
+        if self.is_running:
+            reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.on_run_btn_clicked()
+            else:
+                return False
+        self.close_stdout()
         print('Script widget closed')
-        event.accept()  # let the widget close
+        return True
 
     def set_remove_btn_callback(self, callback):
         self.removeBtn.clicked.connect(callback)
