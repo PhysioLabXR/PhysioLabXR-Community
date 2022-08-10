@@ -335,7 +335,8 @@ class ScriptingWidget(QtWidgets.QWidget):
     def get_preset_input_info_text(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
         num_channel = get_stream_preset_info(preset_name, 'NumChannels')
-        return '[{0}, {1}]'.format(num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate)
+        _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
+        return '[{0}, {1}]'.format(num_channel, _timewindow * sampling_rate)
 
     def get_preset_expected_shape(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')

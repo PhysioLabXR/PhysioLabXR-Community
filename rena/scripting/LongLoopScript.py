@@ -3,7 +3,7 @@ import time
 from rena.scripting.RenaScript import RenaScript
 
 
-class IndexPen(RenaScript):
+class LongLoop(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
