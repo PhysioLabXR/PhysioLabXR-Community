@@ -894,7 +894,7 @@ class ScriptingStdoutWorker(QObject):
 
     @pg.QtCore.pyqtSlot()
     def process_stdout(self):
-        msg: str = recv_string(self.stdout_socket_interface, is_block=True)  # this must not block otherwise check_pid won't get to run because they are on the same thread
+        msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
         if msg:
             if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
                 msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
@@ -930,7 +930,7 @@ class ScriptInfoWorker(QObject):
             self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
             self.send_info_request = True
 
-        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
+        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)  # because
         if len(events):
             self.send_info_request = False
             msg = self.info_socket_interface.socket.recv()

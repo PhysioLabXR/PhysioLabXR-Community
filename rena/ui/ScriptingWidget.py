@@ -91,7 +91,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.data_buffer = None
         self.forward_input_socket_interface = None
 
-    def setup_command_info_worker(self, script_pid):
+    def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
                                                       port_id=self.port + 1,
                                                       identity='client',
@@ -101,7 +101,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.info_worker = workers.ScriptInfoWorker(self.info_socket_interface, script_pid)
         self.info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
         self.info_worker.realtime_info_signal.connect(self.show_realtime_info)
-        self.info_thread = QThread(self)
+        self.info_thread = QThread(self.parent)  # set thread to attach to the scriptingtab instead of the widget because it runs a timeout of 2 seconds in the event loop, causing problem when removing the scriptingwidget.
         self.info_worker.moveToThread(self.info_thread)
         self.info_thread.start()
 
@@ -141,7 +141,7 @@ class ScriptingWidget(QtWidgets.QWidget):
                                                         port_id=self.port,
                                                         identity='client',
                                                         pattern='router-dealer')
-        self.stdout_worker_thread = QThread(self)
+        self.stdout_worker_thread = QThread(self.parent)
         self.stdout_worker = workers.ScriptingStdoutWorker(self.stdout_socket_interface)
         self.stdout_worker.stdout_signal.connect(self.redirect_script_stdout)
         self.stdout_worker.moveToThread(self.stdout_worker_thread)
@@ -153,14 +153,13 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def close_stdout(self):
         self.stdout_timer.stop()
-        self.stdout_worker_thread.quit()
-        del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
+        self.stdout_worker_thread.exit()
+        # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
     def close_info(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
-        self.info_thread.quit()
-        del self.info_timer, self.info_worker, self.info_thread
+        self.info_thread.exit()
 
     def on_script_abnormal_termination(self):
         dialog_popup('Script terminated abnormally.', title='ERROR')
@@ -199,7 +198,7 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.script_process = start_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
-            self.setup_command_info_worker(self.script_pid)
+            self.setup_info_worker(self.script_pid)
             self.setup_command_interface()
 
             self.setup_forward_input(forward_interval, buffer_sizes)
