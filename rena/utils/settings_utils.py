@@ -121,9 +121,9 @@ def add_keys_to_preset(preset_dict):
     if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
     elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
-        preset_dict['ChannelNames'] = ['Channel'] + list(range(int(preset_dict['NumChannels'])))
+        preset_dict['ChannelNames'] = ['Channel{0}'.format(x) for x in list(range(int(preset_dict['NumChannels'])))]
     else:
-        raise InvalidPresetError(preset_dict['stream_name'])
+        raise InvalidPresetError(preset_dict['StreamName'])
     if 'GroupInfo' not in preset_dict.keys():
         preset_dict['GroupInfo'] = None
         preset_dict['GroupFormat'] = None

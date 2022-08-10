@@ -7,10 +7,13 @@ from collections import deque
 
 import numpy as np
 
+from exceptions.exceptions import RenaError, BadOutputError
 from rena.config import script_fps_counter_buffer_size
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.utils.data_utils import validate_output
 from rena.utils.general import get_fps
+from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_buffer
 
 
@@ -61,9 +64,13 @@ class RenaScript(ABC, threading.Thread):
         # setup inputs and outputs
         self.input_names = inputs
         self.inputs = dict()
-        self.outputs = dict()
-
-        # create data buffers
+        self.run_frequency = run_frequency
+        # set up the outputs
+        self.output_names = outputs
+        self.output_num_channels = dict([(x, n) for x, n in zip(outputs, output_num_channels)])
+        self._output_default = dict([(x, None) for x in outputs])
+        self.output_outlets = dict([(x, create_lsl_outlet(x, n, run_frequency)) for x, n in zip(outputs, output_num_channels)])
+        self.outputs = None  # dict holding the output data
 
         print('RenaScript: Script init successfully')
 
@@ -97,6 +104,7 @@ class RenaScript(ABC, threading.Thread):
         # start the loop here, accept interrupt command
         print('Entering loop')
         while True:
+            self.outputs = self._output_default  # reset the output to be default values
             buffer = recv_data_buffer(self.input_socket_interface)
             self.set_input_with_buffer(buffer)
             loop_start_time = time.time()
@@ -123,6 +131,18 @@ class RenaScript(ABC, threading.Thread):
                     break
                 else:
                     print('unknown command: ' + command)
+            # send the output if they are updated in the loop
+            for stream_name, data in self.outputs.items():
+                if data is not None:
+                    try:
+                        validate_output(data, self.output_num_channels[stream_name])
+                        self.output_outlets[stream_name].push_sample(data)
+                    except Exception as e:
+                        if type(e) == BadOutputError:
+                            print('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
+                        else:
+                            print('Unknown error occured when trying to send output data: {0}'.format(str(e)))
+        # exiting the script loop
         try:
             self.cleanup()
         except Exception as e:

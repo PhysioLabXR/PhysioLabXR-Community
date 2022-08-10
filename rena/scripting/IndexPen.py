@@ -1,5 +1,7 @@
 import time
 
+import numpy as np
+
 from rena.scripting.RenaScript import RenaScript
 
 
@@ -17,6 +19,7 @@ class IndexPen(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         print('Received input of shape ' + str(self.inputs['Dummy-8Chan'].shape))
+        self.outputs['SampleOutput'] = np.random.rand(10)
 
     def cleanup(self):
         print('Cleanup function is called')

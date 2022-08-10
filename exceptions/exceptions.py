@@ -117,3 +117,11 @@ class InvalidScripPathError(RenaError):
 
     def __str__(self):
         return 'Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)
+
+class BadOutputError(RenaError):
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return 'Bad output. \nError: {0}\n'.format(self.error)

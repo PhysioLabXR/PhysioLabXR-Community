@@ -130,7 +130,7 @@ class StreamGroupView(QTreeWidget):
 
     def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
         item = QTreeWidgetItem(parent_item)
-        item.setText(0, display_text)
+        item.setText(0, str(display_text))
         item.item_type = item_type
         item.display = display
         if plot_format is not None:
