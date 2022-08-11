@@ -7,7 +7,7 @@ from PyQt5.QtCore import *
 from rena import config
 from rena.config_ui import *
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED
-from rena.utils.settings_utils import get_stream_preset_info
+from rena.utils.settings_utils import get_stream_preset_info, is_group_shown
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -18,9 +18,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class GroupItem(QTreeWidgetItem):
     item_type = 'group'
 
-    def __init__(self, parent, display, plot_format):
+    def __init__(self, parent, is_shown, plot_format):
         super().__init__(parent)
-        self.display = display  # show the channel plot or not
+        self.is_shown = is_shown  # show the channel plot or not
         self.plot_format = plot_format
 
     def setData(self, column, role, value):
@@ -38,9 +38,9 @@ class GroupItem(QTreeWidgetItem):
 
 
 class ChannelItem(QTreeWidgetItem):
-    def __init__(self, parent, display, lsl_index):
+    def __init__(self, parent, is_shown, lsl_index):
         super().__init__(parent)
-        self.display = display  # show the channel plot or not
+        self.is_shown = is_shown  # show the channel plot or not
         self.lsl_index = lsl_index
         self.most_recent_change = None
 
@@ -126,11 +126,9 @@ class StreamGroupView(QTreeWidget):
             # group = self.add_item(parent_item=self.stream_root,
             #                               display_text=group_name,
             #                               plot_format=group_values['plot_format'],
-            #                               item_type='group',
-            #                               display=group_values['is_group_shown'])
+            #                               item_type='group')
             group = self.add_group_item(parent_item=self.stream_root,
-                                        display_text=group_name,
-                                        display=group_values['is_group_shown'],
+                                        group_name=group_name,
                                         plot_format=group_values['plot_format'])
             # self.groups_widgets.append(group)
             for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
@@ -141,10 +139,10 @@ class StreamGroupView(QTreeWidget):
                 #                         display=group_values['is_channels_shown'][channel_index_in_group],
                 #                         item_index=channel_index)
                 channel = self.add_channel_item(parent_item=group,
-                                                display_text=
+                                                channel_name=
                                                 get_stream_preset_info(self.stream_name, key='ChannelNames')[
                                                     int(channel_index)],
-                                                display=group_values['is_channels_shown'][channel_index_in_group],
+                                                is_shown=group_values['is_channels_shown'][channel_index_in_group],
                                                 lsl_index=channel_index)
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
@@ -258,10 +256,10 @@ class StreamGroupView(QTreeWidget):
 
         return item
 
-    def add_channel_item(self, parent_item, display_text, display, lsl_index):
-        item = ChannelItem(parent=parent_item, display=display, lsl_index=lsl_index)
-        item.setText(0, display_text)
-        if display == 1:
+    def add_channel_item(self, parent_item, channel_name, is_shown, lsl_index):
+        item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index)
+        item.setText(0, channel_name)
+        if is_shown == 1:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)
         else:
@@ -279,10 +277,11 @@ class StreamGroupView(QTreeWidget):
         self.channel_widgets.append(item)
         return item
 
-    def add_group_item(self, parent_item, display_text, display, plot_format):
-        item = GroupItem(parent=parent_item, display=display, plot_format=plot_format)
-        item.setText(0, display_text)
-        if display == 1:
+    def add_group_item(self, parent_item, group_name, plot_format):
+        is_shown = is_group_shown(group_name, self.stream_name)
+        item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format)
+        item.setText(0, group_name)
+        if is_shown:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)
         else:
@@ -417,7 +416,7 @@ class StreamGroupView(QTreeWidget):
                 self.clearSelection()
 
                 new_group = self.add_group_item(parent_item=self.stream_root,
-                                                display_text=new_group_name,
+                                                group_name=new_group_name,
                                                 display=any([item.display for item in selected_items]),
                                                 plot_format='time_series')
                 for selected_item in selected_items:

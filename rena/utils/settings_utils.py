@@ -1,6 +1,8 @@
 import json
 import os
 
+import numpy as np
+
 from exceptions.exceptions import InvalidPresetError
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM
@@ -32,7 +34,6 @@ def collect_stream_all_groups_info(stream_name):
     for group_name in config.settings.childGroups():
         config.settings.beginGroup(group_name)
         rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-        rtn[group_name]['is_group_shown'] = bool(int(rtn[group_name]['is_group_shown']))
         rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
         config.settings.endGroup()
     config.settings.endGroup()
@@ -45,7 +46,6 @@ def collect_stream_group_info(stream_name, group_name):
         rtn[keys] = config.settings.value(keys)
     # for value in config.settings.childGroups():
     #     rtn[value] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-    #     rtn['is_group_shown'] = bool(int(rtn['is_group_shown']))
     #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
     config.settings.endGroup()
     return rtn
@@ -204,7 +204,6 @@ def process_plot_group(preset_dict):
                 "plot_format": plot_format,
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
-                "is_group_shown": int(any(is_channels_shown)),
                 "group_description": ""
             }
         }
@@ -241,7 +240,6 @@ def process_plot_group(preset_dict):
                     "plot_format": plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
-                    "is_group_shown": int(any(is_channels_shown)),
                     "group_description": ""
                 }
 
@@ -253,7 +251,6 @@ def get_channel_info():
     for group_name in config.settings.childGroups():
         config.settings.beginGroup(group_name)
         rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-        rtn[group_name]['is_group_shown'] = bool(int(rtn[group_name]['is_group_shown']))
         rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
         config.settings.endGroup()
     config.settings.endGroup()
@@ -286,3 +283,8 @@ def set_channel_displayed(is_display, channel_index, group_name, stream_name):
     config.settings.setValue('is_channels_shown', new_is_channels_shown)
     config.settings.endGroup()
 
+def is_group_shown(group_name, stream_name):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
+    is_channels_shown = [int(x) for x in config.settings.value('is_channels_shown')]
+    config.settings.endGroup()
+    return np.any(is_channels_shown)

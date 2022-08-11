@@ -191,7 +191,7 @@ class OptionsWindow(QDialog):
         # check if changed from previous value
         if checked != is_channel_displayed(channel_index, parent_group, self.stream_name):
             set_channel_displayed(checked, channel_index, parent_group, self.stream_name)
-            self.parent.update_channel_shown(channel_index, checked)
+            self.parent.update_channel_shown(channel_index, checked, parent_group)
 
 
     @QtCore.pyqtSlot(tuple)

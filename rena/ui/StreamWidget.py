@@ -22,7 +22,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_all_groups_info, get_complete_stream_preset_info
+    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
@@ -109,6 +109,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         # create visualization component:
         self.channel_index_plot_widget_dict = {}
+        self.group_name_plot_widget_dict = {}
         self.group_info = collect_stream_all_groups_info(self.stream_name)
         self.num_samples_to_plot, self.viz_time_vector = None, None
         self.create_visualization_component()
@@ -252,10 +253,20 @@ class StreamWidget(QtWidgets.QWidget):
         # self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
         return True
 
-    def update_channel_shown(self, channel_index, is_shown):
+    def update_channel_shown(self, channel_index, is_shown, group_name):
         channel_plot_widget = self.channel_index_plot_widget_dict[channel_index]
         channel_plot_widget.show() if is_shown else channel_plot_widget.hide()
         self.group_info = collect_stream_all_groups_info(self.stream_name)  # just reload the group info from settings
+        self.update_groups_shown(group_name)
+
+    def update_groups_shown(self, group_name):
+        # assuming group info is update to date with in the persist settings
+        # check if there's active channels in this group
+        if is_group_shown(group_name, self.stream_name):
+            self.group_name_plot_widget_dict[group_name].show()
+        else:
+            self.group_name_plot_widget_dict[group_name].hide()
+
 
     def init_visualize_LSLStream_data(self):
 
@@ -277,30 +288,25 @@ class StreamWidget(QtWidgets.QWidget):
             # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
             if plot_format['time_series']['display']:  # time_series plot
                 # plot_formats.append(plot_group_format_info)
-                plot_widget = pg.PlotWidget()
-                self.TimeSeriesPlotsLayout.addWidget(plot_widget)
+                group_plot_widget = pg.PlotWidget()
+                self.group_name_plot_widget_dict[group_name] = group_plot_widget
+                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
                 distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
-                plot_widget.addLegend()
+                group_plot_widget.addLegend()
 
                 plot_data_items = []
                 group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
                 for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                    channel_plot_widget = plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                    channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
                                          name=channel_name)
                     self.channel_index_plot_widget_dict[channel_index] = channel_plot_widget
                     plot_data_items.append(channel_plot_widget)
                     if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
                         channel_plot_widget.hide()
-
+                self.update_groups_shown(group_name)
                 plots.append(plot_data_items)
-
-                if self.group_info[group_name]['is_group_shown']:
-                    plot_widget.show()  # TODO: remove this
-                else:
-                    plot_widget.hide()
-
-                plot_widgets[group_name] = plot_widget
+                plot_widgets[group_name] = group_plot_widget
 
             if plot_format['image']['display']:
                 image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
