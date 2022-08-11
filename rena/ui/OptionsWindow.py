@@ -9,6 +9,8 @@ from rena import config_signal, config
 from rena.config_ui import *
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
+from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED
+from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -30,19 +32,24 @@ class OptionsWindow(QDialog):
 
 
         self.stream_name = stream_name
-        self.signalTreeView = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
+        self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
         self.set_nominal_sampling_rate_textbox()
-        self.SignalTreeViewLayout.addWidget(self.signalTreeView)
+        self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
-        self.signalTreeView.selection_changed_signal.connect(self.update_info_box)
+        self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
         # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
         # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
-        self.signalTreeView.item_changed_signal.connect(self.update_info_box)
+        self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
+
+        # signals for processing changes in the tree view
+        self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
+        self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
+
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
         self.actionsWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = \
-            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
+            self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
         self.clearLayout(self.actionsWidgetLayout)
 ################################################################################
         if selection_state == nothing_selected: # nothing selected
@@ -89,10 +96,6 @@ class OptionsWindow(QDialog):
             # barchart checkbox
             # line checkbox
 
-
-
-
-
         elif selection_state == groups_selected: # multiple groups selected
             merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups',
                                            function=self.merge_groups_btn_clicked)
@@ -101,16 +104,16 @@ class OptionsWindow(QDialog):
 
     def merge_groups_btn_clicked(self):
         selection_state, selected_groups, selected_channels = \
-            self.signalTreeView.selection_state, self.signalTreeView.selected_groups, self.signalTreeView.selected_channels
+            self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
 
         root_group = selected_groups[0]
         other_groups = selected_groups[1:]
         for other_group in other_groups:
             # other_group_children = [child for child in other_group.get in range(0,)]
-            other_group_children = self.signalTreeView.get_all_child(other_group)
+            other_group_children = self.stream_group_view.get_all_child(other_group)
             for other_group_child in other_group_children:
-                self.signalTreeView.change_parent(other_group_child, root_group)
-        self.signalTreeView.remove_empty_groups()
+                self.stream_group_view.change_parent(other_group_child, root_group)
+        self.stream_group_view.remove_empty_groups()
 
     def init_create_new_group_widget(self):
         container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
@@ -127,7 +130,7 @@ class OptionsWindow(QDialog):
         # selected_items = self.signalTreeView.selectedItems()
         new_group_name = self.newGroupNameTextbox.text()
 
-        self.signalTreeView.create_new_group(new_group_name=new_group_name)
+        self.stream_group_view.create_new_group(new_group_name=new_group_name)
 
         #
         # if new_group_name:
@@ -181,6 +184,23 @@ class OptionsWindow(QDialog):
                     widget.deleteLater()
                 else:
                     self.clearLayout(item.layout())
+
+    @QtCore.pyqtSlot(tuple)
+    def channel_is_display_changed(self, change: tuple):
+        channel_index, parent_group, checked = change
+        # check if changed from previous value
+        if checked != is_channel_displayed(channel_index, parent_group, self.stream_name):
+            set_channel_displayed(checked, channel_index, parent_group, self.stream_name)
+            self.parent.update_channel_shown(channel_index, checked)
+
+
+    @QtCore.pyqtSlot(tuple)
+    def channel_parent_group_changed(self, change: tuple):
+        channel_index, target_parent_group = change
+        if not is_channel_in_group(channel_index, target_parent_group, self.stream_name): # check against the setting, see if the target parent group is the same as the one in the settings
+            # the target parent group is different from the channel's original group
+            # TODO
+            pass
 
     # def export_preset(self):
     #     stream_root = self.signalTreeView.stream_root

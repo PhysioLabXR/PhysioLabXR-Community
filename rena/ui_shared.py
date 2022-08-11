@@ -35,3 +35,8 @@ num_active_streams_label_text = 'Streams: {0} added, {1} available, {2} streamin
 recording_tab_file_save_label_prefix = 'File will be saved as: '
 start_recording_text = 'Start Recording'
 stop_recording_text = 'Stop Recording'
+
+
+# StreamGroupView
+CHANNEL_ITEM_IS_DISPLAY_CHANGED = 1
+CHANNEL_ITEM_GROUP_CHANGED = 2

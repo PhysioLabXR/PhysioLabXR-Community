@@ -108,6 +108,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create visualization component:
+        self.channel_index_plot_widget_dict = {}
         self.group_info = collect_stream_all_groups_info(self.stream_name)
         self.num_samples_to_plot, self.viz_time_vector = None, None
         self.create_visualization_component()
@@ -182,6 +183,7 @@ class StreamWidget(QtWidgets.QWidget):
                 print("sensor stopped")
                 # toggle the icon
                 self.StartStopStreamBtn.setText("Start Stream")
+                self.update_stream_availability(self.lsl_worker.is_stream_available)
         else:
             try:
                 self.lsl_worker.start_stream()
@@ -250,6 +252,11 @@ class StreamWidget(QtWidgets.QWidget):
         # self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
         return True
 
+    def update_channel_shown(self, channel_index, is_shown):
+        channel_plot_widget = self.channel_index_plot_widget_dict[channel_index]
+        channel_plot_widget.show() if is_shown else channel_plot_widget.hide()
+        self.group_info = collect_stream_all_groups_info(self.stream_name)  # just reload the group info from settings
+
     def init_visualize_LSLStream_data(self):
 
         # init stream view with LSL
@@ -277,22 +284,16 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widget.addLegend()
 
                 plot_data_items = []
-                for channel_index_in_group, channel_name in enumerate(
-                        [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]):
-                    # if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if display is 1
-                    plot_data_items.append(
-                        plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),
-                                         name=channel_name))
-                # else:
-                #     plot_data_items.append(None)
+                group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
+                for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+                    channel_plot_widget = plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                         name=channel_name)
+                    self.channel_index_plot_widget_dict[channel_index] = channel_plot_widget
+                    plot_data_items.append(channel_plot_widget)
+                    if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
+                        channel_plot_widget.hide()
 
                 plots.append(plot_data_items)
-
-                # for plot_index, (color, c_name) in enumerate(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']]):
-                #     print("John")
-                #
-                # plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                #               zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
 
                 if self.group_info[group_name]['is_group_shown']:
                     plot_widget.show()  # TODO: remove this

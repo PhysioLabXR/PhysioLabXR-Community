@@ -246,3 +246,43 @@ def process_plot_group(preset_dict):
                 }
 
     return preset_dict
+
+def get_channel_info():
+    rtn = dict()
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
+    for group_name in config.settings.childGroups():
+        config.settings.beginGroup(group_name)
+        rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+        rtn[group_name]['is_group_shown'] = bool(int(rtn[group_name]['is_group_shown']))
+        rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
+        config.settings.endGroup()
+    config.settings.endGroup()
+    return rtn
+
+def is_channel_in_group(channel_index, group_name, stream_name):
+    """
+    channel name cannot duplicate so we use index for finding a specific channel.
+    group name
+    """
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
+    channel_indices = config.settings.value('channel_indices')
+    config.settings.endGroup()
+    return channel_index in channel_indices
+
+def is_channel_displayed(channel_index, group_name, stream_name):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
+    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+    is_channel_shown = config.settings.value('is_channels_shown')[channel_index_in_settings]
+    config.settings.endGroup()
+    return is_channel_shown == '1'
+
+def set_channel_displayed(is_display, channel_index, group_name, stream_name):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
+    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+
+    new_is_channels_shown = config.settings.value('is_channels_shown')
+    new_is_channels_shown[channel_index_in_settings] = '1' if is_display else '0'
+
+    config.settings.setValue('is_channels_shown', new_is_channels_shown)
+    config.settings.endGroup()
+
