@@ -1,32 +1,17 @@
 # This Python file uses the following encoding: utf-8
-import os
-import pickle
-import time
 from multiprocessing import Process
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtWidgets, uic, sip
-
 import numpy as np
-from datetime import datetime
-
-from PyQt5.QtCore import QTimer
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
-import rena.config
 from rena import config, shared
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.data_utils import RNStream
-from rena.utils.ui_utils import dialog_popup
-import pylsl
-from rena.threadings.workers import PlaybackWorker
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
-import pyqtgraph as pg
-from rena.ui.ReplaySeekBar import ReplaySeekBar
 from rena.ui.PlayBackWidget import PlayBackWidget
-from rena.utils.ui_utils import AnotherWindow, another_window
+from rena.utils.ui_utils import another_window
+from rena.utils.ui_utils import dialog_popup
 
 
 class ReplayTab(QtWidgets.QWidget):
@@ -132,6 +117,13 @@ class ReplayTab(QtWidgets.QWidget):
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()
+
+    def try_close(self):
+        self.playback_widget.issue_terminate_command()
+        self.replay_server_process.join(timeout=1)
+        if self.replay_server_process.is_alive():
+            self.replay_server_process.kill()
+        return True
 
     # def ticks(self):
     #     self.lsl_replay_worker.tick_signal.emit()

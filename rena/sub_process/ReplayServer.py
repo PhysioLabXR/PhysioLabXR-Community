@@ -65,6 +65,8 @@ class ReplayServer(threading.Thread):
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
                     self.send_string('|'.join(self.stream_data.keys()))
+                elif command == shared.TERMINATE_COMMAND:
+                    self.running = False
             else:
                 while len(self.selected_stream_indices) > 0:
                     self.tick_times.append(time.time())
@@ -81,6 +83,12 @@ class ReplayServer(threading.Thread):
                         self.is_replaying = False
                         self.send_string(shared.STOP_SUCCESS_INFO)
                         break
+                    elif command == shared.TERMINATE_COMMAND:
+                        self.running = False
+                        break
+        self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
+        print("Replay terminated")
+        # return here
 
     def reset_replay(self):
         self.tick_times = deque(maxlen=50)

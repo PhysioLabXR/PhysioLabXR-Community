@@ -16,7 +16,7 @@ from rena import config_ui, config_signal, shared
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
@@ -555,6 +555,7 @@ class PlaybackWorker(QObject):
     playback_tick_signal = pyqtSignal()
     replay_progress_signal = pyqtSignal(float)
     replay_stopped_signal = pyqtSignal()
+    replay_terminated_signal = pyqtSignal()
 
     def __init__(self, command_info_interface):
         super(PlaybackWorker, self).__init__()
@@ -562,7 +563,7 @@ class PlaybackWorker(QObject):
         self.playback_tick_signal.connect(self.run)
         self.send_command_mutex = QMutex()
         self.command_queue = deque()
-        self.is_running = True
+        self.is_running = False
 
     @pg.QtCore.pyqtSlot()
     def run(self):
@@ -577,6 +578,11 @@ class PlaybackWorker(QObject):
                     self.replay_stopped_signal.emit()
                     self.send_command_mutex.unlock()
                     return
+                # elif reply == TERMINATE_SUCCESS_COMMAND:
+                #     self.is_running = False
+                #     self.replay_terminated_signal.emit()
+                #     self.send_command_mutex.unlock()
+                #     return
                 else:
                     raise NotImplementedError
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
@@ -588,9 +594,21 @@ class PlaybackWorker(QObject):
     def start_run(self):
         self.is_running = True
 
-    def send_stop_command(self):
+    def queue_stop_command(self):
         self.send_command_mutex.lock()
         self.command_queue.append(STOP_COMMAND)
+        self.send_command_mutex.unlock()
+
+    def queue_terminate_command(self):
+        self.send_command_mutex.lock()
+        self.command_info_interface.send_string(TERMINATE_COMMAND)
+        reply = self.command_info_interface.socket.recv()
+        reply = reply.decode('utf-8')
+
+        if reply == TERMINATE_SUCCESS_COMMAND:
+            self.is_running = False
+            self.replay_terminated_signal.emit()
+        else: raise NotImplementedError
         self.send_command_mutex.unlock()
 
 

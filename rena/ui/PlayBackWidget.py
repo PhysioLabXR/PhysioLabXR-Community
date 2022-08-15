@@ -32,6 +32,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_worker.moveToThread(self.playback_thread)
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
         self.playback_worker.replay_stopped_signal.connect(self.replay_stopped_signal_callback)
+        self.playback_worker.replay_terminated_signal.connect(self.replay_terminated_signal_callback)
         self.playback_thread.start()
 
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
@@ -94,6 +95,11 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.parent.replay_successfully_stopped()
         self.timer.stop()
 
+    def replay_terminated_signal_callback(self):
+        self.timer.stop()
+        self.playback_thread.exit()
+        del self.command_info_interface  # close the socket
+
     def reset_playback(self):
         self.horizontalSlider.setValue(0)
         self.currentTimestamplabel.setText('')
@@ -101,4 +107,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.percentageReplayedLabel.setText('')
 
     def issue_stop_command(self):
-        self.playback_worker.send_stop_command()
+        self.playback_worker.queue_stop_command()
+
+    def issue_terminate_command(self):
+        self.playback_worker.queue_terminate_command()
