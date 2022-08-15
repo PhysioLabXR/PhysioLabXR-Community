@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import json
 import os
+import shutil
 
 from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
@@ -11,7 +12,7 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
-from rena.shared import SCRIPT_STOP_SUCCESS
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -19,7 +20,7 @@ from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
-from rena.utils.general import DataBuffer
+from rena.utils.general import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_buffer
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
@@ -64,8 +65,10 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.removeBtn.setIcon(minus_icon)
 
         self.locateBtn.clicked.connect(self.on_locate_btn_clicked)
+        self.createBtn.clicked.connect(self.on_create_btn_clicked)
         self.is_running = False
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
+        self.runBtn.setEnabled(False)
         self.script_process = None
 
         # self.scripting_worker = None
@@ -90,6 +93,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.forward_input_timer.timeout.connect(self.forward_input)
         self.data_buffer = None
         self.forward_input_socket_interface = None
+
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -237,12 +241,31 @@ class ScriptingWidget(QtWidgets.QWidget):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
         if script_path != '':
             if not self._validate_script_path(script_path): return
-            self.scriptPathLineEdit.setText(script_path)
-            self.scriptNameLabel.setText(get_target_class_name(script_path))
+            self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
         else:
             self.runBtn.setEnabled(False)
         print("Selected script path ", script_path)
+
+    def on_create_btn_clicked(self):
+        script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
+        if script_path:
+            base_script_name = os.path.basename(os.path.normpath(script_path))
+            this_script: str = rena_base_script[:]  # make a copy
+            this_script = this_script.replace('ExampleRenaScript', base_script_name)
+            script_path = script_path + '.py'
+            with open(script_path, 'w') as f:
+                f.write(this_script)
+            self.load_script_name(script_path)
+            self.runBtn.setEnabled(True)
+            click_on_file(script_path)
+        else:
+            self.runBtn.setEnabled(False)
+        print("Selected script path ", script_path)
+
+    def load_script_name(self, script_path):
+        self.scriptPathLineEdit.setText(script_path)
+        self.scriptNameLabel.setText(get_target_class_name(script_path))
 
     def change_ui_on_run_stop(self, is_run):
         self.widget_input.setEnabled(not is_run)

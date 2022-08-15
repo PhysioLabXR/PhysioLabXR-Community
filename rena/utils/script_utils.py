@@ -63,7 +63,7 @@ def get_target_class_name(script_path):
     #                'outputs': None, 'output_num_channels': None,
     #                'params': None, 'port': None, 'run_frequency': None,
     #                'time_window': None}
-
+    classes = [x for x in classes if x != 'RenaScript' ]
     return classes[0]
 
 

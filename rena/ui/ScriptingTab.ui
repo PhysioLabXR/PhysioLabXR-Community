@@ -42,19 +42,19 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QPushButton" name="pushButton">
-        <property name="maximumSize">
-         <size>
-          <width>180</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Locate and Load</string>
-        </property>
-       </widget>
-      </item>
+<!--      <item>-->
+<!--       <widget class="QPushButton" name="pushButton">-->
+<!--        <property name="maximumSize">-->
+<!--         <size>-->
+<!--          <width>180</width>-->
+<!--          <height>36</height>-->
+<!--         </size>-->
+<!--        </property>-->
+<!--        <property name="text">-->
+<!--         <string>Locate and Load</string>-->
+<!--        </property>-->
+<!--       </widget>-->
+<!--      </item>-->
      </layout>
     </widget>
    </item>

@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 
 import numpy as np
@@ -111,3 +112,10 @@ class DataBuffer():
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
+
+def click_on_file(filename):
+    '''Open document with default application in Python.'''
+    try:
+        os.startfile(filename)
+    except AttributeError:
+        subprocess.call(['open', filename])
