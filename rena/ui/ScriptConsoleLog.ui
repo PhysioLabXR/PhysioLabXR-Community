@@ -24,14 +24,14 @@
     <widget class="QWidget" name="widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="SaveLogBtn">
         <property name="text">
          <string>Save Log</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="ClearLogBtn">
         <property name="text">
          <string>Clear Log</string>
         </property>
