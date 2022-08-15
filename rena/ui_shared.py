@@ -42,3 +42,7 @@ stop_recording_text = 'Stop Recording'
 
 # Scripting Widget
 script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loop call runtime {1}'
+
+# StreamGroupView
+CHANNEL_ITEM_IS_DISPLAY_CHANGED = 1
+CHANNEL_ITEM_GROUP_CHANGED = 2

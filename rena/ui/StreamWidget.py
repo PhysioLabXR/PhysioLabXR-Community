@@ -12,6 +12,7 @@ from pyqtgraph import PlotDataItem
 
 from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
+from rena.config_ui import image_depth_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
@@ -21,7 +22,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_group_info
+    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
@@ -42,7 +43,12 @@ class StreamWidget(QtWidgets.QWidget):
             parent.addWidget(self)
         self.parent = parent
         self.main_parent = main_parent
+
+        ##
         self.stream_name = stream_name
+        # self.preset = get_complete_stream_preset_info(self.stream_name)
+        ##
+
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
@@ -84,13 +90,14 @@ class StreamWidget(QtWidgets.QWidget):
         # data elements
         channel_names = get_stream_preset_info(stream_name, 'ChannelNames')
         self.interface = create_lsl_interface(stream_name, channel_names)
+        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
+
         # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
         #     print('The stream {0} found in LAN has sampling rate of {1}, '
         #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
         #     config.settings.setValue('NominalSamplingRate', stream_srate)
 
         # load default settings from settings
-        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
 
         self.worker_thread = QThread(self)
         self.lsl_worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
@@ -101,15 +108,18 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create visualization component:
-        self.group_info = collect_stream_group_info(self.stream_name)
+        self.channel_index_plot_widget_dict = {}
+        self.group_name_plot_widget_dict = {}
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
         self.num_samples_to_plot, self.viz_time_vector = None, None
         self.create_visualization_component()
 
         # create option window
-        self.signal_settings_window = OptionsWindow(parent=self, lsl_name=self.stream_name, group_info=self.group_info)
+        self.signal_settings_window = OptionsWindow(parent=self, stream_name=self.stream_name,
+                                                    group_info=self.group_info)
         self.signal_settings_window.hide()
 
-        # FPS counter
+        # FPS counter``
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
 
         # mutex for not update the settings while plotting
@@ -174,6 +184,7 @@ class StreamWidget(QtWidgets.QWidget):
                 print("sensor stopped")
                 # toggle the icon
                 self.StartStopStreamBtn.setText("Start Stream")
+                self.update_stream_availability(self.lsl_worker.is_stream_available)
         else:
             try:
                 self.lsl_worker.start_stream()
@@ -181,7 +192,8 @@ class StreamWidget(QtWidgets.QWidget):
                 if type(e) == LSLStreamNotFoundError or type(e) == LSLChannelMismatchError:
                     dialog_popup(msg=str(e), title='ERROR')
                     return
-                else: raise UnsupportedErrorTypeError(str(e))
+                else:
+                    raise UnsupportedErrorTypeError(str(e))
             if self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
@@ -241,10 +253,25 @@ class StreamWidget(QtWidgets.QWidget):
         # self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
         return True
 
+    def update_channel_shown(self, channel_index, is_shown, group_name):
+        channel_plot_widget = self.channel_index_plot_widget_dict[channel_index]
+        channel_plot_widget.show() if is_shown else channel_plot_widget.hide()
+        self.group_info = collect_stream_all_groups_info(self.stream_name)  # just reload the group info from settings
+        self.update_groups_shown(group_name)
+
+    def update_groups_shown(self, group_name):
+        # assuming group info is update to date with in the persist settings
+        # check if there's active channels in this group
+        if is_group_shown(group_name, self.stream_name):
+            self.group_name_plot_widget_dict[group_name].show()
+        else:
+            self.group_name_plot_widget_dict[group_name].hide()
+
+
     def init_visualize_LSLStream_data(self):
 
         # init stream view with LSL
-        parent = self.TimeSeriesPlotsLayout
+        # time_series_widget = self.TimeSeriesPlotsLayout
         metainfo_parent = self.MetaInfoVerticalLayout
 
         fs_label = QLabel(text='Sampling rate = ')
@@ -255,35 +282,42 @@ class StreamWidget(QtWidgets.QWidget):
         plot_widgets = {}
         plots = []
         # plot_formats = []
+        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         for group_name in self.group_info.keys():
             plot_format = self.group_info[group_name]['plot_format']
             # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-            if plot_format == 'time_series':  # time_series plot
+            if plot_format['time_series']['display']:  # time_series plot
                 # plot_formats.append(plot_group_format_info)
-                plot_widget = pg.PlotWidget()
-                parent.addWidget(plot_widget)
+                group_plot_widget = pg.PlotWidget()
+                self.group_name_plot_widget_dict[group_name] = group_plot_widget
+                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
                 distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
-                plot_widget.addLegend()
+                group_plot_widget.addLegend()
 
                 plot_data_items = []
-                for channel_index_in_group, channel_name in enumerate([get_stream_preset_info(self.stream_name, 'ChannelNames')[int(i)] for i in self.group_info[group_name]['channel_indices']]):
-                    if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if display is 1
-                        plot_data_items.append(plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name))
-                    else:
-                        plot_data_items.append(None)
-
+                group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
+                for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+                    channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                         name=channel_name)
+                    self.channel_index_plot_widget_dict[channel_index] = channel_plot_widget
+                    plot_data_items.append(channel_plot_widget)
+                    if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
+                        channel_plot_widget.hide()
+                self.update_groups_shown(group_name)
                 plots.append(plot_data_items)
+                plot_widgets[group_name] = group_plot_widget
 
-                # for plot_index, (color, c_name) in enumerate(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']]):
-                #     print("John")
-                #
-                # plots.append([plot_widget.plot([], [], pen=pg.mkPen(color=color), name=c_name) for color, c_name in
-                #               zip(distinct_colors, [preset['ChannelNames'][i] for i in plot_group_info['channels']])])
+            if plot_format['image']['display']:
+                image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
+                image_label = QLabel('Image_Label')
+                self.ImageWidgetLayout.addWidget(image_label)
 
-                if self.group_info[group_name]['is_group_shown'] == 0:
-                    plot_widget.hide()
-                plot_widgets[group_name] = plot_widget
+                # image_label.setAlignment(QtCore.Qt.AlignCenter)
+                # pass
+
+            if plot_format['bar_plot']['display']:
+                pass
 
                 # elif plot_group_format_info[0] == 'image':
                 #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
@@ -305,7 +339,8 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
-        self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)  # TODO when the user change nominal sampling rate in the option window, update these two variables
+        self.num_samples_to_plot = int(int(get_stream_preset_info(self.stream_name,
+                                                                  'NominalSamplingRate')) * config.PLOT_RETAIN_HISTORY)  # TODO when the user change nominal sampling rate in the option window, update these two variables
         self.viz_time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.num_samples_to_plot)
         return fs_label, ts_label, plot_widgets, plots
 
@@ -350,11 +385,25 @@ class StreamWidget(QtWidgets.QWidget):
     def OnNominalSamplingRateChange(self):
         self.stream_settings_changed(("nominal_sampling_rate", 128))  # TODO
 
+    '''
+    settings on change:
+    visualization can be changed while recording with mutex
+    1. lock settings on change
+    2. update visualization
+    3. save changes to RENA_Settings
+    4. release mutex
+        
+    data processing cannot be changed while recording
+    
+    # cannot add channels while streaming/recording
+    
+    
+    '''
     def stream_settings_changed(self, change):
         self.setting_update_viz_mutex.lock()
         # resolve the
         if change[0] == "nominal_sampling_rate":
-            pass # TODO
+            pass  # TODO
         # TODO add other changes such as plot format, plot order, etc...
 
         self.setting_update_viz_mutex.unlock()
@@ -392,7 +441,7 @@ class StreamWidget(QtWidgets.QWidget):
             # plot_channel_num_offset = 0
             for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
                 plot_group_info = self.group_info[group_name]
-                if plot_group_info["plot_format"] == 'time_series':
+                if plot_group_info["plot_format"]['time_series']['display']:
                     # plot corresponding time series data, range (a,b) is time series
                     # plot_group_channel_num = len(plot_group_info['channels'])
                     for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
@@ -453,7 +502,6 @@ class StreamWidget(QtWidgets.QWidget):
         #     self.tickFrequencyLabel.setText(
         #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
-
     def init_server_client(self):
         print('John')
 
@@ -478,4 +526,3 @@ class StreamWidget(QtWidgets.QWidget):
 
     def is_widget_streaming(self):
         return self.lsl_worker.is_streaming
-

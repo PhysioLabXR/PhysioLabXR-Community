@@ -302,6 +302,10 @@ class LSLInletWorker(RENAWorker):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
 
+    def is_stream_available(self):
+        return self._lslInlet_interface.is_stream_available()
+
+
 
     # def remove_stream(self):
     #     # self.stop_stream()
