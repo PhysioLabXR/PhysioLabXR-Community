@@ -256,7 +256,10 @@ class ScriptingWidget(QtWidgets.QWidget):
             script_path = script_path + '.py'
             with open(script_path, 'w') as f:
                 f.write(this_script)
-            self.load_script_name(script_path)
+            try:
+                self.load_script_name(script_path)
+            except SyntaxError:
+                dialog_popup('The name of the class in your script does not match Python Syntax: {0}. \nPlease change its name before starting'.format(base_script_name), title='WARNING')
             self.runBtn.setEnabled(True)
             click_on_file(script_path)
         else:

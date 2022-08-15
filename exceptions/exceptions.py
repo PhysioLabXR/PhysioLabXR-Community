@@ -125,3 +125,11 @@ class BadOutputError(RenaError):
 
     def __str__(self):
         return 'Bad output. \nError: {0}\n'.format(self.error)
+
+class ScriptSyntaxError(RenaError):
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return 'Script has syntax errors: ' + str(self.error) + '\n' + self.error.text

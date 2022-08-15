@@ -4,7 +4,7 @@ import os
 import pickle
 import sys
 from inspect import isclass
-from exceptions.exceptions import InvalidScripPathError
+from exceptions.exceptions import InvalidScripPathError, ScriptSyntaxError
 
 from multiprocessing import Process
 
@@ -36,6 +36,8 @@ def validate_script_path(script_path: str):
         target_class_name = get_target_class_name(script_path)
     except IndexError:
         raise InvalidScripPathError(script_path, 'Script does not have class defined')
+    except SyntaxError as e:
+        raise ScriptSyntaxError(e)
     try:
         assert issubclass(target_class, RenaScript)
     except AssertionError:
