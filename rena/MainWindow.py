@@ -509,6 +509,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.settings_window.close()
             remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
             [x.click() for x in remove_btns]
+
+            # close other tabs
+            self.scripting_tab.try_close()
+            self.replay_tab.try_close()
+
             event.accept()
             self.app.quit()
         else:

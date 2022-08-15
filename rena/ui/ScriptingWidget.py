@@ -94,7 +94,6 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.data_buffer = None
         self.forward_input_socket_interface = None
 
-
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
                                                       port_id=self.port + 1,
@@ -105,7 +104,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.info_worker = workers.ScriptInfoWorker(self.info_socket_interface, script_pid)
         self.info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
         self.info_worker.realtime_info_signal.connect(self.show_realtime_info)
-        self.info_thread = QThread(self.parent)  # set thread to attach to the scriptingtab instead of the widget because it runs a timeout of 2 seconds in the event loop, causing problem when removing the scriptingwidget.
+        self.info_thread = QThread(
+            self.parent)  # set thread to attach to the scriptingtab instead of the widget because it runs a timeout of 2 seconds in the event loop, causing problem when removing the scriptingwidget.
         self.info_worker.moveToThread(self.info_thread)
         self.info_thread.start()
 
@@ -187,11 +187,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
             if not self._validate_script_path(script_path): return
-            script_args = {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
-                           'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
-                           'params': None, 'port': self.stdout_socket_interface.port_id,
-                           'run_frequency': int(self.frequencyLineEdit.text()),
-                           'time_window': int(self.timeWindowLineEdit.text())}
+            script_args = self.get_script_args()
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
             buffer_sizes = [(input_name, input_shape[1] * 2) for input_name, input_shape in
                             zip(self.get_inputs(), self.get_input_shapes())]
@@ -259,7 +255,9 @@ class ScriptingWidget(QtWidgets.QWidget):
             try:
                 self.load_script_name(script_path)
             except SyntaxError:
-                dialog_popup('The name of the class in your script does not match Python Syntax: {0}. \nPlease change its name before starting'.format(base_script_name), title='WARNING')
+                dialog_popup(
+                    'The name of the class in your script does not match Python Syntax: {0}. \nPlease change its name before starting'.format(
+                        base_script_name), title='WARNING')
             self.runBtn.setEnabled(True)
             click_on_file(script_path)
         else:
@@ -380,12 +378,13 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def try_close(self):
         if self.is_running:
-            reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self.on_run_btn_clicked()
-            else:
-                return False
+            # reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+            #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            # if reply == QMessageBox.Yes:
+            #     self.on_run_btn_clicked()
+            # else:
+            #     return False
+            self.on_run_btn_clicked()
         self.close_stdout()
         print('Script widget closed')
         return True
@@ -419,3 +418,10 @@ class ScriptingWidget(QtWidgets.QWidget):
             return True
         else:
             return False
+
+    def get_script_args(self):
+        return {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
+                'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
+                'params': [], 'port': self.stdout_socket_interface.port_id,
+                'run_frequency': int(self.frequencyLineEdit.text()),
+                'time_window': int(self.timeWindowLineEdit.text())}
