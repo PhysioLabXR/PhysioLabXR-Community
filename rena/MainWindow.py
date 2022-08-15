@@ -19,7 +19,10 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
 from rena.ui.AddWiget import AddStreamWidget
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset
+from rena.ui.ScriptingTab import ScriptingTab
+from rena.ui_shared import num_active_streams_label_text
+from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
+    get_all_lsl_device_preset_names
 
 try:
     import config
@@ -27,7 +30,6 @@ except ModuleNotFoundError as e:
     print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
     raise e
 import threadings.workers as workers
-from rena.ui.InferenceTab import InferenceTab
 from rena.ui.StreamWidget import StreamWidget
 from ui.RecordingsTab import RecordingsTab
 from ui.SettingsTab import SettingsTab
@@ -56,7 +58,7 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, inference_interface, *args, **kwargs):
+    def __init__(self, app, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
@@ -91,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tick_rate = 0
 
         # create workers for different sensors
-        self.init_inference(inference_interface)
+        # self.init_inference(inference_interface)
 
         # camera/screen capture timer
         self.c_timer = QTimer()
@@ -99,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.c_timer.timeout.connect(self.camera_screen_capture_tick)
         self.c_timer.start()
 
-        # inference timer
+        # scripting timer
         self.inference_timer = QTimer()
         self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
         self.inference_timer.timeout.connect(self.inference_ticks)
@@ -141,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LSL_data_buffer_dicts = {}
         self.LSL_current_ts_dict = {}
 
-        # inference buffer
+        # scripting buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
         # add other tabs
@@ -159,8 +161,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
         # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
 
-        self.inference_tab = InferenceTab(self)
-        self.inference_tab_vertical_layout.addWidget(self.inference_tab)
+        # self.inference_tab = InferenceTab(self)
+        # self.inference_tab_vertical_layout.addWidget(self.inference_tab)
+
+        self.scripting_tab = ScriptingTab(self)
+        self.scripting_tab_vertical_layout.addWidget(self.scripting_tab)
 
         # windows
         self.pop_windows = {}
@@ -180,10 +185,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.hide()
 
     def add_btn_clicked(self):
+        """
+        This should be the only entry point to adding a stream widget
+        :return:
+        """
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text = self.addStreamWidget.add_combo_box.currentText()
+        selected_text = self.addStreamWidget.get_selected_stream_name()
 
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
@@ -197,16 +206,24 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.init_lsl(selected_text)  # add lsl stream
             elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = self.experiment_presets_dict[selected_text]
+                streams_for_experiment = self.experiment_presets_dict[selected_text] #TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
                 # create the preset
                 create_default_preset(stream_name=selected_text)
                 self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
-
+            self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
 
+    def remove_stream_widget(self, target):
+        self.sensorTabSensorsHorizontalLayout.removeWidget(target)
+        self.update_num_active_stream_label()
+
+    def update_num_active_stream_label(self):
+        available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
+        streaming_widget_count = len([x for x in self.stream_widgets.values() if x.is_widget_streaming()])
+        self.numActiveStreamsLabel.setText(num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count, streaming_widget_count, self.replay_tab.get_num_replay_channels()))
     # def add_camera_clicked(self):
     #     if self.recording_tab.is_recording:
     #         dialog_popup(msg='Cannot add capture while recording.')
@@ -302,27 +319,21 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_streams_to_visualize(self, stream_names):
         try:
-            assert np.all([x in self.lslStream_presets_dict.keys() or x in self.device_presets_dict.keys() for x in
+            assert np.all([x in get_all_lsl_device_preset_names() for x in
                            stream_names])
         except AssertionError:
             dialog_popup(
-                msg="One or more stream name(s) in the experiment preset is not defined in LSLPreset or DevicePreset",
+                msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
                 title="Error")
             return
-        loading_dlg = dialog_popup(
-            msg="Please wait while streams are being added...",
-            title="Info")
+        # loading_dlg = dialog_popup(
+        #     msg="Please wait while streams are being added...",
+        #     title="Info")
         for stream_name in stream_names:
-            isLSL = stream_name in self.lslStream_presets_dict.keys()
-            if isLSL:
-                index = self.preset_LSLStream_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                self.preset_LSLStream_combo_box.setCurrentIndex(index)
-                self.add_preset_lslStream_clicked()
-            else:
-                index = self.device_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
-                self.device_combo_box.setCurrentIndex(index)
-                self.add_preset_device_clicked()
-        loading_dlg.close()
+            self.addStreamWidget.select_by_stream_name(stream_name)
+            self.add_btn_clicked()
+        # loading_dlg.close()
+
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
@@ -331,6 +342,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for stream_name in stream_names:
             if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
+
 
     def init_lsl(self, lsl_name):
         error_initialization = False
@@ -344,7 +356,6 @@ class MainWindow(QtWidgets.QMainWindow):
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
         lsl_stream_widget.setObjectName(lsl_widget_name)
 
-        # TODO: remove those meta information
         self.stream_widgets[lsl_name] = lsl_stream_widget
 
         if error_initialization:
@@ -397,20 +408,20 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
 
-    def init_inference(self, inference_interface):
-        inference_thread = pg.QtCore.QThread(self)
-        self.worker_threads['inference'] = inference_thread
-        self.inference_worker = workers.InferenceWorker(inference_interface)
-        self.inference_worker.moveToThread(self.worker_threads['inference'])
-        self.init_visualize_inference_results()
-        self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-
-        self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-        self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-
-        # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
-        inference_thread.start()
-        self.inference_widget.hide()
+    # def init_inference(self, inference_interface):
+    #     inference_thread = pg.QtCore.QThread(self)
+    #     self.worker_threads['scripting'] = inference_thread
+    #     self.inference_worker = workers.InferenceWorker(inference_interface)
+    #     self.inference_worker.moveToThread(self.worker_threads['scripting'])
+    #     self.init_visualize_inference_results()
+    #     self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
+    #
+    #     self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
+    #     self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
+    #
+    #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
+    #     inference_thread.start()
+    #     self.inference_widget.hide()
 
 
     def inference_ticks(self):
@@ -444,7 +455,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def visualize_inference_results(self, inference_results):
-        # results will be -1 if inference is not connected
+        # results will be -1 if scripting is not connected
         if self.inference_worker.is_connected and inference_results[0][0] >= 0:
             self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
 
@@ -498,6 +509,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.settings_window.close()
             remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
             [x.click() for x in remove_btns]
+
+            # close other tabs
+            self.scripting_tab.try_close()
+            self.replay_tab.try_close()
+
             event.accept()
             self.app.quit()
         else:

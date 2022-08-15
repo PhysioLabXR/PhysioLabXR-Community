@@ -1,22 +1,15 @@
 # This Python file uses the following encoding: utf-8
-import os
-import time
-
-from datetime import datetime
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QFileDialog
 
 import numpy as np
-import tensorflow as tf
 
 # lsl related imports
-from pylsl import StreamInfo, StreamOutlet, local_clock
+from pylsl import StreamInfo, StreamOutlet
 
-from rena import config
-from rena.inference.RealTimeModels.PupilTensorflowModel import PupilTensorflowModel
-from rena.utils.data_utils import RNStream
+from rena.scripting.PupilTensorflowModel import PupilTensorflowModel
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -44,7 +37,7 @@ class InferenceTab(QtWidgets.QWidget):
         self.model_file_path = ''
         self.SelectModelFileBtn.clicked.connect(self.select_model_file_btn_pressed)
 
-        # keep track of inference status.
+        # keep track of scripting status.
         self.is_inferencing = False
 
         # a ring-buffer that will hold data to be inferenced.
@@ -55,7 +48,7 @@ class InferenceTab(QtWidgets.QWidget):
         self.parent = parent
 
         self.timer = QTimer()
-        # TODO: user should be able to define inference interval; for now, use 500ms
+        # TODO: user should be able to define scripting interval; for now, use 500ms
         self.timer.setInterval(500)
         self.timer.timeout.connect(self.emit_inference_data)
 
@@ -74,7 +67,7 @@ class InferenceTab(QtWidgets.QWidget):
 
     def start_inference_btn_pressed(self):
         if not (len(self.parent.LSL_data_buffer_dicts.keys()) >= 1):
-            dialog_popup('You need at least one LSL Stream opened to start inference!')
+            dialog_popup('You need at least one LSL Stream opened to start scripting!')
             return
         self.inference_buffer = {} # clear buffer
 
@@ -95,7 +88,7 @@ class InferenceTab(QtWidgets.QWidget):
 
     def emit_inference_data(self):
         """
-        Emits inference results to a LSL stream outlet.
+        Emits scripting results to a LSL stream outlet.
         """
         preprocessed_data = self.model.preprocess(self.inference_buffer[self.sourceStreamTextEdit.toPlainText()])
         if preprocessed_data is not None:

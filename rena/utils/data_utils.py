@@ -8,6 +8,7 @@ import numpy as np
 from scipy.signal import resample
 import pandas as pd
 
+from exceptions.exceptions import BadOutputError
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
 
 
@@ -703,3 +704,35 @@ def dats_to_csv(buffer):
     df = pd.DataFrame()
     for stream_name, (data, timestamps) in buffer.items():
         pass
+
+def validate_output(data, expected_size):
+    if type(data) == np.ndarray:
+        try:
+            assert len(data.shape) == 2 or len(data.shape) == 1
+        except AssertionError:
+            raise BadOutputError('Output data must have one or two dimensions when given as a ndarray')
+        if len(data.shape) == 2:
+            try:
+                assert data.shape[0] == 1 or data.shape[1] == 1
+            except AssertionError:
+                raise BadOutputError('If two-dimensional, one of the output\'s data dimension must be 1')
+            data = np.squeeze(data)  # remove the one dimension
+        try:
+            assert len(data) == expected_size
+        except AssertionError:
+            raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
+    elif type(data) == list:
+        try:
+            assert is_homogeneous_type(data)
+        except AssertionError:
+            raise BadOutputError('Output data must be a homogeneous (all elements are of the same type) when given as a list')
+        try:
+            output = np.array(data)
+        except np.VisibleDeprecationWarning:
+            raise BadOutputError('Output data must not be a ragged list (containing sublist of different length) when given as a list')
+
+
+def is_homogeneous_type(seq):
+    iseq = iter(seq)
+    first_type = type(next(iseq))
+    return first_type if all( (type(x) is first_type) for x in iseq ) else False

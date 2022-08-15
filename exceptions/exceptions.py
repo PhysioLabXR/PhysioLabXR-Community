@@ -102,3 +102,34 @@ class UnsupportedErrorTypeError(RenaError):
         super().__init__(message)
     def __str__(self):
         return 'This error type should not be raised \n' + self.message
+
+class InvalidPresetError(RenaError):
+    def __init__(self, stream_name):
+        super().__init__(stream_name)
+    def __str__(self):
+        return 'The preset {0} does is not valid. Must have either Channelnames or NumChannels defined\n'.format(self.stream_name)
+
+class InvalidScripPathError(RenaError):
+    def __init__(self, script_path, error):
+        super().__init__(error)
+        self.script_path = script_path
+        self.error = error
+
+    def __str__(self):
+        return 'Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)
+
+class BadOutputError(RenaError):
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return 'Bad output. \nError: {0}\n'.format(self.error)
+
+class ScriptSyntaxError(RenaError):
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return 'Script has syntax errors: ' + str(self.error) + '\n' + self.error.text

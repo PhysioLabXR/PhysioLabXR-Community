@@ -40,3 +40,9 @@ groups_selected = 4
 mix_selected = 5
 
 stream_widget_icon_size = [72, 72]
+
+image_depth_dict = {
+    'RGB': 3,
+    'Gray': 1,
+    'PixelMap': 1
+}

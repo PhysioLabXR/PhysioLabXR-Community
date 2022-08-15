@@ -1,0 +1,3 @@
+{ "StreamName":"SampleOutput",
+  "NumChannels": 10,
+  "NominalSamplingRate":  5}

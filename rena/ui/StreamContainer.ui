@@ -156,6 +156,12 @@
          </attribute>
          <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout"/>
         </widget>
+        <widget class="QWidget" name="ImageWidget">
+         <attribute name="title">
+          <string>Image</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="ImageWidgetLayout"/>
+        </widget>
         <widget class="QWidget" name="BarChartWidget">
          <attribute name="title">
           <string>BarChart</string>

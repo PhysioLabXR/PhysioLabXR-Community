@@ -1,38 +1,26 @@
-import struct
-from collections import deque
 import time
-import math
+import time
+from collections import deque
+
 import cv2
+import numpy as np
+import psutil as psutil
+import pyautogui
 import pyqtgraph as pg
-from PyQt5.QtCore import QObject, QTimer
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QMutex
+from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
-import rena.config_signal
-import rena.config_ui
 from exceptions.exceptions import DataPortNotOpenError
-from rena.interfaces.InferenceInterface import InferenceInterface
-from rena.interfaces.LSLInletInterface import LSLInletInterface
-from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
-from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference, sim_imp, sim_heatmap, sim_detected_points
 from rena import config_ui, config_signal, shared
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND
+from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.utils.networking_utils import recv_string
+from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
-import multiprocessing as mp
-import pyautogui
-
-import numpy as np
-
-from rena.utils.ui_utils import dialog_popup
-from datetime import datetime
-import pylsl
-from PyQt5.QtCore import (QCoreApplication, QObject, QRunnable, QThread,
-                          QThreadPool, pyqtSignal, pyqtSlot)
-from rena.utils.data_utils import RNStream
-from rena.utils.ui_utils import dialog_popup
-from multiprocessing import Process
-
-from stream_shared import lsl_continuous_resolver
 
 
 class RENAWorker(QObject):
@@ -256,7 +244,7 @@ class LSLInletWorker(RENAWorker):
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
-            frames, timestamps= self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
             if frames.shape[-1] == 0:
                 return
 
@@ -313,6 +301,10 @@ class LSLInletWorker(RENAWorker):
     def stop_stream(self):
         self._lslInlet_interface.stop_sensor()
         self.is_streaming = False
+
+    def is_stream_available(self):
+        return self._lslInlet_interface.is_stream_available()
+
 
 
     # def remove_stream(self):
@@ -566,18 +558,62 @@ class PlaybackWorker(QObject):
     """
     playback_tick_signal = pyqtSignal()
     replay_progress_signal = pyqtSignal(float)
+    replay_stopped_signal = pyqtSignal()
+    replay_terminated_signal = pyqtSignal()
 
     def __init__(self, command_info_interface):
         super(PlaybackWorker, self).__init__()
         self.command_info_interface: RenaTCPInterface = command_info_interface
         self.playback_tick_signal.connect(self.run)
+        self.send_command_mutex = QMutex()
+        self.command_queue = deque()
+        self.is_running = False
 
     @pg.QtCore.pyqtSlot()
     def run(self):
-        self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
-        virtual_clock = self.command_info_interface.socket.recv()
-        virtual_clock = np.frombuffer(virtual_clock)[0]
-        self.replay_progress_signal.emit(virtual_clock)
+        if self.is_running:
+            self.send_command_mutex.lock()
+            if len(self.command_queue) > 0:
+                self.command_info_interface.send_string(self.command_queue.pop())
+                reply = self.command_info_interface.socket.recv()
+                reply = reply.decode('utf-8')
+                if reply == STOP_SUCCESS_INFO:
+                    self.is_running = False
+                    self.replay_stopped_signal.emit()
+                    self.send_command_mutex.unlock()
+                    return
+                # elif reply == TERMINATE_SUCCESS_COMMAND:
+                #     self.is_running = False
+                #     self.replay_terminated_signal.emit()
+                #     self.send_command_mutex.unlock()
+                #     return
+                else:
+                    raise NotImplementedError
+            self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
+            virtual_clock = self.command_info_interface.socket.recv()
+            virtual_clock = np.frombuffer(virtual_clock)[0]
+            self.replay_progress_signal.emit(virtual_clock)
+            self.send_command_mutex.unlock()
+
+    def start_run(self):
+        self.is_running = True
+
+    def queue_stop_command(self):
+        self.send_command_mutex.lock()
+        self.command_queue.append(STOP_COMMAND)
+        self.send_command_mutex.unlock()
+
+    def queue_terminate_command(self):
+        self.send_command_mutex.lock()
+        self.command_info_interface.send_string(TERMINATE_COMMAND)
+        reply = self.command_info_interface.socket.recv()
+        reply = reply.decode('utf-8')
+
+        if reply == TERMINATE_SUCCESS_COMMAND:
+            self.is_running = False
+            self.replay_terminated_signal.emit()
+        else: raise NotImplementedError
+        self.send_command_mutex.unlock()
 
 
 # class LSLReplayWorker(QObject):
@@ -895,3 +931,92 @@ class PlaybackWorker(QObject):
 #             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
 #         except ZeroDivisionError:
 #             return 0
+
+
+class ScriptingStdoutWorker(QObject):
+    stdout_signal = pyqtSignal(str)
+    tick_signal = pyqtSignal()
+
+    def __init__(self, stdout_socket_interface):
+        super().__init__()
+        self.tick_signal.connect(self.process_stdout)
+        self.stdout_socket_interface = stdout_socket_interface
+
+    @pg.QtCore.pyqtSlot()
+    def process_stdout(self):
+        msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
+        if msg:
+            if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
+                msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
+                self.stdout_signal.emit(msg)  # send message if it's not None
+
+
+class ScriptInfoWorker(QObject):
+    abnormal_termination_signal = pyqtSignal()
+    tick_signal = pyqtSignal()
+    realtime_info_signal = pyqtSignal(list)
+
+    def __init__(self, info_socket_interface, script_pid):
+        super().__init__()
+        self.tick_signal.connect(self.check_pid)
+        self.tick_signal.connect(self.request_get_info)
+        self.info_socket_interface = info_socket_interface
+        self.script_pid = script_pid
+        self.script_process_active = True
+        self.send_info_request = False
+
+    @pg.QtCore.pyqtSlot()
+    def check_pid(self):
+        """
+        check if the script process is still running
+        """
+        if not psutil.pid_exists(self.script_pid) and self.script_process_active:
+            self.abnormal_termination_signal.emit()
+            self.deactivate()
+
+    @pg.QtCore.pyqtSlot()
+    def request_get_info(self):
+        if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
+            self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
+            self.send_info_request = True
+
+        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)  # because
+        if len(events):
+            self.send_info_request = False
+            msg = self.info_socket_interface.socket.recv()
+            realtime_info = np.frombuffer(msg)
+            self.realtime_info_signal.emit(list(realtime_info))
+
+    def deactivate(self):
+        self.script_process_active = False
+
+
+# class ScriptCommandWorker(QObject):
+#     command_signal = pyqtSignal(str)
+#     command_return_signal = pyqtSignal(tuple)
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.command_signal.connect(self.process_command)
+#
+#     @pg.QtCore.pyqtSlot()
+#     def process_command(self, command):
+#         self.command_info_mutex.lock()
+#         if command == SCRIPT_STOP_REQUEST:
+#             is_success = self.notify_script_to_stop()
+#         else:
+#             raise NotImplementedError
+#         self.command_return_signal.emit((command, is_success))
+#         self.command_info_mutex.unlock()
+#
+#     def notify_script_to_stop(self):
+#         self.info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
+#         events = self.info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
+#         if len(events) > 0:
+#             msg = self.info_socket_interface.socket.recv().decode('utf-8')
+#         else:
+#             msg = None
+#         if msg == SCRIPT_STOP_SUCCESS:
+#             return True
+#         else:
+#             return False

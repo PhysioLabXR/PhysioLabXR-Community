@@ -1,7 +1,10 @@
 from PyQt5 import QtWidgets, uic
 
 from rena import config
-from rena.utils.settings_utils import get_all_presets
+from rena.utils.settings_utils import get_all_preset_names
+import pyqtgraph as pg
+
+from rena.utils.ui_utils import add_presets_to_combobox
 
 
 class AddStreamWidget(QtWidgets.QWidget):
@@ -12,6 +15,12 @@ class AddStreamWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi("ui/AddWidget.ui", self)
-        for i in get_all_presets() + config.settings.value('cameras'):
-            self.add_combo_box.addItem(i)
+        add_presets_to_combobox(self.stream_name_combo_box)
 
+
+    def select_by_stream_name(self, stream_name):
+        index = self.stream_name_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+        self.stream_name_combo_box.setCurrentIndex(index)
+
+    def get_selected_stream_name(self):
+        return self.stream_name_combo_box.currentText()

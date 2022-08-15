@@ -46,7 +46,7 @@ class RenaTCPExitServerRequestObject(RenaTCPRequestObject):
 
 class RenaTCPInterface:
 
-    def __init__(self, stream_name, port_id, identity, pattern='request-reply'):
+    def __init__(self, stream_name, port_id, identity, pattern='request-reply', add_poller=False):
         self.bind_header = "tcp://*:%s"
         self.connect_header = 'tcp://localhost:'
 
@@ -70,8 +70,11 @@ class RenaTCPInterface:
         else: raise AttributeError('Unsupported interface identity: {0}'.format(identity))
 
         # create poller object, so we can poll msg with a timeout
-        self.poller = zmq.Poller()
-        self.poller.register(self.socket, zmq.POLLIN)
+        if add_poller:
+            self.poller = zmq.Poller()
+            self.poller.register(self.socket, zmq.POLLIN)
+        else:
+            self.poller = None
 
     def bind_socket(self):
         binder = self.bind_header % self.port_id
@@ -114,6 +117,10 @@ class RenaTCPInterface:
 
     def recv_string(self, *args, **kwargs):
         return self.socket.recv(*args, **kwargs).decode('utf-8')
+
+    def __del__(self):
+        self.socket.close()
+        self.context.term()
 
 
 class RenaTCPClient:

@@ -42,8 +42,8 @@ class InferenceInterface:
         streams = resolve_byprop('type', config.INFERENCE_LSL_RESULTS_TYPE, timeout=1)
 
         if len(streams) == 0:
-            print('No inference stream open.')
-        else:  # TODO handle external inference stream lost
+            print('No scripting stream open.')
+        else:  # TODO handle external scripting stream lost
             self.inlet = StreamInlet(streams[0])
             self.inlet.open_stream()
 

@@ -11,8 +11,9 @@ from datetime import datetime
 
 from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
 
-from rena import config
+from rena import config, ui_shared
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
+from rena.ui_shared import start_stream_icon, stop_stream_icon
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import dialog_popup
 import subprocess
@@ -31,10 +32,9 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.is_recording = False
 
-        self.StartRecordingBtn.clicked.connect(self.start_recording_btn_ressed)
-        self.StopRecordingBtn.clicked.connect(self.stop_recording_btn_pressed)
+        self.StartStopRecordingBtn.clicked.connect(self.start_stop_recording_pressed)
+        self.RecordingOptionBtn.clicked.connect(self.on_option_button_clicked)
 
-        self.StopRecordingBtn.setEnabled(False)
         self.parent = parent
 
         self.save_stream = None
@@ -47,7 +47,19 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.recording_byte_count = 0
 
-    def start_recording_btn_ressed(self):
+        self.experimentNameTextEdit.textChanged.connect(self.update_ui_save_file)
+        self.subjectTagTextEdit.textChanged.connect(self.update_ui_save_file)
+        self.sessionTagTextEdit.textChanged.connect(self.update_ui_save_file)
+
+        self.update_ui_save_file()
+
+    def start_stop_recording_pressed(self):
+        if self.is_recording:
+            self.stop_recording_btn_pressed()
+        else:
+            self.start_recording_btn_pressed()
+
+    def start_recording_btn_pressed(self):
         if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
             dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
             return
@@ -55,16 +67,14 @@ class RecordingsTab(QtWidgets.QWidget):
         self.save_stream = RNStream(self.save_path)
         self.recording_buffer = {}  # clear buffer
         self.is_recording = True
-        self.StartRecordingBtn.setEnabled(False)
-        self.StopRecordingBtn.setEnabled(True)
         self.recording_byte_count = 0
+        self.StartStopRecordingBtn.setText(ui_shared.stop_recording_text)
+        self.StartStopRecordingBtn.setIcon(stop_stream_icon)
 
         self.timer.start()
 
     def stop_recording_btn_pressed(self):
         self.is_recording = False
-        self.StopRecordingBtn.setEnabled(False)
-        self.StartRecordingBtn.setEnabled(True)
 
         self.evict_buffer()
         self.timer.stop()
@@ -77,6 +87,10 @@ class RecordingsTab(QtWidgets.QWidget):
             self.convert_file_format(self.save_path, config.settings.value('file_format'))
         else:
             dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
+
+        self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
+        self.StartStopRecordingBtn.setIcon(start_stream_icon)
+
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
@@ -108,6 +122,12 @@ class RecordingsTab(QtWidgets.QWidget):
             self.recording_buffer[cam_id][2] = np.concatenate([self.recording_buffer[cam_id][2], [time.time()]])
 
             pass
+
+    def update_ui_save_file(self):
+        self.FileSaveLabel.setText(ui_shared.recording_tab_file_save_label_prefix + self.generate_save_path())
+
+    def on_option_button_clicked(self):
+        self.parent.fire_action_settings()
 
     def generate_save_path(self):
         # datetime object containing current date and time

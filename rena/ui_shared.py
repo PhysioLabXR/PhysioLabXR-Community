@@ -10,6 +10,10 @@ pop_window_icon = QIcon('../media/icons/popwindow.svg')
 dock_window_icon = QIcon('../media/icons/dockwindow.svg')
 remove_stream_icon = QIcon('../media/icons/removestream.svg')
 
+add_icon = QIcon('../media/icons/add.svg')
+minus_icon = QIcon('../media/icons/minus.svg')
+
+
 
 pause_icon = QIcon('../media/icons/pause.svg')
 
@@ -25,3 +29,20 @@ stream_active_icon = QIcon('../media/icons/streamwidget_stream_viz_active.svg')
 # stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
 # stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
 # stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+
+
+# strings in Rena
+# main window
+num_active_streams_label_text = 'Streams: {0} added, {1} available, {2} streaming, {3} replaying'
+
+# Recording tab
+recording_tab_file_save_label_prefix = 'File will be saved as: '
+start_recording_text = 'Start Recording'
+stop_recording_text = 'Stop Recording'
+
+# Scripting Widget
+script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loop call runtime {1}'
+
+# StreamGroupView
+CHANNEL_ITEM_IS_DISPLAY_CHANGED = 1
+CHANNEL_ITEM_GROUP_CHANGED = 2
