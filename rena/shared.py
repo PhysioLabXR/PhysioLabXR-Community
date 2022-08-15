@@ -1,8 +1,13 @@
+# replay
 FAIL_INFO = 'fail!'
 START_COMMAND = 'start!'
-SUCCESS_INFO = 'success!'
+START_SUCCESS_INFO = 'start'
 VIRTUAL_CLOCK_REQUEST = 'v'
 
+STOP_COMMAND = 'stop!'
+STOP_SUCCESS_INFO = 'stop'
+
+# scripting
 SCRIPT_STDOUT_MSG_PREFIX = 'S!'
 SCRIPT_STOP_REQUEST = 'stop'
 SCRIPT_STOP_SUCCESS = 'stopsuccess'

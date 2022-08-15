@@ -43,7 +43,7 @@ class ReplayServer(threading.Thread):
     def run(self):
         while self.running:
             if not self.is_replaying:
-                print('ReplayClient: not replaying, pending on start replay command')
+                print('ReplayClient: pending on start replay command')
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
@@ -62,7 +62,7 @@ class ReplayServer(threading.Thread):
                         return
                     self.is_replaying = True
                     self.setup_stream()
-                    self.send_string(shared.SUCCESS_INFO + str(self.total_time))
+                    self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
                     self.send_string('|'.join(self.stream_data.keys()))
             else:
@@ -75,6 +75,26 @@ class ReplayServer(threading.Thread):
                     command = self.recv_string(is_block=False)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(self.virtual_clock)
+                    elif command == shared.STOP_COMMAND:
+                        # process stop command
+                        self.reset_replay()
+                        self.is_replaying = False
+                        self.send_string(shared.STOP_SUCCESS_INFO)
+                        break
+
+    def reset_replay(self):
+        self.tick_times = deque(maxlen=50)
+        self.outlets = []
+        self.next_sample_of_stream = []
+        self.chunk_sizes = []
+        self.virtual_clock_offset = None
+        self.start_time = None
+        self.end_time = None
+        self.virtual_clock = None
+        self.total_time = None
+        self.stream_data = None
+        self.stream_names = None
+        self.selected_stream_indices = None
 
     def replay(self):
         nextStreamIndex = None

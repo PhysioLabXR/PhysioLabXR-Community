@@ -31,6 +31,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_worker = PlaybackWorker(self.command_info_interface)
         self.playback_worker.moveToThread(self.playback_thread)
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
+        self.playback_worker.replay_stopped_signal.connect(self.replay_stopped_signal_callback)
         self.playback_thread.start()
 
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
@@ -40,6 +41,7 @@ class PlayBackWidget(QtWidgets.QWidget):
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
         self.playPauseButton.setIcon(pause_icon)
+        self.playback_worker.start_run()
         self.timer.start()  # timer should stop when the replay is paused, over, or stopped
 
     def play_pause_button_clicked(self):
@@ -83,4 +85,20 @@ class PlayBackWidget(QtWidgets.QWidget):
     def ticks(self):
         self.playback_worker.playback_tick_signal.emit()
 
+    def replay_stopped_signal_callback(self):
+        '''
+        called when received 'replay stopped successful' message from replay server
+        :return:
+        '''
+        self.reset_playback()
+        self.parent.replay_successfully_stopped()
+        self.timer.stop()
 
+    def reset_playback(self):
+        self.horizontalSlider.setValue(0)
+        self.currentTimestamplabel.setText('')
+        self.timeSinceStartedLabel.setText('')
+        self.percentageReplayedLabel.setText('')
+
+    def issue_stop_command(self):
+        self.playback_worker.send_stop_command()
