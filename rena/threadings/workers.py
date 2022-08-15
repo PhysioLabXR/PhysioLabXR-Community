@@ -987,32 +987,32 @@ class ScriptInfoWorker(QObject):
         self.script_process_active = False
 
 
-class ScriptCommandWorker(QObject):
-    command_signal = pyqtSignal(str)
-    command_return_signal = pyqtSignal(tuple)
-
-    def __init__(self, command_socket_interface):
-        super().__init__()
-        self.command_signal.connect(self.process_command)
-
-    @pg.QtCore.pyqtSlot()
-    def process_command(self, command):
-        self.command_info_mutex.lock()
-        if command == SCRIPT_STOP_REQUEST:
-            is_success = self.notify_script_to_stop()
-        else:
-            raise NotImplementedError
-        self.command_return_signal.emit((command, is_success))
-        self.command_info_mutex.unlock()
-
-    def notify_script_to_stop(self):
-        self.info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
-        events = self.info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
-        if len(events) > 0:
-            msg = self.info_socket_interface.socket.recv().decode('utf-8')
-        else:
-            msg = None
-        if msg == SCRIPT_STOP_SUCCESS:
-            return True
-        else:
-            return False
+# class ScriptCommandWorker(QObject):
+#     command_signal = pyqtSignal(str)
+#     command_return_signal = pyqtSignal(tuple)
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.command_signal.connect(self.process_command)
+#
+#     @pg.QtCore.pyqtSlot()
+#     def process_command(self, command):
+#         self.command_info_mutex.lock()
+#         if command == SCRIPT_STOP_REQUEST:
+#             is_success = self.notify_script_to_stop()
+#         else:
+#             raise NotImplementedError
+#         self.command_return_signal.emit((command, is_success))
+#         self.command_info_mutex.unlock()
+#
+#     def notify_script_to_stop(self):
+#         self.info_socket_interface.send_string(SCRIPT_STOP_REQUEST)
+#         events = self.info_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
+#         if len(events) > 0:
+#             msg = self.info_socket_interface.socket.recv().decode('utf-8')
+#         else:
+#             msg = None
+#         if msg == SCRIPT_STOP_SUCCESS:
+#             return True
+#         else:
+#             return False

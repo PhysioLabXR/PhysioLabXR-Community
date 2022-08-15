@@ -160,7 +160,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_worker_thread.exit()
         # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
-    def close_info(self):
+    def close_info_interface(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
         self.info_thread.exit()
@@ -212,7 +212,7 @@ class ScriptingWidget(QtWidgets.QWidget):
             if not self.notify_script_to_stop():
                 dialog_popup('Timeout: Failed to terminate script process. Killing it')
                 self.script_process.kill()
-        self.close_info()
+        self.close_info_interface()
         self.close_command_interface()
         self.stop_forward_input()
         del self.info_socket_interface
