@@ -2,7 +2,7 @@
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QStandardItemModel, QIntValidator
 from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 
 from rena import config_signal, config
@@ -29,7 +29,7 @@ class StreamOptionsWindow(QDialog):
         # add supported filter list
         self.resize(1000, 1000)
 
-        self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
+        # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
         self.stream_name = stream_name
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
@@ -45,6 +45,12 @@ class StreamOptionsWindow(QDialog):
         # signals for processing changes in the tree view
         self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
+
+        # nomiaml sampling rate UI elements
+        self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
+
+    def update_nominal_sampling_rate(self):
+
 
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
@@ -169,8 +175,6 @@ class StreamOptionsWindow(QDialog):
     def init_plot_format_widget(self, selected_group_name):
         self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
         self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
-
-
 
     def set_nominal_sampling_rate_textbox(self):
         self.nominalSamplingRateInputbox.setText(

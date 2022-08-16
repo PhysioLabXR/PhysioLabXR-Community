@@ -53,27 +53,106 @@
            <layout class="QVBoxLayout" name="SignalTreeViewLayout"/>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignLeft">
           <widget class="QWidget" name="signalTreeViewBts" native="true">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>48</height>
+            </size>
+           </property>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <item>
              <widget class="QLabel" name="label_2">
+              <property name="maximumSize">
+               <size>
+                <width>120</width>
+                <height>36</height>
+               </size>
+              </property>
               <property name="text">
                <string>Nominal Sampling Rate:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="nominalSamplingRateInputbox">
+             <widget class="QLineEdit" name="nominalSamplingRateIineEdit">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>36</height>
+               </size>
+              </property>
               <property name="placeholderText">
                <string>Nominal Sampling Rate (Positive Number)</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="setNominalSamplingRateBtn">
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_3">
+              <property name="maximumSize">
+               <size>
+                <width>200</width>
+                <height>36</height>
+               </size>
+              </property>
               <property name="text">
-               <string>Update</string>
+               <string>Seconds of data to display:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="lineEdit">
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>36</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_4">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>200</width>
+                <height>36</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Numer of points on shown</string>
               </property>
              </widget>
             </item>
