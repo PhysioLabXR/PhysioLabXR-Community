@@ -2,6 +2,7 @@
 import json
 import os
 import shutil
+import uuid
 
 import numpy as np
 from PyQt5 import QtWidgets, uic, QtGui
@@ -10,7 +11,7 @@ from PyQt5.QtGui import QIntValidator
 
 from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 
-from exceptions.exceptions import RenaError
+from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script
@@ -24,7 +25,7 @@ from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.general import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_buffer
 from rena.utils.script_utils import *
-from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names
+from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
     add_stream_presets_to_combobox, another_window
@@ -32,14 +33,12 @@ import pyqtgraph as pg
 
 
 class ScriptingWidget(QtWidgets.QWidget):
-    settings_changed_signal = pyqtSignal()  # TODO
 
-    def __init__(self, parent, port):
+    def __init__(self, parent, port, args):
         super().__init__()
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
         self.parent = parent
         self.port = port
-        self.settings_changed_signal.connect(self.on_settings_changed)
         self.script = None
         self.input_widgets = []
         self.output_widgets = []
@@ -57,6 +56,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.addParam_btn.setIcon(add_icon)
         self.inputComboBox.currentTextChanged.connect(self.on_input_combobox_changed)
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
+        self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 
         self.timeWindowLineEdit.setValidator(QIntValidator())
         self.frequencyLineEdit.setValidator(QIntValidator())
@@ -100,6 +100,12 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         # self.forward_data_worker = None
         # self.forward_data_thread = None
+        if args is not None:  # loading from script preset
+            self.id = args['id']
+            self.import_script_args(args)
+        else:
+            self.id = uuid.uuid4()
+            self.export_script_args_to_settings()
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -251,6 +257,10 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        self.process_locate_script(script_path)
+        self.export_script_args_to_settings()
+
+    def process_locate_script(self, script_path):
         if script_path != '':
             if not self._validate_script_path(script_path): return
             self.load_script_name(script_path)
@@ -279,6 +289,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         else:
             self.runBtn.setEnabled(False)
         print("Selected script path ", script_path)
+        self.export_script_args_to_settings()
+
 
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
@@ -295,8 +307,16 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
+        self.process_add_input(input_preset_name)
+        self.export_script_args_to_settings()
+
+    def process_add_input(self, input_preset_name):
         input_widget = ScriptingInputWidget(input_preset_name)
-        input_widget.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
+        try:
+            input_widget.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
+        except MissingPresetError as e:
+            print(str(e))
+            return
         self.inputLayout.addWidget(input_widget)
 
         def remove_btn_clicked():
@@ -304,6 +324,7 @@ class ScriptingWidget(QtWidgets.QWidget):
             input_widget.deleteLater()
             self.input_widgets.remove(input_widget)
             self.check_can_add_input()
+            self.export_script_args_to_settings()
 
         input_widget.set_button_callback(remove_btn_clicked)
         input_widget.button.setIcon(minus_icon)
@@ -313,7 +334,11 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def add_output_clicked(self):
         output_name = self.output_lineEdit.text()
-        output_widget = ScriptingOutputWidget(output_name)
+        self.process_add_output(output_name)
+        self.export_script_args_to_settings()
+
+    def process_add_output(self, output_name, num_channels=1):
+        output_widget = ScriptingOutputWidget(self, output_name, num_channels)
         output_widget.on_channel_num_changed()
         self.outputLayout.addWidget(output_widget)
 
@@ -322,12 +347,18 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.output_widgets.remove(output_widget)
             output_widget.deleteLater()
             self.check_can_add_output()
+            self.export_script_args_to_settings()
 
         output_widget.set_button_callback(remove_btn_clicked)
         output_widget.button.setIcon(minus_icon)
         self.output_widgets.append(output_widget)
         self.check_can_add_output()
         print('Current items are {0}'.format(str(self.get_outputs())))
+
+    def add_params_clicked(self):
+        # TODO
+        pass
+        self.export_script_args_to_settings()
 
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
@@ -367,6 +398,10 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def on_time_window_change(self):
         self.update_input_info()
+        self.export_script_args_to_settings()
+
+    def on_frequency_change(self):
+        self.export_script_args_to_settings()
 
     def update_input_info(self):
         """
@@ -377,6 +412,8 @@ class ScriptingWidget(QtWidgets.QWidget):
             w.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
 
     def get_preset_input_info_text(self, preset_name):
+        if not check_preset_exists(preset_name):
+            raise MissingPresetError(preset_name)
         sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
         num_channel = get_stream_preset_info(preset_name, 'NumChannels')
         _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
@@ -451,3 +488,26 @@ class ScriptingWidget(QtWidgets.QWidget):
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked()}
+
+    def export_script_args_to_settings(self):
+        config.settings.beginGroup('scripts/{0}/'.format(self.id))
+        config.settings.setValue('inputs', self.get_inputs())
+        config.settings.setValue('outputs', self.get_outputs())
+        config.settings.setValue('output_num_channels', self.get_outputs_num_channels())
+        config.settings.setValue('run_frequency', self.frequencyLineEdit.text())
+        config.settings.setValue('time_window', self.timeWindowLineEdit.text())
+        config.settings.setValue('script_path', self.scriptPathLineEdit.text())
+        config.settings.setValue('is_simulate', self.simulateCheckbox.isChecked())
+        config.settings.endGroup()
+
+    def import_script_args(self, args):
+        self.process_locate_script(args['script_path'])
+
+        self.frequencyLineEdit.setText(args['run_frequency'])
+        self.timeWindowLineEdit.setText(args['time_window'])
+        self.simulateCheckbox.setChecked(args['is_simulate'] == 'true')  # is checked?
+
+        for input_preset_name in args['inputs']:
+            self.process_add_input(input_preset_name)
+        for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
+            self.process_add_output(output_name, num_channels=output_num_channel)

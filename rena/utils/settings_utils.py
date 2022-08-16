@@ -34,6 +34,12 @@ def get_stream_preset_names():
 def get_stream_preset_info(stream_name, key):
     return config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
 
+def check_preset_exists(stream_name):
+    config.settings.beginGroup('presets/streampresets/')
+    rtn = stream_name in config.settings.childGroups()
+    config.settings.endGroup()
+    return rtn
+
 def collect_stream_all_groups_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
@@ -58,8 +64,6 @@ def collect_stream_group_info(stream_name, group_name):
 
 def collect_stream_group_plot_format(stream_name, group_name):
     return config.settings.value('presets/streampresets/{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, 'plot_format'))
-
-
 
 
 def get_complete_stream_preset_info(stream_name):
@@ -251,7 +255,7 @@ def process_plot_group(preset_dict):
 
     return preset_dict
 
-def get_channel_info():
+def get_channel_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
@@ -261,6 +265,23 @@ def get_channel_info():
         config.settings.endGroup()
     config.settings.endGroup()
     return rtn
+
+
+def get_script_widgets_args():
+    rtn = dict()
+    config.settings.beginGroup('scripts')
+    for script_id in config.settings.childGroups():
+        config.settings.beginGroup(script_id)
+        rtn[script_id] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+        rtn[script_id]['id'] = script_id
+        config.settings.endGroup()
+    config.settings.endGroup()
+    return rtn
+
+
+def remove_script_from_settings(script_id):
+    config.settings.remove('scripts/{0}'.format(script_id))
+
 
 def is_channel_in_group(channel_index, group_name, stream_name):
     """
