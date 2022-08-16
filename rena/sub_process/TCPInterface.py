@@ -46,7 +46,7 @@ class RenaTCPExitServerRequestObject(RenaTCPRequestObject):
 
 class RenaTCPInterface:
 
-    def __init__(self, stream_name, port_id, identity, pattern='request-reply', add_poller=False):
+    def __init__(self, stream_name, port_id, identity, pattern='request-reply', add_poller=False, disable_linger=False):
         self.bind_header = "tcp://*:%s"
         self.connect_header = 'tcp://localhost:'
 
@@ -65,6 +65,9 @@ class RenaTCPInterface:
 
         self.context = zmq.Context()
         self.socket = self.context.socket(socket_type)
+        if disable_linger:
+            self.socket.setsockopt(zmq.LINGER, 0)  # avoid hanging on context termination
+
         if identity == 'server': self.bind_socket()
         elif identity == 'client': self.connect_socket()
         else: raise AttributeError('Unsupported interface identity: {0}'.format(identity))
@@ -121,6 +124,7 @@ class RenaTCPInterface:
     def __del__(self):
         self.socket.close()
         self.context.term()
+        print('Socket closed and context terminated')
 
 
 class RenaTCPClient:

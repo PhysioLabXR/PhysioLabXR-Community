@@ -976,16 +976,17 @@ class ScriptInfoWorker(QObject):
 
     @pg.QtCore.pyqtSlot()
     def request_get_info(self):
-        if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
-            self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
-            self.send_info_request = True
+        if self.script_process_active:
+            if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
+                self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
+                self.send_info_request = True
 
-        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
-        if len(events):
-            self.send_info_request = False
-            msg = self.info_socket_interface.socket.recv()
-            realtime_info = np.frombuffer(msg)
-            self.realtime_info_signal.emit(list(realtime_info))
+            events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
+            if len(events):
+                self.send_info_request = False
+                msg = self.info_socket_interface.socket.recv()
+                realtime_info = np.frombuffer(msg)
+                self.realtime_info_signal.emit(list(realtime_info))
 
     def deactivate(self):
         self.script_process_active = False

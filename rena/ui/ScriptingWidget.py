@@ -127,7 +127,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,
                                                                identity='client',
-                                                               pattern='router-dealer')
+                                                               pattern='router-dealer',
+                                                               disable_linger=True)
         self.forward_input_timer.start()
 
     def stop_forward_input(self):
@@ -138,7 +139,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
                                                          port_id=self.port + 3,
                                                          identity='client',
-                                                         pattern='router-dealer', add_poller=True)
+                                                         pattern='router-dealer', add_poller=True,
+                                                         disable_linger=True)  # must disable lingering in case of dead script process
         self.command_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
     def close_command_interface(self):
@@ -173,7 +175,6 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.info_thread.exit()
 
     def on_script_abnormal_termination(self):
-        dialog_popup('Script terminated abnormally.', title='ERROR')
         self.stop_run(True)
 
     def redirect_script_stdout(self, stdout_line: str):
@@ -217,9 +218,10 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.stop_run(False)
 
     def stop_run(self, is_abnormal_termination):
-        if not is_abnormal_termination:
+        is_timeout_killed = False
+        if not is_abnormal_termination:  # no need to call stop if the process is dead
             if not self.notify_script_to_stop():
-                dialog_popup('Timeout: Failed to terminate script process. Killing it')
+                is_timeout_killed = True
                 self.script_process.kill()
         self.close_info_interface()
         self.close_command_interface()
@@ -228,6 +230,11 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.script_console_log_window.hide()
         self.is_running = False
         self.change_ui_on_run_stop(self.is_running)
+
+        if is_abnormal_termination:
+            dialog_popup('Script process terminated abnormally.', title='ERROR')
+        if is_timeout_killed:
+            dialog_popup('Failed to terminate script process within timeout. Killing it', title='ERROR')
 
     # def process_command_return(self, command_return):
     #     command, is_success = command_return
