@@ -7,7 +7,7 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
 
 from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
@@ -22,8 +22,9 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.general import create_lsl_interface
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
+    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
+    create_default_preset
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -88,9 +89,8 @@ class StreamWidget(QtWidgets.QWidget):
         # self.init_server_client()
 
         # data elements
-        channel_names = get_stream_preset_info(stream_name, 'ChannelNames')
-        self.interface = create_lsl_interface(stream_name, channel_names)
-        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
+        self.interface, self.lsl_data_buffer = None, None
+        self.create_interface_and_buffer()
 
         # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
         #     print('The stream {0} found in LAN has sampling rate of {1}, '
@@ -175,6 +175,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.signal_settings_window.show()
         self.signal_settings_window.activateWindow()
 
+    def is_streaming(self):
+        return self.lsl_worker.is_streaming
+
     def start_stop_stream_btn_clicked(self):
         # check if is streaming
         if self.lsl_worker.is_streaming:
@@ -188,12 +191,21 @@ class StreamWidget(QtWidgets.QWidget):
         else:
             try:
                 self.lsl_worker.start_stream()
+            except LSLStreamNotFoundError as e:
+                dialog_popup(msg=str(e), title='ERROR')
+                return
+            except LSLChannelMismatchError as e:
+                reply = QMessageBox.question(self, 'Channel Mismatch', 'The LSL stream with name {0} found on the network has {1}.\n'
+                                                                       'The preset has {2} channels. \n '
+                                                                       'Do you want to reset your preset to a default and start stream.\n'
+                                                                       'You can edit your stream channels in Options if you choose No'.format(self.stream_name, e.message, len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.reset_preset_by_num_channels(e.message)
+                else: return
             except Exception as e:
-                if type(e) == LSLStreamNotFoundError or type(e) == LSLChannelMismatchError:
-                    dialog_popup(msg=str(e), title='ERROR')
-                    return
-                else:
-                    raise UnsupportedErrorTypeError(str(e))
+                raise UnsupportedErrorTypeError(str(e))
+
             if self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
@@ -201,6 +213,19 @@ class StreamWidget(QtWidgets.QWidget):
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
         self.main_parent.update_num_active_stream_label()
+
+    def reset_preset_by_num_channels(self, num_channels):
+        remove_stream_preset_from_settings(self.stream_name)
+        create_default_preset(self.stream_name, num_channels=num_channels)
+        self.create_interface_and_buffer()  # recreate the interface and buffer, using the new preset
+        self.lsl_worker.set_interface(self.interface)
+        self.clear_stream_visualizations()
+        self.create_visualization_component()
+
+    def create_interface_and_buffer(self):
+        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+        self.interface = create_lsl_interface(self.stream_name, channel_names)  # maybe want to discard and close the old interface
+        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
 
     def dock_window(self):
         self.parent.insertWidget(self.parent.count() - 1, self)
@@ -267,17 +292,24 @@ class StreamWidget(QtWidgets.QWidget):
         else:
             self.group_name_plot_widget_dict[group_name].hide()
 
+    def clear_stream_visualizations(self):
+        self.channel_index_plot_widget_dict = {}
+        self.group_name_plot_widget_dict = {}
+        self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
+        self.num_samples_to_plot, self.viz_time_vector = None, None
+        clear_layout(self.TimeSeriesPlotsLayout)
+        clear_layout(self.ImageWidgetLayout)
+        clear_layout(self.MetaInfoVerticalLayout)
 
-    def init_visualize_LSLStream_data(self):
+    def init_stream_visualization(self):
 
         # init stream view with LSL
         # time_series_widget = self.TimeSeriesPlotsLayout
-        metainfo_parent = self.MetaInfoVerticalLayout
 
         fs_label = QLabel(text='Sampling rate = ')
         ts_label = QLabel(text='Current Time Stamp = ')
-        metainfo_parent.addWidget(fs_label)
-        metainfo_parent.addWidget(ts_label)
+        self.MetaInfoVerticalLayout.addWidget(fs_label)
+        self.MetaInfoVerticalLayout.addWidget(ts_label)
         # if plot_group_slices:
         plot_widgets = {}
         plots = []
@@ -346,7 +378,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     def create_visualization_component(self):
         fs_label, ts_label, plot_widgets, plots = \
-            self.init_visualize_LSLStream_data()
+            self.init_stream_visualization()
         self.stream_widget_visualization_component = \
             StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots)
 

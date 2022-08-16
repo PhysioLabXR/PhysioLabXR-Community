@@ -224,6 +224,8 @@ class LSLInletWorker(RENAWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
+    # signal_stream_num_channels = pyqtSignal(int)
+
     def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
@@ -240,11 +242,15 @@ class LSLInletWorker(RENAWorker):
         self.previous_availability = None
 
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
+        self.interface_mutex = QMutex()
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            self.interface_mutex.lock()
             frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            self.interface_mutex.unlock()
+
             if frames.shape[-1] == 0:
                 return
 
@@ -289,6 +295,11 @@ class LSLInletWorker(RENAWorker):
             if is_stream_availability != self.previous_availability:
                 self.previous_availability = is_stream_availability
                 self.signal_stream_availability.emit(is_stream_availability)
+
+    def set_interface(self, interface: LSLInletInterface):
+        self.interface_mutex.lock()
+        self._lslInlet_interface = interface
+        self.interface_mutex.unlock()
 
     def start_stream(self):
         self._lslInlet_interface.start_sensor()

@@ -22,7 +22,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    get_all_lsl_device_preset_names
+    get_all_lsl_device_preset_names, check_preset_exists
 
 try:
     import config
@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # create sensor threads, worker threads for different sensors
         ############
-        self.stream_widgets = {}
+        self.stream_widgets = {}  # key: stream -> value: stream_widget
         ############
 
         self.worker_threads = {}
@@ -209,8 +209,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = self.experiment_presets_dict[selected_text] #TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
-                # create the preset
-                create_default_preset(stream_name=selected_text)
+                create_default_preset(stream_name=selected_text)  # create the preset
                 self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
             self.update_num_active_stream_label()
         except RenaError as error:
@@ -318,20 +317,25 @@ class MainWindow(QtWidgets.QMainWindow):
     #         self.add_streams_to_visulaize(streams_for_experiment)
 
     def add_streams_to_visualize(self, stream_names):
-        try:
-            assert np.all([x in get_all_lsl_device_preset_names() for x in
-                           stream_names])
-        except AssertionError:
-            dialog_popup(
-                msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
-                title="Error")
-            return
+        # try:
+        #     assert np.all([x in get_all_lsl_device_preset_names() for x in
+        #                    stream_names])
+        # except AssertionError:
+        #     dialog_popup(
+        #         msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
+        #         title="Error")
+        #     return
         # loading_dlg = dialog_popup(
         #     msg="Please wait while streams are being added...",
         #     title="Info")
         for stream_name in stream_names:
-            self.addStreamWidget.select_by_stream_name(stream_name)
-            self.add_btn_clicked()
+            # check if the stream in setting's preset
+            if check_preset_exists(stream_name):
+                self.addStreamWidget.select_by_stream_name(stream_name)
+                self.add_btn_clicked()
+            else:  # add a new preset if the stream name is not defined
+                self.addStreamWidget.set_selection_text(stream_name)
+                self.add_btn_clicked()
         # loading_dlg.close()
 
 
@@ -340,7 +344,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.add_streams_to_visualize(stream_names)
         for stream_name in stream_names:
-            if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
+            if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
 

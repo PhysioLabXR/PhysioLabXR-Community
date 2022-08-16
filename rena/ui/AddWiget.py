@@ -24,3 +24,6 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def get_selected_stream_name(self):
         return self.stream_name_combo_box.currentText()
+
+    def set_selection_text(self, stream_name):
+        self.stream_name_combo_box.setText(stream_name)

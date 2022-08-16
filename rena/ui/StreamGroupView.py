@@ -110,7 +110,6 @@ class StreamGroupView(QTreeWidget):
 
 
     def create_tree_view(self, group_info):
-
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.item_type = 'stream_root'
         self.stream_root.setText(0, self.stream_name)

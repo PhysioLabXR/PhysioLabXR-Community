@@ -46,8 +46,9 @@ class LSLInletInterface:
             assert actual_num_channels == self.lsl_num_chan
         except AssertionError:
             self.inlet.close_stream()
-            raise LSLChannelMismatchError(
-                'The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(self.lsl_num_chan, actual_num_channels))
+            # raise LSLChannelMismatchError(
+            #     'The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(self.lsl_num_chan, actual_num_channels))
+            raise LSLChannelMismatchError(actual_num_channels)
 
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 

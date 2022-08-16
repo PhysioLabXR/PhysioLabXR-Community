@@ -165,9 +165,9 @@ def add_keys_to_preset(preset_dict):
     return preset_dict
 
 
-def create_default_preset(stream_name):
+def create_default_preset(stream_name, num_channels=1):
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel1']}
+                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)]}
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
@@ -282,6 +282,8 @@ def get_script_widgets_args():
 def remove_script_from_settings(script_id):
     config.settings.remove('scripts/{0}'.format(script_id))
 
+def remove_stream_preset_from_settings(stream_name):
+    config.settings.remove('presets/streampresets/{0}'.format(stream_name))
 
 def is_channel_in_group(channel_index, group_name, stream_name):
     """
