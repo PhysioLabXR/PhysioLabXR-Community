@@ -11,7 +11,7 @@ from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED
 from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
-    collect_stream_all_groups_info
+    collect_stream_all_groups_info, get_stream_preset_info
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -34,7 +34,6 @@ class StreamOptionsWindow(QDialog):
         self.stream_name = stream_name
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
 
-        self.set_nominal_sampling_rate_textbox()
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
@@ -48,8 +47,13 @@ class StreamOptionsWindow(QDialog):
 
         # nomiaml sampling rate UI elements
         self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
+        self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
+        self.load_default_sr_and_display_duration()
+        self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
+        self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-    def update_nominal_sampling_rate(self):
+    def update_num_points_to_display(self):
+        new_sampling_rate = 0 if self.nominalSamplingRateIineEdit.text() == '' else abs(int(self.nominalSamplingRateIineEdit.text()))
 
 
     @QtCore.pyqtSlot(str)
@@ -119,7 +123,6 @@ class StreamOptionsWindow(QDialog):
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view(group_info)
 
-
     def merge_groups_btn_clicked(self):
         selection_state, selected_groups, selected_channels = \
             self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
@@ -176,9 +179,9 @@ class StreamOptionsWindow(QDialog):
         self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
         self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
 
-    def set_nominal_sampling_rate_textbox(self):
-        self.nominalSamplingRateInputbox.setText(
-            str(config.settings.value('presets/streampresets/{0}/NominalSamplingRate'.format(self.stream_name))))
+    def load_default_sr_and_display_duration(self):
+        self.nominalSamplingRateInputbox.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
+        self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'DisplayDuration')))
 
     def set_nominal_sampling_rate_btn(self):
         new_nominal_sampling_rate = self.nominalSamplingRateInputbox.text()

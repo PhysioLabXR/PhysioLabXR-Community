@@ -162,6 +162,8 @@ def add_keys_to_preset(preset_dict):
         preset_dict['GroupFormat'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = 1
+    if 'DisplayDuration' not in preset_dict.keys():
+        preset_dict['DisplayDuration'] = config.PLOT_RETAIN_HISTORY
     return preset_dict
 
 
