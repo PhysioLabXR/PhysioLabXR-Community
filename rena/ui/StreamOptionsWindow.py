@@ -10,12 +10,13 @@ from rena.config_ui import *
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED
-from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed
+from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
+    collect_stream_all_groups_info
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class OptionsWindow(QDialog):
+class StreamOptionsWindow(QDialog):
     def __init__(self, parent, stream_name, group_info):
         super().__init__()
         """
@@ -30,9 +31,9 @@ class OptionsWindow(QDialog):
 
         self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
-
         self.stream_name = stream_name
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
+
         self.set_nominal_sampling_rate_textbox()
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
@@ -101,6 +102,17 @@ class OptionsWindow(QDialog):
                                            function=self.merge_groups_btn_clicked)
 
         self.actionsWidgetLayout.addStretch()
+
+    def reload_group_info_in_treeview(self):
+        '''
+        this function is called when the group info in the persistent settings
+        is changed externally
+        :return:
+        '''
+        group_info = collect_stream_all_groups_info(self.stream_name)
+        self.stream_group_view.clear_tree_view()
+        self.stream_group_view.create_tree_view(group_info)
+
 
     def merge_groups_btn_clicked(self):
         selection_state, selected_groups, selected_channels = \

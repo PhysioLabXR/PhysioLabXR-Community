@@ -16,7 +16,7 @@ from rena.config_ui import image_depth_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
-from rena.ui.OptionsWindow import OptionsWindow
+from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
@@ -89,7 +89,7 @@ class StreamWidget(QtWidgets.QWidget):
         # self.init_server_client()
 
         # data elements
-        self.interface, self.lsl_data_buffer = None, None
+        self.interface, self.data_to_plot_buffer = None, None
         self.create_interface_and_buffer()
 
         # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
@@ -115,9 +115,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
         # create option window
-        self.signal_settings_window = OptionsWindow(parent=self, stream_name=self.stream_name,
-                                                    group_info=self.group_info)
-        self.signal_settings_window.hide()
+        self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
+                                                         group_info=self.group_info)
+        self.stream_options_window.hide()
 
         # FPS counter``
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
@@ -172,8 +172,8 @@ class StreamWidget(QtWidgets.QWidget):
 
     def options_btn_clicked(self):
         print("Option window open")
-        self.signal_settings_window.show()
-        self.signal_settings_window.activateWindow()
+        self.stream_options_window.show()
+        self.stream_options_window.activateWindow()
 
     def is_streaming(self):
         return self.lsl_worker.is_streaming
@@ -221,11 +221,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.lsl_worker.set_interface(self.interface)
         self.clear_stream_visualizations()
         self.create_visualization_component()
+        self.stream_options_window.reload_group_info_in_treeview()
 
     def create_interface_and_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         self.interface = create_lsl_interface(self.stream_name, channel_names)  # maybe want to discard and close the old interface
-        self.lsl_data_buffer = np.empty(shape=(len(channel_names), 0))
+        self.data_to_plot_buffer = np.empty(shape=(len(channel_names), 0))
 
     def dock_window(self):
         self.parent.insertWidget(self.parent.count() - 1, self)
@@ -276,6 +277,8 @@ class StreamWidget(QtWidgets.QWidget):
         else:  # use recursive delete if docked
             self.deleteLater()
         # self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
+        self.stream_options_window.close()
+        # close the signal option window
         return True
 
     def update_channel_shown(self, channel_index, is_shown, group_name):
@@ -384,7 +387,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     def process_LSLStream_data(self, data_dict):
         if data_dict['frames'].shape[-1] > 0:
-            buffered_data = self.lsl_data_buffer
+            buffered_data = self.data_to_plot_buffer
             try:
                 buffered_data = np.concatenate(
                     (buffered_data, data_dict['frames']),
@@ -404,7 +407,7 @@ class StreamWidget(QtWidgets.QWidget):
                                - self.num_samples_to_plot:]  # plot the most recent few seconds
 
             # main window only retains the most recent 10 seconds for visualization purposes
-            self.lsl_data_buffer = data_to_plot
+            self.data_to_plot_buffer = data_to_plot
             self.actualSamplingRate = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
 
@@ -446,7 +449,7 @@ class StreamWidget(QtWidgets.QWidget):
         print("Viz FPS {0}".format(self.get_fps()), end='\r')
         self.lsl_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-        data_to_plot = self.lsl_data_buffer
+        data_to_plot = self.data_to_plot_buffer
         if data_to_plot.shape[-1] == len(self.viz_time_vector):
             actual_sampling_rate = self.actualSamplingRate
             # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()

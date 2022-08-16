@@ -91,8 +91,8 @@ class StreamGroupView(QTreeWidget):
         # self.setModel(self.model)
         self.groups_widgets = []
         self.channel_widgets = []
+        self.stream_root = None
         self.create_tree_view(group_info)
-        self.expandAll()
 
         # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -108,6 +108,8 @@ class StreamGroupView(QTreeWidget):
         # helper fieds
         self.dragged = None
 
+    def clear_tree_view(self):
+        self.clear()
 
     def create_tree_view(self, group_info):
         self.stream_root = QTreeWidgetItem(self)
@@ -146,6 +148,7 @@ class StreamGroupView(QTreeWidget):
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 # self.channel_widgets.append(channel)
+        self.expandAll()
 
     def startDrag(self, actions):
 

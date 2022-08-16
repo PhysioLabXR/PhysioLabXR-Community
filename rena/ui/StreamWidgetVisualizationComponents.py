@@ -5,7 +5,7 @@ from PyQt5 import QtWidgets, uic, sip
 
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
-from rena.ui.OptionsWindow import OptionsWindow
+from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, options_icon
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
