@@ -980,7 +980,7 @@ class ScriptInfoWorker(QObject):
             self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
             self.send_info_request = True
 
-        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)  # because
+        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
         if len(events):
             self.send_info_request = False
             msg = self.info_socket_interface.socket.recv()

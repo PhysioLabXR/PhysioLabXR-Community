@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 
+import numpy as np
 from PyQt5 import QtWidgets, uic, QtGui
 from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
 from PyQt5.QtGui import QIntValidator
@@ -64,9 +65,11 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         self.removeBtn.setIcon(minus_icon)
 
+        self.is_running = False
+        self.is_simulating = False
+
         self.locateBtn.clicked.connect(self.on_locate_btn_clicked)
         self.createBtn.clicked.connect(self.on_create_btn_clicked)
-        self.is_running = False
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
         self.runBtn.setEnabled(False)
         self.script_process = None
@@ -89,10 +92,14 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.info_worker = None
         self.script_pid = None
 
+        self.input_shape_dict = None
         self.forward_input_timer = QTimer()
         self.forward_input_timer.timeout.connect(self.forward_input)
         self.data_buffer = None
         self.forward_input_socket_interface = None
+
+        # self.forward_data_worker = None
+        # self.forward_data_thread = None
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -203,7 +210,9 @@ class ScriptingWidget(QtWidgets.QWidget):
 
             self.setup_forward_input(forward_interval, buffer_sizes)
             self.is_running = True
+            self.is_simulating = self.simulateCheckbox.isChecked()
             self.change_ui_on_run_stop(self.is_running)
+            self.input_shape_dict = self.get_input_shape_dict()
         else:
             self.stop_run(False)
 
@@ -275,6 +284,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.timeWindowLineEdit.setEnabled(not is_run)
         self.widget_script_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
+        self.simulateCheckbox.setEnabled(not is_run)
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
@@ -321,6 +331,9 @@ class ScriptingWidget(QtWidgets.QWidget):
             input_preset_name = w.get_input_name_text()
             rtn.append(self.get_preset_expected_shape(input_preset_name))
         return rtn
+
+    def get_input_shape_dict(self):
+        return dict([(i, s) for i, s in zip(self.get_inputs(), self.get_input_shapes())])
 
     def get_outputs(self):
         return [w.get_label_text() for w in self.output_widgets]
@@ -402,7 +415,11 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.data_buffer.update_buffers(data_dict)
 
     def forward_input(self):
-        send_data_buffer(self.data_buffer.buffer, self.forward_input_socket_interface)
+        if self.is_simulating:
+            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for input_name, input_shape in self.input_shape_dict.items()])
+        else:
+            buffer = self.data_buffer.buffer
+        send_data_buffer(buffer, self.forward_input_socket_interface)
 
     def notify_script_to_stop(self):
         print("MainApp: sending stop command")
@@ -424,4 +441,6 @@ class ScriptingWidget(QtWidgets.QWidget):
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                 'params': [], 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),
-                'time_window': int(self.timeWindowLineEdit.text())}
+                'time_window': int(self.timeWindowLineEdit.text()),
+                'script_path': self.scriptPathLineEdit.text(),
+                'is_simulate': self.simulateCheckbox.isChecked()}
