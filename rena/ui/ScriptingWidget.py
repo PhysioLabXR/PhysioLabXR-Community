@@ -54,7 +54,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.output_lineEdit.textChanged.connect(self.on_output_lineEdit_changed)
 
         self.addParam_btn.setIcon(add_icon)
-        self.inputComboBox.currentTextChanged.connect(self.on_input_combobox_changed)
+        self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
         self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 

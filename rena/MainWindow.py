@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.reload_all_presets()
 
         # add camera and add sensor widget initialization
-        self.addStreamWidget = AddStreamWidget()
+        self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
         # self.add_layout, self.camera_combo_box, self.add_camera_btn, self.preset_LSLStream_combo_box, self.add_preset_lslStream_btn, \
         # self.lslStream_name_input, self.add_lslStream_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn, \
@@ -214,10 +214,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
+        self.addStreamWidget.check_can_add_input()
 
     def remove_stream_widget(self, target):
         self.sensorTabSensorsHorizontalLayout.removeWidget(target)
         self.update_num_active_stream_label()
+        self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
     def update_num_active_stream_label(self):
         available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
@@ -332,10 +334,10 @@ class MainWindow(QtWidgets.QMainWindow):
             # check if the stream in setting's preset
             if check_preset_exists(stream_name):
                 self.addStreamWidget.select_by_stream_name(stream_name)
-                self.add_btn_clicked()
+                self.add_btn.click()
             else:  # add a new preset if the stream name is not defined
                 self.addStreamWidget.set_selection_text(stream_name)
-                self.add_btn_clicked()
+                self.add_btn.click()
         # loading_dlg.close()
 
 
@@ -538,3 +540,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def fire_action_settings(self):
         self.settings_window.show()
         self.settings_window.activateWindow()
+
+    def get_added_stream_names(self):
+        return list(self.stream_widgets.keys())

@@ -185,8 +185,7 @@ class StreamWidget(QtWidgets.QWidget):
             if not self.lsl_worker.is_streaming:
                 # started
                 print("sensor stopped")
-                # toggle the icon
-                self.StartStopStreamBtn.setText("Start Stream")
+                self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
                 self.update_stream_availability(self.lsl_worker.is_stream_available)
         else:
             try:
@@ -202,6 +201,7 @@ class StreamWidget(QtWidgets.QWidget):
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.reset_preset_by_num_channels(e.message)
+                    self.lsl_worker.start_stream()  # start the stream again with updated preset
                 else: return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))

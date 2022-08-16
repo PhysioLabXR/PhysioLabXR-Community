@@ -3,7 +3,7 @@ import time
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
@@ -461,3 +461,4 @@ def clear_layout(layout):
         child = layout.takeAt(0)
         if child.widget():
             child.widget().deleteLater()
+
