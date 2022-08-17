@@ -201,7 +201,11 @@ class StreamWidget(QtWidgets.QWidget):
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.reset_preset_by_num_channels(e.message)
-                    self.lsl_worker.start_stream()  # start the stream again with updated preset
+                    try:
+                        self.lsl_worker.start_stream()  # start the stream again with updated preset
+                    except LSLStreamNotFoundError as e:
+                        dialog_popup(msg=str(e), title='ERROR')
+                        return
                 else: return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))

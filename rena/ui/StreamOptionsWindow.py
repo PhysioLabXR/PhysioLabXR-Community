@@ -147,7 +147,7 @@ class StreamOptionsWindow(QDialog):
         is changed externally
         :return:
         '''
-        group_info = collect_stream_all_groups_info(self.stream_name)
+        group_info = collect_stream_all_groups_info(self.stream_name)  # get group info from settings
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view(group_info)
 
