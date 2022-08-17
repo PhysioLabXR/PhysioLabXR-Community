@@ -9,7 +9,7 @@ from rena import config_signal, config
 from rena.config_ui import *
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
-from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED
+from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED, num_points_shown_text
 from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
     collect_stream_all_groups_info, get_stream_preset_info
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
@@ -53,8 +53,16 @@ class StreamOptionsWindow(QDialog):
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
     def update_num_points_to_display(self):
-        new_sampling_rate = 0 if self.nominalSamplingRateIineEdit.text() == '' else abs(int(self.nominalSamplingRateIineEdit.text()))
-
+        try:
+            new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return
+        try:
+            new_display_duration = abs(float(self.dataDisplayDurationLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return
+        num_points_shown = new_sampling_rate * new_display_duration
+        self.numPointsShownLabel.setText(num_points_shown_text.format)
 
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):

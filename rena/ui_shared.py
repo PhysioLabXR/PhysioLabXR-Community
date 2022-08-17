@@ -46,3 +46,4 @@ script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loo
 # StreamGroupView
 CHANNEL_ITEM_IS_DISPLAY_CHANGED = 1
 CHANNEL_ITEM_GROUP_CHANGED = 2
+num_points_shown_text = 'Number of points shown: {0}'

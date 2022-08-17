@@ -163,7 +163,7 @@ def add_keys_to_preset(preset_dict):
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = 1
     if 'DisplayDuration' not in preset_dict.keys():
-        preset_dict['DisplayDuration'] = config.PLOT_RETAIN_HISTORY
+        preset_dict['DisplayDuration'] = config.settings.value('viz_data_buffer_max_size')
     return preset_dict
 
 

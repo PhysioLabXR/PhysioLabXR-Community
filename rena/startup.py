@@ -28,6 +28,8 @@ def load_default_settings():
                                  'Please go to File->Settings and set the the recording file save location before'
                                  'start recording.'.format(config.settings.value('recording_file_location')), title='Warning')
         print("Using default recording location {0}".format(config.settings.value('recording_file_location')))
+    if not config.settings.contains('viz_data_buffer_max_size') or config.settings.value('viz_data_buffer_max_size') is None:
+        config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets

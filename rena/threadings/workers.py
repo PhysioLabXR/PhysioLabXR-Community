@@ -317,7 +317,6 @@ class LSLInletWorker(RENAWorker):
         return self._lslInlet_interface.is_stream_available()
 
 
-
     # def remove_stream(self):
     #     # self.stop_stream()
     #     # kill server

@@ -18,6 +18,8 @@ VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for freque
 CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
 PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
 
+VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 16)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
+
 SCRIPTING_UPDATE_REFRESH_INTERVA = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
