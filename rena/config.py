@@ -125,6 +125,9 @@ rena_server_update_worker_request = 2
 rena_server_remove_worker_request = 3
 rena_server_exit_request = 4
 
+# stream num
+MAX_TS_CHANNEL_NUM = 4000
+
 
 # Scripting
 scripting_port = 8000

@@ -114,7 +114,7 @@ class StreamGroupView(QTreeWidget):
         self.itemChanged[QTreeWidgetItem, int].disconnect(self.item_changed)
         self.clear()
 
-    def create_tree_view(self, group_info):
+    def create_tree_view(self, group_info, image_ir_only=False):
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.item_type = 'stream_root'
         self.stream_root.setText(0, self.stream_name)

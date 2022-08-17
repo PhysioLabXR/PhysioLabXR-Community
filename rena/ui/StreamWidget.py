@@ -23,7 +23,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
 from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
-    create_default_preset, set_stream_preset_info
+    create_default_preset, set_stream_preset_info, get_channel_num
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout
 
 

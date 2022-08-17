@@ -328,3 +328,7 @@ def is_group_shown(group_name, stream_name):
     is_channels_shown = [int(x) for x in config.settings.value('is_channels_shown')]
     config.settings.endGroup()
     return np.any(is_channels_shown)
+
+def get_channel_num(stream_name):
+    channel_num = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, 'NumChannels'))
+    return channel_num
