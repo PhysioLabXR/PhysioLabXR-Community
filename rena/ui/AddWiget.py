@@ -25,7 +25,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         return self.stream_name_combo_box.currentText()
 
     def set_selection_text(self, stream_name):
-        self.stream_name_combo_box.setText(stream_name)
+        self.stream_name_combo_box.lineEdit().setText(stream_name)
 
     def on_streamName_comboBox_returnPressed(self):
         print('Enter pressed in add widget combo box with text: {}'.format(self.get_selected_stream_name()))

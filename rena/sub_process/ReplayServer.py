@@ -130,7 +130,7 @@ class ReplayServer(threading.Thread):
         nextChunkRangeEnd = nextChunkRangeStart + chunkSize
 
         nextChunkTimestamps = nextStream[1][nextChunkRangeStart: nextChunkRangeEnd]
-        nextChunkValues = (nextStream[0][:, nextChunkRangeStart: nextChunkRangeEnd]).transpose()
+        nextChunkValues = (nextStream[0][..., nextChunkRangeStart: nextChunkRangeEnd]).transpose()
 
         # prepare the data (if necessary)
         if isinstance(nextChunkValues, np.ndarray):
@@ -197,7 +197,8 @@ class ReplayServer(threading.Thread):
 
         for streamIndex, stream_name in enumerate(self.stream_names):
             # if not self.isStreamVideo(stream_name):
-            stream_channel_count = self.stream_data[stream_name][0].shape[0]
+            # stream_channel_count = self.stream_data[stream_name][0].shape[0]
+            stream_channel_count = int(np.prod(self.stream_data[stream_name][0].shape[:-1]))
             stream_channel_format = 'double64'
             stream_source_id = 'Replay Stream - ' + stream_name
             outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
@@ -206,8 +207,13 @@ class ReplayServer(threading.Thread):
             self.outlets[streamIndex] = pylsl.StreamOutlet(outlet_info)
             print("\t" + str(streamIndex) + "\t" + stream_name)
 
-        self.virtual_clock_offset = 0
+        # flatten any high dim data
+        for stream_name, (data, _) in self.stream_data.items():
+            if len(data.shape) > 2:
+                time_dim = data.shape[-1]
+                self.stream_data[stream_name][0] = data.reshape((-1, time_dim))
 
+        self.virtual_clock_offset = 0
         for stream in self.stream_names:
             # find the start time
             if self.virtual_clock is None or self.stream_data[stream][1][0] < self.virtual_clock:

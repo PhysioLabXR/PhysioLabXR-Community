@@ -337,8 +337,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.addStreamWidget.add_btn.click()
             else:  # add a new preset if the stream name is not defined
                 self.addStreamWidget.set_selection_text(stream_name)
-        # loading_dlg.close()
+                self.addStreamWidget.add_btn.click()
 
+        # loading_dlg.close()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
@@ -347,7 +348,6 @@ class MainWindow(QtWidgets.QMainWindow):
         for stream_name in stream_names:
             if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
-
 
     def init_lsl(self, lsl_name):
         error_initialization = False
