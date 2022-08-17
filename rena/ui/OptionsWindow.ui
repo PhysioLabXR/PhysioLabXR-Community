@@ -115,7 +115,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit">
+             <widget class="QLineEdit" name="dataDisplayDurationLineEdit">
               <property name="maximumSize">
                <size>
                 <width>80</width>
@@ -138,7 +138,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QLabel" name="label_4">
+             <widget class="QLabel" name="numPointsShownLabel">
               <property name="minimumSize">
                <size>
                 <width>200</width>
@@ -152,7 +152,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Numer of points on shown</string>
+               <string>Number of points shown</string>
               </property>
              </widget>
             </item>

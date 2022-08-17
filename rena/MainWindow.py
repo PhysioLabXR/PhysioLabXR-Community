@@ -111,8 +111,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
         # self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
 
-        self.inference_num_visualized_results = int(
-            config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
+        # self.inference_num_visualized_results = int(
+        #     config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
         # self.lslStream_presets_dict = None
         # self.device_presets_dict = None
@@ -450,31 +450,31 @@ class MainWindow(QtWidgets.QMainWindow):
                 samples_dict = {'eye': eye_samples}
                 self.inference_worker.signal_data_tick.emit(samples_dict)
 
-    def init_visualize_inference_results(self):
-        inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
-        [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
-        self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
-                                        inference_results_plot_widgets]
+    # def init_visualize_inference_results(self):
+    #     inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
+    #     [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
+    #     self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
+    #                                     inference_results_plot_widgets]
 
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
 
-    def visualize_inference_results(self, inference_results):
-        # results will be -1 if scripting is not connected
-        if self.inference_worker.is_connected and inference_results[0][0] >= 0:
-            self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
-
-            if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
-                data_to_plot = np.concatenate((np.zeros(shape=(
-                    self.inference_num_visualized_results - self.inference_buffer.shape[0],
-                    config.INFERENCE_CLASS_NUM)),
-                                               self.inference_buffer), axis=0)  # zero padding
-            else:
-                # plot the most recent 10 seconds
-                data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
-            [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
+    # def visualize_inference_results(self, inference_results):
+    #     # results will be -1 if scripting is not connected
+    #     if self.inference_worker.is_connected and inference_results[0][0] >= 0:
+    #         self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
+    #
+    #         if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
+    #             data_to_plot = np.concatenate((np.zeros(shape=(
+    #                 self.inference_num_visualized_results - self.inference_buffer.shape[0],
+    #                 config.INFERENCE_CLASS_NUM)),
+    #                                            self.inference_buffer), axis=0)  # zero padding
+    #         else:
+    #             # plot the most recent 10 seconds
+    #             data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
+    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
+    #         [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
 
     def reload_all_presets_btn_clicked(self):

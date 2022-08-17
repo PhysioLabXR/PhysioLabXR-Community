@@ -32,7 +32,16 @@ def get_stream_preset_names():
     return stream_preset_names
 
 def get_stream_preset_info(stream_name, key):
-    return config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
+    rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
+    if key == 'DisplayDuration':
+        rtn = float(rtn)
+    elif key == 'NominalSamplingRate':
+        rtn = int(rtn)
+    return rtn
+
+def set_stream_preset_info(stream_name, key, value):
+    config.settings.setValue('presets/streampresets/{0}/{1}'.format(stream_name, key), value)
+
 
 def check_preset_exists(stream_name):
     config.settings.beginGroup('presets/streampresets/')
@@ -163,7 +172,7 @@ def add_keys_to_preset(preset_dict):
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = 1
     if 'DisplayDuration' not in preset_dict.keys():
-        preset_dict['DisplayDuration'] = config.settings.value('viz_data_buffer_max_size')
+        preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
     return preset_dict
 
 
@@ -299,14 +308,14 @@ def is_channel_in_group(channel_index, group_name, stream_name):
 
 def is_channel_displayed(channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
     is_channel_shown = config.settings.value('is_channels_shown')[channel_index_in_settings]
     config.settings.endGroup()
     return is_channel_shown == '1'
 
 def set_channel_displayed(is_display, channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
 
     new_is_channels_shown = config.settings.value('is_channels_shown')
     new_is_channels_shown[channel_index_in_settings] = '1' if is_display else '0'

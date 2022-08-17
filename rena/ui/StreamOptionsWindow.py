@@ -1,5 +1,5 @@
 # This Python file uses the following encoding: utf-8
-
+import numpy as np
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QIntValidator
@@ -48,21 +48,36 @@ class StreamOptionsWindow(QDialog):
         # nomiaml sampling rate UI elements
         self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
         self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
-        self.load_default_sr_and_display_duration()
+        self.load_sr_and_display_duration_from_settings_to_ui()
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
     def update_num_points_to_display(self):
-        try:
-            new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
-        except ValueError:  # in case the string cannot be convert to a float
-            return
+        num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
+        if num_points_to_plot == 0: return
+        num_points_to_plot = int(np.min([num_points_to_plot, config.settings.value('viz_data_buffer_max_size')]))
+        self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
+        self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration )
+
+    def get_display_duration(self):
         try:
             new_display_duration = abs(float(self.dataDisplayDurationLineEdit.text()))
         except ValueError:  # in case the string cannot be convert to a float
-            return
-        num_points_shown = new_sampling_rate * new_display_duration
-        self.numPointsShownLabel.setText(num_points_shown_text.format)
+            return 0
+        return new_display_duration
+
+    def get_nomimal_sampling_rate(self):
+        try:
+            new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_sampling_rate
+
+    def get_num_points_to_plot_info(self):
+        new_sampling_rate = self.get_nomimal_sampling_rate()
+        new_display_duration = self.get_display_duration()
+        num_points_to_plot = new_sampling_rate * new_display_duration
+        return num_points_to_plot, new_sampling_rate, new_display_duration
 
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
@@ -120,6 +135,11 @@ class StreamOptionsWindow(QDialog):
                                            function=self.merge_groups_btn_clicked)
 
         self.actionsWidgetLayout.addStretch()
+
+    def reload_preset_to_UI(self):
+        self.reload_group_info_in_treeview()
+        self.load_sr_and_display_duration_from_settings_to_ui()
+
 
     def reload_group_info_in_treeview(self):
         '''
@@ -187,12 +207,12 @@ class StreamOptionsWindow(QDialog):
         self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
         self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
 
-    def load_default_sr_and_display_duration(self):
-        self.nominalSamplingRateInputbox.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
+    def load_sr_and_display_duration_from_settings_to_ui(self):
+        self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
         self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'DisplayDuration')))
 
     def set_nominal_sampling_rate_btn(self):
-        new_nominal_sampling_rate = self.nominalSamplingRateInputbox.text()
+        new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()
         if new_nominal_sampling_rate.isnumeric():
             new_nominal_sampling_rate = float(new_nominal_sampling_rate)
             if new_nominal_sampling_rate > 0:

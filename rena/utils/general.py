@@ -112,32 +112,40 @@ class DataBuffer():
 
 
 class DataBufferSingleStream():
-    def __init__(self, buffer_sizes: int = None):
-        self.buffer_sizes = buffer_sizes
+    def __init__(self, num_channels=None, buffer_sizes: int = None, append_zeros=False):
+        self.buffer_size = buffer_sizes
         self.buffer = []
+        self.append_zeros = append_zeros
+        if num_channels is not None:
+            self.init_buffer(num_channels)
 
-    def update_buffers(self, data_dict: dict):
+    def update_buffer(self, data_dict: dict):
         '''
 
         :param data_dict: two keys: frame and timestamp, note this is different from DataBuffer defined above
         where the keys are the lsl stream names
         :return:
         '''
-
         if len(self.buffer) == 0:  # init the data buffer
-            self.buffer.append(np.empty(shape=(data_dict['frames'].shape[0], 0)))
-            self.buffer.append(np.empty(shape=(0,)))  # data first, timestamps second
-
+            self.init_buffer(data_dict['frames'].shape[0])
         self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
         self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]
-        cut_to = -np.min([buffer_time_points, self.buffer_sizes])
+        cut_to = -np.min([buffer_time_points, self.buffer_size])
         self.buffer[0] = self.buffer[0][:, cut_to:]
         self.buffer[1] = self.buffer[1][cut_to:]
 
+    def init_buffer(self, num_channels):
+        time_dim = self.buffer_size if self.append_zeros else 0
+        self.buffer.append(np.empty(shape=(num_channels, time_dim)))
+        self.buffer.append(np.empty(shape=(time_dim,)))  # data first, timestamps second
+
     def clear_buffer(self):
         self.buffer = []
+
+    def has_data(self):
+        return len(self.buffer) > 0
 
 
 def flatten(l):
