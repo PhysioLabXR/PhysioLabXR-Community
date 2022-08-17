@@ -305,7 +305,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>245</width>
+              <width>247</width>
               <height>122</height>
              </rect>
             </property>
@@ -387,12 +387,12 @@
            <property name="widgetResizable">
             <bool>true</bool>
            </property>
-           <widget class="QWidget" name="inputScrollContent">
+           <widget class="QWidget" name="outputScrollContent">
             <property name="geometry">
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>244</width>
+              <width>247</width>
               <height>122</height>
              </rect>
             </property>
@@ -435,7 +435,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_3"/>
+             <widget class="QLineEdit" name="param_lineEdit">
+              <property name="text">
+               <string>param1</string>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="addParam_btn">
@@ -470,12 +474,12 @@
            <property name="widgetResizable">
             <bool>true</bool>
            </property>
-           <widget class="QWidget" name="inputScrollContent">
+           <widget class="QWidget" name="paramScrollContent">
             <property name="geometry">
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>252</width>
+              <width>247</width>
               <height>122</height>
              </rect>
             </property>
@@ -489,7 +493,7 @@
      </layout>
     </widget>
    </item>
-   <item>
+   <item alignment="Qt::AlignVCenter">
     <widget class="QWidget" name="widget_4" native="true">
      <property name="maximumSize">
       <size>
@@ -509,7 +513,7 @@
         <property name="minimumSize">
          <size>
           <width>120</width>
-          <height>48</height>
+          <height>36</height>
          </size>
         </property>
         <property name="maximumSize">

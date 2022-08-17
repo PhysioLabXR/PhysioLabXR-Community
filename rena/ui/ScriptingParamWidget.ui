@@ -39,7 +39,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QWidget" name="top_widget" native="true">
      <property name="minimumSize">
       <size>
        <width>180</width>
@@ -52,7 +52,7 @@
        <height>32</height>
       </size>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="top_layout">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -66,7 +66,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLabel" name="label_stream_name">
+       <widget class="QLabel" name="label_param_name">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -96,16 +96,32 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_input_shape">
-        <property name="minimumSize">
-         <size>
-          <width>64</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
+       <widget class="QComboBox" name="type_comboBox">
+        <item>
+         <property name="text">
+          <string>bool</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>str</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>int</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>float</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>complex</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item>

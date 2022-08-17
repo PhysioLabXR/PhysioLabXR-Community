@@ -1,6 +1,8 @@
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtGui import QIntValidator
 
+from rena.ui_shared import minus_icon
+
 
 class ScriptingOutputWidget(QtWidgets.QWidget):
     def __init__(self, parent, label_text, num_channels):
@@ -11,6 +13,10 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
         self.numChan_lineEdit.textChanged.connect(self.on_channel_num_changed)
         self.numChan_lineEdit.setValidator(QIntValidator())
         self.set_output_num_channels(num_channels)
+        self.button.setIcon(minus_icon)
+
+        self.on_channel_num_changed()
+
 
     def set_button_callback(self, callback):
         self.button.clicked.connect(callback)
