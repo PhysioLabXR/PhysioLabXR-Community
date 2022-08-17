@@ -377,7 +377,12 @@ def stream_stylesheet(stylesheet_url):
     stream = QTextStream(stylesheet)
     QtWidgets.qApp.setStyleSheet(stream.readAll())
 
-def add_presets_to_combobox(combobox):
+def add_presets_to_combobox(combobox: QComboBox):
+    for i in get_all_preset_names():
+        combobox.addItem(i)
+
+def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also call this when new preset is added
+    combobox.clear()
     for i in get_all_preset_names():
         combobox.addItem(i)
 

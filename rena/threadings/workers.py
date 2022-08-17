@@ -600,8 +600,13 @@ class PlaybackWorker(QObject):
                 else:
                     raise NotImplementedError
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
-            virtual_clock = self.command_info_interface.socket.recv()
+            virtual_clock = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
             virtual_clock = np.frombuffer(virtual_clock)[0]
+            if virtual_clock == -1:  # replay has finished
+                self.is_running = False
+                self.replay_stopped_signal.emit()
+                self.send_command_mutex.unlock()
+                return
             self.replay_progress_signal.emit(virtual_clock)
             self.send_command_mutex.unlock()
 
