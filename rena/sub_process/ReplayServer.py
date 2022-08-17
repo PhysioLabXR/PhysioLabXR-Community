@@ -196,15 +196,15 @@ class ReplayServer(threading.Thread):
         self.selected_stream_indices = list(range(0, len(self.stream_names)))
 
         for streamIndex, stream_name in enumerate(self.stream_names):
-            if not self.isStreamVideo(stream_name):
-                stream_channel_count = self.stream_data[stream_name][0].shape[0]
-                stream_channel_format = 'double64'
-                stream_source_id = 'Replay Stream - ' + stream_name
-                outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
-                                               stream_source_id)
+            # if not self.isStreamVideo(stream_name):
+            stream_channel_count = self.stream_data[stream_name][0].shape[0]
+            stream_channel_format = 'double64'
+            stream_source_id = 'Replay Stream - ' + stream_name
+            outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
+                                           stream_source_id)
 
-                self.outlets[streamIndex] = pylsl.StreamOutlet(outlet_info)
-                print("\t" + str(streamIndex) + "\t" + stream_name)
+            self.outlets[streamIndex] = pylsl.StreamOutlet(outlet_info)
+            print("\t" + str(streamIndex) + "\t" + stream_name)
 
         self.virtual_clock_offset = 0
 

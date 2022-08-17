@@ -48,8 +48,8 @@ class ReplayTab(QtWidgets.QWidget):
         # self.replay_timer.setInterval(config.REFRESH_INTERVAL)
         # self.replay_timer.timeout.connect(self.ticks)
 
-        self.replay_server_process = Process(target=start_replay_server)
-        self.replay_server_process.start()
+        # self.replay_server_process = Process(target=start_replay_server)
+        # self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()

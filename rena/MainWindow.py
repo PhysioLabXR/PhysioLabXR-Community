@@ -334,10 +334,9 @@ class MainWindow(QtWidgets.QMainWindow):
             # check if the stream in setting's preset
             if check_preset_exists(stream_name):
                 self.addStreamWidget.select_by_stream_name(stream_name)
-                self.add_btn.click()
+                self.addStreamWidget.add_btn.click()
             else:  # add a new preset if the stream name is not defined
                 self.addStreamWidget.set_selection_text(stream_name)
-                self.add_btn.click()
         # loading_dlg.close()
 
 
