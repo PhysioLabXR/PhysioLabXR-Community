@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -367,7 +367,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.export_script_args_to_settings()
 
     def process_add_param(self, param_name, type_text=None, value_text=None):
-        param_widget = ScriptingParamWidget(param_name, type_text, value_text)
+        param_widget = ScriptingParamWidget(self, param_name, type_text, value_text)
         self.paramsLayout.addWidget(param_widget)
 
         def remove_btn_clicked():
@@ -376,21 +376,24 @@ class ScriptingWidget(QtWidgets.QWidget):
             param_widget.deleteLater()
             self.check_can_add_param()
             self.export_script_args_to_settings()
-            self.param_change()
+            self.param_change(ParamChange.REMOVE)
 
         param_widget.set_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change()
+        self.param_change(ParamChange.ADD)
 
-    def param_change(self):
+    def param_change(self, change: ParamChange, value=None):
         '''
         send params to the script process
         @return:
         '''
-        # TODO
-        print('Params changed')
-
+        print('Params changed: {}, {}'.format(change, value))
+        if change == ParamChange.CHANGE:
+            assert value is not None
+        if self.is_running:
+            # TODO
+            print('forward the new parameters')
 
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
@@ -419,6 +422,9 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def get_param_type_texts(self):
         return [w.get_type_text() for w in self.param_widgets]
+
+    def get_param_dict(self):
+        return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
 
     def check_can_add_input(self):
         """
@@ -531,7 +537,7 @@ class ScriptingWidget(QtWidgets.QWidget):
     def get_script_args(self):
         return {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
-                'params': [], 'port': self.stdout_socket_interface.port_id,
+                'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),

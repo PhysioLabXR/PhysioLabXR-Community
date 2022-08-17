@@ -1,14 +1,18 @@
+from pydoc import locate
+
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
+from rena.shared import ParamChange
 from rena.ui_shared import minus_icon
 
 
 class ScriptingParamWidget(QtWidgets.QWidget):
-    def __init__(self, param_name, type_text, value_text):
+    def __init__(self, parent, param_name, type_text, value_text):
         super().__init__()
         self.ui = uic.loadUi("ui/ScriptingParamWidget.ui", self)
+        self.parent = parent
 
         self.label_param_name.setText(param_name)
 
@@ -17,6 +21,7 @@ class ScriptingParamWidget(QtWidgets.QWidget):
         self.value_widget = None
         self.on_type_combobox_changed()
         self.type_comboBox.currentIndexChanged.connect(self.on_type_combobox_changed)
+        self.type_comboBox.currentIndexChanged.connect(self.on_param_changed)
 
         if type_text is not None and value_text is not None:
             self.set_type_and_value_from_text(type_text, value_text)
@@ -27,8 +32,10 @@ class ScriptingParamWidget(QtWidgets.QWidget):
         selected_type_text = self.type_comboBox.currentText()
         if selected_type_text == 'bool':
             self.value_widget = QCheckBox()
+            self.value_widget.stateChanged.connect(self.on_param_changed)
         else:
             self.value_widget = QLineEdit()
+            self.value_widget.textChanged.connect(self.on_param_changed)
         self.top_layout.insertWidget(1, self.value_widget)
 
     def set_button_callback(self, callback):
@@ -37,11 +44,11 @@ class ScriptingParamWidget(QtWidgets.QWidget):
     def get_value(self):
         selected_type_text = self.type_comboBox.currentText()
         if selected_type_text == 'bool':
-            self.value_widget.isChecked()
+            return self.value_widget.isChecked()
         elif selected_type_text == 'str':
             return self.value_widget.text()
         else:  # numeric types: int, float, complex
-            selected_type = getattr(__builtins__, 'int')
+            selected_type = locate(selected_type_text)
             try:
                 return selected_type(self.value_widget.text())
             except ValueError:  # if failed to convert from string
@@ -59,7 +66,6 @@ class ScriptingParamWidget(QtWidgets.QWidget):
         else:
             self.value_widget.setText(value_text)
 
-
     def get_type_text(self):
         return self.type_comboBox.currentText()
 
@@ -72,3 +78,7 @@ class ScriptingParamWidget(QtWidgets.QWidget):
 
     def get_param_name(self):
         return self.label_param_name.text()
+
+    def on_param_changed(self):
+        self.parent.param_change(ParamChange.CHANGE, self.get_value())
+

@@ -1,4 +1,6 @@
 # replay
+from enum import Enum
+
 FAIL_INFO = 'fail!'
 START_COMMAND = 'start!'
 START_SUCCESS_INFO = 'start'
@@ -17,6 +19,9 @@ SCRIPT_STOP_SUCCESS = 'stopsuccess'
 SCRIPT_INFO_REQUEST = 'i'
 DATA_BUFFER_PREFIX = 'd'.encode('utf-8')
 
-# rena script
 rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
 
+class ParamChange(Enum):
+    ADD = 'a'
+    REMOVE = 'r'
+    CHANGE = 'c'
