@@ -211,6 +211,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:  # add a previous unknown lsl stream
                 create_default_preset(stream_name=selected_text)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
+                self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
             self.update_num_active_stream_label()
         except RenaError as error:

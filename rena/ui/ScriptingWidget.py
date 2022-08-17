@@ -28,7 +28,7 @@ from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
-    add_stream_presets_to_combobox, another_window
+    add_stream_presets_to_combobox, another_window, update_presets_to_combobox
 import pyqtgraph as pg
 
 
@@ -46,6 +46,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         # add all presents to camera
         add_stream_presets_to_combobox(self.inputComboBox)
 
+        # set up the add buttons
         self.addInputBtn.setIcon(add_icon)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
 
@@ -511,3 +512,6 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.process_add_input(input_preset_name)
         for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
             self.process_add_output(output_name, num_channels=output_num_channel)
+
+    def update_input_combobox(self):
+        update_presets_to_combobox(self.inputComboBox)
