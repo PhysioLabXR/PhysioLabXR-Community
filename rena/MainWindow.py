@@ -22,7 +22,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    get_all_lsl_device_preset_names
+    get_all_lsl_device_preset_names, check_preset_exists
 
 try:
     import config
@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # create sensor threads, worker threads for different sensors
         ############
-        self.stream_widgets = {}
+        self.stream_widgets = {}  # key: stream -> value: stream_widget
         ############
 
         self.worker_threads = {}
@@ -111,8 +111,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
         # self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
 
-        self.inference_num_visualized_results = int(
-            config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
+        # self.inference_num_visualized_results = int(
+        #     config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
 
         # self.lslStream_presets_dict = None
         # self.device_presets_dict = None
@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.reload_all_presets()
 
         # add camera and add sensor widget initialization
-        self.addStreamWidget = AddStreamWidget()
+        self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
         # self.add_layout, self.camera_combo_box, self.add_camera_btn, self.preset_LSLStream_combo_box, self.add_preset_lslStream_btn, \
         # self.lslStream_name_input, self.add_lslStream_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn, \
@@ -209,16 +209,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = self.experiment_presets_dict[selected_text] #TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
-                # create the preset
-                create_default_preset(stream_name=selected_text)
+                create_default_preset(stream_name=selected_text)  # create the preset
+                self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
+        self.addStreamWidget.check_can_add_input()
 
     def remove_stream_widget(self, target):
         self.sensorTabSensorsHorizontalLayout.removeWidget(target)
         self.update_num_active_stream_label()
+        self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
     def update_num_active_stream_label(self):
         available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
@@ -318,31 +320,35 @@ class MainWindow(QtWidgets.QMainWindow):
     #         self.add_streams_to_visulaize(streams_for_experiment)
 
     def add_streams_to_visualize(self, stream_names):
-        try:
-            assert np.all([x in get_all_lsl_device_preset_names() for x in
-                           stream_names])
-        except AssertionError:
-            dialog_popup(
-                msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
-                title="Error")
-            return
+        # try:
+        #     assert np.all([x in get_all_lsl_device_preset_names() for x in
+        #                    stream_names])
+        # except AssertionError:
+        #     dialog_popup(
+        #         msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
+        #         title="Error")
+        #     return
         # loading_dlg = dialog_popup(
         #     msg="Please wait while streams are being added...",
         #     title="Info")
         for stream_name in stream_names:
-            self.addStreamWidget.select_by_stream_name(stream_name)
-            self.add_btn_clicked()
-        # loading_dlg.close()
+            # check if the stream in setting's preset
+            if check_preset_exists(stream_name):
+                self.addStreamWidget.select_by_stream_name(stream_name)
+                self.addStreamWidget.add_btn.click()
+            else:  # add a new preset if the stream name is not defined
+                self.addStreamWidget.set_selection_text(stream_name)
+                self.addStreamWidget.add_btn.click()
 
+        # loading_dlg.close()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.add_streams_to_visualize(stream_names)
         for stream_name in stream_names:
-            if stream_name in self.lsl_workers.keys() and not self.lsl_workers[stream_name].is_streaming:
+            if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
-
 
     def init_lsl(self, lsl_name):
         error_initialization = False
@@ -444,31 +450,31 @@ class MainWindow(QtWidgets.QMainWindow):
                 samples_dict = {'eye': eye_samples}
                 self.inference_worker.signal_data_tick.emit(samples_dict)
 
-    def init_visualize_inference_results(self):
-        inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
-        [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
-        self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
-                                        inference_results_plot_widgets]
+    # def init_visualize_inference_results(self):
+    #     inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
+    #     [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
+    #     self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
+    #                                     inference_results_plot_widgets]
 
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
 
-    def visualize_inference_results(self, inference_results):
-        # results will be -1 if scripting is not connected
-        if self.inference_worker.is_connected and inference_results[0][0] >= 0:
-            self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
-
-            if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
-                data_to_plot = np.concatenate((np.zeros(shape=(
-                    self.inference_num_visualized_results - self.inference_buffer.shape[0],
-                    config.INFERENCE_CLASS_NUM)),
-                                               self.inference_buffer), axis=0)  # zero padding
-            else:
-                # plot the most recent 10 seconds
-                data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
-            time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
-            [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
+    # def visualize_inference_results(self, inference_results):
+    #     # results will be -1 if scripting is not connected
+    #     if self.inference_worker.is_connected and inference_results[0][0] >= 0:
+    #         self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
+    #
+    #         if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
+    #             data_to_plot = np.concatenate((np.zeros(shape=(
+    #                 self.inference_num_visualized_results - self.inference_buffer.shape[0],
+    #                 config.INFERENCE_CLASS_NUM)),
+    #                                            self.inference_buffer), axis=0)  # zero padding
+    #         else:
+    #             # plot the most recent 10 seconds
+    #             data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
+    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
+    #         [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
 
     def reload_all_presets_btn_clicked(self):
@@ -534,3 +540,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def fire_action_settings(self):
         self.settings_window.show()
         self.settings_window.activateWindow()
+
+    def get_added_stream_names(self):
+        return list(self.stream_widgets.keys())

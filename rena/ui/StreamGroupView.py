@@ -91,8 +91,8 @@ class StreamGroupView(QTreeWidget):
         # self.setModel(self.model)
         self.groups_widgets = []
         self.channel_widgets = []
+        self.stream_root = None
         self.create_tree_view(group_info)
-        self.expandAll()
 
         # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -102,15 +102,19 @@ class StreamGroupView(QTreeWidget):
         self.selection_state = nothing_selected
         self.selected_groups = []
         self.selected_channels = []
-        self.selectionModel().selectionChanged.connect(self.selection_changed)
-        self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
 
         # helper fieds
         self.dragged = None
 
+    def clear_tree_view(self):
+        self.selection_state = nothing_selected
+        self.selected_groups = []
+        self.selected_channels = []
+        self.selectionModel().selectionChanged.disconnect(self.selection_changed)
+        self.itemChanged[QTreeWidgetItem, int].disconnect(self.item_changed)
+        self.clear()
 
     def create_tree_view(self, group_info):
-
         self.stream_root = QTreeWidgetItem(self)
         self.stream_root.item_type = 'stream_root'
         self.stream_root.setText(0, self.stream_name)
@@ -147,6 +151,9 @@ class StreamGroupView(QTreeWidget):
 
                 channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 # self.channel_widgets.append(channel)
+        self.expandAll()
+        self.selectionModel().selectionChanged.connect(self.selection_changed)
+        self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
 
     def startDrag(self, actions):
 
@@ -390,7 +397,7 @@ class StreamGroupView(QTreeWidget):
         if type(item) == ChannelItem:
             checked = item.checkState(column) == QtCore.Qt.Checked
             parent_group = item.parent().data(0, 0)
-            self.channel_is_display_changed_signal.emit((item.lsl_index, parent_group, checked))
+            self.channel_is_display_changed_signal.emit((int(item.lsl_index), parent_group, checked))
 
     # print(item.data(0, 0))
 

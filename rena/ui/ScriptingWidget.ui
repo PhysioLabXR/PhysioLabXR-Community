@@ -249,7 +249,7 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>36</height>
+             <height>48</height>
             </size>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -305,8 +305,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
-              <height>134</height>
+              <width>245</width>
+              <height>122</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="inputLayout"/>
@@ -336,7 +336,7 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>36</height>
+             <height>48</height>
             </size>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -392,8 +392,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
-              <height>134</height>
+              <width>244</width>
+              <height>122</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="outputLayout"/>
@@ -423,7 +423,7 @@
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>36</height>
+             <height>48</height>
             </size>
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -475,8 +475,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
-              <height>134</height>
+              <width>252</width>
+              <height>122</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="paramsLayout"/>
@@ -494,7 +494,7 @@
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>36</height>
+       <height>60</height>
       </size>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
@@ -524,34 +524,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="validateBtn">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>120</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>120</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Test your script with simulated input.</string>
-        </property>
-        <property name="text">
-         <string>Validate</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="runBtn">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -573,6 +545,19 @@
         </property>
         <property name="text">
          <string>Run</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="simulateCheckbox">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Simulate</string>
         </property>
        </widget>
       </item>

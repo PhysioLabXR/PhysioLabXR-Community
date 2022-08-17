@@ -16,10 +16,12 @@ VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
 CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
-PLOT_RETAIN_HISTORY = 10.  # in seconds, how long a history do the plots keep
+VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 
-SCRIPTING_UPDATE_REFRESH_INTERVA = 33
-STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 5 second after sending the stop command,
+VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 15)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
+
+SCRIPTING_UPDATE_REFRESH_INTERVA = 15
+STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
 '''
@@ -107,7 +109,7 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 #     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
 # else:
 #     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
-DEFAULT_CHANNEL_DISPLAY_NUM = 2
+DEFAULT_CHANNEL_DISPLAY_NUM = 20
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 

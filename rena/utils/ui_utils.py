@@ -3,7 +3,7 @@ import time
 import cv2
 import qimage2ndarray
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
 from PyQt5.QtGui import QPixmap, QIcon
@@ -377,7 +377,12 @@ def stream_stylesheet(stylesheet_url):
     stream = QTextStream(stylesheet)
     QtWidgets.qApp.setStyleSheet(stream.readAll())
 
-def add_presets_to_combobox(combobox):
+def add_presets_to_combobox(combobox: QComboBox):
+    for i in get_all_preset_names():
+        combobox.addItem(i)
+
+def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also call this when new preset is added
+    combobox.clear()
     for i in get_all_preset_names():
         combobox.addItem(i)
 
@@ -455,4 +460,10 @@ class ScrollLabel(QScrollArea):
     def setText(self, text):
         # setting text to the label
         self.label.setText(text)
+
+def clear_layout(layout):
+    while layout.count():
+        child = layout.takeAt(0)
+        if child.widget():
+            child.widget().deleteLater()
 

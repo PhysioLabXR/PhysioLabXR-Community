@@ -224,6 +224,8 @@ class LSLInletWorker(RENAWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
+    # signal_stream_num_channels = pyqtSignal(int)
+
     def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
@@ -240,11 +242,15 @@ class LSLInletWorker(RENAWorker):
         self.previous_availability = None
 
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
+        self.interface_mutex = QMutex()
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            self.interface_mutex.lock()
             frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            self.interface_mutex.unlock()
+
             if frames.shape[-1] == 0:
                 return
 
@@ -290,6 +296,11 @@ class LSLInletWorker(RENAWorker):
                 self.previous_availability = is_stream_availability
                 self.signal_stream_availability.emit(is_stream_availability)
 
+    def set_interface(self, interface: LSLInletInterface):
+        self.interface_mutex.lock()
+        self._lslInlet_interface = interface
+        self.interface_mutex.unlock()
+
     def start_stream(self):
         self._lslInlet_interface.start_sensor()
         self.is_streaming = True
@@ -304,7 +315,6 @@ class LSLInletWorker(RENAWorker):
 
     def is_stream_available(self):
         return self._lslInlet_interface.is_stream_available()
-
 
 
     # def remove_stream(self):
@@ -590,8 +600,13 @@ class PlaybackWorker(QObject):
                 else:
                     raise NotImplementedError
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
-            virtual_clock = self.command_info_interface.socket.recv()
+            virtual_clock = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
             virtual_clock = np.frombuffer(virtual_clock)[0]
+            if virtual_clock == -1:  # replay has finished
+                self.is_running = False
+                self.replay_stopped_signal.emit()
+                self.send_command_mutex.unlock()
+                return
             self.replay_progress_signal.emit(virtual_clock)
             self.send_command_mutex.unlock()
 
@@ -976,16 +991,17 @@ class ScriptInfoWorker(QObject):
 
     @pg.QtCore.pyqtSlot()
     def request_get_info(self):
-        if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
-            self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
-            self.send_info_request = True
+        if self.script_process_active:
+            if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
+                self.info_socket_interface.send_string(SCRIPT_INFO_REQUEST)
+                self.send_info_request = True
 
-        events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)  # because
-        if len(events):
-            self.send_info_request = False
-            msg = self.info_socket_interface.socket.recv()
-            realtime_info = np.frombuffer(msg)
-            self.realtime_info_signal.emit(list(realtime_info))
+            events = self.info_socket_interface.poller.poll(REQUEST_REALTIME_INFO_TIMEOUT)
+            if len(events):
+                self.send_info_request = False
+                msg = self.info_socket_interface.socket.recv()
+                realtime_info = np.frombuffer(msg)
+                self.realtime_info_signal.emit(list(realtime_info))
 
     def deactivate(self):
         self.script_process_active = False

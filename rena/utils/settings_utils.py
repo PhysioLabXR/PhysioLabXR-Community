@@ -32,7 +32,22 @@ def get_stream_preset_names():
     return stream_preset_names
 
 def get_stream_preset_info(stream_name, key):
-    return config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
+    rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
+    if key == 'DisplayDuration':
+        rtn = float(rtn)
+    elif key == 'NominalSamplingRate':
+        rtn = int(rtn)
+    return rtn
+
+def set_stream_preset_info(stream_name, key, value):
+    config.settings.setValue('presets/streampresets/{0}/{1}'.format(stream_name, key), value)
+
+
+def check_preset_exists(stream_name):
+    config.settings.beginGroup('presets/streampresets/')
+    rtn = stream_name in config.settings.childGroups()
+    config.settings.endGroup()
+    return rtn
 
 def collect_stream_all_groups_info(stream_name):
     rtn = dict()
@@ -58,8 +73,6 @@ def collect_stream_group_info(stream_name, group_name):
 
 def collect_stream_group_plot_format(stream_name, group_name):
     return config.settings.value('presets/streampresets/{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, 'plot_format'))
-
-
 
 
 def get_complete_stream_preset_info(stream_name):
@@ -158,12 +171,14 @@ def add_keys_to_preset(preset_dict):
         preset_dict['GroupFormat'] = None
     if 'NominalSamplingRate' not in preset_dict.keys():
         preset_dict['NominalSamplingRate'] = 1
+    if 'DisplayDuration' not in preset_dict.keys():
+        preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
     return preset_dict
 
 
-def create_default_preset(stream_name):
+def create_default_preset(stream_name, num_channels=1):
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel1']}
+                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)]}
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
@@ -251,7 +266,7 @@ def process_plot_group(preset_dict):
 
     return preset_dict
 
-def get_channel_info():
+def get_channel_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
@@ -261,6 +276,25 @@ def get_channel_info():
         config.settings.endGroup()
     config.settings.endGroup()
     return rtn
+
+
+def get_script_widgets_args():
+    rtn = dict()
+    config.settings.beginGroup('scripts')
+    for script_id in config.settings.childGroups():
+        config.settings.beginGroup(script_id)
+        rtn[script_id] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+        rtn[script_id]['id'] = script_id
+        config.settings.endGroup()
+    config.settings.endGroup()
+    return rtn
+
+
+def remove_script_from_settings(script_id):
+    config.settings.remove('scripts/{0}'.format(script_id))
+
+def remove_stream_preset_from_settings(stream_name):
+    config.settings.remove('presets/streampresets/{0}'.format(stream_name))
 
 def is_channel_in_group(channel_index, group_name, stream_name):
     """
@@ -274,14 +308,14 @@ def is_channel_in_group(channel_index, group_name, stream_name):
 
 def is_channel_displayed(channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
     is_channel_shown = config.settings.value('is_channels_shown')[channel_index_in_settings]
     config.settings.endGroup()
     return is_channel_shown == '1'
 
 def set_channel_displayed(is_display, channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = config.settings.value('channel_indices').index(channel_index)
+    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
 
     new_is_channels_shown = config.settings.value('is_channels_shown')
     new_is_channels_shown[channel_index_in_settings] = '1' if is_display else '0'

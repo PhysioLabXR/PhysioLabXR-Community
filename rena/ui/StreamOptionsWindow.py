@@ -1,21 +1,22 @@
 # This Python file uses the following encoding: utf-8
-
+import numpy as np
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QStandardItemModel, QIntValidator
 from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
 
 from rena import config_signal, config
 from rena.config_ui import *
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
-from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED
-from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed
+from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED, num_points_shown_text
+from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
+    collect_stream_all_groups_info, get_stream_preset_info
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class OptionsWindow(QDialog):
+class StreamOptionsWindow(QDialog):
     def __init__(self, parent, stream_name, group_info):
         super().__init__()
         """
@@ -28,12 +29,11 @@ class OptionsWindow(QDialog):
         # add supported filter list
         self.resize(1000, 1000)
 
-        self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
-
+        # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
         self.stream_name = stream_name
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
-        self.set_nominal_sampling_rate_textbox()
+
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
@@ -44,6 +44,40 @@ class OptionsWindow(QDialog):
         # signals for processing changes in the tree view
         self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
+
+        # nomiaml sampling rate UI elements
+        self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
+        self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
+        self.load_sr_and_display_duration_from_settings_to_ui()
+        self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
+        self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
+
+    def update_num_points_to_display(self):
+        num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
+        if num_points_to_plot == 0: return
+        num_points_to_plot = int(np.min([num_points_to_plot, config.settings.value('viz_data_buffer_max_size')]))
+        self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
+        self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration )
+
+    def get_display_duration(self):
+        try:
+            new_display_duration = abs(float(self.dataDisplayDurationLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_display_duration
+
+    def get_nomimal_sampling_rate(self):
+        try:
+            new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_sampling_rate
+
+    def get_num_points_to_plot_info(self):
+        new_sampling_rate = self.get_nomimal_sampling_rate()
+        new_display_duration = self.get_display_duration()
+        num_points_to_plot = new_sampling_rate * new_display_duration
+        return num_points_to_plot, new_sampling_rate, new_display_duration
 
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
@@ -102,6 +136,21 @@ class OptionsWindow(QDialog):
 
         self.actionsWidgetLayout.addStretch()
 
+    def reload_preset_to_UI(self):
+        self.reload_group_info_in_treeview()
+        self.load_sr_and_display_duration_from_settings_to_ui()
+
+
+    def reload_group_info_in_treeview(self):
+        '''
+        this function is called when the group info in the persistent settings
+        is changed externally
+        :return:
+        '''
+        group_info = collect_stream_all_groups_info(self.stream_name)  # get group info from settings
+        self.stream_group_view.clear_tree_view()
+        self.stream_group_view.create_tree_view(group_info)
+
     def merge_groups_btn_clicked(self):
         selection_state, selected_groups, selected_channels = \
             self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
@@ -158,14 +207,12 @@ class OptionsWindow(QDialog):
         self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
         self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
 
-
-
-    def set_nominal_sampling_rate_textbox(self):
-        self.nominalSamplingRateInputbox.setText(
-            str(config.settings.value('presets/streampresets/{0}/NominalSamplingRate'.format(self.stream_name))))
+    def load_sr_and_display_duration_from_settings_to_ui(self):
+        self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
+        self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'DisplayDuration')))
 
     def set_nominal_sampling_rate_btn(self):
-        new_nominal_sampling_rate = self.nominalSamplingRateInputbox.text()
+        new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()
         if new_nominal_sampling_rate.isnumeric():
             new_nominal_sampling_rate = float(new_nominal_sampling_rate)
             if new_nominal_sampling_rate > 0:

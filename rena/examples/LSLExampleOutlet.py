@@ -15,10 +15,10 @@ def main(argv):
     letters = string.digits
 
     srate = 128
-    name = 'Dummy-8Chan'
+    name = 'Dummy-8Chan2'
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 8
+    n_channels = 9
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])
