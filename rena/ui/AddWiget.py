@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 
-from rena.utils.ui_utils import add_presets_to_combobox
+from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
 class AddStreamWidget(QtWidgets.QWidget):
@@ -40,3 +40,6 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.add_btn.setEnabled(False)
         else:
             self.add_btn.setEnabled(True)
+
+    def update_combobox_presets(self):
+        update_presets_to_combobox(self.stream_name_combo_box)

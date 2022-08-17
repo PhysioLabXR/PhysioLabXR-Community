@@ -87,11 +87,12 @@ class ReplayServer(threading.Thread):
                         self.running = False
                         break
                 print('replay finished')
-                self.is_replaying = False
-                command = self.recv_string(is_block=True)
-                if command == shared.VIRTUAL_CLOCK_REQUEST:
-                    self.send(np.array(-1.))
-                else: raise Exception('Unexpected command ' + command)
+                if self.is_replaying:  # the case of a finished replay
+                    self.is_replaying = False
+                    command = self.recv_string(is_block=True)
+                    if command == shared.VIRTUAL_CLOCK_REQUEST:
+                        self.send(np.array(-1.))
+                    else: raise Exception('Unexpected command ' + command)
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
         print("Replay terminated")
         # return here
