@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from rena.MainWindow import MainWindow
 from rena.interfaces import InferenceInterface
-from tests.LSLTestStream import LSLTestStream
+from rena.tests.LSLTestStream import LSLTestStream
 
 
 @pytest.fixture
