@@ -20,6 +20,7 @@ class IndexPen(RenaScript):
     def loop(self):
         print('Received input of shape ' + str(self.inputs['Dummy-8Chan'].shape))
         self.outputs['SampleOutput'] = np.random.rand(10)
+        print('Param value 1 is {}'.format(self.params['param1']))
 
     def cleanup(self):
         print('Cleanup function is called')

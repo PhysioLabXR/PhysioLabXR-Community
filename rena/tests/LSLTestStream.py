@@ -13,7 +13,6 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 def LSLTestStream(stream_name):
     letters = string.digits
-    id = (''.join(random.choice(letters) for i in range(3)))
 
     srate = 2048
     print('Test stream name is ' + stream_name)

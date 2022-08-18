@@ -5,11 +5,11 @@ from multiprocessing import Process
 
 import pytest
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QWidget
 
 from rena.MainWindow import MainWindow
-from rena.interfaces import InferenceInterface
-from tests.LSLTestStream import LSLTestStream
-
+from rena.startup import load_default_settings
+from rena.tests.LSLTestStream import LSLTestStream
 
 @pytest.fixture
 def app(qtbot):
@@ -17,25 +17,24 @@ def app(qtbot):
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
-    # main window init
-    inference_interface = InferenceInterface.InferenceInterface()
-    test_renalab_app = MainWindow(app=app, inference_interface=inference_interface)
+    # app initialization
+    load_default_settings(revert_to_default=True)  # load the default settings
+    test_renalabapp = MainWindow(app=app)
+    qtbot.addWidget(test_renalabapp)
+    return test_renalabapp
 
-    return test_renalab_app
 
-
-def test_add_random_stream(app, qtbot):
+def test_add_random_stream_in_added_stream_wigets(app, qtbot) -> None:
     test_stream_name = 'TestStreamName'
     p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
-    app.lslStream_name_input.setText()
-    qtbot.mouseClick(app.add_lslStream_btn, QtCore.Qt.LeftButton)
 
-    # check all the required GUI fields are added
-    assert test_stream_name in app.stream_ui_elements
-    assert 'lsl_widget' in app.stream_ui_elements[test_stream_name]
-    app.stream_ui_elements[test_stream_name]['lsl_widget'].StreamNameLabel.text = test_stream_name
+    app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+    qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box(), '')
+    qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)
 
+    assert test_stream_name in app.get_added_stream_names()
+    p.kill()  # stop the dummy LSL process
 
 def test_running_random_stream(app, qtbot):
     pass
