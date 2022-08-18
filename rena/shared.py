@@ -18,6 +18,7 @@ SCRIPT_STOP_REQUEST = 'stop'
 SCRIPT_STOP_SUCCESS = 'stopsuccess'
 SCRIPT_INFO_REQUEST = 'i'
 DATA_BUFFER_PREFIX = 'd'.encode('utf-8')
+SCRIPT_PARAM_CHANGE = 'p'
 
 rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
 

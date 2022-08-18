@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -83,9 +83,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.runBtn.setEnabled(False)
         self.script_process = None
 
-        # self.scripting_worker = None
-        # self.worker_thread = None
-        # self.worker_timer = None
+        # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
         self.script_console_log = ScriptConsoleLog()
         self.script_console_log_window = another_window('Console Log')
@@ -96,20 +94,21 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_worker_thread = None
         self.create_stdout_worker()  # setup stdout worker
 
+        # Fields readin information from the script process, including timing performance and check for abnormal termination
         self.info_socket_interface = None
         self.info_thread = None
         self.info_worker = None
         self.script_pid = None
 
-        self.input_shape_dict = None
+        # Fields for the console output window #########################################################################
+        self.input_shape_dict = None  # to keep the input shape for each forward input callback, so we don't query the UI everytime for the input shapes
         self.forward_input_timer = QTimer()
         self.forward_input_timer.timeout.connect(self.forward_input)
         self.data_buffer = None
         self.forward_input_socket_interface = None
 
-        # self.forward_data_worker = None
-        # self.forward_data_thread = None
-        if args is not None:  # loading from script preset
+        # loading from script preset from the persistent sittings ######################################################
+        if args is not None:
             self.id = args['id']
             self.import_script_args(args)
         else:
@@ -376,24 +375,24 @@ class ScriptingWidget(QtWidgets.QWidget):
             param_widget.deleteLater()
             self.check_can_add_param()
             self.export_script_args_to_settings()
-            self.param_change(ParamChange.REMOVE)
+            self.param_change(ParamChange.REMOVE, param_name)
 
         param_widget.set_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change(ParamChange.ADD)
+        self.param_change(ParamChange.ADD, param_name)
 
-    def param_change(self, change: ParamChange, value=None):
+    def param_change(self, change: ParamChange, name, value=None):
         '''
         send params to the script process
         @return:
         '''
-        print('Params changed: {}, {}'.format(change, value))
+        print('Param {} changed: {}, {}'.format(name, change, value))
+        self.export_script_args_to_settings()
         if change == ParamChange.CHANGE:
             assert value is not None
         if self.is_running:
-            # TODO
-            print('forward the new parameters')
+            self.forward_param_change(change, name, value)
 
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
@@ -575,3 +574,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def update_input_combobox(self):
         update_presets_to_combobox(self.inputComboBox)
+
+    def forward_param_change(self, change: ParamChange, name, value):
+        self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
+        self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
+        self.command_socket_interface.socket.send(np.array(value))

@@ -80,5 +80,5 @@ class ScriptingParamWidget(QtWidgets.QWidget):
         return self.label_param_name.text()
 
     def on_param_changed(self):
-        self.parent.param_change(ParamChange.CHANGE, self.get_value())
+        self.parent.param_change(ParamChange.CHANGE, self.get_param_name(), value=self.get_value())
 

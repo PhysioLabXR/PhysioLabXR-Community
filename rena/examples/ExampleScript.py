@@ -5,7 +5,7 @@ import numpy as np
 from rena.scripting.RenaScript import RenaScript
 
 
-class IndexPen(RenaScript):
+class ExampleScript(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
@@ -18,8 +18,9 @@ class IndexPen(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
+        self.outputs['output1'] = np.random.rand(10)
+        self.outputs['output2'] = np.array([self.params['param2']])
         print('Received input of shape ' + str(self.inputs['Dummy-8Chan'].shape))
-        self.outputs['SampleOutput'] = np.random.rand(10)
         print('Param value 1 is {}'.format(self.params['param1']))
 
     def cleanup(self):

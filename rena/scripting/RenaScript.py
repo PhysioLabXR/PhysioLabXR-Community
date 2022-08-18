@@ -4,12 +4,14 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from collections import deque
+from pydoc import locate
 
 import numpy as np
 
 from exceptions.exceptions import RenaError, BadOutputError
 from rena.config import script_fps_counter_buffer_size
-from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
+    SCRIPT_PARAM_CHANGE, ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
 from rena.utils.general import get_fps
@@ -72,6 +74,9 @@ class RenaScript(ABC, threading.Thread):
         self.output_outlets = dict([(x, create_lsl_outlet(x, n, run_frequency)) for x, n in zip(outputs, output_num_channels)])
         self.outputs = None  # dict holding the output data
 
+        # set up the parameters
+        self.params = params
+
         print('RenaScript: Script init successfully')
 
     @abstractmethod
@@ -129,6 +134,18 @@ class RenaScript(ABC, threading.Thread):
                 command = command_msg_routing_id[0]
                 if command == SCRIPT_STOP_REQUEST:
                     break
+                if command == SCRIPT_PARAM_CHANGE:
+                    # receive the rest of the mssage about parameter change
+                    change_info, _ = recv_string_router(self.command_socket_interface, is_block=True)
+                    _, value = self.command_socket_interface.socket.recv_multipart()  # first element is routing ID
+                    change_str, param_name, param_type = change_info.split('|')
+                    param_type = locate(param_type)
+                    change = ParamChange(change_str)
+                    if change == ParamChange.ADD or change == ParamChange.CHANGE:
+                        self.params[param_name] = np.frombuffer(np.array(value).tobytes(), dtype=param_type)[0]
+                    else:
+                        self.params.pop(param_name)
+                    print('RenaScript: param changed')
                 else:
                     print('unknown command: ' + command)
             # send the output if they are updated in the loop
