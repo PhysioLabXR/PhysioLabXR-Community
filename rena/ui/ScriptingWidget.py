@@ -380,7 +380,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         param_widget.set_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change(ParamChange.ADD, param_name)
+        self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
 
     def param_change(self, change: ParamChange, name, value=None):
         '''
