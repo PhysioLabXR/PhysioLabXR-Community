@@ -1,4 +1,5 @@
 import pickle
+import time
 
 import mne
 
@@ -29,14 +30,17 @@ with open('aapo_evoked_responses.pickle', 'wb') as handle:
 
 print('John')
 for evoked_response in evoked_responses:
-    plt.plot(evoked_response['evoked_ts'], evoked_response['evoked_response'].T-np.mean(evoked_response['evoked_response']))
+    plt.ylim(-250,150)
+    plt.plot(evoked_response['evoked_ts']*1000, evoked_response['evoked_response'].T-np.mean(evoked_response['evoked_response']))
 
-plt.grid(which='major')
-plt.grid(which='minor')
-plt.xlabel('Time in ms')
-plt.ylabel('mV')
-plt.title('MEPs')
-plt.show()
+    plt.grid(which='major')
+    plt.grid(which='minor')
+    plt.xlabel('Time in ms')
+    plt.ylabel('µV')
+    plt.title('MEP')
+    plt.show()
+    time.sleep(0.1)
+
 
 # def onset_detection():
 # zero_index = 100
@@ -60,7 +64,7 @@ for evoked_response in active_evoked_responses:
 plt.grid(which='major')
 plt.grid(which='minor')
 plt.xlabel('Time in ms')
-plt.ylabel('mV')
+plt.ylabel('µV')
 plt.title('active MEPs')
 plt.show()
 
