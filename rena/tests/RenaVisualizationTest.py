@@ -1,3 +1,8 @@
+"""
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+
+"""
+
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 import os
 import sys
