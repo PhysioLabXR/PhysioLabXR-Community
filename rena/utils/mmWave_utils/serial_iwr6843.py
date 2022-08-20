@@ -1,10 +1,5 @@
 import time
 
-import serial
-
-from exceptions.exceptions import DataPortNotOpenError, BufferOverFlowError
-from utils.mmWave_utils.parse_tlv import decode_iwr_tlv
-
 
 def serial_config(config_fn, cli_port):
     # Open the serial ports for the configuration and the data ports

@@ -21,3 +21,4 @@ ipython~=8.1.1
 pyzmq~=22.3.0
 setuptools~=57.1.0
 psutil
+pytest-qt
