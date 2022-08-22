@@ -21,7 +21,7 @@ from rena.tests.LSLTestStream import LSLTestStream
 
 @pytest.fixture
 def app(qtbot: QtBot):
-    print('Initializing test fixature for ' + 'Visualization Features')
+    print('Initializing test fixture for ' + 'Visualization Features')
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
