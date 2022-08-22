@@ -111,6 +111,9 @@ class ReplayServer(threading.Thread):
         self.stream_names = None
         self.selected_stream_indices = None
 
+        # close all outlets if there's any
+        del self.outlets[:]
+
     def replay(self):
         nextStreamIndex = None
         nextBlockingTimestamp = None
