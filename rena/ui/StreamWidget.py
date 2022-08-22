@@ -23,7 +23,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
 from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
-    create_default_preset, set_stream_preset_info, get_channel_num
+    create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout
 
 
@@ -320,6 +320,8 @@ class StreamWidget(QtWidgets.QWidget):
         # if plot_group_slices:
         plot_widgets = {}
         plots = []
+        image_labels = {}
+
         # plot_formats = []
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         for group_name in self.group_info.keys():
@@ -348,14 +350,17 @@ class StreamWidget(QtWidgets.QWidget):
                 plot_widgets[group_name] = group_plot_widget
 
             if plot_format['image']['display']:
-                image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
+                # image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
                 image_label = QLabel('Image_Label')
                 self.ImageWidgetLayout.addWidget(image_label)
+                image_labels[group_name] = image_label
+
+
 
                 # image_label.setAlignment(QtCore.Qt.AlignCenter)
                 # pass
 
-            if plot_format['bar_plot']['display']:
+            if plot_format['image']['display']:
                 pass
 
                 # elif plot_group_format_info[0] == 'image':
@@ -379,7 +384,7 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
         self.viz_time_vector = self.get_viz_time_vector()
-        return fs_label, ts_label, plot_widgets, plots
+        return fs_label, ts_label, plot_widgets, plots, image_labels
 
     def get_viz_time_vector(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
@@ -387,10 +392,10 @@ class StreamWidget(QtWidgets.QWidget):
         return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
-        fs_label, ts_label, plot_widgets, plots = \
+        fs_label, ts_label, plot_widgets, plots, image_labels = \
             self.init_stream_visualization()
         self.stream_widget_visualization_component = \
-            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots)
+            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots, image_labels)
 
     def process_LSLStream_data(self, data_dict):
         if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict

@@ -9,7 +9,7 @@ from rena import config_signal, config
 from rena.config_ui import *
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.utils.settings_utils import collect_stream_all_groups_info, collect_stream_group_info, \
-    collect_stream_group_plot_format
+    collect_stream_group_plot_format, set_image_plot_format
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -88,7 +88,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
             self.ImageWidthTextEdit.setText(str(image_format['width']))
             self.ImageHeightTextEdit.setText(str(image_format['height']))
-            self.imageFormatComboBox.setCurrentText(image_format['format'])
+            self.imageFormatComboBox.setCurrentText(image_format['image_format'])
 
         else:
             self.ImageCheckBox.setCheckState(Qt.Unchecked)
@@ -100,6 +100,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         else:
             self.BarPlotCheckbox.setCheckState(Qt.Unchecked)
             self.BarPlotFormatInfoWidget.setEnabled(False)
+
 
 
     # def update_plot_format_btn_clicked(self):
@@ -128,21 +129,63 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def TimeSeriesCheckBox_status_change(self, checkbox):
         if checkbox.isChecked():
-            self.TimeSeiresFormatInfoWidget.setEnabled(True)
+            pass
+            # self.TimeSeiresFormatInfoWidget.setEnabled(True)
         else:
-            self.TimeSeiresFormatInfoWidget.setEnabled(False)
+            # self.TimeSeiresFormatInfoWidget.setEnabled(False)
+            pass
 
     def ImageCheckBox_status_change(self, checkbox):
         if checkbox.isChecked():
-            self.ImageFormatInfoWidget.setEnabled(True)
+            #################### check input is valid ################################
+                # if self.ImageCheckBox.isChecked():
+            image_width = self.ImageWidthTextEdit.text()
+            image_height = self.ImageHeightTextEdit.text()
+            if image_width.isnumeric() == False or image_height.isnumeric() == False:
+                dialog_popup('Please Enter a positive Integer for Width and Height')
+                self.ImageCheckBox.setCheckState(Qt.Unchecked)
+                return
+            # self.ImageFormatInfoWidget.setEnabled(True)
+            group_info = collect_stream_group_info(self.stream_name, self.selected_group_name)
+            image = group_info['plot_format']['image']
+
+            if int(image_width) * int(image_height) * image_depth_dict[self.imageFormatComboBox.currentText()] != len(
+                    self.group_info['channel_indices']):
+                dialog_popup(
+                    'Warning, the preset might be corrupted. The WxHxD not equal to the total number of channel')
+                self.ImageCheckBox.setCheckState(Qt.Unchecked)
+                return
+
+            else:
+                # update the preset
+                set_image_plot_format(self.stream_name, self.selected_group_name, image_height, image_width, self.imageFormatComboBox.currentText())
+
+                pass
+                #
+
+
+            # check channel num
+
+
+
+            pass
         else:
-            self.ImageFormatInfoWidget.setEnabled(False)
+            # self.ImageFormatInfoWidget.setEnabled(False)
+
+
+            pass
 
     def BarPlotCheckbox_status_change(self, checkbox):
         if checkbox.isChecked():
-            self.BarPlotFormatInfoWidget.setEnabled(True)
+            # self.BarPlotFormatInfoWidget.setEnabled(True)
+            pass
         else:
-            self.BarPlotFormatInfoWidget.setEnabled(False)
+            # self.BarPlotFormatInfoWidget.setEnabled(False)
+            pass
+
+    # def update
+    #
+    # def updateImageFormatBtnClicked(self):
 
 
 

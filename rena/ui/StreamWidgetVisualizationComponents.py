@@ -28,11 +28,12 @@ import collections
 import os
 
 class StreamWidgetVisualizationComponents():
-    def __init__(self, fs_label, ts_label, plot_widgets, plots):
+    def __init__(self, fs_label, ts_label, plot_widgets, plots, image_labels):
         self.fs_label=fs_label
         self.ts_label=ts_label
         self.plot_widgets=plot_widgets
         self.plots=plots
+        self.image_labels = image_labels
 
         # self.plot_group_slices=plot_group_slices
         # self.plot_formats=plot_formats
