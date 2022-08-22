@@ -204,8 +204,9 @@ class StreamOptionsWindow(QDialog):
         #     dialog_popup('please enter your group name first')
         #     return
     def init_plot_format_widget(self, selected_group_name):
-        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
-        self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
+        pass
+        # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
+        # self.actionsWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
 
     def load_sr_and_display_duration_from_settings_to_ui(self):
         self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
