@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 
 from rena import config
 from rena.config_ui import *
+from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED
 from rena.utils.settings_utils import get_stream_preset_info, is_group_shown
 from rena.utils.ui_utils import dialog_popup
@@ -18,10 +19,17 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class GroupItem(QTreeWidgetItem):
     item_type = 'group'
 
-    def __init__(self, parent, is_shown, plot_format):
+    def __init__(self, parent, is_shown, plot_format, stream_name, group_name):
         super().__init__(parent)
         self.is_shown = is_shown  # show the channel plot or not
         self.plot_format = plot_format
+        self.stream_name = stream_name
+        self.group_name = group_name
+        self.setText(0, group_name)
+
+        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
+
+
 
     def setData(self, column, role, value):
         check_state_before = self.checkState(column)
@@ -286,8 +294,8 @@ class StreamGroupView(QTreeWidget):
 
     def add_group_item(self, parent_item, group_name, plot_format):
         is_shown = is_group_shown(group_name, self.stream_name)
-        item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format)
-        item.setText(0, group_name)
+        item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name, group_name=group_name)
+        # item.setText(0, group_name)
         if is_shown:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)

@@ -1,23 +1,13 @@
 # This Python file uses the following encoding: utf-8
 
+from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
-
-from rena import config_signal, config
-from rena.config_ui import *
-from rena.ui.StreamGroupView import StreamGroupView
-from rena.utils.settings_utils import collect_stream_all_groups_info, collect_stream_group_info, \
-    collect_stream_group_plot_format, set_image_plot_format
-from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
-from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     plot_format_on_change = QtCore.pyqtSignal(str)
 
-    def __init__(self, stream_name, selected_group_name):
+    def __init__(self, stream_name, group_name):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -25,6 +15,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         """
         # self.setWindowTitle('Options')
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
+        self.stream_name = stream_name
+        self.grou_name = group_name
+
+
+
 
     #     self.stream_name = stream_name
     #     self.selected_group_name = selected_group_name
