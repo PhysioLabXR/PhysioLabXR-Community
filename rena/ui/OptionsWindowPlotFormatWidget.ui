@@ -71,121 +71,105 @@
       <attribute name="title">
        <string>Image</string>
       </attribute>
-      <widget class="QWidget" name="widget" native="true">
-       <property name="geometry">
-        <rect>
-         <x>30</x>
-         <y>10</y>
-         <width>171</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Width</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="lineEdit"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="widget_3" native="true">
-       <property name="geometry">
-        <rect>
-         <x>220</x>
-         <y>10</y>
-         <width>171</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Height</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="lineEdit_3"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="widget_4" native="true">
-       <property name="geometry">
-        <rect>
-         <x>420</x>
-         <y>10</y>
-         <width>171</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Image Format</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QComboBox" name="comboBox">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <item>
+        <widget class="QWidget" name="ImageInfoWidget" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <property name="text">
-            <string>RGB</string>
-           </property>
+           <widget class="QWidget" name="WidthWidget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Width</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="imageWidthLineEdit"/>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
-           <property name="text">
-            <string>Gray</string>
-           </property>
+           <widget class="QWidget" name="HeightWidget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <item>
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Height</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="imageHeightLineEdit"/>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
-           <property name="text">
-            <string>PixelMap</string>
-           </property>
+           <widget class="QWidget" name="ImageFormatWidget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Image Format</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="imageFormatComboBox">
+               <item>
+                <property name="text">
+                 <string>RGB</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Gray</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>PixelMap</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="widget_5" native="true">
-       <property name="geometry">
-        <rect>
-         <x>630</x>
-         <y>10</y>
-         <width>171</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_7">
-        <item>
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>Channel Format</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QComboBox" name="comboBox_2">
           <item>
-           <property name="text">
-            <string>Channel First</string>
-           </property>
+           <widget class="QWidget" name="ChannelFormatWidget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_7">
+             <item>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Channel Format</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="channelFormatCombobox">
+               <item>
+                <property name="text">
+                 <string>Channel First</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Channel Last</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
-          <item>
-           <property name="text">
-            <string>Channel Last</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-       </layout>
-      </widget>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </widget>
      <widget class="QWidget" name="bar_plot">
       <attribute name="title">

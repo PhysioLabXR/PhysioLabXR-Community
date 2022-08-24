@@ -175,7 +175,7 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
-          <widget class="QLabel" name="actionsLabel">
+          <widget class="QLabel" name="infoActionsLabel">
            <property name="maximumSize">
             <size>
              <width>200</width>
@@ -188,15 +188,13 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="actionsWidget" native="true">
-           <layout class="QVBoxLayout" name="actionsWidgetLayout"/>
+          <widget class="QWidget" name="infoWidget" native="true">
+           <layout class="QVBoxLayout" name="infoWidgetLayout"/>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string/>
-           </property>
+         <item alignment="Qt::AlignTop">
+          <widget class="QWidget" name="widget" native="true">
+           <layout class="QVBoxLayout" name="actionsWidgetLayout"/>
           </widget>
          </item>
         </layout>

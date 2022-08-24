@@ -1,5 +1,7 @@
 import sys
 from collections import deque
+
+import PyQt5
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -46,11 +48,15 @@ class GroupItem(QTreeWidgetItem):
 
 
 class ChannelItem(QTreeWidgetItem):
-    def __init__(self, parent, is_shown, lsl_index):
+    def __init__(self, parent, is_shown, lsl_index, channel_name):
         super().__init__(parent)
         self.is_shown = is_shown  # show the channel plot or not
         self.lsl_index = lsl_index
         self.most_recent_change = None
+        self.channel_name = channel_name
+        self.setText(0, channel_name)
+        self.setText(1, '['+str(lsl_index)+']')
+
 
     def setData(self, column, role, value):
         parent_check_state_before = self.parent().checkState(column)
@@ -59,6 +65,12 @@ class ChannelItem(QTreeWidgetItem):
         super(ChannelItem, self).setData(column, role, value)
         item_check_state_after = self.checkState(column)
         parent_check_state_after = self.parent().checkState(column)
+
+
+        if role == QtCore.Qt.EditRole:
+            pass
+            # editing the name
+
 
         if role == QtCore.Qt.CheckStateRole and item_check_state_before != item_check_state_after:
             # set text to green
@@ -95,7 +107,9 @@ class StreamGroupView(QTreeWidget):
         # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
 
         # self.header().setDefaultSectionSize(180)
-        self.setHeaderHidden(True)
+        # self.setHeaderHidden(True)
+        self.setHeaderLabels(["Name", "LSL Index"])
+
         # self.setModel(self.model)
         self.groups_widgets = []
         self.channel_widgets = []
@@ -111,8 +125,12 @@ class StreamGroupView(QTreeWidget):
         self.selected_groups = []
         self.selected_channels = []
 
+        # self.resize(500, 200)
+
         # helper fieds
         self.dragged = None
+
+        self.resizeColumnToContents(0)
 
     def clear_tree_view(self):
         self.selection_state = nothing_selected
@@ -272,8 +290,8 @@ class StreamGroupView(QTreeWidget):
         return item
 
     def add_channel_item(self, parent_item, channel_name, is_shown, lsl_index):
-        item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index)
-        item.setText(0, channel_name)
+        item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index, channel_name=channel_name)
+        # item.setText(0, channel_name)
         if is_shown == 1:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)
