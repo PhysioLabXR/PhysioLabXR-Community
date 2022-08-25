@@ -49,16 +49,18 @@ while True:
         indices = cv2.dnn.NMSBoxes(bbox, confs, threshold, nms_threshold)
         detected_classes, xs, ys, ws, hs = list(), list(), list(), list(), list()
         for i in indices:
-            i = i[0]
+            i = i[0] if type(i) is list else i
             box = bbox[i]
             x, y, w, h = box[0], box[1], box[2], box[3]
             xs.append(int(x + w/2))
             ys.append(int(y))
             ws.append(int(w))
             hs.append(int(h))
-            detected_classes.append(int(classIds[i][0]))
+
+            class_id = classIds[i][0] if type(classIds[i]) is list else classIds[i]
+            detected_classes.append(int(class_id))
             cv2.rectangle(img, (x, y), (x + w, h + y), color=(0, 255, 0), thickness=2)
-            cv2.putText(img, classNames[classIds[i][0] - 1].upper(),
+            cv2.putText(img, classNames[class_id - 1].upper(),
                         (np.max((0, np.min((input_size[0], box[0] + 10)))),
                          np.max((0, np.min((input_size[1], box[1] + 30))))),
                         cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
