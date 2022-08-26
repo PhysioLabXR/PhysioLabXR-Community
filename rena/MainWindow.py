@@ -6,40 +6,34 @@ import webbrowser
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, sip, uic
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QLabel, QMessageBox, QWidget
-from PyQt5.QtWidgets import QLabel, QMessageBox
-from pyqtgraph import PlotDataItem
-from scipy.signal import decimate
-from PyQt5 import QtCore
-
-from exceptions.exceptions import RenaError
-from rena.sub_process.TCPInterface import RenaTCPInterface
-
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QWidget
 
+from exceptions.exceptions import RenaError
+from rena import config
+from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    get_all_lsl_device_preset_names, check_preset_exists
+    check_preset_exists
 
 try:
-    import config
+    import rena.config
 except ModuleNotFoundError as e:
     print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
     raise e
-import threadings.workers as workers
+import rena.threadings.workers as workers
 from rena.ui.StreamWidget import StreamWidget
-from ui.RecordingsTab import RecordingsTab
-from ui.SettingsTab import SettingsTab
-from ui.ReplayTab import ReplayTab
-from utils.data_utils import window_slice
-from utils.general import process_preset_create_openBCI_interface_startsensor, \
+from rena.ui.RecordingsTab import RecordingsTab
+from rena.ui.SettingsTab import SettingsTab
+from rena.ui.ReplayTab import ReplayTab
+from rena.utils.data_utils import window_slice
+from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
     process_preset_create_TImmWave_interface_startsensor
-from utils.general import create_lsl_interface
-from utils.ui_utils import dialog_popup, \
+from rena.utils.ui_utils import dialog_popup, \
     init_camera_widget, convert_cv_qt, another_window
+
 import numpy as np
 import collections
 
@@ -58,11 +52,20 @@ def resource_path(relative_path):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app, ask_to_close=True, *args, **kwargs):
+        """
+        This is the main entry point to RenaLabApp
+        :param app: the main QT app
+        :param ask_to_close: whether to show a 'confirm exit' dialog and ask for
+         user's confirmation in a close event
+        :param args:
+        :param kwargs:
+        """
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('Reality Navigation')
         self.app = app
+        self.ask_to_close = ask_to_close
 
         # create sensor threads, worker threads for different sensors
         ############
@@ -508,9 +511,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiment_combo_box.addItems(self.experiment_presets_dict.keys())
 
     def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
+        if self.ask_to_close:
+            reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        else:
+            reply = QMessageBox.Yes
         if reply == QMessageBox.Yes:
             if self.settings_window is not None:
                 self.settings_window.close()

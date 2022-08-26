@@ -449,7 +449,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     def visualize_LSLStream_data(self):
         self.tick_times.append(time.time())
-        print("Viz FPS {0}".format(self.get_fps()), end='\r')
+        # print("Viz FPS {0}".format(self.get_fps()), end='\r')
         self.lsl_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
         actual_sampling_rate = self.actualSamplingRate

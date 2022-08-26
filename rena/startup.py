@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
 from rena.utils.video_capture_utils import get_working_camera_ports
-from ui_shared import *
+from rena.ui_shared import *
 from rena import config, config_ui
 from rena.utils.general import *
 from rena.utils.settings_utils import export_preset_to_settings, load_all_lslStream_presets, load_all_Device_presets, \
@@ -12,7 +12,7 @@ from rena.utils.settings_utils import export_preset_to_settings, load_all_lslStr
 from rena.utils.ui_utils import dialog_popup
 
 
-def load_default_settings(revert_to_default=False):
+def load_default_settings(revert_to_default=False, reload_presets=False):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
@@ -34,7 +34,7 @@ def load_default_settings(revert_to_default=False):
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
-    config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
+    if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
     LSLStream_presets_dict = load_all_lslStream_presets()
     device_presets_dict = load_all_Device_presets()
     experiment_presets_dict = load_all_experiment_presets()

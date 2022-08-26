@@ -70,6 +70,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.timeWindowLineEdit.setValidator(QIntValidator())
         self.frequencyLineEdit.setValidator(QIntValidator())
 
+        self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")
 
         self.removeBtn.setIcon(minus_icon)
@@ -299,7 +300,6 @@ class ScriptingWidget(QtWidgets.QWidget):
         print("Selected script path ", script_path)
         self.export_script_args_to_settings()
 
-
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
         self.scriptNameLabel.setText(get_target_class_name(script_path))
@@ -513,7 +513,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def forward_input(self):
         if self.is_simulating:
-            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for input_name, input_shape in self.input_shape_dict.items()])
+            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for
+                           input_name, input_shape in self.input_shape_dict.items()])
         else:
             buffer = self.data_buffer.buffer
         send_data_buffer(buffer, self.forward_input_socket_interface)
@@ -569,7 +570,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_name, type_text, value_text in zip(args['params'], args['params_type_texts'], args['params_value_texts']):
+        for param_name, type_text, value_text in zip(args['params'], args['params_type_texts'],
+                                                     args['params_value_texts']):
             self.process_add_param(param_name, type_text=type_text, value_text=value_text)
 
     def update_input_combobox(self):
@@ -579,3 +581,6 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
         self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
         self.command_socket_interface.socket.send(np.array(value))
+
+    def onSimulationCheckboxChanged(self):
+        print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))
