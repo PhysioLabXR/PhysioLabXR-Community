@@ -132,6 +132,16 @@ class StreamGroupView(QTreeWidget):
 
         self.resizeColumnToContents(0)
 
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.itemDoubleClicked.connect(self.item_double_clicked_handler)
+
+    def item_double_clicked_handler(self, item:QTreeWidgetItem, column):
+        if column == 0:
+            self.editItem(item, column)
+        else:
+            pass
+
+
     def clear_tree_view(self):
         self.selection_state = nothing_selected
         self.selected_groups = []
