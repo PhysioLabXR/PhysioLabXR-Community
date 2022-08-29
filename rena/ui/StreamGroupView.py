@@ -29,7 +29,7 @@ class GroupItem(QTreeWidgetItem):
         self.group_name = group_name
         self.setText(0, group_name)
 
-        self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
+        # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
 
 
 
@@ -139,7 +139,8 @@ class StreamGroupView(QTreeWidget):
         if column == 0:
             self.editItem(item, column)
         else:
-            pass
+            dialog_popup('Warning: Cannot Modify LSL Index')
+            # pass
 
 
     def clear_tree_view(self):

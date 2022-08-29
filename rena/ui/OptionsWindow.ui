@@ -193,7 +193,7 @@
           </widget>
          </item>
          <item alignment="Qt::AlignTop">
-          <widget class="QWidget" name="widget" native="true">
+          <widget class="QWidget" name="actionWidget" native="true">
            <layout class="QVBoxLayout" name="actionsWidgetLayout"/>
           </widget>
          </item>

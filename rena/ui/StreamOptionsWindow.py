@@ -52,6 +52,10 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
+        self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget()
+        self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
+
+
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
         if num_points_to_plot == 0: return
@@ -84,9 +88,13 @@ class StreamOptionsWindow(QDialog):
         # self.infoWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = \
             self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
-        self.clearLayout(self.infoWidgetLayout)
-        self.clearLayout(self.actionsWidgetLayout)
-
+        # self.clearLayout(self.infoWidgetLayout)
+        # self.clearLayout(self.actionsWidgetLayout)
+        if selection_state != group_selected:
+            self.options_window_plot_format_widget.hide()
+        else:
+            self.options_window_plot_format_widget.set_plot_format_widget_info\
+                (stream_name=self.stream_name, group_name=selected_groups[0].data(0,0))
 
 ################################################################################
         if selection_state == nothing_selected: # nothing selected

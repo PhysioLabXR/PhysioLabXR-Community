@@ -19,7 +19,6 @@ sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
 
 sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
 
-
 default_add_lsl_data_type = 'YourStreamName'
 
 sampling_rate_decimal_places = 2
@@ -40,6 +39,12 @@ groups_selected = 4
 mix_selected = 5
 
 stream_widget_icon_size = [72, 72]
+
+plot_format_index_dict = {
+    'time_series': 0,
+    'image': 1,
+    'bar_plot': 2
+}
 
 image_depth_dict = {
     'RGB': 3,

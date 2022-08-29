@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1158</width>
-    <height>740</height>
+    <width>865</width>
+    <height>502</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,9 +18,9 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item alignment="Qt::AlignTop">
-    <widget class="QTabWidget" name="tabWidget">
+    <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
