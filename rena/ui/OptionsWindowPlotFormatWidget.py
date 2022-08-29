@@ -4,13 +4,13 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
 
 from rena.config_ui import plot_format_index_dict
-from rena.utils.settings_utils import collect_stream_group_info
+from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     plot_format_on_change = QtCore.pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, stream_name):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -18,14 +18,19 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         """
         # self.setWindowTitle('Options')
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
+        self.stream_name = stream_name
+        self.group_name = None
         # self.stream_name = stream_name
         # self.grou_name = group_name
 
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+
     def set_plot_format_widget_info(self, stream_name, group_name):
+        self.group_name = group_name
         # which one to select
         group_info = collect_stream_group_info(stream_name, group_name)
         # change selected tab
-        self.plotFormatTabWidget.setCurrentIndex(plot_format_index_dict[group_info['selected_plot_format']])
+        self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
 
         # only consider image for now
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
@@ -33,14 +38,14 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['image_format'])
         self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['channel_format'])
 
-    def plot_format_tab_selection_changed(self):
+    def plot_format_tab_current_changed(self, index):
+        # create value
+        # update the index in display
+        # get current selected
+        # update_selected_plot_format
+        update_selected_plot_format(self.stream_name, self.group_name, index)
 
 
-
-
-
-        # select = True
-        # print()
 
         return
 
