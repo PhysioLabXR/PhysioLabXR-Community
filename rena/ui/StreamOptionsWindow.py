@@ -52,8 +52,9 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget()
+        self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
         self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
+        self.options_window_plot_format_widget.hide()
 
 
     def update_num_points_to_display(self):
@@ -93,6 +94,7 @@ class StreamOptionsWindow(QDialog):
         if selection_state != group_selected:
             self.options_window_plot_format_widget.hide()
         else:
+            self.options_window_plot_format_widget.show()
             self.options_window_plot_format_widget.set_plot_format_widget_info\
                 (stream_name=self.stream_name, group_name=selected_groups[0].data(0,0))
 

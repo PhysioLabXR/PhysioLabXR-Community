@@ -243,6 +243,10 @@ def create_default_preset(stream_name, num_channels=1):
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
+def update_selected_plot_format(stream_name, group_name, selected_format):
+    config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
+
+
 # plot_format
 # {
 # time_series:{}
@@ -281,7 +285,7 @@ def process_plot_group(preset_dict):
         preset_dict['GroupInfo'] = {
             "Group1": {
                 "group_index": 1,
-                'selected_plot_format': 'time_series',
+                'selected_plot_format': 0,
                 "plot_format": plot_format,
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
@@ -318,7 +322,7 @@ def process_plot_group(preset_dict):
             preset_dict['GroupInfo']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
-                    'selected_plot_format': 'time_series',
+                    'selected_plot_format': 0,
                     "plot_format": plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,

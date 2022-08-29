@@ -41,9 +41,9 @@ mix_selected = 5
 stream_widget_icon_size = [72, 72]
 
 plot_format_index_dict = {
-    'time_series': 0,
-    'image': 1,
-    'bar_plot': 2
+    0: 'time_series',
+    1: 'image',
+    2: 'bar_plot'
 }
 
 image_depth_dict = {
