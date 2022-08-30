@@ -97,10 +97,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             ))
 
         if image_format_valid:
-            self.imageFormatInfoLabel.color(color_green)
+            self.imageFormatInfoLabel.setStyleSheet('color: green')
             print('Valid Image Format XD')
         else:
-            self.imageFormatInfoLabel.color(color_red)
+            self.imageFormatInfoLabel.setStyleSheet('color: red')
             print('Invalid Image Format')
 
     def get_image_info(self):
