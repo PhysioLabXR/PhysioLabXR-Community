@@ -57,6 +57,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # get current selected
         # update_selected_plot_format
         update_selected_plot_format(self.stream_name, self.group_name, index)
+        # if index==2:
+
         # if image is valid
         self.plot_format_on_change_signal.emit()
         return

@@ -480,3 +480,8 @@ class StreamGroupView(QTreeWidget):
     def reconnect_selection_changed(self):
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.selection_changed()
+
+
+    def update_group_child_selectable(self,group_name):
+        pass
+        # make all child unselectable

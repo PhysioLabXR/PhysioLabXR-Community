@@ -252,6 +252,11 @@ class StreamOptionsWindow(QDialog):
             pass
 
     def plot_format_on_change(self):
+        # get current selected:
+        group = self.stream_group_view.selected_groups[0]
+        # remove all child box
+
+
         self.plot_format_on_change_signal.emit()
     # def export_preset(self):
     #     stream_root = self.signalTreeView.stream_root
