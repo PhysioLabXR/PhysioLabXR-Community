@@ -261,14 +261,14 @@ def update_selected_plot_format(stream_name, group_name, selected_format):
 def process_plot_group(preset_dict):
 
     plot_format = {
-        'time_series': {'display': True},
-        'image': {'display': False,
+        'time_series': {'is_valid': True, 'display':True},
+        'image': {'is_valid': False,
                   'image_format': 'Gray',
                   'width': 0,
                   'height': 0,
                   'channel_format': 'Channel Last',
                   },
-        'bar_plot': {'display': False}
+        'bar_plot': {'is_valid': True}
     }
 
 
@@ -401,15 +401,26 @@ def get_channel_num(stream_name):
 
 #####################################################################
 
-def set_image_plot_format(stream_name, group_name, height, width, image_format):
+def set_plot_image_w_h(stream_name, group_name, height, width):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
-
     config.settings.setValue('height', height)
     config.settings.setValue('width', width)
-    config.settings.setValue('image_format', image_format)
-
     config.settings.endGroup()
 
+def set_plot_image_format(stream_name, group_name, image_format):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('image_format', image_format)
+    config.settings.endGroup()
+
+def set_plot_image_channel_format(stream_name, group_name, channel_format):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('channel_format', channel_format)
+    config.settings.endGroup()
+
+def set_plot_image_valid(stream_name, group_name, is_valid):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('is_valid', is_valid)
+    config.settings.endGroup()
 
 
 

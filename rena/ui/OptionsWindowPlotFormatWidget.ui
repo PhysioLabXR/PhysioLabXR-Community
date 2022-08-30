@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
@@ -167,6 +167,13 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="imageFormatInfoLabel">
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
         </widget>
        </item>
       </layout>

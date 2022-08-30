@@ -12,7 +12,7 @@ from pyqtgraph import PlotDataItem
 
 from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
-from rena.config_ui import image_depth_dict
+from rena.config_ui import image_depth_dict, plot_format_index_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
@@ -326,42 +326,44 @@ class StreamWidget(QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         for group_name in self.group_info.keys():
             plot_format = self.group_info[group_name]['plot_format']
-            # one plot widget for each group, no need to check chan_names because plot_group_slices only comes with preset
-            if plot_format['time_series']['display']:  # time_series plot
-                # plot_formats.append(plot_group_format_info)
-                group_plot_widget = pg.PlotWidget()
-                self.group_name_plot_widget_dict[group_name] = group_plot_widget
-                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
-                distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
-                group_plot_widget.addLegend()
+            ################################ time series widget initialization###########################################
+            group_plot_widget = pg.PlotWidget()
+            self.group_name_plot_widget_dict[group_name] = group_plot_widget
+            self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
-                plot_data_items = []
-                group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
-                for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                    channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
-                                         name=channel_name)
-                    self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
-                    plot_data_items.append(channel_plot_widget)
-                    if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
-                        channel_plot_widget.hide()
-                self.update_groups_shown(group_name)
-                plots.append(plot_data_items)
-                plot_widgets[group_name] = group_plot_widget
+            distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
+            group_plot_widget.addLegend()
 
-            if plot_format['image']['display']:
-                # image_shape = [plot_format['image']['width'], plot_format['image']['width'], image_depth_dict[plot_format['image']['format']]]
-                image_label = QLabel('Image_Label')
-                self.ImageWidgetLayout.addWidget(image_label)
-                image_labels[group_name] = image_label
+            plot_data_items = []
+            group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
+            for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+                channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                     name=channel_name)
+                self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
+                plot_data_items.append(channel_plot_widget)
+                if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
+                    channel_plot_widget.hide()
+            self.update_groups_shown(group_name)
+            plots.append(plot_data_items)
+            plot_widgets[group_name] = group_plot_widget
+            if self.group_info[group_name]['selected_plot_format'] != 0:
+                group_plot_widget.hide()
 
 
+            ############################### init image label ####################################################################
+            image_label = QLabel('Image_Label')
+            self.ImageWidgetLayout.addWidget(image_label)
+            image_labels[group_name] = image_label
+            if self.group_info[group_name]['selected_plot_format'] != 1:
+                image_label.hide()
 
-                # image_label.setAlignment(QtCore.Qt.AlignCenter)
-                # pass
 
-            if plot_format['image']['display']:
-                pass
+
+            # show widget if selected
+
+
+
 
                 # elif plot_group_format_info[0] == 'image':
                 #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
@@ -384,7 +386,7 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
         self.viz_time_vector = self.get_viz_time_vector()
-        return fs_label, ts_label, plot_widgets, plots, image_labels
+        return fs_label, ts_label, plot_widgets, image_labels
 
     def get_viz_time_vector(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
@@ -392,10 +394,10 @@ class StreamWidget(QtWidgets.QWidget):
         return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
-        fs_label, ts_label, plot_widgets, plots, image_labels = \
+        fs_label, ts_label, plot_widgets, image_labels = \
             self.init_stream_visualization()
         self.stream_widget_visualization_component = \
-            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, plots, image_labels)
+            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, image_labels)
 
     def process_LSLStream_data(self, data_dict):
         if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict
@@ -485,14 +487,43 @@ class StreamWidget(QtWidgets.QWidget):
         data_to_plot = self.viz_data_buffer.buffer[0][:, -len(self.viz_time_vector):]
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
             plot_group_info = self.group_info[group_name]
-            if plot_group_info["plot_format"]['time_series']['display']:
-                # plot corresponding time series data, range (a,b) is time series
-                # plot_group_channel_num = len(plot_group_info['channels'])
-                for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
-                    if plot_group_info['is_channels_shown'][index_in_group]:
-                        # print(channel_index)
-                        self.stream_widget_visualization_component.plots[plot_group_index][index_in_group] \
-                            .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
+            selected_plot_format = plot_group_info['selected_plot_format']
+
+            # get target plotting
+            # plot if valid
+
+            # 1. time_series
+            if plot_format_index_dict[selected_plot_format] == 'time_series':
+                # plot time series
+                if plot_group_info["plot_format"]['time_series']['display']: # want to show this ?
+                    if plot_group_info["plot_format"]['time_series']['is_valid']: # if the format setting is valid?
+                        # plot if valid and display this group
+                        for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
+                            if plot_group_info['is_channels_shown'][index_in_group]:
+                                # print(channel_index)
+                                self.stream_widget_visualization_component.plot_widgets[group_name].plotItem.curves[index_in_group] \
+                                    .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
+
+            # image
+            elif plot_format_index_dict[selected_plot_format] == 'image':
+                if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
+                    if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
+                        # reshape and attach to the label
+                        # TODO: plot image if valid and display
+
+                        pass
+
+
+            # if plot_group_info["plot_format"]['time_series']['display']:
+            #     # plot corresponding time series data, range (a,b) is time series
+            #     # plot_group_channel_num = len(plot_group_info['channels'])
+            #     for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
+            #         if plot_group_info['is_channels_shown'][index_in_group]:
+            #             # print(channel_index)
+            #             self.stream_widget_visualization_component.plots[plot_group_index][index_in_group] \
+            #                 .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
+
+
                     # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
                     #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
                     #                                                                 data_to_plot[i, :])

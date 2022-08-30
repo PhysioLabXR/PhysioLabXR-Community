@@ -3,6 +3,7 @@ color_white = '#ffffff'
 color_gray = '#f0f0f0'
 color_bright = '#E8E9EB'
 color_green = "#03fc4e"
+color_red = '#d1000e'
 
 button_color = color_white
 
