@@ -11,7 +11,7 @@ from rena.utils.settings_utils import collect_stream_group_info, update_selected
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     plot_format_on_change_signal = QtCore.pyqtSignal(dict)
-    image_format_on_change_signal = QtCore.pyqtSignal()
+    preset_on_change_signal = QtCore.pyqtSignal()
 
     def __init__(self, stream_name):
         super().__init__()
@@ -35,7 +35,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_channel_format_change)
 
-        self.image_format_on_change_signal.connect(self.image_valid_update)
+        # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
 
     def set_plot_format_widget_info(self, stream_name, group_name):
@@ -70,7 +70,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             'group_name': self.group_name,
             'new_format': plot_format_index_dict[index]
         }
+
         self.plot_format_on_change_signal.emit(info)
+        self.preset_on_change_signal.emit()
 
 
     def image_W_H_on_change(self):
@@ -81,19 +83,19 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         height = self.get_image_height()
         set_plot_image_w_h(self.stream_name, self.group_name, height=height, width=width)
 
-        self.image_format_on_change_signal.emit()
+        self.image_changed()
 
     def image_format_change(self):
         image_format = self.get_image_format()
         set_plot_image_format(self.stream_name, self.group_name,image_format=image_format)
 
-        self.image_format_on_change_signal.emit()
+        self.image_changed()
 
     def image_channel_format_change(self):
         image_channel_format = self.get_image_channel_format()
         set_plot_image_channel_format(self.stream_name, self.group_name, channel_format=image_channel_format)
 
-        self.image_format_on_change_signal.emit()
+        self.image_changed()
 
 
 
@@ -159,4 +161,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         current_format = self.channelFormatCombobox.currentText()
         # image_channel_num = image_depth_dict(current_format)
         return current_format
+
+    def image_changed(self):
+        self.image_valid_update()
+        self.preset_on_change_signal.emit()
 

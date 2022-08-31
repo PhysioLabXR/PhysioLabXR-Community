@@ -320,7 +320,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.MetaInfoVerticalLayout.addWidget(fs_label)
         self.MetaInfoVerticalLayout.addWidget(ts_label)
         # if plot_group_slices:
-        plot_widgets = {}
+        time_series_widgets = {}
         image_labels = {}
         plots = []
         plot_elements = {}
@@ -349,7 +349,7 @@ class StreamWidget(QtWidgets.QWidget):
                     channel_plot_widget.hide()
             self.update_groups_shown(group_name)
             plots.append(plot_data_items)
-            plot_widgets[group_name] = group_plot_widget
+            time_series_widgets[group_name] = group_plot_widget
             if self.group_info[group_name]['selected_plot_format'] != 0:
                 group_plot_widget.hide()
 
@@ -388,11 +388,11 @@ class StreamWidget(QtWidgets.QWidget):
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
-        plot_elements['plot_widget'] = plot_widgets
+        plot_elements['time_series'] = time_series_widgets
         plot_elements['image'] = image_labels
 
         self.viz_time_vector = self.get_viz_time_vector()
-        return fs_label, ts_label, plot_widgets, image_labels
+        return fs_label, ts_label, plot_elements
 
     def get_viz_time_vector(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
@@ -400,10 +400,10 @@ class StreamWidget(QtWidgets.QWidget):
         return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
-        fs_label, ts_label, plot_widgets, image_labels = \
+        fs_label, ts_label, plot_elements = \
             self.init_stream_visualization()
         self.stream_widget_visualization_component = \
-            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_widgets, image_labels)
+            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_elements)
 
     def process_LSLStream_data(self, data_dict):
         if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict
@@ -507,7 +507,7 @@ class StreamWidget(QtWidgets.QWidget):
                         for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
                             if plot_group_info['is_channels_shown'][index_in_group]:
                                 # print(channel_index)
-                                self.stream_widget_visualization_component.plot_widgets[group_name].plotItem.curves[index_in_group] \
+                                self.stream_widget_visualization_component.plot_elements['time_series'][group_name].plotItem.curves[index_in_group] \
                                     .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
 
             # image
