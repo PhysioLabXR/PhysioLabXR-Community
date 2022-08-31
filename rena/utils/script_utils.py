@@ -51,8 +51,13 @@ def get_target_class(script_path):
 
     classes = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
-    target_class = classes[0]
-    return script_module.__getattribute__(target_class)
+    classes = [script_module.__getattribute__(x) for x in classes if x != 'RenaScript']  # exclude RenaScript itself
+    classes = [x for x in classes if issubclass(x, RenaScript)]
+    try:
+        assert len(classes) == 1
+    except AssertionError:
+        raise InvalidScripPathError(script_path, 'Script has more than one classes that extends RenaScript. There can be only one subclass of RenaScript in the script file.')
+    return classes[0]
 
 
 def get_target_class_name(script_path):

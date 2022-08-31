@@ -42,7 +42,6 @@ if __name__ == '__main__':
 
     # splash screen destroy
     splash.destroy()
-
     window.show()
 
     try:

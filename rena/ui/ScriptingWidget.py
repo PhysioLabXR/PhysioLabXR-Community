@@ -14,13 +14,14 @@ from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
 from rena.startup import load_default_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
+from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.general import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_buffer
@@ -28,7 +29,7 @@ from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
-    add_stream_presets_to_combobox, another_window
+    add_stream_presets_to_combobox, another_window, update_presets_to_combobox
 import pyqtgraph as pg
 
 
@@ -42,25 +43,34 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.script = None
         self.input_widgets = []
         self.output_widgets = []
+        self.param_widgets = []
 
         # add all presents to camera
         add_stream_presets_to_combobox(self.inputComboBox)
 
+        # set up the add buttons
         self.addInputBtn.setIcon(add_icon)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
+        self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
+        self.inputComboBox.lineEdit().returnPressed.connect(self.addInputBtn.click)
 
         self.addOutput_btn.setIcon(add_icon)
         self.addOutput_btn.clicked.connect(self.add_output_clicked)
         self.output_lineEdit.textChanged.connect(self.on_output_lineEdit_changed)
+        self.output_lineEdit.returnPressed.connect(self.addOutput_btn.click)
 
         self.addParam_btn.setIcon(add_icon)
-        self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
+        self.addParam_btn.clicked.connect(self.add_params_clicked)
+        self.param_lineEdit.textChanged.connect(self.check_can_add_param)
+        self.param_lineEdit.returnPressed.connect(self.addParam_btn.click)
+
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
         self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 
         self.timeWindowLineEdit.setValidator(QIntValidator())
         self.frequencyLineEdit.setValidator(QIntValidator())
 
+        self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")
 
         self.removeBtn.setIcon(minus_icon)
@@ -74,9 +84,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.runBtn.setEnabled(False)
         self.script_process = None
 
-        # self.scripting_worker = None
-        # self.worker_thread = None
-        # self.worker_timer = None
+        # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
         self.script_console_log = ScriptConsoleLog()
         self.script_console_log_window = another_window('Console Log')
@@ -87,20 +95,21 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.stdout_worker_thread = None
         self.create_stdout_worker()  # setup stdout worker
 
+        # Fields readin information from the script process, including timing performance and check for abnormal termination
         self.info_socket_interface = None
         self.info_thread = None
         self.info_worker = None
         self.script_pid = None
 
-        self.input_shape_dict = None
+        # Fields for the console output window #########################################################################
+        self.input_shape_dict = None  # to keep the input shape for each forward input callback, so we don't query the UI everytime for the input shapes
         self.forward_input_timer = QTimer()
         self.forward_input_timer.timeout.connect(self.forward_input)
         self.data_buffer = None
         self.forward_input_socket_interface = None
 
-        # self.forward_data_worker = None
-        # self.forward_data_thread = None
-        if args is not None:  # loading from script preset
+        # loading from script preset from the persistent sittings ######################################################
+        if args is not None:
             self.id = args['id']
             self.import_script_args(args)
         else:
@@ -291,7 +300,6 @@ class ScriptingWidget(QtWidgets.QWidget):
         print("Selected script path ", script_path)
         self.export_script_args_to_settings()
 
-
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
         self.scriptNameLabel.setText(get_target_class_name(script_path))
@@ -327,7 +335,6 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.export_script_args_to_settings()
 
         input_widget.set_button_callback(remove_btn_clicked)
-        input_widget.button.setIcon(minus_icon)
         self.input_widgets.append(input_widget)
         self.check_can_add_input()
         print('Current items are {0}'.format(str(self.get_inputs())))
@@ -339,7 +346,6 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def process_add_output(self, output_name, num_channels=1):
         output_widget = ScriptingOutputWidget(self, output_name, num_channels)
-        output_widget.on_channel_num_changed()
         self.outputLayout.addWidget(output_widget)
 
         def remove_btn_clicked():
@@ -350,15 +356,43 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.export_script_args_to_settings()
 
         output_widget.set_button_callback(remove_btn_clicked)
-        output_widget.button.setIcon(minus_icon)
         self.output_widgets.append(output_widget)
         self.check_can_add_output()
         print('Current items are {0}'.format(str(self.get_outputs())))
 
     def add_params_clicked(self):
-        # TODO
-        pass
+        param_name = self.param_lineEdit.text()
+        self.process_add_param(param_name)
         self.export_script_args_to_settings()
+
+    def process_add_param(self, param_name, type_text=None, value_text=None):
+        param_widget = ScriptingParamWidget(self, param_name, type_text, value_text)
+        self.paramsLayout.addWidget(param_widget)
+
+        def remove_btn_clicked():
+            self.paramsLayout.removeWidget(param_widget)
+            self.param_widgets.remove(param_widget)
+            param_widget.deleteLater()
+            self.check_can_add_param()
+            self.export_script_args_to_settings()
+            self.param_change(ParamChange.REMOVE, param_name)
+
+        param_widget.set_button_callback(remove_btn_clicked)
+        self.param_widgets.append(param_widget)
+        self.check_can_add_param()
+        self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
+
+    def param_change(self, change: ParamChange, name, value=None):
+        '''
+        send params to the script process
+        @return:
+        '''
+        print('Param {} changed: {}, {}'.format(name, change, value))
+        self.export_script_args_to_settings()
+        if change == ParamChange.CHANGE:
+            assert value is not None
+        if self.is_running:
+            self.forward_param_change(change, name, value)
 
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
@@ -379,6 +413,18 @@ class ScriptingWidget(QtWidgets.QWidget):
     def get_outputs_num_channels(self):
         return [w.get_num_channels() for w in self.output_widgets]
 
+    def get_params(self):
+        return [w.get_param_name() for w in self.param_widgets]
+
+    def get_param_value_texts(self):
+        return [w.get_value_text() for w in self.param_widgets]
+
+    def get_param_type_texts(self):
+        return [w.get_type_text() for w in self.param_widgets]
+
+    def get_param_dict(self):
+        return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
+
     def check_can_add_input(self):
         """
         will disable the add button if duplicate input exists
@@ -395,6 +441,13 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.addOutput_btn.setEnabled(False)
         else:
             self.addOutput_btn.setEnabled(True)
+
+    def check_can_add_param(self):
+        param_name = self.param_lineEdit.text()
+        if param_name in self.get_params():
+            self.addParam_btn.setEnabled(False)
+        else:
+            self.addParam_btn.setEnabled(True)
 
     def on_time_window_change(self):
         self.update_input_info()
@@ -460,7 +513,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def forward_input(self):
         if self.is_simulating:
-            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for input_name, input_shape in self.input_shape_dict.items()])
+            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for
+                           input_name, input_shape in self.input_shape_dict.items()])
         else:
             buffer = self.data_buffer.buffer
         send_data_buffer(buffer, self.forward_input_socket_interface)
@@ -483,7 +537,7 @@ class ScriptingWidget(QtWidgets.QWidget):
     def get_script_args(self):
         return {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
-                'params': [], 'port': self.stdout_socket_interface.port_id,
+                'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),
@@ -494,6 +548,10 @@ class ScriptingWidget(QtWidgets.QWidget):
         config.settings.setValue('inputs', self.get_inputs())
         config.settings.setValue('outputs', self.get_outputs())
         config.settings.setValue('output_num_channels', self.get_outputs_num_channels())
+        config.settings.setValue('params', self.get_params())
+        config.settings.setValue('params_type_texts', self.get_param_type_texts())
+        config.settings.setValue('params_value_texts', self.get_param_value_texts())
+
         config.settings.setValue('run_frequency', self.frequencyLineEdit.text())
         config.settings.setValue('time_window', self.timeWindowLineEdit.text())
         config.settings.setValue('script_path', self.scriptPathLineEdit.text())
@@ -511,3 +569,18 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.process_add_input(input_preset_name)
         for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
             self.process_add_output(output_name, num_channels=output_num_channel)
+
+        for param_name, type_text, value_text in zip(args['params'], args['params_type_texts'],
+                                                     args['params_value_texts']):
+            self.process_add_param(param_name, type_text=type_text, value_text=value_text)
+
+    def update_input_combobox(self):
+        update_presets_to_combobox(self.inputComboBox)
+
+    def forward_param_change(self, change: ParamChange, name, value):
+        self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
+        self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
+        self.command_socket_interface.socket.send(np.array(value))
+
+    def onSimulationCheckboxChanged(self):
+        print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))

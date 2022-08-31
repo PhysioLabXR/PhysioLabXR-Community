@@ -6,6 +6,7 @@ from rena import config
 from rena.ui.ScriptingWidget import ScriptingWidget
 from rena.ui_shared import add_icon
 from rena.utils.settings_utils import get_script_widgets_args, remove_script_from_settings
+from rena.utils.ui_utils import update_presets_to_combobox
 
 
 class ScriptingTab(QtWidgets.QWidget):
@@ -60,3 +61,7 @@ class ScriptingTab(QtWidgets.QWidget):
         script_widgets_args = get_script_widgets_args()
         for _, args in script_widgets_args.items():
             self.add_script_widget(args)
+
+    def update_script_widget_input_combobox(self):
+        for script_widget in self.script_widgets:
+            script_widget.update_input_combobox()
