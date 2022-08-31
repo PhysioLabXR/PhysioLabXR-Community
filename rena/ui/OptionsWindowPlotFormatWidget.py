@@ -131,9 +131,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image_channel_num = self.get_image_channel_num()
         width, height, image_format, channel_format, channel_num = self.get_image_info()
         if channel_num != width * height * image_depth_dict[image_format]:
-            return False
+            return 0
         else:
-            return True
+            return 1
 
 
 

@@ -269,14 +269,14 @@ def update_selected_plot_format(stream_name, group_name, selected_format):
 def process_plot_group(preset_dict):
 
     plot_format = {
-        'time_series': {'is_valid': True, 'display':True},
-        'image': {'is_valid': False,
+        'time_series': {'is_valid': 1, 'display':1},
+        'image': {'is_valid': 0,
                   'image_format': 'Gray',
                   'width': 0,
                   'height': 0,
                   'channel_format': 'Channel Last',
                   },
-        'bar_plot': {'is_valid': True}
+        'bar_plot': {'is_valid': 0}
     }
 
 

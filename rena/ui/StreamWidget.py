@@ -24,7 +24,7 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, convert_heatmap_qt
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -118,6 +118,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
                                                          group_info=self.group_info)
         self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
         self.stream_options_window.hide()
 
 
@@ -512,13 +513,23 @@ class StreamWidget(QtWidgets.QWidget):
 
             # image
             elif plot_format_index_dict[selected_plot_format] == 'image':
-                if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
-                    if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
+                # if plot_group_info["plot_format"]['image']['display']:  # want to show this ?
+                    if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid?
                         # reshape and attach to the label
                         # TODO: plot image if valid and display
                         width, height, depth, image_format, channel_format = self.get_image_format_and_shape(group_name)
 
                         image_plot_data = data_to_plot[plot_group_info['channel_indices'], -1] # only visualize the last frame
+
+                        if image_format=='Gray':
+                            pass
+                        if image_format=='RGB':
+                            pass
+                        if image_format=='PixelMap':
+                            # pixel map return value
+                            image_plot_data = np.reshape(image_plot_data, (width, height))
+                            img = convert_heatmap_qt(image_plot_data)
+                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(img)
 
                         # create image with width and height
 
@@ -651,12 +662,15 @@ class StreamWidget(QtWidgets.QWidget):
 
     def plot_format_on_change(self, info_dict):
         old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
+        self.preset_on_change()
 
         self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][info_dict['group_name']].hide()
         self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][info_dict['group_name']].show()
 
         # update the plot hide display
+
+    def preset_on_change(self):
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
 
     def get_image_format_and_shape(self, group_name):
         width = self.group_info[group_name]['plot_format']['image']['width']

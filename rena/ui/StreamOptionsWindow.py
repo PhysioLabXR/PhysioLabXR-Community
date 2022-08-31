@@ -18,6 +18,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class StreamOptionsWindow(QDialog):
     plot_format_on_change_signal = QtCore.pyqtSignal(dict)
+    preset_on_change_signal = QtCore.pyqtSignal()
 
     def __init__(self, parent, stream_name, group_info):
         super().__init__()
@@ -57,6 +58,7 @@ class StreamOptionsWindow(QDialog):
         self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
         self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
         self.options_window_plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        self.options_window_plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.options_window_plot_format_widget.hide()
 
     def update_num_points_to_display(self):
@@ -258,6 +260,9 @@ class StreamOptionsWindow(QDialog):
             self.stream_group_view.defroze_group(group_item=group_item)
 
         self.plot_format_on_change_signal.emit(info_dict)
+
+    def preset_on_change(self):
+        self.preset_on_change_signal.emit()
 
     # def export_preset(self):
     #     stream_root = self.signalTreeView.stream_root

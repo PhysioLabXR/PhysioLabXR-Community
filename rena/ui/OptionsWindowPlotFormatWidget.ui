@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="iconSize">
       <size>
