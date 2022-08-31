@@ -53,30 +53,36 @@ def collect_stream_all_groups_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
-        config.settings.beginGroup(group_name)
-        rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-        rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
-
-
-        plot_format = dict()
-        #############################
-        config.settings.beginGroup('plot_format')
-        for format_name in config.settings.childGroups():
-            # format_info_dict = dict()
-            config.settings.beginGroup(format_name)
-            plot_format[format_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-            config.settings.endGroup()
-        config.settings.endGroup()
-        rtn[group_name]['plot_format'] = plot_format
-
-
-        config.settings.endGroup()
-
-
-
-        #############################
-
+        rtn[group_name] = dict()
     config.settings.endGroup()
+
+    for group_name in rtn:
+        rtn[group_name] = collect_stream_group_info(stream_name, group_name)
+
+    #     config.settings.beginGroup(group_name)
+    #     rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+    #     rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
+    #     rtn[group_name]['channel_indices'] = [int(i) for i in rtn[group_name]['channel_indices']]
+    #
+    #     plot_format = dict()
+    #     #############################
+    #     config.settings.beginGroup('plot_format')
+    #     for format_name in config.settings.childGroups():
+    #         # format_info_dict = dict()
+    #         config.settings.beginGroup(format_name)
+    #         plot_format[format_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+    #         config.settings.endGroup()
+    #     config.settings.endGroup()
+    #     rtn[group_name]['plot_format'] = plot_format
+    #
+    #
+    #     config.settings.endGroup()
+    #
+    #
+    #
+    #     #############################
+    #
+    # config.settings.endGroup()
     return rtn
 
 def collect_stream_group_info(stream_name, group_name):
@@ -89,6 +95,8 @@ def collect_stream_group_info(stream_name, group_name):
     #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
     config.settings.endGroup()
     rtn['plot_format'] = collect_stream_group_plot_format(stream_name, group_name)
+    rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
+    rtn['channel_indices'] = [int(i) for i in rtn['channel_indices']]
 
     return rtn
 

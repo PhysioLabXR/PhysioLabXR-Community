@@ -11,7 +11,7 @@ from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED, num_points_shown_text
 from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
-    collect_stream_all_groups_info, get_stream_preset_info
+    collect_stream_all_groups_info, get_stream_preset_info, collect_stream_group_info
 from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -250,8 +250,9 @@ class StreamOptionsWindow(QDialog):
         # get current selected:
         group_item = self.stream_group_view.selected_groups[0]
 
+        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0,0))
         # if new format is image, we disable all child
-        if info_dict['new_format'] == 'image':
+        if plot_format_index_dict[group_info['selected_plot_format']] == 'image':
             self.stream_group_view.froze_group(group_item=group_item)
         else:
             self.stream_group_view.defroze_group(group_item=group_item)

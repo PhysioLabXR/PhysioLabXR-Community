@@ -516,8 +516,18 @@ class StreamWidget(QtWidgets.QWidget):
                     if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
                         # reshape and attach to the label
                         # TODO: plot image if valid and display
+                        width, height, depth, image_format, channel_format = self.get_image_format_and_shape(group_name)
 
-                        pass
+                        image_plot_data = data_to_plot[plot_group_info['channel_indices'], -1] # only visualize the last frame
+
+                        # create image with width and height
+
+
+                        # reshape the array
+
+
+
+
 
 
             # if plot_group_info["plot_format"]['time_series']['display']:
@@ -555,7 +565,9 @@ class StreamWidget(QtWidgets.QWidget):
         # else:
         #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
         #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-
+        # a = actual_sampling_rate
+        # b = config_ui.sampling_rate_decimal_places
+        # print(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places))
         self.stream_widget_visualization_component.fs_label.setText(
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.stream_widget_visualization_component.ts_label.setText(
@@ -638,4 +650,20 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
     def plot_format_on_change(self, info_dict):
-        pass
+        old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
+
+        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][info_dict['group_name']].hide()
+        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][info_dict['group_name']].show()
+
+        # update the plot hide display
+
+    def get_image_format_and_shape(self, group_name):
+        width = self.group_info[group_name]['plot_format']['image']['width']
+        height = self.group_info[group_name]['plot_format']['image']['height']
+        image_format = self.group_info[group_name]['plot_format']['image']['image_format']
+        depth = image_depth_dict[image_format]
+        channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
+
+        return width, height, depth, image_format, channel_format
+

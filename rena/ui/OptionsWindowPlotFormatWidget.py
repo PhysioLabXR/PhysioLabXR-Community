@@ -65,14 +65,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # if index==2:
 
         # new format, old format
-        info = {
+        info_dict = {
             'stream_name': self.stream_name,
             'group_name': self.group_name,
-            'new_format': plot_format_index_dict[index]
+            'new_format': index
         }
 
-        self.plot_format_on_change_signal.emit(info)
-        self.preset_on_change_signal.emit()
+        self.plot_format_changed(info_dict)
 
 
     def image_W_H_on_change(self):
@@ -165,4 +164,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def image_changed(self):
         self.image_valid_update()
         self.preset_on_change_signal.emit()
+
+    def plot_format_changed(self, info_dict):
+        self.plot_format_on_change_signal.emit(info_dict)
 
