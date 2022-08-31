@@ -104,7 +104,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         set_plot_image_valid(self.stream_name, self.group_name, image_format_valid)
         width, height, image_format, channel_format, channel_num = self.get_image_info()
 
-        self.imageFormatInfoLabel.setText('Settings Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
+        self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
             str(width*height*image_depth_dict[image_format]), str(channel_num)
             ))
 
