@@ -10,7 +10,7 @@ from rena.utils.settings_utils import collect_stream_group_info, update_selected
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
-    plot_format_on_change_signal = QtCore.pyqtSignal()
+    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     image_format_on_change_signal = QtCore.pyqtSignal()
 
     def __init__(self, stream_name):
@@ -43,7 +43,12 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # which one to select
         group_info = collect_stream_group_info(stream_name, group_name)
         # change selected tab
+
+        # disconnect while switching selected group
+        self.plotFormatTabWidget.currentChanged.disconnect()
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+
 
         # only consider image for now
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
@@ -59,9 +64,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         update_selected_plot_format(self.stream_name, self.group_name, index)
         # if index==2:
 
-        # if image is valid
-        self.plot_format_on_change_signal.emit()
-        return
+        # new format, old format
+        info = {
+            'stream_name': self.stream_name,
+            'group_name': self.group_name,
+            'new_format': plot_format_index_dict[index]
+        }
+        self.plot_format_on_change_signal.emit(info)
 
 
     def image_W_H_on_change(self):
@@ -124,18 +133,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             return False
         else:
             return True
-
-    # def get_wxhxd_and_actual(self):
-    #     width, height, image_format, channel_format, channel_num = self.get_image_info()
-    #     wxhxd = width * height * image_depth_dict[image_format]
-    #     return wxhxd, channel_num
-
-        # return 1
-
-
-        # if channel_num!=
-
-
 
 
 

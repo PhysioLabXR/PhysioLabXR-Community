@@ -17,8 +17,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class StreamOptionsWindow(QDialog):
-
-    plot_format_on_change_signal = QtCore.pyqtSignal()
+    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
 
     def __init__(self, parent, stream_name, group_info):
         super().__init__()
@@ -55,21 +54,17 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-
-
         self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
         self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
         self.options_window_plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.options_window_plot_format_widget.hide()
-
-
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
         if num_points_to_plot == 0: return
         num_points_to_plot = int(np.min([num_points_to_plot, config.settings.value('viz_data_buffer_max_size')]))
         self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
-        self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration )
+        self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration)
 
     def get_display_duration(self):
         try:
@@ -102,44 +97,43 @@ class StreamOptionsWindow(QDialog):
             self.options_window_plot_format_widget.hide()
         else:
             self.options_window_plot_format_widget.show()
-            self.options_window_plot_format_widget.set_plot_format_widget_info\
-                (stream_name=self.stream_name, group_name=selected_groups[0].data(0,0))
+            self.options_window_plot_format_widget.set_plot_format_widget_info \
+                (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
 
-################################################################################
-        if selection_state == nothing_selected: # nothing selected
+        ################################################################################
+        if selection_state == nothing_selected:  # nothing selected
             pass
 
 
-################################################################################
-        elif selection_state == channel_selected: # only one channel selected
+        ################################################################################
+        elif selection_state == channel_selected:  # only one channel selected
             pass
 
 
-################################################################################
-        elif selection_state == mix_selected: #  both groups and channels are selected
+        ################################################################################
+        elif selection_state == mix_selected:  # both groups and channels are selected
             pass
 
 
-################################################################################
-        elif selection_state == channels_selected: # channels selected
+        ################################################################################
+        elif selection_state == channels_selected:  # channels selected
             pass
 
-################################################################################
-        elif selection_state == group_selected: # one group selected
+        ################################################################################
+        elif selection_state == group_selected:  # one group selected
             pass
 
-        elif selection_state == groups_selected: # multiple groups selected
+        elif selection_state == groups_selected:  # multiple groups selected
             pass
 
             # merge_groups_btn = init_button(parent=self.actionsWidgetLayout, label='Merge Selected Groups',
             #                                function=self.merge_groups_btn_clicked)
 
-#         self.infoWidgetLayout.addStretch()
+    #         self.infoWidgetLayout.addStretch()
 
     def reload_preset_to_UI(self):
         self.reload_group_info_in_treeview()
         self.load_sr_and_display_duration_from_settings_to_ui()
-
 
     def reload_group_info_in_treeview(self):
         '''
@@ -203,6 +197,7 @@ class StreamOptionsWindow(QDialog):
         # else:
         #     dialog_popup('please enter your group name first')
         #     return
+
     def init_plot_format_widget(self, selected_group_name):
         pass
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
@@ -217,7 +212,7 @@ class StreamOptionsWindow(QDialog):
         if new_nominal_sampling_rate.isnumeric():
             new_nominal_sampling_rate = float(new_nominal_sampling_rate)
             if new_nominal_sampling_rate > 0:
-                print(new_nominal_sampling_rate) # TODO: update in preset and GUI
+                print(new_nominal_sampling_rate)  # TODO: update in preset and GUI
             else:
                 dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
         else:
@@ -242,26 +237,26 @@ class StreamOptionsWindow(QDialog):
         #     set_channel_displayed(checked, channel_index, parent_group, self.stream_name)
         #     self.parent.update_channel_shown(channel_index, checked, parent_group)
 
-
     @QtCore.pyqtSlot(tuple)
     def channel_parent_group_changed(self, change: tuple):
         channel_index, target_parent_group = change
-        if not is_channel_in_group(channel_index, target_parent_group, self.stream_name): # check against the setting, see if the target parent group is the same as the one in the settings
+        if not is_channel_in_group(channel_index, target_parent_group,
+                                   self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
             # the target parent group is different from the channel's original group
             # TODO
             pass
 
-    def plot_format_on_change(self):
+    def plot_format_on_change(self, info_dict):
         # get current selected:
-        group = self.stream_group_view.selected_groups[0]
-        # remove all child box
+        group_item = self.stream_group_view.selected_groups[0]
 
+        # if new format is image, we disable all child
+        if info_dict['new_format'] == 'image':
+            self.stream_group_view.froze_group(group_item=group_item)
+        else:
+            self.stream_group_view.defroze_group(group_item=group_item)
 
-        self.plot_format_on_change_signal.emit()
+        self.plot_format_on_change_signal.emit(info_dict)
+
     # def export_preset(self):
     #     stream_root = self.signalTreeView.stream_root
-
-
-
-
-

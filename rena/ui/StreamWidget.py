@@ -117,7 +117,9 @@ class StreamWidget(QtWidgets.QWidget):
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
                                                          group_info=self.group_info)
+        self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.stream_options_window.hide()
+
 
         # FPS counter``
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
@@ -319,8 +321,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.MetaInfoVerticalLayout.addWidget(ts_label)
         # if plot_group_slices:
         plot_widgets = {}
-        plots = []
         image_labels = {}
+        plots = []
+        plot_elements = {}
 
         # plot_formats = []
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
@@ -384,6 +387,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
+
+        plot_elements['plot_widget'] = plot_widgets
+        plot_elements['image'] = image_labels
 
         self.viz_time_vector = self.get_viz_time_vector()
         return fs_label, ts_label, plot_widgets, image_labels
@@ -622,3 +628,14 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         set_stream_preset_info(self.stream_name, 'NominalSamplingRate', new_sampling_rate)
         set_stream_preset_info(self.stream_name, 'DisplayDuration', new_display_duration)
+
+    def reload_visualization_elements(self, info_dict):
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
+        clear_layout(self.MetaInfoVerticalLayout)
+        clear_layout(self.TimeSeriesPlotsLayout)
+        clear_layout(self.ImageWidgetLayout)
+        clear_layout(self.BarPlotWidgetLayout)
+        self.create_visualization_component()
+
+    def plot_format_on_change(self, info_dict):
+        pass

@@ -13,7 +13,7 @@ from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED
 from rena.utils.settings_utils import get_stream_preset_info, is_group_shown
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore, QtGui, QtWidgets
-
+from PyQt5.QtCore import Qt
 
 ## Reference:
 ## https://stackoverflow.com/questions/13662020/how-to-implement-itemchecked-and-itemunchecked-signals-for-qtreewidget-in-pyqt4
@@ -67,12 +67,12 @@ class ChannelItem(QTreeWidgetItem):
         parent_check_state_after = self.parent().checkState(column)
 
 
-        if role == QtCore.Qt.EditRole:
+        if role == Qt.EditRole:
             pass
             # editing the name
 
 
-        if role == QtCore.Qt.CheckStateRole and item_check_state_before != item_check_state_after:
+        if role == Qt.CheckStateRole and item_check_state_before != item_check_state_after:
             # set text to green
             if item_check_state_after == Qt.Checked or item_check_state_after == Qt.PartiallyChecked:
                 self.display = True
@@ -186,7 +186,7 @@ class StreamGroupView(QTreeWidget):
                                                 is_shown=group_values['is_channels_shown'][channel_index_in_group],
                                                 lsl_index=channel_index)
 
-                channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
+                # channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
                 # self.channel_widgets.append(channel)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)
@@ -268,37 +268,37 @@ class StreamGroupView(QTreeWidget):
         # self.moving_channels = False
         # self.stream_root.setCheckState(0, Qt.Checked)
 
-    def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
-        item = QTreeWidgetItem(parent_item)
-        item.setText(0, str(display_text))
-        item.item_type = item_type
-        item.display = display
-        if plot_format is not None:
-            item.plot_format = 'time_series'
-        if item_index is not None:
-            item.item_index = item_index
-        if display is not None:
-            if display == 1:
-                item.setForeground(0, QBrush(QColor(color_green)))
-                item.setCheckState(0, Qt.Checked)
-            else:
-                item.setCheckState(0, Qt.Unchecked)
-        else:
-            item.setCheckState(0, Qt.Unchecked)
-        # item.setForeground(0, QBrush(QColor("#123456")))
-        # channel.setCheckState(0, Qt.Unchecked)
-        # channel_group.setText(1, group_name)
-        # channel_group.setEditable(False)
-        item.setFlags(
-            item.flags()
-            | Qt.ItemIsTristate
-            | Qt.ItemIsUserCheckable
-            | Qt.ItemIsEditable
-            | Qt.ItemIsDragEnabled
-            | Qt.ItemIsDropEnabled
-        )
-
-        return item
+    # def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
+    #     item = QTreeWidgetItem(parent_item)
+    #     item.setText(0, str(display_text))
+    #     item.item_type = item_type
+    #     item.display = display
+    #     if plot_format is not None:
+    #         item.plot_format = 'time_series'
+    #     if item_index is not None:
+    #         item.item_index = item_index
+    #     if display is not None:
+    #         if display == 1:
+    #             item.setForeground(0, QBrush(QColor(color_green)))
+    #             item.setCheckState(0, Qt.Checked)
+    #         else:
+    #             item.setCheckState(0, Qt.Unchecked)
+    #     else:
+    #         item.setCheckState(0, Qt.Unchecked)
+    #     # item.setForeground(0, QBrush(QColor("#123456")))
+    #     # channel.setCheckState(0, Qt.Unchecked)
+    #     # channel_group.setText(1, group_name)
+    #     # channel_group.setEditable(False)
+    #     item.setFlags(
+    #         item.flags()
+    #         | Qt.ItemIsTristate
+    #         | Qt.ItemIsUserCheckable
+    #         | Qt.ItemIsEditable
+    #         | Qt.ItemIsDragEnabled
+    #         | Qt.ItemIsDropEnabled
+    #     )
+    #
+    #     return item
 
     def add_channel_item(self, parent_item, channel_name, is_shown, lsl_index):
         item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index, channel_name=channel_name)
@@ -315,9 +315,10 @@ class StreamGroupView(QTreeWidget):
             | Qt.ItemIsUserCheckable
             | Qt.ItemIsEditable
             | Qt.ItemIsDragEnabled
-            | Qt.ItemIsDropEnabled
         )
-        # item.emitDataChanged()
+
+        item.setFlags(item.flags() & (~Qt.ItemIsDropEnabled))
+
         self.channel_widgets.append(item)
         return item
 
@@ -339,6 +340,7 @@ class StreamGroupView(QTreeWidget):
             | Qt.ItemIsDragEnabled
             | Qt.ItemIsDropEnabled
         )
+
         self.groups_widgets.append(item)
         return item
 
@@ -480,6 +482,45 @@ class StreamGroupView(QTreeWidget):
     def reconnect_selection_changed(self):
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.selection_changed()
+
+
+    def froze_group(self,group_item):
+        # group_item is not dropable
+        group_item.setFlags(
+            group_item.flags()
+            & (~Qt.ItemIsDropEnabled)
+        )
+
+
+
+        for i in range(0, group_item.childCount()):
+            group_item.child(i).setDisabled(True)
+            # group_item.child(i).setFlags(
+            #     group_item.child(i).flags()
+            #     & (~Qt.ItemIsTristate)
+            #     & (~Qt.ItemIsUserCheckable)
+            #     & (~Qt.ItemIsEditable)
+            #     & (~Qt.ItemIsDragEnabled)
+            #     | (~Qt.ItemIsDropEnabled)
+            # )
+
+    def defroze_group(self, group_item):
+
+        group_item.setFlags(
+            group_item.flags()
+            | Qt.ItemIsDropEnabled
+        )
+
+        for i in range(0, group_item.childCount()):
+            group_item.child(i).setDisabled(False)
+            # group_item.child(i).setFlags(
+            #     group_item.child(i).flags()
+            #     | Qt.ItemIsTristate
+            #     | Qt.ItemIsUserCheckable
+            #     | Qt.ItemIsEditable
+            #     | Qt.ItemIsDragEnabled
+            #     | Qt.ItemIsDropEnabled
+            # )
 
 
     def update_group_child_selectable(self,group_name):
