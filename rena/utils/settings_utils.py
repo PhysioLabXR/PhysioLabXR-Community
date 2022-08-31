@@ -23,7 +23,9 @@ def get_all_preset_names():
     config.settings.beginGroup('presets/experimentpresets')
     experiment_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()
-    return stream_preset_names + experiment_preset_names
+
+    video_devices = config.settings.value('video_device')
+    return stream_preset_names + experiment_preset_names + video_devices
 
 def get_stream_preset_names():
     config.settings.beginGroup('presets/streampresets')

@@ -52,7 +52,7 @@ def load_default_settings():
     print('Loading avaiable cameras')
     cameras = get_working_camera_ports()
     cameras = list(map(str, cameras[1]))
-    config.settings.setValue('cameras', cameras + ['monitor1'])
+    config.settings.setValue('video_device', cameras + ['monitor1'])
 
 def load_ui_shared():
     global stream_unavailable_pixmap
