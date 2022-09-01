@@ -5,12 +5,11 @@ import numpy as np
 import serial
 from pylsl import StreamInfo, StreamOutlet
 
-import config_signal
 from exceptions.exceptions import BufferOverFlowError, DataPortNotOpenError, GeneralMmWError, PortsNotSetUpError
-from utils.IndexPen_utils.IndexPenPredictionUtils.IndexPenPredictor import IndexPenRealTimePredictor
-from utils.data_utils import clutter_removal
-from utils.mmWave_utils import serial_iwr6843
-from utils.mmWave_utils.parse_tlv import decode_iwr_tlv
+from rena import config_signal
+from rena.utils.data_utils import clutter_removal
+from rena.utils.mmWave_utils import serial_iwr6843
+from rena.utils.mmWave_utils.parse_tlv import decode_iwr_tlv
 
 
 class MmWaveSensorLSLInterface:

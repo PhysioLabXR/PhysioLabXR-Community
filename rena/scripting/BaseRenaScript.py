@@ -1,3 +1,5 @@
+import numpy as np
+
 from rena.scripting.RenaScript import RenaScript
 
 

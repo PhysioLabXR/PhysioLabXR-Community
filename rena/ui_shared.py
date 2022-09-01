@@ -43,6 +43,13 @@ stop_recording_text = 'Stop Recording'
 # Scripting Widget
 script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loop call runtime {1}'
 
+# Scripting Widget Tooltips
+scripting_input_widget_shape_label_tooltip = 'The expected shape of this input data at every loop. \n' \
+                                             'First dimension is the number of channels. \n' \
+                                             'Second dimension is the number of time points (set by the input time window)'
+scripting_input_widget_button_tooltip = "Remove this input"
+scripting_input_widget_name_label_tooltip = "Name of the input stream"
+
 # StreamGroupView
 CHANNEL_ITEM_IS_DISPLAY_CHANGED = 1
 CHANNEL_ITEM_GROUP_CHANGED = 2

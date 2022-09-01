@@ -54,6 +54,8 @@ class ReplayServer(threading.Thread):
                                 ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
                         elif file_loc.endswith('.p'):
                             self.stream_data = pickle.load(open(file_loc, 'rb'))
+                            if '0' in self.stream_data.keys(): self.stream_data.pop('0')
+                            # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
                         else:
                             self.send_string(shared.FAIL_INFO + 'Unsupported file type')
                             return
@@ -110,6 +112,9 @@ class ReplayServer(threading.Thread):
         self.stream_data = None
         self.stream_names = None
         self.selected_stream_indices = None
+
+        # close all outlets if there's any
+        del self.outlets[:]
 
     def replay(self):
         nextStreamIndex = None
