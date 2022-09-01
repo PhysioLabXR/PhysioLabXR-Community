@@ -275,6 +275,8 @@ def process_plot_group(preset_dict):
                   'width': 0,
                   'height': 0,
                   'channel_format': 'Channel Last',
+                  'display_width': 0,
+                  'display_height': 0,
                   },
         'bar_plot': {'is_valid': 0}
     }

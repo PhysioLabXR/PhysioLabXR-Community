@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import time
 from collections import deque
-
+import cv2
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
@@ -24,7 +24,8 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, convert_heatmap_qt
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, convert_heatmap_qt, \
+    convert_cv_qt
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -523,13 +524,30 @@ class StreamWidget(QtWidgets.QWidget):
 
                         if image_format=='Gray':
                             pass
+
                         if image_format=='RGB':
-                            pass
+                            # reshape
+                            if channel_format == 'Channel First':
+                                image_plot_data = np.reshape(image_plot_data, (depth, width, height))
+                                image_plot_data = np.moveaxis(image_plot_data, 0, -1)
+                            elif channel_format == 'Channel Last':
+                                image_plot_data = np.reshape(image_plot_data, (width, height, depth))
+                            # cast to int
+                            image_plot_data = image_plot_data.astype(np.uint8)
+                            # image_plot_data = cv2.resize(image_plot_data, (config_ui.cam_display_width, config_ui.cam_display_height),
+                            #                     interpolation=cv2.INTER_NEAREST)
+                            image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLOR_BGR2RGB)
+                            # convert to qt image
+                            image_plot_data = convert_cv_qt(image_plot_data)
+                            # image_plot_data = image_plot_data.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio) # rescale it
+                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
+
+
                         if image_format=='PixelMap':
                             # pixel map return value
                             image_plot_data = np.reshape(image_plot_data, (width, height))
-                            img = convert_heatmap_qt(image_plot_data)
-                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(img)
+                            image_plot_data = convert_heatmap_qt(image_plot_data)
+                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
 
                         # create image with width and height
 
