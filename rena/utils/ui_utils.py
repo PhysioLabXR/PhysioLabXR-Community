@@ -359,7 +359,7 @@ def convert_cv_qt(cv_img):
     # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(convert_to_Qt_format)
 
-def convert_heatmap_qt(spec_array, height=512, width=512):
+def convert_heatmap_qt(spec_array, width=512, height=512):
     heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
     qpixmap = QPixmap(heatmap_qim)
     qpixmap = qpixmap.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
