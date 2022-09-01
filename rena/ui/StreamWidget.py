@@ -539,7 +539,11 @@ class StreamWidget(QtWidgets.QWidget):
                             image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLOR_BGR2RGB)
                             # convert to qt image
                             image_plot_data = convert_cv_qt(image_plot_data)
-                            # image_plot_data = image_plot_data.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio) # rescale it
+
+                            # rescale to window width and keep Aspect Ratio
+
+                            image_plot_data = image_plot_data.scaled(self.stream_widget_visualization_component.plot_elements['image'][group_name].width(),
+                                                                     100, pg.QtCore.Qt.KeepAspectRatio) # rescale it
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
 
 
