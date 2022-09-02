@@ -273,7 +273,7 @@ def process_plot_group(preset_dict):
     plot_format = {
         'time_series': {'is_valid': 1, 'display':1},
         'image': {'is_valid': 0,
-                  'image_format': 'Gray',
+                  'image_format': 'PixelMap',
                   'width': 0,
                   'height': 0,
                   'channel_format': 'Channel Last',

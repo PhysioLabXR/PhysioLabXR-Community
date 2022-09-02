@@ -4,8 +4,7 @@ from collections import deque
 import cv2
 import numpy as np
 import pyqtgraph as pg
-from IPython.external.qt_for_kernel import QtCore
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QMessageBox
@@ -25,8 +24,9 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, convert_heatmap_qt, \
-    convert_cv_qt
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
+    convert_array_to_qt_heatmap, \
+    convert_rgb_to_qt_image, convert_numpy_to_uint8
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -366,29 +366,6 @@ class StreamWidget(QtWidgets.QWidget):
                 image_label.hide()
 
 
-
-            # show widget if selected
-
-
-
-
-                # elif plot_group_format_info[0] == 'image':
-                #     plot_group_format_info[1] = tuple(eval(plot_group_format_info[1]))
-                #
-                #     # check if the channel num matches:
-                #     if pg_slice[1] - pg_slice[0] != np.prod(np.array(plot_group_format_info[1])):
-                #         raise AssertionError(
-                #             'The number of channel in this slice does not match with the number of image pixels.'
-                #             'The image format is {0} but channel slice format is {1}'.format(plot_group_format_info,
-                #                                                                              pg_slice))
-                #     plot_formats.append(plot_group_format_info)
-                #     image_label = QLabel('Image_Label')
-                #     image_label.setAlignment(QtCore.Qt.AlignCenter)
-                #     parent.addWidget(image_label)
-                #     plots.append(image_label)
-                # else:
-                #     raise AssertionError('Unknown plotting group format. We only support: time_series, image_(a,b,c)')
-
         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
 
@@ -524,72 +501,29 @@ class StreamWidget(QtWidgets.QWidget):
 
                         image_plot_data = data_to_plot[plot_group_info['channel_indices'], -1] # only visualize the last frame
 
-                        if image_format=='Gray':
-                            pass
 
-                            # if channel_format == 'Channel First':
-                            #     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
-                            #     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
-                            # elif channel_format == 'Channel Last':
-                            #     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
-                            # # cast to int
-                            # image_plot_data = image_plot_data.astype(np.uint8)
-                            # image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLORMAP_AUTUMN)
-                            # image_plot_data = convert_cv_qt(image_plot_data, scaling_factor=scaling_factor)
-                            # self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
-                            #     image_plot_data)
 
-                        if image_format=='RGB':
-                            # reshape
+                        # if image_format =='Gray':
+                        #     image_plot_data = image_plot_data.astype(np.uint8)
+
+                        if image_format == 'RGB':
+
                             if channel_format == 'Channel First':
                                 image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                                 image_plot_data = np.moveaxis(image_plot_data, 0, -1)
                             elif channel_format == 'Channel Last':
                                 image_plot_data = np.reshape(image_plot_data, (height, width, depth))
-                            # cast to int
+                            # image_plot_data = convert_numpy_to_uint8(image_plot_data)
                             image_plot_data = image_plot_data.astype(np.uint8)
-                            image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLOR_BGR2RGB)
-                            image_plot_data = convert_cv_qt(image_plot_data, scaling_factor=scaling_factor)
+                            image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
-
 
                         if image_format=='PixelMap':
                             # pixel map return value
                             image_plot_data = np.reshape(image_plot_data, (height, width)) # matrix : (height, width)
-                            image_plot_data = convert_heatmap_qt(image_plot_data, scaling_factor=scaling_factor)
+                            image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
 
-
-            # if plot_group_info["plot_format"]['time_series']['display']:
-            #     # plot corresponding time series data, range (a,b) is time series
-            #     # plot_group_channel_num = len(plot_group_info['channels'])
-            #     for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
-            #         if plot_group_info['is_channels_shown'][index_in_group]:
-            #             # print(channel_index)
-            #             self.stream_widget_visualization_component.plots[plot_group_index][index_in_group] \
-            #                 .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
-
-
-                    # for i in range(plot_channel_num_offset, plot_channel_num_offset + plot_group_channel_num):
-                    #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][i].setData(time_vector,
-                    #                                                                 data_to_plot[i, :])
-                    # plot_channel_num_offset += plot_group_channel_num
-                # elif plot_format[0] == 'image':
-                #     image_shape = plot_format[1]
-                #     channel_num = image_shape[2]
-                #     plot_array = data_to_plot[plot_group[0]: plot_group[1], -1]
-                #
-                #     img = plot_array.reshape(image_shape)
-                #     # display openCV image if channel_num = 3
-                #     # display heat map if channel_num = 1
-                #     if channel_num == 3:
-                #         img = convert_cv_qt(img)
-                #     if channel_num == 1:
-                #         img = np.squeeze(img, axis=-1)
-                #         img = convert_heatmap_qt(img)
-                #
-                #     self.LSL_plots_fs_label_dict[lsl_stream_name][0][plot_channel_num_offset].setPixmap(img)
-                #     plot_channel_num_offset += 1
 
         # TODO： remove this statement
         # else:

@@ -32,7 +32,7 @@ from rena.utils.data_utils import window_slice
 from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
     process_preset_create_TImmWave_interface_startsensor
 from rena.utils.ui_utils import dialog_popup, \
-    init_camera_widget, convert_cv_qt, another_window
+    init_camera_widget, convert_rgb_to_qt_image, another_window
 
 import numpy as np
 import collections
@@ -276,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def visualize_cam(self, cam_id_cv_img_timestamp):
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         if cam_id in self.cam_displays.keys():
-            qt_img = convert_cv_qt(cv_img)
+            qt_img = convert_rgb_to_qt_image(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
             self.test_ts_buffer.append(time.time())
             self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)

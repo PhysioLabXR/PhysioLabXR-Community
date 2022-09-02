@@ -49,7 +49,7 @@ plot_format_index_dict = {
 
 image_depth_dict = {
     'RGB': 3,
-    'Gray': 1,
+    # 'Gray': 1,
     'PixelMap': 1
 }
 

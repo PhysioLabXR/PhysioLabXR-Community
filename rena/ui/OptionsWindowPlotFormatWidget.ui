@@ -142,11 +142,6 @@
                </item>
                <item>
                 <property name="text">
-                 <string>Gray</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
                  <string>PixelMap</string>
                 </property>
                </item>

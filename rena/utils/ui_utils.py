@@ -1,8 +1,7 @@
 import time
-
 import cv2
 import qimage2ndarray
-from PyQt5 import QtGui
+# from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
@@ -11,6 +10,8 @@ from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
+from qimage2ndarray.dynqt import QtGui
+
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
@@ -339,31 +340,24 @@ def get_distinct_colors(num_colors, depth=8):
     colors = [tuple(v * (2 ** depth - 1) for v in c) for c in colors]
     return colors
 
+def convert_numpy_to_uint8(array):
+    return array.astype(np.uint8)
 
-def convert_cv_qt(cv_img, scaling_factor=1):
-    t = time.time()
 
+def convert_rgb_to_qt_image(rgb_image, scaling_factor=1):
     """Convert from an opencv image to QPixmap"""
-    if cv_img.shape[-1] == 1:  # if in greyscale
-        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
-        image_data = rgb_image.data
-    elif cv_img.shape[-1] == 3:  # if in colored
-        # image_data = (cv_img * 255).astype(np.uint8)
-        image_data = cv_img
-    else:
-        raise Exception("ui_utils: Unsupported image channel format {0}".format(cv_img.shape))
-
-    h, w, ch = image_data.shape
+    h, w, ch = rgb_image.shape
     bytes_per_line = ch * w
-    convert_to_qt_format = QtGui.QImage(image_data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    convert_to_qt_format = QPixmap.fromImage(convert_to_qt_format)
-    convert_to_qt_format = convert_to_qt_format.scaled(
-                                                scaling_factor*w,
-                                                scaling_factor*h,
-                                                pg.QtCore.Qt.KeepAspectRatio) # rescale it
-    return convert_to_qt_format
+    rgb_image = rgb_image.copy()
+    q_image = QtGui.QImage(rgb_image, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    q_pixelmap = QPixmap.fromImage(q_image)
+    q_pixelmap = q_pixelmap.scaled(
+                                scaling_factor*w,
+                                scaling_factor*h,
+                                pg.QtCore.Qt.KeepAspectRatio) # rescale it
+    return q_pixelmap
 
-def convert_heatmap_qt(spec_array, scaling_factor):
+def convert_array_to_qt_heatmap(spec_array, scaling_factor):
     h, w = spec_array.shape
     heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
     qpixmap = QPixmap(heatmap_qim)
