@@ -525,13 +525,6 @@ class StreamWidget(QtWidgets.QWidget):
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
 
 
-        # TODO： remove this statement
-        # else:
-        #     [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-        #      enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-        # a = actual_sampling_rate
-        # b = config_ui.sampling_rate_decimal_places
-        # print(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places))
         self.stream_widget_visualization_component.fs_label.setText(
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.stream_widget_visualization_component.ts_label.setText(
