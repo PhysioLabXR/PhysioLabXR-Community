@@ -277,8 +277,7 @@ def process_plot_group(preset_dict):
                   'width': 0,
                   'height': 0,
                   'channel_format': 'Channel Last',
-                  'display_width': 0,
-                  'display_height': 0,
+                  'scaling_factor': 1,
                   },
         'bar_plot': {'is_valid': 0}
     }
@@ -413,10 +412,12 @@ def get_channel_num(stream_name):
 
 #####################################################################
 
-def set_plot_image_w_h(stream_name, group_name, height, width):
+def set_plot_image_w_h(stream_name, group_name, height, width, scaling_factor):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
     config.settings.setValue('height', height)
     config.settings.setValue('width', width)
+    config.settings.setValue('scaling_factor', scaling_factor)
+
     config.settings.endGroup()
 
 def set_plot_image_format(stream_name, group_name, image_format):

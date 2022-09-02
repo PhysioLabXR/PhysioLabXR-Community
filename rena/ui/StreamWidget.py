@@ -520,49 +520,44 @@ class StreamWidget(QtWidgets.QWidget):
                     if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid?
                         # reshape and attach to the label
                         # TODO: plot image if valid and display
-                        width, height, depth, image_format, channel_format = self.get_image_format_and_shape(group_name)
+                        width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(group_name)
 
                         image_plot_data = data_to_plot[plot_group_info['channel_indices'], -1] # only visualize the last frame
 
                         if image_format=='Gray':
                             pass
 
+                            # if channel_format == 'Channel First':
+                            #     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
+                            #     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
+                            # elif channel_format == 'Channel Last':
+                            #     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
+                            # # cast to int
+                            # image_plot_data = image_plot_data.astype(np.uint8)
+                            # image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLORMAP_AUTUMN)
+                            # image_plot_data = convert_cv_qt(image_plot_data, scaling_factor=scaling_factor)
+                            # self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
+                            #     image_plot_data)
+
                         if image_format=='RGB':
                             # reshape
                             if channel_format == 'Channel First':
-                                image_plot_data = np.reshape(image_plot_data, (depth, width, height))
+                                image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                                 image_plot_data = np.moveaxis(image_plot_data, 0, -1)
                             elif channel_format == 'Channel Last':
-                                image_plot_data = np.reshape(image_plot_data, (width, height, depth))
+                                image_plot_data = np.reshape(image_plot_data, (height, width, depth))
                             # cast to int
                             image_plot_data = image_plot_data.astype(np.uint8)
-                            # image_plot_data = cv2.resize(image_plot_data, (config_ui.cam_display_width, config_ui.cam_display_height),
-                            #                     interpolation=cv2.INTER_NEAREST)
                             image_plot_data = cv2.cvtColor(image_plot_data, cv2.COLOR_BGR2RGB)
-                            # convert to qt image
-                            image_plot_data = convert_cv_qt(image_plot_data)
-
-                            # rescale to window width and keep Aspect Ratio
-
-                            image_plot_data = image_plot_data.scaled(self.stream_widget_visualization_component.plot_elements['image'][group_name].width(),
-                                                                     100, pg.QtCore.Qt.KeepAspectRatio) # rescale it
+                            image_plot_data = convert_cv_qt(image_plot_data, scaling_factor=scaling_factor)
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
 
 
                         if image_format=='PixelMap':
                             # pixel map return value
-                            image_plot_data = np.reshape(image_plot_data, (width, height))
-                            image_plot_data = convert_heatmap_qt(image_plot_data)
+                            image_plot_data = np.reshape(image_plot_data, (height, width)) # matrix : (height, width)
+                            image_plot_data = convert_heatmap_qt(image_plot_data, scaling_factor=scaling_factor)
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
-
-                        # create image with width and height
-
-
-                        # reshape the array
-
-
-
-
 
 
             # if plot_group_info["plot_format"]['time_series']['display']:
@@ -702,6 +697,7 @@ class StreamWidget(QtWidgets.QWidget):
         image_format = self.group_info[group_name]['plot_format']['image']['image_format']
         depth = image_depth_dict[image_format]
         channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
+        scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
 
-        return width, height, depth, image_format, channel_format
+        return width, height, depth, image_format, channel_format, scaling_factor
 

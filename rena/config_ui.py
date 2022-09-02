@@ -52,3 +52,6 @@ image_depth_dict = {
     'Gray': 1,
     'PixelMap': 1
 }
+
+image_min_width = 512
+image_min_height = 512

@@ -340,12 +340,12 @@ def get_distinct_colors(num_colors, depth=8):
     return colors
 
 
-def convert_cv_qt(cv_img):
+def convert_cv_qt(cv_img, scaling_factor=1):
     t = time.time()
 
     """Convert from an opencv image to QPixmap"""
     if cv_img.shape[-1] == 1:  # if in greyscale
-        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
         image_data = rgb_image.data
     elif cv_img.shape[-1] == 3:  # if in colored
         # image_data = (cv_img * 255).astype(np.uint8)
@@ -355,14 +355,19 @@ def convert_cv_qt(cv_img):
 
     h, w, ch = image_data.shape
     bytes_per_line = ch * w
-    convert_to_Qt_format = QtGui.QImage(image_data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    # p = convert_to_Qt_format.scaled(config_ui.cam_display_width, config_ui.cam_display_height, Qt.KeepAspectRatio)
-    return QPixmap.fromImage(convert_to_Qt_format)
+    convert_to_qt_format = QtGui.QImage(image_data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    convert_to_qt_format = QPixmap.fromImage(convert_to_qt_format)
+    convert_to_qt_format = convert_to_qt_format.scaled(
+                                                scaling_factor*w,
+                                                scaling_factor*h,
+                                                pg.QtCore.Qt.KeepAspectRatio) # rescale it
+    return convert_to_qt_format
 
-def convert_heatmap_qt(spec_array, width=512, height=512):
+def convert_heatmap_qt(spec_array, scaling_factor):
+    h, w = spec_array.shape
     heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
     qpixmap = QPixmap(heatmap_qim)
-    qpixmap = qpixmap.scaled(width, height, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
+    qpixmap = qpixmap.scaled(scaling_factor*w, scaling_factor*h, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
     return qpixmap
 
 def array_to_colormap_qim(a, normalize=True):

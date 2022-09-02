@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
@@ -103,6 +103,22 @@
              </item>
              <item>
               <widget class="QLineEdit" name="imageHeightLineEdit"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="widget" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_8">
+             <item>
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Scaling Factor</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="imageScalingFactorLineEdit"/>
              </item>
             </layout>
            </widget>

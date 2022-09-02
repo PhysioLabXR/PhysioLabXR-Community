@@ -30,8 +30,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
+        self.imageScalingFactorLineEdit.setValidator(QIntValidator())
+
         self.imageWidthLineEdit.textChanged.connect(self.image_W_H_on_change)
         self.imageHeightLineEdit.textChanged.connect(self.image_W_H_on_change)
+        self.imageScalingFactorLineEdit.textChanged.connect(self.image_W_H_on_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_channel_format_change)
 
@@ -53,6 +56,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # only consider image for now
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
         self.imageHeightLineEdit.setText(str(group_info['plot_format']['image']['height']))
+        self.imageScalingFactorLineEdit.setText(str(group_info['plot_format']['image']['scaling_factor']))
         self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['image_format'])
         self.channelFormatCombobox.setCurrentText(group_info['plot_format']['image']['channel_format'])
 
@@ -80,7 +84,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # update the value to settings
         width = self.get_image_width()
         height = self.get_image_height()
-        set_plot_image_w_h(self.stream_name, self.group_name, height=height, width=width)
+        scaling_factor = self.get_image_scaling_factor()
+        set_plot_image_w_h(self.stream_name, self.group_name, height=height, width=width, scaling_factor=scaling_factor)
 
         self.image_changed()
 
@@ -150,6 +155,16 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_image_height
+
+    def get_image_scaling_factor(self):
+        try:
+            new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_image_scaling_factor
+
+
+
 
     def get_image_format(self):
         current_format = self.imageFormatComboBox.currentText()
