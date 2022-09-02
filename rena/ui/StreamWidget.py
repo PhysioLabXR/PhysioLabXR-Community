@@ -4,6 +4,7 @@ from collections import deque
 import cv2
 import numpy as np
 import pyqtgraph as pg
+from IPython.external.qt_for_kernel import QtCore
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
@@ -358,6 +359,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             ############################### init image label ####################################################################
             image_label = QLabel('Image_Label')
+            image_label.setAlignment(QtCore.Qt.AlignCenter)
             self.ImageWidgetLayout.addWidget(image_label)
             image_labels[group_name] = image_label
             if self.group_info[group_name]['selected_plot_format'] != 1:
