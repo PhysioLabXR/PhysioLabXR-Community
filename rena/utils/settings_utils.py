@@ -279,7 +279,11 @@ def process_plot_group(preset_dict):
                   'channel_format': 'Channel Last',
                   'scaling_factor': 1,
                   },
-        'bar_plot': {'is_valid': 0}
+        'bar_plot': {'is_valid': 1,
+                     'display':1,
+                     'maximum_display': 1,
+                     'minimum_display': 0,
+                     }
     }
 
 
