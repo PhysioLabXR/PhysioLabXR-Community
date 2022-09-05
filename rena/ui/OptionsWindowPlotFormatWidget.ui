@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <property name="iconSize">
       <size>
@@ -221,7 +221,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="barPlotMaxLineEdit"/>
+              <widget class="QLineEdit" name="barPlotYMaxLineEdit"/>
              </item>
             </layout>
            </widget>
@@ -237,7 +237,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="barPlotMinLineEdit"/>
+              <widget class="QLineEdit" name="barPlotYMinLineEdit"/>
              </item>
             </layout>
            </widget>

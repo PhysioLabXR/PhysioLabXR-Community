@@ -371,7 +371,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             ############################## bar plot ##############################################################################
             barchart_widget = pg.PlotWidget()
-            barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=0, yMax=1.1)
+            # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
             label_x_axis = barchart_widget.getAxis('bottom')
             label_dict = dict(enumerate(group_channel_names)).items()
             label_x_axis.setTicks([label_dict])
@@ -544,6 +544,11 @@ class StreamWidget(QtWidgets.QWidget):
                             image_plot_data = np.reshape(image_plot_data, (height, width)) # matrix : (height, width)
                             image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
                             self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
+
+            elif plot_format_index_dict[selected_plot_format] == 'bar_chart':
+                if plot_group_info["plot_format"]['bar_chart']['is_valid']:
+                    bar_chart_plot_data = data_to_plot[plot_group_info['channel_indices'], -1]  # only visualize the last frame
+                    self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name].plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data,width=1, brush='r')
 
 
         self.stream_widget_visualization_component.fs_label.setText(

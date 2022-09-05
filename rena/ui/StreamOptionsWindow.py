@@ -254,7 +254,7 @@ class StreamOptionsWindow(QDialog):
 
         group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0,0))
         # if new format is image, we disable all child
-        if plot_format_index_dict[group_info['selected_plot_format']] == 'image':
+        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[group_info['selected_plot_format']] == 'bar_chart':
             self.stream_group_view.froze_group(group_item=group_item)
         else:
             self.stream_group_view.defroze_group(group_item=group_item)
