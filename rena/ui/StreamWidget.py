@@ -325,6 +325,7 @@ class StreamWidget(QtWidgets.QWidget):
         # if plot_group_slices:
         time_series_widgets = {}
         image_labels = {}
+        barchart_widgets = {}
         plots = []
         plot_elements = {}
 
@@ -353,6 +354,8 @@ class StreamWidget(QtWidgets.QWidget):
             self.update_groups_shown(group_name)
             plots.append(plot_data_items)
             time_series_widgets[group_name] = group_plot_widget
+            [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
+            [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
             if self.group_info[group_name]['selected_plot_format'] != 0:
                 group_plot_widget.hide()
 
@@ -366,11 +369,29 @@ class StreamWidget(QtWidgets.QWidget):
                 image_label.hide()
 
 
-        [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
-        [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
+            ############################## bar plot ##############################################################################
+            barchart_widget = pg.PlotWidget()
+            barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=0, yMax=1.1)
+            label_x_axis = barchart_widget.getAxis('bottom')
+            label_dict = dict(enumerate(group_channel_names)).items()
+            label_x_axis.setTicks([label_dict])
+            x = np.arange(len(group_channel_names))
+            y = np.array([0]*len(group_channel_names))
+            bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
+            barchart_widget.addItem(bars)
+            self.BarPlotWidgetLayout.addWidget(barchart_widget)
+            barchart_widgets[group_name] = barchart_widget
+            if self.group_info[group_name]['selected_plot_format'] != 2:
+                barchart_widget.hide()
+
+
+
+
+
 
         plot_elements['time_series'] = time_series_widgets
         plot_elements['image'] = image_labels
+        plot_elements['bar_chart'] = barchart_widgets
 
         self.viz_time_vector = self.get_viz_time_vector()
         return fs_label, ts_label, plot_elements
