@@ -19,6 +19,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class StreamOptionsWindow(QDialog):
     plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     preset_on_change_signal = QtCore.pyqtSignal()
+    bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
     def __init__(self, parent, stream_name, group_info):
         super().__init__()
@@ -59,6 +60,7 @@ class StreamOptionsWindow(QDialog):
         self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
         self.options_window_plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.options_window_plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
+        self.options_window_plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.options_window_plot_format_widget.hide()
 
     def update_num_points_to_display(self):
@@ -252,9 +254,10 @@ class StreamOptionsWindow(QDialog):
         # get current selected:
         group_item = self.stream_group_view.selected_groups[0]
 
-        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0,0))
+        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0, 0))
         # if new format is image, we disable all child
-        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[group_info['selected_plot_format']] == 'bar_chart':
+        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
+            group_info['selected_plot_format']] == 'bar_chart':
             self.stream_group_view.froze_group(group_item=group_item)
         else:
             self.stream_group_view.defroze_group(group_item=group_item)
@@ -264,5 +267,5 @@ class StreamOptionsWindow(QDialog):
     def preset_on_change(self):
         self.preset_on_change_signal.emit()
 
-    # def export_preset(self):
-    #     stream_root = self.signalTreeView.stream_root
+    def bar_chart_range_on_change(self, stream_name, group_name):
+        self.bar_chart_range_on_change_signal.emit(stream_name, group_name)

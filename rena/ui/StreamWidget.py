@@ -121,6 +121,7 @@ class StreamWidget(QtWidgets.QWidget):
                                                          group_info=self.group_info)
         self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
+        self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
 
@@ -371,6 +372,8 @@ class StreamWidget(QtWidgets.QWidget):
 
             ############################## bar plot ##############################################################################
             barchart_widget = pg.PlotWidget()
+            barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'], self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+            # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
             # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
             label_x_axis = barchart_widget.getAxis('bottom')
             label_dict = dict(enumerate(group_channel_names)).items()
@@ -654,3 +657,22 @@ class StreamWidget(QtWidgets.QWidget):
 
         return width, height, depth, image_format, channel_format, scaling_factor
 
+#############################################
+
+    def bar_chart_range_on_change(self, stream_name, group_name):
+        self.preset_on_change()
+        widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
+        widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'], max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+
+
+    def set_plot_widget_range(self, x_min, x_max, y_min, y_max):
+
+
+
+        return
+
+    # def bar_chart_range_changed(self, view, range):
+    #
+    #     return
+
+#############################################

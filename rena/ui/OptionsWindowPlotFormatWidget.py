@@ -2,16 +2,19 @@
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
-    set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid
+    set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     preset_on_change_signal = QtCore.pyqtSignal()
+    bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
+
+
 
     def __init__(self, stream_name):
         super().__init__()
@@ -38,6 +41,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_channel_format_change)
 
+        self.barPlotYMaxLineEdit.setValidator(QDoubleValidator())
+        self.barPlotYMinLineEdit.setValidator(QDoubleValidator())
+
+        self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
+        self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
+
+
+
+
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
 
@@ -53,12 +65,19 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
 
-        # only consider image for now
+        # image format information
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
         self.imageHeightLineEdit.setText(str(group_info['plot_format']['image']['height']))
         self.imageScalingFactorLineEdit.setText(str(group_info['plot_format']['image']['scaling_factor']))
         self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['image_format'])
         self.channelFormatCombobox.setCurrentText(group_info['plot_format']['image']['channel_format'])
+
+        # bar chart format information
+        self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
+        self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
+
+
+
 
     def plot_format_tab_current_changed(self, index):
         # create value
@@ -163,6 +182,20 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             return 0
         return new_image_scaling_factor
 
+    def get_bar_chart_max_range(self):
+        try:
+            new_bar_chart_max_range = float(self.barPlotYMaxLineEdit.text())
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_bar_chart_max_range
+
+    def get_bar_chart_min_range(self):
+        try:
+            new_bar_chart_min_range = float(self.barPlotYMinLineEdit.text())
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_bar_chart_min_range
+
 
 
 
@@ -182,4 +215,16 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def plot_format_changed(self, info_dict):
         self.plot_format_on_change_signal.emit(info_dict)
+
+    def bar_chart_range_on_change(self):
+        bar_chart_max_range = self.get_bar_chart_max_range()
+        bar_chart_min_range = self.get_bar_chart_min_range()
+
+        set_bar_chart_max_min_range(self.stream_name,
+                                    self.group_name,
+                                    max_range=bar_chart_max_range,
+                                    min_range=bar_chart_min_range)
+
+        self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
+
 

@@ -115,6 +115,9 @@ def collect_stream_group_plot_format(stream_name, group_name):
             rtn[plot_format_name][format_info_key] = config.settings.value(format_info_key)
         config.settings.endGroup()
 
+    rtn['bar_chart']['y_max'] = float(rtn['bar_chart']['y_max'])
+    rtn['bar_chart']['y_min'] = float(rtn['bar_chart']['y_min'])
+
     config.settings.endGroup()
     return rtn
 
@@ -281,8 +284,8 @@ def process_plot_group(preset_dict):
                   },
         'bar_chart': {'is_valid': 1,
                      'display':1,
-                     'y_max': 1,
-                     'y_min': 0,
+                     'y_max': -0.1,
+                     'y_min': 0.0,
                      }
     }
 
@@ -437,6 +440,12 @@ def set_plot_image_channel_format(stream_name, group_name, channel_format):
 def set_plot_image_valid(stream_name, group_name, is_valid):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
     config.settings.setValue('is_valid', is_valid)
+    config.settings.endGroup()
+
+def set_bar_chart_max_min_range(stream_name, group_name, max_range, min_range):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/bar_chart'.format(stream_name, group_name))
+    config.settings.setValue('y_max', max_range)
+    config.settings.setValue('y_min', min_range)
     config.settings.endGroup()
 
 

@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <property name="iconSize">
       <size>
@@ -211,22 +211,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="widget_4" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_10">
-             <item alignment="Qt::AlignHCenter">
-              <widget class="QLabel" name="label_9">
-               <property name="text">
-                <string>Max</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="barPlotYMaxLineEdit"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
            <widget class="QWidget" name="widget_5" native="true">
             <layout class="QVBoxLayout" name="verticalLayout_11">
              <item alignment="Qt::AlignHCenter">
@@ -242,15 +226,26 @@
             </layout>
            </widget>
           </item>
+          <item>
+           <widget class="QWidget" name="widget_4" native="true">
+            <layout class="QVBoxLayout" name="verticalLayout_10">
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>Max</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="barPlotYMaxLineEdit"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
       </layout>
-     </widget>
-     <widget class="QWidget" name="impulse_response">
-      <attribute name="title">
-       <string>Impuse Response</string>
-      </attribute>
      </widget>
     </widget>
    </item>
