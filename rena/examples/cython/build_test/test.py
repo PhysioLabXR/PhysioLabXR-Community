@@ -16,6 +16,6 @@
 # t2 = time.time()
 # t = t2 - t1
 # print("%.20f" % t)
-import cython_setup
+import source
 
-print(cython_setup.find_primes_vanilla(40))
+print(source.find_primes_vanilla(40))
