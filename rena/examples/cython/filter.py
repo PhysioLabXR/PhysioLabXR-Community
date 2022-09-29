@@ -85,7 +85,7 @@ class RealtimeNotch(DataProcessor):
 
 
 class RealtimeButterBandpass(DataProcessor):
-    def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
+    def __init__(self, lowcut=5.0, highcut=50, fs=250, order=5, channel_num=8):
         super().__init__()
         self.lowcut = lowcut
         self.highcut = highcut
@@ -147,13 +147,6 @@ class RealtimeVrms(DataProcessor):
 
     def reset_tap(self):
         self.data_buffer.fill(0)
-
-def test(x):
-    y = 1
-    for i in range(1, x+1):
-        y *= i
-    return y
-
 
 
 if __name__ == '__main__':
