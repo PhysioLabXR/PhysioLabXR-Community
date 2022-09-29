@@ -157,6 +157,9 @@ def test(x):
 
 
 if __name__ == '__main__':
-    a = RealtimeButterBandpass(lowcut=0.5, highcut=50, fs=250, order=4, channel_num=8)
+    def change(a):
+        a+=1
 
-    print("John")
+    num = 10
+    change(num)
+    print(num)
