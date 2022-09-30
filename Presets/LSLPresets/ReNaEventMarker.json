@@ -10,6 +10,6 @@
     "TSHandGrab","TSHandRelease",
     "TSInteractingItemID",
     "Likert"],
-  "GroupInfo":  [4],
+  "GroupInfo":  [1,2,3,4],
   "NominalSamplingRate":  75
 }
