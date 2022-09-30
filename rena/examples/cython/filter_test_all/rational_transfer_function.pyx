@@ -26,35 +26,35 @@ DTYPE = np.float
 ctypedef np.float_t DTYPE_t
 
 
-def process_sample_vanilla(x_tap, y_tap, a, b, data):
+def process_sample_vanilla(x_tap, y_tap, a, b, sample):
     # perform realtime filter with tap
 
     # push x
     x_tap[:, 1:] = x_tap[:, : -1]
-    x_tap[:, 0] = data
+    x_tap[:, 0] = sample
     # push y
     y_tap[:, 1:] = y_tap[:, : -1]
     # calculate new y
     y_tap[:, 0] = np.sum(np.multiply(x_tap, b), axis=1) - \
                        np.sum(np.multiply(y_tap[:, 1:], a[1:]), axis=1)
 
-    data = y_tap[:, 0]
-    return data
+    sample = y_tap[:, 0]
+    return sample
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
 def process_sample_cython(np.ndarray[DTYPE_t, ndim=2] x_tap, np.ndarray[DTYPE_t, ndim=2] y_tap,
-                          np.ndarray[DTYPE_t, ndim=1] a, np.ndarray[DTYPE_t, ndim=1] b, np.ndarray[DTYPE_t, ndim=2] data):
+                          np.ndarray[DTYPE_t, ndim=1] a, np.ndarray[DTYPE_t, ndim=1] b, np.ndarray[DTYPE_t, ndim=2] sample):
     # perform realtime filter with tap
 
     # push x
     x_tap[:, 1:] = x_tap[:, : -1]
-    x_tap[:, 0] = data
+    x_tap[:, 0] = sample
     # push y
     y_tap[:, 1:] = y_tap[:, : -1]
     # calculate new y
     y_tap[:, 0] = np.sum(np.multiply(x_tap, b), axis=1) - \
                        np.sum(np.multiply(y_tap[:, 1:], a[1:]), axis=1)
 
-    data = y_tap[:, 0]
-    return data
+    sample = y_tap[:, 0]
+    return sample
