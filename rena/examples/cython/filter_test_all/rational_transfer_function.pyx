@@ -23,7 +23,7 @@ DTYPE = np.float
 # "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
 # every type in the numpy module there's a corresponding compile-time
 # type with a _t-suffix.
-ctypedef np.float_t DTYPE_t
+ctypedef np.float32_t DTYPE_t
 
 
 def process_sample_vanilla(x_tap, y_tap, a, b, sample):
@@ -44,7 +44,7 @@ def process_sample_vanilla(x_tap, y_tap, a, b, sample):
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
 def process_sample_cython(np.ndarray[DTYPE_t, ndim=2] x_tap, np.ndarray[DTYPE_t, ndim=2] y_tap,
-                          np.ndarray[DTYPE_t, ndim=1] a, np.ndarray[DTYPE_t, ndim=1] b, np.ndarray[DTYPE_t, ndim=2] sample):
+                          np.ndarray[DTYPE_t, ndim=1] a, np.ndarray[DTYPE_t, ndim=1] b, np.ndarray[DTYPE_t, ndim=1] sample):
     # perform realtime filter with tap
 
     # push x
@@ -58,3 +58,7 @@ def process_sample_cython(np.ndarray[DTYPE_t, ndim=2] x_tap, np.ndarray[DTYPE_t,
 
     sample = y_tap[:, 0]
     return sample
+
+# @cython.boundscheck(False) # turn off bounds-checking for entire function
+# @cython.wraparound(False)
+# def cython_process_buffer():

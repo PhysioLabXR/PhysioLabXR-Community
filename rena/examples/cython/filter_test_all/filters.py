@@ -54,7 +54,7 @@ class RenaFilter(DataProcessor):
         return output_buffer
 
     def process_sample_cython(self, sample):
-        sample = process_sample_vanilla(x_tap=self.x_tap, y_tap=self.y_tap, a=self.a, b=self.b, sample=sample)
+        sample = process_sample_cython(x_tap=self.x_tap, y_tap=self.y_tap, a=self.a, b=self.b, sample=sample)
         return sample
 
     def process_buffer_cython(self, input_buffer):
@@ -82,7 +82,7 @@ class RealtimeNotch(RenaFilter):
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
 
-class RealtimeButterBandpass(DataProcessor):
+class RealtimeButterBandpass(RenaFilter):
     def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
         super().__init__()
         self.lowcut = lowcut
@@ -91,15 +91,15 @@ class RealtimeButterBandpass(DataProcessor):
         self.order = order
         self.channel_num = channel_num
         self.b, self.a = self.butter_bandpass(lowcut=self.lowcut, highcut=self.highcut, fs=self.fs, order=self.order)
-        self.x_tap = np.zeros((self.channel_num, len(self.b)))
-        self.y_tap = np.zeros((self.channel_num, len(self.a)))
+        self.x_tap = np.zeros((self.channel_num, len(self.b)), dtype=np.float32)
+        self.y_tap = np.zeros((self.channel_num, len(self.a)), dtype=np.float32)
 
     def butter_bandpass(self, lowcut, highcut, fs, order=5):
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
         b, a = butter(order, [low, high], btype='band')
-        return b, a
+        return b.astype(np.float32), a.astype(np.float32)
 
 # class RealtimeVrms(DataProcessor):
 #     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
