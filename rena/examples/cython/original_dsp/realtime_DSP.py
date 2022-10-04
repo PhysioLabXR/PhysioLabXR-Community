@@ -4,6 +4,9 @@ import numpy as np
 from scipy import sparse
 from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
+import warnings
+warnings.simplefilter("error")
+
 
 class DataProcessor:
     def __init__(self):
@@ -37,8 +40,14 @@ class RenaFilter(DataProcessor):
         # push y
         self.y_tap[:, 1:] = self.y_tap[:, : -1]
         # calculate new y
-        self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
-                           np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+        # self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
+        #                    np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+        try:
+            self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
+                               np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+        except RuntimeWarning as e:
+            self.reset_tap()
+            # do something here
 
         sample = self.y_tap[:, 0]
         return sample
@@ -96,7 +105,7 @@ class RealtimeButterBandpass(RenaFilter):
         low = lowcut / nyq
         high = highcut / nyq
         b, a = butter(order, [low, high], btype='band')
-        return b.astype(np.float32), a.astype(np.float32)
+        return b, a
 
 # class RealtimeVrms(DataProcessor):
 #     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
