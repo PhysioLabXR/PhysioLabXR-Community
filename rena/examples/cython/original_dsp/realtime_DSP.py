@@ -46,8 +46,9 @@ class RenaFilter(DataProcessor):
             self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
                                np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
         except RuntimeWarning as e:
+            # handel the overflow error in numpy
+            print(e)
             self.reset_tap()
-            # do something here
 
         sample = self.y_tap[:, 0]
         return sample
