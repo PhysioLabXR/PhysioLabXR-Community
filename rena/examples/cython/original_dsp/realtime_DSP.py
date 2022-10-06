@@ -40,8 +40,7 @@ class RenaFilter(DataProcessor):
         # push y
         self.y_tap[:, 1:] = self.y_tap[:, : -1]
         # calculate new y
-        # self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
-        #                    np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+
         try:
             self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
                                np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
@@ -58,19 +57,6 @@ class RenaFilter(DataProcessor):
         for index in range(0, input_buffer.shape[1]):
             output_buffer[:, index] = self.process_sample(input_buffer[:, index])
         return output_buffer
-
-
-    # def process_sample_cython(self, sample):
-    #     sample = process_sample_cython(x_tap=self.x_tap, y_tap=self.y_tap, a=self.a, b=self.b, sample=sample)
-    #     return sample
-    #
-    # def process_buffer_cython(self, input_buffer):
-    #     output_buffer = np.empty(shape=input_buffer.shape)
-    #     for index in range(0, input_buffer.shape[1]):
-    #         output_buffer[:, index] = self.process_sample_cython(input_buffer[:, index])
-    #     return output_buffer
-
-
 
     def reset_tap(self):
         self.x_tap.fill(0)
@@ -105,7 +91,7 @@ class RealtimeButterBandpass(RenaFilter):
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
-        b, a = butter(order, [low, high], btype='band')
+        b, a = butter(order, [low, high], btype='bandpass')
         return b, a
 
 # class RealtimeVrms(DataProcessor):
