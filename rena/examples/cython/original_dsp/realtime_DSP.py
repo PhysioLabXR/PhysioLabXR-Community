@@ -94,6 +94,42 @@ class RealtimeButterBandpass(RenaFilter):
         b, a = butter(order, [low, high], btype='bandpass')
         return b, a
 
+class RealtimeButterLowpass(RenaFilter):
+    def __init__(self, highcut=5, fs=250, order=5, channel_num=8):
+        super().__init__()
+        self.highcut = highcut
+        self.fs = fs
+        self.order = order
+        self.channel_num = channel_num
+        self.b, self.a = self.butter_lowpass(highcut=self.highcut, fs=self.fs, order=self.order)
+        self.x_tap = np.zeros((self.channel_num, len(self.b)))
+        self.y_tap = np.zeros((self.channel_num, len(self.a)))
+
+    def butter_lowpass(self, highcut, fs, order=5):
+        nyq = 0.5 * fs
+        high = highcut / nyq
+        b, a = butter(order, high, btype='lowpass')
+        return b, a
+
+
+class RealtimeButterHighpass(RenaFilter):
+    def __init__(self, lowcut=5, fs=250, order=5, channel_num=8):
+        super().__init__()
+        self.lowcut = lowcut
+        self.fs = fs
+        self.order = order
+        self.channel_num = channel_num
+        self.b, self.a = self.butter_highpass(lowcut=self.lowcut, fs=self.fs, order=self.order)
+        self.x_tap = np.zeros((self.channel_num, len(self.b)))
+        self.y_tap = np.zeros((self.channel_num, len(self.a)))
+
+    def butter_highpass(self, lowcut, fs, order=5):
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        b, a = butter(order, low, btype='highpass')
+        return b, a
+
+
 # class RealtimeVrms(DataProcessor):
 #     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
 #         super().__init__()
