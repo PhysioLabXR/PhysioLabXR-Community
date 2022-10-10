@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from rena.examples.cython.filter_test_all.filters import RealtimeButterBandpass
 from rena.utils.data_utils import signal_generator
 
-signal0 = signal_generator(f=10, fs=500, duration=1, amp=1)
-signal1 = signal_generator(f=50, fs=500, duration=1, amp=1)
-signal2 = signal_generator(f=100, fs=500, duration=1, amp=1)
+signal0 = signal_generator(f=10, fs=500, duration=20, amp=1)
+signal1 = signal_generator(f=50, fs=500, duration=20, amp=1)
+signal2 = signal_generator(f=100, fs=500, duration=20, amp=1)
 
 signal3 = signal0+signal1+signal2
 
