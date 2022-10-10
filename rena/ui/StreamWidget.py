@@ -86,6 +86,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
 
         # visualization component
+        # This variable stores all the visualization components we initialize it in the init_stream_visualization()
         self.stream_widget_visualization_component = None
 
         # self.init_server_client()
@@ -124,7 +125,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
-
         # FPS counter``
         self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
 
@@ -136,6 +136,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.v_timer.start()
 
     def update_stream_availability(self, is_stream_available):
+        '''
+        this function check if the stream is available
+        '''
         print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available), end='\r')
         self.is_stream_available = is_stream_available
         if self.lsl_worker.is_streaming:
@@ -200,10 +203,13 @@ class StreamWidget(QtWidgets.QWidget):
                 dialog_popup(msg=str(e), title='ERROR')
                 return
             except LSLChannelMismatchError as e:
-                reply = QMessageBox.question(self, 'Channel Mismatch', 'The LSL stream with name {0} found on the network has {1}.\n'
-                                                                       'The preset has {2} channels. \n '
-                                                                       'Do you want to reset your preset to a default and start stream.\n'
-                                                                       'You can edit your stream channels in Options if you choose No'.format(self.stream_name, e.message, len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                reply = QMessageBox.question(self, 'Channel Mismatch',
+                                             'The LSL stream with name {0} found on the network has {1}.\n'
+                                             'The preset has {2} channels. \n '
+                                             'Do you want to reset your preset to a default and start stream.\n'
+                                             'You can edit your stream channels in Options if you choose No'.format(
+                                                 self.stream_name, e.message,
+                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
                                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
                     self.reset_preset_by_num_channels(e.message)
@@ -212,7 +218,8 @@ class StreamWidget(QtWidgets.QWidget):
                     except LSLStreamNotFoundError as e:
                         dialog_popup(msg=str(e), title='ERROR')
                         return
-                else: return
+                else:
+                    return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
 
@@ -235,8 +242,10 @@ class StreamWidget(QtWidgets.QWidget):
 
     def create_interface_and_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
-        self.interface = create_lsl_interface(self.stream_name, channel_names)  # maybe want to discard and close the old interface
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=config.VIZ_DATA_BUFFER_MAX_SIZE, append_zeros=True)
+        self.interface = create_lsl_interface(self.stream_name,
+                                              channel_names)  # maybe want to discard and close the old interface
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
+                                                      buffer_sizes=config.VIZ_DATA_BUFFER_MAX_SIZE, append_zeros=True)
 
     def dock_window(self):
         self.parent.insertWidget(self.parent.count() - 1, self)
@@ -344,13 +353,17 @@ class StreamWidget(QtWidgets.QWidget):
             group_plot_widget.addLegend()
 
             plot_data_items = []
-            group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
-            for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
-                                     name=channel_name)
+            group_channel_names = [channel_names[int(i)] for i in
+                                   self.group_info[group_name]['channel_indices']]  # channel names for this group
+            for channel_index_in_group, (channel_index, channel_name) in enumerate(
+                    zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+                channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(
+                    color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                                             name=channel_name)
                 self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
                 plot_data_items.append(channel_plot_widget)
-                if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
+                if not self.group_info[group_name]['is_channels_shown'][
+                    channel_index_in_group]:  # if this channel is not shown
                     channel_plot_widget.hide()
             self.update_groups_shown(group_name)
             plots.append(plot_data_items)
@@ -360,7 +373,6 @@ class StreamWidget(QtWidgets.QWidget):
             if self.group_info[group_name]['selected_plot_format'] != 0:
                 group_plot_widget.hide()
 
-
             ############################### init image label ####################################################################
             image_label = QLabel('Image_Label')
             image_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -369,28 +381,23 @@ class StreamWidget(QtWidgets.QWidget):
             if self.group_info[group_name]['selected_plot_format'] != 1:
                 image_label.hide()
 
-
             ############################## bar plot ##############################################################################
             barchart_widget = pg.PlotWidget()
-            barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'], self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+            barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+                                      self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
             # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
             # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
             label_x_axis = barchart_widget.getAxis('bottom')
             label_dict = dict(enumerate(group_channel_names)).items()
             label_x_axis.setTicks([label_dict])
             x = np.arange(len(group_channel_names))
-            y = np.array([0]*len(group_channel_names))
+            y = np.array([0] * len(group_channel_names))
             bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
             barchart_widget.addItem(bars)
             self.BarPlotWidgetLayout.addWidget(barchart_widget)
             barchart_widgets[group_name] = barchart_widget
             if self.group_info[group_name]['selected_plot_format'] != 2:
                 barchart_widget.hide()
-
-
-
-
-
 
         plot_elements['time_series'] = time_series_widgets
         plot_elements['image'] = image_labels
@@ -411,29 +418,11 @@ class StreamWidget(QtWidgets.QWidget):
             StreamWidgetVisualizationComponents(fs_label, ts_label, plot_elements)
 
     def process_LSLStream_data(self, data_dict):
+        '''
+        update the visualization buffer, recording buffer, and scripting buffer
+        '''
         if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict
             self.viz_data_buffer.update_buffer(data_dict)
-
-            # buffered_data = self.viz_data_buffer
-            # try:
-            #     buffered_data = np.concatenate(
-            #         (buffered_data, data_dict['frames']),
-            #         axis=-1)  # get all data and remove it from internal buffer
-            #     self.current_timestamp = data_dict['timestamps'][-1]
-            # except ValueError:
-            #     raise Exception('The number of channels for stream {0} mismatch from its preset json.'.format(
-            #         data_dict['lsl_data_type']))
-            # if buffered_data.shape[-1] < self.num_samples_to_plot:
-            #     data_to_plot = np.concatenate((np.zeros(shape=(
-            #         buffered_data.shape[0],
-            #         self.num_samples_to_plot -
-            #         buffered_data.shape[-1])),
-            #                                    buffered_data), axis=-1)
-            # else:
-            #     data_to_plot = buffered_data[:,
-            #                    - self.num_samples_to_plot:]  # plot the most recent few seconds
-
-            # main window only retains the most recent 10 seconds for visualization purposes
             self.actualSamplingRate = data_dict['sampling_rate']
             # notify the internal buffer in recordings tab
 
@@ -442,6 +431,7 @@ class StreamWidget(QtWidgets.QWidget):
             self.main_parent.scripting_tab.forward_data(data_dict)
             # scripting tab
             # self.main_parent.inference_tab.update_buffers(data_dict)
+
     '''
     settings on change:
     visualization can be changed while recording with mutex
@@ -456,6 +446,7 @@ class StreamWidget(QtWidgets.QWidget):
     
     
     '''
+
     def stream_settings_changed(self, change):
         self.setting_update_viz_mutex.lock()
         # resolve the
@@ -466,6 +457,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.setting_update_viz_mutex.unlock()
 
     def visualize_LSLStream_data(self):
+        '''
+        This is the function for LSL data visualization.
+        It plot the data from the data visualization buffer based on the configuration
+        The data to plot is in the parameter self.viz_data_buffer
+        '''
+
         self.tick_times.append(time.time())
         # print("Viz FPS {0}".format(self.get_fps()), end='\r')
         self.lsl_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
@@ -506,79 +503,66 @@ class StreamWidget(QtWidgets.QWidget):
             # 1. time_series
             if plot_format_index_dict[selected_plot_format] == 'time_series':
                 # plot time series
-                if plot_group_info["plot_format"]['time_series']['display']: # want to show this ?
-                    if plot_group_info["plot_format"]['time_series']['is_valid']: # if the format setting is valid?
+                if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
+                    if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
                         # plot if valid and display this group
                         for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
                             if plot_group_info['is_channels_shown'][index_in_group]:
                                 # print(channel_index)
-                                self.stream_widget_visualization_component.plot_elements['time_series'][group_name].plotItem.curves[index_in_group] \
+                                self.stream_widget_visualization_component.plot_elements['time_series'][
+                                    group_name].plotItem.curves[index_in_group] \
                                     .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
 
-            # image
+            # 2. image
             elif plot_format_index_dict[selected_plot_format] == 'image':
-                # if plot_group_info["plot_format"]['image']['display']:  # want to show this ?
-                    if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid?
-                        # reshape and attach to the label
-                        # TODO: plot image if valid and display
-                        width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(group_name)
 
-                        image_plot_data = data_to_plot[plot_group_info['channel_indices'], -1] # only visualize the last frame
+                if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid we continue
+                    # reshape and attach to the label
+                    width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(
+                        group_name)
 
+                    image_plot_data = data_to_plot[
+                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
 
+                    # if we chose RGB
+                    if image_format == 'RGB':
 
-                        # if image_format =='Gray':
-                        #     image_plot_data = image_plot_data.astype(np.uint8)
+                        if channel_format == 'Channel First':
+                            image_plot_data = np.reshape(image_plot_data, (depth, height, width))
+                            image_plot_data = np.moveaxis(image_plot_data, 0, -1)
+                        elif channel_format == 'Channel Last':
+                            image_plot_data = np.reshape(image_plot_data, (height, width, depth))
+                        # image_plot_data = convert_numpy_to_uint8(image_plot_data)
+                        image_plot_data = image_plot_data.astype(np.uint8)
+                        image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
+                        self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
+                            image_plot_data)
 
-                        if image_format == 'RGB':
+                    # if we chose PixelMap
+                    if image_format == 'PixelMap':
+                        # pixel map return value
+                        image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
+                        image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
+                        self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
+                            image_plot_data)
 
-                            if channel_format == 'Channel First':
-                                image_plot_data = np.reshape(image_plot_data, (depth, height, width))
-                                image_plot_data = np.moveaxis(image_plot_data, 0, -1)
-                            elif channel_format == 'Channel Last':
-                                image_plot_data = np.reshape(image_plot_data, (height, width, depth))
-                            # image_plot_data = convert_numpy_to_uint8(image_plot_data)
-                            image_plot_data = image_plot_data.astype(np.uint8)
-                            image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
-                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
-
-                        if image_format=='PixelMap':
-                            # pixel map return value
-                            image_plot_data = np.reshape(image_plot_data, (height, width)) # matrix : (height, width)
-                            image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
-                            self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(image_plot_data)
-
+            # 3. bar_chart
             elif plot_format_index_dict[selected_plot_format] == 'bar_chart':
                 if plot_group_info["plot_format"]['bar_chart']['is_valid']:
-                    bar_chart_plot_data = data_to_plot[plot_group_info['channel_indices'], -1]  # only visualize the last frame
-                    self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name].plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data,width=1, brush='r')
+                    bar_chart_plot_data = data_to_plot[
+                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
+                    self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name].plotItem.curves[
+                        0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1,
+                                   brush='r')
 
-
+        # show the label
         self.stream_widget_visualization_component.fs_label.setText(
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.stream_widget_visualization_component.ts_label.setText(
             'Current Time Stamp = {0}'.format(self.current_timestamp))
 
-    # calculate and update the frame rate
-    # self.recent_visualization_refresh_timestamps.append(time.time())
-    # if len(self.recent_visualization_refresh_timestamps) > 2:
-    #     self.visualization_fps = 1 / ((self.recent_visualization_refresh_timestamps[-1] -
-    #                                    self.recent_visualization_refresh_timestamps[0]) / (
-    #                                               len(self.recent_visualization_refresh_timestamps) - 1))
-    # # print("visualization refresh frequency: "+ str(self.visualization_refresh_frequency))
-    # # print("John")
-    # self.visualizationFPSLabel.setText(
-    #     'Visualization FPS: {0}'.format(round(self.visualization_fps, config_ui.visualization_fps_decimal_places)))
-
     def ticks(self):
         self.lsl_worker.signal_data_tick.emit()
-        #     self.recent_tick_refresh_timestamps.append(time.time())
-        #     if len(self.recent_tick_refresh_timestamps) > 2:
-        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-        #                     len(self.recent_tick_refresh_timestamps) - 1))
-        #
-        #     self.tickFrequencyLabel.setText(
-        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def init_server_client(self):
         print('John')
@@ -615,7 +599,8 @@ class StreamWidget(QtWidgets.QWidget):
         :return:
         '''
         self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
-        self.viz_time_vector = np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
+        self.viz_time_vector = np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'),
+                                           num_points_to_plot)
 
     def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
         '''
@@ -639,8 +624,10 @@ class StreamWidget(QtWidgets.QWidget):
         old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
         self.preset_on_change()
 
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][info_dict['group_name']].hide()
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][info_dict['group_name']].show()
+        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][
+            info_dict['group_name']].hide()
+        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][
+            info_dict['group_name']].show()
 
         # update the plot hide display
 
@@ -657,22 +644,16 @@ class StreamWidget(QtWidgets.QWidget):
 
         return width, height, depth, image_format, channel_format, scaling_factor
 
-#############################################
+    #############################################
 
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.preset_on_change()
         widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
-        widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'], max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
-
+        widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+                         max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
 
     def set_plot_widget_range(self, x_min, x_max, y_min, y_max):
 
-
-
         return
-
-    # def bar_chart_range_changed(self, view, range):
-    #
-    #     return
 
 #############################################
