@@ -74,15 +74,23 @@ class RealtimeNotch(RenaFilter):
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
-
-class RealtimeButterBandpass(RenaFilter):
-    def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
+class RealtimeButter(RenaFilter):
+    def __init__(self, fs=250, order=5, channel_num=8):
         super().__init__()
-        self.lowcut = lowcut
-        self.highcut = highcut
         self.fs = fs
         self.order = order
         self.channel_num = channel_num
+        self.b = None
+        self.a = None
+        self.x_tap = None
+        self.y_tap = None
+
+
+class RealtimeButterBandpass(RealtimeButter):
+    def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
+        super().__init__(fs, order, channel_num)
+        self.lowcut = lowcut
+        self.highcut = highcut
         self.b, self.a = self.butter_bandpass(lowcut=self.lowcut, highcut=self.highcut, fs=self.fs, order=self.order)
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
@@ -94,13 +102,11 @@ class RealtimeButterBandpass(RenaFilter):
         b, a = butter(order, [low, high], btype='bandpass')
         return b, a
 
-class RealtimeButterLowpass(RenaFilter):
+
+class RealtimeButterLowpass(RealtimeButter):
     def __init__(self, highcut=5, fs=250, order=5, channel_num=8):
-        super().__init__()
+        super().__init__(fs, order, channel_num)
         self.highcut = highcut
-        self.fs = fs
-        self.order = order
-        self.channel_num = channel_num
         self.b, self.a = self.butter_lowpass(highcut=self.highcut, fs=self.fs, order=self.order)
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
@@ -112,13 +118,10 @@ class RealtimeButterLowpass(RenaFilter):
         return b, a
 
 
-class RealtimeButterHighpass(RenaFilter):
+class RealtimeButterHighpass(RealtimeButter):
     def __init__(self, lowcut=5, fs=250, order=5, channel_num=8):
-        super().__init__()
+        super().__init__(fs, order, channel_num)
         self.lowcut = lowcut
-        self.fs = fs
-        self.order = order
-        self.channel_num = channel_num
         self.b, self.a = self.butter_highpass(lowcut=self.lowcut, fs=self.fs, order=self.order)
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
