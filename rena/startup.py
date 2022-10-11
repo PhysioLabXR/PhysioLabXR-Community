@@ -20,6 +20,7 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
         load_default_recording_file_location()
         config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
+        config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -31,6 +32,8 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
             config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         if not config.settings.contains('viz_display_duration') or config.settings.value('viz_display_duration') is None:
             config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
+        if not config.settings.contains('video_device_refresh_interval') or config.settings.value('video_device_refresh_interval') is None:
+            config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets

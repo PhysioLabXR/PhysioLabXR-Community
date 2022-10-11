@@ -353,6 +353,7 @@ class WebcamWorker(QObject):
             cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
             self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
 
+
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
     change_pixmap_signal = pyqtSignal(tuple)
