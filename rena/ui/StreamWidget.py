@@ -259,6 +259,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.set_button_icons()
 
     def remove_stream(self):
+        self.timer.stop()
+        self.v_timer.stop()
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
@@ -268,6 +270,8 @@ class StreamWidget(QtWidgets.QWidget):
         # if self.lsl_worker.dsp_on:
         #     self.lsl_worker.remove_stream()
         self.worker_thread.exit()
+        self.worker_thread.wait()  # wait for the thread to exit
+
         # self.main_parent.lsl_workers.pop(self.stream_name)
         # self.main_parent.worker_threads.pop(self.stream_name)
         # if this lsl connect to a device:
@@ -386,12 +390,6 @@ class StreamWidget(QtWidgets.QWidget):
             barchart_widgets[group_name] = barchart_widget
             if self.group_info[group_name]['selected_plot_format'] != 2:
                 barchart_widget.hide()
-
-
-
-
-
-
         plot_elements['time_series'] = time_series_widgets
         plot_elements['image'] = image_labels
         plot_elements['bar_chart'] = barchart_widgets

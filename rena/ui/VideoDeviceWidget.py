@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex
+from PyQt5.QtCore import QTimer, QThread, QMutex, QEventLoop
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
@@ -53,7 +53,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
 
         # Connect UIs ##########################################
-        self.RemoveVideoBtn.clicked.connect(self.remove)
+        self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
         self.PopWindowBtn.clicked.connect(self.pop_window)
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
@@ -80,26 +80,31 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.ImageLabel.setPixmap(qt_img)
         self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
-    def remove(self):
+    def remove_video_device(self):
+        self.timer.stop()
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
+        self.worker.stop_video()
         self.worker_thread.exit()
+        self.worker_thread.wait()  # wait for the thread to exit
 
         self.main_parent.video_device_widgets.pop(self.video_device_name)
         self.main_parent.remove_stream_widget(self)
 
+        # loop = QEventLoop()
+        # QTimer.singleShot(250, loop.quit)
+        # loop.exec_()
         # close window if popped
         if self.video_device_name in self.main_parent.pop_windows.keys():
             self.main_parent.pop_windows[self.video_device_name].hide()
             self.deleteLater()
         else:  # use recursive delete if docked
             self.deleteLater()
-        # close the signal option window
         return True
 
     def pop_window(self):
-        w = AnotherWindow(self, close_function=self.remove)
+        w = AnotherWindow(self, close_function=self.remove_video_device)
         self.main_parent.pop_windows[self.video_device_name] = w
         w.setWindowTitle(self.video_device_long_name)
         self.PopWindowBtn.setText('Dock Window')

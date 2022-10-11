@@ -340,18 +340,21 @@ class WebcamWorker(QObject):
         self.cam_id = cam_id
         self.cap = cv2.VideoCapture(int(self.cam_id))
         self.tick_signal.connect(self.process_on_tick)
+        self.is_streaming = True
 
-    def release_webcam(self):
+    def stop_video(self):
+        self.is_streaming = False
         if self.cap is not None:
             self.cap.release()
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        ret, cv_img = self.cap.read()
-        if ret:
-            cv_img = cv_img.astype(np.uint8)
-            cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-            self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
+        if self.is_streaming:
+            ret, cv_img = self.cap.read()
+            if ret:
+                cv_img = cv_img.astype(np.uint8)
+                cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+                self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
 
 
 class ScreenCaptureWorker(QObject):
@@ -362,15 +365,20 @@ class ScreenCaptureWorker(QObject):
         super().__init__()
         self.tick_signal.connect(self.process_on_tick)
         self.screen_label = screen_label
+        self.is_streaming = True
+
+    def stop_video(self):
+        self.is_streaming = False
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        img = pyautogui.screenshot()
-        frame = np.array(img)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = frame.astype(np.uint8)
-        frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-        self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
+        if self.is_streaming:
+            img = pyautogui.screenshot()
+            frame = np.array(img)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = frame.astype(np.uint8)
+            frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+            self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
 
 
 class TimeSeriesDeviceWorker(QObject):
