@@ -283,11 +283,16 @@ class ReplayServer(threading.Thread):
 
 def start_replay_server():
     print("Replay Client Started")
-    command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                              port_id=config.replay_port,
-                                              identity='server',
-                                              pattern='router-dealer')
-
+    # TODO connect to a different port if this port is already in use
+    try:
+        command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
+                                                  port_id=config.replay_port,
+                                                  identity='server',
+                                                  pattern='router-dealer')
+    except zmq.error.ZMQError as e:
+        print("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
+        print("Replay Server exiting...No replay will be available for this session")
+        return
     replay_client_thread = ReplayServer(command_info_interface)
     replay_client_thread.start()
 
