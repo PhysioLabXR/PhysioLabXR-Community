@@ -33,6 +33,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
         self.playback_worker.replay_stopped_signal.connect(self.replay_stopped_signal_callback)
         self.playback_worker.replay_terminated_signal.connect(self.replay_terminated_signal_callback)
+        self.playback_worker.replay_play_pause_signal.connect(self.replay_play_pause_signal_callback)
         self.playback_thread.start()
 
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
@@ -44,10 +45,6 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playPauseButton.setIcon(pause_icon)
         self.playback_worker.start_run()
         self.timer.start()  # timer should stop when the replay is paused, over, or stopped
-
-    def play_pause_button_clicked(self):
-        # TODO add play pause feature
-        pass
 
     def virtual_time_to_playback_position_value(self, virtual_clock):
         # TODO: do not hardcode playback range (100)
@@ -85,6 +82,20 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def ticks(self):
         self.playback_worker.playback_tick_signal.emit()
+
+    def pause_replay(self):
+        self.timer.stop()
+
+    def resume_replay(self):
+        self.timer.start()
+
+    def replay_play_pause_signal_callback(self):
+        if self.parent.is_replaying: # find a way to access parent attribute differently?
+            self.pause_replay()
+            self.parent.replay_successfully_paused()
+        else:
+            self.resume_replay()
+            self.parent.replay_successfully_resumed()
 
     def replay_stopped_signal_callback(self):
         '''

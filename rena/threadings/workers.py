@@ -16,7 +16,7 @@ from rena import config_ui, config_signal, shared
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_COMMAND
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
@@ -567,6 +567,7 @@ class PlaybackWorker(QObject):
     The playback worker listens from the replay process and emit the playback position
     """
     playback_tick_signal = pyqtSignal()
+    replay_play_pause_signal = pyqtSignal(str)
     replay_progress_signal = pyqtSignal(float)
     replay_stopped_signal = pyqtSignal()
     replay_terminated_signal = pyqtSignal()
@@ -590,6 +591,11 @@ class PlaybackWorker(QObject):
                 if reply == STOP_SUCCESS_INFO:
                     self.is_running = False
                     self.replay_stopped_signal.emit()
+                    self.send_command_mutex.unlock()
+                    return
+                elif reply == PLAY_PAUSE_COMMAND:
+                    self.is_running = not self.is_running
+                    self.replay_play_pause_signal.emit()
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
