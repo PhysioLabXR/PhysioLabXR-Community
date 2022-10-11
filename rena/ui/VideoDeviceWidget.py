@@ -56,7 +56,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.RemoveVideoBtn.clicked.connect(self.remove)
         self.PopWindowBtn.clicked.connect(self.pop_window)
         self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
+        self.RemoveVideoBtn.setIcon(remove_stream_icon)
         self.set_button_icons()
 
         # worker and worker threads ##########################################
