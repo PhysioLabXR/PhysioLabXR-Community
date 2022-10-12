@@ -11,7 +11,8 @@ import numpy as np
 from pylsl import StreamInlet, resolve_stream, StreamOutlet, StreamInfo
 from rena.examples.Eyetracking.EyeUtils import prepare_image_for_sim_score, add_bounding_box
 from rena.examples.Eyetracking.configs import *
-
+import struct
+import matplotlib.pyplot as plt
 
 # fix detection parameters  #######################################
 loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
@@ -30,8 +31,8 @@ cam_capture_sub_socket.connect(sub_tcpAddress)
 cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 # LSL gaze screen position ########################################
-streams = resolve_stream('name', 'Unity.gazeTargetScreenPosition')
-inlet = StreamInlet(streams[0])
+# streams = resolve_stream('name', 'Unity.gazeTargetScreenPosition')
+# inlet = StreamInlet(streams[0])
 
 
 print('Sockets connected, entering image loop')
@@ -40,20 +41,26 @@ while True:
     try:
         fix_detection_sample = np.zeros(3) - 1
 
-        imagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
+        received_bytes = cam_capture_sub_socket.recv_multipart()
+        imagePNGBytes = received_bytes[1]
+        gaze_info = received_bytes[2]
         img = cv2.imdecode(np.frombuffer(imagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
         img_modified = img.copy()
 
         # get the most recent gaze tracking screen position
-        sample, timestamp = inlet.pull_chunk()
-        if len(sample) < 1:
-            continue
-        gaze_x, gaze_y = int(sample[-1][0]), int(sample[-1][1])  # the gaze coordinate
+        # sample, timestamp = inlet.pull_chunk()
+        # if len(sample) < 1:
+        #     continue
+        gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
         gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
         center = gaze_x, gaze_y
 
-        img_patch = img[int(np.max([0, gaze_x - patch_size[0] / 2])) : int(np.min([image_size[0], gaze_x + patch_size[0] / 2])),
-                    int(np.max([0, gaze_y - patch_size[1] / 2])):int(np.min([image_size[1], gaze_y + patch_size[1] / 2]))]
+        img_patch_x_min = int(np.min([np.max([0, gaze_x - patch_size[0] / 2]), image_size[0] - patch_size[0]]))
+        img_patch_x_max = int(np.max([np.min([image_size[0], gaze_x + patch_size[0] / 2]), patch_size[0]]))
+        img_patch_y_min = int(np.min([np.max([0, gaze_y - patch_size[1] / 2]), image_size[1] - patch_size[1]]))
+        img_patch_y_max = int(np.max([np.min([image_size[1], gaze_y + patch_size[1] / 2]), patch_size[1]]))
+        img_patch = img[img_patch_x_min : img_patch_x_max,
+                         img_patch_y_min: img_patch_y_max]
 
         if previous_img_patch is not None:
             img_tensor, previous_img_tensor = prepare_image_for_sim_score(img_patch), prepare_image_for_sim_score(
@@ -72,7 +79,7 @@ while True:
 
         previous_img_patch = img_patch
 
-        img_modified = add_bounding_box(img_modified, gaze_x, gaze_y, patch_size[0], patch_size[1], patch_color)
+        img_modified = cv2.rectangle(img_modified, (img_patch_x_min, img_patch_y_min), (img_patch_x_max, img_patch_y_max), patch_color, thickness=2)
         cv2.circle(img_modified, center, 1, center_color, 2)
         axis = (int(central_fov * ppds[0]), int(central_fov * ppds[1]))
         cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
