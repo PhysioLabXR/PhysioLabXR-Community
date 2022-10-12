@@ -1,7 +1,6 @@
 import numpy
 import zmq
 
-from rena.utils.realtime_DSP import DataProcessor
 import zlib, pickle
 
 def send_array(socket, A, flags=0, copy=True, track=False):

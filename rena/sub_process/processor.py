@@ -1,11 +1,8 @@
 import os
-import time
 
-import numpy as np
 from rena.sub_process.TCPInterface import RenaTCPServer, RenaTCPInterface
 
 # send a processing object
-from rena.utils.realtime_DSP import *
 
 
 # if __name__ == '__main__':

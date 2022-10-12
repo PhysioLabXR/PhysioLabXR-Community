@@ -1,11 +1,8 @@
 import threading
 import time
 
-import pyqtgraph as pg
-from PyQt5.QtCore import (QObject, pyqtSignal)
-
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.realtime_DSP import RealtimeButterBandpass
+from recycle_bin.realtime_DSP import RealtimeButterBandpass
 from rena.config import *
 
 class DSPWorker(threading.Thread):

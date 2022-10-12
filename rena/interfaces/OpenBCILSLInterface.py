@@ -3,7 +3,7 @@ import time
 import brainflow
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from pylsl import StreamInfo, StreamOutlet
-from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
+from recycle_bin.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 
 class OpenBCILSLInterface:

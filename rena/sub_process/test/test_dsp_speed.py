@@ -1,4 +1,4 @@
-from rena.utils.realtime_DSP import *
+from recycle_bin.realtime_DSP import *
 import numpy as np
 
 i = 1
