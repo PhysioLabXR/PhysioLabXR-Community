@@ -594,8 +594,11 @@ class PlaybackWorker(QObject):
                     self.send_command_mutex.unlock()
                     return
                 elif reply == PLAY_PAUSE_COMMAND:
+                    if self.is_running:
+                        self.replay_play_pause_signal.emit('pause')
+                    else:
+                        self.replay_play_pause_signal.emit('resume')
                     self.is_running = not self.is_running
-                    self.replay_play_pause_signal.emit()
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
@@ -619,6 +622,11 @@ class PlaybackWorker(QObject):
     def start_run(self):
         self.is_running = True
 
+    def queue_play_pause_command(self):
+        self.send_command_mutex.lock()
+        self.command_queue.append(PLAY_PAUSE_COMMAND)
+        self.send_command_mutex.unlock()
+
     def queue_stop_command(self):
         self.send_command_mutex.lock()
         self.command_queue.append(STOP_COMMAND)
@@ -633,7 +641,8 @@ class PlaybackWorker(QObject):
         if reply == TERMINATE_SUCCESS_COMMAND:
             self.is_running = False
             self.replay_terminated_signal.emit()
-        else: raise NotImplementedError
+        else:
+            raise NotImplementedError
         self.send_command_mutex.unlock()
 
 

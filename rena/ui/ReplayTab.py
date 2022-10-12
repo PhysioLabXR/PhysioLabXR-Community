@@ -113,11 +113,11 @@ class ReplayTab(QtWidgets.QWidget):
 
     def replay_successfully_paused(self):
         self.StartStopReplayBtn.setText('Resume Replay')
-        self.is_replaying = False
+        # self.is_replaying = False
 
     def replay_successfully_resumed(self):
         self.StartStopReplayBtn.setText('Pause Replay')
-        self.is_replaying = False
+        # self.is_replaying = False
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()

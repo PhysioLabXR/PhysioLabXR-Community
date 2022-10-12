@@ -18,6 +18,7 @@ class ReplayServer(threading.Thread):
         super().__init__()
         self.command_info_interface = command_info_interface
         self.is_replaying = False
+        self.is_paused = False
 
         self.virtual_clock_offset = None
         self.start_time = None
@@ -77,8 +78,12 @@ class ReplayServer(threading.Thread):
                     self.replay()
 
                     command = self.recv_string(is_block=False)
+                    # handle play_pauwe command
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(self.virtual_clock)
+                    elif command == shared.PLAY_PAUSE_COMMAND:
+                        self.is_paused = not self.is_paused
+                        ### expected behavior? ###
                     elif command == shared.STOP_COMMAND:
                         # process stop command
                         self.reset_replay()

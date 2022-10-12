@@ -18,7 +18,7 @@ class PlayBackWidget(QtWidgets.QWidget):
 
         # playback status
         # self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
-        # self.playPauseButton.clicked.connect(self.emit_play_pause_button_clicked)
+        self.playPauseButton.clicked.connect(self.issue_play_pause_command)
         # self.stopButton.clicked.connect(self.emit_playback_stop)
 
         # create worker listening the playback position from the server
@@ -38,7 +38,8 @@ class PlayBackWidget(QtWidgets.QWidget):
 
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 
-        # start the play pause button
+        # initialize pause/resume status
+        self.is_paused = False
 
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
@@ -84,16 +85,29 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_worker.playback_tick_signal.emit()
 
     def pause_replay(self):
+        '''
+        called when pause command is executed.
+        add any playback widget specific clean up steps here when replay is paused.
+        '''
         self.timer.stop()
+        self.is_paused = True
+        self.playPauseButton.setIcon(start_stream_icon)
 
     def resume_replay(self):
+        '''
+        called when resume command is executed.
+        add any playback widget specific set-up steps here when replay is resumed.
+        '''
         self.timer.start()
+        self.is_paused = False
+        self.playPauseButton.setIcon(pause_icon)
 
-    def replay_play_pause_signal_callback(self):
-        if self.parent.is_replaying: # find a way to access parent attribute differently?
+    def replay_play_pause_signal_callback(self, play_pause_command):
+        # relay the signal to the parent (replay tab) and then use that information in a method in replay tab
+        if play_pause_command == 'pause':
             self.pause_replay()
             self.parent.replay_successfully_paused()
-        else:
+        else: # play_pause_command is 'resume':
             self.resume_replay()
             self.parent.replay_successfully_resumed()
 
@@ -117,8 +131,13 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.timeSinceStartedLabel.setText('')
         self.percentageReplayedLabel.setText('')
 
+    def issue_play_pause_command(self):
+        self.playback_worker.queue_play_pause_command()
+
     def issue_stop_command(self):
         self.playback_worker.queue_stop_command()
 
     def issue_terminate_command(self):
         self.playback_worker.queue_terminate_command()
+
+# handle play pause logic here with additional variable is_paused
