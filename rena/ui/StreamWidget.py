@@ -350,12 +350,13 @@ class StreamWidget(QtWidgets.QWidget):
             plot_data_items = []
             group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
             for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
-                                     name=channel_name)
-                self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
-                plot_data_items.append(channel_plot_widget)
-                if not self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
-                    channel_plot_widget.hide()
+                if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
+                    channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                         name=channel_name)
+                    self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
+                    plot_data_items.append(channel_plot_widget)
+                    # TODO add back the channel when they are renabled
+
             self.update_groups_shown(group_name)
             plots.append(plot_data_items)
             time_series_widgets[group_name] = group_plot_widget
