@@ -1,11 +1,26 @@
+"""
+Realtime fixation detection is always delayed <minimal fixation duration>
+"""
+
 import time
 
 import cv2
+import lpips
 import zmq
 import numpy as np
-from pylsl import StreamInlet, resolve_stream
+from pylsl import StreamInlet, resolve_stream, StreamOutlet, StreamInfo
 
-image_shape = (400, 400, 3)
+# fix detection parameters  #######################################
+from rena.examples.Eyetracking.EyeUtils import prepare_image_for_sim_score, add_bounding_box
+from rena.examples.Eyetracking.configs import *
+
+loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
+previous_img_patch = None
+distance_list = []
+fixation_list = []
+
+# LSL detected fixations ########################################
+outlet = StreamOutlet( StreamInfo("FixationDetection", 'FixationDetection', 2, 30, 'float32'))
 
 # zmq camera capture fields #######################################
 subtopic = 'CamCapture1'
@@ -19,6 +34,7 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 streams = resolve_stream('name', 'Unity.gazeTargetScreenPosition')
 inlet = StreamInlet(streams[0])
 
+
 print('Sockets connected, entering image loop')
 
 while True:
@@ -27,15 +43,38 @@ while True:
         img = cv2.imdecode(np.frombuffer(imagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
         img_modified = img.copy()
 
-        cv2.imshow('Camera Capture Object Detection', img)
-        cv2.waitKey(delay=1)
-
         # get the most recent gaze tracking screen position
         sample, timestamp = inlet.pull_chunk()
+        if len(sample) < 1:
+            continue
         gaze_x, gaze_y = int(sample[-1][0]), int(sample[-1][1])  # the gaze coordinate
         gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
         center = gaze_x, gaze_y
 
+        img_patch = img[int(np.max([0, gaze_x - patch_size[0] / 2])) : int(np.min([image_size[0], gaze_x + patch_size[0] / 2])),
+                    int(np.max([0, gaze_y - patch_size[1] / 2])):int(np.min([image_size[1], gaze_y + patch_size[1] / 2]))]
+
+        if previous_img_patch is not None:
+            img_tensor, previous_img_tensor = prepare_image_for_sim_score(img_patch), prepare_image_for_sim_score(
+                previous_img_patch)
+            distance = loss_fn_alex(img_tensor, previous_img_tensor).item()
+            # img_modified = cv2.putText(img_modified, "%.2f" % distance, center, cv2.FONT_HERSHEY_SIMPLEX, 1,
+            #                            center_color, 2, cv2.LINE_AA)
+            distance_list.append(distance)
+            fixation_list.append(0 if distance > similarity_threshold else 1)
+        previous_img_patch = img_patch
+
+        img_modified = add_bounding_box(img_modified, gaze_x, gaze_y, patch_size[0], patch_size[1], patch_color)
+        cv2.circle(img_modified, center, 1, center_color, 2)
+        axis = (int(central_fov * ppds[0]), int(central_fov * ppds[1]))
+        cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
+        axis = (int(near_peripheral_fov * ppds[0]), int(near_peripheral_fov * ppds[1]))
+        cv2.ellipse(img_modified, center, axis, 0, 0, 360, parafovea_color, thickness=4)
+        axis = (int(1.25 * mid_perpheral_fov * ppds[0]), int(mid_perpheral_fov * ppds[1]))
+        cv2.ellipse(img_modified, center, axis, 0, 0, 360, peripheri_color, thickness=4)
+
+        cv2.imshow('Camera Capture Object Detection', img_modified)
+        cv2.waitKey(delay=1)
 
     except KeyboardInterrupt:
         print('Stopped')
