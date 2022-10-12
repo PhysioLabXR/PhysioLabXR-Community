@@ -5,6 +5,7 @@ from scipy import sparse
 from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
 import warnings
+
 warnings.simplefilter("error")
 
 
@@ -31,6 +32,13 @@ class RenaFilter(DataProcessor):
         self.b = None
         self.x_tap = None
         self.y_tap = None
+        self.is_activate = False
+
+    def deactivate(self):
+        self.is_activate = False
+
+    def activate(self):
+        self.is_activate = True
 
     def process_sample(self, sample):
         # perform realtime filter with tap
@@ -73,6 +81,7 @@ class RealtimeNotch(RenaFilter):
         self.b, self.a = iirnotch(w0=w0, Q=self.Q, fs=self.fs)
         self.x_tap = np.zeros((self.channel_num, len(self.b)))
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
+
 
 class RealtimeButter(RenaFilter):
     def __init__(self, fs=250, order=5, channel_num=8):
@@ -131,7 +140,6 @@ class RealtimeButterHighpass(RealtimeButter):
         low = lowcut / nyq
         b, a = butter(order, low, btype='highpass')
         return b, a
-
 
 # class RealtimeVrms(DataProcessor):
 #     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms

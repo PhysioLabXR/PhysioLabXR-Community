@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>1200</height>
+    <width>842</width>
+    <height>675</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -188,8 +188,14 @@
           </widget>
          </item>
          <item>
-          <widget class="QWidget" name="infoWidget" native="true">
-           <layout class="QVBoxLayout" name="infoWidgetLayout"/>
+          <widget class="QWidget" name="filterWidget" native="true">
+           <layout class="QVBoxLayout" name="infoWidgetLayout">
+            <item>
+             <widget class="QWidget" name="groupFilterWidget" native="true">
+              <layout class="QVBoxLayout" name="groupFilterWidgetLayout"/>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item alignment="Qt::AlignTop">

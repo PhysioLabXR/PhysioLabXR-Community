@@ -8,6 +8,7 @@ from PyQt5.QtCore import *
 
 from rena import config
 from rena.config_ui import *
+from rena.ui.FilterWidget import FilterWidget
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED
 from rena.utils.settings_utils import get_stream_preset_info, is_group_shown
@@ -28,7 +29,7 @@ class GroupItem(QTreeWidgetItem):
         self.stream_name = stream_name
         self.group_name = group_name
         self.setText(0, group_name)
-
+        self.filter_widget = FilterWidget()
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
 
 
