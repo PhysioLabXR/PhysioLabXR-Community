@@ -3,7 +3,7 @@ import time
 import brainflow
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from pylsl import StreamInfo, StreamOutlet
-from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
+from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass
 
 
 class OpenBCILSLInterface:
@@ -140,7 +140,7 @@ def run_test():
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
     butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=24)
-    vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
+    # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
     start_time = time.time()

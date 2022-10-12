@@ -3,7 +3,7 @@
 # This Python file uses the following encoding: utf-8
 from PyQt5 import QtWidgets, uic
 
-from rena.examples.cython.original_dsp.realtime_DSP import RealtimeButterHighpass
+from rena.utils.realtime_DSP import RealtimeButterHighpass
 
 
 class FilterComponentButterworthBandPass(QtWidgets.QWidget):
