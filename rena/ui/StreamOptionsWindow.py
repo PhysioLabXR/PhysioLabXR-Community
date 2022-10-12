@@ -99,6 +99,8 @@ class StreamOptionsWindow(QDialog):
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
             self.options_window_plot_format_widget.hide()
+
+
         else:
             self.options_window_plot_format_widget.show()
             self.options_window_plot_format_widget.set_plot_format_widget_info \
