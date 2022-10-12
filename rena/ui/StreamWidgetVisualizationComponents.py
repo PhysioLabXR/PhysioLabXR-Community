@@ -6,7 +6,8 @@ from PyQt5 import QtWidgets, uic, sip
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, options_icon
+from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
+    options_icon
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 import sys
@@ -21,16 +22,16 @@ from pyqtgraph import PlotDataItem
 from scipy.signal import decimate
 from PyQt5 import QtCore
 
-
 import numpy as np
 import collections
 
 import os
 
+
 class StreamWidgetVisualizationComponents():
     def __init__(self, fs_label, ts_label, plot_elements):
-        self.fs_label=fs_label
-        self.ts_label=ts_label
+        self.fs_label = fs_label
+        self.ts_label = ts_label
         self.plot_elements = plot_elements
         # self.plot_widgets=plot_widgets # time series plot widgets
         # # self.plots=plots
@@ -38,4 +39,3 @@ class StreamWidgetVisualizationComponents():
 
         # self.plot_group_slices=plot_group_slices
         # self.plot_formats=plot_formats
-

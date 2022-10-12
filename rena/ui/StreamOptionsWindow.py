@@ -92,6 +92,10 @@ class StreamOptionsWindow(QDialog):
 
     @QtCore.pyqtSlot(str)
     def update_info_box(self, info):
+        """
+        TODO: replace the information and action widget with the current group actions widget
+        """
+
         # self.infoWidgetLayout.addStretch()
         selection_state, selected_groups, selected_channels = \
             self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
@@ -99,12 +103,14 @@ class StreamOptionsWindow(QDialog):
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
             self.options_window_plot_format_widget.hide()
+            # TODO: make the current widget empty
 
 
         else:
             self.options_window_plot_format_widget.show()
             self.options_window_plot_format_widget.set_plot_format_widget_info \
                 (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
+            # TODO： show the current group information action widget
 
         ################################################################################
         if selection_state == nothing_selected:  # nothing selected
