@@ -4,4 +4,6 @@
       "ThresholdedDelta",
       "FixationDetection"
   ],
-  "NominalSamplingRate":  30}
+  "NominalSamplingRate":  30,
+  "GroupInfo":  [1, 2]
+}
