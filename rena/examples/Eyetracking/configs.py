@@ -1,6 +1,8 @@
+fixation_min_duration = .15
+fps = 30
+fixation_min_frame_count = int(fixation_min_duration * fps)
 similarity_threshold = .02
 
-fps = 30
 patch_size = 126, 222  # width, height
 fovs = 115, 90  # horizontal, vertical, in degrees
 central_fov = 13  # fov of the fovea

@@ -9,18 +9,17 @@ import lpips
 import zmq
 import numpy as np
 from pylsl import StreamInlet, resolve_stream, StreamOutlet, StreamInfo
-
-# fix detection parameters  #######################################
 from rena.examples.Eyetracking.EyeUtils import prepare_image_for_sim_score, add_bounding_box
 from rena.examples.Eyetracking.configs import *
 
+
+# fix detection parameters  #######################################
 loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
 previous_img_patch = None
-distance_list = []
-fixation_list = []
+fixation_frame_counter = 0
 
 # LSL detected fixations ########################################
-outlet = StreamOutlet( StreamInfo("FixationDetection", 'FixationDetection', 2, 30, 'float32'))
+outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
 # zmq camera capture fields #######################################
 subtopic = 'CamCapture1'
@@ -39,6 +38,8 @@ print('Sockets connected, entering image loop')
 
 while True:
     try:
+        fix_detection_sample = np.zeros(3) - 1
+
         imagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
         img = cv2.imdecode(np.frombuffer(imagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
         img_modified = img.copy()
@@ -58,10 +59,17 @@ while True:
             img_tensor, previous_img_tensor = prepare_image_for_sim_score(img_patch), prepare_image_for_sim_score(
                 previous_img_patch)
             distance = loss_fn_alex(img_tensor, previous_img_tensor).item()
-            # img_modified = cv2.putText(img_modified, "%.2f" % distance, center, cv2.FONT_HERSHEY_SIMPLEX, 1,
-            #                            center_color, 2, cv2.LINE_AA)
-            distance_list.append(distance)
-            fixation_list.append(0 if distance > similarity_threshold else 1)
+            fixation = 0 if distance > similarity_threshold else 1
+            if fixation == 0:
+                fixation_frame_counter = 0
+            else:
+                fixation_frame_counter += 1
+            # add to LSL
+            fix_detection_sample[0] = distance
+            fix_detection_sample[1] = fixation
+            fix_detection_sample[2] = fixation_frame_counter >= fixation_min_frame_count
+            outlet.push_sample(fix_detection_sample)
+
         previous_img_patch = img_patch
 
         img_modified = add_bounding_box(img_modified, gaze_x, gaze_y, patch_size[0], patch_size[1], patch_color)
