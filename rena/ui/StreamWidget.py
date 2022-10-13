@@ -59,12 +59,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
-        self.is_stream_available = False
+        self.is_stream_available = False         # it will automatically detect if the stream is available
 
         # visualization data buffer
         self.current_timestamp = 0
 
-        # timer
+        # timer: the rate to pull the data from LSL
         self.timer = QTimer()
         self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
         self.timer.timeout.connect(self.ticks)
@@ -87,7 +87,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         # visualization component
         # This variable stores all the visualization components we initialize it in the init_stream_visualization()
-        self.stream_widget_visualization_component = None
+        self.stream_widget_visualization_component = None # TODO: Drag Drop Rename
 
         # self.init_server_client()
 
@@ -113,7 +113,7 @@ class StreamWidget(QtWidgets.QWidget):
         # create visualization component:
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
+        self.group_info = collect_stream_all_groups_info(self.stream_name) # TODO: self.group_info
         self.viz_time_vector = None
         self.create_visualization_component()
 
