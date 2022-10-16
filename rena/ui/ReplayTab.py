@@ -53,7 +53,6 @@ class ReplayTab(QtWidgets.QWidget):
 
     def _create_playback_widget(self):
         self._init_playback_widget()
-        # print("did this start? playback")
         # open in a separate window
         # window = AnotherWindow(self.playback_widget, self.stop_replay_btn_pressed)
         self.playback_window = another_window('Playback')
@@ -61,7 +60,6 @@ class ReplayTab(QtWidgets.QWidget):
         # self.playback_window.setFixedWidth(620)
         # self.playback_window.setFixedHeight(300)
         self.playback_window.hide()
-        # print("shown yet?")
 
     def _init_playback_widget(self):
         self.playback_widget = PlayBackWidget(self, self.command_info_interface)
@@ -133,7 +131,6 @@ class ReplayTab(QtWidgets.QWidget):
     #     self.lsl_replay_worker.tick_signal.emit()
 
     def on_play_pause_toggle(self):
-        print("ReplayTab: toggle is replaying")
         self.is_replaying = not self.is_replaying
         self.play_pause_signal.emit(self.is_replaying)
 

@@ -16,7 +16,7 @@ from rena import config_ui, config_signal, shared
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_COMMAND
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, PLAY_PAUSE_COMMAND
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
@@ -579,6 +579,8 @@ class PlaybackWorker(QObject):
         self.send_command_mutex = QMutex()
         self.command_queue = deque()
         self.is_running = False
+        # initialize pause/resume status
+        self.is_paused = False
 
     @pg.QtCore.pyqtSlot()
     def run(self):
@@ -593,12 +595,12 @@ class PlaybackWorker(QObject):
                     self.replay_stopped_signal.emit()
                     self.send_command_mutex.unlock()
                     return
-                elif reply == PLAY_PAUSE_COMMAND:
-                    if self.is_running:
-                        self.replay_play_pause_signal.emit('pause')
-                    else:
+                elif reply == PLAY_PAUSE_SUCCESS_INFO:
+                    if self.is_paused:
                         self.replay_play_pause_signal.emit('resume')
-                    self.is_running = not self.is_running
+                    else:
+                        self.replay_play_pause_signal.emit('pause')
+                    self.is_paused = not self.is_paused
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:

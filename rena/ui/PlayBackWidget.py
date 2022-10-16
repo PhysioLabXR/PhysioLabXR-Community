@@ -23,9 +23,9 @@ class PlayBackWidget(QtWidgets.QWidget):
 
         # create worker listening the playback position from the server
         # Initialize playback worker
-        self.timer = QTimer()
-        self.timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
-        self.timer.timeout.connect(self.ticks)
+        self.playback_command_interface_timer = QTimer()
+        self.playback_command_interface_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
+        self.playback_command_interface_timer.timeout.connect(self.ticks)
 
         self.playback_thread = pg.QtCore.QThread(self.parent)
         self.playback_worker = PlaybackWorker(self.command_info_interface)
@@ -38,14 +38,11 @@ class PlayBackWidget(QtWidgets.QWidget):
 
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = [None] * 4
 
-        # initialize pause/resume status
-        self.is_paused = False
-
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
         self.playPauseButton.setIcon(pause_icon)
         self.playback_worker.start_run()
-        self.timer.start()  # timer should stop when the replay is paused, over, or stopped
+        self.playback_command_interface_timer.start()  # timer should stop when the replay is paused, over, or stopped
 
     def virtual_time_to_playback_position_value(self, virtual_clock):
         # TODO: do not hardcode playback range (100)
@@ -89,8 +86,6 @@ class PlayBackWidget(QtWidgets.QWidget):
         called when pause command is executed.
         add any playback widget specific clean up steps here when replay is paused.
         '''
-        self.timer.stop()
-        self.is_paused = True
         self.playPauseButton.setIcon(start_stream_icon)
 
     def resume_replay(self):
@@ -98,8 +93,6 @@ class PlayBackWidget(QtWidgets.QWidget):
         called when resume command is executed.
         add any playback widget specific set-up steps here when replay is resumed.
         '''
-        self.timer.start()
-        self.is_paused = False
         self.playPauseButton.setIcon(pause_icon)
 
     def replay_play_pause_signal_callback(self, play_pause_command):
@@ -118,10 +111,10 @@ class PlayBackWidget(QtWidgets.QWidget):
         '''
         self.reset_playback()
         self.parent.replay_successfully_stopped()
-        self.timer.stop()
+        self.playback_command_interface_timer.stop()
 
     def replay_terminated_signal_callback(self):
-        self.timer.stop()
+        self.playback_command_interface_timer.stop()
         self.playback_thread.exit()
         del self.command_info_interface  # close the socket
 

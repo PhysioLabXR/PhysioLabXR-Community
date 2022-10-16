@@ -72,18 +72,20 @@ class ReplayServer(threading.Thread):
                     self.running = False
             else:
                 while len(self.selected_stream_indices) > 0:
-                    self.tick_times.append(time.time())
-                    print("Replay FPS {0}".format(self.get_fps()), end='\r')
-                    # streams get removed from the list if there are no samples left to play
-                    self.replay()
+                    if not self.is_paused:
+                        self.tick_times.append(time.time())
+                        print("Replay FPS {0}".format(self.get_fps()), end='\r')
+                        # streams get removed from the list if there are no samples left to play
+                        self.replay()
 
                     command = self.recv_string(is_block=False)
-                    # handle play_pauwe command
+                    # handle play_pause command
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(self.virtual_clock)
                     elif command == shared.PLAY_PAUSE_COMMAND:
+                        print("command received from replay server: ", command)
                         self.is_paused = not self.is_paused
-                        ### expected behavior? ###
+                        self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
                         # process stop command
                         self.reset_replay()
