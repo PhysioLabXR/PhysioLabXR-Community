@@ -3,4 +3,5 @@
   "NominalSamplingRate":  30,
   "DataType": "uint8",
   "NetworkingInterface":  "ZMQ",
-  "PortNumber":  5556}
+  "PortNumber":  5556,
+  "DataType": "uint8"}

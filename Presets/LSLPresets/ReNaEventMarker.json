@@ -11,5 +11,6 @@
     "TSInteractingItemID",
     "Likert"],
   "GroupInfo":  [1,2,3,4],
-  "NominalSamplingRate":  75
+  "NominalSamplingRate":  75,
+  "DataType": "float32"
 }

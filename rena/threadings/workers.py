@@ -227,10 +227,12 @@ class LSLInletWorker(RENAWorker):
 
     # signal_stream_num_channels = pyqtSignal(int)
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, LSLInlet_interface: LSLInletInterface, data_type, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        self.data_type = data_type
 
         self._lslInlet_interface = LSLInlet_interface
         self._rena_tcp_interface = RenaTCPInterface
@@ -1057,11 +1059,12 @@ class ZMQWorker(RENAWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, port_number, subtopic, *args, **kwargs):
+    def __init__(self, port_number, subtopic, data_type, *args, **kwargs):
         super(ZMQWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
+        self.data_type = data_type
         # networking parameters
         self.sub_address = "tcp://localhost:%s" % port_number
         self.subtopic = subtopic
@@ -1089,11 +1092,13 @@ class ZMQWorker(RENAWorker):
     def process_on_tick(self):
         if self.is_streaming:
             try:
-                received = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                np.frombuffer(timestamp)
             except zmq.error.Again:
                 return None
             print("HI")
-            pass
+            data_dict = {'frames': np.empty(0)}
+            self.signal_data.emit(data_dict)
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
@@ -1113,6 +1118,6 @@ class ZMQWorker(RENAWorker):
         self.is_streaming = False
 
     def is_stream_available(self):
-        poll_results = dict(self.poller.poll())
-        return True
+        poll_results = dict(self.poller.poll(timeout=0))
+        return len(poll_results) > 0
 

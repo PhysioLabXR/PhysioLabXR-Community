@@ -2,4 +2,5 @@
   "ChannelNames":[
     "P(Distractor)", "P(Target)",
     "P(Novelty)"],
-  "NominalSamplingRate":  50}
+  "NominalSamplingRate":  50,
+  "DataType": "float32"}

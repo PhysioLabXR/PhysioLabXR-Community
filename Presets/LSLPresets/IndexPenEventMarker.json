@@ -3,5 +3,6 @@
   "ChannelNames":[
     "IndexPenEventMarker"
   ],
-  "NominalSamplingRate":  3
+  "NominalSamplingRate":  3,
+  "DataType": "float32"
   }

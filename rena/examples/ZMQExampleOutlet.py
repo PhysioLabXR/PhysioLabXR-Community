@@ -37,7 +37,7 @@ def main():
         required_samples = int(srate * elapsed_time) - sent_samples
         if required_samples > 0:
             samples = np.random.rand(required_samples * n_channels).reshape((required_samples, -1))
-
+            samples = (samples * 255).astype(np.uint8)
             for sample_ix in range(required_samples):
                 mysample = samples[sample_ix]
                 socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])

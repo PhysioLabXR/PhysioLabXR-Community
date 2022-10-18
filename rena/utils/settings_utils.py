@@ -27,6 +27,9 @@ def get_all_preset_names():
     video_devices = config.settings.value('video_device')
     return stream_preset_names + experiment_preset_names + video_devices
 
+def get_video_device_names():
+    return config.settings.value('video_device')
+
 def get_stream_preset_names():
     config.settings.beginGroup('presets/streampresets')
     stream_preset_names = list(config.settings.childGroups())
@@ -99,6 +102,7 @@ def collect_stream_group_info(stream_name, group_name):
     rtn['plot_format'] = collect_stream_group_plot_format(stream_name, group_name)
     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
     rtn['channel_indices'] = [int(i) for i in rtn['channel_indices']]
+    rtn['is_image_only'] = len(rtn['channel_indices']) > config.settings.value("max_timeseries_num_channels")
 
     return rtn
 
@@ -250,13 +254,16 @@ def add_keys_to_preset(preset_dict):
         preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
     if 'PortNumber' not in preset_dict.keys():
         preset_dict['PortNumber'] = None
+    if 'DataType' not in preset_dict.keys():
+        preset_dict['DataType'] = 'float32'
     return preset_dict
 
 
-def create_default_preset(stream_name, port, networking_interface, num_channels=1):
+def create_default_preset(stream_name, port, networking_interface, data_type, num_channels=1):
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
                    'NetworkingInterface': networking_interface,
+                   'DataType': data_type,
                    'port': port}
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)

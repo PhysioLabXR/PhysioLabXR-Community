@@ -31,7 +31,8 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, networking_interface='LSL', port_number=None, insert_position=None):
+    def __init__(self, main_parent, parent, stream_name, data_type, networking_interface='LSL', port_number=None,
+                 insert_position=None):
         """
         LSL interface is created in StreamWidget
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -52,6 +53,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_name = stream_name  # this also keeps the subtopic name if using ZMQ
         self.networking_interface = networking_interface
         self.port_number = port_number
+        self.data_type = data_type
         # self.preset = get_complete_stream_preset_info(self.stream_name)
         ##
 
@@ -107,9 +109,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
-            self.worker = workers.LSLInletWorker(LSLInlet_interface=self.interface, RenaTCPInterface=None)
+            self.worker = workers.LSLInletWorker(LSLInlet_interface=self.interface, data_type=data_type, RenaTCPInterface=None)
         else:
-            self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name)
+            self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
         self.worker.signal_data.connect(self.process_stream_data)
         self.worker.signal_stream_availability.connect(self.update_stream_availability)
         self.worker.moveToThread(self.worker_thread)
@@ -238,7 +240,8 @@ class StreamWidget(QtWidgets.QWidget):
 
     def reset_preset_by_num_channels(self, num_channels):
         remove_stream_preset_from_settings(self.stream_name)
-        create_default_preset(self.stream_name, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
+        create_default_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface,
+                              num_channels=num_channels)  # update preset in settings
         self.create_interface_and_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.set_interface(self.interface)
         self.stream_options_window.reload_preset_to_UI()
@@ -353,11 +356,10 @@ class StreamWidget(QtWidgets.QWidget):
 
         is_only_image_enabled = False
         for group_name in self.group_info.keys():
-            if len(self.group_info[group_name]['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+            if is_only_image_enabled := self.group_info[group_name]['is_image_only']:
                 # disable time series and bar plot for this group
-                update_selected_plot_format(self.stream_name, group_name, 1)
-                self.group_info = collect_stream_all_groups_info(self.stream_name)  # just reload the group info from settings
-                is_only_image_enabled = True
+                update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
+                self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
 
             ################################ time series widget initialization###########################################
             if not is_only_image_enabled:
@@ -369,11 +371,15 @@ class StreamWidget(QtWidgets.QWidget):
                 group_plot_widget.addLegend()
 
                 plot_data_items = []
-                group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]  # channel names for this group
-                for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                    if self.group_info[group_name]['is_channels_shown'][channel_index_in_group]:  # if this channel is not shown
-                        channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),  # unique color for each group
-                                             name=channel_name)
+                group_channel_names = [channel_names[int(i)] for i in
+                                       self.group_info[group_name]['channel_indices']]  # channel names for this group
+                for channel_index_in_group, (channel_index, channel_name) in enumerate(
+                        zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+                    if self.group_info[group_name]['is_channels_shown'][
+                        channel_index_in_group]:  # if this channel is not shown
+                        channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(
+                            color=distinct_colors[channel_index_in_group]),  # unique color for each group
+                                                                     name=channel_name)
                         self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
                         plot_data_items.append(channel_plot_widget)
                         # TODO add back the channel when they are renabled
@@ -397,14 +403,15 @@ class StreamWidget(QtWidgets.QWidget):
             ############################## bar plot ##############################################################################
             if not is_only_image_enabled:
                 barchart_widget = pg.PlotWidget()
-                barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'], self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+                barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+                                          self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
                 # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
                 # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
                 label_x_axis = barchart_widget.getAxis('bottom')
                 label_dict = dict(enumerate(group_channel_names)).items()
                 label_x_axis.setTicks([label_dict])
                 x = np.arange(len(group_channel_names))
-                y = np.array([0]*len(group_channel_names))
+                y = np.array([0] * len(group_channel_names))
                 bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
                 barchart_widget.addItem(bars)
                 self.BarPlotWidgetLayout.addWidget(barchart_widget)
@@ -667,9 +674,10 @@ class StreamWidget(QtWidgets.QWidget):
 
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.preset_on_change()
-        widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
-        widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
-                         max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+        if not self.group_info[group_name]['is_image_only']:  # if barplot exists for this group
+            widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
+            widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+                             max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
 
     def set_plot_widget_range(self, x_min, x_max, y_min, y_max):
 
