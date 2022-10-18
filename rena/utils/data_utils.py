@@ -736,3 +736,7 @@ def is_homogeneous_type(seq):
     iseq = iter(seq)
     first_type = type(next(iseq))
     return first_type if all( (type(x) is first_type) for x in iseq ) else False
+
+def signal_generator(f, fs, duration, amp):
+    wave = amp * (np.sin(2 * np.pi * np.arange(fs * duration) * f / fs)).astype(np.float32)
+    return wave
