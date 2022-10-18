@@ -1,4 +1,4 @@
-{ "StreamName":"CameraCapture",
+{ "StreamName":"CamCapture",
   "NumChannels": 480000,
   "NominalSamplingRate":  30,
   "DataType": "uint8",

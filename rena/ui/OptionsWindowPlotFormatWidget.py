@@ -27,7 +27,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.group_name = None
         # self.stream_name = stream_name
         # self.grou_name = group_name
-
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
         self.imageScalingFactorLineEdit.setValidator(QIntValidator())
@@ -57,6 +57,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
+        if collect_stream_group_info(stream_name, group_name)['is_image_only']:
+            self.enable_only_image_tab()
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
         # image format information
@@ -69,12 +71,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # bar chart format information
         self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
         self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
-
-        self.plotFormatTabWidget.currentChanged.disconnect(self.plot_format_tab_current_changed)
-        if collect_stream_group_info(stream_name, group_name)['is_image_only']:
-            self.enable_only_image_tab()
-        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
-
 
     def plot_format_tab_current_changed(self, index):
         # create value

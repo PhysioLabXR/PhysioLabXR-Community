@@ -95,6 +95,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_widget_visualization_component = None
 
         # self.init_server_client()
+        self.group_info = collect_stream_all_groups_info(self.stream_name)
 
         # data elements
         self.interface, self.viz_data_buffer = None, None
@@ -117,7 +118,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
@@ -252,8 +252,9 @@ class StreamWidget(QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
         self.interface = create_lsl_interface(self.stream_name,
                                               channel_names)  # maybe want to discard and close the old interface
+        buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
-                                                      buffer_sizes=config.VIZ_DATA_BUFFER_MAX_SIZE, append_zeros=True)
+                                                      buffer_sizes=buffer_size, append_zeros=True)
 
     def dock_window(self):
         self.parent.insertWidget(self.parent.count() - 1, self)

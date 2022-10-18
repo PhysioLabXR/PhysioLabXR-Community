@@ -282,7 +282,7 @@ class LSLInletWorker(RENAWorker):
             # if self.dsp_on:
             #     self
 
-            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     @pg.QtCore.pyqtSlot()
@@ -1077,11 +1077,11 @@ class ZMQWorker(RENAWorker):
 
         self.ZQMSocket = RenaTCPInterface
         self.is_streaming = False
-        # self.dsp_on = True
-
-        self.num_samples = 0
+        self.timestamp_queue = deque(maxlen=1024)
 
         self.previous_availability = None
+        self.last_poll_time = None
+        self.is_stream_available()
 
     def __del__(self):
         self.socket.close()
@@ -1096,8 +1096,14 @@ class ZMQWorker(RENAWorker):
                 np.frombuffer(timestamp)
             except zmq.error.Again:
                 return None
-            print("HI")
-            data_dict = {'frames': np.empty(0)}
+            timestamp = np.frombuffer(timestamp, dtype=np.float64)
+            self.timestamp_queue.append(timestamp)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+            data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
+            data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     @pg.QtCore.pyqtSlot()
@@ -1118,6 +1124,6 @@ class ZMQWorker(RENAWorker):
         self.is_streaming = False
 
     def is_stream_available(self):
-        poll_results = dict(self.poller.poll(timeout=0))
+        poll_results = dict(self.poller.poll(timeout=1000))
         return len(poll_results) > 0
 
