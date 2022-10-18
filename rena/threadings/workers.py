@@ -7,6 +7,7 @@ import numpy as np
 import psutil as psutil
 import pyautogui
 import pyqtgraph as pg
+import zmq
 from PyQt5.QtCore import QMutex
 from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
@@ -1045,3 +1046,75 @@ class ScriptInfoWorker(QObject):
 #             return True
 #         else:
 #             return False
+
+class ZMQWorker(RENAWorker):
+    """
+    Rena's implementation of working with ZMQ's tcp interfaces
+
+    """
+    signal_data = pyqtSignal(dict)
+    signal_data_tick = pyqtSignal()
+
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
+
+    def __init__(self, port_number, subtopic, *args, **kwargs):
+        super(ZMQWorker, self).__init__()
+        self.signal_data_tick.connect(self.process_on_tick)
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        # networking parameters
+        self.sub_address = "tcp://localhost:%s" % port_number
+        self.subtopic = subtopic
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.SUB)
+        self.socket.connect(self.sub_address)
+        self.socket.setsockopt_string(zmq.SUBSCRIBE, self.subtopic)
+        self.poller = zmq.Poller()
+        self.poller.register(self.socket, zmq.POLLIN)
+
+        self.ZQMSocket = RenaTCPInterface
+        self.is_streaming = False
+        # self.dsp_on = True
+
+        self.num_samples = 0
+
+        self.previous_availability = None
+
+    def __del__(self):
+        self.socket.close()
+        self.context.term()
+        print('In ZMQWorker.__dell__(): Socket closed and context terminated')
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if self.is_streaming:
+            try:
+                received = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+            except zmq.error.Again:
+                return None
+            print()
+            pass
+
+    @pg.QtCore.pyqtSlot()
+    def process_stream_availability(self):
+        is_stream_availability = self.is_stream_available()
+        if self.previous_availability is None:  # first time running
+            self.previous_availability = is_stream_availability
+            self.signal_stream_availability.emit(self.is_stream_available())
+        else:
+            if is_stream_availability != self.previous_availability:
+                self.previous_availability = is_stream_availability
+                self.signal_stream_availability.emit(is_stream_availability)
+
+    def start_stream(self):
+        self.is_streaming = True
+
+
+    def stop_stream(self):
+        self.context.term()
+        self.is_streaming = False
+
+    def is_stream_available(self):
+        poll_results = dict(self.poller.poll())
+        return True

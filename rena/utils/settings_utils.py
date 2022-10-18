@@ -245,18 +245,25 @@ def add_keys_to_preset(preset_dict):
         preset_dict['NominalSamplingRate'] = 1
     if 'DisplayDuration' not in preset_dict.keys():
         preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
+
+    if 'NetworkingInterface' not in preset_dict.keys():
+        preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
+    if 'PortNumber' not in preset_dict.keys():
+        preset_dict['PortNumber'] = None
     return preset_dict
 
 
-def create_default_preset(stream_name, num_channels=1):
+def create_default_preset(stream_name, port, networking_interface, num_channels=1):
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)]}
+                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'NetworkingInterface': networking_interface,
+                   'port': port}
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
-def update_selected_plot_format(stream_name, group_name, selected_format):
+def update_selected_plot_format(stream_name, group_name, selected_format: int):
     config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
 
 
@@ -266,10 +273,6 @@ def update_selected_plot_format(stream_name, group_name, selected_format):
 # image: {}
 # bar plot : {}
 # }
-
-
-
-
 
 def process_plot_group(preset_dict):
 
@@ -288,7 +291,6 @@ def process_plot_group(preset_dict):
                      'y_min': 0.0,
                      }
     }
-
 
     channel_num = preset_dict['NumChannels']
     if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:

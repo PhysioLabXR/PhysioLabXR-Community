@@ -4,6 +4,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
+from rena import config
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
@@ -13,8 +14,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
-
-
 
     def __init__(self, stream_name):
         super().__init__()
@@ -47,9 +46,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
         self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
 
-
-
-
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
 
@@ -64,7 +60,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
-
         # image format information
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
         self.imageHeightLineEdit.setText(str(group_info['plot_format']['image']['height']))
@@ -76,8 +71,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
         self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
 
-
-
+        if len(group_info['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+            self.enable_only_image_tab()
 
     def plot_format_tab_current_changed(self, index):
         # create value
@@ -96,7 +91,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.plot_format_changed(info_dict)
 
-
     def image_W_H_on_change(self):
         # check if W * H * D = Channel Num
         # W * H * D
@@ -110,7 +104,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def image_format_change(self):
         image_format = self.get_image_format()
-        set_plot_image_format(self.stream_name, self.group_name,image_format=image_format)
+        set_plot_image_format(self.stream_name, self.group_name, image_format=image_format)
 
         self.image_changed()
 
@@ -120,17 +114,14 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.image_changed()
 
-
-
-
     def image_valid_update(self):
         image_format_valid = self.image_format_valid()
         set_plot_image_valid(self.stream_name, self.group_name, image_format_valid)
         width, height, image_format, channel_format, channel_num = self.get_image_info()
 
         self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
-            str(width*height*image_depth_dict[image_format]), str(channel_num)
-            ))
+            str(width * height * image_depth_dict[image_format]), str(channel_num)
+        ))
 
         if image_format_valid:
             self.imageFormatInfoLabel.setStyleSheet('color: green')
@@ -159,8 +150,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         else:
             return 1
 
-
-
     def get_image_width(self):
         try:
             new_image_width = abs(int(self.imageWidthLineEdit.text()))
@@ -174,7 +163,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_image_height
-
     def get_image_scaling_factor(self):
         try:
             new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
@@ -195,9 +183,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_bar_chart_min_range
-
-
-
 
     def get_image_format(self):
         current_format = self.imageFormatComboBox.currentText()
@@ -227,4 +212,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
 
-
+    def enable_only_image_tab(self):
+        self.timeseriestab.setEnabled(False)
+        self.barplottab.setEnabled(False)

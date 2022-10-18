@@ -162,32 +162,20 @@ class StreamGroupView(QTreeWidget):
 
         # get_childGroups_for_group('presets/')
         for group_name, group_values in group_info.items():
-            # channel_group = self.add_channel_item(parent_item=self.stream_root, display_text=group_name, display=group_values['plot_format'])
 
-            # group = self.add_item(parent_item=self.stream_root,
-            #                               display_text=group_name,
-            #                               plot_format=group_values['plot_format'],
-            #                               item_type='group')
             group = self.add_group_item(parent_item=self.stream_root,
                                         group_name=group_name,
                                         plot_format=group_values['plot_format'])
             # self.groups_widgets.append(group)
+            if len(group_values['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+                continue  # skip adding channel items if exceeding maximum time series number of channels
             for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
-                # print(channel_index)
-                # channel = self.add_item(parent_item=group,
-                #                         display_text=get_stream_preset_info(self.stream_name, key='ChannelNames')[int(channel_index)],
-                #                         item_type='channel',
-                #                         display=group_values['is_channels_shown'][channel_index_in_group],
-                #                         item_index=channel_index)
                 channel = self.add_channel_item(parent_item=group,
                                                 channel_name=
                                                 get_stream_preset_info(self.stream_name, key='ChannelNames')[
                                                     int(channel_index)],
                                                 is_shown=group_values['is_channels_shown'][channel_index_in_group],
                                                 lsl_index=channel_index)
-
-                # channel.setFlags(channel.flags() & (~Qt.ItemIsDropEnabled))
-                # self.channel_widgets.append(channel)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)

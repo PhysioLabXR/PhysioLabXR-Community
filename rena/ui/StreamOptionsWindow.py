@@ -56,12 +56,12 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.options_window_plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.actionsWidgetLayout.addWidget(self.options_window_plot_format_widget)
-        self.options_window_plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        self.options_window_plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
-        self.options_window_plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.options_window_plot_format_widget.hide()
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
+        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+        self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
+        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
+        self.plot_format_widget.hide()
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -98,10 +98,10 @@ class StreamOptionsWindow(QDialog):
         # self.clearLayout(self.infoWidgetLayout)
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
-            self.options_window_plot_format_widget.hide()
+            self.plot_format_widget.hide()
         else:
-            self.options_window_plot_format_widget.show()
-            self.options_window_plot_format_widget.set_plot_format_widget_info \
+            self.plot_format_widget.show()
+            self.plot_format_widget.set_plot_format_widget_info \
                 (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
 
         ################################################################################
@@ -269,3 +269,4 @@ class StreamOptionsWindow(QDialog):
 
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
+
