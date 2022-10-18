@@ -1050,7 +1050,6 @@ class ScriptInfoWorker(QObject):
 class ZMQWorker(RENAWorker):
     """
     Rena's implementation of working with ZMQ's tcp interfaces
-
     """
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
@@ -1093,7 +1092,7 @@ class ZMQWorker(RENAWorker):
                 received = self.socket.recv_multipart(flags=zmq.NOBLOCK)
             except zmq.error.Again:
                 return None
-            print()
+            print("HI")
             pass
 
     @pg.QtCore.pyqtSlot()
@@ -1110,11 +1109,10 @@ class ZMQWorker(RENAWorker):
     def start_stream(self):
         self.is_streaming = True
 
-
     def stop_stream(self):
-        self.context.term()
         self.is_streaming = False
 
     def is_stream_available(self):
         poll_results = dict(self.poller.poll())
         return True
+

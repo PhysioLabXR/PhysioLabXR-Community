@@ -106,8 +106,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
-            self.worker = workers.LSLInletWorker(LSLInlet_interface=self.interface,
-                                                 RenaTCPInterface=None)
+            self.worker = workers.LSLInletWorker(LSLInlet_interface=self.interface, RenaTCPInterface=None)
         else:
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name)
         self.worker.signal_data.connect(self.process_stream_data)
