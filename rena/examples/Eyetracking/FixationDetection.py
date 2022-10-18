@@ -79,7 +79,7 @@ while True:
 
         previous_img_patch = img_patch
 
-        img_modified = cv2.rectangle(img_modified, (img_patch_x_min, img_patch_y_min), (img_patch_x_max, img_patch_y_max), patch_color, thickness=2)
+        img_modified = cv2.rectangle(img_modified, (img_patch_x_min, img_patch_y_min), (img_patch_x_max, img_patch_y_max), patch_color, thickness=2)  # TODO double check th patch color, should be yellow
         cv2.circle(img_modified, center, 1, center_color, 2)
         axis = (int(central_fov * ppds[0]), int(central_fov * ppds[1]))
         cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
