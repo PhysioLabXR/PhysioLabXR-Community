@@ -17,12 +17,18 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
 
+        self.NetworkingInterfaceComboBox.currentIndexChanged.connect(self.networking_interface_selection_changed)
+        self.networking_interface_selection_changed()
+
     def select_by_stream_name(self, stream_name):
         index = self.stream_name_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
         self.stream_name_combo_box.setCurrentIndex(index)
 
     def get_selected_stream_name(self):
         return self.stream_name_combo_box.currentText()
+
+    def get_port_number(self):
+        return self.PortLineEdit.text()
 
     def set_selection_text(self, stream_name):
         self.stream_name_combo_box.lineEdit().setText(stream_name)
@@ -43,3 +49,13 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def update_combobox_presets(self):
         update_presets_to_combobox(self.stream_name_combo_box)
+
+    def networking_interface_selection_changed(self):
+        if self.NetworkingInterfaceComboBox.currentText() == "LSL":
+            self.PortLineEdit.setHidden(True)
+        elif self.NetworkingInterfaceComboBox.currentText() == "ZMQ":
+            self.PortLineEdit.show()
+
+    def get_networking_interface(self):
+        return self.NetworkingInterfaceComboBox.currentText()
+
