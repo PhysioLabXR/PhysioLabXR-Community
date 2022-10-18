@@ -12,7 +12,7 @@ from rena.utils.settings_utils import export_preset_to_settings, load_all_lslStr
 from rena.utils.ui_utils import dialog_popup
 
 
-def load_default_settings(revert_to_default=False, reload_presets=False):
+def load_default_settings(revert_to_default=False, reload_presets=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
@@ -20,6 +20,7 @@ def load_default_settings(revert_to_default=False, reload_presets=False):
         load_default_recording_file_location()
         config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
+        config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -31,7 +32,10 @@ def load_default_settings(revert_to_default=False, reload_presets=False):
             config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         if not config.settings.contains('viz_display_duration') or config.settings.value('viz_display_duration') is None:
             config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
-
+        if not config.settings.contains('video_device_refresh_interval') or config.settings.value('video_device_refresh_interval') is None:
+            config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
+        if not config.settings.contains('max_timeseries_num_channels') or config.settings.value('max_timeseries_num_channels') is None:
+            config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS)
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
     if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
@@ -51,7 +55,7 @@ def load_default_settings(revert_to_default=False, reload_presets=False):
     print('Loading avaiable cameras')
     cameras = get_working_camera_ports()
     cameras = list(map(str, cameras[1]))
-    config.settings.setValue('cameras', cameras + ['monitor1'])
+    config.settings.setValue('video_device', cameras + ['monitor1'])
 
 def load_ui_shared():
     global stream_unavailable_pixmap

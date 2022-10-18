@@ -51,47 +51,9 @@
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
-          <widget class="QLabel" name="StreamNameLabel">
+          <widget class="QLabel" name="VideoDeviceNameLabel">
            <property name="text">
-            <string>Stream Name</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="StreamAvailablilityLabel">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>72</width>
-             <height>72</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>72</width>
-             <height>72</height>
-            </size>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="StartStopStreamBtn">
-           <property name="toolTip">
-            <string>Start plotting this stream</string>
-           </property>
-           <property name="text">
-            <string>Start Stream</string>
-           </property>
-           <property name="Start Stream" stdset="0">
-            <string>Start Stream</string>
+            <string>Video Device Name</string>
            </property>
           </widget>
          </item>
@@ -119,12 +81,12 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="RemoveStreamBtn">
+          <widget class="QPushButton" name="RemoveVideoBtn">
            <property name="toolTip">
             <string>Remove this stream</string>
            </property>
            <property name="text">
-            <string>Remove Stream</string>
+            <string>Remove Video</string>
            </property>
            <property name="Stop Stream" stdset="0">
             <string>Remove Stream</string>
@@ -139,35 +101,23 @@
    </item>
    <item>
     <widget class="QWidget" name="MetaInfoWidget" native="true">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>48</height>
+      </size>
+     </property>
      <layout class="QVBoxLayout" name="MetaInfoVerticalLayout"/>
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="VisualizationWidget" native="true">
-     <layout class="QVBoxLayout" name="verticalLayout_3">
+    <widget class="QWidget" name="ImageWidget" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QTabWidget" name="PlotsTabWidget">
-        <property name="currentIndex">
-         <number>0</number>
+       <widget class="QLabel" name="ImageLabel">
+        <property name="text">
+         <string>TextLabel</string>
         </property>
-        <widget class="QWidget" name="TimeSeriesPlotsWidget">
-         <attribute name="title">
-          <string>Time Series</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout"/>
-        </widget>
-        <widget class="QWidget" name="ImageWidget">
-         <attribute name="title">
-          <string>Image</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="ImageWidgetLayout"/>
-        </widget>
-        <widget class="QWidget" name="BarChartWidget">
-         <attribute name="title">
-          <string>BarChart</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="BarPlotWidgetLayout"/>
-        </widget>
        </widget>
       </item>
      </layout>

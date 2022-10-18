@@ -1,9 +1,15 @@
 { "StreamName":"Unity.ReNa.EventMarkers",
   "ChannelNames":[
-    "RSVPMarker", "RSVPDistance", "-", "-",
-    "CarouselMarker", "CarouselDistance", "CarouselAngularSpeed", "CarouselIncidentAngle",
-    "VSMarker", "-", "-", "-",
-    "TSMarker", "GrabEvent", "ReleaseEvent", "EventItemID"],
-  "GroupInfo":  [4, 8, 12],
+    "BlockMarker",
+    "BlockIDStartEnd",
+    "DTN",
+    "itemID",
+    "objDistFromPlayer",
+    "CarouselSpeed",
+    "CarouselAngle",
+    "TSHandGrab","TSHandRelease",
+    "TSInteractingItemID",
+    "Likert"],
+  "GroupInfo":  [1,2,3,4],
   "NominalSamplingRate":  75
 }

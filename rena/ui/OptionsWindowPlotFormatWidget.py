@@ -1,23 +1,21 @@
 # This Python file uses the following encoding: utf-8
 
+from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QStandardItemModel
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
-from rena import config_signal, config
-from rena.config_ui import *
-from rena.ui.StreamGroupView import StreamGroupView
-from rena.utils.settings_utils import collect_stream_all_groups_info, collect_stream_group_info, \
-    collect_stream_group_plot_format
-from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
-from PyQt5 import QtCore, QtGui, QtWidgets
+from rena import config
+from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
+from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
+    set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
-    plot_format_on_change = QtCore.pyqtSignal(str)
+    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
+    preset_on_change_signal = QtCore.pyqtSignal()
+    bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, stream_name, selected_group_name):
+    def __init__(self, stream_name):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -25,150 +23,195 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         """
         # self.setWindowTitle('Options')
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
-
         self.stream_name = stream_name
-        self.selected_group_name = selected_group_name
+        self.group_name = None
+        # self.stream_name = stream_name
+        # self.grou_name = group_name
 
-        self.TimeSeriesCheckBox.stateChanged.connect(lambda:self.TimeSeriesCheckBox_status_change(self.TimeSeriesCheckBox))
-        self.ImageCheckBox.stateChanged.connect(lambda:self.ImageCheckBox_status_change(self.ImageCheckBox))
-        self.BarPlotCheckbox.stateChanged.connect(lambda:self.BarPlotCheckbox_status_change(self.BarPlotCheckbox))
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
-        self.group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=self.selected_group_name)
-        self.init_plot_format_info()
+        self.imageWidthLineEdit.setValidator(QIntValidator())
+        self.imageHeightLineEdit.setValidator(QIntValidator())
+        self.imageScalingFactorLineEdit.setValidator(QIntValidator())
 
+        self.imageWidthLineEdit.textChanged.connect(self.image_W_H_on_change)
+        self.imageHeightLineEdit.textChanged.connect(self.image_W_H_on_change)
+        self.imageScalingFactorLineEdit.textChanged.connect(self.image_W_H_on_change)
+        self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
+        self.imageFormatComboBox.currentTextChanged.connect(self.image_channel_format_change)
 
+        self.barPlotYMaxLineEdit.setValidator(QDoubleValidator())
+        self.barPlotYMinLineEdit.setValidator(QDoubleValidator())
 
+        self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
+        self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
 
-        # self.updatePlotFormatBtn.clicked.connect(self.update_plot_format_btn_clicked)
+        # self.image_format_on_change_signal.connect(self.image_valid_update)
+        # image format change
 
-    # plot_format = {
-    #     'time_series': {'display': True},
-    #     'image': {'display': False,
-    #               'format': None,
-    #               'width': None,
-    #               'height': None,
-    #               'depth': None,
-    #               },
-    #     'bar_plot': {'display': False}
-    # }
+    def set_plot_format_widget_info(self, stream_name, group_name):
+        self.group_name = group_name
+        # which one to select
+        group_info = collect_stream_group_info(stream_name, group_name)
+        # change selected tab
 
-    def clearLayout(self, layout):
-        if layout is not None:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-                else:
-                    self.clearLayout(item.layout())
-    #
-    # def set_plot_format(self):
-    #     # get plot format
-    #     # checkbox
-    #     # actions after plot format changed
-    #     pass
+        # disconnect while switching selected group
+        self.plotFormatTabWidget.currentChanged.disconnect()
+        self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
-    def init_plot_format_info(self):
-        if self.group_info['plot_format']['time_series']['display']:
-            self.TimeSeriesCheckBox.setCheckState(Qt.Checked)
+        # image format information
+        self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
+        self.imageHeightLineEdit.setText(str(group_info['plot_format']['image']['height']))
+        self.imageScalingFactorLineEdit.setText(str(group_info['plot_format']['image']['scaling_factor']))
+        self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['image_format'])
+        self.channelFormatCombobox.setCurrentText(group_info['plot_format']['image']['channel_format'])
+
+        # bar chart format information
+        self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
+        self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
+
+        if len(group_info['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+            self.enable_only_image_tab()
+
+    def plot_format_tab_current_changed(self, index):
+        # create value
+        # update the index in display
+        # get current selected
+        # update_selected_plot_format
+        update_selected_plot_format(self.stream_name, self.group_name, index)
+        # if index==2:
+
+        # new format, old format
+        info_dict = {
+            'stream_name': self.stream_name,
+            'group_name': self.group_name,
+            'new_format': index
+        }
+
+        self.plot_format_changed(info_dict)
+
+    def image_W_H_on_change(self):
+        # check if W * H * D = Channel Num
+        # W * H * D
+        # update the value to settings
+        width = self.get_image_width()
+        height = self.get_image_height()
+        scaling_factor = self.get_image_scaling_factor()
+        set_plot_image_w_h(self.stream_name, self.group_name, height=height, width=width, scaling_factor=scaling_factor)
+
+        self.image_changed()
+
+    def image_format_change(self):
+        image_format = self.get_image_format()
+        set_plot_image_format(self.stream_name, self.group_name, image_format=image_format)
+
+        self.image_changed()
+
+    def image_channel_format_change(self):
+        image_channel_format = self.get_image_channel_format()
+        set_plot_image_channel_format(self.stream_name, self.group_name, channel_format=image_channel_format)
+
+        self.image_changed()
+
+    def image_valid_update(self):
+        image_format_valid = self.image_format_valid()
+        set_plot_image_valid(self.stream_name, self.group_name, image_format_valid)
+        width, height, image_format, channel_format, channel_num = self.get_image_info()
+
+        self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
+            str(width * height * image_depth_dict[image_format]), str(channel_num)
+        ))
+
+        if image_format_valid:
+            self.imageFormatInfoLabel.setStyleSheet('color: green')
+            print('Valid Image Format XD')
         else:
-            self.ImageCheckBox.setCheckState(Qt.Unchecked)
-            self.TimeSeiresFormatInfoWidget.setEnabled(False)
+            self.imageFormatInfoLabel.setStyleSheet('color: red')
+            print('Invalid Image Format')
 
+    def get_image_info(self):
+        group_info = collect_stream_group_info(self.stream_name, self.group_name)
+        width = group_info['plot_format']['image']['width']
+        height = group_info['plot_format']['image']['height']
+        image_format = group_info['plot_format']['image']['image_format']
+        channel_format = group_info['plot_format']['image']['channel_format']
+        channel_num = len(group_info['channel_indices'])
+        return width, height, image_format, channel_format, channel_num
 
-        ###################################################################
-        if self.group_info['plot_format']['image']['display']:
-            self.ImageCheckBox.setCheckState(Qt.Checked)
-            # TODO: set size
-            image_format = self.group_info['plot_format']['image']
-            # if image_format['width'] * image_format['height'] * image_format['depth'] != len(
-            #         self.group_info['channel_indices']):
-            #     dialog_popup(
-            #         'Warning, the preset might be corrupted. The WxHxD not equal to the total number of channel')
-
-            self.ImageWidthTextEdit.setText(str(image_format['width']))
-            self.ImageHeightTextEdit.setText(str(image_format['height']))
-            self.imageFormatComboBox.setCurrentText(image_format['format'])
-
+    def image_format_valid(self):
+        # group_info =
+        # height = self.get_image_height()
+        # width = self.get_image_width()
+        # image_channel_num = self.get_image_channel_num()
+        width, height, image_format, channel_format, channel_num = self.get_image_info()
+        if channel_num != width * height * image_depth_dict[image_format]:
+            return 0
         else:
-            self.ImageCheckBox.setCheckState(Qt.Unchecked)
-            self.ImageFormatInfoWidget.setEnabled(False)
-        #################################################################
+            return 1
 
-        if self.group_info['plot_format']['bar_plot']['display']:
-            self.BarPlotCheckbox.setCheckState(Qt.Checked)
-        else:
-            self.BarPlotCheckbox.setCheckState(Qt.Unchecked)
-            self.BarPlotFormatInfoWidget.setEnabled(False)
+    def get_image_width(self):
+        try:
+            new_image_width = abs(int(self.imageWidthLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_image_width
 
+    def get_image_height(self):
+        try:
+            new_image_height = abs(int(self.imageHeightLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_image_height
+    def get_image_scaling_factor(self):
+        try:
+            new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_image_scaling_factor
 
-    # def update_plot_format_btn_clicked(self):
-    #     # get display status
-    #     if self.ImageCheckBox.isChecked():
-    #         image_width = self.ImageWidthTextEdit.text()
-    #         image_height = self.ImageHeightTextEdit.text()
-    #         if image_width.isnumeric() == False or image_height.isnumeric() == False:
-    #             dialog_popup('Please Enter a positive Integer for Width and Height')
-    #             # self.init_plot_format_info()
-    #             return
-    #
-    #         # if image pixel number does  not match
-    #         # image_format = self.group_info['plot_format']['image']
-    #         image_width=int(image_width)
-    #         image_height=int(image_height)
-    #         image_depth = image_depth_dict[self.imageFormatComboBox.currentText()]
-    #         if image_width * image_height * image_depth != len(self.group_info['channel_indices']):
-    #             dialog_popup('Image WxHxD must equal to the total number of channel')
-    #             # self.init_plot_format_info()
-    #             return
+    def get_bar_chart_max_range(self):
+        try:
+            new_bar_chart_max_range = float(self.barPlotYMaxLineEdit.text())
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_bar_chart_max_range
 
+    def get_bar_chart_min_range(self):
+        try:
+            new_bar_chart_min_range = float(self.barPlotYMinLineEdit.text())
+        except ValueError:  # in case the string cannot be convert to a float
+            return 0
+        return new_bar_chart_min_range
 
+    def get_image_format(self):
+        current_format = self.imageFormatComboBox.currentText()
+        # image_channel_num = image_depth_dict(current_format)
+        return current_format
 
+    def get_image_channel_format(self):
+        current_format = self.channelFormatCombobox.currentText()
+        # image_channel_num = image_depth_dict(current_format)
+        return current_format
 
+    def image_changed(self):
+        self.image_valid_update()
+        self.preset_on_change_signal.emit()
 
-    def TimeSeriesCheckBox_status_change(self, checkbox):
-        if checkbox.isChecked():
-            self.TimeSeiresFormatInfoWidget.setEnabled(True)
-        else:
-            self.TimeSeiresFormatInfoWidget.setEnabled(False)
+    def plot_format_changed(self, info_dict):
+        self.plot_format_on_change_signal.emit(info_dict)
 
-    def ImageCheckBox_status_change(self, checkbox):
-        if checkbox.isChecked():
-            self.ImageFormatInfoWidget.setEnabled(True)
-        else:
-            self.ImageFormatInfoWidget.setEnabled(False)
+    def bar_chart_range_on_change(self):
+        bar_chart_max_range = self.get_bar_chart_max_range()
+        bar_chart_min_range = self.get_bar_chart_min_range()
 
-    def BarPlotCheckbox_status_change(self, checkbox):
-        if checkbox.isChecked():
-            self.BarPlotFormatInfoWidget.setEnabled(True)
-        else:
-            self.BarPlotFormatInfoWidget.setEnabled(False)
+        set_bar_chart_max_min_range(self.stream_name,
+                                    self.group_name,
+                                    max_range=bar_chart_max_range,
+                                    min_range=bar_chart_min_range)
 
+        self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
 
-
-    # def update_plot_format_dict(self):
-    #     #
-    #     plot_format = dict()
-    #
-    #     if self.TimeSeriesCheckBox.isChecked():
-    #         plot_format['time_series']['display']=True
-
-
-
-        # plot_format = dict()
-        # if plot_format = True
-        # plot_format['time_series']=bool(self.TimeSeriesCheckBox.checkState())
-        # plot_format['time_series'] = bool(self.TimeSeriesCheckBox.checkState())
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def enable_only_image_tab(self):
+        self.timeseriestab.setEnabled(False)
+        self.barplottab.setEnabled(False)

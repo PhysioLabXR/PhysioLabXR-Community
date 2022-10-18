@@ -1,0 +1,9 @@
+{ "StreamName":"FixationDetection",
+  "ChannelNames":[
+      "FoveaPathDeltaDistance",
+      "ThresholdedDelta",
+      "FixationDetection"
+  ],
+  "NominalSamplingRate":  30,
+  "GroupInfo":  [2]
+}

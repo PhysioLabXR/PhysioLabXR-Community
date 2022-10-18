@@ -49,7 +49,7 @@ while True:
         indices = cv2.dnn.NMSBoxes(bbox, confs, threshold, nms_threshold)
         detected_classes, xs, ys, ws, hs = list(), list(), list(), list(), list()
         for i in indices:
-            i = i[0] if type(i) is list else i
+            i = i[0] if type(i) is list or type(i) is np.ndarray else i
             box = bbox[i]
             x, y, w, h = box[0], box[1], box[2], box[3]
             xs.append(int(x + w/2))
@@ -57,7 +57,7 @@ while True:
             ws.append(int(w))
             hs.append(int(h))
 
-            class_id = classIds[i][0] if type(classIds[i]) is list else classIds[i]
+            class_id = classIds[i][0] if type(classIds[i]) is list or type(classIds[i]) is np.ndarray else classIds[i]
             detected_classes.append(int(class_id))
             cv2.rectangle(img, (x, y), (x + w, h + y), color=(0, 255, 0), thickness=2)
             cv2.putText(img, classNames[class_id - 1].upper(),

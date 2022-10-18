@@ -1,5 +1,5 @@
 brainflow~=4.4.0
-numpy~=1.22.3
+numpy
 PyQt5~=5.15.4
 pyserial~=3.5
 pylsl~=1.14.0
