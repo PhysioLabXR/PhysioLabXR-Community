@@ -14,6 +14,7 @@ from pylsl import local_clock
 
 
 def main():
+    topic = "CameraCapture"
     srate = 30
     port = "5556"
 
@@ -39,7 +40,7 @@ def main():
 
             for sample_ix in range(required_samples):
                 mysample = samples[sample_ix]
-                socket.send_multipart([np.array(local_clock()), mysample])
+                socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])
                 send_times.append(time.time())
             sent_samples += required_samples
         # now send it and wait for a bit before trying again.

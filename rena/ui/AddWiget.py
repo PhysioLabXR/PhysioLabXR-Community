@@ -1,6 +1,8 @@
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtGui import QIntValidator
 
+from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -16,8 +18,13 @@ class AddStreamWidget(QtWidgets.QWidget):
         add_presets_to_combobox(self.stream_name_combo_box)
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
+        self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
 
+        self.PortLineEdit.setValidator(QIntValidator())
         self.NetworkingInterfaceComboBox.currentIndexChanged.connect(self.networking_interface_selection_changed)
+
+        self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
+
         self.networking_interface_selection_changed()
 
     def select_by_stream_name(self, stream_name):
@@ -59,3 +66,14 @@ class AddStreamWidget(QtWidgets.QWidget):
     def get_networking_interface(self):
         return self.NetworkingInterfaceComboBox.currentText()
 
+    def on_streamName_combobox_text_changed(self):
+        stream_name = self.get_selected_stream_name()
+        if check_preset_exists(stream_name):
+            networking_interface = get_stream_preset_info(stream_name, "NetworkingInterface")
+            if networking_interface == 'LSL':
+                self.NetworkingInterfaceComboBox.setCurrentIndex(0)
+                self.PortLineEdit.setText("")
+            else:
+                port_number = get_stream_preset_info(stream_name, "PortNumber")
+                self.NetworkingInterfaceComboBox.setCurrentIndex(1)
+                self.PortLineEdit.setText(str(port_number))
