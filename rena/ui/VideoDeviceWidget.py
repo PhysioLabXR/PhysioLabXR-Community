@@ -1,33 +1,14 @@
 # This Python file uses the following encoding: utf-8
-import time
-from collections import deque
-import cv2
-import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, QEventLoop
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QMessageBox
-from pyqtgraph import PlotDataItem
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QTimer
 
-from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config, config_ui
 from rena.config import settings
-from rena.config_ui import image_depth_dict, plot_format_index_dict
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
-from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
-from rena.ui.StreamOptionsWindow import StreamOptionsWindow
-from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
+from rena.ui_shared import pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
-from rena.utils.general import create_lsl_interface, DataBufferSingleStream
-from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
-    create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
-    convert_array_to_qt_heatmap, \
-    convert_rgb_to_qt_image, convert_numpy_to_uint8
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, convert_rgb_to_qt_image
+
 
 class VideoDeviceWidget(QtWidgets.QWidget):
     def __init__(self, main_parent, parent_layout, video_device_name, insert_position=None):
