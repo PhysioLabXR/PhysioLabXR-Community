@@ -89,6 +89,77 @@
        </widget>
       </item>
       <item>
+       <widget class="QComboBox" name="DataTypeComboBox">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <item>
+         <property name="text">
+          <string>float16</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>float32</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>float64</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>uint8</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>uint16</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>uint32</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>uint64</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>int8</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>int16</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>int32</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>int64</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
        <widget class="QComboBox" name="NetworkingInterfaceComboBox">
         <property name="maximumSize">
          <size>

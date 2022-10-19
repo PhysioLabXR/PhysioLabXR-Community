@@ -27,9 +27,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.group_name = None
         # self.stream_name = stream_name
         # self.grou_name = group_name
-
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
-
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
         self.imageScalingFactorLineEdit.setValidator(QIntValidator())
@@ -50,6 +48,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image format change
 
     def set_plot_format_widget_info(self, stream_name, group_name):
+
         self.group_name = group_name
         # which one to select
         group_info = collect_stream_group_info(stream_name, group_name)
@@ -58,6 +57,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
+        if collect_stream_group_info(stream_name, group_name)['is_image_only']:
+            self.enable_only_image_tab()
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
 
         # image format information
@@ -70,9 +71,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # bar chart format information
         self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
         self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
-
-        if len(group_info['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
-            self.enable_only_image_tab()
 
     def plot_format_tab_current_changed(self, index):
         # create value
@@ -213,5 +211,5 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
 
     def enable_only_image_tab(self):
-        self.timeseriestab.setEnabled(False)
-        self.barplottab.setEnabled(False)
+        self.plotFormatTabWidget.setTabEnabled(0, False)
+        self.plotFormatTabWidget.setTabEnabled(2, False)

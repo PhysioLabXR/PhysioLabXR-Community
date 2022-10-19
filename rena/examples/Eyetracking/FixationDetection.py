@@ -23,8 +23,8 @@ fixation_frame_counter = 0
 outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
 # zmq camera capture fields #######################################
-subtopic = 'CamCapture1'
-sub_tcpAddress = "tcp://localhost:5555"
+subtopic = 'CamCapture'
+sub_tcpAddress = "tcp://localhost:5556"
 context = zmq.Context()
 cam_capture_sub_socket = context.socket(zmq.SUB)
 cam_capture_sub_socket.connect(sub_tcpAddress)
