@@ -1,6 +1,0 @@
-{ "StreamName":"Unity.CameraCapture",
-  "NumChannels": 1920000,
-  "NominalSamplingRate":  70,
-  "GroupInfo":  [1920000],
-  "GroupFormat": ["image_(800,800,3)"],
-  "DataType": "uint8"}

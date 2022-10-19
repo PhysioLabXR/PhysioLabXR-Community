@@ -7,6 +7,7 @@ import numpy as np
 import psutil as psutil
 import pyautogui
 import pyqtgraph as pg
+import zmq
 from PyQt5.QtCore import QMutex
 from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
@@ -226,10 +227,12 @@ class LSLInletWorker(RENAWorker):
 
     # signal_stream_num_channels = pyqtSignal(int)
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, LSLInlet_interface: LSLInletInterface, data_type, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        self.data_type = data_type
 
         self._lslInlet_interface = LSLInlet_interface
         self._rena_tcp_interface = RenaTCPInterface
@@ -279,7 +282,7 @@ class LSLInletWorker(RENAWorker):
             # if self.dsp_on:
             #     self
 
-            data_dict = {'lsl_data_type': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     @pg.QtCore.pyqtSlot()
@@ -340,18 +343,22 @@ class WebcamWorker(QObject):
         self.cam_id = cam_id
         self.cap = cv2.VideoCapture(int(self.cam_id))
         self.tick_signal.connect(self.process_on_tick)
+        self.is_streaming = True
 
-    def release_webcam(self):
+    def stop_video(self):
+        self.is_streaming = False
         if self.cap is not None:
             self.cap.release()
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        ret, cv_img = self.cap.read()
-        if ret:
-            cv_img = cv_img.astype(np.uint8)
-            cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-            self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
+        if self.is_streaming:
+            ret, cv_img = self.cap.read()
+            if ret:
+                cv_img = cv_img.astype(np.uint8)
+                cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+                self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
+
 
 class ScreenCaptureWorker(QObject):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
@@ -361,15 +368,20 @@ class ScreenCaptureWorker(QObject):
         super().__init__()
         self.tick_signal.connect(self.process_on_tick)
         self.screen_label = screen_label
+        self.is_streaming = True
+
+    def stop_video(self):
+        self.is_streaming = False
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
-        img = pyautogui.screenshot()
-        frame = np.array(img)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = frame.astype(np.uint8)
-        frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-        self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
+        if self.is_streaming:
+            img = pyautogui.screenshot()
+            frame = np.array(img)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = frame.astype(np.uint8)
+            frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+            self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
 
 
 class TimeSeriesDeviceWorker(QObject):
@@ -1036,3 +1048,82 @@ class ScriptInfoWorker(QObject):
 #             return True
 #         else:
 #             return False
+
+class ZMQWorker(RENAWorker):
+    """
+    Rena's implementation of working with ZMQ's tcp interfaces
+    """
+    signal_data = pyqtSignal(dict)
+    signal_data_tick = pyqtSignal()
+
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
+
+    def __init__(self, port_number, subtopic, data_type, *args, **kwargs):
+        super(ZMQWorker, self).__init__()
+        self.signal_data_tick.connect(self.process_on_tick)
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        self.data_type = data_type
+        # networking parameters
+        self.sub_address = "tcp://localhost:%s" % port_number
+        self.subtopic = subtopic
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.SUB)
+        self.socket.connect(self.sub_address)
+        self.socket.setsockopt_string(zmq.SUBSCRIBE, self.subtopic)
+        self.poller = zmq.Poller()
+        self.poller.register(self.socket, zmq.POLLIN)
+
+        self.ZQMSocket = RenaTCPInterface
+        self.is_streaming = False
+        self.timestamp_queue = deque(maxlen=1024)
+
+        self.previous_availability = None
+        self.last_poll_time = None
+        self.is_stream_available()
+
+    def __del__(self):
+        self.socket.close()
+        self.context.term()
+        print('In ZMQWorker.__dell__(): Socket closed and context terminated')
+
+    @pg.QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if self.is_streaming:
+            try:
+                _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                np.frombuffer(timestamp)
+            except zmq.error.Again:
+                return None
+            timestamp = np.frombuffer(timestamp, dtype=np.float64)
+            self.timestamp_queue.append(timestamp)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+            data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
+            data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
+            self.signal_data.emit(data_dict)
+
+    @pg.QtCore.pyqtSlot()
+    def process_stream_availability(self):
+        is_stream_availability = self.is_stream_available()
+        if self.previous_availability is None:  # first time running
+            self.previous_availability = is_stream_availability
+            self.signal_stream_availability.emit(self.is_stream_available())
+        else:
+            if is_stream_availability != self.previous_availability:
+                self.previous_availability = is_stream_availability
+                self.signal_stream_availability.emit(is_stream_availability)
+
+    def start_stream(self):
+        self.is_streaming = True
+
+    def stop_stream(self):
+        self.is_streaming = False
+
+    def is_stream_available(self):
+        poll_results = dict(self.poller.poll(timeout=1000))
+        return len(poll_results) > 0
+
