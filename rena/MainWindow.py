@@ -14,6 +14,7 @@ from rena import config
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
+from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     check_preset_exists
@@ -32,7 +33,7 @@ from rena.utils.data_utils import window_slice
 from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
     process_preset_create_TImmWave_interface_startsensor
 from rena.utils.ui_utils import dialog_popup, \
-    init_camera_widget, convert_cv_qt, another_window
+    init_camera_widget, convert_rgb_to_qt_image, another_window
 
 import numpy as np
 import collections
@@ -67,11 +68,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.app = app
         self.ask_to_close = ask_to_close
 
-        # create sensor threads, worker threads for different sensors
         ############
         self.stream_widgets = {}  # key: stream -> value: stream_widget
+        self.video_device_widgets = {}  # key: stream -> value: stream_widget
         ############
 
+        # create sensor threads, worker threads for different sensors
         self.worker_threads = {}
         self.sensor_workers = {}
         self.device_workers = {}
@@ -100,7 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # camera/screen capture timer
         self.c_timer = QTimer()
-        self.c_timer.setInterval(config.CAMERA_SCREENCAPTURE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.c_timer.setInterval(config.VIDEO_DEVICE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.c_timer.timeout.connect(self.camera_screen_capture_tick)
         self.c_timer.start()
 
@@ -195,27 +197,34 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text = self.addStreamWidget.get_selected_stream_name()
+        selected_text, data_type, port, networking_interface = self.addStreamWidget.get_selected_stream_name(), \
+                                                               self.addStreamWidget.get_data_type(), \
+                                                               self.addStreamWidget.get_port_number(), \
+                                                               self.addStreamWidget.get_networking_interface()
 
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text), title='Warning')
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),
+                             title='Warning')
                 return
-            if selected_text in config.settings.value('cameras'):  # add video device
-                self.init_camera(selected_text)
-            elif selected_text in get_presets_by_category('streampresets'):  # add multiple streams from an experiment preset
-                if 'device_type' in get_childKeys_for_group('streampresets/{0}'.format(selected_text)):  # if this is a device preset
+            if selected_text in config.settings.value('video_device'):  # add video device
+                self.init_video_device(selected_text)
+            elif selected_text in get_presets_by_category(
+                    'streampresets'):  # add multiple streams from an experiment preset
+                if 'device_type' in get_childKeys_for_group(
+                        'streampresets/{0}'.format(selected_text)):  # if this is a device preset
                     device_lsl_preset = self.init_device(selected_text)  # add device stream
                 else:
-                    self.init_lsl(selected_text)  # add lsl stream
-            elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = self.experiment_presets_dict[selected_text] #TODO
+                    self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
+            elif selected_text in get_presets_by_category(
+                    'experimentpresets'):  # add multiple streams from an experiment preset
+                streams_for_experiment = self.experiment_presets_dict[selected_text]  # TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
-                create_default_preset(stream_name=selected_text)  # create the preset
+                create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # TODO this can also be a device or experiment preset
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -229,7 +238,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_num_active_stream_label(self):
         available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
         streaming_widget_count = len([x for x in self.stream_widgets.values() if x.is_widget_streaming()])
-        self.numActiveStreamsLabel.setText(num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count, streaming_widget_count, self.replay_tab.get_num_replay_channels()))
+        self.numActiveStreamsLabel.setText(
+            num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count,
+                                                 streaming_widget_count, self.replay_tab.get_num_replay_channels()))
+
     # def add_camera_clicked(self):
     #     if self.recording_tab.is_recording:
     #         dialog_popup(msg='Cannot add capture while recording.')
@@ -237,91 +249,58 @@ class MainWindow(QtWidgets.QMainWindow):
     #     selected_camera_id = self.camera_combo_box.currentText()
     #     self.init_camera(selected_camera_id)
 
-    def init_camera(self, cam_id):
-        if cam_id not in self.cam_workers.keys():
-            camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
-            camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
-                parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
-                insert_position=self.camWidgetVerticalLayout.count() - 1)
-            camera_widget.setObjectName(camera_widget_name)
+    def init_video_device(self, video_device_name):
+        widget_name = video_device_name + '_widget'
+        widget = VideoDeviceWidget(main_parent=self,
+                                   parent_layout=self.sensorTabSensorsHorizontalLayout,
+                                   video_device_name=video_device_name,
+                                   insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+        widget.setObjectName(widget_name)
+        self.video_device_widgets[video_device_name] = widget
 
-            # create camera worker thread
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[cam_id] = worker_thread
-
-            wkr = workers.WebcamWorker(cam_id=cam_id) if cam_id.isnumeric() else workers.ScreenCaptureWorker(cam_id)
-
-            self.cam_workers[cam_id] = wkr
-            self.cam_displays[cam_id] = camera_img_label
-
-            wkr.change_pixmap_signal.connect(self.visualize_cam)
-
-            def remove_cam():
-                if self.recording_tab.is_recording:
-                    dialog_popup(msg='Cannot remove stream while recording.')
-                    return False
-                worker_thread.exit()
-                self.cam_workers.pop(cam_id)
-                self.cam_displays.pop(cam_id)
-                self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
-                sip.delete(camera_widget)
-                return True
-
-            remove_cam_btn.clicked.connect(remove_cam)
-            self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
-            worker_thread.start()
-        else:
-            dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
+    # def init_video_device(self, cam_id):
+    #     if cam_id not in self.cam_workers.keys():
+    #         camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
+    #         camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
+    #             parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
+    #             insert_position=self.camWidgetVerticalLayout.count() - 1)
+    #         camera_widget.setObjectName(camera_widget_name)
+    #
+    #         # create camera worker thread
+    #         worker_thread = pg.QtCore.QThread(self)
+    #         self.worker_threads[cam_id] = worker_thread
+    #
+    #         wkr = workers.WebcamWorker(cam_id=cam_id) if cam_id.isnumeric() else workers.ScreenCaptureWorker(cam_id)
+    #
+    #         self.cam_workers[cam_id] = wkr
+    #         self.cam_displays[cam_id] = camera_img_label
+    #
+    #         wkr.change_pixmap_signal.connect(self.visualize_cam)
+    #
+    #         def remove_cam():
+    #             if self.recording_tab.is_recording:
+    #                 dialog_popup(msg='Cannot remove stream while recording.')
+    #                 return False
+    #             worker_thread.exit()
+    #             self.cam_workers.pop(cam_id)
+    #             self.cam_displays.pop(cam_id)
+    #             self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
+    #             sip.delete(camera_widget)
+    #             return True
+    #
+    #         remove_cam_btn.clicked.connect(remove_cam)
+    #         self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
+    #         worker_thread.start()
+    #     else:
+    #         dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
     def visualize_cam(self, cam_id_cv_img_timestamp):
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         if cam_id in self.cam_displays.keys():
-            qt_img = convert_cv_qt(cv_img)
+            qt_img = convert_rgb_to_qt_image(cv_img)
             self.cam_displays[cam_id].setPixmap(qt_img)
             self.test_ts_buffer.append(time.time())
             self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
-
-    # def add_preset_lslStream_clickved(self):
-    #     """
-    #     button callback for add lsl stream, this is for the preset lsl stream
-    #     :return:
-    #     """
-    #     if self.recording_tab.is_recording:
-    #         dialog_popup(msg='Cannot add stream while recording.')
-    #         return
-    #     selected_text = str(self.preset_LSLStream_combo_box.currentText())
-    #     if selected_text in self.lslStream_presets_dict.keys():
-    #         self.init_lsl(self.lslStream_presets_dict[selected_text])
-    #     else:
-    #         sensor_type = config_ui.sensor_ui_name_type_dict[selected_text]
-    #         if sensor_type not in self.sensor_workers.keys():
-    #             self.init_sensor(
-    #                 sensor_type=config_ui.sensor_ui_name_type_dict[str(self.preset_LSLStream_combo_box.currentText())])
-    #         else:
-    #             msg = 'Sensor type ' + sensor_type + ' is already added.'
-    #             dialog_popup(msg)
-
-    # def add_preset_device_clicked(self):
-    #     if self.recording_tab.is_recording:
-    #         dialog_popup(msg='Cannot add device while recording.')
-    #         return
-    #     selected_text = str(self.device_combo_box.currentText())
-    #     if selected_text in self.device_presets_dict.keys():
-    #         print('device found in device preset')
-    #         device_lsl_preset = self.init_device(self.device_presets_dict[selected_text])
-
-    # def add_lslStream_clicked(self):
-    #     lsl_stream_name = self.lslStream_name_input.text()
-    #     preset_dict = create_LSL_preset(lsl_stream_name)
-    #     if self.init_lsl(preset_dict):
-    #         self.lslStream_presets_dict[lsl_stream_name] = preset_dict
-    #         self.update_presets_combo_box()  # add the new user-defined stream to presets dropdown
-
-    # def add_preset_experiment_clicked(self):
-    #     selected_text = str(self.experiment_combo_box.currentText())
-    #     if selected_text in self.experiment_presets_dict.keys():
-    #         streams_for_experiment = self.experiment_presets_dict[selected_text]
-    #         self.add_streams_to_visulaize(streams_for_experiment)
 
     def add_streams_to_visualize(self, stream_names):
         # try:
@@ -354,32 +333,36 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_lsl(self, lsl_name):
+    def init_network_streaming(self, networking_stream_name, data_type, port_number, networking_interface):
         error_initialization = False
 
         # set up UI elements
-        lsl_widget_name = lsl_name + '_widget'
-        lsl_stream_widget = StreamWidget(main_parent=self,
-                                         parent=self.sensorTabSensorsHorizontalLayout,
-                                         stream_name=lsl_name,
-                                         insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
-        lsl_stream_widget.setObjectName(lsl_widget_name)
+        widget_name = networking_stream_name + '_widget'
+        stream_widget = StreamWidget(main_parent=self,
+                                     parent=self.sensorTabSensorsHorizontalLayout,
+                                     stream_name=networking_stream_name,
+                                     data_type=data_type,
+                                     networking_interface=networking_interface,
+                                     port_number=port_number,
+                                     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+        start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
+        stream_widget.setObjectName(widget_name)
 
-        self.stream_widgets[lsl_name] = lsl_stream_widget
+        self.stream_widgets[networking_stream_name] = stream_widget
 
         if error_initialization:
             remove_stream_btn.click()
         config.settings.endGroup()
 
     def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}',format(device_name))
+        config.settings.beginGroup('presets/streampresets/{0}', format(device_name))
         device_type = config.settings.value('DeviceType')
         if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
             serial_port = config.settings.value('SerialPort')
             board_id = config.settings.value('Board_id')
             try:
-                OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(device_name, serial_port, board_id)
+                OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(device_name, serial_port,
+                                                                                          board_id)
             except AssertionError as e:
                 dialog_popup(str(e))
                 config.settings.endGroup()
@@ -391,7 +374,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
             config.settings.endGroup()
-            self.init_lsl(device_name)    # TODO test needed
+            self.init_network_streaming(device_name)  # TODO test needed
         # TI mmWave connection
         elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
             print('mmWave test')
@@ -413,7 +396,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[device_name] = worker_thread
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
-            self.init_lsl(device_name)    # TODO test needed
+            self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
@@ -432,7 +415,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
     #     inference_thread.start()
     #     self.inference_widget.hide()
-
 
     def inference_ticks(self):
         # only ticks if data is streaming
@@ -463,7 +445,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
-
     # def visualize_inference_results(self, inference_results):
     #     # results will be -1 if scripting is not connected
     #     if self.inference_worker.is_connected and inference_results[0][0] >= 0:
@@ -479,7 +460,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #             data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
     #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
     #         [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
-
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
@@ -548,4 +528,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.activateWindow()
 
     def get_added_stream_names(self):
-        return list(self.stream_widgets.keys())
+        return list(self.stream_widgets.keys()) + list(self.cam_workers.keys())

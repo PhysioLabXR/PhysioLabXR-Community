@@ -3,6 +3,7 @@ color_white = '#ffffff'
 color_gray = '#f0f0f0'
 color_bright = '#E8E9EB'
 color_green = "#03fc4e"
+color_red = '#d1000e'
 
 button_color = color_white
 
@@ -18,7 +19,6 @@ sensors_type_ui_name_dict = {'OpenBCICyton': 'OpenBCI Cyton',
                              }
 
 sensor_ui_name_type_dict = {v: k for k, v in sensors_type_ui_name_dict.items()}
-
 
 default_add_lsl_data_type = 'YourStreamName'
 
@@ -41,8 +41,17 @@ mix_selected = 5
 
 stream_widget_icon_size = [72, 72]
 
+plot_format_index_dict = {
+    0: 'time_series',
+    1: 'image',
+    2: 'bar_chart'
+}
+
 image_depth_dict = {
     'RGB': 3,
-    'Gray': 1,
+    # 'Gray': 1,
     'PixelMap': 1
 }
+
+image_min_width = 512
+image_min_height = 512

@@ -1,3 +1,4 @@
 { "StreamName":"SampleOutput",
   "NumChannels":  10,
-  "NominalSamplingRate":  5}
+  "NominalSamplingRate":  5,
+  "DataType": "float32"}

@@ -11,11 +11,13 @@ Use these parameters to set the RN App to your preference
 '''
 REFRESH_INTERVAL = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 REFRESH_FREQUENCY_RETAIN_FRAMES = 50
+MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP = 512
+MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM = 512
 
 VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
-CAMERA_SCREENCAPTURE_REFRESH_INTERVAL = 33
+VIDEO_DEVICE_REFRESH_INTERVAL = 33
 VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 
 VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 15)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
@@ -124,6 +126,9 @@ rena_server_add_dsp_worker_request = 1
 rena_server_update_worker_request = 2
 rena_server_remove_worker_request = 3
 rena_server_exit_request = 4
+
+# stream num
+MAX_TS_CHANNEL_NUM = 4000
 
 
 # Scripting

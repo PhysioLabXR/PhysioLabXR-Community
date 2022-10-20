@@ -166,6 +166,7 @@
          <attribute name="title">
           <string>BarChart</string>
          </attribute>
+         <layout class="QVBoxLayout" name="BarPlotWidgetLayout"/>
         </widget>
        </widget>
       </item>

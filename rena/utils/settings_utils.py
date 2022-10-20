@@ -23,7 +23,12 @@ def get_all_preset_names():
     config.settings.beginGroup('presets/experimentpresets')
     experiment_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()
-    return stream_preset_names + experiment_preset_names
+
+    video_devices = config.settings.value('video_device')
+    return stream_preset_names + experiment_preset_names + video_devices
+
+def get_video_device_names():
+    return config.settings.value('video_device')
 
 def get_stream_preset_names():
     config.settings.beginGroup('presets/streampresets')
@@ -53,11 +58,36 @@ def collect_stream_all_groups_info(stream_name):
     rtn = dict()
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
     for group_name in config.settings.childGroups():
-        config.settings.beginGroup(group_name)
-        rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-        rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
-        config.settings.endGroup()
+        rtn[group_name] = dict()
     config.settings.endGroup()
+
+    for group_name in rtn:
+        rtn[group_name] = collect_stream_group_info(stream_name, group_name)
+
+    #     config.settings.beginGroup(group_name)
+    #     rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+    #     rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
+    #     rtn[group_name]['channel_indices'] = [int(i) for i in rtn[group_name]['channel_indices']]
+    #
+    #     plot_format = dict()
+    #     #############################
+    #     config.settings.beginGroup('plot_format')
+    #     for format_name in config.settings.childGroups():
+    #         # format_info_dict = dict()
+    #         config.settings.beginGroup(format_name)
+    #         plot_format[format_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+    #         config.settings.endGroup()
+    #     config.settings.endGroup()
+    #     rtn[group_name]['plot_format'] = plot_format
+    #
+    #
+    #     config.settings.endGroup()
+    #
+    #
+    #
+    #     #############################
+    #
+    # config.settings.endGroup()
     return rtn
 
 def collect_stream_group_info(stream_name, group_name):
@@ -69,10 +99,36 @@ def collect_stream_group_info(stream_name, group_name):
     #     rtn[value] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
     #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
     config.settings.endGroup()
+    rtn['plot_format'] = collect_stream_group_plot_format(stream_name, group_name)
+    rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
+    rtn['channel_indices'] = [int(i) for i in rtn['channel_indices']]
+    rtn['is_image_only'] = len(rtn['channel_indices']) > config.settings.value("max_timeseries_num_channels")
+
     return rtn
 
 def collect_stream_group_plot_format(stream_name, group_name):
-    return config.settings.value('presets/streampresets/{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, 'plot_format'))
+    rtn = dict()
+    config.settings.beginGroup('presets/streampresets/{0}/{1}/{2}/plot_format'.
+                               format(stream_name, 'GroupInfo', group_name,
+                                      'plot_format'))
+    for plot_format_name in config.settings.childGroups():
+        rtn[plot_format_name] = dict()
+
+        config.settings.beginGroup(plot_format_name)
+        for format_info_key in config.settings.childKeys():
+            rtn[plot_format_name][format_info_key] = config.settings.value(format_info_key)
+        config.settings.endGroup()
+
+    rtn['bar_chart']['y_max'] = float(rtn['bar_chart']['y_max'])
+    rtn['bar_chart']['y_min'] = float(rtn['bar_chart']['y_min'])
+
+    config.settings.endGroup()
+    return rtn
+
+    # return config.settings.value('presets/streampresets/{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, 'plot_format'))
+
+# def set_stream_group_plot_format(stream_name, group_name, ):
+
 
 
 def get_complete_stream_preset_info(stream_name):
@@ -113,7 +169,27 @@ def export_preset_to_settings(preset, setting_category):
 
         for group_name, group_info_dict in preset['GroupInfo'].items():
             for group_info_key, group_info_value in group_info_dict.items():
-                config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
+                if group_info_key!='plot_format':
+                    config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
+                else:
+                    for plot_format_name, plot_format_info_dict in group_info_value.items():
+                        for plot_format_info_key, plot_format_info_value in plot_format_info_dict.items():
+                            # config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}'.
+                            #                          format(preset['StreamName'],
+                            #                                 group_info_dict['group_index'],  # group name
+                            #                                 group_info_key,
+                            #                                 'selected'
+                            #                                 ),  # plot format name
+                            #                                     'time_series')
+                            config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}/{4}'.
+                                                     format(preset['StreamName'],
+                                                            group_info_dict['group_index'],  # group name
+                                                            group_info_key,
+                                                            plot_format_name, # plot format file
+                                                            plot_format_info_key), # plot format name
+                                                            plot_format_info_value) # plot format value
+                        # print('John')
+
         config.settings.endGroup()
 
 
@@ -173,16 +249,30 @@ def add_keys_to_preset(preset_dict):
         preset_dict['NominalSamplingRate'] = 1
     if 'DisplayDuration' not in preset_dict.keys():
         preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
+
+    if 'NetworkingInterface' not in preset_dict.keys():
+        preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
+    if 'PortNumber' not in preset_dict.keys():
+        preset_dict['PortNumber'] = None
+    if 'DataType' not in preset_dict.keys():
+        preset_dict['DataType'] = 'float32'
     return preset_dict
 
 
-def create_default_preset(stream_name, num_channels=1):
+def create_default_preset(stream_name, port, networking_interface, data_type, num_channels=1):
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)]}
+                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'NetworkingInterface': networking_interface,
+                   'DataType': data_type,
+                   'port': port}
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
+
+def update_selected_plot_format(stream_name, group_name, selected_format: int):
+    config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
+
 
 # plot_format
 # {
@@ -191,23 +281,23 @@ def create_default_preset(stream_name, num_channels=1):
 # bar plot : {}
 # }
 
-
-
-
-
 def process_plot_group(preset_dict):
 
     plot_format = {
-        'time_series': {'display': True},
-        'image': {'display': False,
-                  'format': 'Gray',
-                  'width': 2,
-                  'height': 2,
-                  'depth': 1,
+        'time_series': {'is_valid': 1, 'display':1},
+        'image': {'is_valid': 0,
+                  'image_format': 'PixelMap',
+                  'width': 0,
+                  'height': 0,
+                  'channel_format': 'Channel Last',
+                  'scaling_factor': 1,
                   },
-        'bar_plot': {'display': False}
+        'bar_chart': {'is_valid': 1,
+                     'display':1,
+                     'y_max': -0.1,
+                     'y_min': 0.0,
+                     }
     }
-
 
     channel_num = preset_dict['NumChannels']
     if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:
@@ -222,6 +312,7 @@ def process_plot_group(preset_dict):
         preset_dict['GroupInfo'] = {
             "Group1": {
                 "group_index": 1,
+                'selected_plot_format': 0,
                 "plot_format": plot_format,
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
@@ -258,6 +349,7 @@ def process_plot_group(preset_dict):
             preset_dict['GroupInfo']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
+                    'selected_plot_format': 0,
                     "plot_format": plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
@@ -328,3 +420,43 @@ def is_group_shown(group_name, stream_name):
     is_channels_shown = [int(x) for x in config.settings.value('is_channels_shown')]
     config.settings.endGroup()
     return np.any(is_channels_shown)
+
+def get_channel_num(stream_name):
+    channel_num = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, 'NumChannels'))
+    return channel_num
+
+
+#####################################################################
+
+def set_plot_image_w_h(stream_name, group_name, height, width, scaling_factor):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('height', height)
+    config.settings.setValue('width', width)
+    config.settings.setValue('scaling_factor', scaling_factor)
+
+    config.settings.endGroup()
+
+def set_plot_image_format(stream_name, group_name, image_format):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('image_format', image_format)
+    config.settings.endGroup()
+
+def set_plot_image_channel_format(stream_name, group_name, channel_format):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('channel_format', channel_format)
+    config.settings.endGroup()
+
+def set_plot_image_valid(stream_name, group_name, is_valid):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/image'.format(stream_name, group_name))
+    config.settings.setValue('is_valid', is_valid)
+    config.settings.endGroup()
+
+def set_bar_chart_max_min_range(stream_name, group_name, max_range, min_range):
+    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}/plot_format/bar_chart'.format(stream_name, group_name))
+    config.settings.setValue('y_max', max_range)
+    config.settings.setValue('y_min', min_range)
+    config.settings.endGroup()
+
+
+
+#####################################################################
