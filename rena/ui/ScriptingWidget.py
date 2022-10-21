@@ -140,7 +140,7 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
         self.run_signal_timer.setInterval(forward_interval)
-        self.internal_data_buffer = DataBuffer(data_type_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
+        self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,
                                                                identity='client',
@@ -400,10 +400,10 @@ class ScriptingWidget(QtWidgets.QWidget):
         return [w.get_input_name_text() for w in self.input_widgets]
 
     def get_input_shapes(self):
-        rtn = []
+        rtn = dict()
         for w in self.input_widgets:
             input_preset_name = w.get_input_name_text()
-            rtn.append(self.get_preset_expected_shape(input_preset_name))
+            rtn[input_preset_name] = self.get_preset_expected_shape(input_preset_name)
         return rtn
 
     def get_input_shape_dict(self):
@@ -542,9 +542,11 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def get_script_args(self):
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in
-                        zip(self.get_inputs(), self.get_input_shapes())]
+                        self.get_input_shapes().items()]
         buffer_sizes = dict(buffer_sizes)
-        return {'inputs': self.get_inputs(), 'buffer_sizes': buffer_sizes,
+        return {'inputs': self.get_inputs(),
+                'input_shapes': self.get_input_shapes(),
+                'buffer_sizes': buffer_sizes,
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),

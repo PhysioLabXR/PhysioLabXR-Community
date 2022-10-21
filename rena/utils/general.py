@@ -85,9 +85,9 @@ def resource_path(relative_path):
 
 
 class DataBuffer():
-    def __init__(self, data_type_buffer_sizes: dict = None):
+    def __init__(self, stream_buffer_sizes: dict = None):
         self.buffer = dict()
-        self.data_type_buffer_sizes = data_type_buffer_sizes if data_type_buffer_sizes else dict()
+        self.data_type_buffer_sizes = stream_buffer_sizes if stream_buffer_sizes else dict()
 
     def update_buffer(self, data_dict: dict):
         if len(data_dict) > 0:
@@ -143,6 +143,8 @@ class DataBuffer():
         return self.buffer[stream_name][1]
 
 
+
+
 class DataBufferSingleStream():
     def __init__(self, num_channels=None, buffer_sizes: int = None, append_zeros=False):
         self.buffer_size = buffer_sizes
@@ -194,5 +196,5 @@ def click_on_file(filename):
 
 def check_buffer_timestamps_monotonic(data_buffer: DataBuffer):
     for stream_name, (_, timestamps) in data_buffer.buffer.items():
-        if not np.all(np.diff(timestamps) > 0):
+        if not np.all(np.diff(timestamps) >= 0):
             raise Exception("timestamps for stream {0} is not monotonic.".format(stream_name))
