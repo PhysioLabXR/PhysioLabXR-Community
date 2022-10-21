@@ -23,8 +23,8 @@ fixation_frame_counter = 0
 outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
 # zmq camera capture fields #######################################
-subtopic = 'CamCapture1'
-sub_tcpAddress = "tcp://localhost:5555"
+subtopic = 'CamCapture'
+sub_tcpAddress = "tcp://localhost:5556"
 context = zmq.Context()
 cam_capture_sub_socket = context.socket(zmq.SUB)
 cam_capture_sub_socket.connect(sub_tcpAddress)
@@ -42,8 +42,8 @@ while True:
         fix_detection_sample = np.zeros(3) - 1
 
         received_bytes = cam_capture_sub_socket.recv_multipart()
-        imagePNGBytes = received_bytes[1]
-        gaze_info = received_bytes[2]
+        imagePNGBytes = received_bytes[2]
+        gaze_info = received_bytes[3]
         img = cv2.imdecode(np.frombuffer(imagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
         img_modified = img.copy()
 
