@@ -24,7 +24,7 @@ from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.general import DataBuffer, click_on_file
-from rena.utils.networking_utils import recv_string_router, send_data_buffer
+from rena.utils.networking_utils import recv_string_router, send_data_dict
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists
 
@@ -103,9 +103,9 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         # Fields for the console output window #########################################################################
         self.input_shape_dict = None  # to keep the input shape for each forward input callback, so we don't query the UI everytime for the input shapes
-        self.forward_input_timer = QTimer()
-        self.forward_input_timer.timeout.connect(self.forward_input)
-        self.data_buffer = None
+        self.run_signal_timer = QTimer()
+        self.run_signal_timer.timeout.connect(self.run_signal)
+        # self.data_buffer = None
         self.forward_input_socket_interface = None
 
         # loading from script preset from the persistent sittings ######################################################
@@ -115,6 +115,8 @@ class ScriptingWidget(QtWidgets.QWidget):
         else:
             self.id = uuid.uuid4()
             self.export_script_args_to_settings()
+
+        self.internal_data_buffer = None
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -136,19 +138,19 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
 
-    def setup_forward_input(self, forward_interval, buffer_sizes):
-        self.forward_input_timer.setInterval(forward_interval)
-        self.data_buffer = DataBuffer(data_type_buffer_sizes=buffer_sizes)
+    def setup_forward_input(self, forward_interval, internal_buffer_sizes):
+        self.run_signal_timer.setInterval(forward_interval)
+        self.internal_data_buffer = DataBuffer(data_type_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,
                                                                identity='client',
                                                                pattern='router-dealer',
                                                                disable_linger=True)
-        self.forward_input_timer.start()
+        self.run_signal_timer.start()
 
-    def stop_forward_input(self):
-        self.forward_input_timer.stop()
-        del self.data_buffer, self.forward_input_socket_interface
+    def stop_run_signal_forward_input(self):
+        self.run_signal_timer.stop()
+        del self.internal_data_buffer, self.forward_input_socket_interface
 
     def setup_command_interface(self):
         self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
@@ -210,21 +212,21 @@ class ScriptingWidget(QtWidgets.QWidget):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
             if not self._validate_script_path(script_path): return
-            script_args = self.get_script_args()
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
-            buffer_sizes = [(input_name, input_shape[1] * 2) for input_name, input_shape in
-                            zip(self.get_inputs(), self.get_input_shapes())]
-            buffer_sizes = dict(buffer_sizes)
+
             self.script_console_log_window.show()
             self.stdout_socket_interface.send_string(
                 'Go')  # send an empty message, this is for setting up the routing id
+
+            script_args = self.get_script_args()
             self.script_process = start_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
             self.setup_info_worker(self.script_pid)
             self.setup_command_interface()
 
-            self.setup_forward_input(forward_interval, buffer_sizes)
+            internal_buffer_size = dict([(name, size * 2)for name, size in script_args['buffer_sizes'].items()])
+            self.setup_forward_input(forward_interval, internal_buffer_size)
             self.is_running = True
             self.is_simulating = self.simulateCheckbox.isChecked()
             self.change_ui_on_run_stop(self.is_running)
@@ -240,7 +242,7 @@ class ScriptingWidget(QtWidgets.QWidget):
                 self.script_process.kill()
         self.close_info_interface()
         self.close_command_interface()
-        self.stop_forward_input()
+        self.stop_run_signal_forward_input()
         del self.info_socket_interface
         self.script_console_log_window.hide()
         self.is_running = False
@@ -508,21 +510,25 @@ class ScriptingWidget(QtWidgets.QWidget):
     def on_output_lineEdit_changed(self):
         self.check_can_add_output()
 
-    def buffer_input(self, data_dict):
-        self.data_buffer.update_buffers(data_dict)
+    def send_input(self, data_dict):
+        if np.any(np.array(data_dict["timestamps"] )< 100):
+            print('Hoi')
+        self.internal_data_buffer.update_buffer(data_dict)
+        # send_data_dict(data_dict, self.forward_input_socket_interface)
 
-    def forward_input(self):
-        if self.is_simulating:
-            buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for
-                           input_name, input_shape in self.input_shape_dict.items()])
-        else:
-            buffer = self.data_buffer.buffer
-        send_data_buffer(buffer, self.forward_input_socket_interface)
+    def run_signal(self):
+        # if self.is_simulating:
+        #     buffer = dict([(input_name, (np.random.rand(*input_shape), np.random.rand(input_shape[1]))) for
+        #                    input_name, input_shape in self.input_shape_dict.items()])
+        # else:
+        buffer = self.internal_data_buffer.buffer
+        send_data_dict(buffer, self.forward_input_socket_interface)
+        self.internal_data_buffer.clear_buffer()
 
     def notify_script_to_stop(self):
         print("MainApp: sending stop command")
         self.command_socket_interface.send_string(SCRIPT_STOP_REQUEST)
-        self.forward_input()  # run the loop so it can process the stop command
+        self.run_signal()  # run the loop so it can process the stop command
         print("MainApp: waiting for stop success")
         events = self.command_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
         if len(events) > 0:
@@ -535,7 +541,10 @@ class ScriptingWidget(QtWidgets.QWidget):
             return False
 
     def get_script_args(self):
-        return {'inputs': self.get_inputs(), 'input_shapes': self.get_input_shapes(),
+        buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in
+                        zip(self.get_inputs(), self.get_input_shapes())]
+        buffer_sizes = dict(buffer_sizes)
+        return {'inputs': self.get_inputs(), 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),

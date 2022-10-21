@@ -159,17 +159,17 @@
          <string>In Hz, controls how many times does the script loop run per second.</string>
         </property>
         <property name="text">
-         <string>Run Frequency</string>
+         <string>Run Frequency (times per second)</string>
         </property>
        </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_2">
         <property name="toolTip">
-         <string>The time window of samples the script will have access to at each loop.</string>
+         <string>The time window of samples the script will have access to at each loop. Buffer will throw out oldest data to allow new data come in.</string>
         </property>
         <property name="text">
-         <string>Input time window</string>
+         <string>Input Buffer Duration (sec)</string>
         </property>
        </widget>
       </item>

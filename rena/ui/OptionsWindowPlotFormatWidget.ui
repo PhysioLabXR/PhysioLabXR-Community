@@ -28,7 +28,7 @@
        <height>160</height>
       </size>
      </property>
-     <widget class="QWidget" name="time_series">
+     <widget class="QWidget" name="timeseriestab">
       <attribute name="title">
        <string>Time Series</string>
       </attribute>
@@ -67,7 +67,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="image">
+     <widget class="QWidget" name="imagetab">
       <attribute name="title">
        <string>Image</string>
       </attribute>
@@ -189,7 +189,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="bar_plot">
+     <widget class="QWidget" name="barplottab">
       <attribute name="title">
        <string>Bar Plot</string>
       </attribute>

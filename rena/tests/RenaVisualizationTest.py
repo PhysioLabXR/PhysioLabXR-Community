@@ -1,6 +1,6 @@
 """
 If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
-
+Otherwise, you will get either import error or file not found error
 """
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA

@@ -197,7 +197,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text = self.addStreamWidget.get_selected_stream_name()
+        selected_text, data_type, port, networking_interface = self.addStreamWidget.get_selected_stream_name(), \
+                                                               self.addStreamWidget.get_data_type(), \
+                                                               self.addStreamWidget.get_port_number(), \
+                                                               self.addStreamWidget.get_networking_interface()
 
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
@@ -212,16 +215,16 @@ class MainWindow(QtWidgets.QMainWindow):
                         'streampresets/{0}'.format(selected_text)):  # if this is a device preset
                     device_lsl_preset = self.init_device(selected_text)  # add device stream
                 else:
-                    self.init_lsl(selected_text)  # add lsl stream
+                    self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
             elif selected_text in get_presets_by_category(
                     'experimentpresets'):  # add multiple streams from an experiment preset
                 streams_for_experiment = self.experiment_presets_dict[selected_text]  # TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
-                create_default_preset(stream_name=selected_text)  # create the preset
+                create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_lsl(selected_text)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # TODO this can also be a device or experiment preset
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -330,19 +333,22 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_lsl(self, lsl_name):
+    def init_network_streaming(self, networking_stream_name, data_type, port_number, networking_interface):
         error_initialization = False
 
         # set up UI elements
-        lsl_widget_name = lsl_name + '_widget'
-        lsl_stream_widget = StreamWidget(main_parent=self,
-                                         parent=self.sensorTabSensorsHorizontalLayout,
-                                         stream_name=lsl_name,
-                                         insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        start_stop_stream_btn, remove_stream_btn, pop_window_btn = lsl_stream_widget.StartStopStreamBtn, lsl_stream_widget.RemoveStreamBtn, lsl_stream_widget.PopWindowBtn
-        lsl_stream_widget.setObjectName(lsl_widget_name)
+        widget_name = networking_stream_name + '_widget'
+        stream_widget = StreamWidget(main_parent=self,
+                                     parent=self.sensorTabSensorsHorizontalLayout,
+                                     stream_name=networking_stream_name,
+                                     data_type=data_type,
+                                     networking_interface=networking_interface,
+                                     port_number=port_number,
+                                     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+        start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
+        stream_widget.setObjectName(widget_name)
 
-        self.stream_widgets[lsl_name] = lsl_stream_widget
+        self.stream_widgets[networking_stream_name] = stream_widget
 
         if error_initialization:
             remove_stream_btn.click()
@@ -368,7 +374,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
             config.settings.endGroup()
-            self.init_lsl(device_name)  # TODO test needed
+            self.init_network_streaming(device_name)  # TODO test needed
         # TI mmWave connection
         elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
             print('mmWave test')
@@ -390,7 +396,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.worker_threads[device_name] = worker_thread
             self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
             worker_thread.start()
-            self.init_lsl(device_name)  # TODO test needed
+            self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()

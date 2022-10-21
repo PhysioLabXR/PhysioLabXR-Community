@@ -9,4 +9,5 @@
     "T3",
     "Fp2"],
   "NominalSamplingRate":  128,
-  "GroupInfo":  [4]}
+  "GroupInfo":  [4],
+  "DataType": "float32"}
