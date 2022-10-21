@@ -123,7 +123,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.group_name_plot_widget_dict = {}
         self.group_info = collect_stream_all_groups_info(self.stream_name) # TODO: self.group_info
         self.viz_time_vector = None
-        self.create_visualization_component()
+        # self.create_visualization_component()
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
