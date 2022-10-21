@@ -14,7 +14,7 @@ from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_ST
     SCRIPT_PARAM_CHANGE, ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.general import get_fps, DataBuffer
+from rena.utils.general import get_fps, DataBuffer, check_buffer_timestamps_monotonic
 from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 
@@ -61,8 +61,8 @@ class RenaScript(ABC, threading.Thread):
         sys.stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
 
         # set up measuring realtime performance
-        self.loop_durations = deque(maxlen=script_fps_counter_buffer_size)
-        self.run_while_start_times = deque(maxlen=script_fps_counter_buffer_size)
+        self.loop_durations = deque(maxlen=run_frequency * 2)
+        self.run_while_start_times = deque(maxlen=run_frequency * 2)
         # setup inputs and outputs
         self.input_names = inputs
         self.inputs = DataBuffer(data_type_buffer_sizes=buffer_sizes)
@@ -172,6 +172,8 @@ class RenaScript(ABC, threading.Thread):
 
     def update_input_buffer(self, data_dict):
         self.inputs.update_buffers(data_dict)
+        check_buffer_timestamps_monotonic(self.inputs)
+        # confirm timestamsp are monotonousely increasing
         # self.inputs = dict([(n, np.empty(0)) for n in self.input_names])
         # self.inputs_timestamps = dict([(n, np.empty(0)) for n in self.input_names])
         # for key, data_timestamps in data_dict.items():

@@ -48,8 +48,10 @@ def send_data_dict(data_dict: dict, socket_interface):
         data_timestamp_list.append(np.concatenate([data, np.expand_dims(timestamps, axis=0)], axis=0))
     # data_and_timestamps = [item for sublist in list(data_buffer.values()) for item in sublist]
     send_packet = [DATA_BUFFER_PREFIX] + flatten(
-        [(k, np.array(d.shape[0]), np.array(d.shape[1]), d) for k, d in zip(keys, data_timestamp_list)])
+        [(k, np.array(d.shape[0]), np.array(d.shape[1]), d.tobytes()) for k, d in zip(keys, data_timestamp_list)])
     socket_interface.socket.send_multipart(send_packet)
+
+
 
 
 def recv_data_dict(socket_interface):
@@ -68,3 +70,4 @@ def recv_data_dict(socket_interface):
             timestamps = data_timesamps[-1]
             rtn[key] = (data, timestamps)
         return rtn
+

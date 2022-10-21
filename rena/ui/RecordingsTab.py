@@ -92,7 +92,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
 
 
-    def update_buffers(self, data_dict: dict):
+    def update_recording_buffer(self, data_dict: dict):
         if self.is_recording:
             lsl_data_type = data_dict['stream_name']  # get the type of the newly-come data
 
