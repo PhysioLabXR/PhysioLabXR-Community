@@ -94,14 +94,14 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def update_buffers(self, data_dict: dict):
         if self.is_recording:
-            lsl_data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+            lsl_data_type = data_dict['stream_name']  # get the type of the newly-come data
 
             if lsl_data_type not in self.recording_buffer.keys():
                 self.recording_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
                                                         np.empty(shape=(0,))]  # data first, timestamps second
 
-            buffered_data = self.recording_buffer[data_dict['lsl_data_type']][0]
-            buffered_timestamps = self.recording_buffer[data_dict['lsl_data_type']][1]
+            buffered_data = self.recording_buffer[data_dict['stream_name']][0]
+            buffered_timestamps = self.recording_buffer[data_dict['stream_name']][1]
 
             self.recording_buffer[lsl_data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
             self.recording_buffer[lsl_data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])

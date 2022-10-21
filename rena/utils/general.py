@@ -90,13 +90,13 @@ class DataBuffer():
         self.data_type_buffer_sizes = data_type_buffer_sizes if data_type_buffer_sizes else dict()
 
     def update_buffers(self, data_dict: dict):
-        data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+        data_type = data_dict['stream_name']  # get the type of the newly-come data
 
         if data_type not in self.buffer.keys():
             self.buffer[data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
                                       np.empty(shape=(0,))]  # data first, timestamps second
-        buffered_data = self.buffer[data_dict['lsl_data_type']][0]
-        buffered_timestamps = self.buffer[data_dict['lsl_data_type']][1]
+        buffered_data = self.buffer[data_dict['stream_name']][0]
+        buffered_timestamps = self.buffer[data_dict['stream_name']][1]
 
         self.buffer[data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
         self.buffer[data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
@@ -109,6 +109,10 @@ class DataBuffer():
 
     def clear_buffer(self):
         self.buffer = dict()
+
+    def __getitem__(self, key):
+        return self.buffer[key]  # TODO does this work?
+
 
 
 class DataBufferSingleStream():
