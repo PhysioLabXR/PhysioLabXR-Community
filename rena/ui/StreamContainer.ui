@@ -154,7 +154,26 @@
          <attribute name="title">
           <string>Time Series</string>
          </attribute>
-         <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout"/>
+         <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout">
+          <item>
+           <widget class="QScrollArea" name="scrollArea">
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>1538</width>
+               <height>838</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="TimeSeriesPlotsScrollAreaLayout"/>
+            </widget>
+           </widget>
+          </item>
+         </layout>
         </widget>
         <widget class="QWidget" name="ImageWidget">
          <attribute name="title">

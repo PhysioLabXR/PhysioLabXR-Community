@@ -370,7 +370,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             ################################ time series widget initialization###########################################
             if not is_only_image_enabled:
-                group_plot_widget = pg.PlotWidget()
+                group_plot_widget = pg.PlotWidget(title=group_name)
                 self.group_name_plot_widget_dict[group_name] = group_plot_widget
                 self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
@@ -409,7 +409,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             ############################## bar plot ##############################################################################
             if not is_only_image_enabled:
-                barchart_widget = pg.PlotWidget()
+                barchart_widget = pg.PlotWidget(title=group_name)
                 barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
                                           self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
                 # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
