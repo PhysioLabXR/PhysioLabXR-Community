@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
 previous_img_patch = None
 fixation_frame_counter = 0
+distance = 0
 
 # LSL detected fixations ########################################
 outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
@@ -42,7 +43,6 @@ os.mkdir(capture_save_location)
 frame_counter = 0
 
 print('Sockets connected, entering image loop')
-
 while True:
     try:
         fix_detection_sample = np.zeros(3) - 1
@@ -72,6 +72,7 @@ while True:
         img_patch_y_max = int(np.max([np.min([image_size[1], gaze_y + patch_size[1] / 2]), patch_size[1]]))
         img_patch = img[img_patch_x_min : img_patch_x_max,
                          img_patch_y_min: img_patch_y_max]
+        patch_boundary = (img_patch_x_min, img_patch_y_min, img_patch_x_max, img_patch_y_max)
 
         if previous_img_patch is not None:
             img_tensor, previous_img_tensor = prepare_image_for_sim_score(img_patch), prepare_image_for_sim_score(
@@ -83,14 +84,20 @@ while True:
             else:
                 fixation_frame_counter += 1
             # add to LSL
-            fix_detection_sample[0] = distance
+            fix_detection_sample[0] = 1 - distance
             fix_detection_sample[1] = fixation
             fix_detection_sample[2] = fixation_frame_counter >= fixation_min_frame_count
             outlet.push_sample(fix_detection_sample)
 
         previous_img_patch = img_patch
 
-        img_modified = cv2.rectangle(img_modified, (img_patch_x_min, img_patch_y_min), (img_patch_x_max, img_patch_y_max), patch_color, thickness=2)  # TODO double check th patch color, should be yellow
+        # bounding rectange for the central patch
+        shapes = np.zeros_like(img_modified, np.uint8)
+        alpha = (1 - distance) / 2
+        cv2.rectangle(shapes, patch_boundary[:2], patch_boundary[2:], patch_color, thickness=-1)
+        mask = shapes.astype(bool)
+        img_modified[mask] = cv2.addWeighted(img_modified, alpha, shapes, 1 - alpha, 0)[mask]
+
         cv2.circle(img_modified, center, 1, center_color, 2)
         axis = (int(central_fov * ppds[0]), int(central_fov * ppds[1]))
         cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
