@@ -7,6 +7,7 @@ from datetime import datetime
 
 import cv2
 import lpips
+import pandas as pd
 import zmq
 import numpy as np
 from pylsl import StreamInlet, resolve_stream, StreamOutlet, StreamInfo
@@ -41,6 +42,11 @@ dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
 capture_save_location = os.path.join(capture_save_location, 'ReNaUnityCameraCapture_' + dt_string)
 os.mkdir(capture_save_location)
 frame_counter = 0
+df = pd.DataFrame(columns=['FrameNumber', 'GazePixelPositionX', 'GazePixelPositionY', 'LocalClock'])
+gaze_info_save_counter_max = 120  # frames
+gaze_info_save_counter = 0
+gaze_info_path = os.path.join(capture_save_location, 'GazeInfo.csv')
+
 
 print('Sockets connected, entering image loop')
 while True:
@@ -48,13 +54,24 @@ while True:
         fix_detection_sample = np.zeros(3) - 1
 
         received_bytes = cam_capture_sub_socket.recv_multipart()
+        timestamp = struct.unpack('d', received_bytes[1])[0]
         imagePNGBytes = received_bytes[2]
         gaze_info = received_bytes[3]
         img = cv2.imdecode(np.frombuffer(imagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
+        gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
+        gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
 
         # save the original image
         cv2.imwrite(os.path.join(capture_save_location, '{}.png'.format(frame_counter)), img)
         frame_counter += 1
+
+        # write to gaze info csv
+        row = {'FrameNumber': frame_counter, 'GazePixelPositionX': gaze_x, 'GazePixelPositionY': gaze_y, 'LocalClock': timestamp}
+        df = df.append(row, ignore_index=True)
+        gaze_info_save_counter += 1
+        if gaze_info_save_counter >= gaze_info_save_counter_max:
+            df.to_csv(gaze_info_path)
+            gaze_info_save_counter = 0
 
         img_modified = img.copy()
 
@@ -62,8 +79,6 @@ while True:
         # sample, timestamp = inlet.pull_chunk()
         # if len(sample) < 1:
         #     continue
-        gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
-        gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
         center = gaze_x, gaze_y
 
         img_patch_x_min = int(np.min([np.max([0, gaze_x - patch_size[0] / 2]), image_size[0] - patch_size[0]]))
