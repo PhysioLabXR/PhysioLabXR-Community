@@ -24,7 +24,7 @@ def get_preset_category(preset_name):
     elif preset_name in get_experiment_preset_names():
         return 'exp'
     else:
-        raise Exception("Unknow preset")
+        return 'stream'  # TODO use an exception type, default is stream
 
 def get_all_preset_names():
     config.settings.beginGroup('presets/streampresets')
@@ -51,6 +51,14 @@ def get_experiment_preset_names():
     stream_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()
     return stream_preset_names
+
+def get_experiment_preset_streams(exp_name):
+    try:
+        assert exp_name in get_experiment_preset_names()
+    except AssertionError:
+        raise Exception("Unknown experiment name")
+    return config.settings.value('presets/experimentpresets/{}/PresetStreamNames'.format(exp_name))
+
 
 def get_stream_preset_info(stream_name, key):
     rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))

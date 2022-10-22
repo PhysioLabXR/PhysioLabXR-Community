@@ -17,7 +17,7 @@ from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    check_preset_exists
+    check_preset_exists, get_experiment_preset_streams
 
 try:
     import rena.config
@@ -216,9 +216,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     device_lsl_preset = self.init_device(selected_text)  # add device stream
                 else:
                     self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
-            elif selected_text in get_presets_by_category(
-                    'experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = self.experiment_presets_dict[selected_text]  # TODO
+            elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(selected_text) # TODO
                 self.add_streams_to_visualize(streams_for_experiment)
             else:  # add a previous unknown lsl stream
                 create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset

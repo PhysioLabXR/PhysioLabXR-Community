@@ -83,10 +83,12 @@ class AddStreamWidget(QtWidgets.QWidget):
             if networking_interface == 'LSL':
                 self.NetworkingInterfaceComboBox.setCurrentIndex(0)
                 self.PortLineEdit.setText("")
+                self.PortLineEdit.setHidden(True)
             else:
                 port_number = get_stream_preset_info(stream_name, "PortNumber")
                 self.NetworkingInterfaceComboBox.setCurrentIndex(1)
                 self.PortLineEdit.setText(str(port_number))
+                self.PortLineEdit.show()
 
             index = self.DataTypeComboBox.findText(data_type, QtCore.Qt.MatchFixedString)
             if index >= 0:
@@ -97,9 +99,11 @@ class AddStreamWidget(QtWidgets.QWidget):
         elif preset_category == 'video':
             self.DataTypeComboBox.setHidden(True)
             self.NetworkingInterfaceComboBox.setHidden(True)
+            self.PortLineEdit.setHidden(True)
         elif preset_category == 'exp':
             self.DataTypeComboBox.setHidden(True)
             self.NetworkingInterfaceComboBox.setHidden(True)
+            self.PortLineEdit.setHidden(True)
         else:
             raise Exception('Unknown preset category')
 
