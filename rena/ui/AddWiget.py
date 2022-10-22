@@ -2,7 +2,8 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names
+from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
+    get_preset_category
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -72,7 +73,8 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def on_streamName_combobox_text_changed(self):
         stream_name = self.get_selected_stream_name()
-        if check_preset_exists(stream_name):
+        preset_category = get_preset_category(stream_name)
+        if preset_category == 'stream':
             self.NetworkingInterfaceComboBox.show()
             self.DataTypeComboBox.show()
 
@@ -92,12 +94,14 @@ class AddStreamWidget(QtWidgets.QWidget):
             else:
                 self.set_data_type_to_default()
                 print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
-        elif stream_name in get_video_device_names():
+        elif preset_category == 'video':
+            self.DataTypeComboBox.setHidden(True)
+            self.NetworkingInterfaceComboBox.setHidden(True)
+        elif preset_category == 'exp':
             self.DataTypeComboBox.setHidden(True)
             self.NetworkingInterfaceComboBox.setHidden(True)
         else:
-            self.DataTypeComboBox.show()
-            self.NetworkingInterfaceComboBox.show()
+            raise Exception('Unknown preset category')
 
     def set_data_type_to_default(self):
         self.DataTypeComboBox.setCurrentIndex(1)

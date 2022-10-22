@@ -16,6 +16,16 @@ def get_presets_by_category(setting_category):
     config.settings.endGroup()
     return presets
 
+def get_preset_category(preset_name):
+    if preset_name in get_video_device_names():
+        return 'video'
+    elif preset_name in get_stream_preset_names():
+        return 'stream'
+    elif preset_name in get_experiment_preset_names():
+        return 'exp'
+    else:
+        raise Exception("Unknow preset")
+
 def get_all_preset_names():
     config.settings.beginGroup('presets/streampresets')
     stream_preset_names = list(config.settings.childGroups())
@@ -32,6 +42,12 @@ def get_video_device_names():
 
 def get_stream_preset_names():
     config.settings.beginGroup('presets/streampresets')
+    stream_preset_names = list(config.settings.childGroups())
+    config.settings.endGroup()
+    return stream_preset_names
+
+def get_experiment_preset_names():
+    config.settings.beginGroup('presets/experimentpresets')
     stream_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()
     return stream_preset_names
