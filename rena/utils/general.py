@@ -133,6 +133,9 @@ class DataBuffer():
     def clear_buffer(self):
         self.buffer = dict()
 
+    def clear_stream_buffer(self, stream_name):
+        self.buffer.pop(stream_name)
+
     def __getitem__(self, key):
         return self.buffer[key]  # TODO does this work?
 
