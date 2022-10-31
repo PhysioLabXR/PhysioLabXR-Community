@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
+    <width>1349</width>
     <height>1200</height>
    </rect>
   </property>
@@ -165,9 +165,15 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>1538</width>
+               <width>1287</width>
                <height>838</height>
               </rect>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
              <layout class="QVBoxLayout" name="TimeSeriesPlotsScrollAreaLayout"/>
             </widget>

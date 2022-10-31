@@ -26,16 +26,10 @@ class StreamGroupView(QTreeWidget):
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
     def __init__(self, parent, stream_name, group_info):
-        # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent
         self.stream_name = stream_name
 
-        # self.model = QStandardItemModel()
-        # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
-
-        # self.header().setDefaultSectionSize(180)
-        # self.setHeaderHidden(True)
         self.setHeaderLabels(["Name", "LSL Index"])
 
         # self.setModel(self.model)
@@ -44,7 +38,6 @@ class StreamGroupView(QTreeWidget):
         self.stream_root = None
         self.create_tree_view(group_info)
 
-        # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setDragDropMode(QAbstractItemView.InternalMove)
 
@@ -180,42 +173,6 @@ class StreamGroupView(QTreeWidget):
         [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
          self.groups_widgets]
 
-        # self.moving_groups = False
-        # self.moving_channels = False
-        # self.stream_root.setCheckState(0, Qt.Checked)
-
-    # def add_item(self, parent_item, display_text, item_type, plot_format=None, display=None, item_index=None):
-    #     item = QTreeWidgetItem(parent_item)
-    #     item.setText(0, str(display_text))
-    #     item.item_type = item_type
-    #     item.display = display
-    #     if plot_format is not None:
-    #         item.plot_format = 'time_series'
-    #     if item_index is not None:
-    #         item.item_index = item_index
-    #     if display is not None:
-    #         if display == 1:
-    #             item.setForeground(0, QBrush(QColor(color_green)))
-    #             item.setCheckState(0, Qt.Checked)
-    #         else:
-    #             item.setCheckState(0, Qt.Unchecked)
-    #     else:
-    #         item.setCheckState(0, Qt.Unchecked)
-    #     # item.setForeground(0, QBrush(QColor("#123456")))
-    #     # channel.setCheckState(0, Qt.Unchecked)
-    #     # channel_group.setText(1, group_name)
-    #     # channel_group.setEditable(False)
-    #     item.setFlags(
-    #         item.flags()
-    #         | Qt.ItemIsTristate
-    #         | Qt.ItemIsUserCheckable
-    #         | Qt.ItemIsEditable
-    #         | Qt.ItemIsDragEnabled
-    #         | Qt.ItemIsDropEnabled
-    #     )
-    #
-    #     return item
-
     def add_channel_item(self, parent_item, channel_name, is_shown, lsl_index):
         item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index, channel_name=channel_name)
         # item.setText(0, channel_name)
@@ -260,11 +217,6 @@ class StreamGroupView(QTreeWidget):
         self.groups_widgets.append(item)
         return item
 
-    # def add_group(self, display_text, item_type='group', display=1, item_index=None):
-    #     new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display,
-    #                               item_index=item_index)
-    #     self.groups_widgets.append(new_group)
-    #     return new_group
 
     def get_group_names(self):
         group_names = []
@@ -330,22 +282,8 @@ class StreamGroupView(QTreeWidget):
 
     # @QtCore.pyqtSlot()
     def item_changed(self, item, column):  # check box on change
-        # print(item.data(0, 0))
-        # if hasattr(item, 'attribute')::
-        # print(item.data(0,0))
-        # if hasattr(item, 'item_type') and item.item_type == 'group':
-        #     self.item_changed_signal.emit('Item changed')
-        # print(item.data(0,0))
-        # if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
-        #     item.setForeground(0, QBrush(QColor(color_green)))
-        #     item.display = 1
-        # else:
-        #     item.setForeground(0, QBrush(QColor(color_white)))
-        #     item.display = 0
-        # if hasattr(item, 'item_type') and item.item_type == 'group':
-        # print('John')
+
         print(item.data(0,0))
-        ## the color change due to the checkbox also induce a item_change signal
 
         if type(item) == GroupItem:
             self.update_info_box_signal.emit('Item changed')
@@ -411,14 +349,6 @@ class StreamGroupView(QTreeWidget):
 
         for i in range(0, group_item.childCount()):
             group_item.child(i).setDisabled(True)
-            # group_item.child(i).setFlags(
-            #     group_item.child(i).flags()
-            #     & (~Qt.ItemIsTristate)
-            #     & (~Qt.ItemIsUserCheckable)
-            #     & (~Qt.ItemIsEditable)
-            #     & (~Qt.ItemIsDragEnabled)
-            #     | (~Qt.ItemIsDropEnabled)
-            # )
 
     def defroze_group(self, group_item):
 
@@ -429,15 +359,6 @@ class StreamGroupView(QTreeWidget):
 
         for i in range(0, group_item.childCount()):
             group_item.child(i).setDisabled(False)
-            # group_item.child(i).setFlags(
-            #     group_item.child(i).flags()
-            #     | Qt.ItemIsTristate
-            #     | Qt.ItemIsUserCheckable
-            #     | Qt.ItemIsEditable
-            #     | Qt.ItemIsDragEnabled
-            #     | Qt.ItemIsDropEnabled
-            # )
-
 
     def update_group_child_selectable(self,group_name):
         pass
