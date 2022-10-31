@@ -102,13 +102,15 @@ class StreamOptionsWindow(QDialog):
         # self.clearLayout(self.infoWidgetLayout)
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
-            self.plot_format_widget.hide()
+            pass
+            # self.plot_format_widget.hide()
             # TODO: make the current widget empty
 
         else:
-            self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info \
-                (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
+            pass
+            # self.plot_format_widget.show()
+            # self.plot_format_widget.set_plot_format_widget_info \
+            #     (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
             # TODO： show the current group information action widget
 
         ################################################################################

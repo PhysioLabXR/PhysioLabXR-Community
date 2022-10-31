@@ -28,6 +28,7 @@ class GroupItem(QTreeWidgetItem):
         self.group_name = group_name
         self.setText(0, group_name)
 
+
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
 
 
