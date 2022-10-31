@@ -56,12 +56,12 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
-        self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
-        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.plot_format_widget.hide()
+        # self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
+        # self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+        # self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        # self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
+        # self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
+        # self.plot_format_widget.hide()
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -233,23 +233,23 @@ class StreamOptionsWindow(QDialog):
             # TODO
             pass
 
-    def plot_format_on_change(self, info_dict):
-        # get current selected:
-        group_item = self.stream_group_view.selected_groups[0]
-
-        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0, 0))
-        # if new format is image, we disable all child
-        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
-            group_info['selected_plot_format']] == 'bar_chart':
-            self.stream_group_view.froze_group(group_item=group_item)
-        else:
-            self.stream_group_view.defroze_group(group_item=group_item)
-
-        self.plot_format_on_change_signal.emit(info_dict)
-
-    def preset_on_change(self):
-        self.preset_on_change_signal.emit()
-
-    def bar_chart_range_on_change(self, stream_name, group_name):
-        self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
+    # def plot_format_on_change(self, info_dict):
+    #     # get current selected:
+    #     group_item = self.stream_group_view.selected_groups[0]
+    #
+    #     group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0, 0))
+    #     # if new format is image, we disable all child
+    #     if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
+    #         group_info['selected_plot_format']] == 'bar_chart':
+    #         self.stream_group_view.froze_group(group_item=group_item)
+    #     else:
+    #         self.stream_group_view.defroze_group(group_item=group_item)
+    #
+    #     self.plot_format_on_change_signal.emit(info_dict)
+    #
+    # def preset_on_change(self):
+    #     self.preset_on_change_signal.emit()
+    #
+    # def bar_chart_range_on_change(self, stream_name, group_name):
+    #     self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
 

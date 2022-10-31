@@ -128,9 +128,9 @@ class StreamWidget(QtWidgets.QWidget):
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
                                                          group_info=self.group_info)
-        self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
-        self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
+        # self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        # self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
+        # self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
         # create visualization component, must be after the option window
@@ -372,7 +372,7 @@ class StreamWidget(QtWidgets.QWidget):
             if not is_only_image_enabled:
                 group_plot_widget = pg.PlotWidget(title=group_name)
                 self.group_name_plot_widget_dict[group_name] = group_plot_widget
-                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
+                self.TimeSeriesPlotsScrollAreaLayout.addWidget(group_plot_widget)
 
                 distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
                 group_plot_widget.addLegend()
@@ -653,41 +653,41 @@ class StreamWidget(QtWidgets.QWidget):
         clear_layout(self.BarPlotWidgetLayout)
         self.create_visualization_component()
 
-    def plot_format_on_change(self, info_dict):
-        old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        self.preset_on_change()
-
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][
-            info_dict['group_name']].hide()
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][
-            info_dict['group_name']].show()
-
-        # update the plot hide display
-
-    def preset_on_change(self):
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
-
-    def get_image_format_and_shape(self, group_name):
-        width = self.group_info[group_name]['plot_format']['image']['width']
-        height = self.group_info[group_name]['plot_format']['image']['height']
-        image_format = self.group_info[group_name]['plot_format']['image']['image_format']
-        depth = image_depth_dict[image_format]
-        channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
-        scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
-
-        return width, height, depth, image_format, channel_format, scaling_factor
-
-    #############################################
-
-    def bar_chart_range_on_change(self, stream_name, group_name):
-        self.preset_on_change()
-        if not self.group_info[group_name]['is_image_only']:  # if barplot exists for this group
-            widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
-            widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
-                             max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
-
-    def set_plot_widget_range(self, x_min, x_max, y_min, y_max):
-
-        return
+    # def plot_format_on_change(self, info_dict):
+    #     old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
+    #     self.preset_on_change()
+    #
+    #     self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][
+    #         info_dict['group_name']].hide()
+    #     self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][
+    #         info_dict['group_name']].show()
+    #
+    #     # update the plot hide display
+    #
+    # def preset_on_change(self):
+    #     self.group_info = collect_stream_all_groups_info(self.stream_name)
+    #
+    # def get_image_format_and_shape(self, group_name):
+    #     width = self.group_info[group_name]['plot_format']['image']['width']
+    #     height = self.group_info[group_name]['plot_format']['image']['height']
+    #     image_format = self.group_info[group_name]['plot_format']['image']['image_format']
+    #     depth = image_depth_dict[image_format]
+    #     channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
+    #     scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
+    #
+    #     return width, height, depth, image_format, channel_format, scaling_factor
+    #
+    # #############################################
+    #
+    # def bar_chart_range_on_change(self, stream_name, group_name):
+    #     self.preset_on_change()
+    #     if not self.group_info[group_name]['is_image_only']:  # if barplot exists for this group
+    #         widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
+    #         widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+    #                          max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+    #
+    # def set_plot_widget_range(self, x_min, x_max, y_min, y_max):
+    #
+    #     return
 
 #############################################
