@@ -8,7 +8,7 @@ from rena.utils.rena_dsp_utils import RealtimeButterHighpass
 class FilterComponentButterworthBandPass(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi("ui/FilterComponentButterworthBandPass.ui", self)
+        self.ui = uic.loadUi("ui/FilterComponentWidgetButterworthBandPass.ui", self)
         self.rena_filter = RealtimeButterHighpass()
 
     def filter_process_buffer(self, input_buffer):

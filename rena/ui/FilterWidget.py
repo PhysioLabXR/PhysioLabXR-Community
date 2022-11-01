@@ -12,7 +12,7 @@ class FilterWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/FilterWidget.ui", self)
         self.filter_widgets = []
         self.addFilterBtn.clicked.connect(self.add_filter_btn_clicked)
-
+    #
     def add_filter_btn_clicked(self):
         """
         add inactive filer widget and RenaFilter
@@ -24,12 +24,10 @@ class FilterWidget(QtWidgets.QWidget):
             pass
 
         elif filter_type == "ButterWorthBandPass":
+            # pass
             filter_widget = FilterComponentButterworthBandPass()
-            # self.filter_widgets.append(filter_widget)
+            self.filter_widgets.append(filter_widget)
             self.FilterScrollAreaWidgetContents.addWidget(filter_widget)
-
-
-
         elif filter_type == "ButterWorthHighPass":
             pass
 
