@@ -5,7 +5,7 @@ from scipy import sparse
 from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
 import warnings
-warnings.simplefilter("error")
+# warnings.simplefilter("error")
 
 
 class DataProcessor:

@@ -6,6 +6,7 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
 from rena import config
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
+from rena.ui.FilterComponentButterworthBandPass import FilterComponentButterworthBandPass
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
@@ -25,6 +26,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
         self.stream_name = stream_name
         self.group_name = None
+
+        ##################################### Filters ################################
+        self.filter_widgets = []
+        self.addFilterBtn.clicked.connect(self.add_filter_btn_clicked)
+
+
+        ###############################################################################
         # self.stream_name = stream_name
         # self.grou_name = group_name
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
@@ -213,3 +221,35 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def enable_only_image_tab(self):
         self.plotFormatTabWidget.setTabEnabled(0, False)
         self.plotFormatTabWidget.setTabEnabled(2, False)
+
+
+
+
+
+
+############################## filters
+
+
+    def add_filter_btn_clicked(self):
+        """
+        add inactive filer widget and RenaFilter
+        """
+        filter_type = self.filterSelectionCombobox.currentText()
+
+        # create filter
+        if filter_type == "Notch":
+            pass
+
+        elif filter_type == "ButterWorthBandPass":
+            filter_widget = FilterComponentButterworthBandPass()
+            # self.filter_widgets.append(filter_widget)
+            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
+
+
+
+        elif filter_type == "ButterWorthHighPass":
+            pass
+
+        elif filter_type == "ButterWorthLowPass":
+            pass
+

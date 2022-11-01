@@ -372,7 +372,7 @@ class StreamWidget(QtWidgets.QWidget):
             if not is_only_image_enabled:
                 group_plot_widget = pg.PlotWidget(title=group_name)
                 self.group_name_plot_widget_dict[group_name] = group_plot_widget
-                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
+                self.TimeSeriesPlotsScrollAreaLayout.addWidget(group_plot_widget)
 
                 distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
                 group_plot_widget.addLegend()

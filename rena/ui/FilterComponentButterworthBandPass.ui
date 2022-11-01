@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>552</width>
-    <height>56</height>
+    <width>477</width>
+    <height>65</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,7 +18,7 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>16777215</width>
+    <width>599</width>
     <height>82</height>
    </size>
   </property>
@@ -30,13 +30,13 @@
     <widget class="QWidget" name="widget" native="true">
      <property name="minimumSize">
       <size>
-       <width>180</width>
+       <width>100</width>
        <height>32</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>360</width>
+       <width>100</width>
        <height>32</height>
       </size>
      </property>
@@ -72,13 +72,12 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>16777215</width>
+          <width>100</width>
           <height>32</height>
          </size>
         </property>
         <property name="font">
          <font>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -102,6 +101,12 @@
       </item>
       <item>
        <widget class="QLineEdit" name="lowCutLineEdit">
+        <property name="minimumSize">
+         <size>
+          <width>40</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="inputMask">
          <string/>
         </property>
@@ -122,6 +127,12 @@
       </item>
       <item>
        <widget class="QLineEdit" name="highCutLineEdit">
+        <property name="minimumSize">
+         <size>
+          <width>40</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="inputMask">
          <string/>
         </property>
@@ -158,22 +169,25 @@
    </item>
    <item>
     <widget class="QPushButton" name="remove_btn">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
      <property name="minimumSize">
       <size>
-       <width>32</width>
+       <width>20</width>
        <height>32</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>32</width>
-       <height>32</height>
+       <width>20</width>
+       <height>20</height>
       </size>
      </property>
      <property name="text">

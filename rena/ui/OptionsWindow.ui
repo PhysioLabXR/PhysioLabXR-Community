@@ -183,13 +183,8 @@
             </size>
            </property>
            <property name="text">
-            <string>Information and Actions</string>
+            <string>Actions</string>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QWidget" name="infoWidget" native="true">
-           <layout class="QVBoxLayout" name="infoWidgetLayout"/>
           </widget>
          </item>
          <item alignment="Qt::AlignTop">
