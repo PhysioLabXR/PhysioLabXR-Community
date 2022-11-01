@@ -105,16 +105,19 @@ class ReplayTab(QtWidgets.QWidget):
                 raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
         else:
             self.stop_replay_btn_pressed()  # it is not known if the replay has successfully stopped yet
+            self.playback_window.hide()
+            self.StartStopReplayBtn.setText('Start Replay')
+            self.is_replaying = False
 
     def stop_replay_btn_pressed(self):
         self.playback_widget.issue_stop_command()
 
-    def replay_successfully_paused(self):
-        self.StartStopReplayBtn.setText('Resume Replay')
+    # def replay_successfully_paused(self):
+        # self.StartStopReplayBtn.setText('Resume Replay')
         # self.is_replaying = False
 
-    def replay_successfully_resumed(self):
-        self.StartStopReplayBtn.setText('Pause Replay')
+    # def replay_successfully_resumed(self):
+        # self.StartStopReplayBtn.setText('Pause Replay')
         # self.is_replaying = False
 
     def openWindow(self):
