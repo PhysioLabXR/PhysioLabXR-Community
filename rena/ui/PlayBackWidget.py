@@ -19,7 +19,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         # playback status
         # self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
         self.playPauseButton.clicked.connect(self.issue_play_pause_command)
-        # self.stopButton.clicked.connect(self.emit_playback_stop)
+        self.stopButton.clicked.connect(self.start_stop_replay)
 
         # create worker listening the playback position from the server
         # Initialize playback worker
@@ -69,6 +69,14 @@ class PlayBackWidget(QtWidgets.QWidget):
     #         # self.playPauseButton.setIconSize(QtCore.QSize(100, 100))
     #     self.play_pause_signal.emit(self.is_playing)
     #
+    def start_stop_replay(self):
+        if self.parent.is_replaying:
+            self.issue_stop_command()
+            self.stopButton.setIcon(start_stream_icon)
+        else:
+            self.parent.start_stop_replay_btn_pressed()
+            self.stopButton.setIcon(stop_stream_icon)
+
     # def emit_playback_stop(self):
     #     # self.playing = False
     #     # self.parent.stop_replay_btn_pressed()
