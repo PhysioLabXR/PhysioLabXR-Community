@@ -6,6 +6,7 @@
         "frame_number",
         "stability",
         "status",
+        "Angle2CameraUp",
         "gaze_forward_x",
         "gaze_forward_y",
         "gaze_forward_z",
@@ -36,5 +37,5 @@
         "right_status"
   ],
   "NominalSamplingRate":  200,
-  "GroupInfo":  [1, 5, 11],
+  "GroupInfo":  [6, 7, 9],
   "DataType": "float32"}
