@@ -93,13 +93,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_replay_worker = None
         self.recent_visualization_refresh_timestamps = collections.deque(
             maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        # self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.visualization_fps = 0
         self.tick_rate = 0
 
         # create workers for different sensors
-        # self.init_inference(inference_interface)
-
         # camera/screen capture timer
         self.c_timer = QTimer()
         self.c_timer.setInterval(config.VIDEO_DEVICE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
@@ -112,36 +109,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inference_timer.timeout.connect(self.inference_ticks)
         self.inference_timer.start()
 
-        # bind visualization
-        # self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-        # self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-
-        # self.inference_num_visualized_results = int(
-        #     config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
-
-        # self.lslStream_presets_dict = None
-        # self.device_presets_dict = None
-        # self.experiment_presets_dict = None
-        # self.reload_all_presets()
-
-        # add camera and add sensor widget initialization
         self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
-        # self.add_layout, self.camera_combo_box, self.add_camera_btn, self.preset_LSLStream_combo_box, self.add_preset_lslStream_btn, \
-        # self.lslStream_name_input, self.add_lslStream_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn, \
-        # self.experiment_combo_box, self.add_experiment_btn = init_add_widget(parent=self.sensorTabSensorsHorizontalLayout)
         self.addStreamWidget.add_btn.clicked.connect(self.add_btn_clicked)
-
-        # add cam
-        # self.add_camera_btn.clicked.connect(self.add_camera_clicked)
-        # add lsl sensor
-        # self.add_preset_lslStream_btn.clicked.connect(self.add_preset_lslStream_clicked)
-
-        # self.add_preset_device_btn.clicked.connect(self.add_preset_device_clicked)  # add serial connection sensor
-        # self.add_lslStream_btn.clicked.connect(self.add_lslStream_clicked)
-        # self.add_experiment_btn.clicked.connect(self.add_preset_experiment_clicked)
-        # reload all presets
-        # self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -155,19 +125,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recording_tab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recording_tab)
 
-        # self.settingTab = SettingsTab(self)
-        # self.settings_tab_vertical_layout.addWidget(self.settingTab)
-
         self.replay_tab = ReplayTab(self)
         self.replay_tab_vertical_layout.addWidget(self.replay_tab)
-        # self.lsl_replay_worker_thread = QThread(self)
-        # self.lsl_replay_worker_thread.start()
-        # self.lsl_replay_worker = LSLReplayWorker()
-        # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
-        # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
-
-        # self.inference_tab = InferenceTab(self)
-        # self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
         self.scripting_tab = ScriptingTab(self)
         self.scripting_tab_vertical_layout.addWidget(self.scripting_tab)
@@ -241,13 +200,6 @@ class MainWindow(QtWidgets.QMainWindow):
             num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count,
                                                  streaming_widget_count, self.replay_tab.get_num_replay_channels()))
 
-    # def add_camera_clicked(self):
-    #     if self.recording_tab.is_recording:
-    #         dialog_popup(msg='Cannot add capture while recording.')
-    #         return
-    #     selected_camera_id = self.camera_combo_box.currentText()
-    #     self.init_camera(selected_camera_id)
-
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
         widget = VideoDeviceWidget(main_parent=self,
@@ -257,41 +209,6 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
-    # def init_video_device(self, cam_id):
-    #     if cam_id not in self.cam_workers.keys():
-    #         camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
-    #         camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
-    #             parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
-    #             insert_position=self.camWidgetVerticalLayout.count() - 1)
-    #         camera_widget.setObjectName(camera_widget_name)
-    #
-    #         # create camera worker thread
-    #         worker_thread = pg.QtCore.QThread(self)
-    #         self.worker_threads[cam_id] = worker_thread
-    #
-    #         wkr = workers.WebcamWorker(cam_id=cam_id) if cam_id.isnumeric() else workers.ScreenCaptureWorker(cam_id)
-    #
-    #         self.cam_workers[cam_id] = wkr
-    #         self.cam_displays[cam_id] = camera_img_label
-    #
-    #         wkr.change_pixmap_signal.connect(self.visualize_cam)
-    #
-    #         def remove_cam():
-    #             if self.recording_tab.is_recording:
-    #                 dialog_popup(msg='Cannot remove stream while recording.')
-    #                 return False
-    #             worker_thread.exit()
-    #             self.cam_workers.pop(cam_id)
-    #             self.cam_displays.pop(cam_id)
-    #             self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
-    #             sip.delete(camera_widget)
-    #             return True
-    #
-    #         remove_cam_btn.clicked.connect(remove_cam)
-    #         self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
-    #         worker_thread.start()
-    #     else:
-    #         dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
     def visualize_cam(self, cam_id_cv_img_timestamp):
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
@@ -302,17 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_streams_to_visualize(self, stream_names):
-        # try:
-        #     assert np.all([x in get_all_lsl_device_preset_names() for x in
-        #                    stream_names])
-        # except AssertionError:
-        #     dialog_popup(
-        #         msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
-        #         title="Error")
-        #     return
-        # loading_dlg = dialog_popup(
-        #     msg="Please wait while streams are being added...",
-        #     title="Info")
+
         for stream_name in stream_names:
             # check if the stream in setting's preset
             if check_preset_exists(stream_name):
@@ -435,51 +342,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 samples_dict = {'eye': eye_samples}
                 self.inference_worker.signal_data_tick.emit(samples_dict)
 
-    # def init_visualize_inference_results(self):
-    #     inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
-    #     [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
-    #     self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
-    #                                     inference_results_plot_widgets]
-
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]
-
-    # def visualize_inference_results(self, inference_results):
-    #     # results will be -1 if scripting is not connected
-    #     if self.inference_worker.is_connected and inference_results[0][0] >= 0:
-    #         self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
-    #
-    #         if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
-    #             data_to_plot = np.concatenate((np.zeros(shape=(
-    #                 self.inference_num_visualized_results - self.inference_buffer.shape[0],
-    #                 config.INFERENCE_CLASS_NUM)),
-    #                                            self.inference_buffer), axis=0)  # zero padding
-    #         else:
-    #             # plot the most recent 10 seconds
-    #             data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
-    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
-    #         [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
             self.update_presets_combo_box()
             dialog_popup('Reloaded all presets', title='Info')
-
-    # def reload_all_presets(self):
-    #     if len(self.lsl_workers) > 0 or len(self.device_workers) > 0 or len(self.stream_widgets)!=0:
-    #         dialog_popup('Remove all streams before reloading presets!', title='Warning')
-    #         return False
-    #     else:
-    #         try:
-    #             self.lslStream_presets_dict = load_all_lslStream_presets()
-    #             self.device_presets_dict = load_all_Device_presets()
-    #             self.experiment_presets_dict = load_all_experiment_presets()
-    #         except KeyError as e:
-    #             dialog_popup(
-    #                 msg='Unknown preset specifier, {0}\n Please check the examples presets for list of valid specifiers: '.format(
-    #                     e), title='Error')
-    #             return False
-    #     return True
 
     def update_presets_combo_box(self):
         self.preset_LSLStream_combo_box.clear()
