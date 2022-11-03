@@ -44,6 +44,13 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
     device_presets_dict = load_all_presets('../Presets/DevicePresets')
     experiment_presets_dict = load_all_experiment_presets()
 
+    for _, preset in LSL_presets_dict.items():
+        preset["NetworkingInterface"] = "LSL"
+    for _, preset in ZMQ_presets_dict.items():
+        preset["NetworkingInterface"] = "ZMQ"
+    for _, preset in device_presets_dict.items():
+        preset["NetworkingInterface"] = "Device"
+
     stream_presets_dict = {**LSL_presets_dict, **ZMQ_presets_dict, **device_presets_dict}  # merge the lsl and device presets
     # add plot groups
     stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])

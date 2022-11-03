@@ -68,6 +68,10 @@ def get_stream_preset_info(stream_name, key):
         rtn = int(rtn)
     return rtn
 
+def is_stream_device(stream_name):
+    rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, "DeviceType"))
+
+
 def set_stream_preset_info(stream_name, key, value):
     config.settings.setValue('presets/streampresets/{0}/{1}'.format(stream_name, key), value)
 
