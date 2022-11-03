@@ -103,12 +103,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.c_timer.timeout.connect(self.camera_screen_capture_tick)
         self.c_timer.start()
 
-        # scripting timer
-        self.inference_timer = QTimer()
-        self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
-        self.inference_timer.timeout.connect(self.inference_ticks)
-        self.inference_timer.start()
-
         self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
         self.addStreamWidget.add_btn.clicked.connect(self.add_btn_clicked)
@@ -160,29 +154,29 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                self.addStreamWidget.get_data_type(), \
                                                                self.addStreamWidget.get_port_number(), \
                                                                self.addStreamWidget.get_networking_interface()
-
+        if len(selected_text) == 0:
+            return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),
-                             title='Warning')
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            if selected_text in config.settings.value('video_device'):  # add video device
+            selected_type = self.addStreamWidget.get_current_selected_type()
+            if selected_type == 'video':  # add video device
                 self.init_video_device(selected_text)
-            elif selected_text in get_presets_by_category(
-                    'streampresets'):  # add multiple streams from an experiment preset
-                if 'device_type' in get_childKeys_for_group(
-                        'streampresets/{0}'.format(selected_text)):  # if this is a device preset
-                    device_lsl_preset = self.init_device(selected_text)  # add device stream
-                else:
-                    self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
-            elif selected_text in get_presets_by_category('experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = get_experiment_preset_streams(selected_text) # TODO
+            if selected_type == 'Device':  # if this is a device preset
+                device_lsl_preset = self.init_device(selected_text)  # add device stream
+                # TODO
+            elif selected_type == 'LSL' or selected_type == 'ZMQ' :
+                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
+            elif selected_type == 'exp':  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(selected_text)
                 self.add_streams_to_visualize(streams_for_experiment)
-            else:  # add a previous unknown lsl stream
+            elif selected_type == 'other':  # add a previous unknown lsl stream
                 create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type, port, networking_interface)  # TODO this can also be a device or experiment preset
+            else: raise Exception("Unknow preset type {}".format(selected_type))
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -282,6 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
             config.settings.endGroup()
             self.init_network_streaming(device_name)  # TODO test needed
         # TI mmWave connection
+
         elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
             print('mmWave test')
             try:
@@ -322,25 +317,25 @@ class MainWindow(QtWidgets.QMainWindow):
     #     inference_thread.start()
     #     self.inference_widget.hide()
 
-    def inference_ticks(self):
-        # only ticks if data is streaming
-        if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
-            if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
-                buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
-                if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
-                    eye_frames = np.concatenate((np.zeros(shape=(
-                        2,  # 2 for two eyes' pupil sizes
-                        config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
-                                                 buffered_data[2:4, :]), axis=-1)
-                else:
-                    eye_frames = buffered_data[1:3,
-                                 -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
-                # make samples out of the most recent data
-                eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
-                                           stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
-
-                samples_dict = {'eye': eye_samples}
-                self.inference_worker.signal_data_tick.emit(samples_dict)
+    # def inference_ticks(self):
+    #     # only ticks if data is streaming
+    #     if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
+    #         if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
+    #             buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
+    #             if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
+    #                 eye_frames = np.concatenate((np.zeros(shape=(
+    #                     2,  # 2 for two eyes' pupil sizes
+    #                     config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
+    #                                              buffered_data[2:4, :]), axis=-1)
+    #             else:
+    #                 eye_frames = buffered_data[1:3,
+    #                              -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
+    #             # make samples out of the most recent data
+    #             eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
+    #                                        stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
+    #
+    #             samples_dict = {'eye': eye_samples}
+    #             self.inference_worker.signal_data_tick.emit(samples_dict)
 
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]

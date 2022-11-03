@@ -75,8 +75,7 @@ def get_stream_preset_custom_info(stream_name) -> dict:
     rtn = {}
     for c_property in custom_properties:
         p_value = config.settings.value(c_property)
-        if type(c_property) == str or type(c_property) == int:
-            rtn[c_property] = p_value
+        rtn[c_property] = p_value
     config.settings.endGroup()
     return rtn
 

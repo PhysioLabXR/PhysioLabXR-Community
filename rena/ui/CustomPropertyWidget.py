@@ -1,8 +1,11 @@
 from PyQt5 import QtWidgets, uic
+from PyQt5.QtGui import QIntValidator
+
+from rena.utils.settings_utils import set_stream_preset_info
 
 
 class CustomPropertyWidget(QtWidgets.QWidget):
-    def __init__(self, parent, property_name, property_value):
+    def __init__(self, parent, stream_name, property_name, property_value):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
@@ -11,11 +14,18 @@ class CustomPropertyWidget(QtWidgets.QWidget):
         self.parent = parent
         self.ui = uic.loadUi("ui/CustomPropertyWidget.ui", self)
 
+        self.stream_name = stream_name
+
         self.set_property_label(property_name)
-        self.set_property_label(property_value)
+        self.set_property_value(property_value)
+
+        self.PropertyLineEdit.textChanged.connect(self.update_value_in_settings)
 
     def set_property_label(self, label_name):
-        self.PropertyLabel.text = label_name
+        self.PropertyLabel.setText(label_name)
 
     def set_property_value(self, value):
-        self.PropertyLineEdit.text = value
+        self.PropertyLineEdit.setText(str(value))
+
+    def update_value_in_settings(self):
+        set_stream_preset_info(self.stream_name, self.PropertyLabel.text(), self.PropertyLineEdit.text())
