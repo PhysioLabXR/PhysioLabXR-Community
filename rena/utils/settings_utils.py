@@ -24,7 +24,7 @@ def get_preset_category(preset_name):
     elif preset_name in get_experiment_preset_names():
         return 'exp'
     else:
-        return 'stream'  # TODO use an exception type, default is stream
+        return 'other'  # TODO use an exception type, default is stream
 
 def get_all_preset_names():
     config.settings.beginGroup('presets/streampresets')
@@ -68,9 +68,17 @@ def get_stream_preset_info(stream_name, key):
         rtn = int(rtn)
     return rtn
 
-def is_stream_device(stream_name):
-    rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, "DeviceType"))
-
+def get_stream_preset_custom_info(stream_name) -> dict:
+    config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
+    properties = config.settings.childKeys()
+    custom_properties = [p for p in properties if p.startswith('_')]
+    rtn = {}
+    for c_property in custom_properties:
+        p_value = config.settings.value(c_property)
+        if type(c_property) == str or type(c_property) == int:
+            rtn[c_property] = p_value
+    config.settings.endGroup()
+    return rtn
 
 def set_stream_preset_info(stream_name, key, value):
     config.settings.setValue('presets/streampresets/{0}/{1}'.format(stream_name, key), value)
