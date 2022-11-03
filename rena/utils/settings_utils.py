@@ -217,9 +217,9 @@ def export_preset_to_settings(preset, setting_category):
         config.settings.endGroup()
 
 
-def load_all_lslStream_presets(lsl_preset_roots='../Presets/LSLPresets'):
-    preset_file_names = os.listdir(lsl_preset_roots)
-    preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
+def load_all_presets(preset_roots):
+    preset_file_names = os.listdir(preset_roots)
+    preset_file_paths = [os.path.join(preset_roots, x) for x in preset_file_names]
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
@@ -229,16 +229,16 @@ def load_all_lslStream_presets(lsl_preset_roots='../Presets/LSLPresets'):
     return presets
 
 
-def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
-    preset_file_names = os.listdir(device_preset_roots)
-    preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
-    presets = {}
-    for pf_path in preset_file_paths:
-        loaded_preset_dict = json.load(open(pf_path))
-        preset_dict = add_keys_to_preset(loaded_preset_dict)
-        stream_name = preset_dict['StreamName']
-        presets[stream_name] = preset_dict
-    return presets
+# def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
+#     preset_file_names = os.listdir(device_preset_roots)
+#     preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
+#     presets = {}
+#     for pf_path in preset_file_paths:
+#         loaded_preset_dict = json.load(open(pf_path))
+#         preset_dict = add_keys_to_preset(loaded_preset_dict)
+#         stream_name = preset_dict['StreamName']
+#         presets[stream_name] = preset_dict
+#     return presets
 
 
 def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets'):
