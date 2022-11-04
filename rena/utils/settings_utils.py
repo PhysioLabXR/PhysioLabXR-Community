@@ -24,7 +24,7 @@ def get_preset_category(preset_name):
     elif preset_name in get_experiment_preset_names():
         return 'exp'
     else:
-        return 'stream'  # TODO use an exception type, default is stream
+        return 'other'  # TODO use an exception type, default is stream
 
 def get_all_preset_names():
     config.settings.beginGroup('presets/streampresets')
@@ -66,6 +66,17 @@ def get_stream_preset_info(stream_name, key):
         rtn = float(rtn)
     elif key == 'NominalSamplingRate':
         rtn = int(rtn)
+    return rtn
+
+def get_stream_preset_custom_info(stream_name) -> dict:
+    config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
+    properties = config.settings.childKeys()
+    custom_properties = [p for p in properties if p.startswith('_')]
+    rtn = {}
+    for c_property in custom_properties:
+        p_value = config.settings.value(c_property)
+        rtn[c_property] = p_value
+    config.settings.endGroup()
     return rtn
 
 def set_stream_preset_info(stream_name, key, value):
@@ -217,9 +228,9 @@ def export_preset_to_settings(preset, setting_category):
         config.settings.endGroup()
 
 
-def load_all_lslStream_presets(lsl_preset_roots='../Presets/LSLPresets'):
-    preset_file_names = os.listdir(lsl_preset_roots)
-    preset_file_paths = [os.path.join(lsl_preset_roots, x) for x in preset_file_names]
+def load_all_presets(preset_roots):
+    preset_file_names = os.listdir(preset_roots)
+    preset_file_paths = [os.path.join(preset_roots, x) for x in preset_file_names]
     presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
@@ -229,16 +240,16 @@ def load_all_lslStream_presets(lsl_preset_roots='../Presets/LSLPresets'):
     return presets
 
 
-def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
-    preset_file_names = os.listdir(device_preset_roots)
-    preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
-    presets = {}
-    for pf_path in preset_file_paths:
-        loaded_preset_dict = json.load(open(pf_path))
-        preset_dict = add_keys_to_preset(loaded_preset_dict)
-        stream_name = preset_dict['StreamName']
-        presets[stream_name] = preset_dict
-    return presets
+# def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
+#     preset_file_names = os.listdir(device_preset_roots)
+#     preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
+#     presets = {}
+#     for pf_path in preset_file_paths:
+#         loaded_preset_dict = json.load(open(pf_path))
+#         preset_dict = add_keys_to_preset(loaded_preset_dict)
+#         stream_name = preset_dict['StreamName']
+#         presets[stream_name] = preset_dict
+#     return presets
 
 
 def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets'):

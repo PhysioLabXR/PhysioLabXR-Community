@@ -135,3 +135,6 @@ MAX_TS_CHANNEL_NUM = 4000
 scripting_port = 8000
 CONSOLE_LOG_MAX_NUM_ROWS = 1000
 script_fps_counter_buffer_size = 10000
+
+valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
+valid_preset_categories = ['other', 'video', 'exp']
