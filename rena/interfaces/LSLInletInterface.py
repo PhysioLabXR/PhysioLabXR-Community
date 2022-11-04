@@ -36,8 +36,8 @@ class LSLInletInterface:
     def start_sensor(self):
         # connect to the sensor
         self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=0.1)
-        if len(self.streams) < 1:
-            raise LSLStreamNotFoundError('Unable to find LSL Stream with given name {0}'.format(self.lsl_stream_name))
+        if len(self.streams) < 1: self.streams = resolve_byprop('type', self.lsl_stream_name, timeout=0.1)
+        if len(self.streams) < 1: raise LSLStreamNotFoundError('Unable to find LSL Stream with given name or type: {0}'.format(self.lsl_stream_name))
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         actual_num_channels = self.inlet.channel_count
@@ -55,7 +55,7 @@ class LSLInletInterface:
         # read the channel names is there's any
         # tell the sensor to start sending frames
     def is_stream_available(self):
-        available_streams = [x.name() for x in lsl_continuous_resolver.results()]
+        available_streams = [x.name() for x in lsl_continuous_resolver.results()] + [x.type() for x in lsl_continuous_resolver.results()]
         return self.lsl_stream_name in available_streams
 
     def process_frames(self):

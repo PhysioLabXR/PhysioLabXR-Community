@@ -166,7 +166,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if selected_type == 'Device':  # if this is a device preset
                 self.init_device(selected_text)  # add device stream
             elif selected_type == 'LSL' or selected_type == 'ZMQ':
-                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
+                self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
             elif selected_type == 'exp':  # add multiple streams from an experiment preset
                 streams_for_experiment = get_experiment_preset_streams(selected_text)
                 self.add_streams_to_visualize(streams_for_experiment)
