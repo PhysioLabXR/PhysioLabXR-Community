@@ -164,9 +164,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if selected_type == 'video':  # add video device
                 self.init_video_device(selected_text)
             if selected_type == 'Device':  # if this is a device preset
-                device_lsl_preset = self.init_device(selected_text)  # add device stream
-                # TODO
-            elif selected_type == 'LSL' or selected_type == 'ZMQ' :
+                self.init_device(selected_text)  # add device stream
+            elif selected_type == 'LSL' or selected_type == 'ZMQ':
                 self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
             elif selected_type == 'exp':  # add multiple streams from an experiment preset
                 streams_for_experiment = get_experiment_preset_streams(selected_text)
@@ -175,7 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else: raise Exception("Unknow preset type {}".format(selected_type))
             self.update_num_active_stream_label()
         except RenaError as error:
@@ -233,7 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, data_type, port_number, networking_interface):
+    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
         error_initialization = False
 
         # set up UI elements
@@ -242,6 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                      parent=self.sensorTabSensorsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
+                                     worker = worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
                                      insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
@@ -255,49 +255,39 @@ class MainWindow(QtWidgets.QMainWindow):
         config.settings.endGroup()
 
     def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}', format(device_name))
+        config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
         device_type = config.settings.value('DeviceType')
+
         if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
-            serial_port = config.settings.value('SerialPort')
-            board_id = config.settings.value('Board_id')
-            try:
-                OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(device_name, serial_port,
-                                                                                          board_id)
-            except AssertionError as e:
-                dialog_popup(str(e))
-                config.settings.endGroup()
-                return None
+            serial_port = config.settings.value('_SerialPort')
+            board_id = config.settings.value('_Board_id')
             # create and start this device's worker thread
-            self.device_workers[device_name] = workers.TimeSeriesDeviceWorker(OpenBCILSLInterface)
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[device_name] = worker_thread
-            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-            worker_thread.start()
+            worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
             config.settings.endGroup()
-            self.init_network_streaming(device_name)  # TODO test needed
+            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
         # TI mmWave connection
 
-        elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
-            print('mmWave test')
-            try:
-                # mmWave connect, send config, start sensor
-                num_range_bin = config.settings.value('NumRangeBin')
-                Dport = config.settings.value['Dport(Standard)']
-                Uport = config.settings.value['Uport(Enhanced)']
-                config_path = config.settings.value['ConfigPath']
-
-                MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
-                    num_range_bin, Dport, Uport, config_path)
-            except AssertionError as e:
-                dialog_popup(str(e))
-                config.settings.endGroup()
-                return None
-            self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[device_name] = worker_thread
-            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-            worker_thread.start()
-            self.init_network_streaming(device_name)  # TODO test needed
+        # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
+        #     print('mmWave test')
+        #     try:
+        #         # mmWave connect, send config, start sensor
+        #         num_range_bin = config.settings.value('NumRangeBin')
+        #         Dport = config.settings.value['Dport(Standard)']
+        #         Uport = config.settings.value['Uport(Enhanced)']
+        #         config_path = config.settings.value['ConfigPath']
+        #
+        #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
+        #             num_range_bin, Dport, Uport, config_path)
+        #     except AssertionError as e:
+        #         dialog_popup(str(e))
+        #         config.settings.endGroup()
+        #         return None
+        #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
+        #     worker_thread = pg.QtCore.QThread(self)
+        #     self.worker_threads[device_name] = worker_thread
+        #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+        #     worker_thread.start()
+        #     self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()

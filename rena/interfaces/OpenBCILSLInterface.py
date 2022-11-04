@@ -8,7 +8,7 @@ from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, Realt
 
 class OpenBCILSLInterface:
 
-    def __init__(self, stream_name='OpenBCI_Cyton_8', stream_type='EEG', serial_port='COM5', board_id="0",
+    def __init__(self, stream_name, stream_type='EEG', serial_port='COM5', board_id="0",
                  log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
         self.params = BrainFlowInputParams()

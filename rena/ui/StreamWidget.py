@@ -31,12 +31,13 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, data_type, networking_interface='LSL', port_number=None,
-                 insert_position=None, worker=None):
+    def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
+                 insert_position=None, ):
         """
         LSL interface is created in StreamWidget
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
+        :worker usually None, networking_interface unless is device
         """
 
         # GUI elements
@@ -114,12 +115,12 @@ class StreamWidget(QtWidgets.QWidget):
         elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
         elif self.networking_interface == 'Device':
-            pass
+            assert worker
+            self.worker = worker
         self.worker.signal_data.connect(self.process_stream_data)
         self.worker.signal_stream_availability.connect(self.update_stream_availability)
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
-
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,

@@ -36,7 +36,6 @@ def process_preset_create_openBCI_interface_startsensor(device_name, serial_port
                                         serial_port=serial_port,
                                         board_id=board_id,
                                         log='store_false', )
-        interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
 
