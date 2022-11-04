@@ -36,10 +36,30 @@ od_req_socket.bind(rep_tcpAddress)
 
 print('Sockets connected, entering image loop')
 
+def processDepthImage(depthROI):
+    near = 0.1
+    far = 20.0
+    max16bitval = 65535;
+    min16bitval = 0;
+    # scale from 0-65535 to 0-1 value range
+    scale = 1.0 / (max16bitval - min16bitval);
+    compressed = depthROI * scale;
+    # decompress values by 0.25 compression factor
+    decompressed = np.power(compressed, 4)
+    # remove non valid 0 depth values
+    valid_decompressed = decompressed[np.nonzero(decompressed)]
+    # scale from eye to far rather than near to far (still 0-1 range)
+    scaled_eye_far = -(valid_decompressed - 1) / (1 + near / far) + near / far
+    return np.min(scaled_eye_far), np.max(scaled_eye_far), np.average(scaled_eye_far)
+
 while True:
     try:
         # Get depth frame
-        depthImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
+        recevied = cam_capture_sub_socket.recv_multipart()
+        depthImagePNGBytes = recevied[1]
+        colorImagePNGBytes = recevied[2]
+
+        # depthImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
         depthImg = cv2.imdecode(np.frombuffer(depthImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED)
         minDepth = []
         maxDepth = []
@@ -48,7 +68,7 @@ while True:
         cv2.waitKey(delay=1)
 
         # Get color frame and perform 2D YOLO object detection
-        colorImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
+       #  colorImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
         colorImg = cv2.imdecode(np.frombuffer(colorImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
 
         classIds, confs, bbox = net.detect(colorImg, confThreshold=threshold)
@@ -70,9 +90,14 @@ while True:
             depthROI = depthImg[y:y+h,x:x+w]
             cv2.imshow('Depth ROI', depthROI)
             cv2.waitKey(delay=1)
-            minDepth.append(int(np.min(depthROI[np.nonzero(depthROI)])))
-            maxDepth.append(int(np.max(depthROI)))
-            aveDepth.append(int(np.average(depthROI[np.nonzero(depthROI)])))
+            minD, maxD, aveD = processDepthImage(depthROI)
+            print("Min:", minD)
+            print("Max:", maxD)
+            print("Ave:", aveD)
+            minDepth.append(minD)
+            maxDepth.append(maxD)
+            aveDepth.append(aveD)
+
             #Yolo 2D bb visualization
             class_id = classIds[i][0] if type(classIds[i]) is list or type(classIds[i]) is np.ndarray else classIds[i]
             detected_classes.append(int(class_id))
