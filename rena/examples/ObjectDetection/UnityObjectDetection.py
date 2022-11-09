@@ -41,25 +41,35 @@ def processDepthImage(depthROI):
     far = 20.0
     max16bitval = 65535;
     min16bitval = 0;
+    filtered_depthROI = depthROI[depthROI != 0]
     # scale from 0-65535 to 0-1 value range
     scale = 1.0 / (max16bitval - min16bitval);
-    compressed = depthROI * scale;
+    compressed = filtered_depthROI * scale;
     # decompress values by 0.25 compression factor
     decompressed = np.power(compressed, 4)
     # remove non valid 0 depth values
-    valid_decompressed = decompressed[np.nonzero(decompressed)]
-    # scale from eye to far rather than near to far (still 0-1 range)
+    valid_decompressed = decompressed[decompressed != 0]
+    # scale from eye to far rather than near to far (still linear 0-1 range)
     scaled_eye_far = -(valid_decompressed - 1) / (1 + near / far) + near / far
-    return np.min(scaled_eye_far), np.max(scaled_eye_far), np.average(scaled_eye_far)
+    scaled_eye_far = scaled_eye_far[scaled_eye_far != 0]
+
+    # remove noisy outliers (there seem to be higher depth values than there should be)
+    mean = np.mean(scaled_eye_far)
+    standard_deviation = np.std(scaled_eye_far)
+    distance_from_mean = abs(scaled_eye_far - mean)
+    max_deviations = 2
+    not_outlier = distance_from_mean < max_deviations * standard_deviation
+    no_outliers = scaled_eye_far[not_outlier]
+
+    return np.min(no_outliers), np.max(no_outliers), np.average(no_outliers)
 
 while True:
     try:
         # Get depth frame
-        recevied = cam_capture_sub_socket.recv_multipart()
-        depthImagePNGBytes = recevied[1]
-        colorImagePNGBytes = recevied[2]
+        received = cam_capture_sub_socket.recv_multipart()
+        depthImagePNGBytes = received[1]
+        colorImagePNGBytes = received[2]
 
-        # depthImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
         depthImg = cv2.imdecode(np.frombuffer(depthImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED)
         minDepth = []
         maxDepth = []
@@ -68,7 +78,6 @@ while True:
         cv2.waitKey(delay=1)
 
         # Get color frame and perform 2D YOLO object detection
-       #  colorImagePNGBytes = cam_capture_sub_socket.recv_multipart()[1]
         colorImg = cv2.imdecode(np.frombuffer(colorImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
 
         classIds, confs, bbox = net.detect(colorImg, confThreshold=threshold)
