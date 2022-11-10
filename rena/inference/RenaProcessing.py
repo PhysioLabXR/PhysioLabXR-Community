@@ -18,7 +18,8 @@ class ItemEvent():
 
     duration is a two-item tuple consisting the onset and offset time centered around the event onset
     """
-    def __init__(self, data, dtn, event_type, duraiton, item_id, item_distance, ):
+    def __init__(self, data, dtn, event_type, duraiton, item_id, item_distance, ):  # TODO
+        pass
 
 
 class RenaProcessing(RenaScript):
