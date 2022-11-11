@@ -34,7 +34,7 @@ class TicTacToe(RenaScript):
         board = BoardShim(2, params)
         self.eeg_names = board.get_eeg_names(2)
         self.mne_raw_info = mne.create_info(self.eeg_names, EEG_SAMPLING_RATE, ch_types='eeg')
-
+        print("Tic Tac Toe Decoding Script Setup Complete!")
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -48,6 +48,7 @@ class TicTacToe(RenaScript):
                 if 'EEG' not in self.inputs.keys():
                     print('Warning: EEG data not available at the time when end flashing marker is received, not calculating SSVEP')
                     return
+                print('Flashing end event received, decoding frequency power density')
                 flashing_end_time = self.inputs.get_timestamps('TicTacToeEvents')[np.argwhere(self.inputs.get_data('TicTacToeEvents') == FLASH_END_MARKER)][0, -1]
                 epoch_start_time = flashing_end_time - PAST_TIME_WINDOW
                 epoch_start_index = np.argmin(np.abs(self.inputs.get_timestamps('EEG') - epoch_start_time))
@@ -56,8 +57,8 @@ class TicTacToe(RenaScript):
                 epoch_timestamps = self.inputs.get_timestamps('EEG')[epoch_start_index:]
 
                 decoded_freq_index = self.preprocess_data(epoch, epoch_timestamps)
-                self.outputs['DecidedFreqIndex'] = [decoded_freq_index]
-
+                self.outputs['DecodedFreqIndex'] = [decoded_freq_index]
+                print('Sent Decoded Sample {}'.format(decoded_freq_index))
                 self.inputs.clear_stream_buffer('TicTacToeEvents')
     # cleanup is called when the stop button is hit
     def cleanup(self):
@@ -73,6 +74,7 @@ class TicTacToe(RenaScript):
         for flashing_f in blink_frequencies:
             power = psd[(channel_picks), np.argmin(np.abs(freq - flashing_f))]
             powers.append(power.mean())
+        print('Decoded powers: {}'.format(powers))
         return np.argmax(powers)
 
     def plot_welch(self, raw):
