@@ -185,7 +185,7 @@ class RenaScript(ABC, threading.Thread):
 
             self.sim_clock = time.time()
         self.inputs.update_buffers(data_dict)
-        check_buffer_timestamps_monotonic(self.inputs)
+        # check_buffer_timestamps_monotonic(self.inputs) TODO
         # confirm timestamsp are monotonousely increasing
         # self.inputs = dict([(n, np.empty(0)) for n in self.input_names])
         # self.inputs_timestamps = dict([(n, np.empty(0)) for n in self.input_names])

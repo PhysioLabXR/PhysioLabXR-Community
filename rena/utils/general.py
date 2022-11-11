@@ -144,6 +144,9 @@ class DataBuffer():
     def get_timestamps(self, stream_name):
         return self.buffer[stream_name][1]
 
+    def keys(self):
+        return self.buffer.keys()
+
 
 
 
