@@ -447,6 +447,7 @@ class StreamWidget(QtWidgets.QWidget):
         if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict
             self.viz_data_buffer.update_buffer(data_dict)
             self.actualSamplingRate = data_dict['sampling_rate']
+            self.current_timestamp = data_dict['timestamps'][-1]
             # notify the internal buffer in recordings tab
 
             # reshape data_dict based on sensor interface
