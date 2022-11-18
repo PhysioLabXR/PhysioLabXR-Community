@@ -34,7 +34,7 @@ cam_capture_sub_socket.connect(sub_tcpAddress)
 cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 # Disk Utilities Fields ########################################
-capture_save_location = "C:\Recordings"
+capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
 is_saving_captures = True
 
 now = datetime.now()
