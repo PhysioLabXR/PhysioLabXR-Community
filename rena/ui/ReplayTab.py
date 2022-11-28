@@ -83,7 +83,9 @@ class ReplayTab(QtWidgets.QWidget):
         self.StartStopReplayBtn.setEnabled(True)
 
     def start_stop_replay_btn_pressed(self):
-        # TODO: add progress bar
+        """
+        callback function when start_stop button is pressed.
+        """
         if not self.is_replaying:
             print('Sending start command with file location to ReplayClient')  # TODO change the send to a progress bar
             self.command_info_interface.send_string(shared.START_COMMAND + self.file_loc)

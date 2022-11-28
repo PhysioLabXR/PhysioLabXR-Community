@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QLabel
 
 from rena import config
 from rena.threadings.workers import PlaybackWorker
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon
+from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon, terminate_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):
@@ -41,6 +41,7 @@ class PlayBackWidget(QtWidgets.QWidget):
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
         self.playPauseButton.setIcon(pause_icon)
+        self.stopButton.setIcon(terminate_icon)
         self.playback_worker.start_run()
         self.playback_command_interface_timer.start()  # timer should stop when the replay is paused, over, or stopped
 
@@ -70,12 +71,19 @@ class PlayBackWidget(QtWidgets.QWidget):
     #     self.play_pause_signal.emit(self.is_playing)
     #
     def start_stop_replay(self):
+        """
+        Called when stopButton is clicked.
+        Replay will initiate or terminate depending on the `is_replaying` status of ReplayTab (parent).
+        """
         if self.parent.is_replaying:
             self.issue_stop_command()
             self.stopButton.setIcon(start_stream_icon)
+            self.playPauseButton.setEnabled(False)
         else:
             self.parent.start_stop_replay_btn_pressed()
-            self.stopButton.setIcon(stop_stream_icon)
+            self.stopButton.setIcon(terminate_icon)
+            self.playPauseButton.setEnabled(True)
+            # self.stopButton.setIcon(stop_stream_icon)
 
     # def emit_playback_stop(self):
     #     # self.playing = False
@@ -131,7 +139,9 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.percentageReplayedLabel.setText('')
 
     def issue_play_pause_command(self):
-        self.playback_worker.queue_play_pause_command()
+        # prevent is_paused status from changing when the replay is not running
+        if self.parent.is_replaying:
+            self.playback_worker.queue_play_pause_command()
 
     def issue_stop_command(self):
         self.playback_worker.queue_stop_command()
