@@ -41,6 +41,9 @@ class ReplayServer(threading.Thread):
         # fps counter
         self.tick_times = deque(maxlen=50)
 
+        self.pause_time_offset = 0
+        self.pause_start_time = None
+
     def run(self):
         while self.running:
             if not self.is_replaying:
@@ -84,6 +87,10 @@ class ReplayServer(threading.Thread):
                         self.send(self.virtual_clock)
                     elif command == shared.PLAY_PAUSE_COMMAND:
                         print("command received from replay server: ", command)
+                        if not self.is_paused:
+                            self.pause_start_time = pylsl.local_clock()
+                        else:  # resumed
+                            self.pause_time_offset += pylsl.local_clock() - self.pause_start_time
                         self.is_paused = not self.is_paused
                         self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
@@ -165,7 +172,7 @@ class ReplayServer(threading.Thread):
             # print("CHUNK UPDATE")
             self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
 
-        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset
+        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset - self.pause_time_offset  # time since replay start + first stream timestamps
         # TODO: fix this
         sleepDuration = nextBlockingTimestamp - self.virtual_clock
         if sleepDuration > 0:
