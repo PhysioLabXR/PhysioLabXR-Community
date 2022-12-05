@@ -1,8 +1,8 @@
 { "StreamName":"FixationDetection",
   "ChannelNames":[
-      "FoveaPathDeltaDistance",
-      "ThresholdedDelta",
-      "FixationDetection"
+      "Fovea Patch Delta Sim Score",
+      "Thresholded Delta Sim Score",
+      "Fixation Detection"
   ],
   "NominalSamplingRate":  30,
   "GroupInfo":  [2],

@@ -14,9 +14,9 @@ from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_ST
     SCRIPT_PARAM_CHANGE, ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.general import get_fps
+from rena.utils.general import get_fps, DataBuffer, check_buffer_timestamps_monotonic
 from rena.utils.lsl_utils import create_lsl_outlet
-from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_buffer
+from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 
 
 class RenaScript(ABC, threading.Thread):
@@ -24,7 +24,8 @@ class RenaScript(ABC, threading.Thread):
     An abstract class for implementing scripting models.
     """
 
-    def __init__(self, inputs, input_shapes, outputs, output_num_channels, params, port, run_frequency, time_window, *args, **kwargs):
+    def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params, port, run_frequency, time_window,
+                 script_path, is_simulate, *args, **kwargs):
         """
 
         :param inputs:
@@ -33,6 +34,7 @@ class RenaScript(ABC, threading.Thread):
         :param port: the port to which we bind the
         """
         super().__init__()
+        self.sim_clock = time.time()
         print('RenaScript: RenaScript Thread started on process {0}'.format(os.getpid()))
         self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
                                                         port_id=port,
@@ -61,11 +63,11 @@ class RenaScript(ABC, threading.Thread):
         sys.stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
 
         # set up measuring realtime performance
-        self.loop_durations = deque(maxlen=script_fps_counter_buffer_size)
-        self.run_while_start_times = deque(maxlen=script_fps_counter_buffer_size)
+        self.loop_durations = deque(maxlen=run_frequency * 2)
+        self.run_while_start_times = deque(maxlen=run_frequency * 2)
         # setup inputs and outputs
         self.input_names = inputs
-        self.inputs = dict()
+        self.inputs = DataBuffer(stream_buffer_sizes=buffer_sizes)
         self.run_frequency = run_frequency
         # set up the outputs
         self.output_names = outputs
@@ -76,6 +78,10 @@ class RenaScript(ABC, threading.Thread):
 
         # set up the parameters
         self.params = params
+
+        # other variables
+        self.is_simulate = is_simulate
+        self.input_shapes = input_shapes
 
         print('RenaScript: Script init successfully')
 
@@ -110,8 +116,8 @@ class RenaScript(ABC, threading.Thread):
         print('Entering loop')
         while True:
             self.outputs = self._output_default  # reset the output to be default values
-            buffer = recv_data_buffer(self.input_socket_interface)
-            self.set_input_with_buffer(buffer)
+            data_dict = recv_data_dict(self.input_socket_interface)
+            self.update_input_buffer(data_dict)
             loop_start_time = time.time()
             try:
                 self.loop()
@@ -170,13 +176,24 @@ class RenaScript(ABC, threading.Thread):
     def __del__(self):
         sys.stdout = sys.__stdout__  # return control to regular stdout
 
-    def set_input_with_buffer(self, buffer):
-        self.inputs = dict([(n, np.empty(0)) for n in self.input_names])
-        self.inputs_timestamps = dict([(n, np.empty(0)) for n in self.input_names])
-        for key, data_timestamps in buffer.items():
-            if data_timestamps:
-                self.inputs[key] = data_timestamps[0]
-                self.inputs_timestamps[key] = data_timestamps[1]
+    def update_input_buffer(self, data_dict):
+        if self.is_simulate:
+            # print('Sim clock is {}, time is {}'.format(self.sim_clock, time.time()))
+            data_dict = dict([(stream_name, (np.random.rand(*shape),
+                                        np.linspace(self.sim_clock, time.time(), num=shape[1])
+                                        )) for stream_name, shape in self.input_shapes.items()])
+
+            self.sim_clock = time.time()
+        self.inputs.update_buffers(data_dict)
+        # check_buffer_timestamps_monotonic(self.inputs) TODO
+        # confirm timestamsp are monotonousely increasing
+        # self.inputs = dict([(n, np.empty(0)) for n in self.input_names])
+        # self.inputs_timestamps = dict([(n, np.empty(0)) for n in self.input_names])
+        # for key, data_timestamps in data_dict.items():
+        #     if data_timestamps:
+        #         self.inputs[key] = data_timestamps[0]
+        #         self.inputs_timestamps[key] = data_timestamps[1]
+
 
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):

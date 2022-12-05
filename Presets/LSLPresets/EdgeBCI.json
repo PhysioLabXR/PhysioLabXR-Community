@@ -1,0 +1,4 @@
+{ "StreamName":"EdgeBCI",
+  "NominalSamplingRate":  10,
+  "ChannelNames":  ["fNIRS1"],
+  "DataType": "float32"}

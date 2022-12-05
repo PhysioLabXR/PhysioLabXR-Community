@@ -1,0 +1,4 @@
+{ "StreamName":"BLE-EdgeBCI",
+  "NominalSamplingRate":  100,
+  "ChannelNames":  ["Microphone"],
+  "DataType": "float32"}

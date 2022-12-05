@@ -17,7 +17,7 @@ from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    check_preset_exists
+    check_preset_exists, get_experiment_preset_streams
 
 try:
     import rena.config
@@ -93,55 +93,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_replay_worker = None
         self.recent_visualization_refresh_timestamps = collections.deque(
             maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        # self.recent_tick_refresh_timestamps = collections.deque(maxlen=config.REFRESH_FREQUENCY_RETAIN_FRAMES)
         self.visualization_fps = 0
         self.tick_rate = 0
 
         # create workers for different sensors
-        # self.init_inference(inference_interface)
-
         # camera/screen capture timer
         self.c_timer = QTimer()
         self.c_timer.setInterval(config.VIDEO_DEVICE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.c_timer.timeout.connect(self.camera_screen_capture_tick)
         self.c_timer.start()
 
-        # scripting timer
-        self.inference_timer = QTimer()
-        self.inference_timer.setInterval(config.INFERENCE_REFRESH_INTERVAL)  # for 5 KHz refresh rate
-        self.inference_timer.timeout.connect(self.inference_ticks)
-        self.inference_timer.start()
-
-        # bind visualization
-        # self.eeg_num_visualized_sample = int(config.OPENBCI_EEG_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-        # self.unityLSL_num_visualized_sample = int(config.UNITY_LSL_SAMPLING_RATE * config.PLOT_RETAIN_HISTORY)
-
-        # self.inference_num_visualized_results = int(
-        #     config.PLOT_RETAIN_HISTORY * 1 / (1e-3 * config.INFERENCE_REFRESH_INTERVAL))
-
-        # self.lslStream_presets_dict = None
-        # self.device_presets_dict = None
-        # self.experiment_presets_dict = None
-        # self.reload_all_presets()
-
-        # add camera and add sensor widget initialization
         self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
-        # self.add_layout, self.camera_combo_box, self.add_camera_btn, self.preset_LSLStream_combo_box, self.add_preset_lslStream_btn, \
-        # self.lslStream_name_input, self.add_lslStream_btn, self.reload_presets_btn, self.device_combo_box, self.add_preset_device_btn, \
-        # self.experiment_combo_box, self.add_experiment_btn = init_add_widget(parent=self.sensorTabSensorsHorizontalLayout)
         self.addStreamWidget.add_btn.clicked.connect(self.add_btn_clicked)
-
-        # add cam
-        # self.add_camera_btn.clicked.connect(self.add_camera_clicked)
-        # add lsl sensor
-        # self.add_preset_lslStream_btn.clicked.connect(self.add_preset_lslStream_clicked)
-
-        # self.add_preset_device_btn.clicked.connect(self.add_preset_device_clicked)  # add serial connection sensor
-        # self.add_lslStream_btn.clicked.connect(self.add_lslStream_clicked)
-        # self.add_experiment_btn.clicked.connect(self.add_preset_experiment_clicked)
-        # reload all presets
-        # self.reload_presets_btn.clicked.connect(self.reload_all_presets_btn_clicked)
 
         # data buffers
         self.LSL_plots_fs_label_dict = {}
@@ -155,19 +119,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.recording_tab = RecordingsTab(self)
         self.recordings_tab_vertical_layout.addWidget(self.recording_tab)
 
-        # self.settingTab = SettingsTab(self)
-        # self.settings_tab_vertical_layout.addWidget(self.settingTab)
-
         self.replay_tab = ReplayTab(self)
         self.replay_tab_vertical_layout.addWidget(self.replay_tab)
-        # self.lsl_replay_worker_thread = QThread(self)
-        # self.lsl_replay_worker_thread.start()
-        # self.lsl_replay_worker = LSLReplayWorker()
-        # self.lsl_replay_worker.moveToThread(self.lsl_replay_worker_thread)
-        # self.lsl_replay_worker_thread.started.connect(self.parent.lsl_replay_worker.start_stream())
-
-        # self.inference_tab = InferenceTab(self)
-        # self.inference_tab_vertical_layout.addWidget(self.inference_tab)
 
         self.scripting_tab = ScriptingTab(self)
         self.scripting_tab_vertical_layout.addWidget(self.scripting_tab)
@@ -201,30 +154,28 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                self.addStreamWidget.get_data_type(), \
                                                                self.addStreamWidget.get_port_number(), \
                                                                self.addStreamWidget.get_networking_interface()
-
+        if len(selected_text) == 0:
+            return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),
-                             title='Warning')
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            if selected_text in config.settings.value('video_device'):  # add video device
+            selected_type = self.addStreamWidget.get_current_selected_type()
+            if selected_type == 'video':  # add video device
                 self.init_video_device(selected_text)
-            elif selected_text in get_presets_by_category(
-                    'streampresets'):  # add multiple streams from an experiment preset
-                if 'device_type' in get_childKeys_for_group(
-                        'streampresets/{0}'.format(selected_text)):  # if this is a device preset
-                    device_lsl_preset = self.init_device(selected_text)  # add device stream
-                else:
-                    self.init_network_streaming(selected_text, data_type, port, networking_interface)  # add lsl stream
-            elif selected_text in get_presets_by_category(
-                    'experimentpresets'):  # add multiple streams from an experiment preset
-                streams_for_experiment = self.experiment_presets_dict[selected_text]  # TODO
+            if selected_type == 'Device':  # if this is a device preset
+                self.init_device(selected_text)  # add device stream
+            elif selected_type == 'LSL' or selected_type == 'ZMQ':
+                self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
+            elif selected_type == 'exp':  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(selected_text)
                 self.add_streams_to_visualize(streams_for_experiment)
-            else:  # add a previous unknown lsl stream
+            elif selected_type == 'other':  # add a previous unknown lsl stream
                 create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
                 self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type, port, networking_interface)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
+            else: raise Exception("Unknow preset type {}".format(selected_type))
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -242,13 +193,6 @@ class MainWindow(QtWidgets.QMainWindow):
             num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count,
                                                  streaming_widget_count, self.replay_tab.get_num_replay_channels()))
 
-    # def add_camera_clicked(self):
-    #     if self.recording_tab.is_recording:
-    #         dialog_popup(msg='Cannot add capture while recording.')
-    #         return
-    #     selected_camera_id = self.camera_combo_box.currentText()
-    #     self.init_camera(selected_camera_id)
-
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
         widget = VideoDeviceWidget(main_parent=self,
@@ -258,41 +202,6 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
-    # def init_video_device(self, cam_id):
-    #     if cam_id not in self.cam_workers.keys():
-    #         camera_widget_name = ('Webcam ' if cam_id.isnumeric() else 'Screen Capture ') + str(cam_id)
-    #         camera_widget, camera_layout, remove_cam_btn, camera_img_label = init_camera_widget(
-    #             parent=self.camWidgetVerticalLayout, label_string=camera_widget_name,
-    #             insert_position=self.camWidgetVerticalLayout.count() - 1)
-    #         camera_widget.setObjectName(camera_widget_name)
-    #
-    #         # create camera worker thread
-    #         worker_thread = pg.QtCore.QThread(self)
-    #         self.worker_threads[cam_id] = worker_thread
-    #
-    #         wkr = workers.WebcamWorker(cam_id=cam_id) if cam_id.isnumeric() else workers.ScreenCaptureWorker(cam_id)
-    #
-    #         self.cam_workers[cam_id] = wkr
-    #         self.cam_displays[cam_id] = camera_img_label
-    #
-    #         wkr.change_pixmap_signal.connect(self.visualize_cam)
-    #
-    #         def remove_cam():
-    #             if self.recording_tab.is_recording:
-    #                 dialog_popup(msg='Cannot remove stream while recording.')
-    #                 return False
-    #             worker_thread.exit()
-    #             self.cam_workers.pop(cam_id)
-    #             self.cam_displays.pop(cam_id)
-    #             self.sensorTabSensorsHorizontalLayout.removeWidget(camera_widget)
-    #             sip.delete(camera_widget)
-    #             return True
-    #
-    #         remove_cam_btn.clicked.connect(remove_cam)
-    #         self.cam_workers[cam_id].moveToThread(self.worker_threads[cam_id])
-    #         worker_thread.start()
-    #     else:
-    #         dialog_popup('Webcam with ID ' + cam_id + ' is already added.')
 
     def visualize_cam(self, cam_id_cv_img_timestamp):
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
@@ -303,17 +212,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_streams_to_visualize(self, stream_names):
-        # try:
-        #     assert np.all([x in get_all_lsl_device_preset_names() for x in
-        #                    stream_names])
-        # except AssertionError:
-        #     dialog_popup(
-        #         msg="One or more stream name(s) in the experiment preset is not defined in LSL or Device presets",
-        #         title="Error")
-        #     return
-        # loading_dlg = dialog_popup(
-        #     msg="Please wait while streams are being added...",
-        #     title="Info")
+
         for stream_name in stream_names:
             # check if the stream in setting's preset
             if check_preset_exists(stream_name):
@@ -333,7 +232,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
                 self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, data_type, port_number, networking_interface):
+    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
         error_initialization = False
 
         # set up UI elements
@@ -342,6 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                      parent=self.sensorTabSensorsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
+                                     worker = worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
                                      insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
@@ -355,48 +255,39 @@ class MainWindow(QtWidgets.QMainWindow):
         config.settings.endGroup()
 
     def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}', format(device_name))
+        config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
         device_type = config.settings.value('DeviceType')
-        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
-            serial_port = config.settings.value('SerialPort')
-            board_id = config.settings.value('Board_id')
-            try:
-                OpenBCILSLInterface = process_preset_create_openBCI_interface_startsensor(device_name, serial_port,
-                                                                                          board_id)
-            except AssertionError as e:
-                dialog_popup(str(e))
-                config.settings.endGroup()
-                return None
-            # create and start this device's worker thread
-            self.device_workers[device_name] = workers.TimeSeriesDeviceWorker(OpenBCILSLInterface)
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[device_name] = worker_thread
-            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-            worker_thread.start()
-            config.settings.endGroup()
-            self.init_network_streaming(device_name)  # TODO test needed
-        # TI mmWave connection
-        elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
-            print('mmWave test')
-            try:
-                # mmWave connect, send config, start sensor
-                num_range_bin = config.settings.value('NumRangeBin')
-                Dport = config.settings.value['Dport(Standard)']
-                Uport = config.settings.value['Uport(Enhanced)']
-                config_path = config.settings.value['ConfigPath']
 
-                MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
-                    num_range_bin, Dport, Uport, config_path)
-            except AssertionError as e:
-                dialog_popup(str(e))
-                config.settings.endGroup()
-                return None
-            self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
-            worker_thread = pg.QtCore.QThread(self)
-            self.worker_threads[device_name] = worker_thread
-            self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-            worker_thread.start()
-            self.init_network_streaming(device_name)  # TODO test needed
+        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
+            serial_port = config.settings.value('_SerialPort')
+            board_id = config.settings.value('_Board_id')
+            # create and start this device's worker thread
+            worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
+            config.settings.endGroup()
+            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+        # TI mmWave connection
+
+        # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
+        #     print('mmWave test')
+        #     try:
+        #         # mmWave connect, send config, start sensor
+        #         num_range_bin = config.settings.value('NumRangeBin')
+        #         Dport = config.settings.value['Dport(Standard)']
+        #         Uport = config.settings.value['Uport(Enhanced)']
+        #         config_path = config.settings.value['ConfigPath']
+        #
+        #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
+        #             num_range_bin, Dport, Uport, config_path)
+        #     except AssertionError as e:
+        #         dialog_popup(str(e))
+        #         config.settings.endGroup()
+        #         return None
+        #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
+        #     worker_thread = pg.QtCore.QThread(self)
+        #     self.worker_threads[device_name] = worker_thread
+        #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+        #     worker_thread.start()
+        #     self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
@@ -416,71 +307,33 @@ class MainWindow(QtWidgets.QMainWindow):
     #     inference_thread.start()
     #     self.inference_widget.hide()
 
-    def inference_ticks(self):
-        # only ticks if data is streaming
-        if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
-            if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
-                buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
-                if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
-                    eye_frames = np.concatenate((np.zeros(shape=(
-                        2,  # 2 for two eyes' pupil sizes
-                        config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
-                                                 buffered_data[2:4, :]), axis=-1)
-                else:
-                    eye_frames = buffered_data[1:3,
-                                 -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
-                # make samples out of the most recent data
-                eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
-                                           stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
-
-                samples_dict = {'eye': eye_samples}
-                self.inference_worker.signal_data_tick.emit(samples_dict)
-
-    # def init_visualize_inference_results(self):
-    #     inference_results_plot_widgets = [pg.PlotWidget() for i in range(config.INFERENCE_CLASS_NUM)]
-    #     [self.inference_widget.layout().addWidget(pw) for pw in inference_results_plot_widgets]
-    #     self.inference_results_plots = [pw.plot([], [], pen=pg.mkPen(color=(0, 255, 255))) for pw in
-    #                                     inference_results_plot_widgets]
+    # def inference_ticks(self):
+    #     # only ticks if data is streaming
+    #     if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
+    #         if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
+    #             buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
+    #             if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
+    #                 eye_frames = np.concatenate((np.zeros(shape=(
+    #                     2,  # 2 for two eyes' pupil sizes
+    #                     config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
+    #                                              buffered_data[2:4, :]), axis=-1)
+    #             else:
+    #                 eye_frames = buffered_data[1:3,
+    #                              -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
+    #             # make samples out of the most recent data
+    #             eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
+    #                                        stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
+    #
+    #             samples_dict = {'eye': eye_samples}
+    #             self.inference_worker.signal_data_tick.emit(samples_dict)
 
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]
-
-    # def visualize_inference_results(self, inference_results):
-    #     # results will be -1 if scripting is not connected
-    #     if self.inference_worker.is_connected and inference_results[0][0] >= 0:
-    #         self.inference_buffer = np.concatenate([self.inference_buffer, inference_results], axis=0)
-    #
-    #         if self.inference_buffer.shape[0] < self.inference_num_visualized_results:
-    #             data_to_plot = np.concatenate((np.zeros(shape=(
-    #                 self.inference_num_visualized_results - self.inference_buffer.shape[0],
-    #                 config.INFERENCE_CLASS_NUM)),
-    #                                            self.inference_buffer), axis=0)  # zero padding
-    #         else:
-    #             # plot the most recent 10 seconds
-    #             data_to_plot = self.inference_buffer[-self.inference_num_visualized_results:, :]
-    #         time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, self.inference_num_visualized_results)
-    #         [p.setData(time_vector, data_to_plot[:, i]) for i, p in enumerate(self.inference_results_plots)]
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
             self.update_presets_combo_box()
             dialog_popup('Reloaded all presets', title='Info')
-
-    # def reload_all_presets(self):
-    #     if len(self.lsl_workers) > 0 or len(self.device_workers) > 0 or len(self.stream_widgets)!=0:
-    #         dialog_popup('Remove all streams before reloading presets!', title='Warning')
-    #         return False
-    #     else:
-    #         try:
-    #             self.lslStream_presets_dict = load_all_lslStream_presets()
-    #             self.device_presets_dict = load_all_Device_presets()
-    #             self.experiment_presets_dict = load_all_experiment_presets()
-    #         except KeyError as e:
-    #             dialog_popup(
-    #                 msg='Unknown preset specifier, {0}\n Please check the examples presets for list of valid specifiers: '.format(
-    #                     e), title='Error')
-    #             return False
-    #     return True
 
     def update_presets_combo_box(self):
         self.preset_LSLStream_combo_box.clear()
