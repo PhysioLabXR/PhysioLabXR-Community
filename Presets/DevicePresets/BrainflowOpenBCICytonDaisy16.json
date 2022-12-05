@@ -1,8 +1,8 @@
 { "StreamName":"OpenBCI_CytonDaisy_16",
   "StreamType": "EEG",
   "DeviceType": "OpenBCI",
-  "SerialPort": "COM7",
-  "Board_id": 2,
+  "_SerialPort": "COM3",
+  "_Board_id": 2,
   "ChannelNames":[
     "PackageNum",
     "Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","T8","P3","P4",

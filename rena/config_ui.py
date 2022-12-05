@@ -29,8 +29,8 @@ tick_frequency_decimal_places = 2
 cam_display_width = 640
 cam_display_height = 480
 
-capture_display_width = 640
-capture_display_height = 480
+capture_display_width = 2560
+capture_display_height = 1440
 
 nothing_selected = 0
 channel_selected = 1

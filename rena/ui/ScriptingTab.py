@@ -49,8 +49,8 @@ class ScriptingTab(QtWidgets.QWidget):
 
     def forward_data(self, data_dict):
         for script_widget in self.script_widgets:
-            if script_widget.is_running and data_dict['lsl_data_type'] in script_widget.get_inputs():
-                script_widget.buffer_input(data_dict)
+            if script_widget.is_running and data_dict['stream_name'] in script_widget.get_inputs():
+                script_widget.send_input(data_dict)
 
     def try_close(self):
         for script_widget in self.script_widgets:
