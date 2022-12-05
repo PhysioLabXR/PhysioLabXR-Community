@@ -97,6 +97,7 @@ class ReplayServer(threading.Thread):
                         # process stop command
                         self.reset_replay()
                         self.is_replaying = False
+                        self.is_paused = False # reset is_paused in case is_paused had been set to True
                         self.send_string(shared.STOP_SUCCESS_INFO)
                         break
                     elif command == shared.TERMINATE_COMMAND:

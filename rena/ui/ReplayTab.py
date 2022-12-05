@@ -138,9 +138,9 @@ class ReplayTab(QtWidgets.QWidget):
     # def ticks(self):
     #     self.lsl_replay_worker.tick_signal.emit()
 
-    def on_play_pause_toggle(self):
-        self.is_replaying = not self.is_replaying
-        self.play_pause_signal.emit(self.is_replaying)
+    # def on_play_pause_toggle(self):
+    #     self.is_replaying = not self.is_replaying
+    #     self.play_pause_signal.emit(self.is_replaying)
 
     def on_playback_slider_changed(self, new_playback_position):
         print("adjust playback position to:", new_playback_position)

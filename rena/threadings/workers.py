@@ -604,6 +604,7 @@ class PlaybackWorker(QObject):
                 reply = reply.decode('utf-8')
                 if reply == STOP_SUCCESS_INFO:
                     self.is_running = False
+                    self.is_paused = False # reset is_paused in case is_paused had been set to True
                     self.replay_stopped_signal.emit()
                     self.send_command_mutex.unlock()
                     return
