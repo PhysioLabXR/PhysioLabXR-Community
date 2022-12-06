@@ -11,6 +11,8 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/FilterComponentButterworthBandPass.ui", self)
         self.rena_filter = RealtimeButterBandpass()
 
+        # update the boxes
+
     def filter_process_buffer(self, input_buffer):
         output = self.rena_filter.process_buffer(input_buffer)
         return output

@@ -227,7 +227,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
 
 
-############################## filters
+############################## filters ################################
 
 
     def add_filter_btn_clicked(self):
@@ -243,6 +243,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         elif filter_type == "ButterWorthBandPass":
             filter_widget = FilterComponentButterworthBandPass()
             # self.filter_widgets.append(filter_widget)
+            # the current FilterScrollAreaWidgetLayout is attached to the current group with group name
             self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
 
 
