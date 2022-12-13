@@ -21,6 +21,11 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playPauseButton.clicked.connect(self.issue_play_pause_command)
         self.stopButton.clicked.connect(self.start_stop_replay)
 
+        self.slider_is_dragging = False
+        self.horizontalSlider.sliderPressed.connect(self.slider_pressed)
+        self.horizontalSlider.sliderReleased.connect(self.slider_released)
+        # self.horizontalSlider.sliderMoved.connect(self.issue_slider_moved_command)
+
         # create worker listening the playback position from the server
         # Initialize playback worker
         self.playback_command_interface_timer = QTimer()
@@ -50,15 +55,19 @@ class PlayBackWidget(QtWidgets.QWidget):
         return (virtual_clock - self.start_time) * 100 / self.total_time
 
     def update_playback_position(self, virtual_clock):
-        # print("slider value is being updated ", replay_progress)
-        playback_percent = self.virtual_time_to_playback_position_value(virtual_clock)
-        self.horizontalSlider.setValue(playback_percent)
-        self.currentTimestamplabel.setText('{:.2f}'.format(virtual_clock + self.virtual_clock_offset))
-        self.timeSinceStartedLabel.setText('{:.2f}/{:.2f}'.format(virtual_clock - self.start_time, self.total_time))
-        self.percentageReplayedLabel.setText('{:.1f} %'.format(playback_percent))
-        # print('Virtual Clock {0}'.format(virtual_clock))
-        # print('Time since start {0}/{1}'.format(virtual_clock - self.start_time, self.total_time))
-        # print('Playback percent {0}'.format(playback_percent))
+        """
+        Callback function for replay_progress_signal emitted from playback_worker.
+        Update horizontalSlider's playback position if the slider is not being dragged.
+        """
+        if not self.slider_is_dragging:
+            playback_percent = self.virtual_time_to_playback_position_value(virtual_clock)
+            self.horizontalSlider.setValue(playback_percent)
+            self.currentTimestamplabel.setText('{:.2f}'.format(virtual_clock + self.virtual_clock_offset))
+            self.timeSinceStartedLabel.setText('{:.2f}/{:.2f}'.format(virtual_clock - self.start_time, self.total_time))
+            self.percentageReplayedLabel.setText('{:.1f} %'.format(playback_percent))
+            # print('Virtual Clock {0}'.format(virtual_clock))
+            # print('Time since start {0}/{1}'.format(virtual_clock - self.start_time, self.total_time))
+            # print('Playback percent {0}'.format(playback_percent))
 
     # def emit_play_pause_button_clicked(self):
     #     print("Its clicked in playbackwidget")
@@ -111,6 +120,26 @@ class PlayBackWidget(QtWidgets.QWidget):
         '''
         self.playPauseButton.setIcon(pause_icon)
 
+    def slider_pressed(self):
+        """
+        called when the user starts dragging horizontalSlider.
+        """
+        self.slider_is_dragging = True
+
+    def slider_released(self):
+        """
+        Called when the user stops dragging horizontalSlider.
+        Makes a function call to issue_slider_moved_command() so that replay can be updated to the new playback position.
+        """
+        self.slider_is_dragging = False
+        self.issue_slider_moved_command(self.horizontalSlider.value())
+
+    # def slider_moved(self):
+    #     """
+    #     called when the position of horizontalSlider is changed through dragging.
+    #     """
+    #     self.slider_
+
     def replay_play_pause_signal_callback(self, play_pause_command):
         # relay the signal to the parent (replay tab) and then use that information in a method in replay tab
         if play_pause_command == 'pause':
@@ -148,3 +177,6 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def issue_terminate_command(self):
         self.playback_worker.queue_terminate_command()
+
+    def issue_slider_moved_command(self, updated_position):
+        self.playback_worker.queue_slider_moved_command(updated_position)

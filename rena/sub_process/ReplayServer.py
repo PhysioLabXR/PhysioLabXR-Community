@@ -103,6 +103,12 @@ class ReplayServer(threading.Thread):
                     elif command == shared.TERMINATE_COMMAND:
                         self.running = False
                         break
+                    elif shared.SLIDER_MOVED_COMMAND in command:
+                        # process slider moved command
+                        slider_position = shared.parse_slider_moved_command(command)
+                        # update virtual clock
+                        self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
+
                 print('replay finished')
                 if self.is_replaying:  # the case of a finished replay
                     self.is_replaying = False

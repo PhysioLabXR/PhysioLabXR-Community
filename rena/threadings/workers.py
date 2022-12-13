@@ -17,7 +17,8 @@ from rena import config_ui, config_signal, shared
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, PLAY_PAUSE_COMMAND
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.general import process_preset_create_openBCI_interface_startsensor
 from rena.utils.networking_utils import recv_string
@@ -611,6 +612,9 @@ class PlaybackWorker(QObject):
                     self.is_paused = not self.is_paused
                     self.send_command_mutex.unlock()
                     return
+                elif reply == SLIDER_MOVED_SUCCESS_INFO:
+                    # do something
+                    return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
                 #     self.is_running = False
                 #     self.replay_terminated_signal.emit()
@@ -635,6 +639,13 @@ class PlaybackWorker(QObject):
     def queue_play_pause_command(self):
         self.send_command_mutex.lock()
         self.command_queue.append(PLAY_PAUSE_COMMAND)
+        self.send_command_mutex.unlock()
+
+    def queue_slider_moved_command(self, updated_position):
+        command = SLIDER_MOVED_COMMAND + f":{updated_position}"
+        self.send_command_mutex.lock()
+        self.command_queue.append(command)
+        print("slider moved command  ", command)
         self.send_command_mutex.unlock()
 
     def queue_stop_command(self):
