@@ -17,7 +17,7 @@ from rena import config_ui, config_signal, shared
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, PLAY_PAUSE_COMMAND
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.general import process_preset_create_openBCI_interface_startsensor
 from rena.utils.networking_utils import recv_string
@@ -574,6 +574,7 @@ class PlaybackWorker(QObject):
     The playback worker listens from the replay process and emit the playback position
     """
     playback_tick_signal = pyqtSignal()
+    replay_play_pause_signal = pyqtSignal(str)
     replay_progress_signal = pyqtSignal(float)
     replay_stopped_signal = pyqtSignal()
     replay_terminated_signal = pyqtSignal()
@@ -585,6 +586,8 @@ class PlaybackWorker(QObject):
         self.send_command_mutex = QMutex()
         self.command_queue = deque()
         self.is_running = False
+        # initialize pause/resume status
+        self.is_paused = False
 
     @pg.QtCore.pyqtSlot()
     def run(self):
@@ -596,7 +599,16 @@ class PlaybackWorker(QObject):
                 reply = reply.decode('utf-8')
                 if reply == STOP_SUCCESS_INFO:
                     self.is_running = False
+                    self.is_paused = False # reset is_paused in case is_paused had been set to True
                     self.replay_stopped_signal.emit()
+                    self.send_command_mutex.unlock()
+                    return
+                elif reply == PLAY_PAUSE_SUCCESS_INFO:
+                    if self.is_paused:
+                        self.replay_play_pause_signal.emit('resume')
+                    else:
+                        self.replay_play_pause_signal.emit('pause')
+                    self.is_paused = not self.is_paused
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
@@ -620,6 +632,11 @@ class PlaybackWorker(QObject):
     def start_run(self):
         self.is_running = True
 
+    def queue_play_pause_command(self):
+        self.send_command_mutex.lock()
+        self.command_queue.append(PLAY_PAUSE_COMMAND)
+        self.send_command_mutex.unlock()
+
     def queue_stop_command(self):
         self.send_command_mutex.lock()
         self.command_queue.append(STOP_COMMAND)
@@ -634,7 +651,8 @@ class PlaybackWorker(QObject):
         if reply == TERMINATE_SUCCESS_COMMAND:
             self.is_running = False
             self.replay_terminated_signal.emit()
-        else: raise NotImplementedError
+        else:
+            raise NotImplementedError
         self.send_command_mutex.unlock()
 
 class ScriptingStdoutWorker(QObject):

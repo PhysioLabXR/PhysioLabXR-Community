@@ -5,6 +5,7 @@ from rena.config_ui import stream_widget_icon_size
 
 start_stream_icon = QIcon('../media/icons/start.svg')
 stop_stream_icon = QIcon('../media/icons/stop.svg')
+terminate_icon = QIcon('../media/icons/terminate.svg') # QIcon instance only used in replay playback widget as of now
 options_icon = QIcon('../media/icons/options.svg')
 pop_window_icon = QIcon('../media/icons/popwindow.svg')
 dock_window_icon = QIcon('../media/icons/dockwindow.svg')

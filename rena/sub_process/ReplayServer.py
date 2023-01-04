@@ -18,6 +18,7 @@ class ReplayServer(threading.Thread):
         super().__init__()
         self.command_info_interface = command_info_interface
         self.is_replaying = False
+        self.is_paused = False
 
         self.virtual_clock_offset = None
         self.start_time = None
@@ -39,6 +40,9 @@ class ReplayServer(threading.Thread):
 
         # fps counter
         self.tick_times = deque(maxlen=50)
+
+        self.pause_time_offset = 0
+        self.pause_start_time = None
 
     def run(self):
         while self.running:
@@ -71,18 +75,29 @@ class ReplayServer(threading.Thread):
                     self.running = False
             else:
                 while len(self.selected_stream_indices) > 0:
-                    self.tick_times.append(time.time())
-                    print("Replay FPS {0}".format(self.get_fps()), end='\r')
-                    # streams get removed from the list if there are no samples left to play
-                    self.replay()
+                    if not self.is_paused:
+                        self.tick_times.append(time.time())
+                        print("Replay FPS {0}".format(self.get_fps()), end='\r')
+                        # streams get removed from the list if there are no samples left to play
+                        self.replay()
 
                     command = self.recv_string(is_block=False)
+                    # handle play_pause command
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(self.virtual_clock)
+                    elif command == shared.PLAY_PAUSE_COMMAND:
+                        print("command received from replay server: ", command)
+                        if not self.is_paused:
+                            self.pause_start_time = pylsl.local_clock()
+                        else:  # resumed
+                            self.pause_time_offset += pylsl.local_clock() - self.pause_start_time
+                        self.is_paused = not self.is_paused
+                        self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
                         # process stop command
                         self.reset_replay()
                         self.is_replaying = False
+                        self.is_paused = False # reset is_paused in case is_paused had been set to True
                         self.send_string(shared.STOP_SUCCESS_INFO)
                         break
                     elif command == shared.TERMINATE_COMMAND:
@@ -158,7 +173,7 @@ class ReplayServer(threading.Thread):
             # print("CHUNK UPDATE")
             self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
 
-        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset
+        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset - self.pause_time_offset  # time since replay start + first stream timestamps
         # TODO: fix this
         sleepDuration = nextBlockingTimestamp - self.virtual_clock
         if sleepDuration > 0:
