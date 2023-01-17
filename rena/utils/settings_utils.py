@@ -294,7 +294,7 @@ def add_keys_to_preset(preset_dict):
     return preset_dict
 
 
-def create_default_preset(stream_name, port, networking_interface, data_type, num_channels=1):
+def create_default_preset(stream_name, data_type, port, networking_interface, num_channels=1):
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
                    'NetworkingInterface': networking_interface,

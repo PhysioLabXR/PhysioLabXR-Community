@@ -1,3 +1,4 @@
+import abc
 import time
 import time
 from collections import deque
@@ -8,6 +9,7 @@ import psutil as psutil
 import pyautogui
 import pyqtgraph as pg
 import zmq
+from PyQt5 import QtCore
 from PyQt5.QtCore import QMutex
 from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
@@ -19,17 +21,19 @@ from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, PLAY_PAUSE_COMMAND
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.general import process_preset_create_openBCI_interface_startsensor
+from rena.utils.general import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
 
+class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
+    pass
 
-class RENAWorker(QObject):
+class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
-    def __init__(self):
-        super().__init__()
+    # def __init__(self):
+    #     super().__init__()
         # self.dsp_on = True
         # self.dsp_processor = None
         # self.dsp_server_process = None
@@ -72,10 +76,9 @@ class RENAWorker(QObject):
         # clint_interface = RENATCPInterface()
         # tcp_client = RENATCP
 
+"""
+Deprecated software/device specific workers
 class EEGWorker(QObject):
-    """
-
-    """
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
@@ -127,9 +130,6 @@ class EEGWorker(QObject):
 
 
 class UnityLSLWorker(QObject):
-    """
-
-    """
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     tick_signal = pyqtSignal()
@@ -173,12 +173,8 @@ class UnityLSLWorker(QObject):
             print('UnityLSLWorker: frame rate calculation is not enabled in simulation mode')
         self.is_streaming = False
         self.end_time = time.time()
-
-
+        
 class InferenceWorker(QObject):
-    """
-
-    """
     # for passing data to the gesture tab
     # signal_inference_results = pyqtSignal(np.ndarray)
     signal_inference_results = pyqtSignal(list)
@@ -215,9 +211,9 @@ class InferenceWorker(QObject):
                 inference_results = sim_inference()  # TODO implement simulation mode
             if len(inference_results) > 0:
                 self.signal_inference_results.emit(inference_results)
+"""
 
-
-class LSLInletWorker(RENAWorker):
+class LSLInletWorker(QObject, RenaWorker):
 
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
@@ -228,14 +224,14 @@ class LSLInletWorker(RENAWorker):
 
     # signal_stream_num_channels = pyqtSignal(int)
 
-    def __init__(self, LSLInlet_interface: LSLInletInterface, data_type, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, stream_name, channel_names, data_type, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
         self.data_type = data_type
 
-        self._lslInlet_interface = LSLInlet_interface
+        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
         # self.dsp_on = True
@@ -300,9 +296,9 @@ class LSLInletWorker(RENAWorker):
                 self.previous_availability = is_stream_availability
                 self.signal_stream_availability.emit(is_stream_availability)
 
-    def set_interface(self, interface: LSLInletInterface):
+    def reset_interface(self, stream_name, channel_names):
         self.interface_mutex.lock()
-        self._lslInlet_interface = interface
+        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
         self.interface_mutex.unlock()
 
     def start_stream(self):
@@ -744,7 +740,7 @@ class ScriptInfoWorker(QObject):
 #         else:
 #             return False
 
-class ZMQWorker(RENAWorker):
+class ZMQWorker(QObject, RenaWorker):
     """
     Rena's implementation of working with ZMQ's tcp interfaces
     """
@@ -777,6 +773,7 @@ class ZMQWorker(RENAWorker):
         self.previous_availability = None
         self.last_poll_time = None
         self.is_stream_available()
+
 
     def __del__(self):
         self.socket.close()
@@ -822,3 +819,5 @@ class ZMQWorker(RENAWorker):
         poll_results = dict(self.poller.poll(timeout=1000))
         return len(poll_results) > 0
 
+    def reset_interface(self, stream_name, channel_names):
+        pass
