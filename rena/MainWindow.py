@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import time
 import webbrowser
@@ -142,6 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.get_layout().addWidget(settings_tab)
         self.settings_window.hide()
 
+
     def add_btn_clicked(self):
         """
         This should be the only entry point to adding a stream widget
@@ -171,8 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = get_experiment_preset_streams(selected_text)
                 self.add_streams_to_visualize(streams_for_experiment)
             elif selected_type == 'other':  # add a previous unknown lsl stream
-                create_default_preset(selected_text, data_type, port, networking_interface)  # create the preset
-                self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
+                self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else: raise Exception("Unknow preset type {}".format(selected_type))
@@ -180,6 +181,10 @@ class MainWindow(QtWidgets.QMainWindow):
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
+
+    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1):
+        create_default_preset(stream_name, data_type, port, networking_interface, num_channels)  # create the preset
+        self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
         self.sensorTabSensorsHorizontalLayout.removeWidget(target)
