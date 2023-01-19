@@ -289,7 +289,7 @@ class ScriptingWidget(QtWidgets.QWidget):
             base_script_name = os.path.basename(os.path.normpath(script_path))
             this_script: str = rena_base_script[:]  # make a copy
             class_name = base_script_name if not base_script_name.endswith('.py') else base_script_name.strip('.py')
-            this_script = this_script.replace('ExampleRenaScript', class_name)
+            this_script = this_script.replace('BaseRenaScript', class_name)
             if not script_path.endswith('.py'):
                 script_path = script_path + '.py'
             with open(script_path, 'w') as f:

@@ -3,7 +3,7 @@ import numpy as np
 from rena.scripting.RenaScript import RenaScript
 
 
-class ExampleRenaScript(RenaScript):
+class BaseRenaScript(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
