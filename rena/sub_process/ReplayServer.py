@@ -32,8 +32,8 @@ class ReplayServer(threading.Thread):
         self.selected_stream_indices = None
 
         self.outlets = []
-        self.next_sample_of_stream = []  # index of the next sample of each stream that will be send
-        self.chunk_sizes = []  # how many samples should be published at once
+        self.next_sample_of_stream = []  # index of the next sample of each stream that will be sent, this list contains the same number of items as the number of streams in the replay
+        self.chunk_sizes = []  # how many samples should be published at once, this list contains the same number of items as the number of streams in the replay
 
         self.running = True
         self.main_program_routing_id = None
@@ -136,10 +136,10 @@ class ReplayServer(threading.Thread):
         nextBlockingTimestamp = None
 
         # determine which stream to send next
-        for i, stream_name in enumerate(self.stream_names):
+        for i, stream_name in enumerate(self.stream_names):  # iterate over all the data streams in the replay file
             stream = self.stream_data[stream_name]
-            # when a chunk can be send depends on it's last sample's timestamp
-            blockingElementIdx = self.next_sample_of_stream[i] + self.chunk_sizes[i] - 1
+            # when a chunk can be sent depends on its last sample's timestamp
+            blockingElementIdx = self.next_sample_of_stream[i] + self.chunk_sizes[i] - 1  # at the first call to replay next_sample_of_stream is all zeros, and chunk_sizes is all ones
             try:
                 blockingTimestamp = stream[1][blockingElementIdx]
             except Exception as e:
@@ -165,7 +165,7 @@ class ReplayServer(threading.Thread):
             # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
             # are converted to lists
             nextChunkValues = nextChunkValues.tolist()
-        self.next_sample_of_stream[nextStreamIndex] += chunkSize
+        self.next_sample_of_stream[nextStreamIndex] += chunkSize  # index of the next sample yet to be sent of this stream
 
         stream_length = nextStream[0].shape[-1]
         # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk

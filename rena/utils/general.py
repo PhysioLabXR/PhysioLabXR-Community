@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 
+from exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -167,7 +168,10 @@ class DataBufferSingleStream():
         '''
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(data_dict['frames'].shape[0])
-        self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        try:
+            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        except ValueError:
+            raise ChannelMismatchError(data_dict['frames'].shape[0])
         self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]

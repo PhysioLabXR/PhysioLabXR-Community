@@ -91,7 +91,7 @@ class LSLStreamNotFoundError(RenaError):
         return self.message
 
 
-class LSLChannelMismatchError(RenaError):
+class ChannelMismatchError(RenaError):
     def __init__(self, message):
         super().__init__(message)
     def __str__(self):
