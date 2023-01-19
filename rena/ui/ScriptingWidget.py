@@ -282,6 +282,9 @@ class ScriptingWidget(QtWidgets.QWidget):
 
     def on_create_btn_clicked(self):
         script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
+        self.create_script(script_path)
+
+    def create_script(self, script_path):
         if script_path:
             base_script_name = os.path.basename(os.path.normpath(script_path))
             this_script: str = rena_base_script[:]  # make a copy

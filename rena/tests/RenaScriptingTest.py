@@ -20,11 +20,19 @@ def app(qtbot):
     # main window init
     inference_interface = InferenceInterface.InferenceInterface()
     test_renalab_app = MainWindow(app=app, inference_interface=inference_interface)
-
+    test_renalab_app.show()
     return test_renalab_app
 
 
-def test_add_random_stream(app, qtbot):
+def test_create_script(app, qtbot):
+    qtbot.mouseClick(app.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+
+    # delete the file and remove the script from rena as clean up steps
+
+
+
+def test_create_script(app, qtbot):
+    test_stream_name = 'TestStopScriptRightAfterStart'
     test_stream_name = 'TestStreamName'
     p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
@@ -35,11 +43,6 @@ def test_add_random_stream(app, qtbot):
     assert test_stream_name in app.stream_ui_elements
     assert 'lsl_widget' in app.stream_ui_elements[test_stream_name]
     app.stream_ui_elements[test_stream_name]['lsl_widget'].StreamNameLabel.text = test_stream_name
-
-
-def test_stop_script_right_after_start(app, qtbot):
-    test_stream_name = 'TestStopScriptRightAfterStart'
-
     pass
     # TODO
 
