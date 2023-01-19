@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>599</width>
+    <width>580</width>
     <height>150</height>
    </rect>
   </property>
@@ -18,14 +18,14 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>599</width>
+    <width>16777215</width>
     <height>150</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QWidget" name="widget_2" native="true">
      <property name="maximumSize">
@@ -91,7 +91,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Bandpass</string>
+            <string>HighPass</string>
            </property>
           </widget>
          </item>
@@ -104,38 +104,12 @@
          <item>
           <widget class="QLabel" name="rangeLable">
            <property name="text">
-            <string>Range: </string>
+            <string>LowCut: </string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QLineEdit" name="lowCutFrequencyLineEdit">
-           <property name="minimumSize">
-            <size>
-             <width>40</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="inputMask">
-            <string/>
-           </property>
-           <property name="text">
-            <string>0</string>
-           </property>
-           <property name="placeholderText">
-            <string>LowCut</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="dash">
-           <property name="text">
-            <string>----</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="highCutFrequencyLineEdit">
            <property name="minimumSize">
             <size>
              <width>40</width>

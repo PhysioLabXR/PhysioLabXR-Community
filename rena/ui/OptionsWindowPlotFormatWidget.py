@@ -7,6 +7,7 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from rena import config
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
 from rena.ui.FilterComponentButterworthBandPass import FilterComponentButterworthBandPass
+from rena.ui.FilterComponentButterworthHighPass import FilterComponentButterworthHighPass
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
@@ -234,6 +235,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         """
         add inactive filer widget and RenaFilter
         """
+        # group_info = collect_stream_group_info(self.stream_name, self.group_name)
+        # channel_num =
         filter_type = self.filterSelectionCombobox.currentText()
 
         # create filter
@@ -243,14 +246,21 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         elif filter_type == "ButterWorthBandPass":
             filter_widget = FilterComponentButterworthBandPass()
             # self.filter_widgets.append(filter_widget)
-            # the current FilterScrollAreaWidgetLayout is attached to the current group with group name
+            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
             self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
 
 
 
+
         elif filter_type == "ButterWorthHighPass":
-            pass
+            filter_widget = FilterComponentButterworthHighPass()
+            # self.filter_widgets.append(filter_widget)
+            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
+            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
 
         elif filter_type == "ButterWorthLowPass":
-            pass
+            filter_widget = FilterComponentButterworthLowPass()
+            # self.filter_widgets.append(filter_widget)
+            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
+            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
 
