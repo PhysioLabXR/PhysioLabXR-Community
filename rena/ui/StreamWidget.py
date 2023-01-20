@@ -24,7 +24,7 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format, \
-    update_selected_plot_format
+    update_group_selected_plot_format
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
     convert_array_to_qt_heatmap, \
     convert_rgb_to_qt_image, convert_numpy_to_uint8
@@ -361,7 +361,7 @@ class StreamWidget(QtWidgets.QWidget):
         for group_name in self.group_info.keys():
             if is_only_image_enabled := self.group_info[group_name]['is_image_only']:
                 # disable time series and bar plot for this group
-                update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
+                update_group_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
                 self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
 
             ################################ time series widget initialization###########################################
@@ -370,15 +370,15 @@ class StreamWidget(QtWidgets.QWidget):
                 self.group_name_plot_widget_dict[group_name] = group_plot_widget
                 self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
 
-                distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
+                distinct_colors = get_distinct_colors(len(self.group_info[group_name]['group_channel_indices']))
                 group_plot_widget.addLegend()
 
                 plot_data_items = []
                 group_channel_names = [channel_names[int(i)] for i in
-                                       self.group_info[group_name]['channel_indices']]  # channel names for this group
+                                       self.group_info[group_name]['group_channel_indices']]  # channel names for this group
                 for channel_index_in_group, (channel_index, channel_name) in enumerate(
-                        zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                    if self.group_info[group_name]['is_channels_shown'][
+                        zip(self.group_info[group_name]['group_channel_indices'], group_channel_names)):
+                    if self.group_info[group_name]['group_is_channels_shown'][
                         channel_index_in_group]:  # if this channel is not shown
                         channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(
                             color=distinct_colors[channel_index_in_group]),  # unique color for each group
@@ -392,7 +392,7 @@ class StreamWidget(QtWidgets.QWidget):
                 time_series_widgets[group_name] = group_plot_widget
                 [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
                 [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
-                if self.group_info[group_name]['selected_plot_format'] != 0:
+                if self.group_info[group_name]['group_selected_plot_format'] != 0:
                     group_plot_widget.hide()
 
             ############################### init image label ####################################################################
@@ -400,7 +400,7 @@ class StreamWidget(QtWidgets.QWidget):
             image_label.setAlignment(QtCore.Qt.AlignCenter)
             self.ImageWidgetLayout.addWidget(image_label)
             image_labels[group_name] = image_label
-            if self.group_info[group_name]['selected_plot_format'] != 1:
+            if self.group_info[group_name]['group_selected_plot_format'] != 1:
                 image_label.hide()
 
             ############################## bar plot ##############################################################################
@@ -409,7 +409,7 @@ class StreamWidget(QtWidgets.QWidget):
                 barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
                                           self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
                 # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
-                # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
+                # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['group_channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
                 label_x_axis = barchart_widget.getAxis('bottom')
                 label_dict = dict(enumerate(group_channel_names)).items()
                 label_x_axis.setTicks([label_dict])
@@ -419,7 +419,7 @@ class StreamWidget(QtWidgets.QWidget):
                 barchart_widget.addItem(bars)
                 self.BarPlotWidgetLayout.addWidget(barchart_widget)
                 barchart_widgets[group_name] = barchart_widget
-                if self.group_info[group_name]['selected_plot_format'] != 2:
+                if self.group_info[group_name]['group_selected_plot_format'] != 2:
                     barchart_widget.hide()
         plot_elements['time_series'] = time_series_widgets
         plot_elements['image'] = image_labels
@@ -537,26 +537,26 @@ class StreamWidget(QtWidgets.QWidget):
         data_to_plot = self.viz_data_buffer.buffer[0][:, -len(self.viz_time_vector):]
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
             plot_group_info = self.group_info[group_name]
-            selected_plot_format = plot_group_info['selected_plot_format']
+            group_selected_plot_format = plot_group_info['group_selected_plot_format']
 
             # get target plotting
             # plot if valid
 
             # 1. time_series
-            if plot_format_index_dict[selected_plot_format] == 'time_series':
+            if plot_format_index_dict[group_selected_plot_format] == 'time_series':
                 # plot time series
                 if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
                     if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
                         # plot if valid and display this group
-                        for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
-                            if plot_group_info['is_channels_shown'][index_in_group]:
+                        for index_in_group, channel_index in enumerate(plot_group_info['group_channel_indices']):
+                            if plot_group_info['group_is_channels_shown'][index_in_group]:
                                 # print(channel_index)
                                 self.stream_widget_visualization_component.plot_elements['time_series'][
                                     group_name].plotItem.curves[index_in_group] \
                                     .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
 
             # 2. image
-            elif plot_format_index_dict[selected_plot_format] == 'image':
+            elif plot_format_index_dict[group_selected_plot_format] == 'image':
 
                 if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid we continue
                     # reshape and attach to the label
@@ -564,7 +564,7 @@ class StreamWidget(QtWidgets.QWidget):
                         group_name)
 
                     image_plot_data = data_to_plot[
-                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
+                        plot_group_info['group_channel_indices'], -1]  # only visualize the last frame
 
                     # if we chose RGB
                     if image_format == 'RGB':
@@ -589,10 +589,10 @@ class StreamWidget(QtWidgets.QWidget):
                             image_plot_data)
 
             # 3. bar_chart
-            elif plot_format_index_dict[selected_plot_format] == 'bar_chart':
+            elif plot_format_index_dict[group_selected_plot_format] == 'bar_chart':
                 if plot_group_info["plot_format"]['bar_chart']['is_valid']:
                     bar_chart_plot_data = data_to_plot[
-                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
+                        plot_group_info['group_channel_indices'], -1]  # only visualize the last frame
                     self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name].plotItem.curves[
                         0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1,
                                    brush='r')
@@ -670,7 +670,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
     def plot_format_on_change(self, info_dict):
-        old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
+        old_format = self.group_info[info_dict['group_name']]['group_selected_plot_format']
         self.preset_on_change()
 
         self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][

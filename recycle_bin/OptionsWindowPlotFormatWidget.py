@@ -82,7 +82,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             # TODO: set size
             image_format = self.group_info['plot_format']['image']
             # if image_format['width'] * image_format['height'] * image_format['depth'] != len(
-            #         self.group_info['channel_indices']):
+            #         self.group_info['group_channel_indices']):
             #     dialog_popup(
             #         'Warning, the preset might be corrupted. The WxHxD not equal to the total number of channel')
 
@@ -118,7 +118,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     #         image_width=int(image_width)
     #         image_height=int(image_height)
     #         image_depth = image_depth_dict[self.imageFormatComboBox.currentText()]
-    #         if image_width * image_height * image_depth != len(self.group_info['channel_indices']):
+    #         if image_width * image_height * image_depth != len(self.group_info['group_channel_indices']):
     #             dialog_popup('Image WxHxD must equal to the total number of channel')
     #             # self.init_plot_format_info()
     #             return
@@ -150,7 +150,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             image = group_info['plot_format']['image']
 
             if int(image_width) * int(image_height) * image_depth_dict[self.imageFormatComboBox.currentText()] != len(
-                    self.group_info['channel_indices']):
+                    self.group_info['group_channel_indices']):
                 dialog_popup(
                     'Warning, the preset might be corrupted. The WxHxD not equal to the total number of channel')
                 self.ImageCheckBox.setCheckState(Qt.Unchecked)

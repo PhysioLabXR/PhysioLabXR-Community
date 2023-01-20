@@ -167,14 +167,14 @@ class StreamGroupView(QTreeWidget):
                                         group_name=group_name,
                                         plot_format=group_values['plot_format'])
             # self.groups_widgets.append(group)
-            if len(group_values['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+            if len(group_values['group_channel_indices']) > config.settings.value("max_timeseries_num_channels"):
                 continue  # skip adding channel items if exceeding maximum time series number of channels
-            for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
+            for channel_index_in_group, channel_index in enumerate(group_values['group_channel_indices']):
                 channel = self.add_channel_item(parent_item=group,
                                                 channel_name=
                                                 get_stream_preset_info(self.stream_name, key='ChannelNames')[
                                                     int(channel_index)],
-                                                is_shown=group_values['is_channels_shown'][channel_index_in_group],
+                                                is_shown=group_values['group_is_channels_shown'][channel_index_in_group],
                                                 lsl_index=channel_index)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)

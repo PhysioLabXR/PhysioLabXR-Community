@@ -6,7 +6,7 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
 from rena import config
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
-from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
+from rena.utils.settings_utils import collect_stream_group_info, update_group_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
 
@@ -56,7 +56,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
-        self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
+        self.plotFormatTabWidget.setCurrentIndex(group_info['group_selected_plot_format'])
         if collect_stream_group_info(stream_name, group_name)['is_image_only']:
             self.enable_only_image_tab()
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
@@ -76,8 +76,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # create value
         # update the index in display
         # get current selected
-        # update_selected_plot_format
-        update_selected_plot_format(self.stream_name, self.group_name, index)
+        # update_group_selected_plot_format
+        update_group_selected_plot_format(self.stream_name, self.group_name, index)
         # if index==2:
 
         # new format, old format
@@ -134,7 +134,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         height = group_info['plot_format']['image']['height']
         image_format = group_info['plot_format']['image']['image_format']
         channel_format = group_info['plot_format']['image']['channel_format']
-        channel_num = len(group_info['channel_indices'])
+        channel_num = len(group_info['group_channel_indices'])
         return width, height, image_format, channel_format, channel_num
 
     def image_format_valid(self):

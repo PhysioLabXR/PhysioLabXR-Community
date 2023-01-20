@@ -101,8 +101,8 @@ def collect_stream_all_groups_info(stream_name):
 
     #     config.settings.beginGroup(group_name)
     #     rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-    #     rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
-    #     rtn[group_name]['channel_indices'] = [int(i) for i in rtn[group_name]['channel_indices']]
+    #     rtn[group_name]['group_is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['group_is_channels_shown']]
+    #     rtn[group_name]['group_channel_indices'] = [int(i) for i in rtn[group_name]['group_channel_indices']]
     #
     #     plot_format = dict()
     #     #############################
@@ -132,12 +132,12 @@ def collect_stream_group_info(stream_name, group_name):
         rtn[keys] = config.settings.value(keys)
     # for value in config.settings.childGroups():
     #     rtn[value] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-    #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
+    #     rtn['group_is_channels_shown'] = [bool(int(x)) for x in rtn['group_is_channels_shown']]
     config.settings.endGroup()
     rtn['plot_format'] = collect_stream_group_plot_format(stream_name, group_name)
-    rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
-    rtn['channel_indices'] = [int(i) for i in rtn['channel_indices']]
-    rtn['is_image_only'] = len(rtn['channel_indices']) > config.settings.value("max_timeseries_num_channels")
+    rtn['group_is_channels_shown'] = [bool(int(x)) for x in rtn['group_is_channels_shown']]
+    rtn['group_channel_indices'] = [int(i) for i in rtn['group_channel_indices']]
+    rtn['is_image_only'] = len(rtn['group_channel_indices']) > config.settings.value("max_timeseries_num_channels")
 
     return rtn
 
@@ -305,8 +305,8 @@ def create_default_preset(stream_name, data_type, port, networking_interface, nu
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
-def update_selected_plot_format(stream_name, group_name, selected_format: int):
-    config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
+def update_group_selected_plot_format(stream_name, group_name, selected_format: int):
+    config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/group_selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
 
 
 # plot_format
@@ -339,18 +339,18 @@ def process_plot_group(preset_dict):
         # create groupinfo from 0 to x
         # if channel num is greater than 100, we hide the rest
         if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
-            is_channels_shown = [1 for c in range(0, channel_num)]
+            group_is_channels_shown = [1 for c in range(0, channel_num)]
         else:
-            is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
-            is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
+            group_is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
+            group_is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
 
         preset_dict['GroupInfo'] = {
             "Group1": {
                 "group_index": 1,
-                'selected_plot_format': 0,
+                'group_selected_plot_format': 0,
                 "plot_format": plot_format,
-                "channel_indices": [channel_index for channel_index in range(0, channel_num)],
-                "is_channels_shown": is_channels_shown,
+                "group_channel_indices": [channel_index for channel_index in range(0, channel_num)],
+                "group_is_channels_shown": group_is_channels_shown,
                 "group_description": ""
             }
         }
@@ -372,22 +372,22 @@ def process_plot_group(preset_dict):
         preset_dict['GroupInfo'] = dict()
         num_shown_channel = 0
         for i, group in enumerate(plot_group_slice):
-            channel_indices = list(range(*group))
+            group_channel_indices = list(range(*group))
             num_available_ch_shown = DEFAULT_CHANNEL_DISPLAY_NUM - num_shown_channel
             if num_available_ch_shown <= 0:
-                is_channels_shown = [0 for c in range(len(channel_indices))]
+                group_is_channels_shown = [0 for c in range(len(group_channel_indices))]
             else:
-                is_channels_shown = [1 for c in range(min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
-                is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
-                num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
+                group_is_channels_shown = [1 for c in range(min(len(group_channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
+                group_is_channels_shown += [0] * (len(group_channel_indices) - len(group_is_channels_shown))  # won't pad if len(group_hannel_indices) - len(group_is_channels_shown) is negative
+                num_shown_channel += min(len(group_channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
 
             preset_dict['GroupInfo']["Group{0}".format(i)] = \
                 {
                     "group_index": i,
-                    'selected_plot_format': 0,
+                    'group_selected_plot_format': 0,
                     "plot_format": plot_format,
-                    "channel_indices": channel_indices,
-                    "is_channels_shown": is_channels_shown,
+                    "group_channel_indices": group_channel_indices,
+                    "group_is_channels_shown": group_is_channels_shown,
                     "group_description": ""
                 }
 
@@ -399,7 +399,7 @@ def get_channel_info(stream_name):
     for group_name in config.settings.childGroups():
         config.settings.beginGroup(group_name)
         rtn[group_name] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
-        rtn[group_name]['is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['is_channels_shown']]
+        rtn[group_name]['group_is_channels_shown'] = [bool(int(x)) for x in rtn[group_name]['group_is_channels_shown']]
         config.settings.endGroup()
     config.settings.endGroup()
     return rtn
@@ -429,32 +429,32 @@ def is_channel_in_group(channel_index, group_name, stream_name):
     group name
     """
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_indices = config.settings.value('channel_indices')
+    group_channel_indices = config.settings.value('group_channel_indices')
     config.settings.endGroup()
-    return channel_index in channel_indices
+    return channel_index in group_channel_indices
 
 def is_channel_displayed(channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
-    is_channel_shown = config.settings.value('is_channels_shown')[channel_index_in_settings]
+    channel_index_in_settings = [int(x) for x in config.settings.value('group_channel_indices')].index(channel_index)
+    is_channel_shown = config.settings.value('group_is_channels_shown')[channel_index_in_settings]
     config.settings.endGroup()
     return is_channel_shown == '1'
 
 def set_channel_displayed(is_display, channel_index, group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    channel_index_in_settings = [int(x) for x in config.settings.value('channel_indices')].index(channel_index)
+    channel_index_in_settings = [int(x) for x in config.settings.value('group_channel_indices')].index(channel_index)
 
-    new_is_channels_shown = config.settings.value('is_channels_shown')
-    new_is_channels_shown[channel_index_in_settings] = '1' if is_display else '0'
+    new_group_is_channels_shown = config.settings.value('group_is_channels_shown')
+    new_group_is_channels_shown[channel_index_in_settings] = '1' if is_display else '0'
 
-    config.settings.setValue('is_channels_shown', new_is_channels_shown)
+    config.settings.setValue('group_is_channels_shown', new_group_is_channels_shown)
     config.settings.endGroup()
 
 def is_group_shown(group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    is_channels_shown = [int(x) for x in config.settings.value('is_channels_shown')]
+    group_is_channels_shown = [int(x) for x in config.settings.value('group_is_channels_shown')]
     config.settings.endGroup()
-    return np.any(is_channels_shown)
+    return np.any(group_is_channels_shown)
 
 def get_channel_num(stream_name):
     channel_num = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, 'NumChannels'))
