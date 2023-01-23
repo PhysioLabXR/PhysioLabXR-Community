@@ -6,7 +6,6 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
-import pandas as pd
 
 from exceptions.exceptions import BadOutputError
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
@@ -700,10 +699,10 @@ def replace_special(target_str: str, replacement_dict):
         target_str = target_str.replace(special, replacement)
     return target_str
 
-def dats_to_csv(buffer):
-    df = pd.DataFrame()
-    for stream_name, (data, timestamps) in buffer.items():
-        pass
+# def dats_to_csv(buffer):
+#     df = pd.DataFrame()
+#     for stream_name, (data, timestamps) in buffer.items():
+#         pass
 
 def validate_output(data, expected_size):
     if type(data) == np.ndarray:
