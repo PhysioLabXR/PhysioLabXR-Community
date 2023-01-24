@@ -31,11 +31,13 @@ class StreamOptionsWindow(QDialog):
         self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
         self.parent = parent
         # add supported filter list
-        self.resize(1000, 1000)
+        # self.resize(1000, 1000)
 
         # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
         self.stream_name = stream_name
+        self.setWindowTitle('Options for {}'.format(self.stream_name))
+
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
 
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
