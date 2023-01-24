@@ -61,12 +61,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
-        self.set_button_icons()
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
+        self.is_popped = False
 
         # visualization data buffer
         self.current_timestamp = 0
@@ -144,6 +144,7 @@ class StreamWidget(QtWidgets.QWidget):
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()
 
+        self.set_button_icons()
         # start the timers
         self.timer.start()
         self.v_timer.start()
@@ -182,12 +183,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
     def set_button_icons(self):
-        if 'Start' in self.StartStopStreamBtn.text():
+        if not self.is_streaming():
             self.StartStopStreamBtn.setIcon(start_stream_icon)
         else:
             self.StartStopStreamBtn.setIcon(stop_stream_icon)
 
-        if 'Pop' in self.PopWindowBtn.text():
+        if not self.is_popped:
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
@@ -265,8 +266,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.PopWindowBtn.setText('Pop Window')
         self.main_parent.pop_windows[self.stream_name].hide()  # tetentive measures
         self.main_parent.pop_windows.pop(self.stream_name)
-        self.set_button_icons()
         self.main_parent.activateWindow()
+        self.is_popped = False
+        self.set_button_icons()
+
 
     def pop_window(self):
         w = AnotherWindow(self, self.remove_stream)
@@ -276,6 +279,7 @@ class StreamWidget(QtWidgets.QWidget):
         w.show()
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.dock_window)
+        self.is_popped = True
         self.set_button_icons()
 
     def remove_stream(self):

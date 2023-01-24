@@ -165,7 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
             selected_type = self.addStreamWidget.get_current_selected_type()
             if selected_type == 'video':  # add video device
                 self.init_video_device(selected_text)
-            if selected_type == 'Device':  # if this is a device preset
+            elif selected_type == 'Device':  # if this is a device preset
                 self.init_device(selected_text)  # add device stream
             elif selected_type == 'LSL' or selected_type == 'ZMQ':
                 self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
@@ -176,7 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
-            else: raise Exception("Unknow preset type {}".format(selected_type))
+            else:
+                raise Exception("Unknow preset type {}".format(selected_type))
             self.update_num_active_stream_label()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')

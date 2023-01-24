@@ -60,20 +60,20 @@
          <item>
           <widget class="QPushButton" name="OptionsBtn">
            <property name="text">
-            <string>Options</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="PopWindowBtn">
            <property name="toolTip">
-            <string>Pop as a separate windowq</string>
+            <string>Pop as a separate window</string>
            </property>
            <property name="accessibleName">
             <string>PopWindowBtn</string>
            </property>
            <property name="text">
-            <string>Pop Window</string>
+            <string/>
            </property>
            <property name="Pop Window" stdset="0">
             <string>Remove Stream</string>
@@ -86,7 +86,7 @@
             <string>Remove this stream</string>
            </property>
            <property name="text">
-            <string>Remove Video</string>
+            <string/>
            </property>
            <property name="Stop Stream" stdset="0">
             <string>Remove Stream</string>

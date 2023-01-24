@@ -35,6 +35,8 @@ class AddStreamWidget(QtWidgets.QWidget):
 
         self.current_selected_type = None
 
+        self.check_can_add_input()
+
     def select_by_stream_name(self, stream_name):
         index = self.stream_name_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
         self.stream_name_combo_box.setCurrentIndex(index)
@@ -60,6 +62,10 @@ class AddStreamWidget(QtWidgets.QWidget):
         will disable the add button if duplicate input exists
         """
         stream_name = self.stream_name_combo_box.currentText()
+        if stream_name == '':
+            self.add_btn.setEnabled(False)
+            return
+        # check for duplicate inputs
         if stream_name in self.parent.get_added_stream_names():
             self.add_btn.setEnabled(False)
         else:
