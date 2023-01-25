@@ -108,13 +108,13 @@ class InferenceTab(QtWidgets.QWidget):
         # Buffer processing
 
     def update_buffers(self, data_dict: dict):
-        lsl_data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+        lsl_data_type = data_dict['stream_name']  # get the type of the newly-come data
         if lsl_data_type not in self.inference_buffer.keys():
             self.inference_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
                                                     np.empty(shape=(0,))]  # data first, timestamps second
 
-        buffered_data = self.inference_buffer[data_dict['lsl_data_type']][0]
-        buffered_timestamps = self.inference_buffer[data_dict['lsl_data_type']][1]
+        buffered_data = self.inference_buffer[data_dict['stream_name']][0]
+        buffered_timestamps = self.inference_buffer[data_dict['stream_name']][1]
 
         # TODO: ring buffer implementation
         temp_data = np.concatenate([buffered_data, data_dict['frames']], axis=-1)

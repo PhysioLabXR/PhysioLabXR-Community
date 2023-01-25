@@ -57,6 +57,7 @@
         </property>
         <property name="font">
          <font>
+          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -70,7 +71,7 @@
         <property name="editable">
          <bool>true</bool>
         </property>
-        <property name="placeholderText">
+        <property name="placeholderText" stdset="0">
          <string>Stream Name</string>
         </property>
        </widget>
@@ -79,7 +80,7 @@
        <widget class="QLineEdit" name="PortLineEdit">
         <property name="maximumSize">
          <size>
-          <width>200</width>
+          <width>100</width>
           <height>16777215</height>
          </size>
         </property>
@@ -98,7 +99,7 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>120</width>
+          <width>60</width>
           <height>16777215</height>
          </size>
         </property>
@@ -163,7 +164,7 @@
        <widget class="QComboBox" name="NetworkingInterfaceComboBox">
         <property name="maximumSize">
          <size>
-          <width>120</width>
+          <width>60</width>
           <height>16777215</height>
          </size>
         </property>

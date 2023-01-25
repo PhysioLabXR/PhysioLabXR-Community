@@ -1,0 +1,3 @@
+There are three types of stream presets: LSL, ZMQ and Device
+
+For the custom properties in device presets, GUI only support editing the string and int fields

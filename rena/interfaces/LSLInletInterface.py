@@ -3,7 +3,7 @@ import numpy as np
 
 from pylsl import StreamInlet, LostError, resolve_byprop
 
-from exceptions.exceptions import LSLStreamNotFoundError, LSLChannelMismatchError
+from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
 from stream_shared import lsl_continuous_resolver
 
@@ -36,8 +36,8 @@ class LSLInletInterface:
     def start_sensor(self):
         # connect to the sensor
         self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=0.1)
-        if len(self.streams) < 1:
-            raise LSLStreamNotFoundError('Unable to find LSL Stream with given name {0}'.format(self.lsl_stream_name))
+        if len(self.streams) < 1: self.streams = resolve_byprop('type', self.lsl_stream_name, timeout=0.1)
+        if len(self.streams) < 1: raise LSLStreamNotFoundError('Unable to find LSL Stream with given name or type: {0}'.format(self.lsl_stream_name))
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         actual_num_channels = self.inlet.channel_count
@@ -48,14 +48,14 @@ class LSLInletInterface:
             self.inlet.close_stream()
             # raise LSLChannelMismatchError(
             #     'The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(self.lsl_num_chan, actual_num_channels))
-            raise LSLChannelMismatchError(actual_num_channels)
+            raise ChannelMismatchError(actual_num_channels)
 
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
         # read the channel names is there's any
         # tell the sensor to start sending frames
     def is_stream_available(self):
-        available_streams = [x.name() for x in lsl_continuous_resolver.results()]
+        available_streams = [x.name() for x in lsl_continuous_resolver.results()] + [x.type() for x in lsl_continuous_resolver.results()]
         return self.lsl_stream_name in available_streams
 
     def process_frames(self):

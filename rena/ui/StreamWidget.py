@@ -10,7 +10,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
 
-from exceptions.exceptions import RenaError, LSLChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from exceptions.exceptions import RenaError, ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
 from rena.config_ui import image_depth_dict, plot_format_index_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
@@ -31,12 +31,13 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent, stream_name, data_type, networking_interface='LSL', port_number=None,
+    def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None):
         """
         LSL interface is created in StreamWidget
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
+        :worker usually None, networking_interface unless is device
         """
 
         # GUI elements
@@ -65,6 +66,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
         self.is_stream_available = False         # it will automatically detect if the stream is available
+        self.in_error_state = False  # an error state to prevent ticking when is set to true
 
         # visualization data buffer
         self.current_timestamp = 0
@@ -98,8 +100,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.group_info = collect_stream_all_groups_info(self.stream_name)
 
         # data elements
-        self.interface, self.viz_data_buffer = None, None
-        self.create_interface_and_buffer()
+        self.viz_data_buffer = None
+        self.create_buffer()
 
         # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
         #     print('The stream {0} found in LAN has sampling rate of {1}, '
@@ -110,9 +112,13 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
-            self.worker = workers.LSLInletWorker(LSLInlet_interface=self.interface, data_type=data_type, RenaTCPInterface=None)
-        else:
+            channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
+        elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
+        elif self.networking_interface == 'Device':
+            assert worker
+            self.worker = worker
         self.worker.signal_data.connect(self.process_stream_data)
         self.worker.signal_stream_availability.connect(self.update_stream_availability)
         self.worker.moveToThread(self.worker_thread)
@@ -121,7 +127,6 @@ class StreamWidget(QtWidgets.QWidget):
         # create visualization component:
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        self.group_info = collect_stream_all_groups_info(self.stream_name) # TODO: self.group_info
         self.viz_time_vector = None
         # self.create_visualization_component()
 
@@ -216,9 +221,9 @@ class StreamWidget(QtWidgets.QWidget):
             except LSLStreamNotFoundError as e:
                 dialog_popup(msg=str(e), title='ERROR')
                 return
-            except LSLChannelMismatchError as e:
+            except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
                 reply = QMessageBox.question(self, 'Channel Mismatch',
-                                             'The LSL stream with name {0} found on the network has {1}.\n'
+                                             'The stream with name {0} found on the network has {1}.\n'
                                              'The preset has {2} channels. \n '
                                              'Do you want to reset your preset to a default and start stream.\n'
                                              'You can edit your stream channels in Options if you choose No'.format(
@@ -246,18 +251,15 @@ class StreamWidget(QtWidgets.QWidget):
 
     def reset_preset_by_num_channels(self, num_channels):
         remove_stream_preset_from_settings(self.stream_name)
-        create_default_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface,
-                              num_channels=num_channels)  # update preset in settings
-        self.create_interface_and_buffer()  # recreate the interface and buffer, using the new preset
-        self.worker.set_interface(self.interface)
+        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
+        self.create_buffer()  # recreate the interface and buffer, using the new preset
+        self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
         self.stream_options_window.reload_preset_to_UI()
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
-    def create_interface_and_buffer(self):
+    def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
-        self.interface = create_lsl_interface(self.stream_name,
-                                              channel_names)  # maybe want to discard and close the old interface
         buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
                                                       buffer_sizes=buffer_size, append_zeros=True)
@@ -447,13 +449,33 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         update the visualization buffer, recording buffer, and scripting buffer
         '''
-        if data_dict['frames'].shape[-1] > 0:  # if there are data in the emited data dict
-            self.viz_data_buffer.update_buffer(data_dict)
+        if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
+            try:
+                self.viz_data_buffer.update_buffer(data_dict)
+            except ChannelMismatchError as e:
+                self.in_error_state = True
+                reply = QMessageBox.question(self, 'Channel Mismatch',
+                                             'The stream with name {0} found on the network has {1}.\n'
+                                             'The preset has {2} channels. \n '
+                                             'Do you want to reset your preset to a default and start stream.\n'
+                                             'If you choose No, streaming will stop. You can edit your stream channels in Options'.format(
+                                                 self.stream_name, e.message,
+                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.reset_preset_by_num_channels(e.message)
+                    self.in_error_state = False
+                    return
+                else:
+                    self.start_stop_stream_btn_clicked()  # stop the stream
+                    self.in_error_state = False
+                    return
             self.actualSamplingRate = data_dict['sampling_rate']
+            self.current_timestamp = data_dict['timestamps'][-1]
             # notify the internal buffer in recordings tab
 
             # reshape data_dict based on sensor interface
-            self.main_parent.recording_tab.update_buffers(data_dict)
+            self.main_parent.recording_tab.update_recording_buffer(data_dict)
             self.main_parent.scripting_tab.forward_data(data_dict)
             # scripting tab
             # self.main_parent.inference_tab.update_buffers(data_dict)

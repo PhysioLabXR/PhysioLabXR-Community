@@ -4,6 +4,7 @@ import sys
 
 import numpy as np
 
+from exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -36,7 +37,6 @@ def process_preset_create_openBCI_interface_startsensor(device_name, serial_port
                                         serial_port=serial_port,
                                         board_id=board_id,
                                         log='store_false', )
-        interface.start_sensor()
     except AssertionError as e:
         raise AssertionError(e)
 
@@ -85,30 +85,70 @@ def resource_path(relative_path):
 
 
 class DataBuffer():
-    def __init__(self, data_type_buffer_sizes: dict = None):
+    def __init__(self, stream_buffer_sizes: dict = None):
         self.buffer = dict()
-        self.data_type_buffer_sizes = data_type_buffer_sizes if data_type_buffer_sizes else dict()
+        self.data_type_buffer_sizes = stream_buffer_sizes if stream_buffer_sizes else dict()
 
-    def update_buffers(self, data_dict: dict):
-        data_type = data_dict['lsl_data_type']  # get the type of the newly-come data
+    def update_buffer(self, data_dict: dict):
+        if len(data_dict) > 0:
+            self._update_buffer(data_dict['stream_name'], data_dict['frames'], data_dict['timestamps'])
+            # data_type = data_dict['stream_name']  # get the name of the newly-come data
+            #
+            # if data_type not in self.buffer.keys():
+            #     self.buffer[data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
+            #                               np.empty(shape=(0,))]  # data first, timestamps second
+            # buffered_data = self.buffer[data_dict['stream_name']][0]
+            # buffered_timestamps = self.buffer[data_dict['stream_name']][1]
+            #
+            # self.buffer[data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
+            # self.buffer[data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
+            #
+            # if data_type in self.data_type_buffer_sizes.keys():  # keep only the latest data according to the buffer size
+            #     buffer_time_points = self.buffer[data_type][0].shape[-1]
+            #     cut_to = -np.min([buffer_time_points, self.data_type_buffer_sizes[data_type]])
+            #     self.buffer[data_type][0] = self.buffer[data_type][0][:, cut_to:]
+            #     self.buffer[data_type][1] = self.buffer[data_type][1][cut_to:]
 
-        if data_type not in self.buffer.keys():
-            self.buffer[data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
+    def update_buffers(self, data_buffer):
+        for stream_name, (frames, timestamps) in data_buffer.items():
+            self._update_buffer(stream_name, frames, timestamps)
+
+    def _update_buffer(self, stream_name, frames, timestamps):
+
+        if stream_name not in self.buffer.keys():
+            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0)),
                                       np.empty(shape=(0,))]  # data first, timestamps second
-        buffered_data = self.buffer[data_dict['lsl_data_type']][0]
-        buffered_timestamps = self.buffer[data_dict['lsl_data_type']][1]
+        buffered_data = self.buffer[stream_name][0]
+        buffered_timestamps = self.buffer[stream_name][1]
 
-        self.buffer[data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
-        self.buffer[data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
+        self.buffer[stream_name][0] = np.concatenate([buffered_data, frames], axis=-1)
+        self.buffer[stream_name][1] = np.concatenate([buffered_timestamps, timestamps])
 
-        if data_type in self.data_type_buffer_sizes.keys():  # keep only the latest data according to the buffer size
-            buffer_time_points = self.buffer[data_type][0].shape[-1]
-            cut_to = -np.min([buffer_time_points, self.data_type_buffer_sizes[data_type]])
-            self.buffer[data_type][0] = self.buffer[data_type][0][:, cut_to:]
-            self.buffer[data_type][1] = self.buffer[data_type][1][cut_to:]
+        if stream_name in self.data_type_buffer_sizes.keys():  # keep only the latest data according to the buffer size
+            buffer_time_points = self.buffer[stream_name][0].shape[-1]
+            cut_to = -np.min([buffer_time_points, self.data_type_buffer_sizes[stream_name]])
+            self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to:]
+            self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to:]
 
     def clear_buffer(self):
         self.buffer = dict()
+
+    def clear_stream_buffer(self, stream_name):
+        self.buffer.pop(stream_name)
+
+    def __getitem__(self, key):
+        return self.buffer[key]  # TODO does this work?
+
+    def get_data(self, stream_name):
+        return self.buffer[stream_name][0]
+
+    def get_timestamps(self, stream_name):
+        return self.buffer[stream_name][1]
+
+    def keys(self):
+        return self.buffer.keys()
+
+
 
 
 class DataBufferSingleStream():
@@ -128,7 +168,10 @@ class DataBufferSingleStream():
         '''
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(data_dict['frames'].shape[0])
-        self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        try:
+            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        except ValueError:
+            raise ChannelMismatchError(data_dict['frames'].shape[0])
         self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]
@@ -158,3 +201,9 @@ def click_on_file(filename):
         os.startfile(filename)
     except AttributeError:
         subprocess.call(['open', filename])
+
+
+def check_buffer_timestamps_monotonic(data_buffer: DataBuffer):
+    for stream_name, (_, timestamps) in data_buffer.buffer.items():
+        if not np.all(np.diff(timestamps) >= 0):
+            raise Exception("timestamps for stream {0} is not monotonic.".format(stream_name))

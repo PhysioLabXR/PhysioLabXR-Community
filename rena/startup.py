@@ -7,7 +7,7 @@ from rena.utils.video_capture_utils import get_working_camera_ports
 from rena.ui_shared import *
 from rena import config, config_ui
 from rena.utils.general import *
-from rena.utils.settings_utils import export_preset_to_settings, load_all_lslStream_presets, load_all_Device_presets, \
+from rena.utils.settings_utils import export_preset_to_settings, load_all_presets, \
     load_all_experiment_presets, process_plot_group
 from rena.utils.ui_utils import dialog_popup
 
@@ -39,11 +39,19 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
     if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
-    LSLStream_presets_dict = load_all_lslStream_presets()
-    device_presets_dict = load_all_Device_presets()
+    LSL_presets_dict = load_all_presets('../Presets/LSLPresets')
+    ZMQ_presets_dict = load_all_presets('../Presets/ZMQPresets')
+    device_presets_dict = load_all_presets('../Presets/DevicePresets')
     experiment_presets_dict = load_all_experiment_presets()
 
-    stream_presets_dict = {**LSLStream_presets_dict, **device_presets_dict}  # merge the lsl and device presets
+    for _, preset in LSL_presets_dict.items():
+        preset["NetworkingInterface"] = "LSL"
+    for _, preset in ZMQ_presets_dict.items():
+        preset["NetworkingInterface"] = "ZMQ"
+    for _, preset in device_presets_dict.items():
+        preset["NetworkingInterface"] = "Device"
+
+    stream_presets_dict = {**LSL_presets_dict, **ZMQ_presets_dict, **device_presets_dict}  # merge the lsl and device presets
     # add plot groups
     stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])
 
