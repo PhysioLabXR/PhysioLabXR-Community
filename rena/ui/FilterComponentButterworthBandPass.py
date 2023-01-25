@@ -12,6 +12,7 @@ from rena.utils.rena_dsp_utils import RealtimeButterBandpass, RenaFilter
 
 # This Python file uses the following encoding: utf-8
 
+# cannot remove group if there is active filters
 
 class FilterComponentButterworthBandPass(QtWidgets.QWidget):
     filter_on_change_signal = QtCore.pyqtSignal(RenaFilter)
@@ -20,15 +21,13 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/FilterComponentButterworthBandPass.ui", self)
         self.rena_filter = RealtimeButterBandpass()
-        self.filter_activated = False
-        self.filter_valid = False
 
         # low cut
         if args!=None:
             self.id = args['id']
         else:
             self.id = uuid.uuid4()
-            self.export_butter_worth_band_pass_filter_args_to_settings()
+            self.export_filter_args_to_settings()
 
 
         self.lowCutFrequencyLineEdit.setValidator(QDoubleValidator())
@@ -41,7 +40,10 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
 
         self.removeFilterBtn.clicked.connect(self.remove_filter_button)
 
-    def export_butter_worth_band_pass_filter_args_to_settings(self):
+    def import_filter_args(self, args):
+        pass
+
+    def export_filter_args_to_settings(self):
         pass
 
     def get_args(self):
@@ -70,7 +72,7 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
 
         self.filter_config_valid()
         # if filter valid, send to the worker
-        if self.filter_valid:
+        if self.args['filter_valid']:
             self.filter_on_change_signal.emit(self.rena_filter)
 
 
@@ -98,20 +100,20 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
     def filter_config_valid(self):
         if self.low_cut_frequency > self.high_cut_frequency:
             self.filterInfoLabel.setText("low cut frequency > high cut frequency")
-            self.filter_valid = False
+            self.args['filter_valid'] = False
         else:
             try:
                 self.rena_filter = \
                     RealtimeButterBandpass(highcut=self.args['high_cut_frequency'],
                                            lowcut=self.args['low_cut_frequency'], order=self.args['order'], channel_num=self.args['channel_num'])
                 self.filterInfoLabel.setText("filter valid")
-                self.filter_valid = True
+                self.args['filter_valid'] = True
             except:
-                self.filter_valid = False
+                self.args['filter_valid'] = False
                 self.filterInfoLabel.setText("Invalid filter design")
                 print("invalid filter design")
 
-        if self.filter_valid:
+        if self.args['filter_valid']:
             self.filterInfoLabel.setStyleSheet('color: green')
         else:
             self.filterInfoLabel.setStyleSheet('color: red')
