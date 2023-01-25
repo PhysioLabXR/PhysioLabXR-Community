@@ -406,7 +406,7 @@ class OpenBCIDeviceWorker(QObject):
             timestamps = data[-2,:] - to_local_lock
 
             sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
-            data_dict = {'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
