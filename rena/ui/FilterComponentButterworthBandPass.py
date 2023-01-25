@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 
 # This Python file uses the following encoding: utf-8
+import uuid
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
@@ -15,31 +16,36 @@ from rena.utils.rena_dsp_utils import RealtimeButterBandpass, RenaFilter
 class FilterComponentButterworthBandPass(QtWidgets.QWidget):
     filter_on_change_signal = QtCore.pyqtSignal(RenaFilter)
 
-    def __init__(self):
+    def __init__(self, stream_preset, args=None):
         super().__init__()
         self.ui = uic.loadUi("ui/FilterComponentButterworthBandPass.ui", self)
         self.rena_filter = RealtimeButterBandpass()
         self.filter_activated = False
         self.filter_valid = False
-        # low cut
 
-        self.high_cut_frequency = 0
-        self.low_cut_frequency = 0
-        self.order = 0
+        # low cut
+        if args!=None:
+            self.id = args['id']
+        else:
+            self.id = uuid.uuid4()
+            self.export_butter_worth_band_pass_filter_args_to_settings()
+
 
         self.lowCutFrequencyLineEdit.setValidator(QDoubleValidator())
-        # high cut
         self.highCutFrequencyLineEdit.setValidator(QDoubleValidator())
-        #
         self.filterOrderLineEdit.setValidator(QIntValidator())
-        # self.high_cut_frequency = 0
-        # self.low_cut_frequency = 0
-        # self.order = 0
-        self.lowCutFrequencyLineEdit.textChanged.connect(self.filter_config_on_change)
-        self.highCutFrequencyLineEdit.textChanged.connect(self.filter_config_on_change)
-        self.filterOrderLineEdit.textChanged.connect(self.filter_config_on_change)
+
+        self.lowCutFrequencyLineEdit.textChanged.connect(self.filter_args_on_change)
+        self.highCutFrequencyLineEdit.textChanged.connect(self.filter_args_on_change)
+        self.filterOrderLineEdit.textChanged.connect(self.filter_args_on_change)
 
         self.removeFilterBtn.clicked.connect(self.remove_filter_button)
+
+    def export_butter_worth_band_pass_filter_args_to_settings(self):
+        pass
+
+    def get_args(self):
+        pass
 
     def get_group_info(self):
         pass
@@ -53,10 +59,14 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
 
         self.deleteLater()
 
-    def filter_config_on_change(self):
-        self.high_cut_frequency = self.get_filter_high_cut_frequency()
-        self.low_cut_frequency = self.get_filter_low_cut_frequency()
-        self.order = self.get_filter_order()
+    def init_filter(self, lowcut, highcut, fs, order, channel_num):
+        self.rena_filter.__init__(lowcut=lowcut, highcut=highcut, fs=fs, order=order, channel_num=channel_num)
+
+
+    def filter_args_on_change(self):
+        self.args['high_cut_frequency'] = self.get_filter_high_cut_frequency()
+        self.args['low_cut_frequency'] = self.get_filter_low_cut_frequency()
+        self.args['order'] = self.get_filter_order()
 
         self.filter_config_valid()
         # if filter valid, send to the worker
@@ -92,8 +102,8 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
         else:
             try:
                 self.rena_filter = \
-                    RealtimeButterBandpass(highcut=self.high_cut_frequency,
-                                           lowcut=self.low_cut_frequency, order=self.order)
+                    RealtimeButterBandpass(highcut=self.args['high_cut_frequency'],
+                                           lowcut=self.args['low_cut_frequency'], order=self.args['order'], channel_num=self.args['channel_num'])
                 self.filterInfoLabel.setText("filter valid")
                 self.filter_valid = True
             except:
