@@ -24,7 +24,7 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format, \
-    update_selected_plot_format
+    update_selected_plot_format, is_channel_in_group, export_group_info_to_settings
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
     convert_array_to_qt_heatmap, \
     convert_rgb_to_qt_image, convert_numpy_to_uint8
@@ -61,12 +61,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
-        self.set_button_icons()
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
         self.is_stream_available = False         # it will automatically detect if the stream is available
         self.in_error_state = False  # an error state to prevent ticking when is set to true
+        self.is_popped = False
 
         # visualization data buffer
         self.current_timestamp = 0
@@ -150,6 +150,7 @@ class StreamWidget(QtWidgets.QWidget):
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()
 
+        self.set_button_icons()
         # start the timers
         self.timer.start()
         self.v_timer.start()
@@ -188,12 +189,12 @@ class StreamWidget(QtWidgets.QWidget):
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
     def set_button_icons(self):
-        if 'Start' in self.StartStopStreamBtn.text():
+        if not self.is_streaming():
             self.StartStopStreamBtn.setIcon(start_stream_icon)
         else:
             self.StartStopStreamBtn.setIcon(stop_stream_icon)
 
-        if 'Pop' in self.PopWindowBtn.text():
+        if not self.is_popped:
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
@@ -255,6 +256,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
         self.stream_options_window.reload_preset_to_UI()
+        self.reset_viz()
+
+    def reset_viz(self):
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
@@ -271,8 +275,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.PopWindowBtn.setText('Pop Window')
         self.main_parent.pop_windows[self.stream_name].hide()  # tetentive measures
         self.main_parent.pop_windows.pop(self.stream_name)
-        self.set_button_icons()
         self.main_parent.activateWindow()
+        self.is_popped = False
+        self.set_button_icons()
+
 
     def pop_window(self):
         w = AnotherWindow(self, self.remove_stream)
@@ -282,6 +288,7 @@ class StreamWidget(QtWidgets.QWidget):
         w.show()
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.dock_window)
+        self.is_popped = True
         self.set_button_icons()
 
     def remove_stream(self):
@@ -712,4 +719,25 @@ class StreamWidget(QtWidgets.QWidget):
 
         return
 
-#############################################
+    #############################################
+
+    def channel_group_changed(self, change_dict):
+        """
+        Called when one or more channel's parent group is changed
+        @param change_dict:
+        """
+        # update the group info
+        for group_name, child_channels in change_dict.items():
+            if len(child_channels) == 0:
+                self.group_info.pop(group_name)
+            else:
+                self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
+                self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
+        export_group_info_to_settings(self.group_info, self.stream_name)
+        self.reset_viz()
+
+    def get_next_available_groupname(self):
+        i = 0
+        while (rtn := 'GroupName{}'.format(i)) in self.group_info.keys():
+            i += 1
+        return rtn

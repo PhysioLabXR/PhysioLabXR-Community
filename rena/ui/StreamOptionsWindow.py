@@ -3,7 +3,7 @@ import numpy as np
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QIntValidator
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
+from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem, QPushButton
 
 from rena import config_signal, config
 from rena.config_ui import *
@@ -31,11 +31,13 @@ class StreamOptionsWindow(QDialog):
         self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
         self.parent = parent
         # add supported filter list
-        self.resize(1000, 1000)
+        # self.resize(1000, 1000)
 
         # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
         self.stream_name = stream_name
+        self.setWindowTitle('Options for {}'.format(self.stream_name))
+
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
 
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
@@ -46,10 +48,10 @@ class StreamOptionsWindow(QDialog):
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
 
         # signals for processing changes in the tree view
-        self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
+        # self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
 
-        # nomiaml sampling rate UI elements
+        # nominal sampling rate UI elements
         self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
         self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
         self.load_sr_and_display_duration_from_settings_to_ui()
@@ -57,11 +59,25 @@ class StreamOptionsWindow(QDialog):
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
         self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
         self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+
+        self.add_group_btn = QPushButton()
+        self.add_group_btn.setText('Create New Group')
+        self.add_group_btn.hide()
+        self.add_group_btn.clicked.connect(self.add_group_clicked)
+        self.actionsWidgetLayout.addWidget(self.add_group_btn)
+
+        self.update_num_points_to_display()
+
+    def add_group_clicked(self):
+        affected_groups = self.stream_group_view.get_selected_channel_groups()  # get affected groups
+        new_group_name = self.parent.get_next_available_groupname()
+        print("creating new group {}".format(new_group_name))
+        # create a new group
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -111,6 +127,12 @@ class StreamOptionsWindow(QDialog):
                 (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
             # TODO： show the current group information action widget
 
+        if selection_state == channels_selected or selection_state == channel_selected:
+            self.add_group_btn.show()
+        else:
+            self.add_group_btn.hide()
+
+
         ################################################################################
         if selection_state == nothing_selected:  # nothing selected
             pass
@@ -118,7 +140,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channel_selected:  # only one channel selected
-            pass
+            print('A channel are selected')
 
 
         ################################################################################
@@ -128,7 +150,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channels_selected:  # channels selected
-            pass
+            print('Channels are selected')
 
         ################################################################################
         elif selection_state == group_selected:  # one group selected
@@ -224,14 +246,8 @@ class StreamOptionsWindow(QDialog):
         #     set_channel_displayed(checked, channel_index, parent_group, self.stream_name)
         #     self.parent.update_channel_shown(channel_index, checked, parent_group)
 
-    @QtCore.pyqtSlot(tuple)
-    def channel_parent_group_changed(self, change: tuple):
-        channel_index, target_parent_group = change
-        if not is_channel_in_group(channel_index, target_parent_group,
-                                   self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
-            # the target parent group is different from the channel's original group
-            # TODO
-            pass
+    def channel_parent_group_changed(self, change_dict: dict):
+        self.parent.channel_group_changed(change_dict)
 
     def plot_format_on_change(self, info_dict):
         # get current selected:

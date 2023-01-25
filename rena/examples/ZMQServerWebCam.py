@@ -5,7 +5,7 @@ import zmq
 
 context = zmq.Context()
 socket = context.socket(zmq.PUSH)
-socket.bind('tcp://*:5555')
+socket.bind('tcp://*:5556')
 
 capture = cv2.VideoCapture(0)
 print('Video device connected, entering image loop')

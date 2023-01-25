@@ -90,11 +90,29 @@
          </item>
          <item>
           <widget class="QPushButton" name="StartStopStreamBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>Start plotting this stream</string>
            </property>
            <property name="text">
-            <string>Start Stream</string>
+            <string/>
            </property>
            <property name="Start Stream" stdset="0">
             <string>Start Stream</string>
@@ -103,13 +121,49 @@
          </item>
          <item>
           <widget class="QPushButton" name="OptionsBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Options</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="PopWindowBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>Pop as a separate windowq</string>
            </property>
@@ -117,7 +171,7 @@
             <string>PopWindowBtn</string>
            </property>
            <property name="text">
-            <string>Pop Window</string>
+            <string/>
            </property>
            <property name="Pop Window" stdset="0">
             <string>Remove Stream</string>
@@ -126,11 +180,23 @@
          </item>
          <item>
           <widget class="QPushButton" name="RemoveStreamBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>Remove this stream</string>
            </property>
            <property name="text">
-            <string>Remove Stream</string>
+            <string/>
            </property>
            <property name="Stop Stream" stdset="0">
             <string>Remove Stream</string>

@@ -32,7 +32,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         # check if the video device is a camera or screen capture ####################################
         self.is_webcam = video_device_name.isnumeric()
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
-
+        self.is_popped = False
         # Connect UIs ##########################################
         self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
         self.PopWindowBtn.clicked.connect(self.pop_window)
@@ -51,6 +51,8 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.timer = QTimer()
         self.timer.setInterval(settings.value('video_device_refresh_interval'))
         self.timer.timeout.connect(self.ticks)
+
+        self.set_button_icons()
 
         self.worker_thread.start()
         self.timer.start()
@@ -92,6 +94,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         w.show()
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.dock_window)
+        self.is_popped = True
         self.set_button_icons()
 
     def dock_window(self):
@@ -101,14 +104,15 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.PopWindowBtn.setText('Pop Window')
         self.main_parent.pop_windows[self.video_device_name].hide()
         self.main_parent.pop_windows.pop(self.video_device_name)
-        self.set_button_icons()
         self.main_parent.activateWindow()
+        self.is_popped = False
+        self.set_button_icons()
 
     def ticks(self):
         self.worker.tick_signal.emit()
 
     def set_button_icons(self):
-        if 'Pop' in self.PopWindowBtn.text():
+        if not self.is_popped:
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
