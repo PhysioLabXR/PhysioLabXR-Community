@@ -17,7 +17,7 @@ from rena.utils.rena_dsp_utils import RealtimeButterBandpass, RenaFilter
 class FilterComponentButterworthBandPass(QtWidgets.QWidget):
     filter_on_change_signal = QtCore.pyqtSignal(RenaFilter)
 
-    def __init__(self, stream_preset, args=None):
+    def __init__(self, stream_preset=None, args=None):
         super().__init__()
         self.ui = uic.loadUi("ui/FilterComponentButterworthBandPass.ui", self)
         self.rena_filter = RealtimeButterBandpass()

@@ -8,6 +8,7 @@ from rena import config
 from rena.config_ui import plot_format_index_dict, image_depth_dict, color_green, color_red
 from rena.ui.FilterComponentButterworthBandPass import FilterComponentButterworthBandPass
 from rena.ui.FilterComponentButterworthHighPass import FilterComponentButterworthHighPass
+from rena.ui.FilterComponentButterworthLowPass import FilterComponentButterworthLowPass
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
 
