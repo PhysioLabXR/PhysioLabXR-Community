@@ -1,0 +1,17 @@
+{ "StreamName":"EEG-8Chan",
+  "ChannelNames":[
+    "Timestamp",
+    "Fp1",
+    "F7",
+    "F8",
+    "T4",
+    "T6",
+    "T5",
+    "T3",
+    "Fp2",
+    "Acc-x",
+    "Acc-y",
+    "Acc-z"],
+  "NominalSamplingRate":  128,
+  "GroupInfo":  [1,2,3],
+  "DataType": "float32"}

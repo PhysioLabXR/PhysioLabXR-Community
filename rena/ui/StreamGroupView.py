@@ -220,7 +220,6 @@ class StreamGroupView(QTreeWidget):
         self.reconnect_selection_changed()
         self.dragged = self.selectedItems()
 
-
     def dropEvent(self, event):
         drop_target = self.itemAt(event.pos())
         if drop_target == None:
@@ -251,6 +250,14 @@ class StreamGroupView(QTreeWidget):
         print('Changed groups: {}'.format(change_dict))
         self.parent.channel_parent_group_changed(change_dict)
         event.accept()
+
+    def get_selected_channel_groups(self):
+        rtn = {}  # group name -> channel name, lsl indices
+        for selected_c in self.selected_channels:
+            this_changed_group = selected_c.parent()
+            if this_changed_group.group_name not in rtn.keys():
+                rtn[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
+        return rtn
 
     def reset_drag_drop(self):
         self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)

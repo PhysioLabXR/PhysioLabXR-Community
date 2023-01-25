@@ -3,7 +3,7 @@ import numpy as np
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel, QIntValidator
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
+from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem, QPushButton
 
 from rena import config_signal, config
 from rena.config_ui import *
@@ -59,13 +59,25 @@ class StreamOptionsWindow(QDialog):
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
         self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
         self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+
+        self.add_group_btn = QPushButton()
+        self.add_group_btn.setText('Create New Group')
+        self.add_group_btn.hide()
+        self.add_group_btn.clicked.connect(self.add_group_clicked)
+        self.actionsWidgetLayout.addWidget(self.add_group_btn)
 
         self.update_num_points_to_display()
+
+    def add_group_clicked(self):
+        affected_groups = self.stream_group_view.get_selected_channel_groups()  # get affected groups
+        new_group_name = self.parent.get_next_available_groupname()
+        print("creating new group {}".format(new_group_name))
+        # create a new group
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -108,6 +120,12 @@ class StreamOptionsWindow(QDialog):
             self.plot_format_widget.set_plot_format_widget_info \
                 (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
 
+        if selection_state == channels_selected or selection_state == channel_selected:
+            self.add_group_btn.show()
+        else:
+            self.add_group_btn.hide()
+
+
         ################################################################################
         if selection_state == nothing_selected:  # nothing selected
             pass
@@ -115,7 +133,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channel_selected:  # only one channel selected
-            pass
+            print('A channel are selected')
 
 
         ################################################################################
@@ -125,7 +143,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channels_selected:  # channels selected
-            pass
+            print('Channels are selected')
 
         ################################################################################
         elif selection_state == group_selected:  # one group selected

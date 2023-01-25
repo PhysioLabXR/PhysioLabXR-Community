@@ -729,3 +729,9 @@ class StreamWidget(QtWidgets.QWidget):
                 self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
         export_group_info_to_settings(self.group_info, self.stream_name)
         self.reset_viz()
+
+    def get_next_available_groupname(self):
+        i = 0
+        while (rtn := 'GroupName{}'.format(i)) in self.group_info.keys():
+            i += 1
+        return rtn

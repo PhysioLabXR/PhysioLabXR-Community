@@ -226,7 +226,7 @@
       <item>
        <widget class="QTabWidget" name="PlotsTabWidget">
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="TimeSeriesPlotsWidget">
          <attribute name="title">
