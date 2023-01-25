@@ -135,7 +135,7 @@ def collect_stream_group_info(stream_name, group_name):
     #     rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
     config.settings.endGroup()
     rtn['plot_format'] = collect_stream_group_plot_format(stream_name, group_name)
-    rtn['is_channels_shown'] = [bool(int(x)) for x in rtn['is_channels_shown']]
+    rtn['is_channels_shown'] = [bool(int(x)) if str.isdigit(x) else bool(x) for x in rtn['is_channels_shown']]
     rtn['channel_indices'] = [int(i) for i in rtn['channel_indices']]
     rtn['is_image_only'] = len(rtn['channel_indices']) > config.settings.value("max_timeseries_num_channels")
 
@@ -484,7 +484,7 @@ def set_channel_displayed(is_display, channel_index, group_name, stream_name):
 
 def is_group_shown(group_name, stream_name):
     config.settings.beginGroup('presets/streampresets/{0}/GroupInfo/{1}'.format(stream_name, group_name))
-    is_channels_shown = [int(x) for x in config.settings.value('is_channels_shown')]
+    is_channels_shown = [int(x) if str.isdigit(x) else bool(x) for x in config.settings.value('is_channels_shown')]
     config.settings.endGroup()
     return np.any(is_channels_shown)
 
