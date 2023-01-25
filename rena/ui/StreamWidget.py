@@ -24,7 +24,7 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format, \
-    update_selected_plot_format
+    update_selected_plot_format, is_channel_in_group
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
     convert_array_to_qt_heatmap, \
     convert_rgb_to_qt_image, convert_numpy_to_uint8
@@ -710,4 +710,11 @@ class StreamWidget(QtWidgets.QWidget):
 
         return
 
-#############################################
+    #############################################
+
+    def channel_group_changed(self, channel_indices, target_group):
+        for c_index in channel_indices:
+            if not is_channel_in_group(c_index, target_group, self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
+                # the target parent group is different from the channel's original group
+                # TODO
+                print("changing groups")

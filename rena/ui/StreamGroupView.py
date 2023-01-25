@@ -2,6 +2,7 @@ import sys
 from collections import deque
 
 import PyQt5
+import numpy as np
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -30,9 +31,6 @@ class GroupItem(QTreeWidgetItem):
         self.setText(0, group_name)
 
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
-
-
-
     def setData(self, column, role, value):
         check_state_before = self.checkState(column)
         super(GroupItem, self).setData(column, role, value)
@@ -46,6 +44,9 @@ class GroupItem(QTreeWidgetItem):
                 self.display=False
                 self.setForeground(0, QBrush(QColor(color_white)))
 
+    def children(self):
+        return [self.child(i) for i in range(self.childCount())]
+
 
 class ChannelItem(QTreeWidgetItem):
     def __init__(self, parent, is_shown, lsl_index, channel_name):
@@ -56,7 +57,7 @@ class ChannelItem(QTreeWidgetItem):
         self.channel_name = channel_name
         self.setText(0, channel_name)
         self.setText(1, '['+str(lsl_index)+']')
-
+        self.previous_parent = parent
 
     def setData(self, column, role, value):
         parent_check_state_before = self.parent().checkState(column)
@@ -237,15 +238,19 @@ class StreamGroupView(QTreeWidget):
             self.remove_empty_groups()
             print(drop_target.checkState(0))
 
-        if len(self.selected_channels) == 1 and type(self.selected_channels[0]) is ChannelItem:  # only one channel is being dragged
-            target_parent_group = drop_target.parent().data(0, 0) if type(drop_target) is ChannelItem else drop_target.data(0, 0)
-            channel_index = self.selected_channels[0].lsl_index
-            self.channel_parent_group_changed_signal.emit((channel_index, target_parent_group))
+        # group and channels cannot be moved at the same time
+        change_dict = {}  # group name -> channel name, lsl indices
+        if np.all([type(x) is ChannelItem for x in self.selected_channels]):  # only channel(s) is(are) being dragged
+            target_group = drop_target.parent() if type(drop_target) is ChannelItem else drop_target
+            change_dict[target_group.group_name] = [(x.channel_name, x.lsl_index) for x in target_group.children()]  # get the indices of the changed group
 
-
-    # def mousePressEvent(self, *args, **kwargs):
-    #     super(StreamGroupView, self).mousePressEvent(*args, **kwargs)
-    #     self.reset_drag_drop()
+            for selected_c in self.selected_channels:
+                this_changed_group = selected_c.previous_parent
+                if this_changed_group.group_name not in change_dict.keys():
+                    change_dict[this_changed_group.group_name] = [(x.channel_name, x.lsl_index) for x in this_changed_group.children()]  # get the indices of the changed group
+                selected_c.previous_parent = target_group # set the parent to be the drop target
+        print('Changed groups: {}'.format(change_dict))
+        event.accept()
 
     def reset_drag_drop(self):
         self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)

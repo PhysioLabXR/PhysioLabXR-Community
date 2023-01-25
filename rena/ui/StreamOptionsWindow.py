@@ -40,6 +40,8 @@ class StreamOptionsWindow(QDialog):
 
         self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
 
+        self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
+
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
@@ -64,6 +66,8 @@ class StreamOptionsWindow(QDialog):
         self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
+
+        self.update_num_points_to_display()
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -245,12 +249,8 @@ class StreamOptionsWindow(QDialog):
 
     @QtCore.pyqtSlot(tuple)
     def channel_parent_group_changed(self, change: tuple):
-        channel_index, target_parent_group = change
-        if not is_channel_in_group(channel_index, target_parent_group,
-                                   self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
-            # the target parent group is different from the channel's original group
-            # TODO
-            pass
+        channel_indices, target_group = change
+        self.parent.channel_group_changed(channel_indices, target_group )
 
     def plot_format_on_change(self, info_dict):
         # get current selected:
