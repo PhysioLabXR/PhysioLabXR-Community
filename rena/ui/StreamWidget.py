@@ -24,7 +24,7 @@ from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
     create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format, \
-    update_selected_plot_format, is_channel_in_group
+    update_selected_plot_format, is_channel_in_group, export_group_info_to_settings
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
     convert_array_to_qt_heatmap, \
     convert_rgb_to_qt_image, convert_numpy_to_uint8
@@ -250,6 +250,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
         self.stream_options_window.reload_preset_to_UI()
+        self.reset_viz()
+
+    def reset_viz(self):
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
@@ -712,9 +715,17 @@ class StreamWidget(QtWidgets.QWidget):
 
     #############################################
 
-    def channel_group_changed(self, channel_indices, target_group):
-        for c_index in channel_indices:
-            if not is_channel_in_group(c_index, target_group, self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
-                # the target parent group is different from the channel's original group
-                # TODO
-                print("changing groups")
+    def channel_group_changed(self, change_dict):
+        """
+        Called when one or more channel's parent group is changed
+        @param change_dict:
+        """
+        # update the group info
+        for group_name, child_channels in change_dict.items():
+            if len(child_channels) == 0:
+                self.group_info.pop(group_name)
+            else:
+                self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
+                self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
+        export_group_info_to_settings(self.group_info, self.stream_name)
+        self.reset_viz()

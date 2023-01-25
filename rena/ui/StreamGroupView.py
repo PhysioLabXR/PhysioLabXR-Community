@@ -95,7 +95,6 @@ class StreamGroupView(QTreeWidget):
     selection_changed_signal = QtCore.pyqtSignal(str)
     update_info_box_signal = QtCore.pyqtSignal(str)
 
-    channel_parent_group_changed_signal = QtCore.pyqtSignal(tuple)
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
     def __init__(self, parent, stream_name, group_info):
@@ -242,14 +241,15 @@ class StreamGroupView(QTreeWidget):
         change_dict = {}  # group name -> channel name, lsl indices
         if np.all([type(x) is ChannelItem for x in self.selected_channels]):  # only channel(s) is(are) being dragged
             target_group = drop_target.parent() if type(drop_target) is ChannelItem else drop_target
-            change_dict[target_group.group_name] = [(x.channel_name, x.lsl_index) for x in target_group.children()]  # get the indices of the changed group
-
+            change_dict[target_group.group_name] = target_group.children()  # get the indices of the changed group
             for selected_c in self.selected_channels:
+                if selected_c not in change_dict[target_group.group_name]: change_dict[target_group.group_name].append(selected_c)
                 this_changed_group = selected_c.previous_parent
                 if this_changed_group.group_name not in change_dict.keys():
-                    change_dict[this_changed_group.group_name] = [(x.channel_name, x.lsl_index) for x in this_changed_group.children()]  # get the indices of the changed group
+                    change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
                 selected_c.previous_parent = target_group # set the parent to be the drop target
         print('Changed groups: {}'.format(change_dict))
+        self.parent.channel_parent_group_changed(change_dict)
         event.accept()
 
     def reset_drag_drop(self):
