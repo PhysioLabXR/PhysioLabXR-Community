@@ -237,9 +237,7 @@ def export_preset_to_settings(preset, setting_category):
 
         for group_name, group_info_dict in preset['GroupInfo'].items():
             for group_info_key, group_info_value in group_info_dict.items():
-                if group_info_key!='plot_format':
-                    config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
-                else:
+                if group_info_key == 'plot_format':
                     for plot_format_name, plot_format_info_dict in group_info_value.items():
                         for plot_format_info_key, plot_format_info_value in plot_format_info_dict.items():
                             # config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}'.
@@ -256,6 +254,11 @@ def export_preset_to_settings(preset, setting_category):
                                                             plot_format_name, # plot format file
                                                             plot_format_info_key), # plot format name
                                                             plot_format_info_value) # plot format value
+                        # print('John')
+                elif group_info_key == 'filter_info':
+                    config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key, 'filters'), 'filters')
+                else:
+                    config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
 
         config.settings.endGroup()
 
@@ -381,6 +384,7 @@ def process_plot_group(preset_dict):
                 "group_index": 1,
                 'selected_plot_format': 0,
                 "plot_format": plot_format,
+                'filter_info': {},
                 "channel_indices": [channel_index for channel_index in range(0, channel_num)],
                 "is_channels_shown": is_channels_shown,
                 "group_description": ""
@@ -418,6 +422,7 @@ def process_plot_group(preset_dict):
                     "group_index": i,
                     'selected_plot_format': 0,
                     "plot_format": plot_format,
+                    'filter_info': {},
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
                     "group_description": ""
