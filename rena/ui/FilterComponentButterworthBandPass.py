@@ -44,7 +44,7 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
             self.id = args['id']
         else:
             self.id = uuid.uuid4()
-            self.export_filter_args_to_settings()
+            # self.export_filter_args_to_settings()
 
         self.samplingFrequencyLineEdit.setValidator(QDoubleValidator())
         self.lowCutFrequencyLineEdit.setValidator(QDoubleValidator())
@@ -64,6 +64,7 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
         # filter info
         config.settings.beginGroup('presets/streampresets/{0}/{1}/{2}/'.
                                    format(stream_name, group_name, 'filter_info'))
+
         # config.
 
 
