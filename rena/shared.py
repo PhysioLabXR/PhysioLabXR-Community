@@ -32,3 +32,14 @@ class ParamChange(Enum):
     ADD = 'a'
     REMOVE = 'r'
     CHANGE = 'c'
+
+class FilterChange(Enum):
+    ADD = 'a'
+    REMOVE = 'r'
+    CHANGE = 'c'
+
+class FilterType(Enum):
+    ButterworthBandPass = 'ButterworthBandPass'
+    ButterworthHighPass = 'ButterworthHighPass'
+    ButterworthLowPass = 'ButterworthLowPass'
+    Notch = 'Notch'

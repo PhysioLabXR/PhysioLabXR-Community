@@ -39,7 +39,7 @@ class StreamOptionsWindow(QDialog):
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
 
-        self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
+        self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info, stream_presets=self.stream_presets)
 
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)

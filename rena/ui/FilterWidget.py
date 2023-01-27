@@ -3,6 +3,7 @@
 # This Python file uses the following encoding: utf-8
 from PyQt5 import QtWidgets, uic
 
+from rena.shared import FilterType
 from rena.ui.FilterComponentButterworthBandPass import FilterComponentButterworthBandPass
 
 
@@ -20,25 +21,11 @@ class FilterWidget(QtWidgets.QWidget):
         filter_type = self.filterSelectionCombobox.currentText()
 
         # create filter
-        if filter_type == "Notch":
-            pass
 
-        elif filter_type == "ButterWorthBandPass":
+
+        if filter_type == FilterType.ButterworthBandPass:
             filter_widget = FilterComponentButterworthBandPass()
-            # self.filter_widgets.append(filter_widget)
             self.FilterScrollAreaWidgetContents.addWidget(filter_widget)
 
 
-
-        elif filter_type == "ButterWorthHighPass":
-            pass
-
-        elif filter_type == "ButterWorthLowPass":
-            pass
-
-    # input = asdf
-    # output = none
-    # for filterwidget in filterwidgets:
-    #     output = filterwidget.filter.processsample()
-    #
 
