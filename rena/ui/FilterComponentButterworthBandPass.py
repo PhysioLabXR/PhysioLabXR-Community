@@ -62,11 +62,16 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
 
         self.deleteLater()
 
-    def init_filter(self, lowcut, highcut, fs, order, channel_num):
-        self.rena_filter.__init__(lowcut=lowcut, highcut=highcut, fs=fs, order=order, channel_num=channel_num)
+    def init_filter(self, args):
+        self.rena_filter.__init__(lowcut=args['lowcut'],
+                                  highcut=args['hightcut'],
+                                  fs=args['fs'],
+                                  order=args['order'],
+                                  channel_num=args['channel_num'])
 
 
     def filter_args_on_change(self):
+
         self.args['highcut'] = self.get_filter_high_cut_frequency()
         self.args['lowcut'] = self.get_filter_low_cut_frequency()
         self.args['order'] = self.get_filter_order()
@@ -105,8 +110,8 @@ class FilterComponentButterworthBandPass(QtWidgets.QWidget):
         else:
             try:
                 self.rena_filter = \
-                    RealtimeButterBandpass(highcut=self.args['high_cut_frequency'],
-                                           lowcut=self.args['low_cut_frequency'], order=self.args['order'], channel_num=self.args['channel_num'])
+                    RealtimeButterBandpass(highcut=self.args['highcut'],
+                                           lowcut=self.args['lowcut'], order=self.args['order'], channel_num=self.args['channel_num'])
                 self.filterInfoLabel.setText("filter valid")
                 self.args['filter_valid'] = True
             except:

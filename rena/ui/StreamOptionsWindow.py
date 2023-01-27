@@ -21,7 +21,7 @@ class StreamOptionsWindow(QDialog):
     preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent, stream_name, group_info):
+    def __init__(self, parent, stream_name, group_info, stream_presets):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -30,6 +30,7 @@ class StreamOptionsWindow(QDialog):
         self.setWindowTitle('Options')
         self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
         self.parent = parent
+        self.stream_presets = stream_presets
         # add supported filter list
         # self.resize(1000, 1000)
 
@@ -58,7 +59,7 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name, stream_presets=self.stream_presets)
         self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)

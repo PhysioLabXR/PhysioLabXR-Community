@@ -11,6 +11,7 @@ from rena.ui.FilterComponentButterworthHighPass import FilterComponentButterwort
 from rena.ui.FilterComponentButterworthLowPass import FilterComponentButterworthLowPass
 from rena.utils.settings_utils import collect_stream_group_info, update_selected_plot_format, set_plot_image_w_h, \
     set_plot_image_format, set_plot_image_channel_format, set_plot_image_valid, set_bar_chart_max_min_range
+from rena.utils.ui_utils import clear_layout
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -18,7 +19,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, stream_name):
+    def __init__(self, stream_name, stream_presets):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -28,6 +29,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
         self.stream_name = stream_name
         self.group_name = None
+        self.stream_presets = stream_presets
         # self.stream_name = stream_name
         # self.grou_name = group_name
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
@@ -47,6 +49,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
         self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
 
+        self.filters_widgets = []
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
 
@@ -74,6 +77,14 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # bar chart format information
         self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
         self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
+
+    def filter_info_widgets(self, group_name):
+        clear_layout(self.FilterScrollAreaWidgetLayout)
+        filter_info_dict = self.stream_presets.collect_filter_args(group_name)
+        # for filter_id in filter_info_dict:
+        #     if(filter_id_name)
+
+
 
     def plot_format_tab_current_changed(self, index):
         # create value
@@ -217,34 +228,33 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plotFormatTabWidget.setTabEnabled(0, False)
         self.plotFormatTabWidget.setTabEnabled(2, False)
 
-
-    def add_filter_btn_clicked(self):
-        """
-        add inactive filer widget and RenaFilter
-        """
-        # group_info = collect_stream_group_info(self.stream_name, self.group_name)
-        # channel_num =
-        filter_type = self.filterSelectionCombobox.currentText()
-
-        # create filter
-        if filter_type == "ButterWorthBandPass":
-            pass
-
-        elif filter_type == "ButterWorthBandPass":
-            filter_widget = FilterComponentButterworthBandPass()
-            # self.filter_widgets.append(filter_widget)
-            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
-            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
-
-        elif filter_type == "ButterWorthHighPass":
-            filter_widget = FilterComponentButterworthHighPass()
-            # self.filter_widgets.append(filter_widget)
-            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
-            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
-
-        elif filter_type == "ButterWorthLowPass":
-            filter_widget = FilterComponentButterworthLowPass()
-            # self.filter_widgets.append(filter_widget)
-            # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
-            self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
+    # def add_filter_btn_clicked(self):
+    #     """
+    #     add inactive filer widget and RenaFilter
+    #     """
+    #     # group_info = collect_stream_group_info(self.stream_name, self.group_name)
+    #     # channel_num =
+    #     filter_type = self.filterSelectionCombobox.currentText()
+    #
+    #     # create filter
+    #     if filter_type == "ButterWorthBandPass":
+    #         pass
+    #
+    #     elif filter_type == "ButterWorthBandPass":
+    #         filter_widget = FilterComponentButterworthBandPass()
+    #         # self.filter_widgets.append(filter_widget)
+    #         # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
+    #         self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
+    #
+    #     elif filter_type == "ButterWorthHighPass":
+    #         filter_widget = FilterComponentButterworthHighPass()
+    #         # self.filter_widgets.append(filter_widget)
+    #         # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
+    #         self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
+    #
+    #     elif filter_type == "ButterWorthLowPass":
+    #         filter_widget = FilterComponentButterworthLowPass()
+    #         # self.filter_widgets.append(filter_widget)
+    #         # the current FilterScrollAreaWidgetLayout is attached to the current group and group name
+    #         self.FilterScrollAreaWidgetLayout.addWidget(filter_widget)
 

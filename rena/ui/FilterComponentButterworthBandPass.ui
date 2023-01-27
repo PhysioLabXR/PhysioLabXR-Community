@@ -99,6 +99,26 @@
        </widget>
       </item>
       <item>
+       <widget class="QWidget" name="samplingFrequencyWidget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="samplingFrequencyLabel">
+           <property name="text">
+            <string>fs:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="samplingFrequencyLineEdit">
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QWidget" name="filterRangeWidget" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>

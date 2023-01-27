@@ -20,6 +20,7 @@ from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
+from rena.utils.StreamPresets import StreamPresets
 from rena.utils.general import create_lsl_interface, DataBufferSingleStream
 from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
     collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
@@ -49,6 +50,10 @@ class StreamWidget(QtWidgets.QWidget):
             parent.addWidget(self)
         self.parent = parent
         self.main_parent = main_parent
+
+#########################
+        self.stream_presets = StreamPresets(stream_name=stream_name)
+
 
         ##
         self.stream_name = stream_name  # this also keeps the subtopic name if using ZMQ
@@ -126,7 +131,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
-                                                         group_info=self.group_info)
+                                                         group_info=self.group_info, stream_presets=self.stream_presets)
         self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
