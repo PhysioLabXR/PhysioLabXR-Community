@@ -147,7 +147,7 @@ def run_test():
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
-                print(eeg_data)
+                # print(eeg_data)
                     # print(eeg_data)
                     # start_time = time.time()
         except KeyboardInterrupt:
