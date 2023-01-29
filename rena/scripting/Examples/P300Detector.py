@@ -79,7 +79,7 @@ class P300Detector(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        self.outputs['output1'] = [self.params['老李是傻逼']]
+        # self.outputs['output1'] = [self.params['老李是傻逼']]
         if P300EventStreamName and OpenBCIStreamName not in self.inputs.keys():
             return
 

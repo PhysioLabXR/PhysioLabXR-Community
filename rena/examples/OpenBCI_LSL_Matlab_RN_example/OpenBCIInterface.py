@@ -61,7 +61,7 @@ class OpenBCIInterface:
         except brainflow.board_shim.BrainFlowError as e:
             print(e)
 
-    def create_lsl(self, name='OpenBCI_Cyton_8', type='EEG', channel_count=8,
+    def create_lsl(self, name='OpenBCI_Cython_8_LSL', type='EEG', channel_count=8,
                    nominal_srate=250.0, channel_format='float32',
                    source_id='Cyton_0'):
 
@@ -158,7 +158,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIInterface()
+    openBCI_interface = OpenBCIInterface(serial_port='COM4')
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test()
