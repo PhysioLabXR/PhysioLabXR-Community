@@ -21,7 +21,7 @@ EEG_SAMPLING_RATE = 250.0
 
 Time_Window = 1.1  # second
 
-OpenBCIStreamName = 'OpenBCI_Cyton_8'
+OpenBCIStreamName = 'P300Speller'
 
 P300EventStreamName = 'P300Speller'
 
@@ -80,10 +80,10 @@ class P300Detector(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         # self.outputs['output1'] = [self.params['老李是傻逼']]
-        if P300EventStreamName and OpenBCIStreamName not in self.inputs.keys():
+        if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
-        if TARGET_MARKER or NONTARGET_MARKER in self.inputs.get_data(P300EventStreamName):
+        if TARGET_MARKER in self.inputs.get_data(P300EventStreamName) or NONTARGET_MARKER in self.inputs.get_data(P300EventStreamName):
             # we have event marker in the data buffer
             event_marker_timestamps = self.inputs.get_timestamps(P300EventStreamName)
             event_marker_data = self.inputs.get_data(P300EventStreamName)
