@@ -16,8 +16,9 @@ from rena.config_ui import image_depth_dict, plot_format_index_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
+from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
-from rena.ui.StreamWidgetVisualizationComponents import StreamWidgetVisualizationComponents
+from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.general import create_lsl_interface, DataBufferSingleStream
@@ -94,7 +95,8 @@ class StreamWidget(QtWidgets.QWidget):
 
         # visualization component
         # This variable stores all the visualization components we initialize it in the init_stream_visualization()
-        self.stream_widget_visualization_component = None
+        self.viz_components = None
+        self.num_points_to_plot = None
 
         # self.init_server_client()
         self.group_info = collect_stream_all_groups_info(self.stream_name)
@@ -135,7 +137,6 @@ class StreamWidget(QtWidgets.QWidget):
         # create visualization component, must be after the option window
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        self.viz_time_vector = None
         self.create_visualization_component()
 
         # FPS counter``
@@ -266,7 +267,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.parent.insertWidget(self.parent.count() - 1, self)
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.pop_window)
-        self.PopWindowBtn.setText('Pop Window')
+        # self.PopWindowBtn.setText('Pop Window')
         self.main_parent.pop_windows[self.stream_name].hide()  # tetentive measures
         self.main_parent.pop_windows.pop(self.stream_name)
         self.main_parent.activateWindow()
@@ -278,7 +279,7 @@ class StreamWidget(QtWidgets.QWidget):
         w = AnotherWindow(self, self.remove_stream)
         self.main_parent.pop_windows[self.stream_name] = w
         w.setWindowTitle(self.stream_name)
-        self.PopWindowBtn.setText('Dock Window')
+        # self.PopWindowBtn.setText('Dock Window')
         w.show()
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.dock_window)
@@ -340,7 +341,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
         self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
-        self.viz_time_vector = None
         clear_layout(self.TimeSeriesPlotsLayout)
         clear_layout(self.ImageWidgetLayout)
         clear_layout(self.MetaInfoVerticalLayout)
@@ -364,87 +364,88 @@ class StreamWidget(QtWidgets.QWidget):
         # plot_formats = []
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
 
-        is_only_image_enabled = False
+        group_plot_widget_dict = {}
         for group_name in self.group_info.keys():
             if is_only_image_enabled := self.group_info[group_name]['is_image_only']:
-                # disable time series and bar plot for this group
                 update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
                 self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
 
-            ################################ time series widget initialization###########################################
-            if not is_only_image_enabled:
-                group_plot_widget = pg.PlotWidget()
-                self.group_name_plot_widget_dict[group_name] = group_plot_widget
-                self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
+            group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+            self.viz_group_layout.addWidget(group_plot_widget_dict[group_name])
+            self.num_points_to_plot = self.get_num_points_to_plot()
+        #     ################################ time series widget initialization###########################################
+        #     if not is_only_image_enabled:
+        #         group_plot_widget = pg.PlotWidget()
+        #         self.group_name_plot_widget_dict[group_name] = group_plot_widget
+        #         self.TimeSeriesPlotsLayout.addWidget(group_plot_widget)
+        #
+        #         distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
+        #         group_plot_widget.addLegend()
+        #
+        #         plot_data_items = []
+        #         group_channel_names = [channel_names[int(i)] for i in
+        #                                self.group_info[group_name]['channel_indices']]  # channel names for this group
+        #         for channel_index_in_group, (channel_index, channel_name) in enumerate(
+        #                 zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
+        #             if self.group_info[group_name]['is_channels_shown'][
+        #                 channel_index_in_group]:  # if this channel is not shown
+        #                 channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(
+        #                     color=distinct_colors[channel_index_in_group]),  # unique color for each group
+        #                                                              name=channel_name)
+        #                 self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
+        #                 plot_data_items.append(channel_plot_widget)
+        #                 # TODO add back the channel when they are renabled
+        #
+        #         self.update_groups_shown(group_name)
+        #         plots.append(plot_data_items)
+        #         time_series_widgets[group_name] = group_plot_widget
+        #         [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
+        #         [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
+        #         if self.group_info[group_name]['selected_plot_format'] != 0:
+        #             group_plot_widget.hide()
+        #
+        #     ############################### init image label ####################################################################
+        #     image_label = QLabel('Image_Label')
+        #     image_label.setAlignment(QtCore.Qt.AlignCenter)
+        #     self.ImageWidgetLayout.addWidget(image_label)
+        #     image_labels[group_name] = image_label
+        #     if self.group_info[group_name]['selected_plot_format'] != 1:
+        #         image_label.hide()
+        #
+        #     ############################## bar plot ##############################################################################
+        #     if not is_only_image_enabled:
+        #         barchart_widget = pg.PlotWidget()
+        #         barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
+        #                                   self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
+        #         # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
+        #         # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
+        #         label_x_axis = barchart_widget.getAxis('bottom')
+        #         label_dict = dict(enumerate(group_channel_names)).items()
+        #         label_x_axis.setTicks([label_dict])
+        #         x = np.arange(len(group_channel_names))
+        #         y = np.array([0] * len(group_channel_names))
+        #         bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
+        #         barchart_widget.addItem(bars)
+        #         self.BarPlotWidgetLayout.addWidget(barchart_widget)
+        #         barchart_widgets[group_name] = barchart_widget
+        #         if self.group_info[group_name]['selected_plot_format'] != 2:
+        #             barchart_widget.hide()
+        # plot_elements['time_series'] = time_series_widgets
+        # plot_elements['image'] = image_labels
+        # plot_elements['bar_chart'] = barchart_widgets
+        #
+        # self.viz_time_vector = self.get_viz_time_vector()
+        return fs_label, ts_label, group_plot_widget_dict
 
-                distinct_colors = get_distinct_colors(len(self.group_info[group_name]['channel_indices']))
-                group_plot_widget.addLegend()
-
-                plot_data_items = []
-                group_channel_names = [channel_names[int(i)] for i in
-                                       self.group_info[group_name]['channel_indices']]  # channel names for this group
-                for channel_index_in_group, (channel_index, channel_name) in enumerate(
-                        zip(self.group_info[group_name]['channel_indices'], group_channel_names)):
-                    if self.group_info[group_name]['is_channels_shown'][
-                        channel_index_in_group]:  # if this channel is not shown
-                        channel_plot_widget = group_plot_widget.plot([], [], pen=pg.mkPen(
-                            color=distinct_colors[channel_index_in_group]),  # unique color for each group
-                                                                     name=channel_name)
-                        self.channel_index_plot_widget_dict[int(channel_index)] = channel_plot_widget
-                        plot_data_items.append(channel_plot_widget)
-                        # TODO add back the channel when they are renabled
-
-                self.update_groups_shown(group_name)
-                plots.append(plot_data_items)
-                time_series_widgets[group_name] = group_plot_widget
-                [p.setDownsampling(auto=True, method='mean') for group in plots for p in group if p is PlotDataItem]
-                [p.setClipToView(clip=True) for p in plots for group in plots for p in group if p is PlotDataItem]
-                if self.group_info[group_name]['selected_plot_format'] != 0:
-                    group_plot_widget.hide()
-
-            ############################### init image label ####################################################################
-            image_label = QLabel('Image_Label')
-            image_label.setAlignment(QtCore.Qt.AlignCenter)
-            self.ImageWidgetLayout.addWidget(image_label)
-            image_labels[group_name] = image_label
-            if self.group_info[group_name]['selected_plot_format'] != 1:
-                image_label.hide()
-
-            ############################## bar plot ##############################################################################
-            if not is_only_image_enabled:
-                barchart_widget = pg.PlotWidget()
-                barchart_widget.setYRange(self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
-                                          self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
-                # barchart_widget.sigRangeChanged.connect(self.bar_chart_range_changed)
-                # barchart_widget.setLimits(xMin=-0.5, xMax=len(self.group_info[group_name]['channel_indices']), yMin=plot_format['bar_chart']['y_min'], yMax=plot_format['bar_chart']['y_max'])
-                label_x_axis = barchart_widget.getAxis('bottom')
-                label_dict = dict(enumerate(group_channel_names)).items()
-                label_x_axis.setTicks([label_dict])
-                x = np.arange(len(group_channel_names))
-                y = np.array([0] * len(group_channel_names))
-                bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
-                barchart_widget.addItem(bars)
-                self.BarPlotWidgetLayout.addWidget(barchart_widget)
-                barchart_widgets[group_name] = barchart_widget
-                if self.group_info[group_name]['selected_plot_format'] != 2:
-                    barchart_widget.hide()
-        plot_elements['time_series'] = time_series_widgets
-        plot_elements['image'] = image_labels
-        plot_elements['bar_chart'] = barchart_widgets
-
-        self.viz_time_vector = self.get_viz_time_vector()
-        return fs_label, ts_label, plot_elements
-
-    def get_viz_time_vector(self):
-        display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
-        num_points_to_plot = int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
-        return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
+    # def get_viz_time_vector(self):
+    #     display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
+    #     num_points_to_plot = int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+    #     return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
-        fs_label, ts_label, plot_elements = \
-            self.init_stream_visualization()
-        self.stream_widget_visualization_component = \
-            StreamWidgetVisualizationComponents(fs_label, ts_label, plot_elements)
+        fs_label, ts_label, group_plot_dict = self.init_stream_visualization()
+        self.viz_components = VizComponents(fs_label, ts_label, group_plot_dict)
 
     def process_stream_data(self, data_dict):
         '''
@@ -541,73 +542,76 @@ class StreamWidget(QtWidgets.QWidget):
         # plot_channel_num_offset = 0
         if not self.viz_data_buffer.has_data():
             return
-        data_to_plot = self.viz_data_buffer.buffer[0][:, -len(self.viz_time_vector):]
+        data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
+
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
-            plot_group_info = self.group_info[group_name]
-            selected_plot_format = plot_group_info['selected_plot_format']
+            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
-            # get target plotting
-            # plot if valid
-
-            # 1. time_series
-            if plot_format_index_dict[selected_plot_format] == 'time_series':
-                # plot time series
-                if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
-                    if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
-                        # plot if valid and display this group
-                        for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
-                            if plot_group_info['is_channels_shown'][index_in_group]:
-                                # print(channel_index)
-                                self.stream_widget_visualization_component.plot_elements['time_series'][
-                                    group_name].plotItem.curves[index_in_group] \
-                                    .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
-
-            # 2. image
-            elif plot_format_index_dict[selected_plot_format] == 'image':
-
-                if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid we continue
-                    # reshape and attach to the label
-                    width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(
-                        group_name)
-
-                    image_plot_data = data_to_plot[
-                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
-
-                    # if we chose RGB
-                    if image_format == 'RGB':
-
-                        if channel_format == 'Channel First':
-                            image_plot_data = np.reshape(image_plot_data, (depth, height, width))
-                            image_plot_data = np.moveaxis(image_plot_data, 0, -1)
-                        elif channel_format == 'Channel Last':
-                            image_plot_data = np.reshape(image_plot_data, (height, width, depth))
-                        # image_plot_data = convert_numpy_to_uint8(image_plot_data)
-                        image_plot_data = image_plot_data.astype(np.uint8)
-                        image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
-                        self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
-                            image_plot_data)
-
-                    # if we chose PixelMap
-                    if image_format == 'PixelMap':
-                        # pixel map return value
-                        image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                        image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
-                        self.stream_widget_visualization_component.plot_elements['image'][group_name].setPixmap(
-                            image_plot_data)
-
-            # 3. bar_chart
-            elif plot_format_index_dict[selected_plot_format] == 'bar_chart':
-                if plot_group_info["plot_format"]['bar_chart']['is_valid']:
-                    bar_chart_plot_data = data_to_plot[
-                        plot_group_info['channel_indices'], -1]  # only visualize the last frame
-                    self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name].plotItem.curves[
-                        0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1,
-                                   brush='r')
+            # plot_group_info = self.group_info[group_name]
+            # selected_plot_format = plot_group_info['selected_plot_format']
+            #
+            # # get target plotting
+            # # plot if valid
+            #
+            # # 1. time_series
+            # if plot_format_index_dict[selected_plot_format] == 'time_series':
+            #     # plot time series
+            #     if plot_group_info["plot_format"]['time_series']['display']:  # want to show this ?
+            #         if plot_group_info["plot_format"]['time_series']['is_valid']:  # if the format setting is valid?
+            #             # plot if valid and display this group
+            #             for index_in_group, channel_index in enumerate(plot_group_info['channel_indices']):
+            #                 if plot_group_info['is_channels_shown'][index_in_group]:
+            #                     # print(channel_index)
+            #                     self.viz_components.group_plots['time_series'][
+            #                         group_name].plotItem.curves[index_in_group] \
+            #                         .setData(self.viz_time_vector, data_to_plot[int(channel_index), :])
+            #
+            # # 2. image
+            # elif plot_format_index_dict[selected_plot_format] == 'image':
+            #
+            #     if plot_group_info["plot_format"]['image']['is_valid']:  # if the format setting is valid we continue
+            #         # reshape and attach to the label
+            #         width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(
+            #             group_name)
+            #
+            #         image_plot_data = data_to_plot[
+            #             plot_group_info['channel_indices'], -1]  # only visualize the last frame
+            #
+            #         # if we chose RGB
+            #         if image_format == 'RGB':
+            #
+            #             if channel_format == 'Channel First':
+            #                 image_plot_data = np.reshape(image_plot_data, (depth, height, width))
+            #                 image_plot_data = np.moveaxis(image_plot_data, 0, -1)
+            #             elif channel_format == 'Channel Last':
+            #                 image_plot_data = np.reshape(image_plot_data, (height, width, depth))
+            #             # image_plot_data = convert_numpy_to_uint8(image_plot_data)
+            #             image_plot_data = image_plot_data.astype(np.uint8)
+            #             image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
+            #             self.viz_components.group_plots['image'][group_name].setPixmap(
+            #                 image_plot_data)
+            #
+            #         # if we chose PixelMap
+            #         if image_format == 'PixelMap':
+            #             # pixel map return value
+            #             image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
+            #             image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
+            #             self.viz_components.group_plots['image'][group_name].setPixmap(
+            #                 image_plot_data)
+            #
+            # # 3. bar_chart
+            # elif plot_format_index_dict[selected_plot_format] == 'bar_chart':
+            #     if plot_group_info["plot_format"]['bar_chart']['is_valid']:
+            #         bar_chart_plot_data = data_to_plot[
+            #             plot_group_info['channel_indices'], -1]  # only visualize the last frame
+            #         self.viz_components.group_plots['bar_chart'][group_name].plotItem.curves[
+            #             0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1,
+            #                        brush='r')
 
         # show the label
-        self.stream_widget_visualization_component.fs_label.setText(
+        self.viz_components.fs_label.setText(
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        self.stream_widget_visualization_component.ts_label.setText(
+        self.viz_components.ts_label.setText(
             'Current Time Stamp = {0}'.format(self.current_timestamp))
 
     def ticks(self):
@@ -655,8 +659,9 @@ class StreamWidget(QtWidgets.QWidget):
         :return:
         '''
         self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
-        self.viz_time_vector = np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'),
-                                           num_points_to_plot)
+        self.num_points_to_plot = self.get_num_points_to_plot()
+        # self.viz_time_vector = np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'),
+        #                                    num_points_to_plot)
 
     def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
         '''
@@ -680,9 +685,9 @@ class StreamWidget(QtWidgets.QWidget):
         old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
         self.preset_on_change()
 
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[old_format]][
+        self.viz_components.group_plots[plot_format_index_dict[old_format]][
             info_dict['group_name']].hide()
-        self.stream_widget_visualization_component.plot_elements[plot_format_index_dict[info_dict['new_format']]][
+        self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
             info_dict['group_name']].show()
 
         # update the plot hide display
@@ -705,7 +710,7 @@ class StreamWidget(QtWidgets.QWidget):
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.preset_on_change()
         if not self.group_info[group_name]['is_image_only']:  # if barplot exists for this group
-            widget = self.stream_widget_visualization_component.plot_elements['bar_chart'][group_name]
+            widget = self.viz_components.group_plots['bar_chart'][group_name]
             widget.setYRange(min=self.group_info[group_name]['plot_format']['bar_chart']['y_min'],
                              max=self.group_info[group_name]['plot_format']['bar_chart']['y_max'])
 
@@ -735,3 +740,7 @@ class StreamWidget(QtWidgets.QWidget):
         while (rtn := 'GroupName{}'.format(i)) in self.group_info.keys():
             i += 1
         return rtn
+
+    def get_num_points_to_plot(self):
+        display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
+        return  int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))

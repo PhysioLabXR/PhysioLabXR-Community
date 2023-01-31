@@ -26,6 +26,7 @@ SCRIPTING_UPDATE_REFRESH_INTERVA = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
+downsample_method_mean_sr_threshold = 256
 '''
 ########################################################################################################################
 Advanced parameters:

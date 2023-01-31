@@ -222,33 +222,7 @@
    </item>
    <item>
     <widget class="QWidget" name="VisualizationWidget" native="true">
-     <layout class="QVBoxLayout" name="verticalLayout_3">
-      <item>
-       <widget class="QTabWidget" name="PlotsTabWidget">
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <widget class="QWidget" name="TimeSeriesPlotsWidget">
-         <attribute name="title">
-          <string>Time Series</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="TimeSeriesPlotsLayout"/>
-        </widget>
-        <widget class="QWidget" name="ImageWidget">
-         <attribute name="title">
-          <string>Image</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="ImageWidgetLayout"/>
-        </widget>
-        <widget class="QWidget" name="BarChartWidget">
-         <attribute name="title">
-          <string>BarChart</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="BarPlotWidgetLayout"/>
-        </widget>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QVBoxLayout" name="viz_group_layout"/>
     </widget>
    </item>
   </layout>

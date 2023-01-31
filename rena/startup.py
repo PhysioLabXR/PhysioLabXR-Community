@@ -21,6 +21,7 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
         config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
         config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
+        config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -36,6 +37,9 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
             config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
         if not config.settings.contains('max_timeseries_num_channels') or config.settings.value('max_timeseries_num_channels') is None:
             config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
+        if not config.settings.contains('downsample_method_mean_sr_threshold') or config.settings.value('downsample_method_mean_sr_threshold') is None:
+            config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
+
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
     if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
