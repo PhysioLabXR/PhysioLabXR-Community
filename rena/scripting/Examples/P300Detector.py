@@ -11,6 +11,11 @@ import brainflow
 
 # class P300DetectorMarker(Enum):
 #
+from rena.utils.general import DataBuffer
+
+FLASH_START_MARKER = 9
+FLASH_END_MARKER = 10
+
 NONTARGET_MARKER = 1
 TARGET_MARKER = 2
 
@@ -21,29 +26,35 @@ EEG_SAMPLING_RATE = 250.0
 
 Time_Window = 1.1  # second
 
-OpenBCIStreamName = 'P300Speller'
+OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
 
 P300EventStreamName = 'P300Speller'
 
+IDEAL_STATE = 0
+RECORDING_STATE = 1
 
-# FLASH_END_MARKER = 2
+sampling_rate = 250
+data_duration = 2
+channel_num = 8
+data_array = np.random.rand(8, data_duration * sampling_rate)
 
-# EEG_SAMPLING_RATE = 125
+channel_types = ['eeg'] * 8
+channel_names = [
+    "Fp1",
+    "Fp2",
+    "C3",
+    "C4",
+    "P7",
+    "P8",
+    "O1",
+    "O2"
+]
+montage = 'standard_1005'
 
-# PAST_TIME_WINDOW = 4
-# BASELINE_TIME = 0.1
-# channel_picks = (4, 5, 6, 7)
-# blink_frequencies = np.array([
-#      4,
-#      6.6,
-#      7.5,
-#      8.57,
-#      10,
-#      12,
-#      15,
-#      20,
-#      25
-# ])
+
+# info = mne.create_info(channel_names, sampling_rate, channel_types)
+# info['description'] = 'P300Speller'
+
 
 class P300Detector(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -51,65 +62,73 @@ class P300Detector(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
-        params = BrainFlowInputParams()
-        board = BoardShim(2, params)
-        self.eeg_names = board.get_eeg_names(2)
-        self.mne_raw_info = mne.create_info(self.eeg_names, EEG_SAMPLING_RATE, ch_types='eeg')
-
-        self.time_offset_before = 0.2
+        # params = BrainFlowInputParams()
+        # board = BoardShim(2, params)
+        # self.eeg_names = board.get_eeg_names(2)
+        self.mne_raw_info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
+        self.raw = None
+        self.time_offset_before = -0.2
         self.time_offset_after = 1
 
-        self.sample_num_before_event_marker = EEG_SAMPLING_RATE * self.time_offset_before
-        self.sample_num_after_event_marker = EEG_SAMPLING_RATE * self.time_offset_after
+        self.data_buffer = DataBuffer()
+        self.current_state = IDEAL_STATE
 
-        self.processed_event_marker_timestamp_offset = None
+        print("P300Speller Decoding Script Setup Complete!")
 
-        print("Tic Tac Toe Decoding Script Setup Complete!")
-
-        self.target_epoch = []
-        self.non_target_epoch = []
-
-    # def get_sample_num_before(self):
-    #
-    # def get_sample_num_after(self):
-
-    # Start will be called once when the run button is hit.
     def init(self):
         pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
         # self.outputs['output1'] = [self.params['老李是傻逼']]
+
+        '''
+        if self.cur_state == 'idle':
+            if start_flshing_marker in self.inputs[EventMarkers]
+                self.data_buffer = DataBuffer()
+                next_state = 'recording'
+                # also need to clear inputs here
+
+        if self.cur_state == 'recording':
+            if end_flashing_marker in self.inputs[EventMarkers]
+
+                #### processing epochs for a block
+                raw = mne.raw with EEG and stim
+                raw = mne.filter(raw)
+                target_distractor_events = mne.find_event()
+                epochs = mne.Epochs(raw, target_distractor_events, start=-0.1, stop=1.0, baseline=(-0.1, 0))
+                epochs.plot()
+                #### end of processing epochs for a block
+
+                next_state = 'idle'
+            self.data_buffer.update_buffer(self.inputs)
+            self.clear_inputs()
+
+        cur_state = next_state
+        '''
+
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
+        if self.current_state == IDEAL_STATE:
+            if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
+                # self.data_buffer = DataBuffer()
+                self.inputs.clear_buffer()  # clear buffer
+                self.current_state = RECORDING_STATE
+                return
 
-        if TARGET_MARKER in self.inputs.get_data(P300EventStreamName) or NONTARGET_MARKER in self.inputs.get_data(P300EventStreamName):
-            # we have event marker in the data buffer
-            event_marker_timestamps = self.inputs.get_timestamps(P300EventStreamName)
-            event_marker_data = self.inputs.get_data(P300EventStreamName)
+        if self.current_state == RECORDING_STATE:
+            if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
+                # processed = mne.filter.filter_data(self.data_buffer[OpenBCIStreamName][0], EEG_SAMPLING_RATE, l_freq=1, h_freq=50, n_jobs=1)
+                # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
+                # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
+                self.current_state = IDEAL_STATE
+                self.data_buffer.clear_buffer()
 
-            # find the last unprocessed event_marker_time_stamp_index
-            unprocessed_event_marker_indices = \
-            np.where(event_marker_timestamps > self.processed_event_marker_timestamp_offset)[0]
-            if unprocessed_event_marker_indices.size > 0:
-                # we have unprocessed index
-                last_unprocessed_event_marker_indices = unprocessed_event_marker_indices[0]
-                # unprocessed event marker label and time stamps
-                unprocessed_event_marker_timestamps = event_marker_timestamps[:, last_unprocessed_event_marker_indices:]
-                unprocessed_event_marker_data = event_marker_timestamps[:, last_unprocessed_event_marker_indices:]
-
-                for event_marker_index, event_marker in enumerate(unprocessed_event_marker_data):
-                    event_marker_timestamp = unprocessed_event_marker_timestamps[event_marker_index]
-
-
-
-
-                    if event_marker == NONTARGET_MARKER:
-                        pass
-                    elif event_marker == TARGET_MARKER:
-                        pass
-                    else:
-                        pass
+            self.data_buffer.update_buffer(self.inputs.buffer)  # update the data_buffer with all inputs
+            self.data_buffer.update_buffer(
+                self.inputs.get_stream(OpenBCIStreamName))  # update the data_buffer with all inputs
+            self.data_buffer.update_buffer(self.inputs)  # update the data_buffer with all inputs
+            self.inputs.clear_buffer()  # clear the data buffer
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -169,19 +188,3 @@ class P300Detector(RenaScript):
     #     plt.legend()
     #
     #     plt.show()
-
-# class P300DetectorMarker(Enum):
-#
-#     NONTARGET_MARKER = 1
-#     TARGET_MARKER = 2
-#
-#     START_FLASHING_MARKER = 3
-#     END_FLASHING_MARKER = 4
-#
-#     EEG_SAMPLING_RATE = 250.0
-#
-#     Time_Window = 1.1  # second
-#
-#     OpenBCIStreamName = 'OpenBCI_Cyton_8'
-#
-#     P300EventStreamName = 'P300Speller'
