@@ -150,3 +150,12 @@ class GroupPlotWidget(QtWidgets.QWidget):
         scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
 
         return width, height, depth, image_format, channel_format, scaling_factor
+
+    def update_bar_chart_range(self, new_group_info):
+        self.this_group_info = new_group_info
+        if not self.this_group_info['is_image_only']:  # if barplot exists for this group
+            self.barchart_widget.setYRange(min=self.this_group_info['plot_format']['bar_chart']['y_min'], max=self.this_group_info['plot_format']['bar_chart']['y_max'])
+
+    def on_plot_format_change(self):
+        # TODO emit selected group and changed to what
+        pass
