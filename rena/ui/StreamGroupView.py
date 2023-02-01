@@ -111,7 +111,7 @@ class StreamGroupView(QTreeWidget):
         self.setHeaderLabels(["Name", "LSL Index"])
 
         # self.setModel(self.model)
-        self.groups_widgets = []
+        self.group_widgets = {}  # group name: str -> group item: GroupItem)
         self.channel_widgets = []
         self.stream_root = None
         self.create_tree_view(group_info)
@@ -208,7 +208,7 @@ class StreamGroupView(QTreeWidget):
             return
         if self.selection_state == group_selected or self.selection_state == groups_selected:  # is moving groups, we cannot drag one group into another
             [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
-             self.groups_widgets]
+             self.group_widgets.values()]
         if self.selection_state==channel_selected or self.selection_state==channels_selected:
             self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
         #
@@ -259,10 +259,13 @@ class StreamGroupView(QTreeWidget):
                 rtn[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
         return rtn
 
+    def get_group_item(self, group_name):
+        return self.group_widgets[group_name]
+
     def reset_drag_drop(self):
         self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
         [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
-         self.groups_widgets]
+         self.group_widgets.values()]
 
         # self.moving_groups = False
         # self.moving_channels = False
@@ -341,7 +344,7 @@ class StreamGroupView(QTreeWidget):
             | Qt.ItemIsDropEnabled
         )
 
-        self.groups_widgets.append(item)
+        self.group_widgets[group_name] = item
         return item
 
     # def add_group(self, display_text, item_type='group', display=1, item_index=None):
@@ -369,9 +372,9 @@ class StreamGroupView(QTreeWidget):
         for child_index in range(0, children_num):
             group = self.stream_root.child(child_index)
             if group.childCount() == 0:
-                empty_groups.append(group)
+                empty_groups.append(group.group_name)
         for empty_group in empty_groups:
-            self.groups_widgets.remove(empty_group)
+            self.group_widgets.pop(empty_group)
             self.stream_root.removeChild(empty_group)
 
     def change_parent(self, item, new_parent):
@@ -491,8 +494,6 @@ class StreamGroupView(QTreeWidget):
             & (~Qt.ItemIsDropEnabled)
         )
 
-
-
         for i in range(0, group_item.childCount()):
             group_item.child(i).setDisabled(True)
             # group_item.child(i).setFlags(
@@ -505,7 +506,6 @@ class StreamGroupView(QTreeWidget):
             # )
 
     def defroze_group(self, group_item):
-
         group_item.setFlags(
             group_item.flags()
             | Qt.ItemIsDropEnabled

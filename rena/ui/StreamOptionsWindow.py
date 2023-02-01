@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import numpy as np
 from PyQt5 import uic
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QStandardItemModel, QIntValidator
 from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem, QPushButton
 
@@ -17,11 +17,11 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class StreamOptionsWindow(QDialog):
-    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
+    # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent, stream_name, group_info):
+    def __init__(self, parent, stream_name, group_info, plot_format_changed_signal):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -58,8 +58,9 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, stream_name, plot_format_changed_signal)
+        plot_format_changed_signal.connect(self.plot_format_changed)
+
         self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
@@ -117,8 +118,7 @@ class StreamOptionsWindow(QDialog):
             self.plot_format_widget.hide()
         else:
             self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info \
-                (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
+            self.plot_format_widget.set_plot_format_widget_info(group_name=selected_groups[0].data(0, 0))
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()
@@ -266,11 +266,13 @@ class StreamOptionsWindow(QDialog):
     def channel_parent_group_changed(self, change_dict: dict):
         self.parent.channel_group_changed(change_dict)
 
-    def plot_format_on_change(self, info_dict):
+    @QtCore.pyqtSlot(dict)
+    def plot_format_changed(self, info_dict: dict):
         # get current selected:
-        group_item = self.stream_group_view.selected_groups[0]
+        group_item = self.stream_group_view.get_group_item(info_dict['group_name'])
+        group_info = self.get_group_info(info_dict['group_name'])
+        # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
 
-        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0, 0))
         # if new format is image, we disable all child
         if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
             group_info['selected_plot_format']] == 'bar_chart':
@@ -278,11 +280,14 @@ class StreamOptionsWindow(QDialog):
         else:
             self.stream_group_view.defroze_group(group_item=group_item)
 
-        self.plot_format_on_change_signal.emit(info_dict)
-
     def preset_on_change(self):
         self.preset_on_change_signal.emit()
 
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
 
+    def get_group_info(self, group_name):
+        group_info = self.parent.group_info[group_name]
+        # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
+        assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
+        return group_info

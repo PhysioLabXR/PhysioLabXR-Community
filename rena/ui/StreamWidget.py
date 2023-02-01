@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex
+from PyQt5.QtCore import QTimer, QThread, QMutex, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QMessageBox
 from pyqtgraph import PlotDataItem
@@ -32,6 +32,8 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 
 class StreamWidget(QtWidgets.QWidget):
+    plot_format_changed_signal = QtCore.pyqtSignal(dict)
+
     def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
         """
@@ -128,8 +130,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
-                                                         group_info=self.group_info)
-        self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
+                                                         group_info=self.group_info, plot_format_changed_signal=self.plot_format_changed_signal)
+        self.plot_format_changed_signal.connect(self.plot_format_on_change)
+        # self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
         self.stream_options_window.preset_on_change_signal.connect(self.preset_on_change)
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
@@ -371,7 +374,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
             self.viz_group_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -557,19 +560,21 @@ class StreamWidget(QtWidgets.QWidget):
         clear_layout(self.BarPlotWidgetLayout)
         self.create_visualization_component()
 
+    @QtCore.pyqtSlot(dict)
     def plot_format_on_change(self, info_dict):
+        update_selected_plot_format(self.stream_name, info_dict['group_name'], info_dict['new_format'])
         old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        self.preset_on_change()
+        self.preset_on_change()  # update the group info
 
-        self.viz_components.group_plots[plot_format_index_dict[old_format]][
-            info_dict['group_name']].hide()
-        self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
-            info_dict['group_name']].show()
+        # self.viz_components.group_plots[plot_format_index_dict[old_format]][
+        #     info_dict['group_name']].hide()
+        # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
+        #     info_dict['group_name']].show()
 
         # update the plot hide display
 
     def preset_on_change(self):
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
+        self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info
 
     def get_image_format_and_shape(self, group_name):
         width = self.group_info[group_name]['plot_format']['image']['width']

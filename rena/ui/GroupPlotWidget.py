@@ -15,7 +15,7 @@ from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combo
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
-    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate):
+    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate, plot_format_changed_signal):
         """
         :param channel_names: channel names for all the channels in this group
         """
@@ -50,6 +50,23 @@ class GroupPlotWidget(QtWidgets.QWidget):
         # TODO select the right tab base on the selected_plot_format in the group_info
         self.update_group_shown()  # show or hide this group
         self.plot_tabs.setCurrentIndex(self.this_group_info['selected_plot_format'])
+
+        self.plot_format_changed_signal = plot_format_changed_signal
+        self.plot_format_changed_signal.connect(self.plot_format_on_change)
+        self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
+    @QtCore.pyqtSlot(dict)
+    def plot_format_on_change(self, info_dict):
+        self.plot_tabs.currentChanged.disconnect(self.plot_tab_changed)
+        self.plot_tabs.setCurrentIndex(info_dict['new_format'])
+        self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
+
+    def plot_tab_changed(self, index):
+        info_dict = {
+            'stream_name': self.stream_name,
+            'group_name': self.get_group_name(),
+            'new_format': index
+        }
+        self.plot_format_changed_signal.emit(info_dict)
 
     def init_line_chart(self):
         self.linechart_widget = pg.PlotWidget()
@@ -157,5 +174,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.barchart_widget.setYRange(min=self.this_group_info['plot_format']['bar_chart']['y_min'], max=self.this_group_info['plot_format']['bar_chart']['y_max'])
 
     def on_plot_format_change(self):
-        # TODO emit selected group and changed to what
+        '''
+        emit selected group and changed to the stream widget, and to the stream options
+        '''
         pass

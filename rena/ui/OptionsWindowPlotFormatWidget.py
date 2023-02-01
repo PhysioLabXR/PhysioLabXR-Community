@@ -2,6 +2,7 @@
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
 from rena import config
@@ -11,11 +12,10 @@ from rena.utils.settings_utils import collect_stream_group_info, update_selected
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
-    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, stream_name):
+    def __init__(self, parent, stream_name, plot_format_changed_signal):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -25,9 +25,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
         self.stream_name = stream_name
         self.group_name = None
+        self.parent = parent
         # self.stream_name = stream_name
         # self.grou_name = group_name
-        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
         self.imageScalingFactorLineEdit.setValidator(QIntValidator())
@@ -46,20 +47,24 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
+        self.plot_format_changed_signal = plot_format_changed_signal
 
-    def set_plot_format_widget_info(self, stream_name, group_name):
-
+    def set_plot_format_widget_info(self, group_name):
         self.group_name = group_name
         # which one to select
-        group_info = collect_stream_group_info(stream_name, group_name)
+        self.update_display()
+
+    def update_display(self):
+        group_info = self.parent.get_group_info(self.group_name)
         # change selected tab
 
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
-        if collect_stream_group_info(stream_name, group_name)['is_image_only']:
+        if collect_stream_group_info(self.stream_name, self.group_name)['is_image_only']:
             self.enable_only_image_tab()
-        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+        self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         # image format information
         self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
@@ -72,12 +77,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
         self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
 
-    def plot_format_tab_current_changed(self, index):
+    def plot_format_tab_selection_changed(self, index):
         # create value
         # update the index in display
         # get current selected
         # update_selected_plot_format
-        update_selected_plot_format(self.stream_name, self.group_name, index)
         # if index==2:
 
         # new format, old format
@@ -86,9 +90,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             'group_name': self.group_name,
             'new_format': index
         }
+        self.plot_format_changed_signal.emit(info_dict)
 
-        self.plot_format_changed(info_dict)
-
+    @QtCore.pyqtSlot(dict)
+    def plot_format_changed(self, info_dict):
+        # if current selected group is the plot-format-changed group
+        if self.group_name == info_dict['group_name']:
+            self.update_display()
     def image_W_H_on_change(self):
         # check if W * H * D = Channel Num
         # W * H * D
@@ -161,6 +169,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_image_height
+
     def get_image_scaling_factor(self):
         try:
             new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
@@ -195,9 +204,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def image_changed(self):
         self.image_valid_update()
         self.preset_on_change_signal.emit()
-
-    def plot_format_changed(self, info_dict):
-        self.plot_format_on_change_signal.emit(info_dict)
 
     def bar_chart_range_on_change(self):
         bar_chart_max_range = self.get_bar_chart_max_range()
