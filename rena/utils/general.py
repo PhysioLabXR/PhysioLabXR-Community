@@ -150,6 +150,9 @@ class DataBuffer():
     def __getitem__(self, key):
         return self.buffer[key]  # TODO does this work?
 
+    def get_stream(self, stream):
+        return self.buffer[stream]
+
     def get_data(self, stream_name):
         return self.buffer[stream_name][0]
 

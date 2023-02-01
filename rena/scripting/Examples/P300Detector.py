@@ -118,15 +118,15 @@ class P300Detector(RenaScript):
 
         if self.current_state == RECORDING_STATE:
             if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
+
                 # processed = mne.filter.filter_data(self.data_buffer[OpenBCIStreamName][0], EEG_SAMPLING_RATE, l_freq=1, h_freq=50, n_jobs=1)
                 # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
                 # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
                 self.current_state = IDEAL_STATE
                 self.data_buffer.clear_buffer_data()
+                self.inputs.clear_buffer_data()
 
-            # self.data_buffer.update_buffer(self.inputs.buffer)  # update the data_buffer with all inputs
-            # self.data_buffer.update_buffer(
-            #     self.inputs.get_stream(OpenBCIStreamName))  # update the data_buffer with all inputs
+            # print('flash')
             self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
             self.inputs.clear_buffer_data() # clear the data buffer
 

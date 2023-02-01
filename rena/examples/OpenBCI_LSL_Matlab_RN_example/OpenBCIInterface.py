@@ -128,7 +128,7 @@ def run_test():
     print('Started streaming')
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=8, highcut=12, fs=250, order=6, channel_num=8)
+    butter_bandpass = RealtimeButterBandpass(lowcut=4, highcut=50, fs=250, order=6, channel_num=8)
     # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
@@ -139,7 +139,7 @@ def run_test():
             # data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
             for data in new_data.T:
                 eeg_data = data[1:9]
-                aux_data = data[9:12]
+                # aux_data = data[9:12]
                 # ######### notch and butter
                 eeg_data = notch.process_sample(eeg_data)
                 eeg_data = butter_bandpass.process_sample(eeg_data)
