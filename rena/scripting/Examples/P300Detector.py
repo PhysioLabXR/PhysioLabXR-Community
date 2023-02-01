@@ -209,7 +209,7 @@ def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
                           np.min(np.abs(data_ts - t)) < deviate]
 
     for index, event_data_index in enumerate(event_data_indices):
-        stim_array[0, event_data_index] = events[index]
+        stim_array[0, event_data_index] = events[0, index]
 
     return stim_array
 

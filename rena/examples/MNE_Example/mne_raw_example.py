@@ -115,13 +115,11 @@ stim_data = generate_mne_stim_channel(data_ts=data_ts, event_ts=event_ts, events
 add_stim_channel_to_raw_array(raw_array=raw_data, stim_data=stim_data)
 flashing_events = mne.find_events(raw_data, stim_channel='STI')
 epochs = mne.Epochs(raw_data, flashing_events, tmin=-0.1, tmax=0.1, baseline=(-0.1, 0), event_id=event_id, preload=True)
-target_epochs = epochs['target']
-non_target_epochs = epochs['non_target']
+# target_epochs = epochs['target']
+# non_target_epochs = epochs['non_target']
 # epochs.get_data()
 # epochs_eeg = epochs.pick_types(eeg=True)
-# evoked = epochs.average(by_event_type=True)
-
-print("")
+evoked = epochs.average(by_event_types = True)
 
 
 
