@@ -270,7 +270,7 @@
             <item>
              <widget class="QPushButton" name="addInputBtn">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -305,7 +305,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
+              <width>245</width>
               <height>122</height>
              </rect>
             </property>
@@ -357,7 +357,7 @@
             <item>
              <widget class="QPushButton" name="addOutput_btn">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -392,7 +392,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
+              <width>244</width>
               <height>122</height>
              </rect>
             </property>
@@ -444,7 +444,7 @@
             <item>
              <widget class="QPushButton" name="addParam_btn">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -479,7 +479,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>247</width>
+              <width>252</width>
               <height>122</height>
              </rect>
             </property>

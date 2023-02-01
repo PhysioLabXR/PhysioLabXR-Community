@@ -108,11 +108,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
         self.addStreamWidget.add_btn.clicked.connect(self.add_btn_clicked)
 
-        # data buffers
-        self.LSL_plots_fs_label_dict = {}
-        self.LSL_data_buffer_dicts = {}
-        self.LSL_current_ts_dict = {}
+        self.start_all_btn.setEnabled(False)
+        self.stop_all_btn.setEnabled(False)
 
+        self.start_all_btn.clicked.connect(self.on_start_all_btn_clicked)
+        self.stop_all_btn.clicked.connect(self.on_stop_all_btn_clicked)
         # scripting buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
@@ -178,7 +178,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
                 raise Exception("Unknow preset type {}".format(selected_type))
-            self.update_num_active_stream_label()
+            self.update_active_streams()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
@@ -189,15 +189,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def remove_stream_widget(self, target):
         self.sensorTabSensorsHorizontalLayout.removeWidget(target)
-        self.update_num_active_stream_label()
+        self.update_active_streams()
         self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
-    def update_num_active_stream_label(self):
+    def update_active_streams(self):
         available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
         streaming_widget_count = len([x for x in self.stream_widgets.values() if x.is_widget_streaming()])
         self.numActiveStreamsLabel.setText(
             num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count,
                                                  streaming_widget_count, self.replay_tab.get_num_replay_channels()))
+        # enable/disable the start/stop all buttons
+        self.start_all_btn.setEnabled(available_widget_count > streaming_widget_count)
+        self.stop_all_btn.setEnabled(streaming_widget_count > 0)
+
+    def on_start_all_btn_clicked(self):
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available]
+
+    def on_stop_all_btn_clicked(self):
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming]
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
@@ -298,40 +307,7 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
 
-    # def init_inference(self, inference_interface):
-    #     inference_thread = pg.QtCore.QThread(self)
-    #     self.worker_threads['scripting'] = inference_thread
-    #     self.inference_worker = workers.InferenceWorker(inference_interface)
-    #     self.inference_worker.moveToThread(self.worker_threads['scripting'])
-    #     self.init_visualize_inference_results()
-    #     self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-    #
-    #     self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-    #     self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-    #
-    #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
-    #     inference_thread.start()
-    #     self.inference_widget.hide()
 
-    # def inference_ticks(self):
-    #     # only ticks if data is streaming
-    #     if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
-    #         if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
-    #             buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
-    #             if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
-    #                 eye_frames = np.concatenate((np.zeros(shape=(
-    #                     2,  # 2 for two eyes' pupil sizes
-    #                     config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
-    #                                              buffered_data[2:4, :]), axis=-1)
-    #             else:
-    #                 eye_frames = buffered_data[1:3,
-    #                              -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
-    #             # make samples out of the most recent data
-    #             eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
-    #                                        stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
-    #
-    #             samples_dict = {'eye': eye_samples}
-    #             self.inference_worker.signal_data_tick.emit(samples_dict)
 
     def camera_screen_capture_tick(self):
         [w.signal_data_tick.emit() for w in self.cam_workers.values()]

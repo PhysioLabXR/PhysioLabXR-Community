@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from rena.scripting.RenaScript import RenaScript
-
+from rena.utils.general import DataBuffer
 
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
@@ -43,6 +43,12 @@ class RenaProcessing(RenaScript):
         self.item_events = []
         self.item_events_queue = []  # the items (timestamps and metainfo of an event) in this queue is emptied to self.item events, when its data is available
 
+        self.cur_state = 'idle'  # states: idle, recording, (training model), predicting
+        self.num_meta_blocks_before_training = 1
+        self.meta_block_counter = 0
+
+        self.next_state = 'idle'
+
     # Start will be called once when the run button is hit.
     def init(self):
         pass
@@ -50,36 +56,27 @@ class RenaProcessing(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         self.loop_count += 1
-        if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():
+        if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():  # if we receive event markers
             new_block_id, new_meta_block, new_condition, block_end = self.get_block_update()
 
-            if block_end:
-                try:
-                    assert self.current_block_id is not None
-                except AssertionError:
-                    raise Exception("self.current_block_id is None when block_end signal comes, that means a block start is never received")
-                print("[{0}] Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
-            if new_meta_block:
-                self.current_block_id = new_block_id
-                print("[{0}] Entering new block with ID {1}".format(self.loop_count, metablock_name_dict[self.current_block_id]))
-            if new_block_id:
-                self.current_block_id = new_block_id
-                message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
-                ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
-                print(message)
-            if new_condition:
-                self.current_block_id = new_block_id
-                print("[{0}] Setting current condition to {1}".format(self.loop_count, condition_name_dict[self.current_block_id]))
+            if self.cur_state == 'idle':
+                if new_meta_block:
+                    self.meta_block_counter += 1
+                    if self.meta_block_counter >= self.num_meta_blocks_before_training:
+                        print("Should start training now !!!")  # TODO
 
-            # TODO capture all the DTN events and later process them, so we can clear the event markers first
-            dtn_marker = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("DTN"), :]
-            # deal with other markers based on the current condition and metablock
+                if new_block_id:
+                    self.data_buffer = DataBuffer()# init the data buffer
+                    self.next_state = 'recording'
+            if self.cur_state == 'recording':
+                self.data_buffer.update_buffers(self.inputs.buffer)
+                if block_end:
+                    self.next_state = 'idle'
 
-
-            self.inputs.clear_stream_buffer('Unity.ReNa.EventMarkers')  # clear the event markers
-
-
-
+        self.inputs.clear_buffer()
+        if self.next_state != self.cur_state:
+            print(f'updating state from {self.cur_state} to {self.next_state}')
+            self.cur_state = self.next_state
         # TODO check if there's any request queued
 
     # cleanup is called when the stop button is hit
@@ -88,6 +85,10 @@ class RenaProcessing(RenaScript):
 
     def get_block_update(self):
         # there cannot be multiple condition updates in one block update, which runs once a second
+        block_end = False
+        new_condition = None
+        new_meta_block = None
+        new_block_id = None
         for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
             block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
             new_block_id = None if block_id_start_end == 0 or block_id_start_end < 0 else block_id_start_end  # block id less than 0 is also when the block ends
@@ -98,11 +99,33 @@ class RenaProcessing(RenaScript):
                 except AssertionError:
                     raise Exception("Did not receive block end signal")
                 block_end = True
-            else: block_end = False
 
             block_marker = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockMarker"), i]
             new_condition = block_marker if block_marker <= 4 else None
             new_meta_block = block_marker if block_marker > 4 else None
+
+            if block_end:
+                try:
+                    assert self.current_block_id is not None
+                except AssertionError:
+                    raise Exception(
+                        "self.current_block_id is None when block_end signal comes, that means a block start is never received")
+
+        if block_end:
+            print("[{0}] Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
+        if new_meta_block:  # TODO not worry about meta block for now because p1_s2 only has visual search
+            self.current_block_id = new_block_id
+            print("[{0}] Entering new META block with ID {1}".format(self.loop_count, metablock_name_dict[self.current_block_id]))
+        if new_block_id:
+            self.current_block_id = new_block_id
+            # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
+            # ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
+            message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
+            print(message)
+        if new_condition:
+            self.current_block_id = new_block_id
+            print("[{0}] Setting current condition to {1}".format(self.loop_count,
+                                                                  condition_name_dict[self.current_block_id]))
 
         return new_block_id, new_meta_block, new_condition, block_end
 

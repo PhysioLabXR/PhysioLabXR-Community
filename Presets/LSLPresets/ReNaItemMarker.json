@@ -1,3 +1,5 @@
 { "StreamName":"Unity.ReNa.ItemMarkers",
 "NumChannels":  300,
-  "DataType": "float32"}
+  "DataType": "float32",
+  "NominalSamplingRate":  75
+}
