@@ -6,6 +6,7 @@ from brainflow import BrainFlowInputParams, BoardShim
 from matplotlib import pyplot as plt
 from mne.time_frequency import psd_welch
 
+# from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
 from rena.scripting.RenaScript import RenaScript
 import brainflow
 
@@ -49,6 +50,9 @@ channel_names = [
     "O1",
     "O2"
 ]
+
+event_id = {'target': 1, 'non_target': 2}
+
 montage = 'standard_1005'
 
 
@@ -65,7 +69,8 @@ class P300Detector(RenaScript):
         # params = BrainFlowInputParams()
         # board = BoardShim(2, params)
         # self.eeg_names = board.get_eeg_names(2)
-        self.mne_raw_info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
+        self.info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
+        self.info['description'] = 'P300Speller'
         self.raw = None
         self.time_offset_before = -0.2
         self.time_offset_after = 1
@@ -118,19 +123,19 @@ class P300Detector(RenaScript):
 
         if self.current_state == RECORDING_STATE:
             if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
-
-                processed = mne.filter.filter_data(self.data_buffer[OpenBCIStreamName][0],
-                                                   EEG_SAMPLING_RATE,
-                                                   l_freq=1, h_freq=50, n_jobs=1)
-                processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
+                # processed = mne.filter.filter_data(self.data_buffer[OpenBCIStreamName][0],
+                #                                    EEG_SAMPLING_RATE,
+                #                                    l_freq=1, h_freq=50, n_jobs=1)
+                # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
                 # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
-                self.current_state = IDEAL_STATE
+                evoked = self.process_epoch_data()
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
+                self.current_state = IDEAL_STATE
 
             # print('flash')
             self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
-            self.inputs.clear_buffer_data() # clear the data buffer
+            self.inputs.clear_buffer_data()  # clear the data buffer
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -140,9 +145,19 @@ class P300Detector(RenaScript):
 
     def process_epoch_data(self):
         # self.data_buffer
-        self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0])
+        self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
+        stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
+                                              event_ts=self.data_buffer[P300EventStreamName][1],
+                                              events=self.data_buffer[P300EventStreamName][0])
 
-        pass
+        add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=stim_data)
+        flashing_events = mne.find_events(self.raw, stim_channel='STI')
+        epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
+                            preload=True)
+        evoked = epochs.average(by_event_type=True)
+        return evoked
+        # target_epochs = epochs['target']
+        # non_target_epochs = epochs['non_target']
 
     # cleanup is called when the stop button is hit
     # def cleanup(self):
@@ -174,3 +189,34 @@ class P300Detector(RenaScript):
     #     plt.legend()
     #
     #     plt.show()
+
+
+def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
+    stim_array = np.zeros((1, data_ts.shape[0]))
+
+    # event_data_indices = []
+    # for t_e in event_ts:
+    #     min_ts = math.inf
+    #     min_ts_index = None
+    #     for i, t_d in enumerate(data_ts):
+    #         t_diff = abs(t_e - t_d)
+    #         if t_diff < min_ts:
+    #             min_ts = t_diff
+    #             min_ts_index = i
+    #     event_data_indices.append(min_ts_index)
+
+    event_data_indices = [np.argmin(np.abs(data_ts - t)) for t in event_ts if
+                          np.min(np.abs(data_ts - t)) < deviate]
+
+    for index, event_data_index in enumerate(event_data_indices):
+        stim_array[0, event_data_index] = events[index]
+
+    return stim_array
+
+
+def add_stim_channel_to_raw_array(raw_array, stim_data, stim_channel_name='STI'):
+    # if len(stim_data.shape)==1:
+    #     stim_data = stim_data.reshape(1,stim_data.shape[0])
+    info = mne.create_info([stim_channel_name], raw_array.info['sfreq'], ['stim'])
+    stim_raw = mne.io.RawArray(stim_data, info)
+    raw_array.add_channels([stim_raw], force_update_info=True)
