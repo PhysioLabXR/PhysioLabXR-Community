@@ -112,7 +112,7 @@ class P300Detector(RenaScript):
         if self.current_state == IDEAL_STATE:
             if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
                 # self.data_buffer = DataBuffer()
-                self.inputs.clear_buffer()  # clear buffer
+                self.inputs.clear_buffer_data()  # clear buffer
                 self.current_state = RECORDING_STATE
                 return
 
@@ -122,13 +122,13 @@ class P300Detector(RenaScript):
                 # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
                 # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
                 self.current_state = IDEAL_STATE
-                self.data_buffer.clear_buffer()
+                self.data_buffer.clear_buffer_data()
 
             # self.data_buffer.update_buffer(self.inputs.buffer)  # update the data_buffer with all inputs
             # self.data_buffer.update_buffer(
             #     self.inputs.get_stream(OpenBCIStreamName))  # update the data_buffer with all inputs
             self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
-            self.inputs.clear_buffer()  # clear the data buffer
+            self.inputs.clear_buffer_data() # clear the data buffer
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -136,28 +136,6 @@ class P300Detector(RenaScript):
         # ................|..................|(processed marker).................|...................|............
         # ....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|
 
-        # stream name:
-        #
-        #
-
-        # if 'TicTacToeEvents' in self.inputs.keys():
-        #     # check if there is an end flashing event
-        #     if np.any(self.inputs.get_data('TicTacToeEvents') == FLASH_END_MARKER):
-        #         if 'EEG' not in self.inputs.keys():
-        #             print('Warning: EEG data not available at the time when end flashing marker is received, not calculating SSVEP')
-        #             return
-        #         print('Flashing end event received, decoding frequency power density')
-        #         flashing_end_time = self.inputs.get_timestamps('TicTacToeEvents')[np.argwhere(self.inputs.get_data('TicTacToeEvents') == FLASH_END_MARKER)][0, -1]
-        #         epoch_start_time = flashing_end_time - PAST_TIME_WINDOW
-        #         epoch_start_index = np.argmin(np.abs(self.inputs.get_timestamps('EEG') - epoch_start_time))
-        #
-        #         epoch = self.inputs.get_data('EEG')[:, epoch_start_index:]
-        #         epoch_timestamps = self.inputs.get_timestamps('EEG')[epoch_start_index:]
-        #
-        #         decoded_freq_index = self.preprocess_data(epoch, epoch_timestamps)
-        #         self.outputs['DecodedFreqIndex'] = [decoded_freq_index]
-        #         print('Sent Decoded Sample {}'.format(decoded_freq_index))
-        #         self.inputs.clear_stream_buffer('TicTacToeEvents')
     # cleanup is called when the stop button is hit
     # def cleanup(self):
     #     print('Cleanup function is called')
