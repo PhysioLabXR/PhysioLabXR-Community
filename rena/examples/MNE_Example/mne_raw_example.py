@@ -119,7 +119,9 @@ epochs = mne.Epochs(raw_data, flashing_events, tmin=-0.1, tmax=0.1, baseline=(-0
 # non_target_epochs = epochs['non_target']
 # epochs.get_data()
 # epochs_eeg = epochs.pick_types(eeg=True)
-evoked = epochs.average(by_event_types = True)
+evoked = epochs.average(by_event_type=True)
+
+print("")
 
 
 
