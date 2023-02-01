@@ -124,10 +124,10 @@ class P300Detector(RenaScript):
                 self.current_state = IDEAL_STATE
                 self.data_buffer.clear_buffer()
 
-            self.data_buffer.update_buffer(self.inputs.buffer)  # update the data_buffer with all inputs
-            self.data_buffer.update_buffer(
-                self.inputs.get_stream(OpenBCIStreamName))  # update the data_buffer with all inputs
-            self.data_buffer.update_buffer(self.inputs)  # update the data_buffer with all inputs
+            # self.data_buffer.update_buffer(self.inputs.buffer)  # update the data_buffer with all inputs
+            # self.data_buffer.update_buffer(
+            #     self.inputs.get_stream(OpenBCIStreamName))  # update the data_buffer with all inputs
+            self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
             self.inputs.clear_buffer()  # clear the data buffer
 
     def cleanup(self):

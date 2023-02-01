@@ -136,6 +136,17 @@ class DataBuffer():
     def clear_stream_buffer(self, stream_name):
         self.buffer.pop(stream_name)
 
+    def clear_stream_buffer_data(self, stream_name):
+        try:
+            self.buffer[stream_name][0] = np.empty([self.buffer[stream_name][0].shape[0], 0]) # event marker
+            self.buffer[stream_name][1] = np.array([]) # timestamp
+        except KeyError:
+            print(KeyError)
+
+    def clear_buffer_data(self):
+        for stream_name in self.buffer.keys():
+            self.clear_stream_buffer_data(stream_name)
+
     def __getitem__(self, key):
         return self.buffer[key]  # TODO does this work?
 
