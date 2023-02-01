@@ -171,7 +171,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.set_stream_available()
             else:
                 self.set_stream_unavailable()
-        self.main_parent.update_num_active_stream_label()
+        self.main_parent.update_active_streams()
 
     def set_stream_unavailable(self):
         self.StartStopStreamBtn.setEnabled(False)
@@ -243,7 +243,7 @@ class StreamWidget(QtWidgets.QWidget):
                 print("sensor stopped")
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
-        self.main_parent.update_num_active_stream_label()
+        self.main_parent.update_active_streams()
 
     def reset_preset_by_num_channels(self, num_channels):
         remove_stream_preset_from_settings(self.stream_name)
