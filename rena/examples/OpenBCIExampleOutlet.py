@@ -1,5 +1,6 @@
-"""Example program to demonstrate how to send a multi-channel time series to
-LSL."""
+"""
+Creates a dummy output that resembles a 8 channel EEG data source streamed through LSL
+"""
 import random
 import sys
 import getopt
