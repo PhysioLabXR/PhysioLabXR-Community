@@ -136,7 +136,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
         # FPS counter``
-        self.tick_times = deque(maxlen=config.VISUALIZATION_REFRESH_INTERVAL)
+        self.tick_times = deque(maxlen=10 * config.VISUALIZATION_REFRESH_INTERVAL)
 
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()

@@ -21,6 +21,7 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
         config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
         config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
+        config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
@@ -39,6 +40,8 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
             config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
         if not config.settings.contains('downsample_method_mean_sr_threshold') or config.settings.value('downsample_method_mean_sr_threshold') is None:
             config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
+        if not config.settings.contains('main_window_meta_data_refresh_interval') or config.settings.value('main_window_meta_data_refresh_interval') is None:
+            config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets

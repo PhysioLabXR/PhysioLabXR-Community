@@ -75,13 +75,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ############
 
         # create sensor threads, worker threads for different sensors
-        self.worker_threads = {}
-        self.sensor_workers = {}
         self.device_workers = {}
         self.lsl_workers = {}
-        self.inference_worker = None
-        self.cam_workers = {}
-        self.cam_displays = {}
 
         ######### init server
         print('Creating Rena Client')
@@ -90,19 +85,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                                 identity='client')
 
         #########
-
-        self.lsl_replay_worker = None
-        self.recent_visualization_refresh_timestamps = collections.deque(
-            maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        self.visualization_fps = 0
-        self.tick_rate = 0
-
-        # create workers for different sensors
-        # camera/screen capture timer
-        self.c_timer = QTimer()
-        self.c_timer.setInterval(config.VIDEO_DEVICE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.c_timer.timeout.connect(self.camera_screen_capture_tick)
-        self.c_timer.start()
+        # meta data udpate timer
+        self.meta_data_update_timer = QTimer()
+        self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.meta_data_update_timer.timeout.connect(self.update_meta_data)
+        self.meta_data_update_timer.start()
 
         self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
@@ -128,7 +115,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # windows
         self.pop_windows = {}
-        self.test_ts_buffer = []
 
         # actions for context menu
         self.actionDocumentation.triggered.connect(self.fire_action_documentation)
@@ -217,15 +203,6 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
-
-    def visualize_cam(self, cam_id_cv_img_timestamp):
-        cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
-        if cam_id in self.cam_displays.keys():
-            qt_img = convert_rgb_to_qt_image(cv_img)
-            self.cam_displays[cam_id].setPixmap(qt_img)
-            self.test_ts_buffer.append(time.time())
-            self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
-
     def add_streams_to_visualize(self, stream_names):
 
         for stream_name in stream_names:
@@ -269,6 +246,17 @@ class MainWindow(QtWidgets.QMainWindow):
             remove_stream_btn.click()
         config.settings.endGroup()
 
+    def update_meta_data(self):
+        # get the stream viz fps
+        fps_list = np.array([[s.get_fps() for s in  self.stream_widgets.values()] +  [v.get_fps() for v in self.video_device_widgets.values()]])
+        if len(fps_list) == 0:
+            return
+        if np.all(fps_list == 0):
+            self.visualizationFPSLabel.setText("0")
+        else:
+            self.visualizationFPSLabel.setText("%.2f" % np.mean(fps_list))
+
+
     def init_device(self, device_name):
         config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
         device_type = config.settings.value('DeviceType')
@@ -306,11 +294,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
-
-
-
-    def camera_screen_capture_tick(self):
-        [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
@@ -363,4 +346,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.activateWindow()
 
     def get_added_stream_names(self):
-        return list(self.stream_widgets.keys()) + list(self.cam_workers.keys())
+        return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
