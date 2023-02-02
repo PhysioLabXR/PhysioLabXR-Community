@@ -15,7 +15,7 @@ from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combo
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
-    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate, plot_format_changed_signal, group_info_changed_signal):
+    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate, plot_format_changed_signal):
         """
         :param channel_names: channel names for all the channels in this group
         """
@@ -55,10 +55,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_on_change)
         self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
 
-        group_info_changed_signal.connect(self.group_info_changed)
-
-    def group_info_changed(self, new_group_info: dict):
-        self.this_group_info = new_group_info[self.get_group_name()]
+    def update_image_info(self, new_image_info):
+        self.this_group_info['image'] = new_image_info
 
     @QtCore.pyqtSlot(dict)
     def plot_format_on_change(self, info_dict):
@@ -74,6 +72,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             'group_name': self.get_group_name(),
             'new_format': index
         }
+        self.this_group_info['selected_plot_format'] = index
         self.plot_format_changed_signal.emit(info_dict)
 
     def init_line_chart(self):

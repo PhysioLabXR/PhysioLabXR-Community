@@ -18,7 +18,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class StreamOptionsWindow(QDialog):
     # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
-    preset_on_change_signal = QtCore.pyqtSignal()
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
     def __init__(self, parent, stream_name, group_info, plot_format_changed_signal):
@@ -60,8 +59,7 @@ class StreamOptionsWindow(QDialog):
 
         self.plot_format_widget = OptionsWindowPlotFormatWidget(self, stream_name, plot_format_changed_signal)
         plot_format_changed_signal.connect(self.plot_format_changed)
-
-        self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
+        self.image_change_signal = self.plot_format_widget.image_change_signal
         self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
@@ -117,8 +115,9 @@ class StreamOptionsWindow(QDialog):
         if selection_state != group_selected:
             self.plot_format_widget.hide()
         else:
+            group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info(group_name=selected_groups[0].data(0, 0))
+            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name, this_group_info=self.parent.group_info[group_name])
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()
@@ -277,9 +276,6 @@ class StreamOptionsWindow(QDialog):
             self.stream_group_view.disable_channels_in_group(group_item=group_item)
         else:
             self.stream_group_view.enable_channels_in_group(group_item=group_item)
-
-    def preset_on_change(self):
-        self.preset_on_change_signal.emit()
 
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
