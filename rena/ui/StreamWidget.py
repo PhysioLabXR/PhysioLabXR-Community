@@ -33,7 +33,7 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors
 
 class StreamWidget(QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-
+    group_info_changed_signal = QtCore.pyqtSignal(dict)
     def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
         """
@@ -374,7 +374,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal, self.group_info_changed_signal)
             self.viz_group_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -562,7 +562,6 @@ class StreamWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(dict)
     def plot_format_on_change(self, info_dict):
-        update_selected_plot_format(self.stream_name, info_dict['group_name'], info_dict['new_format'])
         old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
         self.preset_on_change()  # update the group info
 
@@ -575,6 +574,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     def preset_on_change(self):
         self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info
+        self.group_info_changed_signal.emit(self.group_info)
 
     def get_image_format_and_shape(self, group_name):
         width = self.group_info[group_name]['plot_format']['image']['width']

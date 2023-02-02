@@ -9,13 +9,13 @@ from rena.config import valid_networking_interfaces, valid_preset_categories
 from rena.config_ui import image_depth_dict
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
-    get_preset_category, get_stream_preset_custom_info, is_group_shown
+    get_preset_category, get_stream_preset_custom_info, is_group_shown, update_selected_plot_format
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox, get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
-    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate, plot_format_changed_signal):
+    def __init__(self, parent, stream_name, group_name, this_group_info, channel_names, sampling_rate, plot_format_changed_signal, group_info_changed_signal):
         """
         :param channel_names: channel names for all the channels in this group
         """
@@ -54,13 +54,21 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal = plot_format_changed_signal
         self.plot_format_changed_signal.connect(self.plot_format_on_change)
         self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
+
+        group_info_changed_signal.connect(self.group_info_changed)
+
+    def group_info_changed(self, new_group_info: dict):
+        self.this_group_info = new_group_info[self.get_group_name()]
+
     @QtCore.pyqtSlot(dict)
     def plot_format_on_change(self, info_dict):
-        self.plot_tabs.currentChanged.disconnect(self.plot_tab_changed)
-        self.plot_tabs.setCurrentIndex(info_dict['new_format'])
-        self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
+        if self.get_group_name() == info_dict['group_name']:
+            self.plot_tabs.currentChanged.disconnect(self.plot_tab_changed)
+            self.plot_tabs.setCurrentIndex(info_dict['new_format'])
+            self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
 
     def plot_tab_changed(self, index):
+        update_selected_plot_format(self.stream_name, self.get_group_name(), index)
         info_dict = {
             'stream_name': self.stream_name,
             'group_name': self.get_group_name(),
@@ -135,7 +143,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             for index_in_group, channel_index in enumerate(self.this_group_info['channel_indices']):
                 self.linechart_widget.plotItem.curves[index_in_group].setData(self.viz_time_vector, data[int(channel_index), :])
         elif self.get_selected_format() == 1 and self.this_group_info["plot_format"]['image']['is_valid']:
-            width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(self.group_name)
+            width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(self.get_group_name())
             image_plot_data = data[self.this_group_info['channel_indices'], -1]  # only visualize the last frame
             if image_format == 'RGB':
                 if channel_format == 'Channel First':
@@ -159,12 +167,12 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.barchart_widget.plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1, brush='r')
 
     def get_image_format_and_shape(self, group_name):
-        width = self.group_info[group_name]['plot_format']['image']['width']
-        height = self.group_info[group_name]['plot_format']['image']['height']
-        image_format = self.group_info[group_name]['plot_format']['image']['image_format']
+        width = self.this_group_info['plot_format']['image']['width']
+        height = self.this_group_info['plot_format']['image']['height']
+        image_format = self.this_group_info['plot_format']['image']['image_format']
         depth = image_depth_dict[image_format]
-        channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
-        scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
+        channel_format = self.this_group_info['plot_format']['image']['channel_format']
+        scaling_factor = self.this_group_info['plot_format']['image']['scaling_factor']
 
         return width, height, depth, image_format, channel_format, scaling_factor
 

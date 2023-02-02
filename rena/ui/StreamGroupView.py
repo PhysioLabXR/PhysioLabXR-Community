@@ -487,7 +487,7 @@ class StreamGroupView(QTreeWidget):
         self.selection_changed()
 
 
-    def froze_group(self,group_item):
+    def disable_channels_in_group(self, group_item):
         # group_item is not dropable
         group_item.setFlags(
             group_item.flags()
@@ -505,7 +505,7 @@ class StreamGroupView(QTreeWidget):
             #     | (~Qt.ItemIsDropEnabled)
             # )
 
-    def defroze_group(self, group_item):
+    def enable_channels_in_group(self, group_item):
         group_item.setFlags(
             group_item.flags()
             | Qt.ItemIsDropEnabled

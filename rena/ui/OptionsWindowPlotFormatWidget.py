@@ -55,9 +55,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.update_display()
 
     def update_display(self):
-        group_info = self.parent.get_group_info(self.group_name)
-        # change selected tab
-
+        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=self.group_name)        # change selected tab
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
         self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
@@ -83,7 +81,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # get current selected
         # update_selected_plot_format
         # if index==2:
-
+        update_selected_plot_format(self.stream_name, self.group_name, index)
         # new format, old format
         info_dict = {
             'stream_name': self.stream_name,

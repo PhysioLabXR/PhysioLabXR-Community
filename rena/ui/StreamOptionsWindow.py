@@ -270,15 +270,13 @@ class StreamOptionsWindow(QDialog):
     def plot_format_changed(self, info_dict: dict):
         # get current selected:
         group_item = self.stream_group_view.get_group_item(info_dict['group_name'])
-        group_info = self.get_group_info(info_dict['group_name'])
         # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
 
         # if new format is image, we disable all child
-        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
-            group_info['selected_plot_format']] == 'bar_chart':
-            self.stream_group_view.froze_group(group_item=group_item)
+        if plot_format_index_dict[info_dict['new_format']] == 'image' or plot_format_index_dict[info_dict['new_format']] == 'bar_chart':
+            self.stream_group_view.disable_channels_in_group(group_item=group_item)
         else:
-            self.stream_group_view.defroze_group(group_item=group_item)
+            self.stream_group_view.enable_channels_in_group(group_item=group_item)
 
     def preset_on_change(self):
         self.preset_on_change_signal.emit()
@@ -286,8 +284,8 @@ class StreamOptionsWindow(QDialog):
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
 
-    def get_group_info(self, group_name):
-        group_info = self.parent.group_info[group_name]
-        # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
-        assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
-        return group_info
+    # def get_group_info(self, group_name):
+    #     group_info = self.parent.group_info[group_name]
+    #     # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
+    #     assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
+    #     return group_info
