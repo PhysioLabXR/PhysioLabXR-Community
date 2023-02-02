@@ -26,8 +26,7 @@ class StreamOptionsWindow(QDialog):
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
-        self.setWindowTitle('Options')
-        self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
+        self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
         self.parent = parent
         # add supported filter list
         # self.resize(1000, 1000)
@@ -73,10 +72,8 @@ class StreamOptionsWindow(QDialog):
         self.update_num_points_to_display()
 
     def add_group_clicked(self):
-        affected_groups = self.stream_group_view.get_selected_channel_groups()  # get affected groups
-        new_group_name = self.parent.get_next_available_groupname()
-        print("creating new group {}".format(new_group_name))
-        # create a new group
+        change_dict = self.stream_group_view.add_group()
+        self.parent.channel_group_changed(change_dict)
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -182,22 +179,22 @@ class StreamOptionsWindow(QDialog):
                 self.stream_group_view.change_parent(other_group_child, root_group)
         self.stream_group_view.remove_empty_groups()
 
-    def init_create_new_group_widget(self):
-        container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
-                                                               label='New Group from Selected Channels',
-                                                               vertical=False,
-                                                               label_position='centertop')
-        _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
-                                                    default_input='')
-        add_group_btn = init_button(parent=layout_add_group, label='Create')
-        add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
-
-    def create_new_group_btn_clicked(self):
-        # group_names = self.signalTreeView.get_group_names()
-        # selected_items = self.signalTreeView.selectedItems()
-        new_group_name = self.newGroupNameTextbox.text()
-
-        self.stream_group_view.create_new_group(new_group_name=new_group_name)
+    # def init_create_new_group_widget(self):
+    #     container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
+    #                                                            label='New Group from Selected Channels',
+    #                                                            vertical=False,
+    #                                                            label_position='centertop')
+    #     _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
+    #                                                 default_input='')
+    #     add_group_btn = init_button(parent=layout_add_group, label='Create')
+    #     add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
+    #
+    # def create_new_group_btn_clicked(self):
+    #     # group_names = self.signalTreeView.get_group_names()
+    #     # selected_items = self.signalTreeView.selectedItems()
+    #     new_group_name = self.newGroupNameTextbox.text()
+    #
+    #     self.stream_group_view.create_new_group(new_group_name=new_group_name)
 
         #
         # if new_group_name:

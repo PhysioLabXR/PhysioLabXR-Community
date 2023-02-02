@@ -1,5 +1,5 @@
 import sys
-from collections import deque
+from collections import deque, defaultdict
 
 import PyQt5
 import numpy as np
@@ -142,13 +142,13 @@ class StreamGroupView(QTreeWidget):
             dialog_popup('Warning: Cannot Modify LSL Index')
             # pass
 
-
     def clear_tree_view(self):
         self.selection_state = nothing_selected
         self.selected_groups = []
         self.selected_channels = []
         self.selectionModel().selectionChanged.disconnect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].disconnect(self.item_changed)
+        self.group_widgets = dict()
         self.clear()
 
     def create_tree_view(self, group_info, image_ir_only=False):
@@ -163,9 +163,9 @@ class StreamGroupView(QTreeWidget):
         # get_childGroups_for_group('presets/')
         for group_name, group_values in group_info.items():
 
-            group = self.add_group_item(parent_item=self.stream_root,
-                                        group_name=group_name,
-                                        plot_format=group_values['plot_format'])
+            group = self.add_existing_group_item(parent_item=self.stream_root,
+                                                 group_name=group_name,
+                                                 plot_format=group_values['plot_format'])
             # self.groups_widgets.append(group)
             if len(group_values['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
                 continue  # skip adding channel items if exceeding maximum time series number of channels
@@ -247,16 +247,15 @@ class StreamGroupView(QTreeWidget):
                 if this_changed_group.group_name not in change_dict.keys():
                     change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
                 selected_c.previous_parent = target_group # set the parent to be the drop target
-        print('Changed groups: {}'.format(change_dict))
+        print('StreamGroupView: Changed groups: {}'.format(change_dict))
         self.parent.channel_parent_group_changed(change_dict)
         event.accept()
 
     def get_selected_channel_groups(self):
-        rtn = {}  # group name -> channel name, lsl indices
+        rtn = defaultdict(list)  # group name -> channel name, lsl indices
         for selected_c in self.selected_channels:
             this_changed_group = selected_c.parent()
-            if this_changed_group.group_name not in rtn.keys():
-                rtn[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
+            rtn[this_changed_group.group_name].append(selected_c) # get the indices of the changed group
         return rtn
 
     def get_group_item(self, group_name):
@@ -325,9 +324,21 @@ class StreamGroupView(QTreeWidget):
         self.channel_widgets.append(item)
         return item
 
-    def add_group_item(self, parent_item, group_name, plot_format):
+    def add_new_group_item(self, parent_item, group_name):
+        return self.add_group_item(parent_item, group_name, new_group_default_plot_format, True)
+
+    def add_existing_group_item(self, parent_item, group_name, plot_format):
+        try:
+            assert group_name not in self.group_widgets.keys()
+        except AssertionError:
+            raise Exception(f"There can't be duplicate group names {group_name}")
         is_shown = is_group_shown(group_name, self.stream_name)
-        item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name, group_name=group_name)
+        return self.add_group_item(parent_item, group_name, plot_format, is_shown)
+
+
+    def add_group_item(self, parent_item, group_name, plot_format, is_shown):
+        item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name,
+                         group_name=group_name)
         # item.setText(0, group_name)
         if is_shown:
             item.setForeground(0, QBrush(QColor(color_green)))
@@ -343,10 +354,8 @@ class StreamGroupView(QTreeWidget):
             | Qt.ItemIsDragEnabled
             | Qt.ItemIsDropEnabled
         )
-
         self.group_widgets[group_name] = item
         return item
-
     # def add_group(self, display_text, item_type='group', display=1, item_index=None):
     #     new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display,
     #                               item_index=item_index)
@@ -443,41 +452,41 @@ class StreamGroupView(QTreeWidget):
 
     # print(item.data(0, 0))
 
-    def create_new_group(self, new_group_name):
-        group_names = self.get_group_names()
-        selected_items = self.selectedItems()
-        # new_group_name = self.newGroupNameTextbox.text()
-
-        if new_group_name:
-            if len(selected_items) == 0:
-                dialog_popup('please select at least one channel to create a group')
-            elif new_group_name in group_names:
-                dialog_popup('Cannot Have duplicated Group Names')
-                return
-            else:
-                for selected_item in selected_items:
-                    if type(selected_item) == GroupItem:
-                        dialog_popup('group item cannot be selected while creating new group')
-                        return
-                # create new group:
-
-                # self.disconnect_selection_changed()
-                self.clearSelection()
-
-                new_group = self.add_group_item(parent_item=self.stream_root,
-                                                group_name=new_group_name,
-                                                display=any([item.display for item in selected_items]),
-                                                plot_format='time_series')
-                for selected_item in selected_items:
-                    self.change_parent(item=selected_item, new_parent=new_group)
-
-                # self.reconnect_selection_changed()
-
-            self.remove_empty_groups()
-            self.expandAll()
-        else:
-            dialog_popup('please enter your group name first')
-            return
+    # def create_new_group(self, new_group_name):
+    #     group_names = self.get_group_names()
+    #     selected_items = self.selectedItems()
+    #     # new_group_name = self.newGroupNameTextbox.text()
+    #
+    #     if new_group_name:
+    #         if len(selected_items) == 0:
+    #             dialog_popup('please select at least one channel to create a group')
+    #         elif new_group_name in group_names:
+    #             dialog_popup('Cannot Have duplicated Group Names')
+    #             return
+    #         else:
+    #             for selected_item in selected_items:
+    #                 if type(selected_item) == GroupItem:
+    #                     dialog_popup('group item cannot be selected while creating new group')
+    #                     return
+    #             # create new group:
+    #
+    #             # self.disconnect_selection_changed()
+    #             self.clearSelection()
+    #
+    #             new_group = self.add_group_item(parent_item=self.stream_root,
+    #                                             group_name=new_group_name,
+    #                                             display=any([item.display for item in selected_items]),
+    #                                             plot_format='time_series')
+    #             for selected_item in selected_items:
+    #                 self.change_parent(item=selected_item, new_parent=new_group)
+    #
+    #             # self.reconnect_selection_changed()
+    #
+    #         self.remove_empty_groups()
+    #         self.expandAll()
+    #     else:
+    #         dialog_popup('please enter your group name first')
+    #         return
 
     def disconnect_selection_changed(self):
         self.selectionModel().selectionChanged.disconnect(self.selection_changed)
@@ -485,7 +494,6 @@ class StreamGroupView(QTreeWidget):
     def reconnect_selection_changed(self):
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.selection_changed()
-
 
     def disable_channels_in_group(self, group_item):
         # group_item is not dropable
@@ -523,6 +531,39 @@ class StreamGroupView(QTreeWidget):
             # )
 
 
-    def update_group_child_selectable(self,group_name):
-        pass
-        # make all child unselectable
+    # def update_group_child_selectable(self,group_name):
+    #     pass
+    #     # make all child unselectable
+    def get_next_available_groupname(self):
+        i = 0
+        while (rtn := 'GroupName{}'.format(i)) in self.group_widgets.keys():
+            i += 1
+        return rtn
+
+    def add_group(self):
+        new_group_name = self.get_next_available_groupname()
+        new_group = self.add_new_group_item(parent_item=self.stream_root, group_name=new_group_name)  # default plot as time series
+        selected = self.get_selected_channel_groups()
+
+        self.disconnect_selection_changed()
+        for old_group_name, channels in selected.items():
+            old_group = self.group_widgets[old_group_name]
+            for c in channels:
+                index = old_group.indexOfChild(c)
+                channel_item_without_parent = old_group.takeChild(index)  # this will remove the child from selected channels
+                new_group.addChild(channel_item_without_parent)
+
+        change_dict = {}  # group name -> channel name, lsl indices
+        change_dict[new_group_name] = new_group.children()  # get the indices of the changed group
+        for selected_c in self.selected_channels:
+            if selected_c not in change_dict[new_group_name]:
+                change_dict[new_group_name].append(selected_c)
+            this_changed_group = selected_c.previous_parent
+            if this_changed_group.group_name not in change_dict.keys():
+                change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
+            selected_c.previous_parent = new_group # set the parent to be the drop target
+        print('StreamGroupView: Changed groups: {}'.format(change_dict))
+        self.remove_empty_groups()
+        self.reconnect_selection_changed()
+        return change_dict
+

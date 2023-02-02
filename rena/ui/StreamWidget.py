@@ -20,7 +20,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
 from rena.utils.general import DataBufferSingleStream
 from rena.utils.settings_utils import get_stream_preset_info, \
     collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
-    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings
+    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
@@ -349,10 +349,10 @@ class StreamWidget(QtWidgets.QWidget):
         # init stream view with LSL
         # time_series_widget = self.TimeSeriesPlotsLayout
 
-        fs_label = QLabel(text='Sampling rate = ')
-        ts_label = QLabel(text='Current Time Stamp = ')
-        self.MetaInfoVerticalLayout.addWidget(fs_label)
-        self.MetaInfoVerticalLayout.addWidget(ts_label)
+        # fs_label = QLabel(text='Sampling rate = ')
+        # ts_label = QLabel(text='Current Time Stamp = ')
+        # self.MetaInfoVerticalLayout.addWidget(fs_label)
+        # self.MetaInfoVerticalLayout.addWidget(ts_label)
         # if plot_group_slices:
         time_series_widgets = {}
         image_labels = {}
@@ -374,7 +374,7 @@ class StreamWidget(QtWidgets.QWidget):
             self.viz_group_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
-        return fs_label, ts_label, group_plot_widget_dict
+        return group_plot_widget_dict
 
     # def get_viz_time_vector(self):
     #     display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
@@ -382,8 +382,8 @@ class StreamWidget(QtWidgets.QWidget):
     #     return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
-        fs_label, ts_label, group_plot_dict = self.init_stream_visualization()
-        self.viz_components = VizComponents(fs_label, ts_label, group_plot_dict)
+        group_plot_dict = self.init_stream_visualization()
+        self.viz_components = VizComponents(self.fs_label, self.ts_label, group_plot_dict)
 
     def process_stream_data(self, data_dict):
         '''
@@ -606,21 +606,28 @@ class StreamWidget(QtWidgets.QWidget):
         for group_name, child_channels in change_dict.items():
             if len(child_channels) == 0:
                 self.group_info.pop(group_name)
-            else:
+            else:  # cover the cases for both changed groups and new group
+                if group_name not in self.group_info.keys():
+                    self.group_info[group_name] = create_default_group_info(len(child_channels), group_name)[group_name]  # add a default group info
                 self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
                 self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
         export_group_info_to_settings(self.group_info, self.stream_name)
         self.reset_viz()
 
-    def get_next_available_groupname(self):
-        i = 0
-        while (rtn := 'GroupName{}'.format(i)) in self.group_info.keys():
-            i += 1
-        return rtn
 
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
         return  int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
 
-    def create_new_group_btn_clicked(self):
-        pass
+    # def add_group(self, affected):
+    #     new_group_name = self.get_next_available_groupname()
+    #     print("StreamOptionsWindow: creating new group {}".format(new_group_name))
+    #
+    #     for group_name, child_channels in affected.items():
+    #         self.group_info
+    #         if len(child_channels) == 0:
+    #             self.group_info.pop(group_name)
+    #         else:
+    #             self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
+    #             self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
+    #     return new_group_name

@@ -5,7 +5,8 @@ import numpy as np
 
 from exceptions.exceptions import InvalidPresetError
 from rena import config
-from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM
+from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP
+from rena.shared import default_plot_format
 
 
 def get_presets_by_category(setting_category):
@@ -202,7 +203,7 @@ def export_group_info_to_settings(group_info, stream_name):
         for group_info_key, group_info_value in group_info_dict.items():
             if group_info_key != 'plot_format':
                 config.settings.setValue(
-                    '{0}/GroupInfo/GroupName{1}/{2}'.format(stream_name, group_info_dict['group_index'],
+                    '{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name,
                                                             group_info_key), group_info_value)
             else:
                 for plot_format_name, plot_format_info_dict in group_info_value.items():
@@ -214,9 +215,9 @@ def export_group_info_to_settings(group_info, stream_name):
                         #                                 'selected'
                         #                                 ),  # plot format name
                         #                                     'time_series')
-                        config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}/{4}'.
+                        config.settings.setValue('{0}/GroupInfo/{1}/{2}/{3}/{4}'.
                                                  format(stream_name,
-                                                        group_info_dict['group_index'],  # group name
+                                                        group_name,  # group name
                                                         group_info_key,
                                                         plot_format_name,  # plot format file
                                                         plot_format_info_key),  # plot format name
@@ -238,7 +239,7 @@ def export_preset_to_settings(preset, setting_category):
         for group_name, group_info_dict in preset['GroupInfo'].items():
             for group_info_key, group_info_value in group_info_dict.items():
                 if group_info_key!='plot_format':
-                    config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}'.format(preset['StreamName'], group_info_dict['group_index'], group_info_key), group_info_value)
+                    config.settings.setValue('{0}/GroupInfo/{1}/{2}'.format(preset['StreamName'], group_name, group_info_key), group_info_value)
                 else:
                     for plot_format_name, plot_format_info_dict in group_info_value.items():
                         for plot_format_info_key, plot_format_info_value in plot_format_info_dict.items():
@@ -249,9 +250,9 @@ def export_preset_to_settings(preset, setting_category):
                             #                                 'selected'
                             #                                 ),  # plot format name
                             #                                     'time_series')
-                            config.settings.setValue('{0}/GroupInfo/GroupName{1}/{2}/{3}/{4}'.
+                            config.settings.setValue('{0}/GroupInfo/{1}/{2}/{3}/{4}'.
                                                      format(preset['StreamName'],
-                                                            group_info_dict['group_index'],  # group name
+                                                            group_name,  # group name
                                                             group_info_key,
                                                             plot_format_name, # plot format file
                                                             plot_format_info_key), # plot format name
@@ -337,6 +338,26 @@ def create_default_preset(stream_name, data_type, port, networking_interface, nu
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
+def create_default_group_info(channel_num, group_name):
+    # create groupinfo from 0 to x
+    # if channel num is greater than 100, we hide the rest
+    if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
+        is_channels_shown = [1 for c in range(0, channel_num)]
+    else:
+        is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
+        is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
+
+    return {
+        group_name: {
+            'selected_plot_format': 0,
+            "plot_format": default_plot_format,
+            "channel_indices": [channel_index for channel_index in range(0, channel_num)],
+            "is_channels_shown": is_channels_shown,
+            "group_description": "",
+            "is_image_only": channel_num > MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP
+                }
+            }
+
 def update_selected_plot_format(stream_name, group_name, selected_format: int):
     config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
 
@@ -350,42 +371,9 @@ def update_selected_plot_format(stream_name, group_name, selected_format: int):
 
 def process_plot_group(preset_dict):
 
-    plot_format = {
-        'time_series': {'is_valid': 1, 'display':1},
-        'image': {'is_valid': 0,
-                  'image_format': 'PixelMap',
-                  'width': 0,
-                  'height': 0,
-                  'channel_format': 'Channel Last',
-                  'scaling_factor': 1,
-                  },
-        'bar_chart': {'is_valid': 1,
-                     'display':1,
-                     'y_max': -0.1,
-                     'y_min': 0.0,
-                     }
-    }
-
     channel_num = preset_dict['NumChannels']
     if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:
-        # create groupinfo from 0 to x
-        # if channel num is greater than 100, we hide the rest
-        if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
-            is_channels_shown = [1 for c in range(0, channel_num)]
-        else:
-            is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
-            is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
-
-        preset_dict['GroupInfo'] = {
-            "Group1": {
-                "group_index": 1,
-                'selected_plot_format': 0,
-                "plot_format": plot_format,
-                "channel_indices": [channel_index for channel_index in range(0, channel_num)],
-                "is_channels_shown": is_channels_shown,
-                "group_description": ""
-            }
-        }
+        preset_dict['GroupInfo'] = create_default_group_info(channel_num, "GroupName1")
     else:
         plot_group_slice = []
         head = 0
@@ -413,11 +401,10 @@ def process_plot_group(preset_dict):
                 is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
                 num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
 
-            preset_dict['GroupInfo']["Group{0}".format(i)] = \
+            preset_dict['GroupInfo']["GroupName{0}".format(i)] = \
                 {
-                    "group_index": i,
                     'selected_plot_format': 0,
-                    "plot_format": plot_format,
+                    "plot_format": default_plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
                     "group_description": ""
