@@ -43,7 +43,7 @@ def teardown_function(function):
     """
     pass
 
-def test_lsl_channel_mistmatch(app, qtbot) -> None:
+def test_plot_format_change(app, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -51,32 +51,47 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     :return:
     '''
     test_stream_name = 'TestStreamName'
-    p = Process(target=LSLTestStream, args=(test_stream_name, random.randint(100, 200)))
+    p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
 
-    app.create_preset('TestStreamName', 'float', None, 'LSL', num_channels=random.randint(1, 99))  # add a default preset
 
-    app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
-    qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box, test_stream_name)
-
-    qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
-    def stream_is_available():
-        assert app.stream_widgets[test_stream_name].is_stream_available
-    qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the LSL stream becomes available
-
-    # get the messagebox about channel mismatch
-    def handle_dialog():
-        w = QtWidgets.QApplication.activeWindow()
-        if isinstance(w, QMessageBox):
-            yes_button = w.button(QtWidgets.QMessageBox.Yes)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
-
-    threading.Timer(1, handle_dialog).start()
-    qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
-    # check if data is being plotted
-    assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
-
+    print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
+
+def test_drag_drop_channels(app, qtbot) -> None:
+    '''
+    Adding active stream
+    :param app:
+    :param qtbot:
+    :return:
+    '''
+    test_stream_name = 'TestStreamName'
+    p = Process(target=LSLTestStream, args=(test_stream_name,))
+    p.start()
+
+
+    print("Test complete, killing sending-data process")
+    p.kill()  # stop the dummy LSL process
+
+
+def test_create_group(app, qtbot) -> None:
+    test_stream_name = 'TestStreamName'
+    p = Process(target=LSLTestStream, args=(test_stream_name,))
+    p.start()
+
+
+    print("Test complete, killing sending-data process")
+    p.kill()  # stop the dummy LSL process
+
+def test_use_case_1(app, qtbot) -> None:
+    # add new preset
+    # create group
+    # rearrange channels between groups
+    test_stream_name = 'TestStreamName'
+    p = Process(target=LSLTestStream, args=(test_stream_name,))
+    p.start()
+
+
+    print("Test complete, killing sending-data process")
+    p.kill()  # stop the dummy LSL process

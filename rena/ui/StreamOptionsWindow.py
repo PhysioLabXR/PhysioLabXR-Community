@@ -156,17 +156,16 @@ class StreamOptionsWindow(QDialog):
 
     #         self.infoWidgetLayout.addStretch()
 
-    def reload_preset_to_UI(self):
-        self.reload_group_info_in_treeview()
+    def reload_preset_to_UI(self, group_info):
+        self.reload_group_info_in_treeview(group_info)
         self.load_sr_and_display_duration_from_settings_to_ui()
 
-    def reload_group_info_in_treeview(self):
+    def reload_group_info_in_treeview(self, group_info):
         '''
         this function is called when the group info in the persistent settings
         is changed externally
         :return:
         '''
-        group_info = collect_stream_all_groups_info(self.stream_name)  # get group info from settings
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view(group_info)
 

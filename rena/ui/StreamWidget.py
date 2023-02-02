@@ -74,7 +74,7 @@ class StreamWidget(QtWidgets.QWidget):
         # visualization timer
         self.v_timer = QTimer()
         self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.v_timer.timeout.connect(self.visualize_LSLStream_data)
+        self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
         self.StartStopStreamBtn.clicked.connect(self.start_stop_stream_btn_clicked)
@@ -246,10 +246,16 @@ class StreamWidget(QtWidgets.QWidget):
         self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
-        self.stream_options_window.reload_preset_to_UI()
+
+        self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
+        self.stream_options_window.reload_preset_to_UI(self.group_info)
         self.reset_viz()
 
     def reset_viz(self):
+        '''
+        caller to this function must ensure self.group_info is modified and up to date with user changes
+        :return:
+        '''
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
@@ -336,10 +342,7 @@ class StreamWidget(QtWidgets.QWidget):
     def clear_stream_visualizations(self):
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
-        clear_layout(self.TimeSeriesPlotsLayout)
-        clear_layout(self.ImageWidgetLayout)
-        clear_layout(self.MetaInfoVerticalLayout)
+        clear_layout(self.viz_group_layout)
 
     def init_stream_visualization(self):
 
@@ -441,7 +444,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.setting_update_viz_mutex.unlock()
 
-    def visualize_LSLStream_data(self):
+    def visualize(self):
         '''
         This is the function for LSL data visualization.
         It plot the data from the data visualization buffer based on the configuration
@@ -545,13 +548,13 @@ class StreamWidget(QtWidgets.QWidget):
         set_stream_preset_info(self.stream_name, 'NominalSamplingRate', new_sampling_rate)
         set_stream_preset_info(self.stream_name, 'DisplayDuration', new_display_duration)
 
-    def reload_visualization_elements(self, info_dict):
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
-        clear_layout(self.MetaInfoVerticalLayout)
-        clear_layout(self.TimeSeriesPlotsLayout)
-        clear_layout(self.ImageWidgetLayout)
-        clear_layout(self.BarPlotWidgetLayout)
-        self.create_visualization_component()
+    # def reload_visualization_elements(self, info_dict):
+    #     self.group_info = collect_stream_all_groups_info(self.stream_name)
+    #     clear_layout(self.MetaInfoVerticalLayout)
+    #     clear_layout(self.TimeSeriesPlotsLayout)
+    #     clear_layout(self.ImageWidgetLayout)
+    #     clear_layout(self.BarPlotWidgetLayout)
+    #     self.create_visualization_component()
 
     @QtCore.pyqtSlot(dict)
     def plot_format_on_change(self, info_dict):
@@ -591,7 +594,6 @@ class StreamWidget(QtWidgets.QWidget):
     def bar_chart_range_on_change(self, stream_name, group_name):
         self.preset_on_change()
         self.viz_components.group_plots[group_name].update_bar_chart_range(self.group_info[group_name])
-
 
     #############################################
 
