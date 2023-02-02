@@ -1,34 +1,27 @@
 # This Python file uses the following encoding: utf-8
 import time
 from collections import deque
-import cv2
-import numpy as np
-import pyqtgraph as pg
+
 from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, pyqtSlot
+from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QMessageBox
-from pyqtgraph import PlotDataItem
 
-from exceptions.exceptions import RenaError, ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
-from rena.config_ui import image_depth_dict, plot_format_index_dict
+from rena.config_ui import image_depth_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
-from rena.interfaces.LSLInletInterface import LSLInletInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
-from rena.utils.general import create_lsl_interface, DataBufferSingleStream
-from rena.utils.settings_utils import get_childKeys_for_group, get_childGroups_for_group, get_stream_preset_info, \
-    collect_stream_all_groups_info, get_complete_stream_preset_info, is_group_shown, remove_stream_preset_from_settings, \
-    create_default_preset, set_stream_preset_info, get_channel_num, collect_stream_group_plot_format, \
-    update_selected_plot_format, is_channel_in_group, export_group_info_to_settings
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, get_distinct_colors, clear_layout, \
-    convert_array_to_qt_heatmap, \
-    convert_rgb_to_qt_image, convert_numpy_to_uint8
+from rena.utils.general import DataBufferSingleStream
+from rena.utils.settings_utils import get_stream_preset_info, \
+    collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
+    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
 class StreamWidget(QtWidgets.QWidget):
