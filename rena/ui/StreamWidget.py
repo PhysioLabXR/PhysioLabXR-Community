@@ -621,3 +621,6 @@ class StreamWidget(QtWidgets.QWidget):
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
         return  int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+
+    def create_new_group_btn_clicked(self):
+        pass

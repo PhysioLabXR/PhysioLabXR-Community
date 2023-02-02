@@ -374,8 +374,8 @@ class StreamGroupView(QTreeWidget):
             if group.childCount() == 0:
                 empty_groups.append(group.group_name)
         for empty_group in empty_groups:
-            self.group_widgets.pop(empty_group)
-            self.stream_root.removeChild(empty_group)
+            remvoed_group_widget = self.group_widgets.pop(empty_group)
+            self.stream_root.removeChild(remvoed_group_widget)
 
     def change_parent(self, item, new_parent):
         old_parent = item.parent()

@@ -74,6 +74,21 @@ def test_drag_drop_channels(app, qtbot) -> None:
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
+def test_arrange_channels_until_group_is_empty(app, qtbot) -> None:
+    '''
+    Adding active stream
+    :param app:
+    :param qtbot:
+    :return:
+    '''
+    test_stream_name = 'TestStreamName'
+    p = Process(target=LSLTestStream, args=(test_stream_name,))
+    p.start()
+
+
+    print("Test complete, killing sending-data process")
+    p.kill()  # stop the dummy LSL process
+
 
 def test_create_group(app, qtbot) -> None:
     test_stream_name = 'TestStreamName'
