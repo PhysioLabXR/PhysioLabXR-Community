@@ -200,6 +200,11 @@ def get_childGroups_for_group(group):
 def get_all_lsl_device_preset_names():
     return get_childGroups_for_group('presets/streampresets')
 
+def change_group_name(new_group_name, old_group_name, stream_name):
+    config.settings.beginGroup('presets/{0}'.format('streampresets'))
+    config.settings.setValue('{0}/GroupInfo/{1}'.format(stream_name, old_group_name), new_group_name)
+    config.settings.endGroup()
+
 
 def export_group_info_to_settings(group_info, stream_name):
     # config.settings.beginGroup('presets/{0}/GroupInfo'.format('streampresets'))
@@ -212,8 +217,7 @@ def export_group_info_to_settings(group_info, stream_name):
         for group_info_key, group_info_value in group_info_dict.items():
             if group_info_key != 'plot_format':
                 config.settings.setValue(
-                    '{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name,
-                                                            group_info_key), group_info_value)
+                    '{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, group_info_key), group_info_value)
             else:
                 for plot_format_name, plot_format_info_dict in group_info_value.items():
                     for plot_format_info_key, plot_format_info_value in plot_format_info_dict.items():

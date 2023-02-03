@@ -34,6 +34,7 @@ class GroupItem(QTreeWidgetItem):
 
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
     def setData(self, column, role, value):
+        group_name_changed = False
         # check group name is being edited
         if type(value) is str and column == 0 and self.group_name != value:
             # check with StreamGroupView for duplicate group name
@@ -41,11 +42,20 @@ class GroupItem(QTreeWidgetItem):
                 value = self.group_name  # revert to old group name
                 dialog_popup("Cannot have duplicate group names for a stream", title="Warning")
             else:
-                pass
+                self.group_view.change_group_name(new_group_name=value, old_group_name=self.group_name)
+                self.group_name = value  # update self's group name
+                group_name_changed = True
 
-        check_state_before = self.checkState(column)
-        super(GroupItem, self).setData(column, role, value)
-        check_state_after = self.checkState(column)
+        if group_name_changed:
+            self.group_view.set_enable_item_changed(False)
+            check_state_before = self.checkState(column)
+            super(GroupItem, self).setData(column, role, value)
+            check_state_after = self.checkState(column)
+            self.group_view.set_enable_item_changed(True)
+        else:
+            check_state_before = self.checkState(column)
+            super(GroupItem, self).setData(column, role, value)
+            check_state_after = self.checkState(column)
 
         if check_state_before != check_state_after:
             if check_state_after == Qt.Checked or check_state_after == Qt.PartiallyChecked:
@@ -54,8 +64,6 @@ class GroupItem(QTreeWidgetItem):
             else:
                 self.display=False
                 self.setForeground(0, QBrush(QColor(color_white)))
-
-
 
     def children(self):
         return [self.child(i) for i in range(self.childCount())]
@@ -110,10 +118,11 @@ class StreamGroupView(QTreeWidget):
 
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
-    def __init__(self, parent, stream_name, group_info):
+    def __init__(self, parent_stream_options, stream_widget, stream_name, group_info):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
-        self.parent = parent
+        self.parent = parent_stream_options
+        self.stream_widget = stream_widget
         self.stream_name = stream_name
 
         # self.model = QStandardItemModel()
@@ -177,7 +186,7 @@ class StreamGroupView(QTreeWidget):
         self.stream_root.setText(0, self.stream_name)
         self.stream_root.setFlags(self.stream_root.flags()
                                   & (~Qt.ItemIsDragEnabled)
-                                  & (~Qt.ItemIsSelectable) | Qt.ItemIsEditable)
+                                  & (~Qt.ItemIsSelectable))
         # self.stream_root.channel_group.setEditable(False)
 
         # get_childGroups_for_group('presets/')
@@ -586,3 +595,13 @@ class StreamGroupView(QTreeWidget):
         self.remove_empty_groups()
         self.reconnect_selection_changed()
         return change_dict
+
+    def change_group_name(self, new_group_name, old_group_name):
+        self.group_widgets[new_group_name] = self.group_widgets.pop(old_group_name)
+        self.stream_widget.change_group_name(new_group_name, old_group_name)
+
+    def set_enable_item_changed(self, is_enable):
+        if is_enable:
+            self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
+        else:
+            self.itemChanged[QTreeWidgetItem, int].disconnect(self.item_changed)

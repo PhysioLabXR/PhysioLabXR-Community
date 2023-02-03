@@ -20,7 +20,8 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
 from rena.utils.general import DataBufferSingleStream
 from rena.utils.settings_utils import get_stream_preset_info, \
     collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
-    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info
+    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
+    change_group_name
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
@@ -121,7 +122,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create option window
-        self.stream_options_window = StreamOptionsWindow(parent=self, stream_name=self.stream_name,
+        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name,
                                                          group_info=self.group_info, plot_format_changed_signal=self.plot_format_changed_signal)
         self.plot_format_changed_signal.connect(self.plot_format_on_change)
         # self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
@@ -614,10 +615,14 @@ class StreamWidget(QtWidgets.QWidget):
         export_group_info_to_settings(self.group_info, self.stream_name)
         self.reset_viz()
 
+    def change_group_name(self, new_group_name, old_group_name):
+        self.group_info[new_group_name] = self.group_info.pop(old_group_name)
+        self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
+        change_group_name(new_group_name, old_group_name, self.stream_name)
 
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
-        return  int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+        return int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
 
     # def add_group(self, affected):
     #     new_group_name = self.get_next_available_groupname()

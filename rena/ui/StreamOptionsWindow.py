@@ -20,14 +20,21 @@ class StreamOptionsWindow(QDialog):
     # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent, stream_name, group_info, plot_format_changed_signal):
+    def __init__(self, parent_stream_widget, stream_name, group_info, plot_format_changed_signal):
+        """
+        note that this class does not keep a copy of the group_info
+        @param parent_stream_widget:
+        @param stream_name:
+        @param group_info:
+        @param plot_format_changed_signal:
+        """
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
         self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
-        self.parent = parent
+        self.parent = parent_stream_widget
         # add supported filter list
         # self.resize(1000, 1000)
 
@@ -36,7 +43,7 @@ class StreamOptionsWindow(QDialog):
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
 
-        self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
+        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, stream_name=stream_name, group_info=group_info)
 
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
@@ -281,3 +288,4 @@ class StreamOptionsWindow(QDialog):
     #     # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
     #     assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
     #     return group_info
+
