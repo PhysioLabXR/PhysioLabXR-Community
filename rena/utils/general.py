@@ -1,9 +1,11 @@
 import os
 import subprocess
 import sys
+import warnings
 
 import numpy as np
 
+from exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -129,14 +131,39 @@ class DataBuffer():
             self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to:]
             self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to:]
 
-    def clear_buffer(self):
+    def clear_buffer(self) -> None:
         self.buffer = dict()
 
-    def clear_stream_buffer(self, stream_name):
-        self.buffer.pop(stream_name)
+    def clear_stream_buffer(self, stream_name: str) -> None:
+        try:
+            self.buffer.pop(stream_name)
+        except KeyError:
+            warnings.warn(f'Unable to clear the buffer for stream name {stream_name}, key not found')
+
+    def clear_stream_buffer_data(self, stream_name: str) -> None:
+        """
+        Remove the buffered data for a stream without removing the existing keys.
+        The data and timestamps array will instead become empty arraries
+        """
+        try:
+            self.buffer[stream_name][0] = np.empty([self.buffer[stream_name][0].shape[0], 0]) # event marker
+            self.buffer[stream_name][1] = np.array([]) # timestamp
+        except KeyError:
+            warnings.warn(f'Unable to clear the buffer for stream name {stream_name}, key not found')
+
+    def clear_buffer_data(self) -> None:
+        """
+        Remove buffered data for all streams without removing the existing keys.
+        The data and timestamps array will instead become empty arraries
+        """
+        for stream_name in self.buffer.keys():
+            self.clear_stream_buffer_data(stream_name)
 
     def __getitem__(self, key):
-        return self.buffer[key]  # TODO does this work?
+        return self.buffer[key]
+
+    def get_stream(self, stream):
+        return self.buffer[stream]
 
     def get_data(self, stream_name):
         return self.buffer[stream_name][0]
@@ -167,7 +194,10 @@ class DataBufferSingleStream():
         '''
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(data_dict['frames'].shape[0])
-        self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        try:
+            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        except ValueError:
+            raise ChannelMismatchError(data_dict['frames'].shape[0])
         self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]

@@ -27,15 +27,14 @@ import collections
 
 import os
 
-class StreamWidgetVisualizationComponents():
+class VizComponents():
     def __init__(self, fs_label, ts_label, plot_elements):
         self.fs_label=fs_label
         self.ts_label=ts_label
-        self.plot_elements = plot_elements
+        self.group_plots = plot_elements
         # self.plot_widgets=plot_widgets # time series plot widgets
         # # self.plots=plots
         # self.image_labels = image_labels # image labels
 
         # self.plot_group_slices=plot_group_slices
         # self.plot_formats=plot_formats
-

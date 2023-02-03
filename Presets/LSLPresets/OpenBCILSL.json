@@ -1,0 +1,15 @@
+{
+  "StreamName": "OpenBCI_Cython_8_LSL",
+  "ChannelNames": [
+    "Fp1",
+    "Fp2",
+    "C3",
+    "C4",
+    "P7",
+    "P8",
+    "O1",
+    "O2"
+  ],
+  "NominalSamplingRate": 125,
+  "GroupInfo":  [1, 2, 3, 4, 5, 6, 7]
+}

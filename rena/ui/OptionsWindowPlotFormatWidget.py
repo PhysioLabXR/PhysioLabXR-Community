@@ -1,7 +1,9 @@
 # This Python file uses the following encoding: utf-8
+import copy
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
 from rena import config
@@ -11,11 +13,9 @@ from rena.utils.settings_utils import collect_stream_group_info, update_selected
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
-    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
-    preset_on_change_signal = QtCore.pyqtSignal()
-    bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
+    image_change_signal = QtCore.pyqtSignal(dict)
 
-    def __init__(self, stream_name):
+    def __init__(self, parent, stream_widget, stream_name, plot_format_changed_signal):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -25,9 +25,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
         self.stream_name = stream_name
         self.group_name = None
+        self.parent = parent
+        self.stream_widget = stream_widget
         # self.stream_name = stream_name
         # self.grou_name = group_name
-        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
         self.imageScalingFactorLineEdit.setValidator(QIntValidator())
@@ -46,39 +48,43 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
+        self.plot_format_changed_signal = plot_format_changed_signal
+        self.this_group_info = None
 
-    def set_plot_format_widget_info(self, stream_name, group_name):
-
+    def set_plot_format_widget_info(self, group_name, this_group_info):
         self.group_name = group_name
+        self.this_group_info = this_group_info
         # which one to select
-        group_info = collect_stream_group_info(stream_name, group_name)
-        # change selected tab
+        self.update_display()
 
+    def update_display(self):
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
-        self.plotFormatTabWidget.setCurrentIndex(group_info['selected_plot_format'])
-        if collect_stream_group_info(stream_name, group_name)['is_image_only']:
+        self.plotFormatTabWidget.setCurrentIndex(self.this_group_info['selected_plot_format'])
+        if self.this_group_info['is_image_only']:
             self.enable_only_image_tab()
-        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_current_changed)
+        self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+        self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         # image format information
-        self.imageWidthLineEdit.setText(str(group_info['plot_format']['image']['width']))
-        self.imageHeightLineEdit.setText(str(group_info['plot_format']['image']['height']))
-        self.imageScalingFactorLineEdit.setText(str(group_info['plot_format']['image']['scaling_factor']))
-        self.imageFormatComboBox.setCurrentText(group_info['plot_format']['image']['image_format'])
-        self.channelFormatCombobox.setCurrentText(group_info['plot_format']['image']['channel_format'])
+        self.imageWidthLineEdit.setText(str(self.this_group_info['plot_format']['image']['width']))
+        self.imageHeightLineEdit.setText(str(self.this_group_info['plot_format']['image']['height']))
+        self.imageScalingFactorLineEdit.setText(str(self.this_group_info['plot_format']['image']['scaling_factor']))
+        self.imageFormatComboBox.setCurrentText(self.this_group_info['plot_format']['image']['image_format'])
+        self.channelFormatCombobox.setCurrentText(self.this_group_info['plot_format']['image']['channel_format'])
 
         # bar chart format information
-        self.barPlotYMaxLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_max']))
-        self.barPlotYMinLineEdit.setText(str(group_info['plot_format']['bar_chart']['y_min']))
+        self.barPlotYMaxLineEdit.setText(str(self.this_group_info['plot_format']['bar_chart']['y_max']))
+        self.barPlotYMinLineEdit.setText(str(self.this_group_info['plot_format']['bar_chart']['y_min']))
 
-    def plot_format_tab_current_changed(self, index):
+    def plot_format_tab_selection_changed(self, index):
         # create value
         # update the index in display
         # get current selected
         # update_selected_plot_format
-        update_selected_plot_format(self.stream_name, self.group_name, index)
         # if index==2:
+        update_selected_plot_format(self.stream_name, self.group_name, index)
+        self.this_group_info['selected_plot_format'] = index
 
         # new format, old format
         info_dict = {
@@ -86,8 +92,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             'group_name': self.group_name,
             'new_format': index
         }
+        self.plot_format_changed_signal.emit(info_dict)
 
-        self.plot_format_changed(info_dict)
+    @QtCore.pyqtSlot(dict)
+    def plot_format_changed(self, info_dict):
+        if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
+            self.this_group_info['selected_plot_format'] = info_dict['new_format']
+            self.update_display()
 
     def image_W_H_on_change(self):
         # check if W * H * D = Channel Num
@@ -98,23 +109,30 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         scaling_factor = self.get_image_scaling_factor()
         set_plot_image_w_h(self.stream_name, self.group_name, height=height, width=width, scaling_factor=scaling_factor)
 
+        self.this_group_info['plot_format']['image']['height'] = height
+        self.this_group_info['plot_format']['image']['width'] = width
+        self.this_group_info['plot_format']['image']['scaling_factor'] = scaling_factor
         self.image_changed()
 
     def image_format_change(self):
         image_format = self.get_image_format()
         set_plot_image_format(self.stream_name, self.group_name, image_format=image_format)
+        self.this_group_info['plot_format']['image']['image_format'] = image_format
 
         self.image_changed()
 
     def image_channel_format_change(self):
         image_channel_format = self.get_image_channel_format()
         set_plot_image_channel_format(self.stream_name, self.group_name, channel_format=image_channel_format)
+        self.this_group_info['plot_format']['image']['channel_format'] = image_channel_format
 
         self.image_changed()
 
     def image_valid_update(self):
         image_format_valid = self.image_format_valid()
         set_plot_image_valid(self.stream_name, self.group_name, image_format_valid)
+        self.this_group_info['plot_format']['image']['is_valid'] = image_format_valid
+
         width, height, image_format, channel_format, channel_num = self.get_image_info()
 
         self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
@@ -129,7 +147,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             print('Invalid Image Format')
 
     def get_image_info(self):
-        group_info = collect_stream_group_info(self.stream_name, self.group_name)
+        group_info = self.this_group_info
         width = group_info['plot_format']['image']['width']
         height = group_info['plot_format']['image']['height']
         image_format = group_info['plot_format']['image']['image_format']
@@ -161,6 +179,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_image_height
+
     def get_image_scaling_factor(self):
         try:
             new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
@@ -194,22 +213,20 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def image_changed(self):
         self.image_valid_update()
-        self.preset_on_change_signal.emit()
-
-    def plot_format_changed(self, info_dict):
-        self.plot_format_on_change_signal.emit(info_dict)
+        self.image_change_signal.emit({'group_name': self.group_name, 'this_group_info_image': self.this_group_info["plot_format"]['image']})
 
     def bar_chart_range_on_change(self):
-        bar_chart_max_range = self.get_bar_chart_max_range()
-        bar_chart_min_range = self.get_bar_chart_min_range()
+        bar_chart_max = self.get_bar_chart_max_range()
+        bar_chart_min = self.get_bar_chart_min_range()
 
-        set_bar_chart_max_min_range(self.stream_name,
-                                    self.group_name,
-                                    max_range=bar_chart_max_range,
-                                    min_range=bar_chart_min_range)
-
-        self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
+        set_bar_chart_max_min_range(self.stream_name, self.group_name, max_range=bar_chart_max,  min_range=bar_chart_min)  # change in the settings
+        self.this_group_info['plot_format']['bar_chart']['y_max'] = bar_chart_max
+        self.this_group_info['plot_format']['bar_chart']['y_min'] = bar_chart_min
+        self.stream_widget.bar_chart_range_on_change(self.group_name, bar_chart_min, bar_chart_max)
 
     def enable_only_image_tab(self):
         self.plotFormatTabWidget.setTabEnabled(0, False)
         self.plotFormatTabWidget.setTabEnabled(2, False)
+
+    def change_group_name(self, new_name):
+        self.group_name = new_name

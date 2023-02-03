@@ -15,8 +15,8 @@ class SignalSettingsTab(QDialog):
         """
         super().__init__(parent=parent)
 
-        self.setWindowTitle('Signal Settings')
-        self.ui = uic.loadUi("ui/SignalSettingsTab.ui", self)
+        self.setWindowTitle('Stream Options')
+        self.ui = uic.loadUi("ui/StreamSettingsTab.ui", self)
         self.parent = parent
         # add supported filter list
         self.resize(600, 600)

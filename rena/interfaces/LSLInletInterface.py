@@ -3,7 +3,7 @@ import numpy as np
 
 from pylsl import StreamInlet, LostError, resolve_byprop
 
-from exceptions.exceptions import LSLStreamNotFoundError, LSLChannelMismatchError
+from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
 from stream_shared import lsl_continuous_resolver
 
@@ -48,7 +48,7 @@ class LSLInletInterface:
             self.inlet.close_stream()
             # raise LSLChannelMismatchError(
             #     'The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(self.lsl_num_chan, actual_num_channels))
-            raise LSLChannelMismatchError(actual_num_channels)
+            raise ChannelMismatchError(actual_num_channels)
 
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
@@ -65,7 +65,6 @@ class LSLInletInterface:
         except LostError:
             frames, timestamps = [], []
             pass  # TODO handle stream lost
-        # frames = np.transpose(frames).astype()
         return np.transpose(frames), timestamps
 
     def stop_sensor(self):

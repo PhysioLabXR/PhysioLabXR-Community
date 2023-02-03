@@ -122,7 +122,10 @@ class RenaScript(ABC, threading.Thread):
             try:
                 self.loop()
             except Exception as e:
-                print('Exception in loop(): {0} {1}'.format(type(e), str(e)))
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print('Exception in loop(): {0} {1}'.format(type(e), e))
+                # print(exc_type, fname, exc_tb.tb_lineno)
             self.loop_durations.append(time.time() - loop_start_time)
             self.run_while_start_times.append(loop_start_time)
             # receive info request from main process
