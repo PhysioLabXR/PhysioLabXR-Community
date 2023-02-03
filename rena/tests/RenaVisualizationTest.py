@@ -126,6 +126,7 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
+    print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
 def test_zmq_channel_mistmatch(app, qtbot) -> None:
@@ -164,4 +165,5 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
-    p.kill()  # stop the dummy LSL process
+    print("Test complete, killing sending-data process")
+    p.kill()  # stop sending data via ZMQ

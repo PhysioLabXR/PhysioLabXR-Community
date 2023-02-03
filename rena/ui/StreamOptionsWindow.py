@@ -1,9 +1,9 @@
 # This Python file uses the following encoding: utf-8
 import numpy as np
 from PyQt5 import uic
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QStandardItemModel, QIntValidator
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem
+from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem, QPushButton
 
 from rena import config_signal, config
 from rena.config_ui import *
@@ -17,51 +17,64 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class StreamOptionsWindow(QDialog):
-    plot_format_on_change_signal = QtCore.pyqtSignal(dict)
-    preset_on_change_signal = QtCore.pyqtSignal()
+    # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent, stream_name, group_info):
+    def __init__(self, parent_stream_widget, stream_name, group_info, plot_format_changed_signal):
+        """
+        note that this class does not keep a copy of the group_info
+        @param parent_stream_widget:
+        @param stream_name:
+        @param group_info:
+        @param plot_format_changed_signal:
+        """
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
-        self.setWindowTitle('Options')
-        self.ui = uic.loadUi("ui/OptionsWindow.ui", self)
-        self.parent = parent
+        self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
+        self.parent = parent_stream_widget
         # add supported filter list
-        self.resize(1000, 1000)
+        # self.resize(1000, 1000)
 
         # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
 
         self.stream_name = stream_name
-        self.stream_group_view = StreamGroupView(parent=self, stream_name=stream_name, group_info=group_info)
+        self.setWindowTitle('Options for {}'.format(self.stream_name))
 
+        # plot format
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, self.parent, stream_name, plot_format_changed_signal)
+        plot_format_changed_signal.connect(self.plot_format_changed)
+        self.image_change_signal = self.plot_format_widget.image_change_signal
+        self.plot_format_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+
+        # stream group tree view
+        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name, group_info=group_info)
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
-        # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
-        # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
-        # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
-
-        # signals for processing changes in the tree view
-        self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
 
-        # nomiaml sampling rate UI elements
+        # nominal sampling rate UI elements
         self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
         self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
         self.load_sr_and_display_duration_from_settings_to_ui()
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(stream_name)
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
-        self.plot_format_widget.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        self.plot_format_widget.preset_on_change_signal.connect(self.preset_on_change)
-        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.plot_format_widget.hide()
+        self.add_group_btn = QPushButton()
+        self.add_group_btn.setText('Create New Group')
+        self.add_group_btn.hide()
+        self.add_group_btn.clicked.connect(self.add_group_clicked)
+        self.actionsWidgetLayout.addWidget(self.add_group_btn)
+
+        self.update_num_points_to_display()
+
+    def add_group_clicked(self):
+        change_dict = self.stream_group_view.add_group()
+        self.parent.channel_group_changed(change_dict)
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
@@ -100,9 +113,15 @@ class StreamOptionsWindow(QDialog):
         if selection_state != group_selected:
             self.plot_format_widget.hide()
         else:
+            group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info \
-                (stream_name=self.stream_name, group_name=selected_groups[0].data(0, 0))
+            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name, this_group_info=self.parent.group_info[group_name])
+
+        if selection_state == channels_selected or selection_state == channel_selected:
+            self.add_group_btn.show()
+        else:
+            self.add_group_btn.hide()
+
 
         ################################################################################
         if selection_state == nothing_selected:  # nothing selected
@@ -111,7 +130,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channel_selected:  # only one channel selected
-            pass
+            print('A channel are selected')
 
 
         ################################################################################
@@ -121,7 +140,7 @@ class StreamOptionsWindow(QDialog):
 
         ################################################################################
         elif selection_state == channels_selected:  # channels selected
-            pass
+            print('Channels are selected')
 
         ################################################################################
         elif selection_state == group_selected:  # one group selected
@@ -135,49 +154,48 @@ class StreamOptionsWindow(QDialog):
 
     #         self.infoWidgetLayout.addStretch()
 
-    def reload_preset_to_UI(self):
-        self.reload_group_info_in_treeview()
+    def reload_preset_to_UI(self, group_info):
+        self.reload_group_info_in_treeview(group_info)
         self.load_sr_and_display_duration_from_settings_to_ui()
 
-    def reload_group_info_in_treeview(self):
+    def reload_group_info_in_treeview(self, group_info):
         '''
         this function is called when the group info in the persistent settings
         is changed externally
         :return:
         '''
-        group_info = collect_stream_all_groups_info(self.stream_name)  # get group info from settings
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view(group_info)
 
-    def merge_groups_btn_clicked(self):
-        selection_state, selected_groups, selected_channels = \
-            self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
+    # def merge_groups_btn_clicked(self):
+    #     selection_state, selected_groups, selected_channels = \
+    #         self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
+    #
+    #     root_group = selected_groups[0]
+    #     other_groups = selected_groups[1:]
+    #     for other_group in other_groups:
+    #         # other_group_children = [child for child in other_group.get in range(0,)]
+    #         other_group_children = self.stream_group_view.get_all_child(other_group)
+    #         for other_group_child in other_group_children:
+    #             self.stream_group_view.change_parent(other_group_child, root_group)
+    #     self.stream_group_view.remove_empty_groups()
 
-        root_group = selected_groups[0]
-        other_groups = selected_groups[1:]
-        for other_group in other_groups:
-            # other_group_children = [child for child in other_group.get in range(0,)]
-            other_group_children = self.stream_group_view.get_all_child(other_group)
-            for other_group_child in other_group_children:
-                self.stream_group_view.change_parent(other_group_child, root_group)
-        self.stream_group_view.remove_empty_groups()
-
-    def init_create_new_group_widget(self):
-        container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
-                                                               label='New Group from Selected Channels',
-                                                               vertical=False,
-                                                               label_position='centertop')
-        _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
-                                                    default_input='')
-        add_group_btn = init_button(parent=layout_add_group, label='Create')
-        add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
-
-    def create_new_group_btn_clicked(self):
-        # group_names = self.signalTreeView.get_group_names()
-        # selected_items = self.signalTreeView.selectedItems()
-        new_group_name = self.newGroupNameTextbox.text()
-
-        self.stream_group_view.create_new_group(new_group_name=new_group_name)
+    # def init_create_new_group_widget(self):
+    #     container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
+    #                                                            label='New Group from Selected Channels',
+    #                                                            vertical=False,
+    #                                                            label_position='centertop')
+    #     _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
+    #                                                 default_input='')
+    #     add_group_btn = init_button(parent=layout_add_group, label='Create')
+    #     add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
+    #
+    # def create_new_group_btn_clicked(self):
+    #     # group_names = self.signalTreeView.get_group_names()
+    #     # selected_items = self.signalTreeView.selectedItems()
+    #     new_group_name = self.newGroupNameTextbox.text()
+    #
+    #     self.stream_group_view.create_new_group(new_group_name=new_group_name)
 
         #
         # if new_group_name:
@@ -241,32 +259,25 @@ class StreamOptionsWindow(QDialog):
         #     set_channel_displayed(checked, channel_index, parent_group, self.stream_name)
         #     self.parent.update_channel_shown(channel_index, checked, parent_group)
 
-    @QtCore.pyqtSlot(tuple)
-    def channel_parent_group_changed(self, change: tuple):
-        channel_index, target_parent_group = change
-        if not is_channel_in_group(channel_index, target_parent_group,
-                                   self.stream_name):  # check against the setting, see if the target parent group is the same as the one in the settings
-            # the target parent group is different from the channel's original group
-            # TODO
-            pass
+    def channel_parent_group_changed(self, change_dict: dict):
+        self.parent.channel_group_changed(change_dict)
 
-    def plot_format_on_change(self, info_dict):
+    @QtCore.pyqtSlot(dict)
+    def plot_format_changed(self, info_dict: dict):
         # get current selected:
-        group_item = self.stream_group_view.selected_groups[0]
+        group_item = self.stream_group_view.get_group_item(info_dict['group_name'])
+        # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
 
-        group_info = collect_stream_group_info(stream_name=self.stream_name, group_name=group_item.data(0, 0))
         # if new format is image, we disable all child
-        if plot_format_index_dict[group_info['selected_plot_format']] == 'image' or plot_format_index_dict[
-            group_info['selected_plot_format']] == 'bar_chart':
-            self.stream_group_view.froze_group(group_item=group_item)
+        if plot_format_index_dict[info_dict['new_format']] == 'image' or plot_format_index_dict[info_dict['new_format']] == 'bar_chart':
+            self.stream_group_view.disable_channels_in_group(group_item=group_item)
         else:
-            self.stream_group_view.defroze_group(group_item=group_item)
+            self.stream_group_view.enable_channels_in_group(group_item=group_item)
 
-        self.plot_format_on_change_signal.emit(info_dict)
 
-    def preset_on_change(self):
-        self.preset_on_change_signal.emit()
-
-    def bar_chart_range_on_change(self, stream_name, group_name):
-        self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
+    # def get_group_info(self, group_name):
+    #     group_info = self.parent.group_info[group_name]
+    #     # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
+    #     assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
+    #     return group_info
 

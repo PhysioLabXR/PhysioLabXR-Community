@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1600</width>
-    <height>1200</height>
+    <height>886</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,21 +59,45 @@
          </item>
          <item>
           <widget class="QPushButton" name="OptionsBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Options</string>
+            <string/>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QPushButton" name="PopWindowBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="toolTip">
-            <string>Pop as a separate windowq</string>
+            <string>Pop as a separate window</string>
            </property>
            <property name="accessibleName">
             <string>PopWindowBtn</string>
            </property>
            <property name="text">
-            <string>Pop Window</string>
+            <string/>
            </property>
            <property name="Pop Window" stdset="0">
             <string>Remove Stream</string>
@@ -82,11 +106,23 @@
          </item>
          <item>
           <widget class="QPushButton" name="RemoveVideoBtn">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>36</width>
+             <height>36</height>
+            </size>
+           </property>
            <property name="toolTip">
             <string>Remove this stream</string>
            </property>
            <property name="text">
-            <string>Remove Video</string>
+            <string/>
            </property>
            <property name="Stop Stream" stdset="0">
             <string>Remove Stream</string>

@@ -75,13 +75,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ############
 
         # create sensor threads, worker threads for different sensors
-        self.worker_threads = {}
-        self.sensor_workers = {}
         self.device_workers = {}
         self.lsl_workers = {}
-        self.inference_worker = None
-        self.cam_workers = {}
-        self.cam_displays = {}
 
         ######### init server
         print('Creating Rena Client')
@@ -90,29 +85,21 @@ class MainWindow(QtWidgets.QMainWindow):
                                                 identity='client')
 
         #########
-
-        self.lsl_replay_worker = None
-        self.recent_visualization_refresh_timestamps = collections.deque(
-            maxlen=config.VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES)
-        self.visualization_fps = 0
-        self.tick_rate = 0
-
-        # create workers for different sensors
-        # camera/screen capture timer
-        self.c_timer = QTimer()
-        self.c_timer.setInterval(config.VIDEO_DEVICE_REFRESH_INTERVAL)  # for 15 Hz refresh rate
-        self.c_timer.timeout.connect(self.camera_screen_capture_tick)
-        self.c_timer.start()
+        # meta data udpate timer
+        self.meta_data_update_timer = QTimer()
+        self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.meta_data_update_timer.timeout.connect(self.update_meta_data)
+        self.meta_data_update_timer.start()
 
         self.addStreamWidget = AddStreamWidget(self)
         self.MainTabVerticalLayout.insertWidget(0, self.addStreamWidget)  # add the add widget to visualization tab's
         self.addStreamWidget.add_btn.clicked.connect(self.add_btn_clicked)
 
-        # data buffers
-        self.LSL_plots_fs_label_dict = {}
-        self.LSL_data_buffer_dicts = {}
-        self.LSL_current_ts_dict = {}
+        self.start_all_btn.setEnabled(False)
+        self.stop_all_btn.setEnabled(False)
 
+        self.start_all_btn.clicked.connect(self.on_start_all_btn_clicked)
+        self.stop_all_btn.clicked.connect(self.on_stop_all_btn_clicked)
         # scripting buffer
         self.inference_buffer = np.empty(shape=(0, config.INFERENCE_CLASS_NUM))  # time axis is the first
 
@@ -128,7 +115,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # windows
         self.pop_windows = {}
-        self.test_ts_buffer = []
 
         # actions for context menu
         self.actionDocumentation.triggered.connect(self.fire_action_documentation)
@@ -165,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
             selected_type = self.addStreamWidget.get_current_selected_type()
             if selected_type == 'video':  # add video device
                 self.init_video_device(selected_text)
-            if selected_type == 'Device':  # if this is a device preset
+            elif selected_type == 'Device':  # if this is a device preset
                 self.init_device(selected_text)  # add device stream
             elif selected_type == 'LSL' or selected_type == 'ZMQ':
                 self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
@@ -176,8 +162,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
-            else: raise Exception("Unknow preset type {}".format(selected_type))
-            self.update_num_active_stream_label()
+            else:
+                raise Exception("Unknow preset type {}".format(selected_type))
+            self.update_active_streams()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
@@ -188,15 +175,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def remove_stream_widget(self, target):
         self.sensorTabSensorsHorizontalLayout.removeWidget(target)
-        self.update_num_active_stream_label()
+        self.update_active_streams()
         self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
-    def update_num_active_stream_label(self):
+    def update_active_streams(self):
         available_widget_count = len([x for x in self.stream_widgets.values() if x.is_stream_available])
         streaming_widget_count = len([x for x in self.stream_widgets.values() if x.is_widget_streaming()])
         self.numActiveStreamsLabel.setText(
             num_active_streams_label_text.format(len(self.stream_widgets), available_widget_count,
                                                  streaming_widget_count, self.replay_tab.get_num_replay_channels()))
+        # enable/disable the start/stop all buttons
+        self.start_all_btn.setEnabled(available_widget_count > streaming_widget_count)
+        self.stop_all_btn.setEnabled(streaming_widget_count > 0)
+
+    def on_start_all_btn_clicked(self):
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available]
+
+    def on_stop_all_btn_clicked(self):
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming]
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
@@ -206,15 +202,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                    insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
-
-
-    def visualize_cam(self, cam_id_cv_img_timestamp):
-        cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
-        if cam_id in self.cam_displays.keys():
-            qt_img = convert_rgb_to_qt_image(cv_img)
-            self.cam_displays[cam_id].setPixmap(qt_img)
-            self.test_ts_buffer.append(time.time())
-            self.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
 
     def add_streams_to_visualize(self, stream_names):
 
@@ -259,6 +246,24 @@ class MainWindow(QtWidgets.QMainWindow):
             remove_stream_btn.click()
         config.settings.endGroup()
 
+    def update_meta_data(self):
+        # get the stream viz fps
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
+        if len(fps_list) == 0:
+            return
+        if np.all(fps_list == 0):
+            self.visualizationFPSLabel.setText("0")
+        else:
+            self.visualizationFPSLabel.setText("%.2f" % np.mean(fps_list))
+
+        if len(pull_data_delay_list) == 0:
+            return
+        if np.all(pull_data_delay_list == 0):
+            self.pull_data_delay_label.setText("0")
+        else:
+            self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
+
     def init_device(self, device_name):
         config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
         device_type = config.settings.value('DeviceType')
@@ -296,44 +301,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
-
-    # def init_inference(self, inference_interface):
-    #     inference_thread = pg.QtCore.QThread(self)
-    #     self.worker_threads['scripting'] = inference_thread
-    #     self.inference_worker = workers.InferenceWorker(inference_interface)
-    #     self.inference_worker.moveToThread(self.worker_threads['scripting'])
-    #     self.init_visualize_inference_results()
-    #     self.inference_worker.signal_inference_results.connect(self.visualize_inference_results)
-    #
-    #     self.connect_inference_btn.clicked.connect(self.inference_worker.connect)
-    #     self.disconnect_inference_btn.clicked.connect(self.inference_worker.disconnect)
-    #
-    #     # self.connect_inference_btn.setStyleSheet(config_ui.inference_button_style)
-    #     inference_thread.start()
-    #     self.inference_widget.hide()
-
-    # def inference_ticks(self):
-    #     # only ticks if data is streaming
-    #     if 'Unity.ViveSREyeTracking' in self.lsl_workers.keys() and self.inference_worker:
-    #         if self.lsl_workers['Unity.ViveSREyeTracking'].is_streaming:
-    #             buffered_data = self.LSL_data_buffer_dicts['Unity.ViveSREyeTracking']
-    #             if buffered_data.shape[-1] < config.EYE_INFERENCE_TOTAL_TIMESTEPS:
-    #                 eye_frames = np.concatenate((np.zeros(shape=(
-    #                     2,  # 2 for two eyes' pupil sizes
-    #                     config.EYE_INFERENCE_TOTAL_TIMESTEPS - buffered_data.shape[-1])),
-    #                                              buffered_data[2:4, :]), axis=-1)
-    #             else:
-    #                 eye_frames = buffered_data[1:3,
-    #                              -config.EYE_INFERENCE_TOTAL_TIMESTEPS:]
-    #             # make samples out of the most recent data
-    #             eye_samples = window_slice(eye_frames, window_size=config.EYE_INFERENCE_WINDOW_TIMESTEPS,
-    #                                        stride=config.EYE_WINDOW_STRIDE_TIMESTEMPS, channel_mode='channel_first')
-    #
-    #             samples_dict = {'eye': eye_samples}
-    #             self.inference_worker.signal_data_tick.emit(samples_dict)
-
-    def camera_screen_capture_tick(self):
-        [w.signal_data_tick.emit() for w in self.cam_workers.values()]
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
@@ -386,4 +353,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.activateWindow()
 
     def get_added_stream_names(self):
-        return list(self.stream_widgets.keys()) + list(self.cam_workers.keys())
+        return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
