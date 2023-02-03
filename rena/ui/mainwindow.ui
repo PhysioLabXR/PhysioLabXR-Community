@@ -209,13 +209,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Scripting Loop FPS</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
    </layout>

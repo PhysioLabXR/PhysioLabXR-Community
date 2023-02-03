@@ -22,16 +22,27 @@ from PyQt5.QtCore import Qt
 class GroupItem(QTreeWidgetItem):
     item_type = 'group'
 
-    def __init__(self, parent, is_shown, plot_format, stream_name, group_name):
+    def __init__(self, parent, is_shown, plot_format, stream_name, group_name, group_view):
         super().__init__(parent)
+        self.parent = parent
         self.is_shown = is_shown  # show the channel plot or not
         self.plot_format = plot_format
         self.stream_name = stream_name
         self.group_name = group_name
+        self.group_view = group_view
         self.setText(0, group_name)
 
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, self.group_name)
     def setData(self, column, role, value):
+        # check group name is being edited
+        if type(value) is str and column == 0 and self.group_name != value:
+            # check with StreamGroupView for duplicate group name
+            if value in self.group_view.get_group_names():
+                value = self.group_name  # revert to old group name
+                dialog_popup("Cannot have duplicate group names for a stream", title="Warning")
+            else:
+                pass
+
         check_state_before = self.checkState(column)
         super(GroupItem, self).setData(column, role, value)
         check_state_after = self.checkState(column)
@@ -43,6 +54,8 @@ class GroupItem(QTreeWidgetItem):
             else:
                 self.display=False
                 self.setForeground(0, QBrush(QColor(color_white)))
+
+
 
     def children(self):
         return [self.child(i) for i in range(self.childCount())]
@@ -134,6 +147,13 @@ class StreamGroupView(QTreeWidget):
 
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.itemDoubleClicked.connect(self.item_double_clicked_handler)
+
+    def on_group_name_change(self):
+
+        pass
+
+    def on_channel_name_change(self):
+        pass
 
     def item_double_clicked_handler(self, item:QTreeWidgetItem, column):
         if column == 0:
@@ -338,7 +358,7 @@ class StreamGroupView(QTreeWidget):
 
     def add_group_item(self, parent_item, group_name, plot_format, is_shown):
         item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name,
-                         group_name=group_name)
+                         group_name=group_name, group_view=self)
         # item.setText(0, group_name)
         if is_shown:
             item.setForeground(0, QBrush(QColor(color_green)))
@@ -566,4 +586,3 @@ class StreamGroupView(QTreeWidget):
         self.remove_empty_groups()
         self.reconnect_selection_changed()
         return change_dict
-
