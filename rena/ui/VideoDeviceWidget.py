@@ -1,8 +1,12 @@
 # This Python file uses the following encoding: utf-8
+import time
+from collections import deque
+
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 
+from rena import config
 from rena.config import settings
 from rena.threadings import workers
 from rena.ui_shared import pop_window_icon, dock_window_icon, remove_stream_icon, \
@@ -32,13 +36,16 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         # check if the video device is a camera or screen capture ####################################
         self.is_webcam = video_device_name.isnumeric()
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
-
+        self.is_popped = False
         # Connect UIs ##########################################
         self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
         self.PopWindowBtn.clicked.connect(self.pop_window)
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
         self.set_button_icons()
+
+        # FPS counter``
+        self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
 
         # worker and worker threads ##########################################
         self.worker_thread = pg.QtCore.QThread(self)
@@ -52,10 +59,13 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.timer.setInterval(settings.value('video_device_refresh_interval'))
         self.timer.timeout.connect(self.ticks)
 
+        self.set_button_icons()
+
         self.worker_thread.start()
         self.timer.start()
 
     def visualize(self, cam_id_cv_img_timestamp):
+        self.tick_times.append(time.time())
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         qt_img = convert_rgb_to_qt_image(cv_img)
         self.ImageLabel.setPixmap(qt_img)
@@ -66,7 +76,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
-        self.worker.stop_video()
+        self.worker.stop_stream()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
 
@@ -92,6 +102,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         w.show()
         self.PopWindowBtn.clicked.disconnect()
         self.PopWindowBtn.clicked.connect(self.dock_window)
+        self.is_popped = True
         self.set_button_icons()
 
     def dock_window(self):
@@ -101,14 +112,24 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.PopWindowBtn.setText('Pop Window')
         self.main_parent.pop_windows[self.video_device_name].hide()
         self.main_parent.pop_windows.pop(self.video_device_name)
-        self.set_button_icons()
         self.main_parent.activateWindow()
+        self.is_popped = False
+        self.set_button_icons()
 
     def ticks(self):
         self.worker.tick_signal.emit()
 
     def set_button_icons(self):
-        if 'Pop' in self.PopWindowBtn.text():
+        if not self.is_popped:
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
+
+    def get_fps(self):
+        try:
+            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+        except (ZeroDivisionError, IndexError) as e:
+            return 0
+
+    def get_pull_data_delay(self):
+        return self.worker.get_pull_data_delay()

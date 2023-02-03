@@ -55,3 +55,5 @@ image_depth_dict = {
 
 image_min_width = 512
 image_min_height = 512
+
+new_group_default_plot_format = 1

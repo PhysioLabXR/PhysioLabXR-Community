@@ -15,10 +15,10 @@ def main(argv):
     letters = string.digits
 
     srate = 128
-    name = 'Dummy-8Chan'
+    name = 'EEG-8Chan'
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 8
+    n_channels = 12
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])
@@ -57,8 +57,13 @@ def main(argv):
         for sample_ix in range(required_samples):
             # make a new random n_channels sample; this is converted into a
             # pylsl.vectorf (the data type that is expected by push_sample)
-            mysample = [rand()*10 for _ in range(n_channels)]
+            mysample = [rand() * 200 for _ in range(n_channels)]
             # now send it
+            mysample[0] = time.time()
+            mysample[-3] = rand()
+            mysample[-2] = rand()
+            mysample[-1] = rand()
+
             outlet.push_sample(mysample)
         sent_samples += required_samples
         # now send it and wait for a bit before trying again.

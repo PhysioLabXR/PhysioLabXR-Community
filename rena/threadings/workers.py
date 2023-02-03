@@ -15,7 +15,7 @@ from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
 from exceptions.exceptions import DataPortNotOpenError
-from rena import config_ui, config_signal, shared
+from rena import config_ui, config_signal, shared, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
@@ -39,6 +39,7 @@ class RenaWorker(metaclass=RenaWorkerMeta):
         # self.dsp_server_process = None
         # self.dsp_client = None
         # self.init_dsp_client_server('John')
+    pull_data_times = deque(maxlen=100 * config.pull_data_interval)
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
@@ -75,7 +76,10 @@ class RenaWorker(metaclass=RenaWorkerMeta):
         # server_interface = RENATCPInterface()
         # clint_interface = RENATCPInterface()
         # tcp_client = RENATCP
-
+    def get_pull_data_delay(self):
+        if len(self.pull_data_times) == 0:
+            return 0
+        return np.mean(self.pull_data_times)
 """
 Deprecated software/device specific workers
 class EEGWorker(QObject):
@@ -213,6 +217,8 @@ class InferenceWorker(QObject):
                 self.signal_inference_results.emit(inference_results)
 """
 
+
+
 class LSLInletWorker(QObject, RenaWorker):
 
     # for passing data to the gesture tab
@@ -247,6 +253,7 @@ class LSLInletWorker(QObject, RenaWorker):
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
             frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
             self.interface_mutex.unlock()
@@ -281,6 +288,7 @@ class LSLInletWorker(QObject, RenaWorker):
 
             data_dict = {'stream_name': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
+            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
@@ -330,7 +338,7 @@ class LSLInletWorker(QObject, RenaWorker):
             # self.dsp_server_process.close()
 
 
-class WebcamWorker(QObject):
+class WebcamWorker(QObject, RenaWorker):
     tick_signal = pyqtSignal()
     change_pixmap_signal = pyqtSignal(tuple)
 
@@ -342,7 +350,7 @@ class WebcamWorker(QObject):
         self.tick_signal.connect(self.process_on_tick)
         self.is_streaming = True
 
-    def stop_video(self):
+    def stop_stream(self):
         self.is_streaming = False
         if self.cap is not None:
             self.cap.release()
@@ -350,14 +358,16 @@ class WebcamWorker(QObject):
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            pull_data_start_time = time.perf_counter()
             ret, cv_img = self.cap.read()
             if ret:
                 cv_img = cv_img.astype(np.uint8)
                 cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
 
 
-class ScreenCaptureWorker(QObject):
+class ScreenCaptureWorker(QObject, RenaWorker):
     tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
     change_pixmap_signal = pyqtSignal(tuple)
 
@@ -367,17 +377,19 @@ class ScreenCaptureWorker(QObject):
         self.screen_label = screen_label
         self.is_streaming = True
 
-    def stop_video(self):
+    def stop_stream(self):
         self.is_streaming = False
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
+            pull_data_start_time = time.perf_counter()
             img = pyautogui.screenshot()
             frame = np.array(img)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = frame.astype(np.uint8)
             frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
+            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
             self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
 
 
@@ -406,7 +418,7 @@ class OpenBCIDeviceWorker(QObject):
             timestamps = data[-2,:] - to_local_lock
 
             sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
-            data_dict = {'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
@@ -774,7 +786,6 @@ class ZMQWorker(QObject, RenaWorker):
         self.last_poll_time = None
         self.is_stream_available()
 
-
     def __del__(self):
         self.socket.close()
         self.context.term()
@@ -784,6 +795,7 @@ class ZMQWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if self.is_streaming:
             try:
+                pull_data_start_time = time.perf_counter()
                 _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
                 np.frombuffer(timestamp)
             except zmq.error.Again:
@@ -797,6 +809,7 @@ class ZMQWorker(QObject, RenaWorker):
             data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
             data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
+            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):

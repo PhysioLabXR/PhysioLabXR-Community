@@ -131,6 +131,33 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <widget class="Line" name="line1">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="widget_11" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Videos</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton">
+              <property name="text">
+               <string>Reload Cameras</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item alignment="Qt::AlignRight">
           <widget class="QPushButton" name="resetDefaultBtn">
            <property name="maximumSize">
@@ -155,9 +182,6 @@
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <widget class="QWidget" name="widget_3" native="true"/>
    </item>
    <item>
     <widget class="QWidget" name="widget_2" native="true"/>
