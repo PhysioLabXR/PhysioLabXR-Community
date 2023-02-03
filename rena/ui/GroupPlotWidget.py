@@ -30,10 +30,12 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.channel_names =  channel_names
         self.sampling_rate = sampling_rate
         self.channel_index_channel_dict = dict()
+        self.channel_plot_item_dict = dict()
 
         self.linechart_widget = None
         self.image_label = None
         self.barchart_widget = None
+        self.legends = None
 
         if not (is_only_image_enabled := self.this_group_info['is_image_only']):  # a stream will become image only when it has too many channels
             self.init_line_chart()
@@ -54,6 +56,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal = plot_format_changed_signal
         self.plot_format_changed_signal.connect(self.plot_format_on_change)
         self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
+
 
     def update_image_info(self, new_image_info):
         self.this_group_info['image'] = new_image_info
@@ -79,7 +82,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.linechart_widget = pg.PlotWidget()
         self.linechart_layout.addWidget(self.linechart_widget)
         distinct_colors = get_distinct_colors(len(self.this_group_info['channel_indices']))
-        self.linechart_widget.addLegend()
+        self.legends = self.linechart_widget.addLegend()
         for channel_index_in_group, (channel_index, channel_name) in enumerate(
                 zip(self.channel_indices, self.channel_names)):
             is_channel_shown = self.this_group_info['is_channels_shown'][channel_index_in_group]
@@ -90,6 +93,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
             downsample_method = 'mean' if self.sampling_rate > config.settings.value('downsample_method_mean_sr_threshold') else 'subsample'
             channel_plot_item.setDownsampling(auto=True, method=downsample_method)
             channel_plot_item.setClipToView(True)
+
+            self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
         self.image_label = QLabel('Image_Label')
@@ -188,3 +193,13 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def change_group_name(self, new_group_name):
         self.update_group_name(new_group_name)
+
+    def change_channel_name(self, new_ch_name, old_ch_name, lsl_index):
+        # change_plot_label(self.linechart_widget, self.channel_plot_item_dict[old_ch_name], new_ch_name)
+        self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
+        self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
+
+        # self.channel_plot_item_dict[old_ch_name].legend.setText(new_ch_name)
+        index_in_group = self.this_group_info['channel_indices'].index(lsl_index)
+        self.legends.items[index_in_group][1].setText(new_ch_name)
+

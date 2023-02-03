@@ -70,7 +70,7 @@ class GroupItem(QTreeWidgetItem):
 
 
 class ChannelItem(QTreeWidgetItem):
-    def __init__(self, parent, is_shown, lsl_index, channel_name):
+    def __init__(self, parent, is_shown, lsl_index, channel_name, group_view):
         super().__init__(parent)
         self.is_shown = is_shown  # show the channel plot or not
         self.lsl_index = lsl_index
@@ -79,20 +79,33 @@ class ChannelItem(QTreeWidgetItem):
         self.setText(0, channel_name)
         self.setText(1, '['+str(lsl_index)+']')
         self.previous_parent = parent
+        self.group_view = group_view
 
     def setData(self, column, role, value):
         parent_check_state_before = self.parent().checkState(column)
         item_check_state_before = self.checkState(column)
 
-        super(ChannelItem, self).setData(column, role, value)
-        item_check_state_after = self.checkState(column)
-        parent_check_state_after = self.parent().checkState(column)
-
-
-        if role == Qt.EditRole:
-            pass
+        channel_name_changed = False
+        if role == Qt.EditRole and type(value) is str and column == 0:
             # editing the name
+            if value in self.group_view.get_channel_names():
+                value = self.channel_name  # revert to old group name
+                dialog_popup("Cannot have duplicate channel names for a stream", title="Warning")
+            else:
+                self.group_view.change_channel_name(group_name=self.parent().group_name, new_channel_name=value, old_channel_name=self.channel_name, lsl_index=self.lsl_index)
+                self.channel_name = value
+                channel_name_changed= True
 
+        if channel_name_changed:
+            self.group_view.set_enable_item_changed(False)
+            super(ChannelItem, self).setData(column, role, value)
+            item_check_state_after = self.checkState(column)
+            parent_check_state_after = self.parent().checkState(column)
+            self.group_view.set_enable_item_changed(True)
+        else:
+            super(ChannelItem, self).setData(column, role, value)
+            item_check_state_after = self.checkState(column)
+            parent_check_state_after = self.parent().checkState(column)
 
         if role == Qt.CheckStateRole and item_check_state_before != item_check_state_after:
             # set text to green
@@ -333,7 +346,7 @@ class StreamGroupView(QTreeWidget):
     #     return item
 
     def add_channel_item(self, parent_item, channel_name, is_shown, lsl_index):
-        item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index, channel_name=channel_name)
+        item = ChannelItem(parent=parent_item, is_shown=is_shown, lsl_index=lsl_index, channel_name=channel_name, group_view=self)
         # item.setText(0, channel_name)
         if is_shown == 1:
             item.setForeground(0, QBrush(QColor(color_green)))
@@ -416,11 +429,11 @@ class StreamGroupView(QTreeWidget):
             remvoed_group_widget = self.group_widgets.pop(empty_group)
             self.stream_root.removeChild(remvoed_group_widget)
 
-    def change_parent(self, item, new_parent):
-        old_parent = item.parent()
-        ix = old_parent.indexOfChild(item)
-        item_without_parent = old_parent.takeChild(ix)
-        new_parent.addChild(item_without_parent)
+    # def change_parent(self, item, new_parent):
+    #     old_parent = item.parent
+    #     ix = old_parent.indexOfChild(item)
+    #     item_without_parent = old_parent.takeChild(ix)
+    #     new_parent.addChild(item_without_parent)
 
     @QtCore.pyqtSlot()
     def selection_changed(self):
@@ -602,8 +615,14 @@ class StreamGroupView(QTreeWidget):
         self.stream_widget.change_group_name(new_group_name, old_group_name)
         self.format_widget.change_group_name(new_group_name)
 
+    def change_channel_name(self, group_name, new_channel_name, old_channel_name, lsl_index):
+        self.stream_widget.change_channel_name(group_name, new_channel_name, old_channel_name, lsl_index)
+
     def set_enable_item_changed(self, is_enable):
         if is_enable:
             self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)
         else:
             self.itemChanged[QTreeWidgetItem, int].disconnect(self.item_changed)
+
+    def get_channel_names(self):
+        return [x.channel_name for x in self.channel_widgets]

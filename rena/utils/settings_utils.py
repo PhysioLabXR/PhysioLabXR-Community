@@ -209,23 +209,7 @@ def export_group_info_to_settings(group_info, stream_name):
     config.settings.remove('presets/streampresets/{0}/GroupInfo'.format(stream_name))
 
     for group_name, group_info_dict in group_info.items():
-        update_group_info(group_info_dict, group_name, stream_name)
-        # for group_info_key, group_info_value in group_info_dict.items():
-        #     if group_info_key != 'plot_format':
-        #         config.settings.setValue(
-        #             '{0}/GroupInfo/{1}/{2}'.format(stream_name, group_name, group_info_key), group_info_value)
-        #     else:
-        #         for plot_format_name, plot_format_info_dict in group_info_value.items():
-        #             for plot_format_info_key, plot_format_info_value in plot_format_info_dict.items():
-        #
-        #                 config.settings.setValue('{0}/GroupInfo/{1}/{2}/{3}/{4}'.
-        #                                          format(stream_name,
-        #                                                 group_name,  # group name
-        #                                                 group_info_key,
-        #                                                 plot_format_name,  # plot format file
-        #                                                 plot_format_info_key),  # plot format name
-        #                                          plot_format_info_value)  # plot format value
-
+        update_group_info(group_info_dict, stream_name, group_name)
 
 def export_preset_to_settings(preset, setting_category):
     assert setting_category == 'streampresets' or setting_category == 'experimentpresets'

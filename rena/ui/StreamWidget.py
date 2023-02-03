@@ -623,6 +623,15 @@ class StreamWidget(QtWidgets.QWidget):
         self.viz_components.group_plots[new_group_name].change_group_name(new_group_name)
         change_group_name(self.group_info[new_group_name], new_group_name, old_group_name, self.stream_name)
 
+    def change_channel_name(self, group_name, new_ch_name, old_ch_name, lsl_index):
+        # change channel name in the settings
+        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+        changing_channel_index = channel_names.index(old_ch_name)
+        channel_names[changing_channel_index] = new_ch_name
+        set_stream_preset_info(self.stream_name, 'ChannelNames', channel_names)
+
+        # change the name in the plots
+        self.viz_components.group_plots[group_name].change_channel_name(new_ch_name, old_ch_name, lsl_index)
 
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')

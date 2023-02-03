@@ -64,8 +64,6 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-
-
         self.add_group_btn = QPushButton()
         self.add_group_btn.setText('Create New Group')
         self.add_group_btn.hide()
@@ -169,18 +167,18 @@ class StreamOptionsWindow(QDialog):
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view(group_info)
 
-    def merge_groups_btn_clicked(self):
-        selection_state, selected_groups, selected_channels = \
-            self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
-
-        root_group = selected_groups[0]
-        other_groups = selected_groups[1:]
-        for other_group in other_groups:
-            # other_group_children = [child for child in other_group.get in range(0,)]
-            other_group_children = self.stream_group_view.get_all_child(other_group)
-            for other_group_child in other_group_children:
-                self.stream_group_view.change_parent(other_group_child, root_group)
-        self.stream_group_view.remove_empty_groups()
+    # def merge_groups_btn_clicked(self):
+    #     selection_state, selected_groups, selected_channels = \
+    #         self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
+    #
+    #     root_group = selected_groups[0]
+    #     other_groups = selected_groups[1:]
+    #     for other_group in other_groups:
+    #         # other_group_children = [child for child in other_group.get in range(0,)]
+    #         other_group_children = self.stream_group_view.get_all_child(other_group)
+    #         for other_group_child in other_group_children:
+    #             self.stream_group_view.change_parent(other_group_child, root_group)
+    #     self.stream_group_view.remove_empty_groups()
 
     # def init_create_new_group_widget(self):
     #     container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,

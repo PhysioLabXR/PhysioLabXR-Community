@@ -466,3 +466,8 @@ def clear_layout(layout):
         if child.widget():
             child.widget().deleteLater()
 
+# def change_plot_label(plot, plotItem, name):
+#     # change the label of given PlotDataItem in the plot's legend
+#     plot.legend.removeItem(plotItem)
+#     plot.legend.addItem(plotItem, name)
+#     plotItem.setData(name='New Name')
