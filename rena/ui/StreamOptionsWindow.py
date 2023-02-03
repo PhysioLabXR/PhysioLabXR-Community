@@ -44,10 +44,9 @@ class StreamOptionsWindow(QDialog):
         self.setWindowTitle('Options for {}'.format(self.stream_name))
 
         # plot format
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, stream_name, plot_format_changed_signal)
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, self.parent, stream_name, plot_format_changed_signal)
         plot_format_changed_signal.connect(self.plot_format_changed)
         self.image_change_signal = self.plot_format_widget.image_change_signal
-        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.plot_format_widget.hide()
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
 
@@ -277,8 +276,6 @@ class StreamOptionsWindow(QDialog):
         else:
             self.stream_group_view.enable_channels_in_group(group_item=group_item)
 
-    def bar_chart_range_on_change(self, stream_name, group_name):
-        self.bar_chart_range_on_change_signal.emit(stream_name, group_name)
 
     # def get_group_info(self, group_name):
     #     group_info = self.parent.group_info[group_name]

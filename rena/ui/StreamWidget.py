@@ -592,8 +592,9 @@ class StreamWidget(QtWidgets.QWidget):
 
     #############################################
 
-    def bar_chart_range_on_change(self, stream_name, group_name):
-        self.preset_on_change()
+    def bar_chart_range_on_change(self, group_name, barchart_min, barchart_max):
+        self.group_info[group_name]['plot_format']['bar_chart']['y_min'] = barchart_min
+        self.group_info[group_name]['plot_format']['bar_chart']['y_max'] = barchart_max
         self.viz_components.group_plots[group_name].update_bar_chart_range(self.group_info[group_name])
 
     #############################################

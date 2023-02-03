@@ -14,9 +14,8 @@ from rena.utils.settings_utils import collect_stream_group_info, update_selected
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     image_change_signal = QtCore.pyqtSignal(dict)
-    bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent, stream_name, plot_format_changed_signal):
+    def __init__(self, parent, stream_widget, stream_name, plot_format_changed_signal):
         super().__init__()
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
@@ -27,6 +26,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.stream_name = stream_name
         self.group_name = None
         self.parent = parent
+        self.stream_widget = stream_widget
         # self.stream_name = stream_name
         # self.grou_name = group_name
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
@@ -216,16 +216,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.image_change_signal.emit({'group_name': self.group_name, 'this_group_info_image': self.this_group_info["plot_format"]['image']})
 
     def bar_chart_range_on_change(self):
-        bar_chart_max_range = self.get_bar_chart_max_range()
-        bar_chart_min_range = self.get_bar_chart_min_range()
+        bar_chart_max = self.get_bar_chart_max_range()
+        bar_chart_min = self.get_bar_chart_min_range()
 
-        set_bar_chart_max_min_range(self.stream_name,
-                                    self.group_name,
-                                    max_range=bar_chart_max_range,
-                                    min_range=bar_chart_min_range)
-        self.this_group_info['plot_format']['bar_chart']['y_max'] = bar_chart_max_range
-        self.this_group_info['plot_format']['bar_chart']['y_min'] = bar_chart_min_range
-        self.bar_chart_range_on_change_signal.emit(self.stream_name, self.group_name)
+        set_bar_chart_max_min_range(self.stream_name, self.group_name, max_range=bar_chart_max,  min_range=bar_chart_min)  # change in the settings
+        self.this_group_info['plot_format']['bar_chart']['y_max'] = bar_chart_max
+        self.this_group_info['plot_format']['bar_chart']['y_min'] = bar_chart_min
+        self.stream_widget.bar_chart_range_on_change(self.group_name, bar_chart_min, bar_chart_max)
 
     def enable_only_image_tab(self):
         self.plotFormatTabWidget.setTabEnabled(0, False)
