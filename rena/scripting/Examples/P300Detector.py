@@ -4,7 +4,6 @@ import numpy as np
 import mne
 from brainflow import BrainFlowInputParams, BoardShim
 from matplotlib import pyplot as plt
-from mne.time_frequency import psd_welch
 
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
 from rena.scripting.RenaScript import RenaScript
@@ -40,15 +39,25 @@ channel_num = 8
 data_array = np.random.rand(8, data_duration * sampling_rate)
 
 channel_types = ['eeg'] * 8
+# channel_names = [
+#     "Fp1",
+#     "Fp2",
+#     "C3",
+#     "C4",
+#     "P7",
+#     "P8",
+#     "O1",
+#     "O2"
+# ]
 channel_names = [
-    "Fp1",
-    "Fp2",
+    "Fz",
+    "Cz",
+    "Pz",
     "C3",
     "C4",
-    "P7",
-    "P8",
-    "O1",
-    "O2"
+    "P3",
+    "P4",
+    "O1"
 ]
 
 event_id = {'target': 1, 'non_target': 2}
@@ -74,6 +83,7 @@ class P300Detector(RenaScript):
         self.raw = None
         self.time_offset_before = -0.2
         self.time_offset_after = 1
+        self.evoked_list = []
 
         self.data_buffer = DataBuffer()
         self.current_state = IDEAL_STATE
@@ -129,6 +139,7 @@ class P300Detector(RenaScript):
                 # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
                 # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
                 evoked = self.process_epoch_data()
+                self.evoked_list.append(evoked)
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
                 self.current_state = IDEAL_STATE
