@@ -39,7 +39,7 @@ class RenaWorker(metaclass=RenaWorkerMeta):
         # self.dsp_server_process = None
         # self.dsp_client = None
         # self.init_dsp_client_server('John')
-    pull_data_times = deque(maxlen=100 * config.settings.value('pull_data_interval'))
+    pull_data_times = deque(maxlen=100 * config.pull_data_interval)
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
