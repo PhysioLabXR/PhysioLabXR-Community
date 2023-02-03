@@ -618,7 +618,10 @@ class StreamWidget(QtWidgets.QWidget):
     def change_group_name(self, new_group_name, old_group_name):
         self.group_info[new_group_name] = self.group_info.pop(old_group_name)
         self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
-        change_group_name(new_group_name, old_group_name, self.stream_name)
+
+        self.viz_components.group_plots[new_group_name].change_group_name(new_group_name)
+        change_group_name(self.group_info[new_group_name], new_group_name, old_group_name, self.stream_name)
+
 
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')

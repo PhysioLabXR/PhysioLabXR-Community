@@ -43,17 +43,19 @@ class StreamOptionsWindow(QDialog):
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
 
-        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, stream_name=stream_name, group_info=group_info)
+        # plot format
+        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, stream_name, plot_format_changed_signal)
+        plot_format_changed_signal.connect(self.plot_format_changed)
+        self.image_change_signal = self.plot_format_widget.image_change_signal
+        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
+        self.plot_format_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
 
+        # stream group tree view
+        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name, group_info=group_info)
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
-        # self.signalTreeView.selectionModel().selectionChanged.connect(self.update_info_box)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
-        # self.newGroupBtn.clicked.connect(self.newGropBtn_clicked)
-        # self.signalTreeView.itemChanged[QTreeWidgetItem, int].connect(self.update_info_box)
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
-
-        # signals for processing changes in the tree view
-        # self.stream_group_view.channel_parent_group_changed_signal.connect(self.channel_parent_group_changed)
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
 
         # nominal sampling rate UI elements
@@ -63,12 +65,7 @@ class StreamOptionsWindow(QDialog):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.plot_format_widget = OptionsWindowPlotFormatWidget(self, stream_name, plot_format_changed_signal)
-        plot_format_changed_signal.connect(self.plot_format_changed)
-        self.image_change_signal = self.plot_format_widget.image_change_signal
-        self.plot_format_widget.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.plot_format_widget.hide()
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+
 
         self.add_group_btn = QPushButton()
         self.add_group_btn.setText('Create New Group')

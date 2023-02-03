@@ -118,11 +118,12 @@ class StreamGroupView(QTreeWidget):
 
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
-    def __init__(self, parent_stream_options, stream_widget, stream_name, group_info):
+    def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name, group_info):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent_stream_options
         self.stream_widget = stream_widget
+        self.format_widget = format_widget
         self.stream_name = stream_name
 
         # self.model = QStandardItemModel()
@@ -599,6 +600,7 @@ class StreamGroupView(QTreeWidget):
     def change_group_name(self, new_group_name, old_group_name):
         self.group_widgets[new_group_name] = self.group_widgets.pop(old_group_name)
         self.stream_widget.change_group_name(new_group_name, old_group_name)
+        self.format_widget.change_group_name(new_group_name)
 
     def set_enable_item_changed(self, is_enable):
         if is_enable:

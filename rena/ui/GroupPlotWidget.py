@@ -185,3 +185,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         emit selected group and changed to the stream widget, and to the stream options
         '''
         pass
+
+    def change_group_name(self, new_group_name):
+        self.update_group_name(new_group_name)
