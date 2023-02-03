@@ -9,7 +9,7 @@ from sys import platform
 User parameters:
 Use these parameters to set the RN App to your preference
 '''
-REFRESH_INTERVAL = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+pull_data_interval = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 REFRESH_FREQUENCY_RETAIN_FRAMES = 50
 MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP = 512
 MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM = 1000

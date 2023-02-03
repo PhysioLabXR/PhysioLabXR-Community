@@ -68,12 +68,12 @@ class StreamWidget(QtWidgets.QWidget):
 
         # timer
         self.timer = QTimer()
-        self.timer.setInterval(config.REFRESH_INTERVAL)  # for 1000 Hz refresh rate
+        self.timer.setInterval(config.settings.value('pull_data_interval'))
         self.timer.timeout.connect(self.ticks)
 
         # visualization timer
         self.v_timer = QTimer()
-        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
         self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
@@ -520,7 +520,7 @@ class StreamWidget(QtWidgets.QWidget):
     def get_fps(self):
         try:
             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
-        except ZeroDivisionError:
+        except (ZeroDivisionError, IndexError) as e:
             return 0
 
     def is_widget_streaming(self):
@@ -631,3 +631,6 @@ class StreamWidget(QtWidgets.QWidget):
     #             self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
     #             self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
     #     return new_group_name
+
+    def get_pull_data_delay(self):
+        return self.worker.get_pull_data_delay()

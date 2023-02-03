@@ -248,7 +248,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_meta_data(self):
         # get the stream viz fps
-        fps_list = np.array([[s.get_fps() for s in  self.stream_widgets.values()] +  [v.get_fps() for v in self.video_device_widgets.values()]])
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
         if len(fps_list) == 0:
             return
         if np.all(fps_list == 0):
@@ -256,6 +257,12 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.visualizationFPSLabel.setText("%.2f" % np.mean(fps_list))
 
+        if len(pull_data_delay_list) == 0:
+            return
+        if np.all(pull_data_delay_list == 0):
+            self.pull_data_delay_label.setText("0")
+        else:
+            self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
 
     def init_device(self, device_name):
         config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))

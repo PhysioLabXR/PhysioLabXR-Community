@@ -76,7 +76,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
-        self.worker.stop_video()
+        self.worker.stop_stream()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
 
@@ -128,5 +128,8 @@ class VideoDeviceWidget(QtWidgets.QWidget):
     def get_fps(self):
         try:
             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
-        except ZeroDivisionError:
+        except (ZeroDivisionError, IndexError) as e:
             return 0
+
+    def get_pull_data_delay(self):
+        return self.worker.get_pull_data_delay()
