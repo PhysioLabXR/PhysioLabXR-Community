@@ -89,7 +89,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 channel_plot_item.hide()  # TODO does disable do what it should do: uncheck from the plots
             downsample_method = 'mean' if self.sampling_rate > config.settings.value('downsample_method_mean_sr_threshold') else 'subsample'
             channel_plot_item.setDownsampling(auto=True, method=downsample_method)
-            channel_plot_item.setClipToView(clip=True)
+            channel_plot_item.setClipToView(True)
 
     def init_image(self):
         self.image_label = QLabel('Image_Label')
