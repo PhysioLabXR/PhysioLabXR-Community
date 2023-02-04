@@ -1,3 +1,4 @@
+import numpy as np
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, QTimer
 import pyqtgraph as pg
@@ -139,7 +140,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         before_press_time = self.total_time * (self.slider_pressed_position + 1) * 1e-2
 
         slider_offset_time = set_to_time - before_press_time
-        self.issue_slider_moved_command(set_to_time.tostring() + slider_offset_time.tostring())
+        self.issue_slider_moved_command(np.array([set_to_time, slider_offset_time]))
 
     # def slider_moved(self):
     #     """

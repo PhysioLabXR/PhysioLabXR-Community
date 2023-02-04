@@ -26,6 +26,7 @@ class ReplayServer(threading.Thread):
         self.end_time = None
         self.virtual_clock = None
         self.total_time = None
+        self.slider_offset_time = None
 
         self.stream_data = None
 
@@ -96,8 +97,12 @@ class ReplayServer(threading.Thread):
                         self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
                     elif type(command) is str and shared.SLIDER_MOVED_COMMAND in command:
                         # process slider moved command
-                        times = self.recv_string(is_block=True)
-                        # update virtual clock
+                        times = self.recv(is_block=True)
+                        set_to_time, slider_offset_time = np.frombuffer(times, dtype=float)
+                        self.slider_offset_time += slider_offset_time
+
+                        self.set_to_time(set_to_time)
+
                         self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
                         # process stop command
@@ -132,6 +137,7 @@ class ReplayServer(threading.Thread):
         self.end_time = None
         self.virtual_clock = None
         self.total_time = None
+        self.slider_offset_time = None
         self.stream_data = None
         self.stream_names = None
         self.remaining_stream_names = None
@@ -183,7 +189,7 @@ class ReplayServer(threading.Thread):
             self.chunk_sizes[this_stream_name] = stream_total_num_samples - self.next_sample_index_of_stream[this_stream_name]
 
         # virtual clock is in sync with the replayed stream timestamps, it equals to (replay time) + (original data's first timestamp)
-        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset - self.pause_time_offset  # time since replay start + first stream timestamps
+        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset  # time since replay start + first stream timestamps
         sleep_duration = this_stream_next_timestamp - self.virtual_clock
         if sleep_duration > 0:
             time.sleep(sleep_duration)
@@ -192,12 +198,12 @@ class ReplayServer(threading.Thread):
         # print("outlet for this replay is: ", outlet)
         if this_chunk_size == 1:
             # the data sample's timestamp is equal to (this sample's timestamp minus the first timestamp of the original data) + time since replay start
-            outlet.push_sample(this_chunk_data[0], this_chunk_timestamps[0] + self.virtual_clock_offset)
+            outlet.push_sample(this_chunk_data[0], this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time)
             # print("pushed, chunk size 1")
             # print(nextChunkValues)
         else:
             # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
-            outlet.push_chunk(this_chunk_data, this_chunk_timestamps[-1] + self.virtual_clock_offset)
+            outlet.push_chunk(this_chunk_data, this_chunk_timestamps[-1] + self.virtual_clock_offset + self.slider_offset_time)
             # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable
@@ -217,6 +223,7 @@ class ReplayServer(threading.Thread):
         self.virtual_clock = math.inf
         self.end_time = - math.inf
         self.outlets = {}
+        self.slider_offset_time = 0
 
         # flatten any high dim data
         video_keys = []
@@ -271,7 +278,12 @@ class ReplayServer(threading.Thread):
         print("Offsetting replayed timestamps by " + str(self.virtual_clock_offset))
         print("start time and end time ", self.start_time, self.end_time)
 
-    def isStreamVideo(self, stream):
+    def set_to_time(self, set_to_time):
+        for i, stream_name in enumerate(self.remaining_stream_names):  # iterate over the remaining data streams in the replay file
+            timestamps = self.stream_data[stream_name][1]
+            self.next_sample_index_of_stream[stream_name] = np.argwhere(timestamps > (self.start_time + set_to_time))[0][0]
+
+    def is_stream_video(self, stream):
         if stream.isdigit():
             return True
         if ("monitor" in stream) or ("video" in stream):
@@ -286,7 +298,19 @@ class ReplayServer(threading.Thread):
         self.command_info_interface.socket.send_multipart(
             [self.main_program_routing_id, data])
 
-    def recv_string(self, is_block):
+    def recv(self, is_block) -> bytes:
+        if is_block:
+            self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=0)
+            return command
+        else:
+            try:
+                self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
+                    flags=zmq.NOBLOCK)
+                return command
+            except zmq.error.Again:
+                return None  # no message has arrived at the socket yet
+
+    def recv_string(self, is_block) -> str:
         if is_block:
             self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=0)
             return command.decode('utf-8')
@@ -295,6 +319,24 @@ class ReplayServer(threading.Thread):
                 self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
                     flags=zmq.NOBLOCK)
                 return command.decode('utf-8')
+            except zmq.error.Again:
+                return None  # no message has arrived at the socket yet
+
+    def recv_any(self, is_block):
+        if is_block:
+            self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=0)
+            try:
+                return command.decode('utf-8')
+            except UnicodeDecodeError:
+                return command
+        else:
+            try:
+                self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
+                    flags=zmq.NOBLOCK)
+                try:
+                    return command.decode('utf-8')
+                except UnicodeDecodeError:
+                    return command
             except zmq.error.Again:
                 return None  # no message has arrived at the socket yet
 

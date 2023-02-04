@@ -605,9 +605,15 @@ class PlaybackWorker(QObject):
             if len(self.command_queue) > 0:
                 to_send = self.command_queue.pop()
                 if type(to_send) is str:
-                    self.command_info_interface.send_string(self.command_queue.pop())
-                elif type(to_send) is bytes:
-                    self.command_info_interface.send(self.command_queue.pop())
+                    self.command_info_interface.send_string(to_send)
+                elif type(to_send) is np.ndarray:
+                    self.command_info_interface.send(to_send)
+                elif type(to_send) is list:
+                    for s in to_send:
+                        if type(s) is str:
+                            self.command_info_interface.send_string(s)
+                        elif type(s) is np.ndarray:
+                            self.command_info_interface.send(s)
                 else:
                     raise NotImplementedError
                 reply = self.command_info_interface.socket.recv()
@@ -657,8 +663,7 @@ class PlaybackWorker(QObject):
 
     def queue_slider_moved_command(self, command):
         self.send_command_mutex.lock()
-        self.command_queue.append(SLIDER_MOVED_COMMAND)
-        self.command_queue.append(command)  # contains the set to time, and the offset time
+        self.command_queue.append([SLIDER_MOVED_COMMAND, command])
         self.send_command_mutex.unlock()
 
     def queue_stop_command(self):
