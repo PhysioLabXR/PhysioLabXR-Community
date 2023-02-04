@@ -8,6 +8,7 @@ import os
 import random
 import sys
 import threading
+import time
 import unittest
 from multiprocessing import Process
 
@@ -72,6 +73,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
     num_stream_to_test = 3
     recording_time = 3
     replay_file_session_name = 'replayed'
+    stream_availability_timeout = 2 * lsl_stream_availability_wait_time * 1e3
 
     test_stream_names = []
     test_stream_processes = []
@@ -99,7 +101,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
         for ts_name in test_stream_names:
             assert not app.stream_widgets[ts_name].is_stream_available
 
-    qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the LSL stream becomes available
+    qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the LSL stream becomes available
 
     for ts_name in test_stream_names:
         qtbot.mouseClick(app.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
@@ -113,11 +115,22 @@ def test_replay_multi_streams(app, qtbot) -> None:
 
     qtbot.wait(recording_time * 1e3)
 
-    def handle_custom_dialog_ok():
+    def handle_custom_dialog_ok(patience=0):
         w = QtWidgets.QApplication.activeWindow()
-        if isinstance(w, CustomDialog):
+        if patience == 0:
+            if isinstance(w, CustomDialog):
+                yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+                qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+        else:
+            time_started = time.time()
+            while not isinstance(w, CustomDialog):
+                time_waited = time.time() - time_started
+                if time_waited > patience:
+                    raise TimeoutError
+                time.sleep(0.5)
             yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)
+
 
     t = threading.Timer(1, handle_custom_dialog_ok)
     t.start()
@@ -128,7 +141,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
 
     print("Waiting for test stream processes to close")
     [p.kill() for p in test_stream_processes]
-    qtbot.waitUntil(stream_is_unavailable, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the lsl processes are closed
+    qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
     # start the streams from replay and record them ################################################
     recording_file_name = app.recording_tab.save_path
@@ -140,7 +153,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
 
     print("Waiting for replay streams to become available")
     [p.kill() for p in test_stream_processes]
-    qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the streams becomes available from replay
+    qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay
 
     # start the streams from replay and record them ################################################
     for ts_name in test_stream_names:
@@ -158,19 +171,17 @@ def test_replay_multi_streams(app, qtbot) -> None:
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
-    qtbot.waitUntil(lambda: not app.replay_tab.is_replaying, timeout=(recording_time + 1) * 1e3)  # wait until the replay completes
+    wait_for_replay_finishes_time = (recording_time * 2) * 1e3
 
-    def handle_custom_dialog_ok():
-        w = QtWidgets.QApplication.activeWindow()
-        if isinstance(w, CustomDialog):
-            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+    qtbot.waitUntil(lambda: not app.replay_tab.is_replaying, timeout=wait_for_replay_finishes_time)  # wait until the replay completes, need to ensure that the replay can finish
+    print("replay is over")
+    # the streams are stopped at this point
 
     t = threading.Timer(1, handle_custom_dialog_ok)
     t.start()
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
 
-    qtbot.mouseClick(app.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams
+    # qtbot.mouseClick(app.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams
 
     # replay is completed and the data file saved ################################################
     replayed_file_name = app.recording_tab.save_path

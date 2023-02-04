@@ -1,3 +1,4 @@
+import copy
 import math
 import pickle
 import threading
@@ -29,7 +30,7 @@ class ReplayServer(threading.Thread):
         self.stream_data = None
 
         self.stream_names = None
-        self.selected_stream_indices = None
+        self.remaining_stream_names = None
 
         self.outlets = {}
         self.next_sample_of_stream = {}  # index of the next sample of each stream that will be sent, this list contains the same number of items as the number of streams in the replay
@@ -74,7 +75,7 @@ class ReplayServer(threading.Thread):
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
             else:
-                while len(self.selected_stream_indices) > 0:
+                while len(self.remaining_stream_names) > 0:
                     if not self.is_paused:
                         self.tick_times.append(time.time())
                         print("Replay FPS {0}".format(self.get_fps()), end='\r')
@@ -111,6 +112,7 @@ class ReplayServer(threading.Thread):
 
                 print('replay finished')
                 if self.is_replaying:  # the case of a finished replay
+                    self.reset_replay()
                     self.is_replaying = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
@@ -132,7 +134,7 @@ class ReplayServer(threading.Thread):
         self.total_time = None
         self.stream_data = None
         self.stream_names = None
-        self.selected_stream_indices = None
+        self.remaining_stream_names = None
 
         # close all outlets if there's any
         del self.outlets
@@ -143,7 +145,7 @@ class ReplayServer(threading.Thread):
         nextBlockingTimestamp = None
 
         # determine which stream to send next
-        for i, stream_name in enumerate(self.stream_names):  # iterate over all the data streams in the replay file
+        for i, stream_name in enumerate(self.remaining_stream_names):  # iterate over the remaining data streams in the replay file
             stream = self.stream_data[stream_name]
             # when a chunk can be sent depends on its last sample's timestamp
             blockingElementIdx = self.next_sample_of_stream[stream_name] + self.chunk_sizes[stream_name] - 1  # at the first call to replay next_sample_of_stream is all zeros, and chunk_sizes is all ones
@@ -155,9 +157,10 @@ class ReplayServer(threading.Thread):
                 next_stream_index = i
                 this_stream_name = stream_name
                 nextBlockingTimestamp = blockingTimestamp
+        del stream_name
 
         # retrieve the data and timestamps to be sent
-        nextStream = self.stream_data[self.stream_names[next_stream_index]]
+        nextStream = self.stream_data[this_stream_name]
         # print("chunk sizes: ", self.chunk_sizes)
         chunkSize = self.chunk_sizes[this_stream_name]
 
@@ -189,7 +192,6 @@ class ReplayServer(threading.Thread):
 
         outlet = self.outlets[this_stream_name]
         # print("outlet for this replay is: ", outlet)
-        nextStreamName = self.stream_names[next_stream_index]
         if chunkSize == 1:
             # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
             outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
@@ -204,11 +206,11 @@ class ReplayServer(threading.Thread):
 
         # remove this stream from the list if there are no remaining samples
         if self.next_sample_of_stream[this_stream_name] >= stream_length:
-            self.selected_stream_indices.remove(self.selected_stream_indices[next_stream_index])
+            self.remaining_stream_names.remove(this_stream_name)
             # self.outlets.remove(self.outlets[nextStreamIndex])
             # self.next_sample_of_stream.remove(self.next_sample_of_stream[next_stream_index])
             # self.chunk_sizes.remove(self.chunk_sizes[next_stream_index])
-            self.stream_names.remove(self.stream_names[next_stream_index])
+            # self.stream_names.remove(self.stream_names[next_stream_index])
 
         # self.replay_progress_signal.emit(playback_position) # TODO add another TCP interface to communicate back
         # print("virtual clock time: ", self.virtual_clock)
@@ -239,7 +241,7 @@ class ReplayServer(threading.Thread):
         print("Creating outlets")
         print("\t[index]\t[name]")
 
-        self.selected_stream_indices = list(range(0, len(self.stream_names)))
+        self.remaining_stream_names = copy.copy(self.stream_names)
         # create LSL outlets
         for streamIndex, stream_name in enumerate(self.stream_names):
             # if not self.isStreamVideo(stream_name):

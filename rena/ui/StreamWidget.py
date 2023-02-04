@@ -161,7 +161,7 @@ class StreamWidget(QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning')
+                dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
         else:
             # is the stream is not available
             if is_stream_available:
