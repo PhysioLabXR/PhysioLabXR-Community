@@ -121,8 +121,11 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
             yes_button = w.button(QtWidgets.QMessageBox.Yes)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
 
-    threading.Timer(1, handle_dialog).start()
+    t = threading.Timer(1, handle_dialog)
+    t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    t.join()
+
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
@@ -160,8 +163,10 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
             yes_button = w.button(QtWidgets.QMessageBox.Yes)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
 
-    threading.Timer(1, handle_dialog).start()
+    t = threading.Timer(1, handle_dialog)
+    t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    t.join()
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
