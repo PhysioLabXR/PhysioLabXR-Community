@@ -31,9 +31,9 @@ class ReplayServer(threading.Thread):
         self.stream_names = None
         self.selected_stream_indices = None
 
-        self.outlets = []
-        self.next_sample_of_stream = []  # index of the next sample of each stream that will be sent, this list contains the same number of items as the number of streams in the replay
-        self.chunk_sizes = []  # how many samples should be published at once, this list contains the same number of items as the number of streams in the replay
+        self.outlets = {}
+        self.next_sample_of_stream = {}  # index of the next sample of each stream that will be sent, this list contains the same number of items as the number of streams in the replay
+        self.chunk_sizes = {}  # how many samples should be published at once, this list contains the same number of items as the number of streams in the replay
 
         self.running = True
         self.main_program_routing_id = None
@@ -93,6 +93,11 @@ class ReplayServer(threading.Thread):
                             self.pause_time_offset += pylsl.local_clock() - self.pause_start_time
                         self.is_paused = not self.is_paused
                         self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
+                    elif type(command) is str and shared.SLIDER_MOVED_COMMAND in command:
+                        # process slider moved command
+                        slider_position = shared.parse_slider_moved_command(command)
+                        # update virtual clock
+                        self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
                         # process stop command
                         self.reset_replay()
@@ -103,11 +108,7 @@ class ReplayServer(threading.Thread):
                     elif command == shared.TERMINATE_COMMAND:
                         self.running = False
                         break
-                    # elif shared.SLIDER_MOVED_COMMAND in command:
-                    #     # process slider moved command
-                    #     slider_position = shared.parse_slider_moved_command(command)
-                    #     # update virtual clock
-                    #     self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
+
                 print('replay finished')
                 if self.is_replaying:  # the case of a finished replay
                     self.is_replaying = False
@@ -121,9 +122,9 @@ class ReplayServer(threading.Thread):
 
     def reset_replay(self):
         self.tick_times = deque(maxlen=50)
-        self.outlets = []
-        self.next_sample_of_stream = []
-        self.chunk_sizes = []
+        self.outlets = {}
+        self.next_sample_of_stream = {}
+        self.chunk_sizes = {}  # chunk sizes are initialized to 1 in setup stream
         self.virtual_clock_offset = None
         self.start_time = None
         self.end_time = None
@@ -134,31 +135,33 @@ class ReplayServer(threading.Thread):
         self.selected_stream_indices = None
 
         # close all outlets if there's any
-        del self.outlets[:]
+        del self.outlets
 
     def replay(self):
-        nextStreamIndex = None
+        next_stream_index = None
+        this_stream_name = None
         nextBlockingTimestamp = None
 
         # determine which stream to send next
         for i, stream_name in enumerate(self.stream_names):  # iterate over all the data streams in the replay file
             stream = self.stream_data[stream_name]
             # when a chunk can be sent depends on its last sample's timestamp
-            blockingElementIdx = self.next_sample_of_stream[i] + self.chunk_sizes[i] - 1  # at the first call to replay next_sample_of_stream is all zeros, and chunk_sizes is all ones
+            blockingElementIdx = self.next_sample_of_stream[stream_name] + self.chunk_sizes[stream_name] - 1  # at the first call to replay next_sample_of_stream is all zeros, and chunk_sizes is all ones
             try:
                 blockingTimestamp = stream[1][blockingElementIdx]
             except Exception as e:
                 raise (e)
             if nextBlockingTimestamp is None or blockingTimestamp <= nextBlockingTimestamp:
-                nextStreamIndex = i
+                next_stream_index = i
+                this_stream_name = stream_name
                 nextBlockingTimestamp = blockingTimestamp
 
-        # retrieve the data and timestamps to be send
-        nextStream = self.stream_data[self.stream_names[nextStreamIndex]]
+        # retrieve the data and timestamps to be sent
+        nextStream = self.stream_data[self.stream_names[next_stream_index]]
         # print("chunk sizes: ", self.chunk_sizes)
-        chunkSize = self.chunk_sizes[nextStreamIndex]
+        chunkSize = self.chunk_sizes[this_stream_name]
 
-        nextChunkRangeStart = self.next_sample_of_stream[nextStreamIndex]
+        nextChunkRangeStart = self.next_sample_of_stream[this_stream_name]
         nextChunkRangeEnd = nextChunkRangeStart + chunkSize
 
         nextChunkTimestamps = nextStream[1][nextChunkRangeStart: nextChunkRangeEnd]
@@ -170,13 +173,13 @@ class ReplayServer(threading.Thread):
             # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
             # are converted to lists
             nextChunkValues = nextChunkValues.tolist()
-        self.next_sample_of_stream[nextStreamIndex] += chunkSize  # index of the next sample yet to be sent of this stream
+        self.next_sample_of_stream[this_stream_name] += chunkSize  # index of the next sample yet to be sent of this stream
 
         stream_length = nextStream[0].shape[-1]
-        # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk
-        if stream_length < self.next_sample_of_stream[nextStreamIndex] + chunkSize:
+        # calculates a lower chunk_size if there are not enough samples left for a "complete" chunk, this will only happen when a stream is running out of samples
+        if stream_length < self.next_sample_of_stream[this_stream_name] + chunkSize:
             # print("CHUNK UPDATE")
-            self.chunk_sizes[nextStreamIndex] = stream_length - self.next_sample_of_stream[nextStreamIndex]
+            self.chunk_sizes[this_stream_name] = stream_length - self.next_sample_of_stream[this_stream_name]
 
         self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset - self.pause_time_offset  # time since replay start + first stream timestamps
         # TODO: fix this
@@ -184,9 +187,9 @@ class ReplayServer(threading.Thread):
         if sleepDuration > 0:
             time.sleep(sleepDuration)
 
-        outlet = self.outlets[nextStreamIndex]
+        outlet = self.outlets[this_stream_name]
         # print("outlet for this replay is: ", outlet)
-        nextStreamName = self.stream_names[nextStreamIndex]
+        nextStreamName = self.stream_names[next_stream_index]
         if chunkSize == 1:
             # print(str(nextChunkTimestamps[0] + virtualTimeOffset) + "\t" + nextStreamName + "\t" + str(nextChunkValues[0]))
             outlet.push_sample(nextChunkValues[0], nextChunkTimestamps[0] + self.virtual_clock_offset)
@@ -200,12 +203,12 @@ class ReplayServer(threading.Thread):
             # would make the terminal output unreadable
 
         # remove this stream from the list if there are no remaining samples
-        if self.next_sample_of_stream[nextStreamIndex] >= stream_length:
-            self.selected_stream_indices.remove(self.selected_stream_indices[nextStreamIndex])
-            self.outlets.remove(self.outlets[nextStreamIndex])
-            self.next_sample_of_stream.remove(self.next_sample_of_stream[nextStreamIndex])
-            self.chunk_sizes.remove(self.chunk_sizes[nextStreamIndex])
-            self.stream_names.remove(self.stream_names[nextStreamIndex])
+        if self.next_sample_of_stream[this_stream_name] >= stream_length:
+            self.selected_stream_indices.remove(self.selected_stream_indices[next_stream_index])
+            # self.outlets.remove(self.outlets[nextStreamIndex])
+            # self.next_sample_of_stream.remove(self.next_sample_of_stream[next_stream_index])
+            # self.chunk_sizes.remove(self.chunk_sizes[next_stream_index])
+            self.stream_names.remove(self.stream_names[next_stream_index])
 
         # self.replay_progress_signal.emit(playback_position) # TODO add another TCP interface to communicate back
         # print("virtual clock time: ", self.virtual_clock)
@@ -213,6 +216,7 @@ class ReplayServer(threading.Thread):
     def setup_stream(self):
         self.virtual_clock = math.inf
         self.end_time = - math.inf
+        self.outlets = {}
 
         # flatten any high dim data
         video_keys = []
@@ -228,10 +232,9 @@ class ReplayServer(threading.Thread):
         # setup the streams
         self.stream_names = list(self.stream_data)
 
-        for i in range(0, len(self.stream_names)):
-            self.outlets.append(None)
-            self.next_sample_of_stream.append(0)
-            self.chunk_sizes.append(1)
+        for stream_name in self.stream_names:
+            self.next_sample_of_stream[stream_name] = 0
+            self.chunk_sizes[stream_name] = 1
 
         print("Creating outlets")
         print("\t[index]\t[name]")
@@ -247,14 +250,14 @@ class ReplayServer(threading.Thread):
             outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
                                            stream_source_id)
 
-            self.outlets[streamIndex] = pylsl.StreamOutlet(outlet_info)
+            self.outlets[stream_name]= pylsl.StreamOutlet(outlet_info)
             print("\t" + str(streamIndex) + "\t" + stream_name)
 
         self.virtual_clock_offset = 0
         for stream in self.stream_names:
             # find the start time
             if self.virtual_clock is None or self.stream_data[stream][1][0] < self.virtual_clock:
-                # virtual clock will be set to the timestamp of the first received stream data
+                # virtual clock will be set to the timestamp of the first received stream data (the earliest data)
                 self.virtual_clock = self.stream_data[stream][1][0]
                 self.start_time = self.virtual_clock
 

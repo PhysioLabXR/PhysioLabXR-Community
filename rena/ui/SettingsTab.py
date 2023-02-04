@@ -17,7 +17,7 @@ class SettingsTab(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
         self.ui = uic.loadUi("ui/SettingsTab.ui", self)
-
+        self.parent = parent
         self.set_theme(config.settings.value('theme'))
 
         self.LightThemeBtn.clicked.connect(self.toggle_theme_btn_pressed)
@@ -25,7 +25,7 @@ class SettingsTab(QtWidgets.QWidget):
 
         # resolve save directory
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
-        self.set_recording_file_location()
+        self.set_recording_file_location(config.settings.value('recording_file_location'))
 
         # resolve recording file format
         for file_format in config.FILE_FORMATS:
@@ -59,10 +59,7 @@ class SettingsTab(QtWidgets.QWidget):
 
     def select_data_dir_btn_pressed(self):
         selected_data_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        if selected_data_dir != '':
-            config.settings.setValue('recording_file_location', selected_data_dir)
-        print("Selected data dir: ", config.settings.value('recording_file_location'))
-        self.set_recording_file_location()
+        self.set_recording_file_location(selected_data_dir)
 
     def recording_file_format_change(self):
         # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
@@ -77,10 +74,14 @@ class SettingsTab(QtWidgets.QWidget):
 
         self.set_theme(config.settings.value('theme'))
         self.set_recording_file_format()
-        self.set_recording_file_location()
+        self.set_recording_file_location(config.DEFAULT_DATA_DIR)
 
     def set_recording_file_format(self):
         self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))
 
-    def set_recording_file_location(self):
-        self.saveRootTextEdit.setText(config.settings.value('recording_file_location'))
+    def set_recording_file_location(self, selected_data_dir):
+        if selected_data_dir != '':
+            config.settings.setValue('recording_file_location', selected_data_dir)
+            print("Selected data dir: ", config.settings.value('recording_file_location'))
+            self.saveRootTextEdit.setText(config.settings.value('recording_file_location'))
+            self.parent.recording_tab.update_ui_save_file()
