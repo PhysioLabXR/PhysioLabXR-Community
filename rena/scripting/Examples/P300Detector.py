@@ -13,6 +13,13 @@ import brainflow
 #
 from rena.utils.general import DataBuffer
 
+
+START_TRAINING_MARKER = 90
+END_TRAINING_MARKER = 91
+
+START_TESTING_MARKER = 100
+END_TESTING_MARKER = 101
+
 FLASH_START_MARKER = 9
 FLASH_END_MARKER = 10
 
@@ -69,7 +76,7 @@ montage = 'standard_1005'
 # info['description'] = 'P300Speller'
 
 
-class P300Detector(RenaScript):
+class P300Speller(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
@@ -87,8 +94,11 @@ class P300Detector(RenaScript):
 
         self.data_buffer = DataBuffer()
         self.current_state = IDEAL_STATE
+        self.model_name = 'P300SpellerModel'
 
         print("P300Speller Decoding Script Setup Complete!")
+
+
 
     def init(self):
         pass
@@ -124,6 +134,9 @@ class P300Detector(RenaScript):
 
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
+
+
+
         if self.current_state == IDEAL_STATE:
             if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
                 # self.data_buffer = DataBuffer()
@@ -169,37 +182,6 @@ class P300Detector(RenaScript):
         return evoked
         # target_epochs = epochs['target']
         # non_target_epochs = epochs['non_target']
-
-    # cleanup is called when the stop button is hit
-    # def cleanup(self):
-    #     print('Cleanup function is called')
-
-    # def preprocess_data(self, epoch, epoch_timestamps):
-    #     processed = mne.filter.filter_data(epoch, EEG_SAMPLING_RATE, l_freq=50, h_freq=1, n_jobs=1)
-    #     # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
-    #     raw = mne.io.RawArray(processed, self.mne_raw_info)
-    #     psd, freq = psd_welch(raw, n_fft=1028, n_per_seg=256 * 3, picks='all', n_jobs=1)
-    #
-    #     powers = []  # power density for each frequency
-    #     for flashing_f in blink_frequencies:
-    #         power = psd[(channel_picks), np.argmin(np.abs(freq - flashing_f))]
-    #         powers.append(power.mean())
-    #     print('Decoded powers: {}'.format(powers))
-    #     return np.argmax(powers)
-    #
-    # def plot_welch(self, raw):
-    #     psd, freq = psd_welch(raw, n_fft=1028, n_per_seg=256 * 3, picks='all', n_jobs=1)
-    #     psd = 10 * np.log10(psd)
-    #
-    #     psd = psd[channel_picks, :]  # pick the occipital channels
-    #     psd_mean = psd.mean(0)  # pick the occipital
-    #     plt.plot(freq, psd_mean, color='b')
-    #
-    #     plt.ylabel('Power Spectral Density (dB)')
-    #     plt.xlabel('Frequency (Hz)')
-    #     plt.legend()
-    #
-    #     plt.show()
 
 
 def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
