@@ -13,7 +13,6 @@ import brainflow
 #
 from rena.utils.general import DataBuffer
 
-
 START_TRAINING_MARKER = 90
 END_TRAINING_MARKER = 91
 
@@ -39,6 +38,8 @@ P300EventStreamName = 'P300Speller'
 
 IDEAL_STATE = 0
 RECORDING_STATE = 1
+TRAINING_STATE = 99
+TESTING_STATE = 100
 
 sampling_rate = 250
 data_duration = 2
@@ -90,15 +91,15 @@ class P300Speller(RenaScript):
         self.raw = None
         self.time_offset_before = -0.2
         self.time_offset_after = 1
-        self.evoked_list = []
-
         self.data_buffer = DataBuffer()
-        self.current_state = IDEAL_STATE
+        self.board_state = IDEAL_STATE
+        self.game_state = IDEAL_STATE
         self.model_name = 'P300SpellerModel'
 
+        self.training_state_data = []
+        self.testing_state_data = []
+
         print("P300Speller Decoding Script Setup Complete!")
-
-
 
     def init(self):
         pass
@@ -132,34 +133,41 @@ class P300Speller(RenaScript):
         cur_state = next_state
         '''
 
+
+
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
 
-
-        if self.current_state == IDEAL_STATE:
-            if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
-                # self.data_buffer = DataBuffer()
+        if self.game_state==IDEAL_STATE:
+            if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
                 self.inputs.clear_buffer_data()  # clear buffer
-                self.current_state = RECORDING_STATE
-                return
+                self.game_state=TRAINING_STATE
+                print('enter training state')
+            elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
+                self.inputs.clear_buffer_data()  # clear buffer
+                self.game_state=TESTING_STATE
+                print('enter testing state')
+        elif self.game_state==TRAINING_STATE:
+            if END_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
+                self.inputs.clear_buffer_data()  # clear buffer
+                self.game_state=IDEAL_STATE
+                # report final result
+                print('end training state')
+            else:
+                self.collect_trail(self.training_call_back)
+                print('collect training state data')
+        elif self.game_state==TESTING_STATE:
+            if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
+                self.inputs.clear_buffer_data()  # clear buffer
+                self.game_state=IDEAL_STATE
+                print('end testing state')
+                # report final result
+            else:
+                self.collect_trail(self.testing_call_back)
+                print('collect testing state data')
 
-        if self.current_state == RECORDING_STATE:
-            if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
-                # processed = mne.filter.filter_data(self.data_buffer[OpenBCIStreamName][0],
-                #                                    EEG_SAMPLING_RATE,
-                #                                    l_freq=1, h_freq=50, n_jobs=1)
-                # processed = mne.filter.notch_filter(processed, EEG_SAMPLING_RATE, freqs=60, n_jobs=1)
-                # self.raw = mne.io.RawArray(processed, self.mne_raw_info)
-                evoked = self.process_epoch_data()
-                self.evoked_list.append(evoked)
-                self.data_buffer.clear_buffer_data()
-                self.inputs.clear_buffer_data()
-                self.current_state = IDEAL_STATE
 
-            # print('flash')
-            self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
-            self.inputs.clear_buffer_data()  # clear the data buffer
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -167,7 +175,38 @@ class P300Speller(RenaScript):
         # ................|..................|(processed marker).................|...................|............
         # ....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|
 
-    def process_epoch_data(self):
+    def collect_trail(self,call_back_function):
+        if self.board_state == IDEAL_STATE:
+            if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
+                # self.data_buffer = DataBuffer()
+                self.inputs.clear_buffer_data()  # clear buffer
+                self.board_state = RECORDING_STATE
+
+        elif self.board_state == RECORDING_STATE:
+            if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
+                # epochs = self.process_raw_data()
+                call_back_function()
+                self.data_buffer.clear_buffer_data()
+                self.inputs.clear_buffer_data()
+                self.board_state = IDEAL_STATE
+            else:
+                self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
+                self.inputs.clear_buffer_data()  # clear the data buffer
+        else:
+            pass
+
+    def training_call_back(self):
+        epoch = self.process_raw_data()
+        self.training_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
+
+    def testing_call_back(self):
+        epoch = self.process_raw_data()
+        self.testing_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
+
+    def data_structure(self, raw, epoch):
+        return {'raw': raw, 'epoch': epoch}
+
+    def process_raw_data(self):
         # self.data_buffer
         self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
         stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
@@ -178,10 +217,8 @@ class P300Speller(RenaScript):
         flashing_events = mne.find_events(self.raw, stim_channel='STI')
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
-        evoked = epochs.average(by_event_type=True)
-        return evoked
-        # target_epochs = epochs['target']
-        # non_target_epochs = epochs['non_target']
+        # evoked = epochs.average(by_event_type=True)
+        return epochs
 
 
 def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
