@@ -64,4 +64,5 @@ def parse_slider_moved_command(command_to_parse):
     Returns:
         updated_position: the updated slider position.
     """
+
     return command_to_parse.split(':')[1]

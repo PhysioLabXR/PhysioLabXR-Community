@@ -603,7 +603,13 @@ class PlaybackWorker(QObject):
         if self.is_running:
             self.send_command_mutex.lock()
             if len(self.command_queue) > 0:
-                self.command_info_interface.send_string(self.command_queue.pop())
+                to_send = self.command_queue.pop()
+                if type(to_send) is str:
+                    self.command_info_interface.send_string(self.command_queue.pop())
+                elif type(to_send) is bytes:
+                    self.command_info_interface.send(self.command_queue.pop())
+                else:
+                    raise NotImplementedError
                 reply = self.command_info_interface.socket.recv()
                 reply = reply.decode('utf-8')
                 if reply == STOP_SUCCESS_INFO:
@@ -649,11 +655,10 @@ class PlaybackWorker(QObject):
         self.command_queue.append(PLAY_PAUSE_COMMAND)
         self.send_command_mutex.unlock()
 
-    def queue_slider_moved_command(self, updated_position):
-        command = SLIDER_MOVED_COMMAND + f":{updated_position}"
+    def queue_slider_moved_command(self, command):
         self.send_command_mutex.lock()
-        self.command_queue.append(command)
-        print("slider moved command  ", command)
+        self.command_queue.append(SLIDER_MOVED_COMMAND)
+        self.command_queue.append(command)  # contains the set to time, and the offset time
         self.send_command_mutex.unlock()
 
     def queue_stop_command(self):

@@ -118,6 +118,9 @@ class RenaTCPInterface:
     def send_string(self, data: str, *args, **kwargs):
         self.socket.send(data.encode('utf-8'), *args, **kwargs)
 
+    def send(self, data: bytes, *args, **kwargs):
+        self.socket.send(data, *args, **kwargs)
+
     def recv_string(self, *args, **kwargs):
         return self.socket.recv(*args, **kwargs).decode('utf-8')
 

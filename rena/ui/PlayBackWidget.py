@@ -15,6 +15,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/PlayBackWidget.ui", self)
         self.parent = parent
         self.command_info_interface = command_info_interface
+        self.slider_pressed_position = None
 
         # playback status
         # self.horizontalSlider.valueChanged.connect(self.emit_playback_position)
@@ -124,6 +125,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         """
         called when the user starts dragging horizontalSlider.
         """
+        self.slider_pressed_position = self.horizontalSlider.value()
         self.slider_is_dragging = True
 
     def slider_released(self):
@@ -132,7 +134,12 @@ class PlayBackWidget(QtWidgets.QWidget):
         Makes a function call to issue_slider_moved_command() so that replay can be updated to the new playback position.
         """
         self.slider_is_dragging = False
-        self.issue_slider_moved_command(self.horizontalSlider.value())
+        playback_position = (self.horizontalSlider.value() + 1) * 1e-2
+        set_to_time = self.total_time * playback_position
+        before_press_time = self.total_time * (self.slider_pressed_position + 1) * 1e-2
+
+        slider_offset_time = set_to_time - before_press_time
+        self.issue_slider_moved_command(set_to_time.tostring() + slider_offset_time.tostring())
 
     # def slider_moved(self):
     #     """
@@ -178,5 +185,5 @@ class PlayBackWidget(QtWidgets.QWidget):
     def issue_terminate_command(self):
         self.playback_worker.queue_terminate_command()
 
-    def issue_slider_moved_command(self, updated_position):
-        self.playback_worker.queue_slider_moved_command(updated_position)
+    def issue_slider_moved_command(self, command):
+        self.playback_worker.queue_slider_moved_command(command)
