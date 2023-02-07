@@ -1,0 +1,7 @@
+{
+  "StreamName": "psylsl",
+  "ChannelNames": [
+    "psymarker"
+  ],
+  "NominalSamplingRate": 5
+}

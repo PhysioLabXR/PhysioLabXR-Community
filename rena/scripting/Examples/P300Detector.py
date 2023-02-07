@@ -13,7 +13,6 @@ import brainflow
 #
 from rena.utils.general import DataBuffer
 
-
 START_TRAINING_MARKER = 90
 END_TRAINING_MARKER = 91
 
@@ -71,9 +70,17 @@ event_id = {'target': 1, 'non_target': 2}
 
 montage = 'standard_1005'
 
-
 # info = mne.create_info(channel_names, sampling_rate, channel_types)
 # info['description'] = 'P300Speller'
+
+SpellerMatrix = [
+    ['A', 'B', 'C', 'D', 'E'],
+    ['F', 'G', 'H', 'I', 'J'],
+    ['K', 'L', 'M', 'N', 'O'],
+    ['P', 'Q', 'R', 'S', 'T'],
+    ['U', 'V', 'W', 'X', 'Y'],
+    ['Z', 'Space', 'BSpace', 'Enter', 'Activation']
+]
 
 
 class P300Speller(RenaScript):
@@ -97,8 +104,6 @@ class P300Speller(RenaScript):
         self.model_name = 'P300SpellerModel'
 
         print("P300Speller Decoding Script Setup Complete!")
-
-
 
     def init(self):
         pass
@@ -134,8 +139,6 @@ class P300Speller(RenaScript):
 
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
-
-
 
         if self.current_state == IDEAL_STATE:
             if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
