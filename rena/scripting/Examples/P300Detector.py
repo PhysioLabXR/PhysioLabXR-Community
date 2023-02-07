@@ -4,7 +4,7 @@ import numpy as np
 import mne
 from brainflow import BrainFlowInputParams, BoardShim
 from matplotlib import pyplot as plt
-from mne.time_frequency import psd_welch
+# from mne.time_frequency import psd_welch
 
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
 from rena.scripting.RenaScript import RenaScript
