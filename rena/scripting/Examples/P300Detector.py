@@ -25,6 +25,14 @@ FLASH_END_MARKER = 10
 NONTARGET_MARKER = 1
 TARGET_MARKER = 2
 
+
+IDLE_STATE = 0
+RECORDING_STATE = 1
+
+TRAINING_STATE = 99
+TESTING_STATE = 100
+
+
 START_FLASHING_MARKER = 3
 END_FLASHING_MARKER = 4
 
@@ -36,10 +44,7 @@ OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
 
 P300EventStreamName = 'P300Speller'
 
-IDEAL_STATE = 0
-RECORDING_STATE = 1
-TRAINING_STATE = 99
-TESTING_STATE = 100
+
 
 sampling_rate = 250
 data_duration = 2
@@ -92,8 +97,8 @@ class P300Speller(RenaScript):
         self.time_offset_before = -0.2
         self.time_offset_after = 1
         self.data_buffer = DataBuffer()
-        self.board_state = IDEAL_STATE
-        self.game_state = IDEAL_STATE
+        self.board_state = IDLE_STATE
+        self.game_state = IDLE_STATE
         self.model_name = 'P300SpellerModel'
 
         self.training_state_data = []
@@ -135,32 +140,36 @@ class P300Speller(RenaScript):
             return
 
 
-        if self.game_state==IDEAL_STATE:
+        if self.game_state==IDLE_STATE:
             if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state=TRAINING_STATE
                 print('enter training state')
             elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
                 self.inputs.clear_buffer_data()  # clear buffer
-                self.game_state=TESTING_STATE
+                self.game_state=IDLE_STATE
                 print('enter testing state')
+
+
         elif self.game_state==TRAINING_STATE:
             if END_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
                 self.inputs.clear_buffer_data()  # clear buffer
-                self.game_state=IDEAL_STATE
+                self.game_state=IDLE_STATE
                 # report final result
                 print('end training state')
             else:
-                self.collect_trail(self.training_call_back)
+                self.collect_trail(self.training_callback)
                 print('collect training state data')
+
+
         elif self.game_state==TESTING_STATE:
             if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
                 self.inputs.clear_buffer_data()  # clear buffer
-                self.game_state=IDEAL_STATE
+                self.game_state=IDLE_STATE
                 print('end testing state')
                 # report final result
             else:
-                self.collect_trail(self.testing_call_back)
+                self.collect_trail(self.testing_callback)
                 print('collect testing state data')
 
 
@@ -171,8 +180,8 @@ class P300Speller(RenaScript):
         # ................|..................|(processed marker).................|...................|............
         # ....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|....|
 
-    def collect_trail(self,call_back_function):
-        if self.board_state == IDEAL_STATE:
+    def collect_trail(self,callback_function):
+        if self.board_state == IDLE_STATE:
             if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
                 # self.data_buffer = DataBuffer()
                 self.inputs.clear_buffer_data()  # clear buffer
@@ -181,21 +190,23 @@ class P300Speller(RenaScript):
         elif self.board_state == RECORDING_STATE:
             if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
                 # epochs = self.process_raw_data()
-                call_back_function()
+
+                # callback_function()
+
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
-                self.board_state = IDEAL_STATE
+                self.board_state = IDLE_STATE
             else:
                 self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
                 self.inputs.clear_buffer_data()  # clear the data buffer
         else:
             pass
 
-    def training_call_back(self):
+    def training_callback(self):
         epoch = self.process_raw_data()
         self.training_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
 
-    def testing_call_back(self):
+    def testing_callback(self):
         epoch = self.process_raw_data()
         self.testing_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
 
