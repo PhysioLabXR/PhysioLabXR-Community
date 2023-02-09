@@ -47,6 +47,9 @@ class ReplayServer(threading.Thread):
         self.pause_time_offset_total = 0  # use for tracking the total paused time for this replay
         self.pause_start_time = None
 
+        self.previous_file_loc = None
+        self.previous_stream_data = None
+
     def run(self):
         while self.running:
             if not self.is_replaying:
@@ -54,21 +57,25 @@ class ReplayServer(threading.Thread):
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
-                    try:
-                        if file_loc.endswith('.dats'):
-                            rns_stream = RNStream(file_loc)
-                            self.stream_data = rns_stream.stream_in(
-                                ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
-                        elif file_loc.endswith('.p'):
-                            self.stream_data = pickle.load(open(file_loc, 'rb'))
-                            if '0' in self.stream_data.keys(): self.stream_data.pop('0')
-                            # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
-                        else:
-                            self.send_string(shared.FAIL_INFO + 'Unsupported file type')
+                    if file_loc == self.previous_file_loc:
+                        self.stream_data = self.previous_stream_data
+                    else:
+                        try:
+                            if file_loc.endswith('.dats'):
+                                rns_stream = RNStream(file_loc)
+                                self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
+                            elif file_loc.endswith('.p'):
+                                self.stream_data = pickle.load(open(file_loc, 'rb'))
+                                if '0' in self.stream_data.keys(): self.stream_data.pop('0')
+                                # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
+                            else:
+                                self.send_string(shared.FAIL_INFO + 'Unsupported file type')
+                                return
+                        except FileNotFoundError:
+                            self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
                             return
-                    except FileNotFoundError:
-                        self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
-                        return
+                    self.previous_file_loc = file_loc
+                    self.previous_stream_data = self.stream_data
                     self.is_replaying = True
                     self.setup_stream()
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
@@ -286,9 +293,14 @@ class ReplayServer(threading.Thread):
         self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset_total
 
     def set_to_time(self, set_to_time):
-        for i, stream_name in enumerate(self.remaining_stream_names):  # iterate over the remaining data streams in the replay file
+        remaining_stream_names_copy = copy.deepcopy(self.remaining_stream_names)
+        for i, stream_name in enumerate(remaining_stream_names_copy):  # iterate over the remaining data streams in the replay file
             timestamps = self.stream_data[stream_name][1]
-            self.next_sample_index_of_stream[stream_name] = np.argwhere(timestamps > (self.start_time + set_to_time))[0][0]
+            future_timestamps = np.argwhere(timestamps > (self.start_time + set_to_time))
+            if len(future_timestamps) == 0:
+                self.remaining_stream_names.remove(stream_name)
+            else:
+                self.next_sample_index_of_stream[stream_name] = np.argwhere(timestamps > (self.start_time + set_to_time))[0][0]
 
     def is_stream_video(self, stream):
         if stream.isdigit():
