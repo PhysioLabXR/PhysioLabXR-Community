@@ -174,6 +174,9 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.currentTimestamplabel.setText('')
         self.timeSinceStartedLabel.setText('')
         self.percentageReplayedLabel.setText('')
+        self.stopButton.setIcon(start_stream_icon)
+        self.playPauseButton.setEnabled(False)
+        self.playPauseButton.setIcon(pause_icon)
 
     def issue_play_pause_command(self):
         # prevent is_paused status from changing when the replay is not running

@@ -100,9 +100,7 @@ class ReplayServer(threading.Thread):
                         times = self.recv(is_block=True)
                         set_to_time, slider_offset_time = np.frombuffer(times, dtype=float)
                         self.slider_offset_time += slider_offset_time
-
                         self.set_to_time(set_to_time)
-
                         self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:
                         # process stop command
@@ -118,11 +116,13 @@ class ReplayServer(threading.Thread):
                 print('replay finished')
                 if self.is_replaying:  # the case of a finished replay
                     self.reset_replay()
+                    self.is_paused = False
                     self.is_replaying = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
-                        self.send(np.array(-1.))
-                    else: raise Exception('Unexpected command ' + command)
+                        self.send(np.array(-1.))  # this is the stop info
+                    else:
+                        raise Exception('Unexpected command ' + command)
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
         print("Replay terminated")
         # return here
@@ -146,7 +146,6 @@ class ReplayServer(threading.Thread):
         del self.outlets
 
     def replay(self):
-        next_stream_index = None
         this_stream_name = None
         this_stream_next_timestamp = None
 
@@ -159,7 +158,7 @@ class ReplayServer(threading.Thread):
                 next_timestamp_of_stream = stream[1][next_sample_index_of_stream]
             except Exception as e:
                 raise (e)
-            if this_stream_next_timestamp is None or next_timestamp_of_stream <= this_stream_next_timestamp:  # find the stream with smallest timestamp for their next chunk of data
+            if this_stream_next_timestamp is None or next_timestamp_of_stream <= this_stream_next_timestamp:  # find the stream with the smallest timestamp for their next chunk of data
                 this_stream_name = stream_name
                 this_stream_next_timestamp = next_timestamp_of_stream
         del stream_name
