@@ -124,9 +124,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
         # create the settings window
-        settings_tab = SettingsTab(self)
+        self.settings_tab = SettingsTab(self)
         self.settings_window = another_window('Settings')
-        self.settings_window.get_layout().addWidget(settings_tab)
+        self.settings_window.get_layout().addWidget(self.settings_tab)
         self.settings_window.hide()
 
 

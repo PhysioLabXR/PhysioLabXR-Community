@@ -19,7 +19,8 @@ from rena import config_ui, config_signal, shared, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
 from rena.interfaces import InferenceInterface, LSLInletInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, PLAY_PAUSE_COMMAND
+    STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.general import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
 from rena.utils.networking_utils import recv_string
@@ -602,13 +603,23 @@ class PlaybackWorker(QObject):
         if self.is_running:
             self.send_command_mutex.lock()
             if len(self.command_queue) > 0:
-                self.command_info_interface.send_string(self.command_queue.pop())
+                to_send = self.command_queue.pop()
+                if type(to_send) is str:
+                    self.command_info_interface.send_string(to_send)
+                elif type(to_send) is np.ndarray:
+                    self.command_info_interface.send(to_send)
+                elif type(to_send) is list:
+                    for s in to_send:
+                        if type(s) is str:
+                            self.command_info_interface.send_string(s)
+                        elif type(s) is np.ndarray:
+                            self.command_info_interface.send(s)
+                else:
+                    raise NotImplementedError
                 reply = self.command_info_interface.socket.recv()
                 reply = reply.decode('utf-8')
                 if reply == STOP_SUCCESS_INFO:
-                    self.is_running = False
-                    self.is_paused = False # reset is_paused in case is_paused had been set to True
-                    self.replay_stopped_signal.emit()
+                    self.replay_stopped()
                     self.send_command_mutex.unlock()
                     return
                 elif reply == PLAY_PAUSE_SUCCESS_INFO:
@@ -619,23 +630,31 @@ class PlaybackWorker(QObject):
                     self.is_paused = not self.is_paused
                     self.send_command_mutex.unlock()
                     return
+                elif reply == SLIDER_MOVED_SUCCESS_INFO:
+                    # do something
+                    self.send_command_mutex.unlock()
+                    return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
                 #     self.is_running = False
                 #     self.replay_terminated_signal.emit()
                 #     self.send_command_mutex.unlock()
-                #     return
+                #     return'
                 else:
                     raise NotImplementedError
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
             virtual_clock = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
             virtual_clock = np.frombuffer(virtual_clock)[0]
             if virtual_clock == -1:  # replay has finished
-                self.is_running = False
-                self.replay_stopped_signal.emit()
+                self.replay_stopped()
                 self.send_command_mutex.unlock()
                 return
             self.replay_progress_signal.emit(virtual_clock)
             self.send_command_mutex.unlock()
+
+    def replay_stopped(self):
+        self.is_running = False
+        self.is_paused = False  # reset is_paused in case is_paused had been set to True
+        self.replay_stopped_signal.emit()
 
     def start_run(self):
         self.is_running = True
@@ -643,6 +662,11 @@ class PlaybackWorker(QObject):
     def queue_play_pause_command(self):
         self.send_command_mutex.lock()
         self.command_queue.append(PLAY_PAUSE_COMMAND)
+        self.send_command_mutex.unlock()
+
+    def queue_slider_moved_command(self, command):
+        self.send_command_mutex.lock()
+        self.command_queue.append([SLIDER_MOVED_COMMAND, command])
         self.send_command_mutex.unlock()
 
     def queue_stop_command(self):
