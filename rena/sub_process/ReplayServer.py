@@ -43,7 +43,8 @@ class ReplayServer(threading.Thread):
         # fps counter
         self.tick_times = deque(maxlen=50)
 
-        self.pause_time_offset = 0
+        self.c = 0  # use for counting in the pause session
+        self.pause_time_offset_total = 0  # use for tracking the total paused time for this replay
         self.pause_start_time = None
 
     def run(self):
@@ -82,17 +83,21 @@ class ReplayServer(threading.Thread):
                         print("Replay FPS {0}".format(self.get_fps()), end='\r')
                         # streams get removed from the list if there are no samples left to play
                         self.replay()
-
+                    else:
+                        pause_time_offset = pylsl.local_clock() - self.pause_start_time
+                        self.pause_time_offset_total = self.pause_time_offset_copy + pause_time_offset
+                        self.update_virtual_clock()  # time since replay start + first stream timestamps
+                    # process commands
                     command = self.recv_string(is_block=False)
-                    # handle play_pause command
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(self.virtual_clock)
-                    elif command == shared.PLAY_PAUSE_COMMAND:
+                    elif command == shared.PLAY_PAUSE_COMMAND:  # handle play_pause command
                         print("command received from replay server: ", command)
                         if not self.is_paused:
                             self.pause_start_time = pylsl.local_clock()
-                        else:  # resumed
-                            self.pause_time_offset += pylsl.local_clock() - self.pause_start_time
+                            self.pause_time_offset_copy = copy.copy(self.pause_time_offset_total)
+                        else:
+                            print(f"resumed: pause time is ticking: {self.pause_time_offset_total}")
                         self.is_paused = not self.is_paused
                         self.send_string(shared.PLAY_PAUSE_SUCCESS_INFO)
                     elif type(command) is str and shared.SLIDER_MOVED_COMMAND in command:
@@ -106,7 +111,7 @@ class ReplayServer(threading.Thread):
                         # process stop command
                         self.reset_replay()
                         self.is_replaying = False
-                        self.is_paused = False # reset is_paused in case is_paused had been set to True
+                        self.is_paused = False  # reset is_paused in case is_paused had been set to True
                         self.send_string(shared.STOP_SUCCESS_INFO)
                         break
                     elif command == shared.TERMINATE_COMMAND:
@@ -120,7 +125,7 @@ class ReplayServer(threading.Thread):
                     self.is_replaying = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
-                        self.send(np.array(-1.))  # this is the stop info
+                        self.send(np.array(-1.))
                     else:
                         raise Exception('Unexpected command ' + command)
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
@@ -188,7 +193,7 @@ class ReplayServer(threading.Thread):
             self.chunk_sizes[this_stream_name] = stream_total_num_samples - self.next_sample_index_of_stream[this_stream_name]
 
         # virtual clock is in sync with the replayed stream timestamps, it equals to (replay time) + (original data's first timestamp)
-        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset  # time since replay start + first stream timestamps
+        self.update_virtual_clock()  # time since replay start + first stream timestamps
         sleep_duration = this_stream_next_timestamp - self.virtual_clock
         if sleep_duration > 0:
             time.sleep(sleep_duration)
@@ -276,6 +281,9 @@ class ReplayServer(threading.Thread):
         self.virtual_clock_offset = pylsl.local_clock() - self.virtual_clock
         print("Offsetting replayed timestamps by " + str(self.virtual_clock_offset))
         print("start time and end time ", self.start_time, self.end_time)
+
+    def update_virtual_clock(self):
+        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset_total
 
     def set_to_time(self, set_to_time):
         for i, stream_name in enumerate(self.remaining_stream_names):  # iterate over the remaining data streams in the replay file
