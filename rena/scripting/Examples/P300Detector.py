@@ -99,6 +99,8 @@ class P300Speller(RenaScript):
         self.board_state = IDLE_STATE
         self.game_state = IDLE_STATE
         self.model_name = 'P300SpellerModel'
+        self.train_data_filename = ''
+        self.test_data_filename = ''
 
         self.training_state_data = []
         self.testing_state_data = []
@@ -156,7 +158,6 @@ class P300Speller(RenaScript):
             else:
                 self.collect_trail(self.training_callback)
                 print('collect training state data')
-
 
         elif self.game_state == TESTING_STATE:
             if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
@@ -223,7 +224,6 @@ class P300Speller(RenaScript):
         flashing_events = mne.find_events(self.raw, stim_channel='STI')
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
-        # evoked = epochs.average(by_event_type=True)
         return epochs
 
 
