@@ -166,5 +166,8 @@ class RenaProcessing(RenaScript):
         colors = {'Distractor': 'blue', 'Target': 'red', 'Novelty': 'orange'}
 
         viz_eeg_epochs(rdf, event_names, event_filters, colors)
-        epochs = epochs_to_class_samples(rdf, event_names, event_filters)
+        x, y, _, _ = epochs_to_class_samples(rdf, event_names, event_filters)
+
+
+
         self.inputs.clear_buffer()
