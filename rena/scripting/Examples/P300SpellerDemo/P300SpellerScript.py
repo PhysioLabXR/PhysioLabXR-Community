@@ -6,75 +6,77 @@ from brainflow import BrainFlowInputParams, BoardShim
 from matplotlib import pyplot as plt
 
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
+
 from rena.scripting.RenaScript import RenaScript
 import brainflow
 
 # class P300DetectorMarker(Enum):
 #
 from rena.utils.general import DataBuffer
-
-START_TRAINING_MARKER = 90
-END_TRAINING_MARKER = 91
-
-START_TESTING_MARKER = 100
-END_TESTING_MARKER = 101
-
-FLASH_START_MARKER = 9
-FLASH_END_MARKER = 10
-
-NONTARGET_MARKER = 11
-TARGET_MARKER = 12
-
-ROW_FLASH_LABEL = 1
-COL_FLASH_LABEL = 2
-
-IDLE_STATE = 0
-RECORDING_STATE = 1
-
-TRAINING_STATE = 99
-TESTING_STATE = 100
-
-START_FLASHING_MARKER = 3
-END_FLASHING_MARKER = 4
-
-EEG_SAMPLING_RATE = 250.0
-
-Time_Window = 1.1  # second
-
-OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
-
-P300EventStreamName = 'P300Speller'
-
-sampling_rate = 250
-data_duration = 2
-channel_num = 8
-data_array = np.random.rand(8, data_duration * sampling_rate)
-
-channel_types = ['eeg'] * 8
+from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
+from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
+# START_TRAINING_MARKER = 90
+# END_TRAINING_MARKER = 91
+#
+# START_TESTING_MARKER = 100
+# END_TESTING_MARKER = 101
+#
+# FLASH_START_MARKER = 9
+# FLASH_END_MARKER = 10
+#
+# NONTARGET_MARKER = 11
+# TARGET_MARKER = 12
+#
+# ROW_FLASH_LABEL = 1
+# COL_FLASH_LABEL = 2
+#
+# IDLE_STATE = 0
+# RECORDING_STATE = 1
+#
+# TRAINING_STATE = 99
+# TESTING_STATE = 100
+#
+# START_FLASHING_MARKER = 3
+# END_FLASHING_MARKER = 4
+#
+# EEG_SAMPLING_RATE = 250.0
+#
+# Time_Window = 1.1  # second
+#
+# OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
+#
+# P300EventStreamName = 'P300Speller'
+#
+# sampling_rate = 250
+# data_duration = 2
+# channel_num = 8
+# data_array = np.random.rand(8, data_duration * sampling_rate)
+#
+# channel_types = ['eeg'] * 8
+# # channel_names = [
+# #     "Fp1",
+# #     "Fp2",
+# #     "C3",
+# #     "C4",
+# #     "P7",
+# #     "P8",
+# #     "O1",
+# #     "O2"
+# # ]
 # channel_names = [
-#     "Fp1",
-#     "Fp2",
+#     "Fz",
+#     "Cz",
+#     "Pz",
 #     "C3",
 #     "C4",
-#     "P7",
-#     "P8",
-#     "O1",
-#     "O2"
+#     "P3",
+#     "P4",
+#     "O1"
 # ]
-channel_names = [
-    "Fz",
-    "Cz",
-    "Pz",
-    "C3",
-    "C4",
-    "P3",
-    "P4",
-    "O1"
-]
-
-event_id = {'non_target': 11, 'target': 12}
-
-montage = 'standard_1005'
+#
+# event_id = {'non_target': 11, 'target': 12}
+#
+# montage = 'standard_1005'
 
 
 # info = mne.create_info(channel_names, sampling_rate, channel_types)
@@ -224,6 +226,7 @@ class P300Speller(RenaScript):
         flashing_events = mne.find_events(self.raw, stim_channel='STI')
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
+        visualize_eeg_epochs(epochs, event_id, event_color)
         return epochs
 
 
@@ -250,24 +253,3 @@ def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
     return stim_array
 
 
-def add_stim_channel_to_raw_array(raw_array, stim_data, stim_channel_name='STI'):
-    # if len(stim_data.shape)==1:
-    #     stim_data = stim_data.reshape(1,stim_data.shape[0])
-    info = mne.create_info([stim_channel_name], raw_array.info['sfreq'], ['stim'])
-    stim_raw = mne.io.RawArray(stim_data, info)
-    raw_array.add_channels([stim_raw], force_update_info=True)
-
-
-def separate_p300_speller_event_and_info_markers(markers, ts):
-    markers = markers[0]
-    events_info = []
-    event_indices = [index for index, i in enumerate(markers) if i in [TARGET_MARKER, NONTARGET_MARKER]]
-
-    event_ts = ts[event_indices]
-    events = markers[event_indices]
-
-    for event_index in event_indices:
-        events_info.append((markers[event_index + 1], markers[event_index + 2]))
-
-    events = np.reshape(events, (1, -1))
-    return events, event_ts, events_info
