@@ -128,7 +128,7 @@ def run_test():
     print('Started streaming')
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=4, highcut=50, fs=250, order=6, channel_num=8)
+    butter_bandpass = RealtimeButterBandpass(lowcut=1, highcut=50, fs=250, order=6, channel_num=8)
     # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
@@ -158,7 +158,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIInterface(serial_port='COM4')
+    openBCI_interface = OpenBCIInterface(serial_port='COM5')
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test()

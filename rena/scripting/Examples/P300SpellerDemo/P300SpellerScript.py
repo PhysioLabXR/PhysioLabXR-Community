@@ -226,6 +226,10 @@ class P300Speller(RenaScript):
         flashing_events = mne.find_events(self.raw, stim_channel='STI')
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
+
+        # save
+
+
         visualize_eeg_epochs(epochs, event_id, event_color)
         return epochs
 
