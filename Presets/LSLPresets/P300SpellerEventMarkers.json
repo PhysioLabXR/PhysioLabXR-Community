@@ -1,7 +1,13 @@
 {
   "StreamName": "P300Speller",
   "ChannelNames": [
-    "GameEventMarkers"
+    "GameStateControlMarker",
+    "StartFlashingMarker",
+    "FlashingRowOrColumMarker",
+    "FlashingRowColumIndexMarker",
+    "TargetCharIndexMarker",
+    "TargetNonTargetMarker"
+
   ],
   "NominalSamplingRate": 5
 }

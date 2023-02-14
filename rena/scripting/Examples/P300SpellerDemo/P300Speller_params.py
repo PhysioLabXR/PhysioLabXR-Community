@@ -37,9 +37,15 @@ sampling_rate = 250
 data_duration = 2
 channel_num = 8
 
-
 test_size = 0.2
 
+event_marker_channel_names = ["GameControl",
+                              "StartFlashing",
+                              "TargetNonTarget",
+                              "TargetIndex",
+                              "RowOrColum",
+                              "RowColumIndex"
+                              ]
 
 channel_types = ['eeg'] * 8
 # channel_names = [
@@ -67,10 +73,6 @@ event_id = {'non_target': 11, 'target': 12}
 event_color = {'non_target': 'blue', 'target': 'red'}
 montage = 'standard_1005'
 
-
-
-
-
 ##########################
 
 import itertools
@@ -82,8 +84,6 @@ import numpy as np
 import pkg_resources
 
 from renaanalysis.utils.Bidict import Bidict
-
-
 
 # base_root = "C:/Users/LLINC-Lab/Dropbox/ReNa/data/ReNaPilot-2022Fall/"
 # base_root = "/Users/Leo/Dropbox/ReNa/data/ReNaPilot-2022Fall"
@@ -111,19 +111,18 @@ dtn_color_dict = {None: 'grey', 1: 'blue', 2: 'red', 3: 'orange', 4: 'grey'}
 
 event_viz = 'GazeRayIntersect'
 
-
 conditions = Bidict({'RSVP': 1., 'Carousel': 2., 'VS': 3., 'TS': 4., 'TS-gnd': 8, 'TS-id': 9})
 dtnn_types = Bidict({'Distractor': 1, 'Target': 2, 'Novelty': 3, 'Null': 4})
 meta_blocks = Bidict({'cp': 5, 'ip': 7})
 
 # load presets
-eeg_chs =  ["Trig1", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14",
-                 "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A23", "A24", "A25", "A26", "A27", "A28",
-                 "A29", "A30", "A31", "A32", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12",
-                 "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26",
-                 "B27", "B28", "B29", "B30", "B31", "B32", "EX1", "EX2", "EX3", "EX4", "EX5", "EX6", "EX7", "EX8",
-                 "AUX1", "AUX2", "AUX3", "AUX4", "AUX5", "AUX6", "AUX7", "AUX8", "AUX9", "AUX10", "AUX11", "AUX12",
-                 "AUX13", "AUX14", "AUX15", "AUX16"]
+eeg_chs = ["Trig1", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14",
+           "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A23", "A24", "A25", "A26", "A27", "A28",
+           "A29", "A30", "A31", "A32", "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12",
+           "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "B24", "B25", "B26",
+           "B27", "B28", "B29", "B30", "B31", "B32", "EX1", "EX2", "EX3", "EX4", "EX5", "EX6", "EX7", "EX8",
+           "AUX1", "AUX2", "AUX3", "AUX4", "AUX5", "AUX6", "AUX7", "AUX8", "AUX9", "AUX10", "AUX11", "AUX12",
+           "AUX13", "AUX14", "AUX15", "AUX16"]
 eventmarker_chs = [
     "BlockMarker",
     "BlockIDStartEnd",
@@ -132,51 +131,51 @@ eventmarker_chs = [
     "objDistFromPlayer",
     "CarouselSpeed",
     "CarouselAngle",
-    "TSHandLeft","TSHandRight",
+    "TSHandLeft", "TSHandRight",
     "Likert"]
 
 headtracker_chs = [
     "Head Yaw", "Head Pitch", "Head Roll",
     "Head Displacement X", "Head Displacement Y", "Head Displacement Z",
     "Head Position X", "Head Position Y", "Head Position Z"
-  ]
+]
 varjoEyetracking_stream_name = "Unity.VarjoEyeTrackingComplete"
 varjoEyetracking_chs = [
-        "raw_timestamp",
-        "log_time",
-        "focus_distance",
-        "frame_number",
-        "stability",
-        "status",
-        "Angle2CameraUp",
-        "gaze_forward_x",
-        "gaze_forward_y",
-        "gaze_forward_z",
-        "gaze_origin_x",
-        "gaze_origin_y",
-        "gaze_origin_z",
-        "HMD_position_x",
-        "HMD_position_y",
-        "HMD_position_z",
-        "HMD_rotation_x",
-        "HMD_rotation_y",
-        "HMD_rotation_z",
-        "left_forward_x",
-        "left_forward_y",
-        "left_forward_z",
-        "left_origin_x",
-        "left_origin_y",
-        "left_origin_z",
-        "left_pupil_size",
-        "left_status",
-        "right_forward_x",
-        "right_forward_y",
-        "right_forward_z",
-        "right_origin_x",
-        "right_origin_y",
-        "right_origin_z",
-        "right_pupil_size",
-        "right_status"
+    "raw_timestamp",
+    "log_time",
+    "focus_distance",
+    "frame_number",
+    "stability",
+    "status",
+    "Angle2CameraUp",
+    "gaze_forward_x",
+    "gaze_forward_y",
+    "gaze_forward_z",
+    "gaze_origin_x",
+    "gaze_origin_y",
+    "gaze_origin_z",
+    "HMD_position_x",
+    "HMD_position_y",
+    "HMD_position_z",
+    "HMD_rotation_x",
+    "HMD_rotation_y",
+    "HMD_rotation_z",
+    "left_forward_x",
+    "left_forward_y",
+    "left_forward_z",
+    "left_origin_x",
+    "left_origin_y",
+    "left_origin_z",
+    "left_pupil_size",
+    "left_status",
+    "right_forward_x",
+    "right_forward_y",
+    "right_forward_z",
+    "right_origin_x",
+    "right_origin_y",
+    "right_origin_z",
+    "right_pupil_size",
+    "right_status"
 ]
 # eeg_preset = json.load(pkg_resources.resource_stream(__name__, 'BioSemi.json'))
 # eventmarker_preset = json.load(pkg_resources.resource_stream(__name__, 'ReNaEventMarker.json'))
@@ -197,6 +196,7 @@ eyetracking_srate = 200
 eyetracking_resample_srate = 20
 exg_srate = 2048
 exg_resample_srate = 128
+
 eeg_picks = [
     "Fz",
     "Cz",
@@ -210,7 +210,7 @@ eeg_picks = [
 
 eeg_montage = mne.channels.make_standard_montage('biosemi64')
 eeg_channel_names = mne.channels.make_standard_montage('biosemi64').ch_names
-ecg_ch_name='ECG00'
+ecg_ch_name = 'ECG00'
 
 note = "test_v3"
 
@@ -237,7 +237,8 @@ RSVP-pop:
 #
 # events = Bidict(dict([(e, i) for i, e in enumerate(events)]))
 
-item_marker_names = ['itemDTNType', 'ItemIndexInBlock', 'itemID', 'foveateAngle', 'isInFrustum', 'isGazeRayIntersected', 'distFromPlayer', 'transform.rotation.x', 'transform.rotation.y', 'transform.rotation.z']
+item_marker_names = ['itemDTNType', 'ItemIndexInBlock', 'itemID', 'foveateAngle', 'isInFrustum', 'isGazeRayIntersected',
+                     'distFromPlayer', 'transform.rotation.x', 'transform.rotation.y', 'transform.rotation.z']
 
 SACCADE_CODE = 1
 FIXATION_CODE = 2
@@ -263,7 +264,7 @@ l2_weight = 1e-5
 random_seed = 42
 
 # HDCA parameters
-split_window_eeg=100e-3
-split_window_pupil=500e-3
+split_window_eeg = 100e-3
+split_window_pupil = 500e-3
 num_folds = 10
 num_top_compoenents = 20

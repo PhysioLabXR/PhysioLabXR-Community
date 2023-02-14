@@ -1,5 +1,7 @@
 import numpy as np
 import mne
+from renaanalysis.utils.data_utils import rebalance_classes
+
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
 import matplotlib.pyplot as plt
 import scipy
@@ -13,6 +15,7 @@ from sklearn import metrics
 
 
 def train_logistic_regression(X, y, model):
+    rebalance_classes(X, y)
     X = X.reshape(X.shape[0],-1)
     x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
     model.fit(x_train, y_train)
@@ -22,7 +25,7 @@ def train_logistic_regression(X, y, model):
 
 def confusion_matrix(y_test, y_pred):
     cm = metrics.confusion_matrix(y_test, y_pred)
-    score = f1_score(y_test, y_pred)
+    score = f1_score(y_test, y_pred, average='macro')
     plt.figure(figsize=(9,9))
     sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square = True, cmap = 'Blues_r')
     plt.ylabel('Actual label')
@@ -35,8 +38,7 @@ def confusion_matrix(y_test, y_pred):
 
 
 def add_stim_channel_to_raw_array(raw_array, stim_data, stim_channel_name='STI'):
-    # if len(stim_data.shape)==1:
-    #     stim_data = stim_data.reshape(1,stim_data.shape[0])
+
     info = mne.create_info([stim_channel_name], raw_array.info['sfreq'], ['stim'])
     stim_raw = mne.io.RawArray(stim_data, info)
     raw_array.add_channels([stim_raw], force_update_info=True)
