@@ -619,9 +619,7 @@ class PlaybackWorker(QObject):
                 reply = self.command_info_interface.socket.recv()
                 reply = reply.decode('utf-8')
                 if reply == STOP_SUCCESS_INFO:
-                    self.is_running = False
-                    self.is_paused = False # reset is_paused in case is_paused had been set to True
-                    self.replay_stopped_signal.emit()
+                    self.replay_stopped()
                     self.send_command_mutex.unlock()
                     return
                 elif reply == PLAY_PAUSE_SUCCESS_INFO:
@@ -634,24 +632,29 @@ class PlaybackWorker(QObject):
                     return
                 elif reply == SLIDER_MOVED_SUCCESS_INFO:
                     # do something
+                    self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
                 #     self.is_running = False
                 #     self.replay_terminated_signal.emit()
                 #     self.send_command_mutex.unlock()
-                #     return
+                #     return'
                 else:
                     raise NotImplementedError
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
             virtual_clock = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
             virtual_clock = np.frombuffer(virtual_clock)[0]
             if virtual_clock == -1:  # replay has finished
-                self.is_running = False
-                self.replay_stopped_signal.emit()
+                self.replay_stopped()
                 self.send_command_mutex.unlock()
                 return
             self.replay_progress_signal.emit(virtual_clock)
             self.send_command_mutex.unlock()
+
+    def replay_stopped(self):
+        self.is_running = False
+        self.is_paused = False  # reset is_paused in case is_paused had been set to True
+        self.replay_stopped_signal.emit()
 
     def start_run(self):
         self.is_running = True
