@@ -4,6 +4,35 @@ from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
 import matplotlib.pyplot as plt
 import scipy
 import os
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+from sklearn import metrics
+import seaborn as sns
+from sklearn import metrics
+
+
+def train_logistic_regression(X, y, model):
+    X = X.reshape(X.shape[0],-1)
+    x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=True, test_size=test_size)
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    confusion_matrix(y_test, y_pred)
+
+
+def confusion_matrix(y_test, y_pred):
+    cm = metrics.confusion_matrix(y_test, y_pred)
+    score = f1_score(y_test, y_pred)
+    plt.figure(figsize=(9,9))
+    sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square = True, cmap = 'Blues_r')
+    plt.ylabel('Actual label')
+    plt.xlabel('Predicted label')
+    all_sample_title = 'Accuracy Score: {0}'.format(score)
+    plt.title(all_sample_title, size=15)
+    plt.show()
+
+
+
 
 def add_stim_channel_to_raw_array(raw_array, stim_data, stim_channel_name='STI'):
     # if len(stim_data.shape)==1:

@@ -1,3 +1,4 @@
+import pickle
 from enum import Enum
 
 import numpy as np
@@ -6,15 +7,19 @@ from brainflow import BrainFlowInputParams, BoardShim
 from matplotlib import pyplot as plt
 
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
+from pylsl import StreamInfo, StreamOutlet
 
 from rena.scripting.RenaScript import RenaScript
 import brainflow
-
+from datetime import datetime
 # class P300DetectorMarker(Enum):
 #
 from rena.utils.general import DataBuffer
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
+from sklearn.linear_model import LogisticRegression
+
+
 # START_TRAINING_MARKER = 90
 # END_TRAINING_MARKER = 91
 #
@@ -104,41 +109,32 @@ class P300Speller(RenaScript):
         self.train_data_filename = ''
         self.test_data_filename = ''
 
-        self.training_state_data = []
-        self.testing_state_data = []
+        self.data_dict_buffer = []
+
+        # outlet
+        self.lsl_info = StreamInfo("P300SpellerScript", "P300SpellerScript", 1, 10, 'float32', 'someuuid1234')
+        self.p300_speller_script_lsl = StreamOutlet(self.lsl_info)
 
         print("P300Speller Decoding Script Setup Complete!")
+
+        self.model = LogisticRegression()
 
     def init(self):
         pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        # self.outputs['output1'] = [self.params['老李是傻逼']]
-
-        '''
-        if self.cur_state == 'idle':
-            if start_flshing_marker in self.inputs[EventMarkers]
-                self.data_buffer = DataBuffer()
-                next_state = 'recording'
-                # also need to clear inputs here
-        if self.cur_state == 'recording':
-            if end_flashing_marker in self.inputs[EventMarkers]
-                #### processing epochs for a block
-                raw = mne.raw with EEG and stim
-                raw = mne.filter(raw)
-                target_distractor_events = mne.find_event()
-                epochs = mne.Epochs(raw, target_distractor_events, start=-0.1, stop=1.0, baseline=(-0.1, 0))
-                epochs.plot()
-                #### end of processing epochs for a block
-                next_state = 'idle'
-            self.data_buffer.update_buffer(self.inputs)
-            self.clear_inputs()
-        cur_state = next_state
-        '''
 
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
+
+        if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName):
+            self.game_state = IDLE_STATE
+            self.board_state = IDLE_STATE
+
+            self.inputs.clear_buffer()
+            self.data_buffer.clear_buffer()
+            print("Game interrupted. Back to Idle state and aboard all the collected data")
 
         if self.game_state == IDLE_STATE:
             if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
@@ -186,10 +182,8 @@ class P300Speller(RenaScript):
 
         elif self.board_state == RECORDING_STATE:
             if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
-                epochs = self.process_raw_data()
-
-                # callback_function()
-
+                # epochs = self.process_raw_data()
+                callback_function()
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
                 self.board_state = IDLE_STATE
@@ -200,53 +194,74 @@ class P300Speller(RenaScript):
             pass
 
     def training_callback(self):
-        epoch = self.process_raw_data()
-        self.training_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
+        p300_epochs, row_col_info = self.process_raw_data()
+        self.data_dict_buffer.append(self.data_structure(raw=self.raw,
+                                                         epoch=p300_epochs,
+                                                         row_col_info=row_col_info))
+        X, Y = self.get_all_data()
+        self.train_model(X=X, y=Y, model=self.model)
 
     def testing_callback(self):
-        epoch = self.process_raw_data()
-        self.testing_state_data.append(self.data_structure(raw=self.raw, epoch=epoch))
+        p300_epochs, row_col_info = self.process_raw_data()
+        self.data_dict_buffer.append(self.data_structure(raw=self.raw,
+                                                         epoch=p300_epochs,
+                                                         row_col_info=row_col_info))
 
-    def data_structure(self, raw, epoch):
-        return {'raw': raw, 'epoch': epoch}
+    def data_structure(self, raw, epoch, row_col_info):
+        return {'raw': raw, 'epoch': epoch, 'row_col_info': row_col_info}
 
     def process_raw_data(self):
-        # self.data_buffer
+
         events, event_ts, row_col_info = separate_p300_speller_event_and_info_markers(
             markers=self.data_buffer[P300EventStreamName][0],
             ts=self.data_buffer[P300EventStreamName][1])
 
         self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
+        flash_stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
+                                                    event_ts=event_ts,
+                                                    events=events)
+        add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=flash_stim_data,
+                                      stim_channel_name="TargetNonTargetEventMarker")
 
-        stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
-                                              event_ts=event_ts,
-                                              events=events)
-
-        add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=stim_data)
-        flashing_events = mne.find_events(self.raw, stim_channel='STI')
+        flashing_events = mne.find_events(self.raw, stim_channel='TargetNonTargetEventMarker')
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
-
         # save
+        # visualize_eeg_epochs(epochs, event_id, event_color)
+        return epochs, row_col_info
 
+    def get_all_data(self):
+        X = None
+        Y = None
+        for data_dict in self.data_dict_buffer:
+            x = data_dict['epochs'].get_data()
+            y = data_dict['epochs'].events[:, 2]
+            if X is None:
+                X = x
+                Y = y
+            else:
+                X = np.concatenate((X, x), axis=0)
+                Y = np.concatenate((Y, y), axis=0)
 
-        visualize_eeg_epochs(epochs, event_id, event_color)
-        return epochs
+        return X, Y
+
+    def train_model(self, X, y, model):
+        train_logistic_regression(X=X, y=y, model=model)
+
+    def save_data(self):
+        now = datetime.now()
+        if self.game_state == TRAINING_STATE:
+            file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_train.pickle'
+        elif self.game_state == TESTING_STATE:
+            file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_test.pickle'
+        else:
+            return
+        with open(file_name, 'wb') as handle:
+            pickle.dump(self.data_dict_buffer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
     stim_array = np.zeros((1, data_ts.shape[0]))
-
-    # event_data_indices = []
-    # for t_e in event_ts:
-    #     min_ts = math.inf
-    #     min_ts_index = None
-    #     for i, t_d in enumerate(data_ts):
-    #         t_diff = abs(t_e - t_d)
-    #         if t_diff < min_ts:
-    #             min_ts = t_diff
-    #             min_ts_index = i
-    #     event_data_indices.append(min_ts_index)
 
     event_data_indices = [np.argmin(np.abs(data_ts - t)) for t in event_ts if
                           np.min(np.abs(data_ts - t)) < deviate]
@@ -255,5 +270,3 @@ def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
         stim_array[0, event_data_index] = events[0, index]
 
     return stim_array
-
-

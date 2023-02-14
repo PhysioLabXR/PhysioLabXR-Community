@@ -22,6 +22,9 @@ TESTING_STATE = 100
 START_FLASHING_MARKER = 3
 END_FLASHING_MARKER = 4
 
+InterruptExperimentMarker = -1
+ConfirmInterruptExperimentMarker = -2
+
 EEG_SAMPLING_RATE = 250.0
 
 Time_Window = 1.1  # second
@@ -33,6 +36,10 @@ P300EventStreamName = 'P300Speller'
 sampling_rate = 250
 data_duration = 2
 channel_num = 8
+
+
+test_size = 0.2
+
 
 channel_types = ['eeg'] * 8
 # channel_names = [
