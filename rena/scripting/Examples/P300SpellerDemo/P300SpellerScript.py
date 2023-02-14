@@ -182,7 +182,6 @@ class P300Speller(RenaScript):
 
         elif self.board_state == RECORDING_STATE:
             if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
-                # epochs = self.process_raw_data()
                 callback_function()
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
@@ -208,7 +207,7 @@ class P300Speller(RenaScript):
                                                          row_col_info=row_col_info))
 
     def data_structure(self, raw, epoch, row_col_info):
-        return {'raw': raw, 'epoch': epoch, 'row_col_info': row_col_info}
+        return {'raw': raw, 'epochs': epoch, 'row_col_info': row_col_info}
 
     def process_raw_data(self):
 
@@ -227,7 +226,7 @@ class P300Speller(RenaScript):
         epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                             preload=True)
         # save
-        # visualize_eeg_epochs(epochs, event_id, event_color)
+        visualize_eeg_epochs(epochs, event_id, event_color)
         return epochs, row_col_info
 
     def get_all_data(self):

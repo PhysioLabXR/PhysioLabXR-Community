@@ -14,7 +14,7 @@ from sklearn import metrics
 
 def train_logistic_regression(X, y, model):
     X = X.reshape(X.shape[0],-1)
-    x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=True, test_size=test_size)
+    x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
     confusion_matrix(y_test, y_pred)
