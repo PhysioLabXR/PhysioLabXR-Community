@@ -1,9 +1,10 @@
 import copy
 import json
+import time
 
 import mne
 import numpy as np
-from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT
+from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
 from renaanalysis.learning.train import train_model_pupil_eeg
 from renaanalysis.params.params import conditions, dtnn_types
@@ -47,6 +48,7 @@ class RenaProcessing(RenaScript):
         always remove the marker that has been processed from the input buffer
         """
         super().__init__(*args, **kwargs)
+        mne.use_log_level(False)
         self.current_metablock = None
         self.current_condition = None
         self.current_block_id = None
@@ -101,22 +103,23 @@ class RenaProcessing(RenaScript):
                 # print('Updating buffer')
                 # self.data_buffer.update_buffers(self.inputs.buffer)
                 if is_block_end:
+                    time.sleep(3)
                     if self.current_condition == conditions['VS']:
                         self.vs_block_counter += 1
                         print(f"Incrementing VS block counter to {self.vs_block_counter}")
                         try:
                             if self.vs_block_counter == self.num_vs_blocks_before_training:  # time to train the model and identify target for this block
+                                self.add_block_data()
                                 self.train_identification_model()
                                 this_block_data = self.add_block_data()
                                 self.target_identification(this_block_data)
                             elif self.vs_block_counter > self.num_vs_blocks_before_training:  # identify target for this block
                                 this_block_data = self.add_block_data()
                                 self.target_identification(this_block_data)
-                            else:   # epoching the recorded block data
-                                self.add_block_data()
-                                pass
+                            else:
+                                self.add_block_data()  # epoching the recorded block data
                         except Exception as e:
-                            print("Hi")
+                            print("Exception in end-of-block processing")
 
                     self.next_state = 'idle'
 
@@ -136,6 +139,10 @@ class RenaProcessing(RenaScript):
         events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
         events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events)
         events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events, headtracking_data_timestamps=data['Unity.HeadTracker'])
+        if 'FixationDetection' in data.keys():
+            events += gaze_event_detection_PatchSim(data['FixationDetection'][0], data['FixationDetection'][1], events)
+        else:
+            print("WARNING: not FixationDetection stream when trying to add block data")
         rdf.add_participant_session(data, events, 0, 0, None, None, None)
         rdf.preprocess(is_running_ica=False, n_jobs=1)
 
@@ -168,7 +175,7 @@ class RenaProcessing(RenaScript):
         self.inputs.clear_buffer()
 
     def train_identification_model(self):
-        for locking_name, (_, _, epochs_eeg, epochs_pupil) in self.locking_data:
+        for locking_name, (_, _, epochs_eeg, epochs_pupil) in self.locking_data.items():
             (x_eeg, x_pupil), y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
             x_eeg = compute_pca_ica(x_eeg, n_components=20)
             model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
