@@ -6,8 +6,9 @@ import mne
 import numpy as np
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
-from renaanalysis.learning.train import train_model_pupil_eeg
+from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
 from renaanalysis.params.params import conditions, dtnn_types
+from renaanalysis.utils.Event import get_events
 from renaanalysis.utils.RenaDataFrame import RenaDataFrame
 from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined
 from renaanalysis.utils.utils import get_item_events, viz_eeg_epochs
@@ -48,6 +49,7 @@ class RenaProcessing(RenaScript):
         always remove the marker that has been processed from the input buffer
         """
         super().__init__(*args, **kwargs)
+
         mne.use_log_level(False)
         self.current_metablock = None
         self.current_condition = None
@@ -71,6 +73,9 @@ class RenaProcessing(RenaScript):
         self.locking_data = {}
         self.is_inferencing = False
         self.event_ids = None
+
+        self.end_of_block_waited = None
+        self.end_of_block_wait_time = 3.5
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -103,25 +108,34 @@ class RenaProcessing(RenaScript):
                 # print('Updating buffer')
                 # self.data_buffer.update_buffers(self.inputs.buffer)
                 if is_block_end:
-                    time.sleep(3)
-                    if self.current_condition == conditions['VS']:
-                        self.vs_block_counter += 1
-                        print(f"Incrementing VS block counter to {self.vs_block_counter}")
-                        try:
-                            if self.vs_block_counter == self.num_vs_blocks_before_training:  # time to train the model and identify target for this block
-                                self.add_block_data()
-                                self.train_identification_model()
-                                this_block_data = self.add_block_data()
-                                self.target_identification(this_block_data)
-                            elif self.vs_block_counter > self.num_vs_blocks_before_training:  # identify target for this block
-                                this_block_data = self.add_block_data()
-                                self.target_identification(this_block_data)
-                            else:
-                                self.add_block_data()  # epoching the recorded block data
-                        except Exception as e:
-                            print("Exception in end-of-block processing")
-
-                    self.next_state = 'idle'
+                    self.next_state = 'endOfBlockWaiting'
+                    self.end_of_block_wait_start = time.time()
+            elif self.cur_state == 'endOfBlockWaiting':
+                print(f"end of block waited {self.end_of_block_waited}")
+                self.end_of_block_waited = time.time() - self.end_of_block_wait_start
+                if self.end_of_block_waited > self.end_of_block_wait_time:
+                    self.next_state = 'endOfBlockProcessing'
+            elif self.cur_state == 'endOfBlockProcessing':
+                if self.current_condition == conditions['VS']:
+                    self.vs_block_counter += 1
+                    print(f"EndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
+                    try:
+                        if self.vs_block_counter == self.num_vs_blocks_before_training:  # time to train the model and identify target for this block
+                            self.add_block_data()
+                            self.train_identification_model()
+                            this_block_data = self.add_block_data()
+                            self.target_identification(this_block_data)
+                        elif self.vs_block_counter > self.num_vs_blocks_before_training:  # identify target for this block
+                            this_block_data = self.add_block_data()
+                            self.target_identification(this_block_data)
+                        else:
+                            self.add_block_data()  # epoching the recorded block data
+                    except Exception as e:
+                        print(f"Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
+                        print(e)
+                else:
+                    print(f"EndOfBlockProcessing: not VS block, skipping")
+                self.next_state = 'idle'
 
         if self.next_state != self.cur_state:
             print(f'updating state from {self.cur_state} to {self.next_state}')
@@ -165,26 +179,32 @@ class RenaProcessing(RenaScript):
                 self._add_block_data_to_locking(x, y, epochs, locking_name)
                 print(f"Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self.report_locking_class_nums(locking_name)
-                this_locking_data[locking_name] = [x, y, epochs[0], epochs[1]]
+                epoch_events = get_events(event_filters, events)
+                this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
         print("Process completed")
         self.clear_buffer()
         return this_locking_data
 
     def clear_buffer(self):
+        print("Buffer cleared")
         self.event_marker_head = 0
         self.inputs.clear_buffer()
 
     def train_identification_model(self):
         for locking_name, (_, _, epochs_eeg, epochs_pupil) in self.locking_data.items():
+            print(f'Training models for {locking_name}')
             (x_eeg, x_pupil), y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
             x_eeg = compute_pca_ica(x_eeg, n_components=20)
             model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
-            model, training_histories, criterion, label_encoder = train_model_pupil_eeg([x_eeg, x_pupil], y, model,test_name='realtime')
-        pass
+            model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=30, test_name='realtime')
+            best_train_acc = np.max(training_histories['train accs'])
+            print(f'{locking_name} gives classification accuracy: {best_train_acc}')
+        print('training complete')
 
     def target_identification(self, this_block_data):
         pass
-    def  _add_block_data_to_locking(self, x, y, epochs, locking_name):
+
+    def _add_block_data_to_locking(self, x, y, epochs, locking_name):
         epochs_eeg, epochs_pupil = epochs
         if locking_name not in self.locking_data.keys():
             self.locking_data[locking_name] = [x, y, epochs_eeg, epochs_pupil]
