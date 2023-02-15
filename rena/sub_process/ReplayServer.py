@@ -87,7 +87,7 @@ class ReplayServer(threading.Thread):
                 while len(self.remaining_stream_names) > 0:
                     if not self.is_paused:
                         self.tick_times.append(time.time())
-                        print("Replay FPS {0}".format(self.get_fps()), end='\r')
+                        # print("Replay FPS {0}".format(self.get_fps()), end='\r')
                         # streams get removed from the list if there are no samples left to play
                         self.replay()
                     else:
