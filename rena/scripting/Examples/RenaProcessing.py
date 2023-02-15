@@ -4,6 +4,7 @@ import time
 
 import mne
 import numpy as np
+import torch
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
 from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
@@ -76,6 +77,14 @@ class RenaProcessing(RenaScript):
 
         self.end_of_block_waited = None
         self.end_of_block_wait_time = 3.5
+
+        self.PCAs = {}
+        self.ICAs = {}
+        self.current_target_item_id = None
+        self.models = {}
+
+        use_cuda = torch.cuda.is_available()
+        self.device = torch.device("cuda:0" if use_cuda else "cpu")
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -176,10 +185,10 @@ class RenaProcessing(RenaScript):
                         assert self.event_ids == event_ids
                     except AssertionError:
                         raise ValueError(f'Event ids mismatch from previous blocks, current is {event_ids}, previous is {self.event_ids}')
-                self._add_block_data_to_locking(x, y, epochs, locking_name)
+                epoch_events = get_events(event_filters, events)
+                self._add_block_data_to_locking(x, y, epochs, locking_name, epoch_events)
                 print(f"Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self.report_locking_class_nums(locking_name)
-                epoch_events = get_events(event_filters, events)
                 this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
         print("Process completed")
         self.clear_buffer()
@@ -191,23 +200,43 @@ class RenaProcessing(RenaScript):
         self.inputs.clear_buffer()
 
     def train_identification_model(self):
-        for locking_name, (_, _, epochs_eeg, epochs_pupil) in self.locking_data.items():
+        training_start_time = time.time()
+        for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
             print(f'Training models for {locking_name}')
-            (x_eeg, x_pupil), y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
-            x_eeg = compute_pca_ica(x_eeg, n_components=20)
+            x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name] = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+
             model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
-            model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=30, test_name='realtime')
+            model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=15, test_name='realtime')
             best_train_acc = np.max(training_histories['train accs'])
             print(f'{locking_name} gives classification accuracy: {best_train_acc}')
-        print('training complete')
+            self.models[locking_name] = model
+        print(f'training complete, took {time.time() - training_start_time} seconds')
 
     def target_identification(self, this_block_data):
-        pass
+        try:
+            for locking_name, ((x_eeg, x_pupil), y, epochs_eeg, epochs_pupil, block_events) in this_block_data:
+                # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
+                # block_events_cleaned = np.array(block_events)[rejects]
+                assert locking_name in self.PCAs.keys and locking_name in self.ICAs.keys()
+                x_eeg, x_pupil, y = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
-    def _add_block_data_to_locking(self, x, y, epochs, locking_name):
+                x_eeg_tensor = torch.Tensor(x_eeg).to(self.device)
+                x_pupil_tensor = torch.Tensor(x_eeg).to(self.device)
+
+                pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
+                print(f"Locking {locking_name} predicts the target is , but true target is ")
+        except Exception as e:
+            print(e)
+
+    def preprocess_block_data(self, epochs_eeg, epochs_pupil):
+        (x_eeg, x_pupil), y, _ = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
+        x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
+        return x_eeg, x_pupil, y, pca, ica
+
+    def _add_block_data_to_locking(self, x, y, epochs, locking_name, epoch_events):
         epochs_eeg, epochs_pupil = epochs
         if locking_name not in self.locking_data.keys():
-            self.locking_data[locking_name] = [x, y, epochs_eeg, epochs_pupil]
+            self.locking_data[locking_name] = [x, y, epochs_eeg, epochs_pupil, epoch_events]
         else:  # append the data
             self.locking_data[locking_name][0][0] = np.concatenate([self.locking_data[locking_name][0][0], x[0]], axis=0)  # append EEG data
             self.locking_data[locking_name][0][1] = np.concatenate([self.locking_data[locking_name][0][1], x[1]], axis=0)  # append pupil data
@@ -215,6 +244,7 @@ class RenaProcessing(RenaScript):
             self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
 
             self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
+            self.locking_data[locking_name][4] += epoch_events  # append labels
 
     def report_locking_class_nums(self, locking_name):
         print(f'Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
