@@ -99,7 +99,6 @@ class P300Speller(RenaScript):
         # self.eeg_names = board.get_eeg_names(2)
         self.info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
         self.info['description'] = 'P300Speller'
-        self.raw = None
         self.time_offset_before = -0.2
         self.time_offset_after = 1
         self.data_buffer = DataBuffer()
@@ -109,7 +108,8 @@ class P300Speller(RenaScript):
         self.train_data_filename = ''
         self.test_data_filename = ''
 
-        self.data_dict_buffer = []
+        self.training_raw = []
+        self.testing_raw = []
 
         # outlet
         self.lsl_info = StreamInfo("P300SpellerScript", "P300SpellerScript", 1, 10, 'float32', 'someuuid1234')
@@ -128,27 +128,35 @@ class P300Speller(RenaScript):
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
-        if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName):
+        if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
+            p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
             self.game_state = IDLE_STATE
             self.board_state = IDLE_STATE
 
             self.inputs.clear_buffer()
             self.data_buffer.clear_buffer()
+
+            self.training_raw = []
+            self.testing_raw = []
+
             print("Game interrupted. Back to Idle state and aboard all the collected data")
 
         if self.game_state == IDLE_STATE:
-            if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
+            if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = TRAINING_STATE
                 # report final result
                 print('enter training state')
-            elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
+            elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = IDLE_STATE
                 print('enter testing state')
 
         elif self.game_state == TRAINING_STATE:
-            if END_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName):
+            if END_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = IDLE_STATE
                 # report final result
@@ -158,7 +166,8 @@ class P300Speller(RenaScript):
                 print('collect training state data')
 
         elif self.game_state == TESTING_STATE:
-            if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName):
+            if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = IDLE_STATE
                 print('end testing state')
@@ -175,13 +184,15 @@ class P300Speller(RenaScript):
 
     def collect_trail(self, callback_function):
         if self.board_state == IDLE_STATE:
-            if FLASH_START_MARKER in self.inputs.get_data(P300EventStreamName):
+            if TRAIL_START_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerStartTrailStartEndMarker']]:
                 # self.data_buffer = DataBuffer()
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.board_state = RECORDING_STATE
 
         elif self.board_state == RECORDING_STATE:
-            if FLASH_END_MARKER in self.inputs.get_data(P300EventStreamName):
+            if TRAIL_END_MARKER in self.inputs.get_data(P300EventStreamName)[
+                p300_speller_event_marker_channel_index['P300SpellerStartTrailStartEndMarker']]:
                 callback_function()
                 self.data_buffer.clear_buffer_data()
                 self.inputs.clear_buffer_data()
@@ -193,79 +204,134 @@ class P300Speller(RenaScript):
             pass
 
     def training_callback(self):
-        p300_epochs, row_col_info = self.process_raw_data()
-        self.data_dict_buffer.append(self.data_structure(raw=self.raw,
-                                                         epoch=p300_epochs,
-                                                         row_col_info=row_col_info))
-        X, Y = self.get_all_data()
-        self.train_model(X=X, y=Y, model=self.model)
+        x_list = []
+        y_list = []
+
+        raw = self.generate_raw_data()
+        self.training_raw.append(raw)
+        for raw_array in self.training_raw:
+            raw_processed = p300_speller_process_raw_data(raw_array, l_freq=1, h_freq=50, notch_f=60, picks='eeg',
+                                                          )
+            # raw_processed.plot_psd()
+            flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerTargetNonTargetMarker')
+            epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
+                                preload=True)
+
+            x = epoch.get_data(picks='eeg')
+            y = epoch.events[:,2]
+            x_list.append(x)
+            y_list.append(y)
+        x = np.concatenate([x for x in x_list])
+        y = np.concatenate([y for y in y_list])
+        x, y = rebalance_classes(x, y, by_channel=True)
+        x = x.reshape(x.shape[0], -1)
+
+        x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, test_size=test_size)
+        self.model.fit(x_train, y_train)
+        y_pred = self.model.predict(x_test)
+        confusion_matrix(y_test, y_pred)
 
     def testing_callback(self):
-        p300_epochs, row_col_info = self.process_raw_data()
-        self.data_dict_buffer.append(self.data_structure(raw=self.raw,
-                                                         epoch=p300_epochs,
-                                                         row_col_info=row_col_info))
+        raw = self.generate_raw_data()
+        self.testing_raw.append(raw)
+        raw_processed = p300_speller_process_raw_data(raw, l_freq=1, h_freq=50, notch_f=60, picks='eeg')
+        flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingMarker')
+        epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
+                           preload=True)
+        x = epoch.get_data(picks='eeg')
+        x = x.reshape(x.shape[0], -1)
+        y_pred = self.model.predict(x)
 
-    def data_structure(self, raw, epoch, row_col_info):
-        return {'raw': raw, 'epochs': epoch, 'row_col_info': row_col_info}
+        # indicate the row is flashing or colum is flashing
+        colum_row_marker = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowOrColumMarker')
+        # indicate the index
+        colum_row_index = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowColumIndexMarker')
+        # get highest
 
-    def process_raw_data(self):
 
-        events, event_ts, row_col_info = separate_p300_speller_event_and_info_markers(
-            markers=self.data_buffer[P300EventStreamName][0],
-            ts=self.data_buffer[P300EventStreamName][1])
+        # def data_structure(self, raw, epoch, row_col_info):
+    #     return {'raw': raw, 'epochs': epoch, 'row_col_info': row_col_info}
 
-        self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
-        flash_stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
-                                                    event_ts=event_ts,
-                                                    events=events)
-        add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=flash_stim_data,
-                                      stim_channel_name="TargetNonTargetEventMarker")
 
-        flashing_events = mne.find_events(self.raw, stim_channel='TargetNonTargetEventMarker')
-        epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
-                            preload=True)
-        # save
-        visualize_eeg_epochs(epochs, event_id, event_color)
-        return epochs, row_col_info
 
-    def get_all_data(self):
-        X = None
-        Y = None
-        for data_dict in self.data_dict_buffer:
-            x = data_dict['epochs'].get_data()
-            y = data_dict['epochs'].events[:, 2]
-            if X is None:
-                X = x
-                Y = y
-            else:
-                X = np.concatenate((X, x), axis=0)
-                Y = np.concatenate((Y, y), axis=0)
+    def generate_raw_data(self):
 
-        return X, Y
+        flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts = self.get_p300_speller_events()
+        raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
 
-    def train_model(self, X, y, model):
-        train_logistic_regression(X=X, y=y, model=model)
+        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_markers,
+                         stim_channel_name='P300SpellerFlashingMarker')
+        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_or_colum_marker,
+                         stim_channel_name='P300SpellerFlashingRowOrColumMarker')
+        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_colum_index_marker,
+                         stim_channel_name='P300SpellerFlashingRowColumIndexMarker')
+        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, target_non_target_marker,
+                         stim_channel_name='P300SpellerTargetNonTargetMarker')
+
+        return raw
+
+    def get_p300_speller_events(self):
+        markers = self.data_buffer[P300EventStreamName][0]
+        ts = self.data_buffer[P300EventStreamName][1]
+
+        flashing_markers_channel = markers[p300_speller_event_marker_channel_index['P300SpellerFlashingMarker']]
+        flashing_markers_index = np.where(flashing_markers_channel != 0)
+
+        flashing_markers = markers[p300_speller_event_marker_channel_index['P300SpellerFlashingMarker']][
+            flashing_markers_index]
+        flashing_row_or_colum_marker = \
+        markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowOrColumMarker']][flashing_markers_index]
+        flashing_row_colum_index_marker = \
+        markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowColumIndexMarker']][
+            flashing_markers_index]
+        target_non_target_marker = markers[p300_speller_event_marker_channel_index['P300SpellerTargetNonTargetMarker']][
+            flashing_markers_index]
+        flashing_ts = ts[flashing_markers_index]
+        return flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts
+
+        # events, event_ts, row_col_info = separate_p300_speller_event_and_info_markers(
+        #     markers=self.data_buffer[P300EventStreamName][0],
+        #     ts=self.data_buffer[P300EventStreamName][1])
+        #
+        # self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
+        # flash_stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
+        #                                             event_ts=event_ts,
+        #                                             events=events)
+        # add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=flash_stim_data,
+        #                               stim_channel_name="TargetNonTargetEventMarker")
+        #
+        # flashing_events = mne.find_events(self.raw, stim_channel='TargetNonTargetEventMarker')
+        # epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
+        #                     preload=True)
+        # # save
+        # visualize_eeg_epochs(epochs, event_id, event_color)
+        # return epochs, row_col_info
+
+    # def get_all_data(self):
+    #     X = None
+    #     Y = None
+    #     for data_dict in self.data_dict_buffer:
+    #         x = data_dict['epochs'].get_data()
+    #         y = data_dict['epochs'].events[:, 2]
+    #         if X is None:
+    #             X = x
+    #             Y = y
+    #         else:
+    #             X = np.concatenate((X, x), axis=0)
+    #             Y = np.concatenate((Y, y), axis=0)
+    #
+    #     return X, Y
+
+    # def train_model(self, X, y, model):
+    #     train_logistic_regression(X=X, y=y, model=model)
 
     def save_data(self):
         now = datetime.now()
-        if self.game_state == TRAINING_STATE:
-            file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_train.pickle'
-        elif self.game_state == TESTING_STATE:
-            file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_test.pickle'
-        else:
-            return
-        with open(file_name, 'wb') as handle:
-            pickle.dump(self.data_dict_buffer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
-    stim_array = np.zeros((1, data_ts.shape[0]))
-
-    event_data_indices = [np.argmin(np.abs(data_ts - t)) for t in event_ts if
-                          np.min(np.abs(data_ts - t)) < deviate]
-
-    for index, event_data_index in enumerate(event_data_indices):
-        stim_array[0, event_data_index] = events[0, index]
-
-    return stim_array
+        # if self.game_state == TRAINING_STATE:
+        #     file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_train.pickle'
+        # elif self.game_state == TESTING_STATE:
+        #     file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_test.pickle'
+        # else:
+        #     return
+        # with open(file_name, 'wb') as handle:
+        #     pickle.dump(self.data_dict_buffer, handle, protocol=pickle.HIGHEST_PROTOCOL)

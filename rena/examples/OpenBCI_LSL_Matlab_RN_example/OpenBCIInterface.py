@@ -141,8 +141,10 @@ def run_test():
                 eeg_data = data[1:9]
                 # aux_data = data[9:12]
                 # ######### notch and butter
-                eeg_data = notch.process_sample(eeg_data)
-                eeg_data = butter_bandpass.process_sample(eeg_data)
+
+                # eeg_data = notch.process_sample(eeg_data)
+                # eeg_data = butter_bandpass.process_sample(eeg_data)
+
                 # eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:

@@ -1,7 +1,6 @@
 import numpy as np
 import mne
-from renaanalysis.utils.data_utils import rebalance_classes
-
+from imblearn.over_sampling import SMOTE
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
 import matplotlib.pyplot as plt
 import scipy
@@ -14,13 +13,20 @@ import seaborn as sns
 from sklearn import metrics
 
 
-def train_logistic_regression(X, y, model):
-    rebalance_classes(X, y)
-    X = X.reshape(X.shape[0],-1)
-    x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
-    model.fit(x_train, y_train)
-    y_pred = model.predict(x_test)
-    confusion_matrix(y_test, y_pred)
+def p300_speller_process_raw_data(raw, l_freq, h_freq, notch_f, picks):
+    raw_processed = raw.copy().filter(l_freq=l_freq, h_freq=h_freq, picks=picks)
+    raw_processed = raw_processed.copy().notch_filter(freqs=notch_f, picks=picks)
+    # raw_processed = raw_processed.copy().resample(sfreq=resampling_rate)
+    return raw_processed
+
+
+# def train_logistic_regression(X, y, model):
+#     # rebalance_classes(X, y)
+#     # X = X.reshape(X.shape[0],-1)
+#     x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
+#     model.fit(x_train, y_train)
+#     y_pred = model.predict(x_test)
+#     confusion_matrix(y_test, y_pred)
 
 
 def confusion_matrix(y_test, y_pred):
@@ -34,29 +40,68 @@ def confusion_matrix(y_test, y_pred):
     plt.title(all_sample_title, size=15)
     plt.show()
 
+def generate_mne_stim_channel(data_ts, event_ts, events, deviate=25e-2):
+    stim_array = np.zeros((1, data_ts.shape[0]))
+    events = np.reshape(events, (1, -1))
+    event_data_indices = [np.argmin(np.abs(data_ts - t)) for t in event_ts if
+                          np.min(np.abs(data_ts - t)) < deviate]
 
+    for index, event_data_index in enumerate(event_data_indices):
+        stim_array[0, event_data_index] = events[0, index]
+
+    return stim_array
 
 
 def add_stim_channel_to_raw_array(raw_array, stim_data, stim_channel_name='STI'):
-
     info = mne.create_info([stim_channel_name], raw_array.info['sfreq'], ['stim'])
     stim_raw = mne.io.RawArray(stim_data, info)
     raw_array.add_channels([stim_raw], force_update_info=True)
 
 
-def separate_p300_speller_event_and_info_markers(markers, ts):
-    markers = markers[0]
-    events_info = []
-    event_indices = [index for index, i in enumerate(markers) if i in [TARGET_MARKER, NONTARGET_MARKER]]
 
-    event_ts = ts[event_indices]
-    events = markers[event_indices]
+def add_stim_channel(raw_array, data_ts, event_ts, events, stim_channel_name='STI', deviate=25e-2):
+    stim_array = generate_mne_stim_channel(data_ts, event_ts, events, deviate=deviate)
+    add_stim_channel_to_raw_array(raw_array, stim_array, stim_channel_name=stim_channel_name)
 
-    for event_index in event_indices:
-        events_info.append((markers[event_index + 1], markers[event_index + 2]))
 
-    events = np.reshape(events, (1, -1))
-    return events, event_ts, events_info
+def rebalance_classes(x, y, by_channel=False):
+    epoch_shape = x.shape[1:]
+    if by_channel:
+        y_resample = None
+        channel_data = []
+        channel_num = epoch_shape[0]
+
+        for channel_index in range(0, channel_num):
+            sm = SMOTE(random_state=42)
+            x_channel = x[:, channel_index, :]
+            x_channel, y_resample = sm.fit_resample(x_channel, y)
+            channel_data.append(x_channel)
+        channel_data = [np.expand_dims(x, axis=1) for x in channel_data]
+
+        x = np.concatenate([x for x in channel_data], axis=1)
+        y = y_resample
+
+    else:
+        x = np.reshape(x, newshape=(len(x), -1))
+        sm = SMOTE(random_state=42)
+        x, y = sm.fit_resample(x, y)
+        x = np.reshape(x, newshape=(len(x),) + epoch_shape)  # reshape back x after resampling
+    return x, y
+
+
+# def separate_p300_speller_event_and_info_markers(markers, ts):
+#     markers = markers[0]
+#     events_info = []
+#     event_indices = [index for index, i in enumerate(markers) if i in [TARGET_MARKER, NONTARGET_MARKER]]
+#
+#     event_ts = ts[event_indices]
+#     events = markers[event_indices]
+#
+#     for event_index in event_indices:
+#         events_info.append((markers[event_index + 1], markers[event_index + 2]))
+#
+#     events = np.reshape(events, (1, -1))
+#     return events, event_ts, events_info
 
 
 
