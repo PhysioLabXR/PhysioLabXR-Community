@@ -144,10 +144,9 @@ class RenaProcessing(RenaScript):
             if 'VS' in locking_name:  # TODO only care about VS conditions for now
                 print(f"Working on locking {locking_name}")
                 # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
-                try:
-                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
-                except AttributeError:
-                    print(f"No epochs found for {locking_name}")
+                x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
+                if x is None:
+                    print(f"No event found for locking {locking_name}")
                     continue
                 if self.event_ids == None:
                     self.event_ids = event_ids
@@ -185,8 +184,9 @@ class RenaProcessing(RenaScript):
         else:  # append the data
             self.locking_data[locking_name][0][0] = np.concatenate([self.locking_data[locking_name][0][0], x[0]], axis=0)  # append EEG data
             self.locking_data[locking_name][0][1] = np.concatenate([self.locking_data[locking_name][0][1], x[1]], axis=0)  # append pupil data
-            self.locking_data[locking_name][0][2] = mne.concatenate_epochs([self.locking_data[locking_name][0][2], x[2]])  # append EEG epochs
-            self.locking_data[locking_name][0][3] = mne.concatenate_epochs([self.locking_data[locking_name][0][3], x[3]])  # append pupil epochs
+            self.locking_data[locking_name][2] = mne.concatenate_epochs([self.locking_data[locking_name][2], epochs_eeg])  # append EEG epochs
+            self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
+
             self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
 
     def report_locking_class_nums(self, locking_name):
