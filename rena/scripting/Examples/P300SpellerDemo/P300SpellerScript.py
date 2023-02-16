@@ -118,6 +118,8 @@ class P300Speller(RenaScript):
         print("P300Speller Decoding Script Setup Complete!")
 
         self.model = LogisticRegression()
+        # with (open('C:/Users/Haowe/Desktop/RENA/data/P300SpellerData/HaowenCompleteTestDataModel/model.pickle', "rb")) as openfile:
+        #     self.model = pickle.load(openfile)
 
     def init(self):
         pass
@@ -151,7 +153,7 @@ class P300Speller(RenaScript):
             elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
-                self.game_state = IDLE_STATE
+                self.game_state = TESTING_STATE
                 print('enter testing state')
 
         elif self.game_state == TRAINING_STATE:
@@ -206,7 +208,7 @@ class P300Speller(RenaScript):
     def training_callback(self):
         x_list = []
         y_list = []
-
+        epoch = None
         raw = self.generate_raw_data()
         self.training_raw.append(raw)
         for raw_array in self.training_raw:
@@ -215,44 +217,71 @@ class P300Speller(RenaScript):
             # raw_processed.plot_psd()
             flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerTargetNonTargetMarker')
             epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
-                                preload=True)
+                               preload=True)
 
             x = epoch.get_data(picks='eeg')
-            y = epoch.events[:,2]
+            y = epoch.events[:, 2]
             x_list.append(x)
             y_list.append(y)
+
         x = np.concatenate([x for x in x_list])
         y = np.concatenate([y for y in y_list])
         x, y = rebalance_classes(x, y, by_channel=True)
         x = x.reshape(x.shape[0], -1)
 
+        visualize_eeg_epochs(epoch, event_id, event_color)
         x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, test_size=test_size)
         self.model.fit(x_train, y_train)
         y_pred = self.model.predict(x_test)
         confusion_matrix(y_test, y_pred)
+
 
     def testing_callback(self):
         raw = self.generate_raw_data()
         self.testing_raw.append(raw)
         raw_processed = p300_speller_process_raw_data(raw, l_freq=1, h_freq=50, notch_f=60, picks='eeg')
         flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingMarker')
-        epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
+        epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id={'flashing_event':1},
                            preload=True)
         x = epoch.get_data(picks='eeg')
         x = x.reshape(x.shape[0], -1)
-        y_pred = self.model.predict(x)
+        y_pred_target_prob = self.model.predict_proba(x)[:,1]
 
-        # indicate the row is flashing or colum is flashing
-        colum_row_marker = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowOrColumMarker')
-        # indicate the index
-        colum_row_index = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowColumIndexMarker')
-        # get highest
+        colum_row_marker = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowOrColumMarker')[:, -1]
+        colum_row_index = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowColumIndexMarker')[:, -1]
+
+        merged_list = [(colum_row_marker[i], colum_row_index[i]) for i in range(0, len(colum_row_index))]
+
+        # mask the row colum information
+        row_1 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 1)]]
+        row_2 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 2)]]
+        row_3 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 3)]]
+        row_4 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 4)]]
+        row_5 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 5)]]
+        row_6 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (ROW_FLASHING_MARKER, 6)]]
+
+        col_1 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 1)]]
+        col_2 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 2)]]
+        col_3 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 3)]]
+        col_4 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 4)]]
+        col_5 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 5)]]
+
+
+        target_row_index = np.argmax([row_1.mean(), row_2.mean(), row_3.mean(), row_4.mean(), row_5.mean(), row_6.mean()])
+        target_col_index = np.argmax([col_1.mean(), col_2.mean(), col_3.mean(), col_4.mean(), col_5.mean()])
+
+        print("TargetRow: ", target_row_index)
+        print("TargetCol: ", target_col_index)
+        #
+        target_char_index = target_row_index*5+target_col_index
+        self.p300_speller_script_lsl.push_sample([target_char_index])
+
+        # training update
 
 
         # def data_structure(self, raw, epoch, row_col_info):
+
     #     return {'raw': raw, 'epochs': epoch, 'row_col_info': row_col_info}
-
-
 
     def generate_raw_data(self):
 
@@ -280,10 +309,11 @@ class P300Speller(RenaScript):
         flashing_markers = markers[p300_speller_event_marker_channel_index['P300SpellerFlashingMarker']][
             flashing_markers_index]
         flashing_row_or_colum_marker = \
-        markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowOrColumMarker']][flashing_markers_index]
+            markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowOrColumMarker']][
+                flashing_markers_index]
         flashing_row_colum_index_marker = \
-        markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowColumIndexMarker']][
-            flashing_markers_index]
+            markers[p300_speller_event_marker_channel_index['P300SpellerFlashingRowColumIndexMarker']][
+                flashing_markers_index]
         target_non_target_marker = markers[p300_speller_event_marker_channel_index['P300SpellerTargetNonTargetMarker']][
             flashing_markers_index]
         flashing_ts = ts[flashing_markers_index]
