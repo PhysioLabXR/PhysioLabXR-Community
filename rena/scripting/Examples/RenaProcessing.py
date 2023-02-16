@@ -188,13 +188,12 @@ class RenaProcessing(RenaScript):
                 if x is None:
                     print(f"[{self.loop_count}] No event found for locking {locking_name}")
                     continue
-                if self.event_ids == None:
-                    self.event_ids = event_ids
+                if len(event_ids) == 2:
+                    if self.event_ids == None:
+                        self.event_ids = event_ids
                 else:
-                    try:
-                        assert self.event_ids == event_ids
-                    except AssertionError:
-                        raise ValueError(f'Event ids mismatch from previous blocks, current is {event_ids}, previous is {self.event_ids}')
+                    print(f'[{self.loop_count}] only found one event {event_ids}, skipping adding epoch')
+                    continue
                 epoch_events = get_events(event_filters, events)
                 self._add_block_data_to_locking(x, y, epochs, locking_name, epoch_events)
                 print(f"[{self.loop_count}] Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
