@@ -205,7 +205,7 @@ class StreamWidget(QtWidgets.QWidget):
             self.worker.stop_stream()
             if not self.worker.is_streaming:
                 # started
-                print("sensor stopped")
+                # print("sensor stopped")
                 self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
                 self.update_stream_availability(self.worker.is_stream_available)
         else:
@@ -237,7 +237,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             if self.worker.is_streaming:
                 # started
-                print("sensor stopped")
+                # print("sensor stopped")
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
         self.main_parent.update_active_streams()

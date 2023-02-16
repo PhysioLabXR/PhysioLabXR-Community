@@ -11,8 +11,11 @@ from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil
 from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil
 from renaanalysis.utils.Event import get_events
 from renaanalysis.utils.RenaDataFrame import RenaDataFrame
-from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined
+from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined, \
+    binary_classification_metric
 from renaanalysis.utils.utils import get_item_events, viz_eeg_epochs
+from scipy.stats import stats
+from sklearn.metrics import confusion_matrix
 
 from rena.scripting.Examples.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from rena.scripting.RenaScript import RenaScript
@@ -50,6 +53,7 @@ class RenaProcessing(RenaScript):
         """
         super().__init__(*args, **kwargs)
 
+        self.end_of_block_wait_start = None
         mne.use_log_level(False)
         self.current_metablock = None
         self.current_condition = None
@@ -94,7 +98,10 @@ class RenaProcessing(RenaScript):
         try:
             self.loop_count += 1
             if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():  # if we receive event markers
-                new_block_id, new_meta_block, new_condition, is_block_end, event_timestamp = self.get_block_update()
+                if self.cur_state != 'endOfBlockWaiting':  # will not process new event marker if waiting
+                    new_block_id, new_meta_block, new_condition, is_block_end, event_timestamp = self.get_block_update()
+                else:
+                    new_block_id, new_meta_block, new_condition, is_block_end, event_timestamp = [None] * 5
 
                 if self.cur_state == 'idle':
                     if is_block_end and self.current_metablock is not None:
@@ -122,8 +129,8 @@ class RenaProcessing(RenaScript):
                         self.next_state = 'endOfBlockWaiting'
                         self.end_of_block_wait_start = time.time()
                 elif self.cur_state == 'endOfBlockWaiting':
-                    print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
                     self.end_of_block_waited = time.time() - self.end_of_block_wait_start
+                    print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
                     if self.end_of_block_waited > self.end_of_block_wait_time:
                         self.next_state = 'endOfBlockProcessing'
                 elif self.cur_state == 'endOfBlockProcessing':
@@ -175,7 +182,7 @@ class RenaProcessing(RenaScript):
         this_locking_data = {}
         for locking_name, event_filters in locking_filters.items():
             if 'VS' in locking_name:  # TODO only care about VS conditions for now
-                print(f"[{self.loop_count}] Working on locking {locking_name}")
+                print(f"[{self.loop_count}] Finding epochs samples on locking {locking_name}")
                 # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
                 x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
                 if x is None:
@@ -213,7 +220,7 @@ class RenaProcessing(RenaScript):
                 x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name] = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
-                model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=15, test_name='realtime')
+                model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
                 best_train_acc = np.max(training_histories['train accs'])
                 print(f'[{self.loop_count}] {locking_name} gives classification accuracy: {best_train_acc}')
                 self.models[locking_name] = model
@@ -223,17 +230,36 @@ class RenaProcessing(RenaScript):
 
     def target_identification(self, this_block_data):
         try:
-            for locking_name, ((x_eeg, x_pupil), y, epochs_eeg, epochs_pupil, block_events) in this_block_data:
+            prediction_start_time = time.time()
+            for locking_name, ((x_eeg, x_pupil), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
                 # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
                 # block_events_cleaned = np.array(block_events)[rejects]
-                assert locking_name in self.PCAs.keys and locking_name in self.ICAs.keys()
-                x_eeg, x_pupil, y = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
+                print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
+                assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
+                x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
-                x_eeg_tensor = torch.Tensor(x_eeg).to(self.device)
-                x_pupil_tensor = torch.Tensor(x_eeg).to(self.device)
+                x_eeg_tensor = torch.Tensor(x_eeg_reduced).to(self.device)
+                x_pupil_tensor = torch.Tensor(x_pupil).to(self.device)
 
                 pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
-                print(f"[{self.loop_count}] Locking {locking_name} predicts the target is , but true target is ")
+                pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
+
+                acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=pred)
+                target_sensitivity = tpr[1]
+                target_specificity = tnr[1]
+
+                predicted_target_item_ids = [x.item_id for x in np.array(block_events)[pred==1]]
+                true_target_item_ids = [x.item_id for x in np.array(block_events)[y==1]]
+                predicted_target_item_id = None if len(predicted_target_item_ids)==0 else stats.mode(predicted_target_item_ids).mode[0]
+                try:
+                    assert len(np.unique(true_target_item_ids)) == 1
+                except AssertionError as e:
+                    print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
+                    print(e)
+                print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target sensitivity (TNR) = {target_specificity}")
+                print(f"[{self.loop_count}] Locking {locking_name} predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
+            print(f'[{self.loop_count}] prediction  complete, took {time.time() - prediction_start_time} seconds')
+
         except Exception as e:
             print(e)
 
