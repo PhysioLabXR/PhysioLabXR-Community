@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import p300_speller_process_raw_data, rebalance_classes, \
-    confusion_matrix
+    confusion_matrix, visualize_eeg_epochs
 import mne
 
 model = LogisticRegression()
@@ -20,6 +20,8 @@ flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerTarget
 
 epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
                    preload=True)
+
+visualize_eeg_epochs(epoch, event_id,event_color)
 
 x = epoch.get_data(picks='eeg')
 y = epoch.events[:, 2]
