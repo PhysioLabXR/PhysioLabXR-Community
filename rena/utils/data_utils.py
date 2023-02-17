@@ -744,3 +744,4 @@ def signal_generator(f, fs, duration, amp):
 def get_date_string():
     now = datetime.now()
     dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
+    return dt_string

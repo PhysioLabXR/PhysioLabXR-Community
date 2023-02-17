@@ -1,6 +1,8 @@
 import copy
 import json
+import pickle
 import time
+from collections import defaultdict
 
 import mne
 import numpy as np
@@ -19,6 +21,7 @@ from sklearn.metrics import confusion_matrix
 
 from rena.scripting.Examples.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from rena.scripting.RenaScript import RenaScript
+from rena.utils.data_utils import get_date_string
 from rena.utils.general import DataBuffer
 
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
@@ -88,6 +91,7 @@ class RenaProcessing(RenaScript):
 
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
+        self.block_reports = defaultdict(dict)
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -118,10 +122,9 @@ class RenaProcessing(RenaScript):
                         self.meta_block_counter += 1
                         # if self.meta_block_counter > self.num_meta_blocks_before_training:
                         #     print("Should start training now !!!")  # TODO add rena analysis scripts here
-                    if new_block_id and self.current_metablock:  # only record if we are in a metablock
-                        print(f"[{self.loop_count}] in idle, find new block id")
+                    if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
+                        print(f"[{self.loop_count}] in idle, find new block id, entering in_block")
                         self.next_state = 'in_block'
-
                 elif self.cur_state == 'in_block':
                     # print('Updating buffer')
                     # self.data_buffer.update_buffers(self.inputs.buffer)
@@ -131,7 +134,8 @@ class RenaProcessing(RenaScript):
                 elif self.cur_state == 'endOfBlockWaiting':
                     self.end_of_block_waited = time.time() - self.end_of_block_wait_start
                     print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
-                    if self.end_of_block_waited > self.end_of_block_wait_time:
+                    # if self.end_of_block_waited > self.end_of_block_wait_time:
+                    if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
                         self.next_state = 'endOfBlockProcessing'
                 elif self.cur_state == 'endOfBlockProcessing':
                     if self.current_condition == conditions['VS']:
@@ -255,15 +259,17 @@ class RenaProcessing(RenaScript):
                 except AssertionError as e:
                     print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
                     print(e)
-                print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target sensitivity (TNR) = {target_specificity}")
-                print(f"[{self.loop_count}] Locking {locking_name} predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
+                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['accuracy'] = acc
+                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
+                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['target specificity'] = target_specificity
+                print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
             print(f'[{self.loop_count}] prediction  complete, took {time.time() - prediction_start_time} seconds')
-
+            pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
         except Exception as e:
             print(e)
 
     def preprocess_block_data(self, epochs_eeg, epochs_pupil):
-        (x_eeg, x_pupil), y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
+        (x_eeg, x_pupil), y, _ = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
         return x_eeg, x_pupil, y, pca, ica
 
@@ -309,7 +315,7 @@ class RenaProcessing(RenaScript):
                 except AssertionError:
                     raise Exception(f"self.current_block_id is None when block_end signal ({block_id_start_end}) comes, that means a block start is never received")
                 print("[{0}] Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
-                self.current_block_id = None
+                # self.current_block_id = None  # IMPORTANT, current_block_id will retain the its value until new block id is received
                 self.last_block_end_timestamp = this_event_timestamp
                 is_block_end = True
             else:  # the only other possibility is that this is a meta block marker
