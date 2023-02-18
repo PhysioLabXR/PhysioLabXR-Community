@@ -202,7 +202,12 @@ class RenaProcessing(RenaScript):
                 else:
                     print(f'[{self.loop_count}] only found one event {event_ids}, skipping adding epoch')
                     continue
-                epoch_events = get_events(event_filters, events)
+                epoch_events = get_events(event_filters, events, order='time')
+                try:
+                    assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
+                except:
+                    print(f"[{self.loop_count}] add_block_data: epoch block events is different from y")
+                    raise ValueError
                 self._add_block_data_to_locking(x, y, epochs, locking_name, epoch_events)
                 print(f"[{self.loop_count}] Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self.report_locking_class_nums(locking_name)
@@ -255,6 +260,7 @@ class RenaProcessing(RenaScript):
 
                 acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=pred)
                 target_sensitivity = tpr[1]
+
                 target_specificity = tnr[1]
 
                 cleaned_block_events = np.array(block_events)[rejections]
