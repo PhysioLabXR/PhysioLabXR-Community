@@ -34,7 +34,7 @@ Advanced parameters:
 do not change these unless you know what you are doing
 '''
 DOWNSAMPLE_MULTIPLY_THRESHOLD = 5
-EVICTION_INTERVAL = 1000.  # in seconds, large eviction interval means laggier app, but faster loading the data back in
+EVICTION_INTERVAL = 1000  # in seconds, large eviction interval means laggier app, but faster loading the data back in
 
 '''
 ########################################################################################################################
