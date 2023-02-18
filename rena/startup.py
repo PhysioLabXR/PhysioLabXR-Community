@@ -24,6 +24,7 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
         config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
+        config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -45,6 +46,8 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
             config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         if not config.settings.contains('pull_data_interval') or config.settings.value('pull_data_interval') is None:
             config.settings.setValue('pull_data_interval', config.pull_data_interval)
+        if not config.settings.contains('visualization_refresh_interval') or config.settings.value('visualization_refresh_interval') is None:
+            config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets

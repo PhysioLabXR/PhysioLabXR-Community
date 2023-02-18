@@ -1,2 +1,2 @@
 {"ExperimentName": "ReNa",
-  "PresetStreamNames": ["Unity.ReNa.EventMarkers", "Unity.ReNa.ItemMarkers", "Unity.HeadTracker", "Unity.HandTracker","Unity.VarjoEyeTrackingComplete", "BioSemi"]}
+  "PresetStreamNames": ["Unity.ReNa.EventMarkers", "Unity.ReNa.ItemMarkers", "Unity.HeadTracker", "Unity.HandTracker","Unity.VarjoEyeTrackingComplete", "BioSemi", "FixationDetection"]}

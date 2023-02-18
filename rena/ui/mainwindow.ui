@@ -25,7 +25,7 @@
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
-        <string>Visualization</string>
+        <string>Stream</string>
        </attribute>
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>

@@ -4,6 +4,7 @@ import os
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QIntValidator
 
 from PyQt5.QtWidgets import QFileDialog
 
@@ -34,6 +35,12 @@ class SettingsTab(QtWidgets.QWidget):
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
         self.resetDefaultBtn.clicked.connect(self.reset_default)
+
+        self.plot_fps_lineedit.textChanged.connect(self.on_plot_fps_changed)
+        onlyInt = QIntValidator()
+        onlyInt.setRange(*config.plot_fps_range)
+        self.plot_fps_lineedit.setValidator(onlyInt)
+        self.plot_fps_lineedit.setText(str(int(1e3 / config.settings.value('visualization_refresh_interval'))))
 
     def toggle_theme_btn_pressed(self):
         print("toggling theme")
@@ -85,3 +92,15 @@ class SettingsTab(QtWidgets.QWidget):
             print("Selected data dir: ", config.settings.value('recording_file_location'))
             self.saveRootTextEdit.setText(config.settings.value('recording_file_location'))
             self.parent.recording_tab.update_ui_save_file()
+
+    def on_plot_fps_changed(self):
+        print(f"plot_fps_lineedit changed value is {self.plot_fps_lineedit.text()}")
+
+        if self.plot_fps_lineedit.text() != '':
+            new_value = int(self.plot_fps_lineedit.text())
+            if new_value in range(config.plot_fps_range[0], config.plot_fps_range[1]+1):
+                config.settings.setValue('visualization_refresh_interval', 1e3 / new_value)
+                new_refresh_interval = 1e3 / new_value
+                print(f'Set viz refresh interval to {new_refresh_interval}')
+            else:
+                dialog_popup(f"Plot FPS range is {config.plot_fps_range}. Please input a number within this range.", enable_dont_show=True, dialog_name='PlotFPSOutOfRangePopup')

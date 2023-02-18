@@ -142,3 +142,6 @@ valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
 valid_preset_categories = ['other', 'video', 'exp']
 
 lsl_stream_availability_wait_time = 2  # in seconds
+
+# viz
+plot_fps_range = (1, 60)

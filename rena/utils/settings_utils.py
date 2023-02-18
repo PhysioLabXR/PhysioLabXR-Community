@@ -49,9 +49,9 @@ def get_stream_preset_names():
 
 def get_experiment_preset_names():
     config.settings.beginGroup('presets/experimentpresets')
-    stream_preset_names = list(config.settings.childGroups())
+    experiment_preset_names = list(config.settings.childGroups())
     config.settings.endGroup()
-    return stream_preset_names
+    return experiment_preset_names
 
 def get_experiment_preset_streams(exp_name):
     try:
