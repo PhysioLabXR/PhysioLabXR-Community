@@ -40,7 +40,7 @@ class SettingsTab(QtWidgets.QWidget):
         onlyInt = QIntValidator()
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
-        self.plot_fps_lineedit.setText(str(int(1e3 / config.settings.value('visualization_refresh_interval'))))
+        self.plot_fps_lineedit.setText(str(int(1e3 / int(float(config.settings.value('visualization_refresh_interval'))))))
 
     def toggle_theme_btn_pressed(self):
         print("toggling theme")
