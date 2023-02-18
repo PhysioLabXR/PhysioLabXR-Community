@@ -34,3 +34,4 @@ locking_filters = {
 
 event_names = ["Distractor", "Target"]
 epoch_margin = 0.2
+

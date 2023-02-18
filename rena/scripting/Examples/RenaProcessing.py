@@ -10,7 +10,7 @@ import torch
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
 from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
-from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil
+from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil, random_seed
 from renaanalysis.utils.Event import get_events
 from renaanalysis.utils.RenaDataFrame import RenaDataFrame
 from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined, \
@@ -94,6 +94,9 @@ class RenaProcessing(RenaScript):
         self.block_reports = defaultdict(dict)
 
         self.ar = None
+
+        torch.manual_seed(random_seed)
+        np.random.seed(random_seed)
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -240,7 +243,7 @@ class RenaProcessing(RenaScript):
                 # block_events_cleaned = np.array(block_events)[rejects]
                 print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
                 assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
-                x_eeg, x_pupil, y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar)  # apply auto reject
+                x_eeg, x_pupil, y, _, rejections= reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True)  # apply auto reject
                 print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected.')
                 x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
@@ -254,8 +257,9 @@ class RenaProcessing(RenaScript):
                 target_sensitivity = tpr[1]
                 target_specificity = tnr[1]
 
-                predicted_target_item_ids = [x.item_id for x in np.array(block_events)[pred==1]]
-                true_target_item_ids = [x.item_id for x in np.array(block_events)[y==1]]
+                cleaned_block_events = np.array(block_events)[rejections]
+                predicted_target_item_ids = [x.item_id for x in cleaned_block_events[pred==1]]
+                true_target_item_ids = [x.item_id for x in cleaned_block_events[y==1]]
                 predicted_target_item_id = None if len(predicted_target_item_ids)==0 else stats.mode(predicted_target_item_ids).mode[0]
                 try:
                     assert len(np.unique(true_target_item_ids)) == 1
