@@ -3,7 +3,7 @@ numpy
 PyQt5~=5.15.4
 pyserial~=3.5
 pylsl~=1.14.0
-sklearn
+scikit-learn
 scipy~=1.7.0
 pyqtgraph~=0.12.2
 pyxdf~=1.16.3
