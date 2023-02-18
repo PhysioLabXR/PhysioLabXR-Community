@@ -168,14 +168,14 @@ class DataBuffer():
         for stream_name in self.buffer.keys():
             if timestamp < np.min(self.buffer[stream_name][1]):
                 skip_count += 1
-            elif timestamp > np.max(self.buffer[stream_name][1]):
+            elif timestamp >= np.max(self.buffer[stream_name][1]):
                 self.clear_stream_buffer_data(stream_name)
             else:
                 cut_to_index = np.argmax([self.buffer[stream_name][1] > timestamp])
                 self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
                 self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
         if skip_count == len(self.buffer):
-            print('DataBuffer: nothing is cleared, given cut-to time is smaller than smallest stream timestamp')
+            warnings.warn('DataBuffer: nothing is cleared, given cut-to time is smaller than smallest stream timestamp')
 
     def __getitem__(self, key):
         return self.buffer[key]

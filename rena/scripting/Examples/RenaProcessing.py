@@ -59,6 +59,7 @@ class RenaProcessing(RenaScript):
         self.end_of_block_wait_start = None
         mne.use_log_level(False)
         self.current_metablock = None
+        self.meta_block_counter = 0
         self.current_condition = None
         self.current_block_id = None
         self.event_marker_channels = json.load(open("../Presets/LSLPresets/ReNaEventMarker.json", 'r'))["ChannelNames"]
@@ -69,7 +70,6 @@ class RenaProcessing(RenaScript):
 
         self.cur_state = 'idle'  # states: idle, recording, (training model), predicting
         self.num_meta_blocks_before_training = 1
-        self.meta_block_counter = 0
 
         self.next_state = 'idle'
 
@@ -92,6 +92,8 @@ class RenaProcessing(RenaScript):
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
         self.block_reports = defaultdict(dict)
+
+        self.ar = None
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -117,13 +119,12 @@ class RenaProcessing(RenaScript):
                             print(f'[{self.loop_count}] Eyetracking data NOT passed tmax margin, next state will be waiting')
                             self.next_state = 'endOfBlockWaiting'
                     if new_meta_block:
-                        print(f"[{self.loop_count}] in idle, find new meta block")
+                        print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
                         self.vs_block_counter = 0  # renew the counter for metablock
-                        self.meta_block_counter += 1
                         # if self.meta_block_counter > self.num_meta_blocks_before_training:
                         #     print("Should start training now !!!")  # TODO add rena analysis scripts here
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
-                        print(f"[{self.loop_count}] in idle, find new block id, entering in_block")
+                        print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
                         self.next_state = 'in_block'
                 elif self.cur_state == 'in_block':
                     # print('Updating buffer')
@@ -234,11 +235,13 @@ class RenaProcessing(RenaScript):
     def target_identification(self, this_block_data):
         try:
             prediction_start_time = time.time()
-            for locking_name, ((x_eeg, x_pupil), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
+            for locking_name, ((_, _), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
                 # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
                 # block_events_cleaned = np.array(block_events)[rejects]
                 print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
                 assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
+                x_eeg, x_pupil, y = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar)  # apply auto reject
+                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected.')
                 x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
                 x_eeg_tensor = torch.Tensor(x_eeg_reduced).to(self.device)
@@ -259,9 +262,9 @@ class RenaProcessing(RenaScript):
                 except AssertionError as e:
                     print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
                     print(e)
-                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['accuracy'] = acc
-                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
-                self.block_reports[(self.current_metablock, self.current_block_id, locking_name)]['target specificity'] = target_specificity
+                self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = acc
+                self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
+                self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = target_specificity
                 print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
             print(f'[{self.loop_count}] prediction  complete, took {time.time() - prediction_start_time} seconds')
             pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
@@ -269,7 +272,7 @@ class RenaProcessing(RenaScript):
             print(e)
 
     def preprocess_block_data(self, epochs_eeg, epochs_pupil):
-        (x_eeg, x_pupil), y, _ = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
+        x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
         return x_eeg, x_pupil, y, pca, ica
 
@@ -309,12 +312,12 @@ class RenaProcessing(RenaScript):
                 try:
                     assert block_id_start_end == -self.current_block_id
                 except AssertionError:
-                    raise Exception(f"Did not receive block end signal. This block end {block_id_start_end}. Current block id {self.current_block_id}")
+                    raise Exception(f"[{self.loop()}] get_block_update: Did not receive block end signal. This block end {block_id_start_end}. Current block id {self.current_block_id}")
                 try:
                     assert self.current_block_id is not None
                 except AssertionError:
-                    raise Exception(f"self.current_block_id is None when block_end signal ({block_id_start_end}) comes, that means a block start is never received")
-                print("[{0}] Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
+                    raise Exception(f"[{self.loop()}] get_block_update: self.current_block_id is None when block_end signal ({block_id_start_end}) comes, that means a block start is never received")
+                print("[{0}] get_block_update: Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
                 # self.current_block_id = None  # IMPORTANT, current_block_id will retain the its value until new block id is received
                 self.last_block_end_timestamp = this_event_timestamp
                 is_block_end = True
@@ -322,19 +325,20 @@ class RenaProcessing(RenaScript):
                 new_meta_block = block_marker if block_marker in metablock_name_dict.keys() else None
 
         if new_meta_block:
-            self.current_block_id = new_block_id
-            print("[{0}] Entering new META block {1}, clearing buffer".format(self.loop_count, metablock_name_dict[new_meta_block]))
+            # self.current_block_id = new_block_id
+            self.meta_block_counter += 1
+            print("[{0}] get_block_update: Entering new META block {1}, metablock count is {2}".format(self.loop_count, metablock_name_dict[new_meta_block], self.meta_block_counter))
             self.current_metablock = new_meta_block
             # self.inputs.clear_buffer()  # should clear buffer at every metablock so we don't need to deal with practice round data
         if new_block_id:
             self.current_block_id = new_block_id
             # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
             # ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
-            print("[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + ". No metablock is given, assuming in practice rounds." if not self.current_metablock else "")
+            print("[{0}] get_block_update: Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + (". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""))
         if new_condition:
             self.current_block_id = new_block_id
             self.current_condition = new_condition
-            print("[{0}] Setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition]))
+            print("[{0}] get_block_update: Block {2} is setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition], self.current_block_id))
         return new_block_id, new_meta_block, new_condition, is_block_end, this_event_timestamp  # tells if there's new block and meta block
 
     def get_item_event(self):
