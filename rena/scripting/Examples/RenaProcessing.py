@@ -36,9 +36,12 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 
 is_debugging = True
-is_simulating_predictions = False
+is_simulating_predictions = True
+end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 selected_locking_name = 'VS-I-VT-Head'
+num_vs_blocks_before_training = 1  # for a total of 8 VS blocks in each metablock
+
 
 class ItemEvent():
     """
@@ -86,7 +89,6 @@ class RenaProcessing(RenaScript):
 
         self.event_marker_head = 0
 
-        self.num_vs_blocks_before_training = 4  # for a total of 8 VS blocks in each metablock
         self.vs_block_counter = 0
         self.locking_data = {}
         self.is_inferencing = False
@@ -121,6 +123,9 @@ class RenaProcessing(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         try:
+            # send = np.random.random(3 + num_item_perblock)
+            # self.prediction_outlet.push_sample(send)
+
             self.loop_count += 1
             if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():  # if we receive event markers
                 if self.cur_state != 'endOfBlockWaiting':  # will not process new event marker if waiting
@@ -131,12 +136,16 @@ class RenaProcessing(RenaScript):
                 if self.cur_state == 'idle':
                     if is_block_end and self.current_metablock is not None:
                         print(f'[{self.loop_count}] System is idle when received block_end, this probably means the last loop took too long')
-                        if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - event_timestamp > tmax_pupil + epoch_margin:
-                            print(f'[{self.loop_count}] Eyetracking data has progressed beyond margin, next state will be processing')
-                            self.next_state = 'endOfBlockProcessing'
-                        else:
-                            print(f'[{self.loop_count}] Eyetracking data NOT passed tmax margin, next state will be waiting')
-                            self.next_state = 'endOfBlockWaiting'
+                        self.next_state = 'endOfBlockWaiting'
+                        # if is_simulating_predictions:
+                        #     self.next_state = 'endOfBlockWaiting'
+                        # else:
+                        #     if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - event_timestamp > tmax_pupil + epoch_margin:
+                        #         print(f'[{self.loop_count}] Eyetracking data has progressed beyond margin, next state will be processing')
+                        #         self.next_state = 'endOfBlockProcessing'
+                        #     else:
+                        #         print(f'[{self.loop_count}] Eyetracking data NOT passed tmax margin, next state will be waiting')
+                        #         self.next_state = 'endOfBlockWaiting'
                     if new_meta_block:
                         print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
                         self.vs_block_counter = 0  # renew the counter for metablock
@@ -155,18 +164,22 @@ class RenaProcessing(RenaScript):
                     self.end_of_block_waited = time.time() - self.end_of_block_wait_start
                     print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
                     # if self.end_of_block_waited > self.end_of_block_wait_time:
-                    if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
-                        self.next_state = 'endOfBlockProcessing'
+                    if is_simulating_predictions:
+                        if self.end_of_block_waited > end_of_block_wait_time_in_simulate:
+                            self.next_state = 'endOfBlockProcessing'
+                    else:
+                        if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
+                            self.next_state = 'endOfBlockProcessing'
                 elif self.cur_state == 'endOfBlockProcessing':
                     if self.current_condition == conditions['VS']:
                         self.vs_block_counter += 1
                         print(f"[{self.loop_count}] EndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
                         try:
-                            if self.vs_block_counter == self.num_vs_blocks_before_training:  # time to train the model and identify target for this block
+                            if self.vs_block_counter == num_vs_blocks_before_training:  # time to train the model and identify target for this block
                                 self.send_skip_prediction()  # epoching the recorded block data
                                 self.add_block_data()
                                 self.train_identification_model()  # the next VS block will probably have wait here
-                            elif self.vs_block_counter > self.num_vs_blocks_before_training:  # identify target for this block
+                            elif self.vs_block_counter > num_vs_blocks_before_training:  # identify target for this block
                                 this_block_data = self.add_block_data()
                                 self.target_identification(this_block_data)
                             else:  # we are still accumulating data
@@ -266,6 +279,7 @@ class RenaProcessing(RenaScript):
         try:
             if is_simulating_predictions:
                 self.send_dummy_prediction()
+                return
             prediction_start_time = time.time()
             predicted_target_ids_dict = {}
             item_predictions_dict = {}
