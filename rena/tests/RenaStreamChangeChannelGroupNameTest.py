@@ -19,7 +19,7 @@ from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.utils.settings_utils import create_default_preset
 
@@ -31,7 +31,7 @@ def app(qtbot: QtBot):
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
     # app initialization
-    load_default_settings(revert_to_default=True, reload_presets=True)  # load the default settings
+    load_settings(revert_to_default=True, reload_presets=True)  # load the default settings
     test_renalabapp = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     # test_renalabapp.show()
     qtbot.addWidget(test_renalabapp)

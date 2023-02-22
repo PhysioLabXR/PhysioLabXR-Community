@@ -12,7 +12,7 @@ from rena.utils.settings_utils import export_preset_to_settings, load_all_preset
 from rena.utils.ui_utils import dialog_popup
 
 
-def load_default_settings(revert_to_default=False, reload_presets=True):
+def load_settings(revert_to_default=False, reload_presets=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)

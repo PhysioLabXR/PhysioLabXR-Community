@@ -9,7 +9,7 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QFileDialog
 
 from rena import config_ui, config
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
@@ -77,7 +77,7 @@ class SettingsTab(QtWidgets.QWidget):
 
     def reset_default(self):
         config.settings.clear()
-        load_default_settings()
+        load_settings()
 
         self.set_theme(config.settings.value('theme'))
         self.set_recording_file_format()

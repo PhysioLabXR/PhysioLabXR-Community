@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 
 # import and init shared global variables
 
@@ -15,7 +15,7 @@ app = None
 
 if __name__ == '__main__':
     # load default settings
-    load_default_settings()
+    load_settings(revert_to_default=False)
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)

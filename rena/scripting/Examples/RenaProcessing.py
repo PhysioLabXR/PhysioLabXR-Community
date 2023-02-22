@@ -300,7 +300,7 @@ class RenaProcessing(RenaScript):
                 item_index_dtn_predictions = np.zeros(num_item_perblock)
                 for item_index, predicted_dtn in zip(predicted_item_indices, pred):
                     item_index_dtn_predictions[item_index] = predicted_dtn
-
+                item_predictions_dict[locking_name] = item_index_dtn_predictions
                 try:
                     assert len(np.unique(true_target_item_ids)) == 1
                 except AssertionError as e:

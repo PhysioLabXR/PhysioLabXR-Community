@@ -15,7 +15,7 @@ from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
