@@ -36,12 +36,13 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 
 is_debugging = True
-is_simulating_predictions = True
+is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 selected_locking_name = 'VS-FLGI'
 num_vs_blocks_before_training = 1  # for a total of 8 VS blocks in each metablock
 
+ar_cv_folds = 3
 
 class ItemEvent():
     """
@@ -288,15 +289,25 @@ class RenaProcessing(RenaScript):
                 # block_events_cleaned = np.array(block_events)[rejects]
                 print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
                 assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
-                x_eeg, x_pupil, y, _, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True)  # apply auto reject
-                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected.')
+                x_eeg, x_pupil, y, _, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True, n_folds=ar_cv_folds)  # apply auto reject
+                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y==1)} targets and {np.sum(y==0)} distractors')
+
+                if len(y) == 0 or np.all(y == 1):  # if no data or no target fixations
+                    print(f'[{self.loop_count}] target_identification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = -1
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = -1
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = -1
+                    continue
+
                 x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
                 x_eeg_tensor = torch.Tensor(x_eeg_reduced).to(self.device)
                 x_pupil_tensor = torch.Tensor(x_pupil).to(self.device)
 
-                pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
-                pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
+                self.models[locking_name].eval()
+                with torch.no_grad():
+                    pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
+                    pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
 
                 acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=pred)
                 target_sensitivity = tpr[1]
@@ -366,7 +377,12 @@ class RenaProcessing(RenaScript):
             raise e
 
     def preprocess_block_data(self, epochs_eeg, epochs_pupil):
-        x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
+        try:
+            x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds)  # apply auto reject
+        except ValueError as e:
+            print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
+            raise e
+
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
         return x_eeg, x_pupil, y, pca, ica
 
