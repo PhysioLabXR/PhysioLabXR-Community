@@ -39,7 +39,7 @@ is_debugging = True
 is_simulating_predictions = True
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
-selected_locking_name = 'VS-I-VT-Head'
+selected_locking_name = 'VS-FLGI'
 num_vs_blocks_before_training = 1  # for a total of 8 VS blocks in each metablock
 
 
@@ -319,7 +319,7 @@ class RenaProcessing(RenaScript):
                     assert len(np.unique(true_target_item_ids)) == 1
                 except AssertionError as e:
                     print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
-                    print(e)
+                    raise(e)
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = acc
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = target_specificity
@@ -328,11 +328,14 @@ class RenaProcessing(RenaScript):
             pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
             # TODO return the predicted class for each item, and the inferred target class
 
-            self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
-
+            try:
+                self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
+            except KeyError:
+                print(f"[{self.loop_count}] no epochs available for locking {selected_locking_name}, sending dummy results.")
+                self.send_dummy_prediction()
         except Exception as e:
             print(e)
-
+            raise e
     def send_prediction(self, predicted_target_id, item_index_dtn_predictions):
         try:
             send = np.zeros(3 + num_item_perblock)
