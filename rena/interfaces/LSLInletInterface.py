@@ -65,7 +65,6 @@ class LSLInletInterface:
         except LostError:
             frames, timestamps = [], []
             pass  # TODO handle stream lost
-        # frames = np.transpose(frames).astype()
         return np.transpose(frames), timestamps
 
     def stop_sensor(self):

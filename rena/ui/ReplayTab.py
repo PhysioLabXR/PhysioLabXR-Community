@@ -71,10 +71,12 @@ class ReplayTab(QtWidgets.QWidget):
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
-        selected_data_dir = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
+        selected_file = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
+        self.select_file(selected_file)
 
-        if selected_data_dir != '':
-            self.file_loc = selected_data_dir
+    def select_file(self, selected_file):
+        if selected_file != '':
+            self.file_loc = selected_file
 
         # self.file_loc = self.file_loc + 'data.dats'
 

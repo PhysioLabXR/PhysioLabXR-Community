@@ -158,6 +158,29 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <widget class="Line" name="line_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="widget_3" native="true">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Plot frame per second</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="plot_fps_lineedit"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
          <item alignment="Qt::AlignRight">
           <widget class="QPushButton" name="resetDefaultBtn">
            <property name="maximumSize">

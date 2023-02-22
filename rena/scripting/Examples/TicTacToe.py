@@ -51,6 +51,7 @@ class TicTacToe(RenaScript):
                 print('Flashing end event received, decoding frequency power density')
                 flashing_end_time = self.inputs.get_timestamps('TicTacToeEvents')[np.argwhere(self.inputs.get_data('TicTacToeEvents') == FLASH_END_MARKER)][0, -1]
                 epoch_start_time = flashing_end_time - PAST_TIME_WINDOW
+
                 epoch_start_index = np.argmin(np.abs(self.inputs.get_timestamps('EEG') - epoch_start_time))
 
                 epoch = self.inputs.get_data('EEG')[:, epoch_start_index:]

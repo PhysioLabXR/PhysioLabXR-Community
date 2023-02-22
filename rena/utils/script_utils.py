@@ -4,7 +4,7 @@ import os
 import pickle
 import sys
 from inspect import isclass
-from exceptions.exceptions import InvalidScripPathError, ScriptSyntaxError
+from exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, ScriptMissingModuleError
 
 from multiprocessing import Process
 
@@ -23,25 +23,36 @@ def start_script_server(script_path, script_args):
     replay_client_thread.start()
 
 def validate_script_path(script_path: str):
+    """
+    Validate if the script at <script_path> can be loaded without any import
+    or module not found error.
+    Also checks to make sure if the first class of in the script is an implementation
+    of the RenaScript class.
+    This function ensures that of the script can be laoded. Then it will run under
+    the scripting widget
+    :param script_path: path to the script to be loaded
+    """
     try:
         assert os.path.exists(script_path)
     except AssertionError:
-        raise InvalidScripPathError(script_path, 'File Not Found')
+        raise InvalidScriptPathError(script_path, 'File Not Found')
     try:
         assert script_path.endswith('.py')
     except AssertionError:
-        raise InvalidScripPathError(script_path, 'File name must end with .py')
+        raise InvalidScriptPathError(script_path, 'File name must end with .py')
     try:
         target_class = get_target_class(script_path)
         target_class_name = get_target_class_name(script_path)
     except IndexError:
-        raise InvalidScripPathError(script_path, 'Script does not have class defined')
+        raise InvalidScriptPathError(script_path, 'Script does not have class defined')
+    except ModuleNotFoundError as e:
+        raise ScriptMissingModuleError(script_path, e)
     except SyntaxError as e:
         raise ScriptSyntaxError(e)
     try:
         assert issubclass(target_class, RenaScript)
     except AssertionError:
-        raise InvalidScripPathError(script_path, 'The first class ({0}) in the script does not inherit RenaScript. '.format(target_class_name))
+        raise InvalidScriptPathError(script_path, 'The first class ({0}) in the script does not inherit RenaScript. '.format(target_class_name))
 
 
 def get_target_class(script_path):
@@ -56,7 +67,7 @@ def get_target_class(script_path):
     try:
         assert len(classes) == 1
     except AssertionError:
-        raise InvalidScripPathError(script_path, 'Script has more than one classes that extends RenaScript. There can be only one subclass of RenaScript in the script file.')
+        raise InvalidScriptPathError(script_path, 'Script has more than one classes that extends RenaScript. There can be only one subclass of RenaScript in the script file.')
     return classes[0]
 
 

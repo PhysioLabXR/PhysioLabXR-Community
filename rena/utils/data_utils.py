@@ -1,6 +1,7 @@
 import os
 import warnings
 from pathlib import Path
+from datetime import datetime
 
 import cv2
 import matplotlib.pyplot as plt
@@ -739,3 +740,8 @@ def is_homogeneous_type(seq):
 def signal_generator(f, fs, duration, amp):
     wave = amp * (np.sin(2 * np.pi * np.arange(fs * duration) * f / fs)).astype(np.float32)
     return wave
+
+def get_date_string():
+    now = datetime.now()
+    dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
+    return dt_string

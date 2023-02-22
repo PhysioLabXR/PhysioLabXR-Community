@@ -9,7 +9,7 @@ from sys import platform
 User parameters:
 Use these parameters to set the RN App to your preference
 '''
-REFRESH_INTERVAL = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+pull_data_interval = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 REFRESH_FREQUENCY_RETAIN_FRAMES = 50
 MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP = 512
 MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM = 1000
@@ -18,6 +18,7 @@ VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
 VIDEO_DEVICE_REFRESH_INTERVAL = 33
+MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
 VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 
 VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 15)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
@@ -26,13 +27,14 @@ SCRIPTING_UPDATE_REFRESH_INTERVA = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
+downsample_method_mean_sr_threshold = 256
 '''
 ########################################################################################################################
 Advanced parameters:
 do not change these unless you know what you are doing
 '''
 DOWNSAMPLE_MULTIPLY_THRESHOLD = 5
-EVICTION_INTERVAL = 1000.  # in seconds, large eviction interval means laggier app, but faster loading the data back in
+EVICTION_INTERVAL = 1000  # in seconds, large eviction interval means laggier app, but faster loading the data back in
 
 '''
 ########################################################################################################################
@@ -140,3 +142,6 @@ valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
 valid_preset_categories = ['other', 'video', 'exp']
 
 lsl_stream_availability_wait_time = 2  # in seconds
+
+# viz
+plot_fps_range = (1, 60)

@@ -61,7 +61,7 @@ class OpenBCIInterface:
         except brainflow.board_shim.BrainFlowError as e:
             print(e)
 
-    def create_lsl(self, name='OpenBCI_Cyton_8', type='EEG', channel_count=8,
+    def create_lsl(self, name='OpenBCI_Cython_8_LSL', type='EEG', channel_count=8,
                    nominal_srate=250.0, channel_format='float32',
                    source_id='Cyton_0'):
 
@@ -128,7 +128,7 @@ def run_test():
     print('Started streaming')
     start_time = time.time()
     notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=8, highcut=12, fs=250, order=6, channel_num=8)
+    butter_bandpass = RealtimeButterBandpass(lowcut=4, highcut=50, fs=250, order=6, channel_num=8)
     # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
@@ -139,15 +139,15 @@ def run_test():
             # data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
             for data in new_data.T:
                 eeg_data = data[1:9]
-                aux_data = data[9:12]
+                # aux_data = data[9:12]
                 # ######### notch and butter
-                # eeg_data = notch.process_data(eeg_data)
-                # eeg_data = butter_bandpass.process_data(eeg_data)
+                eeg_data = notch.process_sample(eeg_data)
+                eeg_data = butter_bandpass.process_sample(eeg_data)
                 # eeg_data = vrms_converter.process_data(eeg_data)
                 # push sample to lsl with interval
                 # if time.time() - start_time > 0.35:
                 openBCI_interface.push_sample(samples=eeg_data)
-                print(eeg_data)
+                # print(eeg_data)
                     # print(eeg_data)
                     # start_time = time.time()
         except KeyboardInterrupt:
@@ -158,7 +158,7 @@ def run_test():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIInterface()
+    openBCI_interface = OpenBCIInterface(serial_port='COM4')
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test()

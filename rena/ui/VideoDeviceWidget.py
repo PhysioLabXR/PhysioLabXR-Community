@@ -1,8 +1,12 @@
 # This Python file uses the following encoding: utf-8
+import time
+from collections import deque
+
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 
+from rena import config
 from rena.config import settings
 from rena.threadings import workers
 from rena.ui_shared import pop_window_icon, dock_window_icon, remove_stream_icon, \
@@ -40,6 +44,9 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
         self.set_button_icons()
 
+        # FPS counter``
+        self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
+
         # worker and worker threads ##########################################
         self.worker_thread = pg.QtCore.QThread(self)
 
@@ -58,6 +65,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.timer.start()
 
     def visualize(self, cam_id_cv_img_timestamp):
+        self.tick_times.append(time.time())
         cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
         qt_img = convert_rgb_to_qt_image(cv_img)
         self.ImageLabel.setPixmap(qt_img)
@@ -68,7 +76,7 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
-        self.worker.stop_video()
+        self.worker.stop_stream()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
 
@@ -116,3 +124,12 @@ class VideoDeviceWidget(QtWidgets.QWidget):
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
+
+    def get_fps(self):
+        try:
+            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+        except (ZeroDivisionError, IndexError) as e:
+            return 0
+
+    def get_pull_data_delay(self):
+        return self.worker.get_pull_data_delay()

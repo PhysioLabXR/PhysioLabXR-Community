@@ -1,0 +1,7 @@
+{
+  "StreamName": "P300Speller",
+  "ChannelNames": [
+    "GameEventMarkers"
+  ],
+  "NominalSamplingRate": 5
+}
