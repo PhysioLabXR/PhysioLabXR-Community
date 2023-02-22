@@ -363,6 +363,7 @@ class WebcamWorker(QObject, RenaWorker):
             ret, cv_img = self.cap.read()
             if ret:
                 cv_img = cv_img.astype(np.uint8)
+                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
                 cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
@@ -387,7 +388,6 @@ class ScreenCaptureWorker(QObject, RenaWorker):
             pull_data_start_time = time.perf_counter()
             img = pyautogui.screenshot()
             frame = np.array(img)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = frame.astype(np.uint8)
             frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
