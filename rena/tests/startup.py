@@ -4,7 +4,7 @@ import sys
 from PyQt5 import QtCore, QtWidgets
 
 from rena.MainWindow import MainWindow
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 
 
 def app(qtbot):
@@ -14,7 +14,7 @@ def app(qtbot):
     app = QtWidgets.QApplication(sys.argv)
 
     # app initialization
-    load_default_settings()
+    load_settings()
     test_renalab_app = MainWindow(app=app)
 
     return test_renalab_app

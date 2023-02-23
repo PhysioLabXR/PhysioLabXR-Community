@@ -166,6 +166,9 @@ class DataBuffer():
         """
         skip_count = 0
         for stream_name in self.buffer.keys():
+            if len(self.buffer[stream_name][1]) == 0:
+                skip_count += 1
+                continue
             if timestamp < np.min(self.buffer[stream_name][1]):
                 skip_count += 1
             elif timestamp >= np.max(self.buffer[stream_name][1]):

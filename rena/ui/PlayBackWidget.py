@@ -31,7 +31,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         # create worker listening the playback position from the server
         # Initialize playback worker
         self.playback_command_interface_timer = QTimer()
-        self.playback_command_interface_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
+        self.playback_command_interface_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
         self.playback_command_interface_timer.timeout.connect(self.ticks)
 
         self.playback_thread = pg.QtCore.QThread(self.parent)

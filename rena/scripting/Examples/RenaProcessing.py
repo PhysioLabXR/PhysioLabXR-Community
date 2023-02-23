@@ -1,3 +1,10 @@
+"""
+
+
+You will find plenty of try, except Exception in the functions defined here. This is to help debugging with breakpoints
+in case a function raises exception. We don't have to dig back into the function to find what's wrong
+"""
+
 import copy
 import json
 import pickle
@@ -7,6 +14,7 @@ from collections import defaultdict
 import mne
 import numpy as np
 import torch
+from pylsl import StreamInfo, StreamOutlet, pylsl
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
 from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
@@ -28,6 +36,13 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 
 is_debugging = True
+is_simulating_predictions = True
+end_of_block_wait_time_in_simulate = 5
+num_item_perblock = 30
+selected_locking_name = 'VS-FLGI'
+num_vs_blocks_before_training = 0  # for a total of 8 VS blocks in each metablock
+
+ar_cv_folds = 3
 
 class ItemEvent():
     """
@@ -75,7 +90,6 @@ class RenaProcessing(RenaScript):
 
         self.event_marker_head = 0
 
-        self.num_vs_blocks_before_training = 4  # for a total of 8 VS blocks in each metablock
         self.vs_block_counter = 0
         self.locking_data = {}
         self.is_inferencing = False
@@ -95,6 +109,11 @@ class RenaProcessing(RenaScript):
 
         self.ar = None
 
+        # outlet for sending predictions
+        # RenaPrediction channels: [blockID, isSkipping, predictedTargetItemID] + num_item_perblock for each block item
+        info = StreamInfo('RenaPrediction', 'Prediction', num_item_perblock + 3, pylsl.IRREGULAR_RATE, 'float32', 'RenaFeedbackID1234')
+        self.prediction_outlet = StreamOutlet(info)
+
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
 
@@ -105,6 +124,9 @@ class RenaProcessing(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         try:
+            # send = np.random.random(3 + num_item_perblock)
+            # self.prediction_outlet.push_sample(send)
+
             self.loop_count += 1
             if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():  # if we receive event markers
                 if self.cur_state != 'endOfBlockWaiting':  # will not process new event marker if waiting
@@ -115,12 +137,16 @@ class RenaProcessing(RenaScript):
                 if self.cur_state == 'idle':
                     if is_block_end and self.current_metablock is not None:
                         print(f'[{self.loop_count}] System is idle when received block_end, this probably means the last loop took too long')
-                        if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - event_timestamp > tmax_pupil + epoch_margin:
-                            print(f'[{self.loop_count}] Eyetracking data has progressed beyond margin, next state will be processing')
-                            self.next_state = 'endOfBlockProcessing'
-                        else:
-                            print(f'[{self.loop_count}] Eyetracking data NOT passed tmax margin, next state will be waiting')
-                            self.next_state = 'endOfBlockWaiting'
+                        self.next_state = 'endOfBlockWaiting'
+                        # if is_simulating_predictions:
+                        #     self.next_state = 'endOfBlockWaiting'
+                        # else:
+                        #     if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - event_timestamp > tmax_pupil + epoch_margin:
+                        #         print(f'[{self.loop_count}] Eyetracking data has progressed beyond margin, next state will be processing')
+                        #         self.next_state = 'endOfBlockProcessing'
+                        #     else:
+                        #         print(f'[{self.loop_count}] Eyetracking data NOT passed tmax margin, next state will be waiting')
+                        #         self.next_state = 'endOfBlockWaiting'
                     if new_meta_block:
                         print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
                         self.vs_block_counter = 0  # renew the counter for metablock
@@ -139,20 +165,26 @@ class RenaProcessing(RenaScript):
                     self.end_of_block_waited = time.time() - self.end_of_block_wait_start
                     print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
                     # if self.end_of_block_waited > self.end_of_block_wait_time:
-                    if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
-                        self.next_state = 'endOfBlockProcessing'
+                    if is_simulating_predictions:
+                        if self.end_of_block_waited > end_of_block_wait_time_in_simulate:
+                            self.next_state = 'endOfBlockProcessing'
+                    else:
+                        if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
+                            self.next_state = 'endOfBlockProcessing'
                 elif self.cur_state == 'endOfBlockProcessing':
                     if self.current_condition == conditions['VS']:
                         self.vs_block_counter += 1
                         print(f"[{self.loop_count}] EndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
                         try:
-                            if self.vs_block_counter == self.num_vs_blocks_before_training:  # time to train the model and identify target for this block
+                            if self.vs_block_counter == num_vs_blocks_before_training:  # time to train the model and identify target for this block
+                                self.send_skip_prediction()  # epoching the recorded block data
                                 self.add_block_data()
-                                self.train_identification_model()
-                            elif self.vs_block_counter > self.num_vs_blocks_before_training:  # identify target for this block
+                                self.train_identification_model()  # the next VS block will probably have wait here
+                            elif self.vs_block_counter > num_vs_blocks_before_training:  # identify target for this block
                                 this_block_data = self.add_block_data()
                                 self.target_identification(this_block_data)
-                            else:
+                            else:  # we are still accumulating data
+                                self.send_skip_prediction()
                                 self.add_block_data()  # epoching the recorded block data
                         except Exception as e:
                             print(f"[{self.loop_count}] Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
@@ -174,6 +206,8 @@ class RenaProcessing(RenaScript):
         print('Cleanup function is called')
 
     def add_block_data(self):
+        if is_simulating_predictions:
+            return
         print(f'[{self.loop_count}] Adding block data with id {self.current_block_id} of condition {self.current_condition}')
         rdf = RenaDataFrame()
         data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
@@ -202,7 +236,12 @@ class RenaProcessing(RenaScript):
                 else:
                     print(f'[{self.loop_count}] only found one event {event_ids}, skipping adding epoch')
                     continue
-                epoch_events = get_events(event_filters, events)
+                epoch_events = get_events(event_filters, events, order='time')
+                try:
+                    assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
+                except:
+                    print(f"[{self.loop_count}] add_block_data: epoch block events is different from y")
+                    raise ValueError
                 self._add_block_data_to_locking(x, y, epochs, locking_name, epoch_events)
                 print(f"[{self.loop_count}] Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self.report_locking_class_nums(locking_name)
@@ -220,6 +259,8 @@ class RenaProcessing(RenaScript):
     #     return (np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - start_time) > (tmax_pupil + epoch_margin)
 
     def train_identification_model(self):
+        if is_simulating_predictions:
+            return
         try:
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
@@ -237,46 +278,111 @@ class RenaProcessing(RenaScript):
 
     def target_identification(self, this_block_data):
         try:
+            if is_simulating_predictions:
+                self.send_dummy_prediction()
+                return
             prediction_start_time = time.time()
+            predicted_target_ids_dict = {}
+            item_predictions_dict = {}
             for locking_name, ((_, _), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
                 # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
                 # block_events_cleaned = np.array(block_events)[rejects]
                 print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
                 assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
-                x_eeg, x_pupil, y, _, rejections= reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True)  # apply auto reject
-                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected.')
+                x_eeg, x_pupil, y, _, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True, n_folds=ar_cv_folds)  # apply auto reject
+                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y==1)} targets and {np.sum(y==0)} distractors')
+
+                if len(y) == 0 or np.all(y == 1):  # if no data or no target fixations
+                    print(f'[{self.loop_count}] target_identification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = -1
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = -1
+                    self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = -1
+                    continue
+
                 x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
                 x_eeg_tensor = torch.Tensor(x_eeg_reduced).to(self.device)
                 x_pupil_tensor = torch.Tensor(x_pupil).to(self.device)
 
-                pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
-                pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
+                self.models[locking_name].eval()
+                with torch.no_grad():
+                    pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
+                    pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
 
                 acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=pred)
                 target_sensitivity = tpr[1]
+
                 target_specificity = tnr[1]
 
                 cleaned_block_events = np.array(block_events)[rejections]
                 predicted_target_item_ids = [x.item_id for x in cleaned_block_events[pred==1]]
+                predicted_item_indices = [x.item_index for x in cleaned_block_events]
+
                 true_target_item_ids = [x.item_id for x in cleaned_block_events[y==1]]
                 predicted_target_item_id = None if len(predicted_target_item_ids)==0 else stats.mode(predicted_target_item_ids).mode[0]
+                predicted_target_ids_dict[locking_name] = predicted_target_item_id
+
+                item_index_dtn_predictions = np.zeros(num_item_perblock)
+                for item_index, predicted_dtn in zip(predicted_item_indices, pred):
+                    item_index_dtn_predictions[item_index] = predicted_dtn
+                item_predictions_dict[locking_name] = item_index_dtn_predictions
                 try:
                     assert len(np.unique(true_target_item_ids)) == 1
                 except AssertionError as e:
                     print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
-                    print(e)
+                    raise(e)
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = acc
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = target_specificity
                 print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
             print(f'[{self.loop_count}] prediction  complete, took {time.time() - prediction_start_time} seconds')
             pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
+            # TODO return the predicted class for each item, and the inferred target class
+
+            try:
+                self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
+            except KeyError:
+                print(f"[{self.loop_count}] no epochs available for locking {selected_locking_name}, sending dummy results.")
+                self.send_dummy_prediction()
         except Exception as e:
             print(e)
+            raise e
+    def send_prediction(self, predicted_target_id, item_index_dtn_predictions):
+        try:
+            send = np.zeros(3 + num_item_perblock)
+            send[0] = self.current_block_id  # Unity will check the block ID matches
+            send[2] = predicted_target_id  # set predicted target item id
+            send[3:] = item_index_dtn_predictions
+            self.prediction_outlet.push_sample(send)
+        except Exception as e:
+            raise e
+
+    def send_dummy_prediction(self):
+        try:
+            send = np.zeros(3 + num_item_perblock)
+            send[0] = self.current_block_id  # Unity will check the block ID matches
+            send[2] = -1  # set predicted target item id
+            send[3:] = np.random.randint(1, 3, size=num_item_perblock)
+            self.prediction_outlet.push_sample(send)
+        except Exception as e:
+            raise e
+    def send_skip_prediction(self):
+        try:
+            send = np.zeros(3 + num_item_perblock)
+            send[0] = self.current_block_id  # Unity will check the block ID matches
+            send[1] = 1  # set the skip (second value to 1)
+            self.prediction_outlet.push_sample(send)
+            print("Skip prediction sent")
+        except Exception as e:
+            raise e
 
     def preprocess_block_data(self, epochs_eeg, epochs_pupil):
-        x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1)  # apply auto reject
+        try:
+            x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds)  # apply auto reject
+        except ValueError as e:
+            print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
+            raise e
+
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
         return x_eeg, x_pupil, y, pca, ica
 

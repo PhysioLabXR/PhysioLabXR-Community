@@ -74,7 +74,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         # visualization timer
         self.v_timer = QTimer()
-        self.v_timer.setInterval(config.VISUALIZATION_REFRESH_INTERVAL)
+        self.v_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
         self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
@@ -137,7 +137,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
         # FPS counter``
-        self.tick_times = deque(maxlen=10 * config.VISUALIZATION_REFRESH_INTERVAL)
+        self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
 
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()

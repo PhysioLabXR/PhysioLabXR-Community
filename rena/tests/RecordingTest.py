@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget
 
 from rena.MainWindow import MainWindow
 from rena.interfaces import InferenceInterface
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream
 import importlib
 
@@ -21,7 +21,7 @@ def app(qtbot):
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
     # app initialization
-    load_default_settings(revert_to_default=True, reload_presets=True)  # load the default settings
+    load_settings(revert_to_default=True, reload_presets=True)  # load the default settings
     test_renalabapp = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     test_renalabapp.show()
     qtbot.addWidget(test_renalabapp)
