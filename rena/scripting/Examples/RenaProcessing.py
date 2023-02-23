@@ -36,11 +36,11 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 
 is_debugging = True
-is_simulating_predictions = False
+is_simulating_predictions = True
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 selected_locking_name = 'VS-FLGI'
-num_vs_blocks_before_training = 1  # for a total of 8 VS blocks in each metablock
+num_vs_blocks_before_training = 0  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
