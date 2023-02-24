@@ -15,7 +15,7 @@ def main(argv):
     letters = string.digits
 
     srate = 128
-    name = 'Dummy-8Chan'
+    name = 'obci_eeg1'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 8
