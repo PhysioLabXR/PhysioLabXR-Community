@@ -40,7 +40,8 @@ is_simulating_predictions = True
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 selected_locking_name = 'VS-FLGI'
-num_vs_blocks_before_training = 0  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_classifier_prep = 8  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
@@ -100,14 +101,13 @@ class RenaProcessing(RenaScript):
 
         self.PCAs = {}
         self.ICAs = {}
-        self.current_target_item_id = None
+        self.ARs = {}
+        self.predicted_targets_for_metablock = []
         self.models = {}
 
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
         self.block_reports = defaultdict(dict)
-
-        self.ar = None
 
         # outlet for sending predictions
         # RenaPrediction channels: [blockID, isSkipping, predictedTargetItemID] + num_item_perblock for each block item
@@ -149,9 +149,14 @@ class RenaProcessing(RenaScript):
                         #         self.next_state = 'endOfBlockWaiting'
                     if new_meta_block:
                         print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
-                        self.vs_block_counter = 0  # renew the counter for metablock
-                        # if self.meta_block_counter > self.num_meta_blocks_before_training:
-                        #     print("Should start training now !!!")  # TODO add rena analysis scripts here
+                        self.vs_block_counter = 0  # reset the counter for metablock
+                        if new_meta_block == 5:
+                            self.num_vs_before_training = num_vs_to_train_in_classifier_prep
+                            print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
+                        elif new_meta_block == 6:
+                            self.num_vs_before_training = num_vs_to_train_in_identifier_prep
+                            print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
+
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
                         print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
                         self.next_state = 'in_block'
@@ -172,26 +177,15 @@ class RenaProcessing(RenaScript):
                         if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
                             self.next_state = 'endOfBlockProcessing'
                 elif self.cur_state == 'endOfBlockProcessing':
-                    if self.current_condition == conditions['VS']:
-                        self.vs_block_counter += 1
-                        print(f"[{self.loop_count}] EndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
-                        try:
-                            if self.vs_block_counter == num_vs_blocks_before_training:  # time to train the model and identify target for this block
-                                self.send_skip_prediction()  # epoching the recorded block data
-                                self.add_block_data()
-                                self.train_identification_model()  # the next VS block will probably have wait here
-                            elif self.vs_block_counter > num_vs_blocks_before_training:  # identify target for this block
-                                this_block_data = self.add_block_data()
-                                self.target_identification(this_block_data)
-                            else:  # we are still accumulating data
-                                self.send_skip_prediction()
-                                self.add_block_data()  # epoching the recorded block data
-                        except Exception as e:
-                            print(f"[{self.loop_count}] Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
-                            print(e)
+                    if self.current_metablock == 5:
+                        self.next_state = self.classifier_prep_phase_end_of_block()
+                    elif self.current_metablock == 6:
+                        self.next_state = self.identifier_prep_phase_end_of_block()
                     else:
-                        print(f"[{self.loop_count}] EndOfBlockProcessing: not VS block, skipping")
-                    self.next_state = 'idle'
+                        print(f'[{self.loop_count}] block ended on while in meta block {self.current_metablock}. Skipping end of block processing. Not likely to happen.')
+                elif self.cur_state == 'waitingFeedback':
+                    # TODO
+                    pass
 
             if self.next_state != self.cur_state:
                 print(f'[{self.loop_count}] updating state from {self.cur_state} to {self.next_state}')
@@ -202,6 +196,48 @@ class RenaProcessing(RenaScript):
         # print(f"[{self.loop_count}] End of loop ")
 
     # cleanup is called when the stop button is hit
+
+    def classifier_prep_phase_end_of_block(self):
+        if self.current_condition == conditions['VS']:
+            self.vs_block_counter += 1
+            print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
+            try:
+                if self.vs_block_counter == self.num_vs_before_training:  # time to train the model and identify target for this block
+                    self.send_skip_prediction()  # epoching the recorded block data
+                    self.add_block_data()
+                    self.train_identification_model()  # the next VS block will probably have wait here
+                else:  # we are still accumulating data
+                    self.send_skip_prediction()
+                    self.add_block_data()
+            except Exception as e:
+                print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
+                print(e)
+        else:
+            print(f"[{self.loop_count}] EndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
+        return 'idle'
+
+    def identifier_prep_phase_end_of_block(self):
+        if self.current_condition == conditions['VS']:
+            self.vs_block_counter += 1
+            print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
+            try:
+                if self.vs_block_counter == self.num_vs_before_training:  # time to train the model and identify target for this block
+                    print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: counter is equal to num blocks before training. Start training with feedback from user and resetting training block counter.")
+                    self.vs_block_counter = 0
+                    this_block_data = self.add_block_data()
+                    self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    self.train_identification_model()  # the next VS block will probably have wait here, if it ends before this function (training) returns
+                else:  # we are not training yet
+                    this_block_data = self.add_block_data()  # epoching the recorded block data
+                    self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+            except Exception as e:
+                print(f"[{self.loop_count}]IdentifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
+                print(e)
+            return 'waitingFeedback'
+        else:
+            print(f"[{self.loop_count}] EndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
+            return 'idle'
+
     def cleanup(self):
         print('Cleanup function is called')
 
@@ -265,7 +301,7 @@ class RenaProcessing(RenaScript):
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
                 print(f'[{self.loop_count}] Training models for {locking_name}')
-                x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name] = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+                x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name] = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
                 model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
@@ -287,19 +323,20 @@ class RenaProcessing(RenaScript):
             for locking_name, ((_, _), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
                 # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
                 # block_events_cleaned = np.array(block_events)[rejects]
-                print(f"[{self.loop_count}] Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
-                assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys()
-                x_eeg, x_pupil, y, _, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True, n_folds=ar_cv_folds)  # apply auto reject
-                print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y==1)} targets and {np.sum(y==0)} distractors')
+                print(f"[{self.loop_count}] TargetIdentification:  Locking {locking_name} Has {len(y)} epochs, with {np.sum(y==1)} targets and {np.sum(y==0)} distractors")
+                try:
+                    assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys() and locking_name in self.ARs.keys()
+                except AssertionError:
+                    print(f'[{self.loop_count}] TargetIdentification: locking {locking_name} does not have preprocess transforms. Skippinp. Likely this data was not present in entire training data, which should not happen normally.')
+                    continue
+                x_eeg_reduced, x_pupil, y, _, _, _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
-                if len(y) == 0 or np.all(y == 0):  # if no data or no target fixations
-                    print(f'[{self.loop_count}] target_identification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
+                if x_eeg_reduced is None or np.all(y == 0):  # if no data or no target fixations
+                    print(f'[{self.loop_count}] TargetIdentification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = -1
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = -1
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = -1
                     continue
-
-                x_eeg_reduced, _, _ = compute_pca_ica(x_eeg, n_components=20, pca=self.PCAs[locking_name], ica=self.ICAs[locking_name])
 
                 x_eeg_tensor = torch.Tensor(x_eeg_reduced).to(self.device)
                 x_pupil_tensor = torch.Tensor(x_pupil).to(self.device)
@@ -329,24 +366,25 @@ class RenaProcessing(RenaScript):
                 try:
                     assert len(np.unique(true_target_item_ids)) == 1
                 except AssertionError as e:
-                    print(f"[{self.loop_count}] true target item ids not all equal, this should NEVER happen!")
+                    print(f"[{self.loop_count}] TargetIdentification: true target item ids not all equal, this should NEVER happen!")
                     raise(e)
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = acc
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = target_specificity
-                print(f"[{self.loop_count}] Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
-            print(f'[{self.loop_count}] prediction  complete, took {time.time() - prediction_start_time} seconds')
+                print(f"[{self.loop_count}] TargetIdentification: Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
+            print(f'[{self.loop_count}] TargetIdentification: prediction  complete, took {time.time() - prediction_start_time} seconds')
             pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
             # TODO return the predicted class for each item, and the inferred target class
 
             try:
                 self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
             except KeyError:
-                print(f"[{self.loop_count}] no epochs available for locking {selected_locking_name}, sending dummy results.")
+                print(f"[{self.loop_count}] TargetIdentification: no epochs available for selected target-identification locking {selected_locking_name}, sending dummy results.")
                 self.send_dummy_prediction()
         except Exception as e:
             print(e)
             raise e
+
     def send_prediction(self, predicted_target_id, item_index_dtn_predictions):
         try:
             send = np.zeros(3 + num_item_perblock)
@@ -376,15 +414,19 @@ class RenaProcessing(RenaScript):
         except Exception as e:
             raise e
 
-    def preprocess_block_data(self, epochs_eeg, epochs_pupil):
+    def preprocess_block_data(self, epochs_eeg, epochs_pupil, pca=None, ica=None, ar=None):
+
         try:
-            x_eeg, x_pupil, y, self.ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds)  # apply auto reject
+            x_eeg, x_pupil, y, ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds, ar=ar)  # apply auto reject
         except ValueError as e:
             print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
             raise e
+        print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y == 1)} targets and {np.sum(y == 0)} distractors')
+        if len(y) == 0:  # no data remains after rejection
+            return [None] * 6
 
-        x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20)
-        return x_eeg, x_pupil, y, pca, ica
+        x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=None)
+        return x_eeg, x_pupil, y, pca, ica, ar
 
     def _add_block_data_to_locking(self, x, y, epochs, locking_name, epoch_events):
         epochs_eeg, epochs_pupil = epochs
