@@ -158,7 +158,7 @@ class DataBuffer():
         """
         for stream_name in self.buffer.keys():
             self.clear_stream_buffer_data(stream_name)
-    def clear_up_to(self, timestamp):
+    def clear_up_to(self, timestamp, ignores=()):
         """
         The resulting timestamp is guaranteed to be greater than the given cut-to timestamp
         :param timestamp:
@@ -166,6 +166,8 @@ class DataBuffer():
         """
         skip_count = 0
         for stream_name in self.buffer.keys():
+            if stream_name in ignores:
+                continue
             if len(self.buffer[stream_name][1]) == 0:
                 skip_count += 1
                 continue

@@ -90,6 +90,7 @@ class RenaProcessing(RenaScript):
         self.next_state = 'idle'
 
         self.event_marker_head = 0
+        self.prediction_feedback_head = 0
 
         self.vs_block_counter = 0
         self.locking_data = {}
@@ -114,6 +115,9 @@ class RenaProcessing(RenaScript):
         info = StreamInfo('RenaPrediction', 'Prediction', num_item_perblock + 3, pylsl.IRREGULAR_RATE, 'float32', 'RenaFeedbackID1234')
         self.prediction_outlet = StreamOutlet(info)
 
+        self.predicted_block_dtn = None
+        self.this_block_data_pending_feedback = None
+        self.identifier_block_is_training_now = False
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
 
@@ -184,7 +188,7 @@ class RenaProcessing(RenaScript):
                     else:
                         print(f'[{self.loop_count}] block ended on while in meta block {self.current_metablock}. Skipping end of block processing. Not likely to happen.')
                 elif self.cur_state == 'waitingFeedback':
-                    # TODO
+                    self.next_state = self.receive_prediction_feedback()
                     pass
 
             if self.next_state != self.cur_state:
@@ -196,6 +200,35 @@ class RenaProcessing(RenaScript):
         # print(f"[{self.loop_count}] End of loop ")
 
     # cleanup is called when the stop button is hit
+
+    def receive_prediction_feedback(self):
+        try:
+            if len(self.inputs['RenaPredictionFeedback'][1]) - self.prediction_feedback_head > 0: # there's new event marker
+                timestamp = self.inputs['Unity.ReNa.PredictionFeedback'][1][self.prediction_feedback_head]
+                feedbacks = self.inputs['Unity.ReNa.PredictionFeedback'][0][:, self.prediction_feedback_head]
+                self.prediction_feedback_head += 1
+
+                flipped_count = 0
+                for i, (predicted_item_dtn, feedback_item_dtn) in enumerate(zip(self.predicted_block_dtn, feedbacks)):
+                    if feedback_item_dtn == 1 and predicted_item_dtn == 2: # target got flipped to a distractor:
+                        flipped_count += 1
+                        for locking_name, _ in locking_filters.items():
+                            y = np.copy(self.this_block_data_pending_feedback[locking_name][1])
+                            try:
+                                assert y == 1  # y pred must be 1: target
+                            except AssertionError as e:
+                                print("predicted dtn not much y in the block data pending feedback. " + e)
+                            y[i] = 0
+                            self.this_block_data_pending_feedback[locking_name][1] = y
+
+                self.all_block_data_all_lockings(self.this_block_data_pending_feedback)
+                if self.identifier_block_is_training_now:
+                    self.train_identification_model()  # the next VS block will probably have wait here, if it ends before this function (training) returns
+                return 'idle'
+            else:
+                return 'waitingFeedback'
+        except Exception:
+            print(f"[{self.loop_count}] ReceivePredictionFeedback: found exception." + e)
 
     def classifier_prep_phase_end_of_block(self):
         if self.current_condition == conditions['VS']:
@@ -224,12 +257,16 @@ class RenaProcessing(RenaScript):
                 if self.vs_block_counter == self.num_vs_before_training:  # time to train the model and identify target for this block
                     print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: counter is equal to num blocks before training. Start training with feedback from user and resetting training block counter.")
                     self.vs_block_counter = 0
-                    this_block_data = self.add_block_data()
-                    self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
-                    self.train_identification_model()  # the next VS block will probably have wait here, if it ends before this function (training) returns
+                    this_block_data = self.add_block_data(append_data=False)
+                    self.predicted_block_dtn = self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    self.identifier_block_is_training_now = True
+                    # Don't train until have feedback
                 else:  # we are not training yet
-                    this_block_data = self.add_block_data()  # epoching the recorded block data
-                    self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    this_block_data = self.add_block_data(append_data=False)  # epoching the recorded block data
+                    self.predicted_block_dtn = self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    self.identifier_block_is_training_now = False
+
+                self.this_block_data_pending_feedback = this_block_data
             except Exception as e:
                 print(f"[{self.loop_count}]IdentifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
                 print(e)
@@ -241,10 +278,10 @@ class RenaProcessing(RenaScript):
     def cleanup(self):
         print('Cleanup function is called')
 
-    def add_block_data(self):
+    def add_block_data(self, append_data=True):
         if is_simulating_predictions:
             return
-        print(f'[{self.loop_count}] Adding block data with id {self.current_block_id} of condition {self.current_condition}')
+        print(f'[{self.loop_count}] AddingBlockData: Adding block data with id {self.current_block_id} of condition {self.current_condition}')
         rdf = RenaDataFrame()
         data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
         events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
@@ -253,43 +290,71 @@ class RenaProcessing(RenaScript):
         if 'FixationDetection' in data.keys():
             events += gaze_event_detection_PatchSim(data['FixationDetection'][0], data['FixationDetection'][1], events)
         else:
-            print(f"[{self.loop_count}] WARNING: not FixationDetection stream when trying to add block data")
+            print(f"[{self.loop_count}] AddingBlockData: WARNING: not FixationDetection stream when trying to add block data")
         rdf.add_participant_session(data, events, 0, 0, None, None, None)
         rdf.preprocess(is_running_ica=False, n_jobs=1)
 
         this_locking_data = {}
         for locking_name, event_filters in locking_filters.items():
             if 'VS' in locking_name:  # TODO only care about VS conditions for now
-                print(f"[{self.loop_count}] Finding epochs samples on locking {locking_name}")
+                print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
                 # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
                 x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
                 if x is None:
-                    print(f"[{self.loop_count}] No event found for locking {locking_name}")
+                    print(f"[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}")
                     continue
                 if len(event_ids) == 2:
                     if self.event_ids == None:
                         self.event_ids = event_ids
                 else:
-                    print(f'[{self.loop_count}] only found one event {event_ids}, skipping adding epoch')
+                    print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
                     continue
                 epoch_events = get_events(event_filters, events, order='time')
                 try:
                     assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
                 except:
-                    print(f"[{self.loop_count}] add_block_data: epoch block events is different from y")
+                    print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
                     raise ValueError
-                self._add_block_data_to_locking(x, y, epochs, locking_name, epoch_events)
-                print(f"[{self.loop_count}] Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self.report_locking_class_nums(locking_name)
+                if append_data:
+                    self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)
+                    print(f"[{self.loop_count}] AddingBlockData: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                else:
+                    print(f"[{self.loop_count}] AddingBlockData: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+
                 this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
-        print(f"[{self.loop_count}] Process completed")
+        print(f"[{self.loop_count}] AddingBlockData: Process completed")
         self.clear_buffer()
         return this_locking_data
+
+    def all_block_data_all_lockings(self, this_block_data: dict):
+        for locking_name, event_filters in locking_filters.items():
+            if locking_name in this_block_data.keys():
+                y = this_block_data[1]
+                print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
+            else:
+                print(f"[{self.loop_count}] AddingBlockDataPostHoc: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+
+    def _add_block_data_to_locking(self, locking_name, x, y, epochs_eeg, epochs_pupil, epoch_events):
+        if locking_name not in self.locking_data.keys():
+            self.locking_data[locking_name] = [x, y, epochs_eeg, epochs_pupil, epoch_events]
+        else:  # append the data
+            self.locking_data[locking_name][0][0] = np.concatenate([self.locking_data[locking_name][0][0], x[0]], axis=0)  # append EEG data
+            self.locking_data[locking_name][0][1] = np.concatenate([self.locking_data[locking_name][0][1], x[1]], axis=0)  # append pupil data
+            self.locking_data[locking_name][2] = mne.concatenate_epochs([self.locking_data[locking_name][2], epochs_eeg])  # append EEG epochs
+            self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
+
+            self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
+            self.locking_data[locking_name][4] += epoch_events  # append labels
+
+    def report_locking_class_nums(self, locking_name):
+        print(f'[{self.loop_count}] AddingBlockData: Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
 
     def clear_buffer(self):
         print(f"[{self.loop_count}] Buffer cleared")
         self.event_marker_head = 0
-        self.inputs.clear_up_to(self.last_block_end_timestamp)
+        self.inputs.clear_up_to(self.last_block_end_timestamp, ignores=['Unity.ReNa.PredictionFeedback'])
 
     # def check_pupil_data_complete_epoch(self, start_time):
     #     return (np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - start_time) > (tmax_pupil + epoch_margin)
@@ -361,7 +426,7 @@ class RenaProcessing(RenaScript):
 
                 item_index_dtn_predictions = np.zeros(num_item_perblock)
                 for item_index, predicted_dtn in zip(predicted_item_indices, pred):
-                    item_index_dtn_predictions[item_index] = predicted_dtn
+                    item_index_dtn_predictions[item_index] = predicted_dtn + 1  # plus one to convert between pred and dtn
                 item_predictions_dict[locking_name] = item_index_dtn_predictions
                 try:
                     assert len(np.unique(true_target_item_ids)) == 1
@@ -378,9 +443,11 @@ class RenaProcessing(RenaScript):
 
             try:
                 self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
+                return item_predictions_dict[selected_locking_name]
             except KeyError:
                 print(f"[{self.loop_count}] TargetIdentification: no epochs available for selected target-identification locking {selected_locking_name}, sending dummy results.")
-                self.send_dummy_prediction()
+                dummy_predictions = self.send_dummy_prediction()
+                return dummy_predictions
         except Exception as e:
             print(e)
             raise e
@@ -397,6 +464,7 @@ class RenaProcessing(RenaScript):
 
     def send_dummy_prediction(self):
         try:
+            item_predictions = np.random.randint(0, 3, size=num_item_perblock)
             send = np.zeros(3 + num_item_perblock)
             send[0] = self.current_block_id  # Unity will check the block ID matches
             send[2] = -1  # set predicted target item id
@@ -404,6 +472,8 @@ class RenaProcessing(RenaScript):
             self.prediction_outlet.push_sample(send)
         except Exception as e:
             raise e
+        return item_predictions
+
     def send_skip_prediction(self):
         try:
             send = np.zeros(3 + num_item_perblock)
@@ -427,22 +497,6 @@ class RenaProcessing(RenaScript):
 
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=None)
         return x_eeg, x_pupil, y, pca, ica, ar
-
-    def _add_block_data_to_locking(self, x, y, epochs, locking_name, epoch_events):
-        epochs_eeg, epochs_pupil = epochs
-        if locking_name not in self.locking_data.keys():
-            self.locking_data[locking_name] = [x, y, epochs_eeg, epochs_pupil, epoch_events]
-        else:  # append the data
-            self.locking_data[locking_name][0][0] = np.concatenate([self.locking_data[locking_name][0][0], x[0]], axis=0)  # append EEG data
-            self.locking_data[locking_name][0][1] = np.concatenate([self.locking_data[locking_name][0][1], x[1]], axis=0)  # append pupil data
-            self.locking_data[locking_name][2] = mne.concatenate_epochs([self.locking_data[locking_name][2], epochs_eeg])  # append EEG epochs
-            self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
-
-            self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
-            self.locking_data[locking_name][4] += epoch_events  # append labels
-
-    def report_locking_class_nums(self, locking_name):
-        print(f'[{self.loop_count}] Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
 
     def get_block_update(self):
         # there cannot be multiple condition updates in one block update, which runs once a second
