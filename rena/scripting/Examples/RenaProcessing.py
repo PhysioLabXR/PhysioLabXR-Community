@@ -292,7 +292,7 @@ class RenaProcessing(RenaScript):
                 x_eeg, x_pupil, y, _, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, ar=self.ar, return_rejections=True, n_folds=ar_cv_folds)  # apply auto reject
                 print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y==1)} targets and {np.sum(y==0)} distractors')
 
-                if len(y) == 0 or np.all(y == 1):  # if no data or no target fixations
+                if len(y) == 0 or np.all(y == 0):  # if no data or no target fixations
                     print(f'[{self.loop_count}] target_identification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = -1
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = -1
