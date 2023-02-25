@@ -203,7 +203,7 @@ class RenaProcessing(RenaScript):
 
     def receive_prediction_feedback(self):
         try:
-            if len(self.inputs['RenaPredictionFeedback'][1]) - self.prediction_feedback_head > 0: # there's new event marker
+            if 'Unity.ReNa.PredictionFeedback' in self.inputs.keys() and len(self.inputs['Unity.ReNa.PredictionFeedback'][1]) - self.prediction_feedback_head > 0: # there's new event marker
                 timestamp = self.inputs['Unity.ReNa.PredictionFeedback'][1][self.prediction_feedback_head]
                 feedbacks = self.inputs['Unity.ReNa.PredictionFeedback'][0][:, self.prediction_feedback_head]
                 self.prediction_feedback_head += 1
@@ -217,7 +217,7 @@ class RenaProcessing(RenaScript):
                             try:
                                 assert y == 1  # y pred must be 1: target
                             except AssertionError as e:
-                                print("predicted dtn not much y in the block data pending feedback. " + e)
+                                print("predicted dtn not much y in the block data pending feedback. " + str(e))
                             y[i] = 0
                             self.this_block_data_pending_feedback[locking_name][1] = y
 
@@ -227,8 +227,8 @@ class RenaProcessing(RenaScript):
                 return 'idle'
             else:
                 return 'waitingFeedback'
-        except Exception:
-            print(f"[{self.loop_count}] ReceivePredictionFeedback: found exception." + e)
+        except Exception as e:
+            print(f"[{self.loop_count}] ReceivePredictionFeedback: found exception." + str(e))
 
     def classifier_prep_phase_end_of_block(self):
         if self.current_condition == conditions['VS']:
@@ -257,16 +257,15 @@ class RenaProcessing(RenaScript):
                 if self.vs_block_counter == self.num_vs_before_training:  # time to train the model and identify target for this block
                     print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: counter is equal to num blocks before training. Start training with feedback from user and resetting training block counter.")
                     self.vs_block_counter = 0
-                    this_block_data = self.add_block_data(append_data=False)
-                    self.predicted_block_dtn = self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    self.this_block_data_pending_feedback = self.add_block_data(append_data=False)
+                    self.predicted_block_dtn = self.target_identification(self.this_block_data_pending_feedback)  # identify target for this block, this will send the identification result
                     self.identifier_block_is_training_now = True
                     # Don't train until have feedback
                 else:  # we are not training yet
-                    this_block_data = self.add_block_data(append_data=False)  # epoching the recorded block data
-                    self.predicted_block_dtn = self.target_identification(this_block_data)  # identify target for this block, this will send the identification result
+                    self.this_block_data_pending_feedback = self.add_block_data(append_data=False)  # epoching the recorded block data
+                    self.predicted_block_dtn = self.target_identification(self.this_block_data_pending_feedback)  # identify target for this block, this will send the identification result
                     self.identifier_block_is_training_now = False
 
-                self.this_block_data_pending_feedback = this_block_data
             except Exception as e:
                 print(f"[{self.loop_count}]IdentifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
                 print(e)
@@ -280,7 +279,8 @@ class RenaProcessing(RenaScript):
 
     def add_block_data(self, append_data=True):
         if is_simulating_predictions:
-            return
+            return dict([(locking_name, [None,  np.random.randint(0, 3, size=num_item_perblock), None, None, None]) for locking_name, _ in locking_filters.items()])
+
         print(f'[{self.loop_count}] AddingBlockData: Adding block data with id {self.current_block_id} of condition {self.current_condition}')
         rdf = RenaDataFrame()
         data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
@@ -329,8 +329,8 @@ class RenaProcessing(RenaScript):
 
     def all_block_data_all_lockings(self, this_block_data: dict):
         for locking_name, event_filters in locking_filters.items():
+            y = this_block_data[1]
             if locking_name in this_block_data.keys():
-                y = this_block_data[1]
                 print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                 self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
             else:
@@ -361,27 +361,28 @@ class RenaProcessing(RenaScript):
 
     def train_identification_model(self):
         if is_simulating_predictions:
+            print(f'[{self.loop_count}] TrainIdentificationModel: in simulation, skipping output.')
             return
         try:
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
-                print(f'[{self.loop_count}] Training models for {locking_name}')
+                print(f'[{self.loop_count}] TrainIdentificationModel: Training models for {locking_name}')
                 x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
                 model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
                 best_train_acc = np.max(training_histories['train accs'])
-                print(f'[{self.loop_count}] {locking_name} gives classification accuracy: {best_train_acc}')
+                print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} gives classification accuracy: {best_train_acc}')
                 self.models[locking_name] = model
-            print(f'[{self.loop_count}] training complete, took {time.time() - training_start_time} seconds')
+            print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
         except Exception as e:
             print(e)
 
     def target_identification(self, this_block_data):
         try:
             if is_simulating_predictions:
-                self.send_dummy_prediction()
-                return
+                dummy_predictions = self.send_dummy_prediction()
+                return dummy_predictions
             prediction_start_time = time.time()
             predicted_target_ids_dict = {}
             item_predictions_dict = {}
@@ -550,3 +551,4 @@ class RenaProcessing(RenaScript):
     def get_item_event(self):
         for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
             block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
+
