@@ -366,7 +366,7 @@ class RenaProcessing(RenaScript):
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
                 print(f'[{self.loop_count}] Training models for {locking_name}')
-                x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name] = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+                x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
                 model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
@@ -394,7 +394,7 @@ class RenaProcessing(RenaScript):
                 except AssertionError:
                     print(f'[{self.loop_count}] TargetIdentification: locking {locking_name} does not have preprocess transforms. Skippinp. Likely this data was not present in entire training data, which should not happen normally.')
                     continue
-                x_eeg_reduced, x_pupil, y, _, _, _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+                x_eeg_reduced, x_pupil, y, _, _, _, rejections = self.preprocess_block_data(epochs_eeg, epochs_pupil)
 
                 if x_eeg_reduced is None or np.all(y == 0):  # if no data or no target fixations
                     print(f'[{self.loop_count}] TargetIdentification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
@@ -487,7 +487,7 @@ class RenaProcessing(RenaScript):
     def preprocess_block_data(self, epochs_eeg, epochs_pupil, pca=None, ica=None, ar=None):
 
         try:
-            x_eeg, x_pupil, y, ar = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds, ar=ar)  # apply auto reject
+            x_eeg, x_pupil, y, ar, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds, ar=ar, return_rejections=True)  # apply auto reject
         except ValueError as e:
             print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
             raise e
@@ -496,7 +496,7 @@ class RenaProcessing(RenaScript):
             return [None] * 6
 
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=None)
-        return x_eeg, x_pupil, y, pca, ica, ar
+        return x_eeg, x_pupil, y, pca, ica, ar, rejections
 
     def get_block_update(self):
         # there cannot be multiple condition updates in one block update, which runs once a second
