@@ -706,31 +706,37 @@ def replace_special(target_str: str, replacement_dict):
 #         pass
 
 def validate_output(data, expected_size):
-    if type(data) == np.ndarray:
-        try:
-            assert len(data.shape) == 2 or len(data.shape) == 1
-        except AssertionError:
-            raise BadOutputError('Output data must have one or two dimensions when given as a ndarray')
-        if len(data.shape) == 2:
-            try:
-                assert data.shape[0] == 1 or data.shape[1] == 1
-            except AssertionError:
-                raise BadOutputError('If two-dimensional, one of the output\'s data dimension must be 1')
-            data = np.squeeze(data)  # remove the one dimension
-        try:
-            assert len(data) == expected_size
-        except AssertionError:
-            raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
-    elif type(data) == list:
+    is_chunk = False
+
+    if type(data) == list:
         try:
             assert is_homogeneous_type(data)
         except AssertionError:
             raise BadOutputError('Output data must be a homogeneous (all elements are of the same type) when given as a list')
         try:
-            output = np.array(data)
+            data = np.array(data)
         except np.VisibleDeprecationWarning:
             raise BadOutputError('Output data must not be a ragged list (containing sublist of different length) when given as a list')
 
+    try:
+        assert len(data.shape) == 2 or len(data.shape) == 1
+    except AssertionError:
+        raise BadOutputError('Output data must have one or two dimensions when given as a ndarray')
+    if len(data.shape) == 2:
+        try:
+            assert data.shape[0] == expected_size or data.shape[1] == expected_size
+        except AssertionError:
+            raise BadOutputError(f'Out put data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
+        if data.shape[0] == expected_size:
+            data = np.transpose(data)  #  the first dimension is the number of samples and the second is channels
+        is_chunk = True
+    else:  # if one-dimensional
+        try:
+            assert len(data) == expected_size
+        except AssertionError:
+            raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
+
+    return data, is_chunk
 
 def is_homogeneous_type(seq):
     iseq = iter(seq)
