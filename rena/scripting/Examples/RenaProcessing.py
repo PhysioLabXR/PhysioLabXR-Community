@@ -45,6 +45,8 @@ num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each met
 
 ar_cv_folds = 3
 
+target_threshold_quantile = 0.75
+
 class ItemEvent():
     """
     event types can be
@@ -72,6 +74,7 @@ class RenaProcessing(RenaScript):
         """
         super().__init__(*args, **kwargs)
 
+        self.last_block_end_timestamp = None
         self.end_of_block_wait_start = None
         mne.use_log_level(False)
         self.current_metablock = None
@@ -105,6 +108,7 @@ class RenaProcessing(RenaScript):
         self.ARs = {}
         self.predicted_targets_for_metablock = []
         self.models = {}
+        self.models_accs = {}
 
         use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
@@ -112,10 +116,12 @@ class RenaProcessing(RenaScript):
 
         # outlet for sending predictions
         # RenaPrediction channels: [blockID, isSkipping, predictedTargetItemID] + num_item_perblock for each block item
-        info = StreamInfo('RenaPrediction', 'Prediction', num_item_perblock + 3, pylsl.IRREGULAR_RATE, 'float32', 'RenaFeedbackID1234')
+        info = StreamInfo('RenaPrediction', 'Prediction', num_item_perblock * 2 + 3, pylsl.IRREGULAR_RATE, 'float32', 'RenaFeedbackID1234')
         self.prediction_outlet = StreamOutlet(info)
 
-        self.running_mode_of_predicted_target = []
+        # self.running_mode_of_predicted_target = []
+        self.predicted_target_index_id_dict = None  # initialized at every new metablock in the main loop
+
         self.predicted_block_dtn = None
         self.this_block_data_pending_feedback = None
         self.identifier_block_is_training_now = False
@@ -155,7 +161,9 @@ class RenaProcessing(RenaScript):
                     if new_meta_block:
                         print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
                         self.vs_block_counter = 0  # reset the counter for metablock
-                        self.running_mode_of_predicted_target = []  # reset running mode of predicted target
+                        self.predicted_target_index_id_dict = defaultdict(float)
+                        # self.running_mode_of_predicted_target = []  # reset running mode of predicted target
+
                         if new_meta_block == 5:
                             self.num_vs_before_training = num_vs_to_train_in_classifier_prep
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
@@ -376,6 +384,7 @@ class RenaProcessing(RenaScript):
                 best_train_acc = np.max(training_histories['train accs'])
                 print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} gives classification accuracy: {best_train_acc}')
                 self.models[locking_name] = model
+                self.models_accs[locking_name] = best_train_acc
             print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
         except Exception as e:
             print(e)
@@ -386,7 +395,7 @@ class RenaProcessing(RenaScript):
                 dummy_predictions = self.send_dummy_prediction()
                 return dummy_predictions
             prediction_start_time = time.time()
-            predicted_target_ids_dict = {}
+            predicted_target_ids_lockings_dict = defaultdict(lambda: defaultdict(int))
             item_predictions_dict = {}
             for locking_name, ((_, _), y, epochs_eeg, epochs_pupil, block_events) in this_block_data.items():
                 # (x_eeg, x_pupil), y, rejects = reject_combined(epochs_pupil, epochs_eeg, self.event_ids,  n_jobs=1)  # NOT auto reject
@@ -411,24 +420,30 @@ class RenaProcessing(RenaScript):
 
                 self.models[locking_name].eval()
                 with torch.no_grad():
-                    pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
-                    pred = torch.argmax(pred, dim=1).detach().cpu().numpy()
+                    y_pred = self.models[locking_name]([x_eeg_tensor, x_pupil_tensor])
+                    confidences = y_pred.max(dim=1).detach().cpu().numpy()
+                    prediction = torch.argmax(y_pred, dim=1).detach().cpu().numpy()
 
-                acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=pred)
+                acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=prediction)
                 target_sensitivity = tpr[1]
 
                 target_specificity = tnr[1]
 
                 cleaned_block_events = np.array(block_events)[rejections]
-                predicted_target_item_ids = [x.item_id for x in cleaned_block_events[pred==1]]
+                target_index_id_predicted_prob = [(x.item_idnex, x.item_id, prob) for x, prob in zip(cleaned_block_events[prediction == 1], confidences)]
                 predicted_item_indices = [x.item_index for x in cleaned_block_events]
 
-                true_target_item_ids = [x.item_id for x in cleaned_block_events[y==1]]
-                predicted_target_item_id = None if len(predicted_target_item_ids)==0 else stats.mode(predicted_target_item_ids).mode[0]
-                predicted_target_ids_dict[locking_name] = predicted_target_item_id
+                true_target_item_ids = [x.item_id for x in cleaned_block_events[y == 1]]
+
+                # if len(predicted_target_item_ids) == 0 == None:
+                #     predicted_target_ids_lockings_dict[locking_name] = None
+                # else:
+                for target_item_index, target_item_id, confidence in zip(predicted_item_indices, target_index_id_predicted_prob):
+                    predicted_target_ids_lockings_dict[locking_name][target_item_id] += confidence
+                    self.predicted_target_index_id_dict[target_item_index] += confidence * self.models_accs[locking_name]  # weight by the accuracy of the model
 
                 item_index_dtn_predictions = np.zeros(num_item_perblock)
-                for item_index, predicted_dtn in zip(predicted_item_indices, pred):
+                for item_index, predicted_dtn in zip(predicted_item_indices, prediction):
                     item_index_dtn_predictions[item_index] = predicted_dtn + 1  # plus one to convert between pred and dtn
                 item_predictions_dict[locking_name] = item_index_dtn_predictions
                 try:
@@ -445,9 +460,10 @@ class RenaProcessing(RenaScript):
             # TODO return the predicted class for each item, and the inferred target class
 
             try:
-                self.running_mode_of_predicted_target.append(predicted_target_ids_dict[selected_locking_name])
-                voted_target = stats.mode(self.running_mode_of_predicted_target).mode[0]
-                self.send_prediction(voted_target, item_predictions_dict[selected_locking_name])  # each value item_predictions_dict contains <num_item_perblock> items, they are the dtn prediction for each item in a block
+                # self.running_mode_of_predicted_target.append(predicted_target_ids_lockings_dict[selected_locking_name])
+                # voted_target = stats.mode(self.running_mode_of_predicted_target).mode[0]
+                block_target_pred_confidences = self.process_block_target_confidence(self.predicted_target_index_id_dict)
+                self.send_prediction(-1, item_predictions_dict[selected_locking_name], block_target_pred_confidences)  # each value item_predictions_dict contains <num_item_perblock> items, they are the dtn prediction for each item in a block
                 return item_predictions_dict[selected_locking_name]
             except KeyError:
                 print(f"[{self.loop_count}] TargetIdentification: no epochs available for selected target-identification locking {selected_locking_name}, sending dummy results.")
@@ -457,27 +473,58 @@ class RenaProcessing(RenaScript):
             print(e)
             raise e
 
-    def send_prediction(self, predicted_target_id, item_index_dtn_predictions):
+    def process_block_target_confidence(self, predicted_target_index_id_dict: dict):
+        try:
+            index_target_confidence = - np.ones(num_item_perblock)
+            all_probs = np.array(predicted_target_index_id_dict.values())
+            all_ids = np.array([id for id in predicted_target_index_id_dict.keys()])
+            prob_threshold = np.quantile(all_probs, target_threshold_quantile)
+
+            thresholded =[(id, prob) for id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
+            thresholded.sort(key=lambda x: x[1], reverse=True)
+
+            print(f"[{self.loop_count}] ProcessBlockTargetConfidence: process target quantiles: {target_threshold_quantile} give a threshold confidence of {prob_threshold} and {np.sum(all_probs > prob_threshold)} targets")
+            print(f'with prob {thresholded}')
+
+            try:
+                assert len(thresholded) < num_item_perblock / 2
+            except AssertionError:
+                print(f'[{self.loop_count}] ProcessBlockTargetConfidence: more than half of <num item perblock> ({num_item_perblock/2}) are predicted as target. Trimming to top {num_item_perblock/2} ones.')
+                thresholded = thresholded[:num_item_perblock/2]
+
+            thresholded_probs =[prob for id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
+            thresholded_normalized_prof =[(id, (prob - np.min(thresholded_probs)) / (np.max(thresholded_probs) - np.min(thresholded_probs))) for id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
+
+            for i, (id, confidence) in enumerate(thresholded_normalized_prof):
+                index_target_confidence[i] = id
+                index_target_confidence[i + int(num_item_perblock / 2)] = condition_name_dict
+            return index_target_confidence
+        except Exception as e:
+            print(f"[{self.loop_count}] ProcessBlockTargetConfidence: find exception: " + str(e))
+
+
+    def send_prediction(self, predicted_target_id, block_item_prediciton, item_index_pred_target_confidence):
         try:
             send = np.zeros(3 + num_item_perblock)
             send[0] = self.current_block_id  # Unity will check the block ID matches
             send[2] = predicted_target_id  # set predicted target item id
-            send[3:] = item_index_dtn_predictions
+            send[3:] = np.concatenate((block_item_prediciton, item_index_pred_target_confidence))
             self.prediction_outlet.push_sample(send)
         except Exception as e:
             raise e
 
     def send_dummy_prediction(self):
-        try:
-            item_predictions = np.random.randint(0, 3, size=num_item_perblock)
-            send = np.zeros(3 + num_item_perblock)
-            send[0] = self.current_block_id  # Unity will check the block ID matches
-            send[2] = -1  # set predicted target item id
-            send[3:] = np.random.randint(1, 3, size=num_item_perblock)
-            self.prediction_outlet.push_sample(send)
-        except Exception as e:
-            raise e
-        return item_predictions
+        pass
+        # try:asdfwe need to change the dummy dtn to dummy confidence scores
+        #     item_predictions = np.random.randint(0, 3, size=num_item_perblock)
+        #     send = np.zeros(3 + num_item_perblock)
+        #     send[0] = self.current_block_id  # Unity will check the block ID matches
+        #     send[2] = -1  # set predicted target item id
+        #     send[3:] = np.random.randint(1, 3, size=num_item_perblock)
+        #     self.prediction_outlet.push_sample(send)
+        # except Exception as e:
+        #     raise e
+        # return item_predictions
 
     def send_skip_prediction(self):
         try:
@@ -540,7 +587,7 @@ class RenaProcessing(RenaScript):
             self.meta_block_counter += 1
             print("[{0}] get_block_update: Entering new META block {1}, metablock count is {2}".format(self.loop_count, metablock_name_dict[new_meta_block], self.meta_block_counter))
             self.current_metablock = new_meta_block
-            # self.inputs.clear_buffer()  # should clear buffer at every metablock so we don't need to deal with practice round data
+            # self.inputs.clear_buffer()  # should clear buffer at every metablock, so we don't need to deal with practice round data
         if new_block_id:
             self.current_block_id = new_block_id
             # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
@@ -552,7 +599,7 @@ class RenaProcessing(RenaScript):
             print("[{0}] get_block_update: Block {2} is setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition], self.current_block_id))
         return new_block_id, new_meta_block, new_condition, is_block_end, this_event_timestamp  # tells if there's new block and meta block
 
-    def get_item_event(self):
-        for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
-            block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
+    # def get_item_event(self):
+    #     for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
+    #         block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
 
