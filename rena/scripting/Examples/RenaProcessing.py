@@ -115,6 +115,7 @@ class RenaProcessing(RenaScript):
         info = StreamInfo('RenaPrediction', 'Prediction', num_item_perblock + 3, pylsl.IRREGULAR_RATE, 'float32', 'RenaFeedbackID1234')
         self.prediction_outlet = StreamOutlet(info)
 
+        self.running_mode_of_predicted_target = []
         self.predicted_block_dtn = None
         self.this_block_data_pending_feedback = None
         self.identifier_block_is_training_now = False
@@ -154,6 +155,7 @@ class RenaProcessing(RenaScript):
                     if new_meta_block:
                         print(f"[{self.loop_count}] in idle, find new meta block, metablock counter = {self.meta_block_counter}")
                         self.vs_block_counter = 0  # reset the counter for metablock
+                        self.running_mode_of_predicted_target = []  # reset running mode of predicted target
                         if new_meta_block == 5:
                             self.num_vs_before_training = num_vs_to_train_in_classifier_prep
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
@@ -443,7 +445,9 @@ class RenaProcessing(RenaScript):
             # TODO return the predicted class for each item, and the inferred target class
 
             try:
-                self.send_prediction(predicted_target_ids_dict[selected_locking_name], item_predictions_dict[selected_locking_name])
+                self.running_mode_of_predicted_target.append(predicted_target_ids_dict[selected_locking_name])
+                voted_target = stats.mode(self.running_mode_of_predicted_target).mode[0]
+                self.send_prediction(voted_target, item_predictions_dict[selected_locking_name])  # each value item_predictions_dict contains <num_item_perblock> items, they are the dtn prediction for each item in a block
                 return item_predictions_dict[selected_locking_name]
             except KeyError:
                 print(f"[{self.loop_count}] TargetIdentification: no epochs available for selected target-identification locking {selected_locking_name}, sending dummy results.")
