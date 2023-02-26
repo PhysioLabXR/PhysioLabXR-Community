@@ -502,7 +502,6 @@ class RenaProcessing(RenaScript):
         except Exception as e:
             print(f"[{self.loop_count}] ProcessBlockTargetConfidence: find exception: " + str(e))
 
-
     def send_prediction(self, predicted_target_id, block_item_prediciton, item_index_pred_target_confidence):
         try:
             send = np.zeros(3 + num_item_perblock)
@@ -514,17 +513,16 @@ class RenaProcessing(RenaScript):
             raise e
 
     def send_dummy_prediction(self):
-        pass
-        # try:asdfwe need to change the dummy dtn to dummy confidence scores
-        #     item_predictions = np.random.randint(0, 3, size=num_item_perblock)
-        #     send = np.zeros(3 + num_item_perblock)
-        #     send[0] = self.current_block_id  # Unity will check the block ID matches
-        #     send[2] = -1  # set predicted target item id
-        #     send[3:] = np.random.randint(1, 3, size=num_item_perblock)
-        #     self.prediction_outlet.push_sample(send)
-        # except Exception as e:
-        #     raise e
-        # return item_predictions
+        try:
+            item_predictions = np.random.randint(0, 3, size=num_item_perblock)
+            send = np.zeros(3 + num_item_perblock)
+            send[0] = self.current_block_id  # Unity will check the block ID matches
+            send[2] = -1  # set predicted target item id
+            send[3:] = np.concatenate(np.random.randint(1, 3, size=num_item_perblock), -np.ones(num_item_perblock))
+            self.prediction_outlet.push_sample(send)
+        except Exception as e:
+            raise e
+        return item_predictions
 
     def send_skip_prediction(self):
         try:
