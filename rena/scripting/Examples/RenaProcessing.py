@@ -36,7 +36,7 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 
 is_debugging = True
-is_simulating_predictions = True
+is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 selected_locking_name = 'VS-FLGI'
@@ -169,7 +169,7 @@ class RenaProcessing(RenaScript):
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
                         elif new_meta_block == 6:
                             self.num_vs_before_training = num_vs_to_train_in_identifier_prep
-                            print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
+                            print(f'[{self.loop_count}] entering identifier and performance evaluation, num visual search blocks for training will be {self.num_vs_before_training}')
 
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
                         print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
@@ -288,54 +288,57 @@ class RenaProcessing(RenaScript):
         print('Cleanup function is called')
 
     def add_block_data(self, append_data=True):
-        if is_simulating_predictions:
-            return dict([(locking_name, [None,  np.random.randint(0, 3, size=num_item_perblock), None, None, None]) for locking_name, _ in locking_filters.items()])
+        try:
+            if is_simulating_predictions:
+                return dict([(locking_name, [None,  np.random.randint(0, 3, size=num_item_perblock), None, None, None]) for locking_name, _ in locking_filters.items()])
 
-        print(f'[{self.loop_count}] AddingBlockData: Adding block data with id {self.current_block_id} of condition {self.current_condition}')
-        rdf = RenaDataFrame()
-        data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
-        events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
-        events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events)
-        events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events, headtracking_data_timestamps=data['Unity.HeadTracker'])
-        if 'FixationDetection' in data.keys():
-            events += gaze_event_detection_PatchSim(data['FixationDetection'][0], data['FixationDetection'][1], events)
-        else:
-            print(f"[{self.loop_count}] AddingBlockData: WARNING: not FixationDetection stream when trying to add block data")
-        rdf.add_participant_session(data, events, 0, 0, None, None, None)
-        rdf.preprocess(is_running_ica=False, n_jobs=1)
+            print(f'[{self.loop_count}] AddingBlockData: Adding block data with id {self.current_block_id} of condition {self.current_condition}')
+            rdf = RenaDataFrame()
+            data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
+            events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
+            events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events)
+            events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events, headtracking_data_timestamps=data['Unity.HeadTracker'])
+            if 'FixationDetection' in data.keys():
+                events += gaze_event_detection_PatchSim(data['FixationDetection'][0], data['FixationDetection'][1], events)
+            else:
+                print(f"[{self.loop_count}] AddingBlockData: WARNING: not FixationDetection stream when trying to add block data")
+            rdf.add_participant_session(data, events, 0, 0, None, None, None)
+            rdf.preprocess(is_running_ica=False, n_jobs=1)
 
-        this_locking_data = {}
-        for locking_name, event_filters in locking_filters.items():
-            if 'VS' in locking_name:  # TODO only care about VS conditions for now
-                print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
-                # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
-                x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
-                if x is None:
-                    print(f"[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}")
-                    continue
-                if len(event_ids) == 2:
-                    if self.event_ids == None:
-                        self.event_ids = event_ids
-                else:
-                    print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
-                    continue
-                epoch_events = get_events(event_filters, events, order='time')
-                try:
-                    assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
-                except:
-                    print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
-                    raise ValueError
-                self.report_locking_class_nums(locking_name)
-                if append_data:
-                    self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)
-                    print(f"[{self.loop_count}] AddingBlockData: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
-                else:
-                    print(f"[{self.loop_count}] AddingBlockData: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+            this_locking_data = {}
+            for locking_name, event_filters in locking_filters.items():
+                if 'VS' in locking_name:  # TODO only care about VS conditions for now
+                    print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
+                    # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
+                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
+                    if x is None:
+                        print(f"[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}")
+                        continue
+                    if len(event_ids) == 2:
+                        if self.event_ids == None:
+                            self.event_ids = event_ids
+                    else:
+                        print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
+                        continue
+                    epoch_events = get_events(event_filters, events, order='time')
+                    try:
+                        assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
+                    except:
+                        print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
+                        raise ValueError
+                    if append_data:
+                        self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)
+                        print(f"[{self.loop_count}] AddingBlockData: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                    else:
+                        print(f"[{self.loop_count}] AddingBlockData: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                    this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
+                    print(f'[{self.loop_count}] AddingBlockData: {self.locking_data} Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
 
-                this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
-        print(f"[{self.loop_count}] AddingBlockData: Process completed")
-        self.clear_buffer()
-        return this_locking_data
+            print(f"[{self.loop_count}] AddingBlockData: Process completed")
+            self.clear_buffer()
+            return this_locking_data
+        except Exception as e:
+            print(f"[{self.loop_count}]AddBlockData: exception when adding block data: " + str(e))
 
     def all_block_data_all_lockings(self, this_block_data: dict):
         for locking_name, event_filters in locking_filters.items():
@@ -357,9 +360,6 @@ class RenaProcessing(RenaScript):
 
             self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
             self.locking_data[locking_name][4] += epoch_events  # append labels
-
-    def report_locking_class_nums(self, locking_name):
-        print(f'[{self.loop_count}] AddingBlockData: Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
 
     def clear_buffer(self):
         print(f"[{self.loop_count}] Buffer cleared")
@@ -454,7 +454,7 @@ class RenaProcessing(RenaScript):
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = acc
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = target_sensitivity
                 self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = target_specificity
-                print(f"[{self.loop_count}] TargetIdentification: Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, predicts the target is {predicted_target_item_id}, true target is {true_target_item_ids[0]}")
+                print(f"[{self.loop_count}] TargetIdentification: Locking {locking_name} {np.sum(y==1)} accuracy = {acc}, target sensitivity (TPR) = {target_sensitivity}, target specificity (TNR) = {target_specificity}, true target is {true_target_item_ids[0]}")
             print(f'[{self.loop_count}] TargetIdentification: prediction  complete, took {time.time() - prediction_start_time} seconds')
             pickle.dump(self.block_reports, open(f"{get_date_string()}_block_report", 'wb'))
             # TODO return the predicted class for each item, and the inferred target class
@@ -528,7 +528,7 @@ class RenaProcessing(RenaScript):
 
     def send_skip_prediction(self):
         try:
-            send = np.zeros(3 + num_item_perblock)
+            send = np.zeros(3 + 2 * num_item_perblock)
             send[0] = self.current_block_id  # Unity will check the block ID matches
             send[1] = 1  # set the skip (second value to 1)
             self.prediction_outlet.push_sample(send)
@@ -551,54 +551,56 @@ class RenaProcessing(RenaScript):
         return x_eeg, x_pupil, y, pca, ica, ar, rejections
 
     def get_block_update(self):
-        # there cannot be multiple condition updates in one block update, which runs once a second
-        is_block_end = False
-        new_block_id = None
-        new_meta_block = None
-        new_condition = None
-        this_event_timestamp = None
-        if len(self.inputs['Unity.ReNa.EventMarkers'][1]) - self.event_marker_head > 0: # there's new event marker
-            this_event_timestamp = self.inputs['Unity.ReNa.EventMarkers'][1][self.event_marker_head]
-            block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), self.event_marker_head]
-            block_marker = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockMarker"), self.event_marker_head]
-            self.event_marker_head += 1
+        try:
+            # there cannot be multiple condition updates in one block update, which runs once a second
+            is_block_end = False
+            new_block_id = None
+            new_meta_block = None
+            new_condition = None
+            this_event_timestamp = None
+            if len(self.inputs['Unity.ReNa.EventMarkers'][1]) - self.event_marker_head > 0: # there's new event marker
+                this_event_timestamp = self.inputs['Unity.ReNa.EventMarkers'][1][self.event_marker_head]
+                block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), self.event_marker_head]
+                block_marker = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockMarker"), self.event_marker_head]
+                self.event_marker_head += 1
 
-            if block_id_start_end > 0:  # if there's a new block id
-                new_block_id = None if block_id_start_end == 0 or block_id_start_end < 0 else block_id_start_end  # block id less than 0 is also when the block ends
-                new_condition = block_marker if block_marker in condition_name_dict.keys() else None
-            elif block_id_start_end < 0:  # if this is an end of a block
-                try:
-                    assert block_id_start_end == -self.current_block_id
-                except AssertionError:
-                    raise Exception(f"[{self.loop()}] get_block_update: Did not receive block end signal. This block end {block_id_start_end}. Current block id {self.current_block_id}")
-                try:
-                    assert self.current_block_id is not None
-                except AssertionError:
-                    raise Exception(f"[{self.loop()}] get_block_update: self.current_block_id is None when block_end signal ({block_id_start_end}) comes, that means a block start is never received")
-                print("[{0}] get_block_update: Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
-                # self.current_block_id = None  # IMPORTANT, current_block_id will retain the its value until new block id is received
-                self.last_block_end_timestamp = this_event_timestamp
-                is_block_end = True
-            else:  # the only other possibility is that this is a meta block marker
-                new_meta_block = block_marker if block_marker in metablock_name_dict.keys() else None
+                if block_id_start_end > 0:  # if there's a new block id
+                    new_block_id = None if block_id_start_end == 0 or block_id_start_end < 0 else block_id_start_end  # block id less than 0 is also when the block ends
+                    new_condition = block_marker if block_marker in condition_name_dict.keys() else None
+                elif block_id_start_end < 0:  # if this is an end of a block
+                    try:
+                        assert block_id_start_end == -self.current_block_id
+                    except AssertionError:
+                        raise Exception(f"[{self.loop()}] get_block_update: Did not receive block end signal. This block end {block_id_start_end}. Current block id {self.current_block_id}")
+                    try:
+                        assert self.current_block_id is not None
+                    except AssertionError:
+                        raise Exception(f"[{self.loop()}] get_block_update: self.current_block_id is None when block_end signal ({block_id_start_end}) comes, that means a block start is never received")
+                    print("[{0}] get_block_update: Block with ID {1} ended. ".format(self.loop_count, self.current_block_id))
+                    # self.current_block_id = None  # IMPORTANT, current_block_id will retain the its value until new block id is received
+                    self.last_block_end_timestamp = this_event_timestamp
+                    is_block_end = True
+                else:  # the only other possibility is that this is a meta block marker
+                    new_meta_block = block_marker if block_marker in metablock_name_dict.keys() else None
 
-        if new_meta_block:
-            # self.current_block_id = new_block_id
-            self.meta_block_counter += 1
-            print("[{0}] get_block_update: Entering new META block {1}, metablock count is {2}".format(self.loop_count, metablock_name_dict[new_meta_block], self.meta_block_counter))
-            self.current_metablock = new_meta_block
-            # self.inputs.clear_buffer()  # should clear buffer at every metablock, so we don't need to deal with practice round data
-        if new_block_id:
-            self.current_block_id = new_block_id
-            # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
-            # ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
-            print("[{0}] get_block_update: Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + (". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""))
-        if new_condition:
-            self.current_block_id = new_block_id
-            self.current_condition = new_condition
-            print("[{0}] get_block_update: Block {2} is setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition], self.current_block_id))
-        return new_block_id, new_meta_block, new_condition, is_block_end, this_event_timestamp  # tells if there's new block and meta block
-
+            if new_meta_block:
+                # self.current_block_id = new_block_id
+                self.meta_block_counter += 1
+                print("[{0}] get_block_update: Entering new META block {1}, metablock count is {2}".format(self.loop_count, metablock_name_dict[new_meta_block], self.meta_block_counter))
+                self.current_metablock = new_meta_block
+                # self.inputs.clear_buffer()  # should clear buffer at every metablock, so we don't need to deal with practice round data
+            if new_block_id:
+                self.current_block_id = new_block_id
+                # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
+                # ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
+                print("[{0}] get_block_update: Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + (". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""))
+            if new_condition:
+                self.current_block_id = new_block_id
+                self.current_condition = new_condition
+                print("[{0}] get_block_update: Block {2} is setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition], self.current_block_id))
+            return new_block_id, new_meta_block, new_condition, is_block_end, this_event_timestamp  # tells if there's new block and meta block
+        except Exception as e:
+            raise e
     # def get_item_event(self):
     #     for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
     #         block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
