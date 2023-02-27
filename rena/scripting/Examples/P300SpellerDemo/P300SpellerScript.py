@@ -112,7 +112,7 @@ class P300Speller(RenaScript):
         self.testing_raw = []
 
         # outlet
-        self.lsl_info = StreamInfo("P300SpellerScript", "P300SpellerScript", 1, 10, 'float32', 'someuuid1234')
+        self.lsl_info = StreamInfo("P300SpellerRenaScript", "P300SpellerRenaScript", 1, 10, 'float32', 'someuuid1234')
         self.p300_speller_script_lsl = StreamOutlet(self.lsl_info)
 
         print("P300Speller Decoding Script Setup Complete!")
@@ -129,6 +129,9 @@ class P300Speller(RenaScript):
 
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
+
+        print(self.inputs.get_data(P300EventStreamName)[
+            p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']])
 
         if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
             p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
@@ -235,6 +238,11 @@ class P300Speller(RenaScript):
         y_pred = self.model.predict(x_test)
         confusion_matrix(y_test, y_pred)
 
+        # push the result
+
+    def callback_to_lsl(self):
+        pass
+
 
     def testing_callback(self):
         raw = self.generate_raw_data()
@@ -318,42 +326,6 @@ class P300Speller(RenaScript):
             flashing_markers_index]
         flashing_ts = ts[flashing_markers_index]
         return flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts
-
-        # events, event_ts, row_col_info = separate_p300_speller_event_and_info_markers(
-        #     markers=self.data_buffer[P300EventStreamName][0],
-        #     ts=self.data_buffer[P300EventStreamName][1])
-        #
-        # self.raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
-        # flash_stim_data = generate_mne_stim_channel(data_ts=self.data_buffer[OpenBCIStreamName][1],
-        #                                             event_ts=event_ts,
-        #                                             events=events)
-        # add_stim_channel_to_raw_array(raw_array=self.raw, stim_data=flash_stim_data,
-        #                               stim_channel_name="TargetNonTargetEventMarker")
-        #
-        # flashing_events = mne.find_events(self.raw, stim_channel='TargetNonTargetEventMarker')
-        # epochs = mne.Epochs(self.raw, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id=event_id,
-        #                     preload=True)
-        # # save
-        # visualize_eeg_epochs(epochs, event_id, event_color)
-        # return epochs, row_col_info
-
-    # def get_all_data(self):
-    #     X = None
-    #     Y = None
-    #     for data_dict in self.data_dict_buffer:
-    #         x = data_dict['epochs'].get_data()
-    #         y = data_dict['epochs'].events[:, 2]
-    #         if X is None:
-    #             X = x
-    #             Y = y
-    #         else:
-    #             X = np.concatenate((X, x), axis=0)
-    #             Y = np.concatenate((Y, y), axis=0)
-    #
-    #     return X, Y
-
-    # def train_model(self, X, y, model):
-    #     train_logistic_regression(X=X, y=y, model=model)
 
     def save_data(self):
         now = datetime.now()
