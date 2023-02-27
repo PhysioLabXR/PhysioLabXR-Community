@@ -216,20 +216,27 @@ class RenaProcessing(RenaScript):
                 timestamp = self.inputs['Unity.ReNa.PredictionFeedback'][1][self.prediction_feedback_head]
                 feedbacks = self.inputs['Unity.ReNa.PredictionFeedback'][0][:, self.prediction_feedback_head]
                 self.prediction_feedback_head += 1
-                flipped_count = 0
-                for locking_name, _ in locking_filters.items():
-                    for i, feedback_item_dtn in enumerate(feedbacks):
-                        if feedback_item_dtn == 1 and self.predicted_block_dtn_dict[locking_name][i] == 2: # target got flipped to a distractor:
-                            flipped_count += 1
-                            y = np.copy(self.this_block_data_pending_feedback[locking_name][1])
-                            try:
-                                assert y == 1  # y pred must be 1: target
-                            except AssertionError as e:
-                                print("predicted dtn not much y in the block data pending feedback. " + str(e))
-                            y[i] = 0
-                            self.this_block_data_pending_feedback[locking_name][1] = y
+                for locking_name in locking_filters.keys():
+                    if locking_name in self.predicted_block_dtn_dict.keys():
+                        y_pending_feedback = np.copy(self.this_block_data_pending_feedback[locking_name][1])  # get the y array
+                        item_indices_pending_feedbacks = [g.item_index for g in self.this_block_data_pending_feedback[locking_name][4]]
+                        item_ids_pending_feedbacks = [g.item_id for g in self.this_block_data_pending_feedback[locking_name][4]]
+                        for i, feedback_item_dtn in enumerate(feedbacks):
+                            # if feedback_item_dtn == 1 and self.predicted_block_dtn_dict[locking_name][i] == 2: # target got flipped to a distractor:
+                                # try:
+                                #     assert y_pending_feedback[item_indices_pending_feedbacks.index(i)] == 1  # y pred must be 1: target
+                                # except AssertionError as e:
+                                #     print(f"[{self.loop_count}] ReceivePredictionFeedback: predicted dtn not much y in the block data pending feedback. " + str(e))
+                                #     raise e
+                            if feedback_item_dtn != 0 and i in item_indices_pending_feedbacks:
+                                y_pending_feedback[item_indices_pending_feedbacks.index(i)] = 0
+                        if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
+                            print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
+                            self.this_block_data_pending_feedback[locking_name][1] = y_pending_feedback
+                        else:
+                            print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: no y is changed. y is {self.this_block_data_pending_feedback[locking_name][1]}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
 
-                self.all_block_data_all_lockings(self.this_block_data_pending_feedback)
+                self.add_block_data_all_lockings(self.this_block_data_pending_feedback)
                 if self.identifier_block_is_training_now:
                     self.train_identification_model()  # the next VS block will probably have wait here, if it ends before this function (training) returns
                 return 'idle'
@@ -338,14 +345,17 @@ class RenaProcessing(RenaScript):
         except Exception as e:
             print(f"[{self.loop_count}]AddBlockData: exception when adding block data: " + str(e))
 
-    def all_block_data_all_lockings(self, this_block_data: dict):
+    def add_block_data_all_lockings(self, this_block_data: dict):
         for locking_name, event_filters in locking_filters.items():
-            y = this_block_data[1]
             if locking_name in this_block_data.keys():
-                print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
-                self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
+                y = this_block_data[locking_name][1]
+                if locking_name in this_block_data.keys():
+                    print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                    self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
+                else:
+                    print(f"[{self.loop_count}] AddingBlockDataPostHoc: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
             else:
-                print(f"[{self.loop_count}] AddingBlockDataPostHoc: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                print(f'[{self.loop_count}] AddingBlockDataPostHoc: no data is available for {locking_name}')
 
     def _add_block_data_to_locking(self, locking_name, x, y, epochs_eeg, epochs_pupil, epoch_events):
         if locking_name not in self.locking_data.keys():
@@ -367,7 +377,7 @@ class RenaProcessing(RenaScript):
     # def check_pupil_data_complete_epoch(self, start_time):
     #     return (np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - start_time) > (tmax_pupil + epoch_margin)
 
-    def train_identification_model(self):
+    def train_identification_model(self, lockings=None):
         if is_simulating_predictions:
             print(f'[{self.loop_count}] TrainIdentificationModel: in simulation, skipping output.')
             return
@@ -435,7 +445,10 @@ class RenaProcessing(RenaScript):
                 # if len(predicted_target_item_ids) == 0 == None:
                 #     predicted_target_ids_lockings_dict[locking_name] = None
                 # else:
-                voted_target = stats.mode([x.item_id for x in cleaned_block_events[prediction == 1]]).mode[0]
+                try:
+                    voted_target = stats.mode([x.item_id for x in cleaned_block_events[prediction == 1]]).mode[0]
+                except IndexError:
+                    print(f"[{self.loop_count}] TargetIdentification: no target is predicted with locking {locking_name}: predictions are: {prediction}")
                 for target_item_index, target_item_id, confidence in target_index_id_predicted_prob:
                     predicted_target_ids_lockings_dict[locking_name][target_item_id] += confidence
                     self.predicted_target_index_id_dict[target_item_id] += confidence * self.models_accs[locking_name]  # weight by the accuracy of the model
@@ -463,7 +476,10 @@ class RenaProcessing(RenaScript):
 
                 predicts = np.array([predicts for locking_name, predicts in item_predictions_dict.items()])  # calculate modes
                 predicts_mode = stats.mode(predicts, axis=0).mode[0]
-
+                # if
+                #     print("[{self.loop_count}] TargetIdentification: no target is found for ALL lockings. Predictions are predicts, sending dummy prediction")
+                #     dummy_predictions = self.send_dummy_prediction()
+                #     return dummy_predictions
                 self.send_prediction(-1, predicts_mode, block_target_pred_confidences)  # each value item_predictions_dict contains <num_item_perblock> items, they are the dtn prediction for each item in a block
                 return item_predictions_dict
             else:
@@ -511,6 +527,7 @@ class RenaProcessing(RenaScript):
             send[2] = predicted_target_id  # set predicted target item id
             send[3:] = np.concatenate((block_item_prediciton, item_index_pred_target_confidence))
             self.prediction_outlet.push_sample(send)
+            print("Prediction send successful")
         except Exception as e:
             raise e
 
@@ -522,6 +539,7 @@ class RenaProcessing(RenaScript):
             send[2] = -1  # set predicted target item id
             send[3:] = np.random.randint(1, 3, size=num_item_perblock * 2)
             self.prediction_outlet.push_sample(send)
+            print("Dummy prediction send successful")
         except Exception as e:
             raise e
         return item_predictions
