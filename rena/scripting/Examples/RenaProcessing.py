@@ -232,6 +232,13 @@ class RenaProcessing(RenaScript):
                                 y_pending_feedback[item_indices_pending_feedbacks.index(i)] = 0
                         if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
                             print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
+                            try:
+                                assert np.all(self.this_block_data_pending_feedback[locking_name][2].events[:, 2] == self.this_block_data_pending_feedback[locking_name][3].events[:, 2])
+                                assert np.all(self.this_block_data_pending_feedback[locking_name][3].events[:, 2] == self.this_block_data_pending_feedback[locking_name][1] +1)
+                            except AssertionError:
+                                print(f'[{self.loop_count}] ReceivePredictionFeedback: epoch events do not match y')
+                            self.this_block_data_pending_feedback[locking_name][2].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
+                            self.this_block_data_pending_feedback[locking_name][3].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
                             self.this_block_data_pending_feedback[locking_name][1] = y_pending_feedback
                         else:
                             print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: no y is changed. y is {self.this_block_data_pending_feedback[locking_name][1]}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
@@ -244,6 +251,7 @@ class RenaProcessing(RenaScript):
                 return 'waitingFeedback'
         except Exception as e:
             print(f"[{self.loop_count}] ReceivePredictionFeedback: found exception." + str(e))
+            raise e
 
     def classifier_prep_phase_end_of_block(self):
         if self.current_condition == conditions['VS']:
@@ -323,8 +331,9 @@ class RenaProcessing(RenaScript):
                         if self.event_ids == None:
                             self.event_ids = event_ids
                     else:
-                        print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
-                        continue
+                        # print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
+                        print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}')
+                        # continue
                     epoch_events = get_events(event_filters, events, order='time')
                     try:
                         assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
@@ -334,28 +343,34 @@ class RenaProcessing(RenaScript):
                     if append_data:
                         self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)
                         print(f"[{self.loop_count}] AddingBlockData: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                        print(f'[{self.loop_count}] AddingBlockData: {locking_name} Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
                     else:
                         print(f"[{self.loop_count}] AddingBlockData: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                     this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
-                    print(f'[{self.loop_count}] AddingBlockData: {locking_name} Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
 
             print(f"[{self.loop_count}] AddingBlockData: Process completed")
             self.clear_buffer()
             return this_locking_data
         except Exception as e:
             print(f"[{self.loop_count}]AddBlockData: exception when adding block data: " + str(e))
+            raise e
 
     def add_block_data_all_lockings(self, this_block_data: dict):
-        for locking_name, event_filters in locking_filters.items():
-            if locking_name in this_block_data.keys():
-                y = this_block_data[locking_name][1]
-                if locking_name in this_block_data.keys():
-                    print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
-                    self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
-                else:
-                    print(f"[{self.loop_count}] AddingBlockDataPostHoc: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
-            else:
-                print(f'[{self.loop_count}] AddingBlockDataPostHoc: no data is available for {locking_name}')
+        try:
+            for locking_name, event_filters in locking_filters.items():
+                if 'VS' in locking_name:
+                    if locking_name in this_block_data.keys():
+                        y = this_block_data[locking_name][1]
+                        if locking_name in this_block_data.keys():
+                            print(f"[{self.loop_count}] AddingBlockDataPostHoc: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                            self._add_block_data_to_locking(locking_name, *this_block_data[locking_name])
+                            print(f'[{self.loop_count}] AddingBlockData: {locking_name} Has {np.sum(self.locking_data[locking_name][1] == 0)} distractors and {np.sum(self.locking_data[locking_name][1] == 1)} targets')
+                        else:
+                            print(f"[{self.loop_count}] AddingBlockDataPostHoc: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
+                    else:
+                        print(f'[{self.loop_count}] AddingBlockDataPostHoc: no data is available for {locking_name}')
+        except Exception as e:
+            raise e
 
     def _add_block_data_to_locking(self, locking_name, x, y, epochs_eeg, epochs_pupil, epoch_events):
         if locking_name not in self.locking_data.keys():
@@ -390,7 +405,7 @@ class RenaProcessing(RenaScript):
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
                 model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
                 best_train_acc = np.max(training_histories['train accs'])
-                print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} gives classification accuracy: {best_train_acc}')
+                print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} (with {np.sum(y==0)} distractors and {np.sum(y==1)} targets) gives classification accuracy: {best_train_acc}')
                 self.models[locking_name] = model
                 self.models_accs[locking_name] = best_train_acc
             print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
