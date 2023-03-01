@@ -1,29 +1,31 @@
-# "P300SpellerGameStateControlMarker",
-START_TRAINING_MARKER = 90
-END_TRAINING_MARKER = 91
-
-START_TESTING_MARKER = 100
-END_TESTING_MARKER = 101
-
-TRAIL_START_MARKER = 9
-TRAIL_END_MARKER = 10
-
+# P300SpellerGameStateControlMarker
+START_TRAINING_MARKER = 1
+END_TRAINING_MARKER = 2
+START_TESTING_MARKER = 3
+END_TESTING_MARKER = 4
 InterruptExperimentMarker = -1
 
-# "P300SpellerStartFlashingMarker",
+# P300SpellerTrailStartEndMarker
+TRAIL_START_MARKER = 1
+TRAIL_END_MARKER = 2
+
+# P300SpellerStartFlashingMarker
 FLASHING_MARKER = 1
 
-# "P300SpellerFlashingRowOrColumMarker",
-ROW_FLASHING_MARKER = 3
-COL_FLASHING_MARKER = 4
+# P300SpellerFlashingRowOrColumMarker
+ROW_FLASHING_MARKER = 1
+COL_FLASHING_MARKER = 2
 
-# "P300SpellerFlashingRowColumIndexMarker",
+# P300SpellerTargetNonTargetMarker
+NONTARGET_MARKER = 1
+TARGET_MARKER = 2
 
-# "P300SpellerTargetCharIndexMarker",
 
-# "P300SpellerTargetNonTargetMarker"
-NONTARGET_MARKER = 11
-TARGET_MARKER = 12
+
+
+##########
+TRAIN_RESPONSE_MARKER = 1
+TEST_RESPONSE_MARKER = 2
 
 ###########################################
 IDLE_STATE = 0

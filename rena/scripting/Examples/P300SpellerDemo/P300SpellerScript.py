@@ -112,7 +112,7 @@ class P300Speller(RenaScript):
         self.testing_raw = []
 
         # outlet
-        self.lsl_info = StreamInfo("P300SpellerRenaScript", "P300SpellerRenaScript", 1, 10, 'float32', 'someuuid1234')
+        self.lsl_info = StreamInfo("P300SpellerRenaScript", "P300SpellerRenaScript", 2, 10, 'float32', 'someuuid1234')
         self.p300_speller_script_lsl = StreamOutlet(self.lsl_info)
 
         print("P300Speller Decoding Script Setup Complete!")
@@ -130,8 +130,8 @@ class P300Speller(RenaScript):
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
-        print(self.inputs.get_data(P300EventStreamName)[
-            p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']])
+        # print(self.inputs.get_data(P300EventStreamName)[
+        #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']])
 
         if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
             p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
@@ -168,7 +168,7 @@ class P300Speller(RenaScript):
                 print('end training state')
             else:
                 self.collect_trail(self.training_callback)
-                print('collect training state data')
+                # print('collect training state data')
 
         elif self.game_state == TESTING_STATE:
             if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
@@ -179,7 +179,7 @@ class P300Speller(RenaScript):
                 # report final result
             else:
                 self.collect_trail(self.testing_callback)
-                print('collect testing state data')
+                # print('collect testing state data')
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -227,17 +227,21 @@ class P300Speller(RenaScript):
             x_list.append(x)
             y_list.append(y)
 
-        x = np.concatenate([x for x in x_list])
-        y = np.concatenate([y for y in y_list])
-        x, y = rebalance_classes(x, y, by_channel=True)
-        x = x.reshape(x.shape[0], -1)
+        # visualize_eeg_epochs(epoch, event_id, event_color)
 
-        visualize_eeg_epochs(epoch, event_id, event_color)
+        x = np.concatenate([x for x in x_list]) # collect all x samples
+        y = np.concatenate([y for y in y_list]) # collect all y samples
         x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, test_size=test_size)
+        x_train, y_train = rebalance_classes(x_train, y_train, by_channel=True)  #re-balance the class
+        x_train = x_train.reshape(x_train.shape[0], -1)
+        x_test = x_test.reshape(x_test.shape[0], -1)
+
         self.model.fit(x_train, y_train)
         y_pred = self.model.predict(x_test)
         confusion_matrix(y_test, y_pred)
-
+        score = f1_score(y_test, y_pred, average='macro')
+        print("score:", score)
+        self.p300_speller_script_lsl.push_sample([TRAIN_RESPONSE_MARKER, score])
         # push the result
 
     def callback_to_lsl(self):
@@ -278,11 +282,13 @@ class P300Speller(RenaScript):
         target_row_index = np.argmax([row_1.mean(), row_2.mean(), row_3.mean(), row_4.mean(), row_5.mean(), row_6.mean()])
         target_col_index = np.argmax([col_1.mean(), col_2.mean(), col_3.mean(), col_4.mean(), col_5.mean()])
 
-        print("TargetRow: ", target_row_index)
-        print("TargetCol: ", target_col_index)
+        # print("TargetRow: ", target_row_index)
+        # print("TargetCol: ", target_col_index)
         #
         target_char_index = target_row_index*5+target_col_index
-        self.p300_speller_script_lsl.push_sample([target_char_index])
+        print("targetIndex:")
+        print(target_char_index)
+        self.p300_speller_script_lsl.push_sample([TEST_RESPONSE_MARKER,target_char_index])
 
         # training update
 
