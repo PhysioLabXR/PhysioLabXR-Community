@@ -29,7 +29,8 @@ from sklearn.metrics import confusion_matrix
 
 from rena.scripting.Examples.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from rena.scripting.RenaScript import RenaScript
-from rena.utils.data_utils import get_date_string
+from rena.shared import bcolors
+from rena.utils.data_utils import get_date_string, mode_by_column
 from rena.utils.general import DataBuffer
 
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
@@ -229,7 +230,7 @@ class RenaProcessing(RenaScript):
                                 #     print(f"[{self.loop_count}] ReceivePredictionFeedback: predicted dtn not much y in the block data pending feedback. " + str(e))
                                 #     raise e
                             if feedback_item_dtn != 0 and i in item_indices_pending_feedbacks:
-                                y_pending_feedback[item_indices_pending_feedbacks.index(i)] = 0
+                                y_pending_feedback[item_indices_pending_feedbacks.index(i)] = feedback_item_dtn - 1
                         if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
                             print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
                             try:
@@ -325,14 +326,14 @@ class RenaProcessing(RenaScript):
                     # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
                     x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None)
                     if x is None:
-                        print(f"[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}")
+                        print(f"{bcolors.WARNING}[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}{bcolors.ENDC}")
                         continue
                     if len(event_ids) == 2:
                         if self.event_ids == None:
                             self.event_ids = event_ids
                     else:
                         # print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
-                        print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}')
+                        print(f'{bcolors.WARNING}[{self.loop_count}] AddingBlockData: only found one event {event_ids}{bcolors.ENDC}')
                         # continue
                     epoch_events = get_events(event_filters, events, order='time')
                     try:
@@ -400,8 +401,14 @@ class RenaProcessing(RenaScript):
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
                 print(f'[{self.loop_count}] TrainIdentificationModel: Training models for {locking_name}')
-                x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
-
+                try:
+                        x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+                except Exception:
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: {locking_name}: error preprocessing block data, skipping. y is {y}{bcolors.ENDC}')
+                    continue
+                if len(np.unique(y)) == 1:
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: y for {locking_name} only has class, skipping training. y is {y}{bcolors.ENDC}')
+                    continue
                 model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
                 model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
                 best_train_acc = np.max(training_histories['train accs'])
@@ -410,7 +417,7 @@ class RenaProcessing(RenaScript):
                 self.models_accs[locking_name] = best_train_acc
             print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
         except Exception as e:
-            print(e)
+            raise(e)
 
     def target_identification(self, this_block_data):
         try:
@@ -427,12 +434,20 @@ class RenaProcessing(RenaScript):
                 try:
                     assert locking_name in self.PCAs.keys() and locking_name in self.ICAs.keys() and locking_name in self.ARs.keys()
                 except AssertionError:
-                    print(f'[{self.loop_count}] TargetIdentification: locking {locking_name} does not have preprocess transforms. Skippinp. Likely this data was not present in entire training data, which should not happen normally.')
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TargetIdentification: locking {locking_name} does not have preprocess transforms. Skippinp. Likely this data was not present in entire training data, which should not happen normally.{bcolors.ENDC}')
                     continue
-                x_eeg_reduced, x_pupil, y, _, _, _, rejections = self.preprocess_block_data(epochs_eeg, epochs_pupil)
-
+                try:
+                    assert locking_name in self.models.keys()
+                except AssertionError:
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TargetIdentification: locking {locking_name} does not have model. Skippinp. Likely this data only have one class: in the locking data, y is {self.locking_data[locking_name][1]}{bcolors.ENDC}')
+                    continue
+                try:
+                    x_eeg_reduced, x_pupil, y, _, _, _, rejections = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+                except Exception:
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TargetIdentification: {locking_name}: error preprocessing block data, skipping. y is {y}{bcolors.ENDC}')
+                    continue
                 if x_eeg_reduced is None or np.all(y == 0):  # if no data or no target fixations
-                    print(f'[{self.loop_count}] TargetIdentification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.')
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TargetIdentification: {np.sum(np.all(y == 2))} target epochs remains after rejection. Skipping target identification for {locking_name}.{bcolors.ENDC}')
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['accuracy'] = -1
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target sensitivity'] = -1
                     self.block_reports[(self.meta_block_counter, self.current_block_id, locking_name)]['target specificity'] = -1
@@ -448,9 +463,13 @@ class RenaProcessing(RenaScript):
                     prediction = torch.argmax(y_pred, dim=1).detach().cpu().numpy()
 
                 acc, tpr, tnr = binary_classification_metric(y_true=y, y_pred=prediction)
-                target_sensitivity = tpr[1]
-
-                target_specificity = tnr[1]
+                if len(tpr) == 1:
+                    print(f'{bcolors.WARNING}[{self.loop_count}] TargetIdentification: {locking_name} found only one class for tpr/tnr: y={y}, prediction={prediction}, tpr={tpr}, tnr={tnr}.{bcolors.ENDC}')
+                    target_sensitivity = tpr[0]
+                    target_specificity = tnr[0]
+                else:
+                    target_sensitivity = tpr[1]
+                    target_specificity = tnr[1]
 
                 cleaned_block_events = np.array(block_events)[rejections]
                 target_index_id_predicted_prob = [(x.item_index, x.item_id, prob) for x, prob in zip(cleaned_block_events[prediction == 1], confidences)]
@@ -463,6 +482,7 @@ class RenaProcessing(RenaScript):
                 try:
                     voted_target = stats.mode([x.item_id for x in cleaned_block_events[prediction == 1]]).mode[0]
                 except IndexError:
+                    voted_target = -1
                     print(f"[{self.loop_count}] TargetIdentification: no target is predicted with locking {locking_name}: predictions are: {prediction}")
                 for target_item_index, target_item_id, confidence in target_index_id_predicted_prob:
                     predicted_target_ids_lockings_dict[locking_name][target_item_id] += confidence
@@ -490,7 +510,8 @@ class RenaProcessing(RenaScript):
                 block_target_pred_confidences = self.process_block_target_confidence(self.predicted_target_index_id_dict)
 
                 predicts = np.array([predicts for locking_name, predicts in item_predictions_dict.items()])  # calculate modes
-                predicts_mode = stats.mode(predicts, axis=0).mode[0]
+                # predicts_mode = stats.mode(predicts, axis=0).mode[0]
+                predicts_mode = mode_by_column(predicts, ignore=0)
                 # if
                 #     print("[{self.loop_count}] TargetIdentification: no target is found for ALL lockings. Predictions are predicts, sending dummy prediction")
                 #     dummy_predictions = self.send_dummy_prediction()
@@ -530,9 +551,12 @@ class RenaProcessing(RenaScript):
             for i, (id, confidence) in enumerate(thresholded_normalized_prob):
                 index_target_confidence[i] = id
                 index_target_confidence[i + int(num_item_perblock / 2)] = confidence
+            print(f"[{self.loop_count}] ProcessBlockTargetConfidence: find thresholded & normalized confidence: {thresholded_normalized_prob}, with indices index_target_confidence {index_target_confidence} or ids {all_ids}, and all probs {all_probs}")
+
             return index_target_confidence
         except Exception as e:
             print(f"[{self.loop_count}] ProcessBlockTargetConfidence: find exception: " + str(e))
+            raise(e)
 
 
     def send_prediction(self, predicted_target_id, block_item_prediciton, item_index_pred_target_confidence):
@@ -548,8 +572,7 @@ class RenaProcessing(RenaScript):
 
     def send_dummy_prediction(self):
         try:
-            item_predictions = np.random.randint(0, 3, size=num_item_perblock)
-            send = np.zeros(3 + num_item_perblock)
+            send = np.zeros(3 + num_item_perblock * 2)
             send[0] = self.current_block_id  # Unity will check the block ID matches
             send[2] = -1  # set predicted target item id
             send[3:] = np.random.randint(1, 3, size=num_item_perblock * 2)
@@ -557,7 +580,6 @@ class RenaProcessing(RenaScript):
             print("Dummy prediction send successful")
         except Exception as e:
             raise e
-        return item_predictions
 
     def send_skip_prediction(self):
         try:
@@ -580,7 +602,7 @@ class RenaProcessing(RenaScript):
         if len(y) == 0:  # no data remains after rejection
             return [None] * 6
 
-        x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=None)
+        x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=ica)
         return x_eeg, x_pupil, y, pca, ica, ar, rejections
 
     def get_block_update(self):

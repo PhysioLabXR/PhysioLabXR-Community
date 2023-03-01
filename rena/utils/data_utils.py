@@ -7,6 +7,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
+from scipy.stats import stats
 
 from exceptions.exceptions import BadOutputError
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
@@ -751,3 +752,14 @@ def get_date_string():
     now = datetime.now()
     dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
     return dt_string
+
+def mode_by_column(array: np.ndarray, ignore=None):
+    assert len(array.shape) == 2
+    rtn = []
+    for i in range(array.shape[1]):
+        mode = stats.mode(array[:, i][array[:, i] != ignore], axis=0).mode
+        if len(mode) == 0:
+            rtn.append(ignore)
+        else:
+            rtn.append(mode[0])
+    return rtn
