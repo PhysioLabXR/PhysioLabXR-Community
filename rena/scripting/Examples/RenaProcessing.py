@@ -41,7 +41,7 @@ is_debugging = True
 is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
-num_vs_to_train_in_classifier_prep = 4  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_classifier_prep = 1  # for a total of 8 VS blocks in each metablock
 num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
@@ -232,6 +232,8 @@ class RenaProcessing(RenaScript):
                             #     print(f"[{self.loop_count}] ReceivePredictionFeedback: predicted dtn not much y in the block data pending feedback. " + str(e))
                             #     raise e
                             if feedback_item_dtn != 0 and i in item_indices_pending_feedbacks:
+                                if y_pending_feedback[item_indices_pending_feedbacks.index(i)] != feedback_item_dtn - 1:
+                                    print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: feedback changed item id {item_ids_pending_feedbacks[item_indices_pending_feedbacks.index(i)]} at index {i} from {y_pending_feedback[item_indices_pending_feedbacks.index(i)]} to {feedback_item_dtn - 1}")
                                 y_pending_feedback[item_indices_pending_feedbacks.index(i)] = feedback_item_dtn - 1
                         if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
                             print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
@@ -550,8 +552,10 @@ class RenaProcessing(RenaScript):
                 # thresholded = thresholded[:num_item_perblock/2]
 
             thresholded_probs = [prob for item_id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
-            thresholded_normalized_prob = [(item_id, (prob - np.min(thresholded_probs)) / (np.max(thresholded_probs) - np.min(thresholded_probs))) for item_id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
-
+            if len(thresholded_probs) > 1:
+                thresholded_normalized_prob = [(item_id, (prob - np.min(thresholded_probs)) / (np.max(thresholded_probs) - np.min(thresholded_probs))) for item_id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
+            else:
+                thresholded_normalized_prob = [(item_id, 1) for item_id, prob in predicted_target_index_id_dict.items() if prob > prob_threshold]
             for i, (item_id, confidence) in enumerate(thresholded_normalized_prob):
                 index_target_confidence[i] = item_id
                 index_target_confidence[i + int(num_item_perblock / 2)] = confidence
