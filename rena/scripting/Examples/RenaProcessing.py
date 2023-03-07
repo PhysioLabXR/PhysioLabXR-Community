@@ -42,7 +42,7 @@ is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 num_vs_to_train_in_classifier_prep = 1  # for a total of 8 VS blocks in each metablock
-num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
+# num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
@@ -75,7 +75,6 @@ class RenaProcessing(RenaScript):
         """
         super().__init__(*args, **kwargs)
 
-        self.num_vs_before_training = None
         self.last_block_end_timestamp = None
         self.end_of_block_wait_start = None
         mne.use_log_level(False)
@@ -167,11 +166,11 @@ class RenaProcessing(RenaScript):
                         # self.running_mode_of_predicted_target = []  # reset running mode of predicted target
 
                         if new_meta_block == 5:
-                            self.num_vs_before_training = num_vs_to_train_in_classifier_prep
-                            print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {self.num_vs_before_training}')
+                            # self.num_vs_before_training = num_vs_to_train_in_classifier_prep
+                            print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {num_vs_to_train_in_classifier_prep}')
                         elif new_meta_block == 6:
-                            self.num_vs_before_training = num_vs_to_train_in_identifier_prep
-                            print(f'[{self.loop_count}] entering identifier and performance evaluation, num visual search blocks for training will be {self.num_vs_before_training}')
+                            # self.num_vs_before_training = num_vs_to_train_in_identifier_prep
+                            print(f'[{self.loop_count}] entering identifier and performance evaluation')
 
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
                         print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
@@ -263,7 +262,7 @@ class RenaProcessing(RenaScript):
             self.vs_block_counter += 1
             print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
             try:
-                if self.vs_block_counter == self.num_vs_before_training:  # time to train the model and identify target for this block
+                if self.vs_block_counter == num_vs_to_train_in_classifier_prep:  # time to train the model and identify target for this block
                     self.send_skip_prediction()  # epoching the recorded block data
                     self.add_block_data()
                     self.train_identification_model()  # the next VS block will probably have wait here
