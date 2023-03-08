@@ -37,12 +37,14 @@ condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table S
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
 colors = {'Distractor': 'blue', 'Target': 'red', 'Novelty': 'orange'}
 
+feedback_mode = 'weights'
+
 is_debugging = True
 is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
-num_vs_to_train_in_classifier_prep = 1  # for a total of 8 VS blocks in each metablock
-# num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_classifier_prep = 8  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
@@ -75,6 +77,7 @@ class RenaProcessing(RenaScript):
         """
         super().__init__(*args, **kwargs)
 
+        self.num_vs_before_training = None
         self.last_block_end_timestamp = None
         self.end_of_block_wait_start = None
         mne.use_log_level(False)
@@ -166,10 +169,10 @@ class RenaProcessing(RenaScript):
                         # self.running_mode_of_predicted_target = []  # reset running mode of predicted target
 
                         if new_meta_block == 5:
-                            # self.num_vs_before_training = num_vs_to_train_in_classifier_prep
+                            self.num_vs_before_training = num_vs_to_train_in_classifier_prep
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {num_vs_to_train_in_classifier_prep}')
                         elif new_meta_block == 6:
-                            # self.num_vs_before_training = num_vs_to_train_in_identifier_prep
+                            self.num_vs_before_training = num_vs_to_train_in_identifier_prep
                             print(f'[{self.loop_count}] entering identifier and performance evaluation')
 
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
@@ -273,7 +276,7 @@ class RenaProcessing(RenaScript):
                 print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
                 print(e)
         else:
-            print(f"[{self.loop_count}] EndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
+            print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
         return 'idle'
 
     def identifier_prep_phase_end_of_block(self):
@@ -285,20 +288,23 @@ class RenaProcessing(RenaScript):
                     print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: counter is equal to num blocks before training. Start training with feedback from user and resetting training block counter.")
                     self.vs_block_counter = 0
                     self.this_block_data_pending_feedback = self.add_block_data(append_data=False)
-                    self.predicted_block_dtn_dict = self.target_identification(self.this_block_data_pending_feedback)  # identify target for this block, this will send the identification result
                     self.identifier_block_is_training_now = True
                     # Don't train until have feedback
                 else:  # we are not training yet
                     self.this_block_data_pending_feedback = self.add_block_data(append_data=False)  # epoching the recorded block data
-                    self.predicted_block_dtn_dict = self.target_identification(self.this_block_data_pending_feedback)  # identify target for this block, this will send the identification result
                     self.identifier_block_is_training_now = False
+                if self.this_block_data_pending_feedback is None:
+                    print(f"[{self.loop_count}] IdentifierEndOfBlockProcessing: received this block data as none, probably due to NaN (please check if it's not because of NaN), skipping")
+                    self.send_skip_prediction()
+                    return 'idle'
+                self.predicted_block_dtn_dict = self.target_identification(self.this_block_data_pending_feedback)  # identify target for this block, this will send the identification result
 
             except Exception as e:
                 print(f"[{self.loop_count}]IdentifierPrepEndOfBlockProcessing: Exception in end-of-block processing with vs counter value {self.vs_block_counter}: ")
                 print(e)
             return 'waitingFeedback'
         else:
-            print(f"[{self.loop_count}] EndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
+            print(f"[{self.loop_count}] IdentifierEndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
             return 'idle'
 
     def cleanup(self):
@@ -320,8 +326,11 @@ class RenaProcessing(RenaScript):
             else:
                 print(f"[{self.loop_count}] AddingBlockData: WARNING: not FixationDetection stream when trying to add block data")
             rdf.add_participant_session(data, events, 0, 0, None, None, None)
-            rdf.preprocess(is_running_ica=True, n_jobs=1, ocular_artifact_mode='proxy')
-
+            try:
+                rdf.preprocess(is_running_ica=True, n_jobs=1, ocular_artifact_mode='proxy')
+            except Exception as e:
+                print(f"Encountered value error when preprocessing rdf: str(e)")
+                return None
             this_locking_data = {}
             for locking_name, event_filters in locking_filters.items():
                 if 'VS' in locking_name:  # TODO only care about VS conditions for now
