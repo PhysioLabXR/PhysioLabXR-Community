@@ -329,7 +329,7 @@ class RenaProcessing(RenaScript):
             try:
                 rdf.preprocess(is_running_ica=True, n_jobs=1, ocular_artifact_mode='proxy')
             except Exception as e:
-                print(f"Encountered value error when preprocessing rdf: str(e)")
+                print(f"Encountered value error when preprocessing rdf: {str(e)}")
                 return None
             this_locking_data = {}
             for locking_name, event_filters in locking_filters.items():
