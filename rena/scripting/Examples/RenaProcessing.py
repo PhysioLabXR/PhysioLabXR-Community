@@ -336,7 +336,7 @@ class RenaProcessing(RenaScript):
                 if 'VS' in locking_name:  # TODO only care about VS conditions for now
                     print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
                     # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
-                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'EEG Epochs for {locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
+                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
                     if x is None:
                         print(f"{bcolors.WARNING}[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}{bcolors.ENDC}")
                         continue
