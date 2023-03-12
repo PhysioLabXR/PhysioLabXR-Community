@@ -11,8 +11,9 @@ from rena.utils.settings_utils import export_preset_to_settings, load_all_preset
     load_all_experiment_presets, process_plot_group
 from rena.utils.ui_utils import dialog_popup
 
-default_settings_dict = {}
-def load_settings(revert_to_default=False, reload_presets=True):
+default_settings_dict = {'theme': config_ui.default_theme,
+                         'file_format': config.DEFAULT_FILE_FORMAT}
+def load_settings(revert_to_default=True, reload_presets=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)

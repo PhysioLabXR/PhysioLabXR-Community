@@ -7,6 +7,7 @@ Otherwise, you will get either import error or file not found error
 import os
 import random
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -91,8 +92,8 @@ def test_replay_multi_streams(app, qtbot) -> None:
         qtbot.keyPress(app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
         qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box, ts_name)
         qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
-
-    app.settings_tab.set_recording_file_location('/')  # set recording file location (not through the system's file dialog)
+    temp_dir = tempfile.TemporaryDirectory()
+    app.settings_tab.set_recording_file_location(temp_dir.name)  # set recording file location (not through the system's file dialog)
 
     def stream_is_available():
         for ts_name in test_stream_names:
