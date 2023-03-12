@@ -6,6 +6,7 @@ Otherwise, you will get either import error or file not found error
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 import os
 import random
+import shutil
 import sys
 import tempfile
 import threading
@@ -58,8 +59,6 @@ def test_plot_format_change(app, qtbot) -> None:
     test_stream_name = 'TestStreamName'
     p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
-
-
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
@@ -72,7 +71,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
     :return:
     '''
     num_stream_to_test = 3
-    recording_time = 3
+    recording_time_second = 3
     replay_file_session_name = 'replayed'
     stream_availability_timeout = 2 * lsl_stream_availability_wait_time * 1e3
 
@@ -92,8 +91,8 @@ def test_replay_multi_streams(app, qtbot) -> None:
         qtbot.keyPress(app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
         qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box, ts_name)
         qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
-    temp_dir = tempfile.TemporaryDirectory()
-    app.settings_tab.set_recording_file_location(temp_dir.name)  # set recording file location (not through the system's file dialog)
+
+    app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
 
     def stream_is_available():
         for ts_name in test_stream_names:
@@ -114,7 +113,8 @@ def test_replay_multi_streams(app, qtbot) -> None:
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
-    qtbot.wait(recording_time * 1e3)
+    qtbot.wait(recording_time_second * 1e3)
+    # time.sleep(recording_time_second)
 
     def handle_custom_dialog_ok(patience=0):
         w = QtWidgets.QApplication.activeWindow()
@@ -132,14 +132,13 @@ def test_replay_multi_streams(app, qtbot) -> None:
             yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)
 
-
     t = threading.Timer(1, handle_custom_dialog_ok)
     t.start()
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
     t.join()  # wait until the dialog is closed
-
+    #
     qtbot.mouseClick(app.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams, so we don't need to handle stream lost
-
+    #
     print("Waiting for test stream processes to close")
     [p.kill() for p in test_stream_processes]
     qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
@@ -205,5 +204,5 @@ def test_replay_multi_streams(app, qtbot) -> None:
         assert np.max(np.abs(e - d)) < 1e-9
         assert np.std(np.abs(e - d)) < 1e-9
         break
-
+    os.remove(app.recording_tab.save_path)
     print("Replay completed")
