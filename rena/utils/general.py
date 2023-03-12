@@ -205,8 +205,9 @@ class DataBufferSingleStream():
         self.buffer_size = buffer_sizes
         self.buffer = []
         self.append_zeros = append_zeros
-        if num_channels is not None:
-            self.init_buffer(num_channels)
+        self.samples_received = 0
+        self.num_channels = num_channels
+        self.reset_buffer()
 
     def update_buffer(self, data_dict: dict):
         '''
@@ -227,17 +228,20 @@ class DataBufferSingleStream():
         cut_to = -np.min([buffer_time_points, self.buffer_size])
         self.buffer[0] = self.buffer[0][:, cut_to:]
         self.buffer[1] = self.buffer[1][cut_to:]
+        self.samples_received += data_dict['frames'].shape[1]
 
     def init_buffer(self, num_channels):
         time_dim = self.buffer_size if self.append_zeros else 0
         self.buffer.append(np.empty(shape=(num_channels, time_dim)))
         self.buffer.append(np.empty(shape=(time_dim,)))  # data first, timestamps second
+        self.samples_received = 0
 
-    def clear_buffer(self):
-        self.buffer = []
+    def reset_buffer(self):
+        if self.num_channels is not None:
+            self.init_buffer(self.num_channels)
 
     def has_data(self):
-        return len(self.buffer) > 0
+        return self.samples_received > 0
 
 
 def flatten(l):
