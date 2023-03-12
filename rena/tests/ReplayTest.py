@@ -171,7 +171,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
-    wait_for_replay_finishes_time = (recording_time * 2) * 1e3
+    wait_for_replay_finishes_time = (recording_time_second * 2) * 1e3
 
     qtbot.waitUntil(lambda: not app.replay_tab.is_replaying, timeout=wait_for_replay_finishes_time)  # wait until the replay completes, need to ensure that the replay can finish
     print("replay is over")
