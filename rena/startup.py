@@ -11,7 +11,7 @@ from rena.utils.settings_utils import export_preset_to_settings, load_all_preset
     load_all_experiment_presets, process_plot_group
 from rena.utils.ui_utils import dialog_popup
 
-
+default_settings_dict = {}
 def load_settings(revert_to_default=False, reload_presets=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
@@ -25,6 +25,7 @@ def load_settings(revert_to_default=False, reload_presets=True):
         config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
         config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
+        config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
