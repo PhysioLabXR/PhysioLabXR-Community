@@ -147,6 +147,14 @@ class StreamWidget(QtWidgets.QWidget):
         self.timer.start()
         self.v_timer.start()
 
+        # Attributes purely for performance checks x############################
+        """
+        These attributes should be kept only on this branch
+        """
+        self.update_buffer_times = []
+        self.plot_data_times = []
+        ########################################################################
+
     def update_stream_availability(self, is_stream_available):
         '''
         this function check if the stream is available
