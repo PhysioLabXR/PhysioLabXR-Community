@@ -197,9 +197,6 @@ class DataBuffer():
     def keys(self):
         return self.buffer.keys()
 
-
-
-
 class DataBufferSingleStream():
     def __init__(self, num_channels=None, buffer_sizes: int = None, append_zeros=False):
         self.buffer_size = buffer_sizes
@@ -218,11 +215,14 @@ class DataBufferSingleStream():
         '''
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(data_dict['frames'].shape[0])
+
+        # self.bu(self.buffer, data_dict)
         try:
-            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+            pass
+            # self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
         except ValueError:
             raise ChannelMismatchError(data_dict['frames'].shape[0])
-        self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
+        # self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]
         cut_to = -np.min([buffer_time_points, self.buffer_size])
@@ -232,8 +232,8 @@ class DataBufferSingleStream():
 
     def init_buffer(self, num_channels):
         time_dim = self.buffer_size if self.append_zeros else 0
-        self.buffer.append(np.empty(shape=(num_channels, time_dim)))
-        self.buffer.append(np.empty(shape=(time_dim,)))  # data first, timestamps second
+        self.buffer.append(np.zeros(shape=(num_channels, time_dim)))
+        self.buffer.append(np.zeros(shape=(time_dim,)))  # data first, timestamps second
         self.samples_received = 0
 
     def reset_buffer(self):

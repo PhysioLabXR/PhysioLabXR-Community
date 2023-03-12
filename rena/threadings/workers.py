@@ -22,7 +22,7 @@ from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_ST
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.general import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
+from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference

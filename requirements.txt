@@ -1,6 +1,6 @@
 brainflow
 numpy
-PyQt5~=5.15.4
+PyQt5
 pyserial~=3.5
 pylsl~=1.14.0
 scikit-learn

@@ -23,7 +23,7 @@ from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
-from rena.utils.general import DataBuffer, click_on_file
+from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_dict
 from rena.utils.script_utils import *
 from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists, \

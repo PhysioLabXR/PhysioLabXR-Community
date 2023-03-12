@@ -31,7 +31,7 @@ from rena.scripting.Examples.RenaProcessingParameters import locking_filters, ev
 from rena.scripting.RenaScript import RenaScript
 from rena.shared import bcolors
 from rena.utils.data_utils import get_date_string, mode_by_column
-from rena.utils.general import DataBuffer
+from rena.utils.buffers import DataBuffer
 
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}

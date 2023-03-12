@@ -64,7 +64,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         """
         if not self.slider_is_dragging:
             playback_percent = self.virtual_time_to_playback_position_value(virtual_clock)
-            self.horizontalSlider.setValue(playback_percent)
+            self.horizontalSlider.setValue(round(playback_percent))
             self.currentTimestamplabel.setText('{:.2f}'.format(virtual_clock + self.virtual_clock_offset))
             self.timeSinceStartedLabel.setText('{:.2f}/{:.2f}'.format(virtual_clock - self.start_time, self.total_time))
             self.percentageReplayedLabel.setText('{:.1f} %'.format(playback_percent))

@@ -31,7 +31,7 @@ from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsTab import SettingsTab
 from rena.ui.ReplayTab import ReplayTab
 from rena.utils.data_utils import window_slice
-from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
+from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
     process_preset_create_TImmWave_interface_startsensor
 from rena.utils.ui_utils import dialog_popup, \
     init_camera_widget, convert_rgb_to_qt_image, another_window
