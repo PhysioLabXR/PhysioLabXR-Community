@@ -1,3 +1,4 @@
+import os
 import secrets
 import string
 from multiprocessing import Process
@@ -80,3 +81,7 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
             redraw = rand_name in names
         names.append(rand_name)
     return names
+
+def update_test_cwd():
+    if os.getcwd().endswith('rena/tests'):
+        os.chdir('../')

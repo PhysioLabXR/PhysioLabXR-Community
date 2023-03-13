@@ -21,12 +21,14 @@ from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.tests.test_utils import update_test_cwd
 from rena.utils.settings_utils import create_default_preset
 
 
 @pytest.fixture
 def app(qtbot: QtBot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)

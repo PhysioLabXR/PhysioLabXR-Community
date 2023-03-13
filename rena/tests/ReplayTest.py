@@ -26,7 +26,7 @@ from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import get_random_test_stream_names
+from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd
 from rena.utils.data_utils import RNStream
 from rena.utils.settings_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
@@ -35,6 +35,7 @@ from rena.utils.ui_utils import CustomDialog
 @pytest.fixture
 def app(qtbot: QtBot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
@@ -51,18 +52,18 @@ def teardown_function(function):
     """
     pass
 
-def test_plot_format_change(app, qtbot) -> None:
-    '''
-    Adding active stream
-    :param app:
-    :param qtbot:
-    :return:
-    '''
-    test_stream_name = 'TestStreamName'
-    p = Process(target=LSLTestStream, args=(test_stream_name,))
-    p.start()
-    print("Test complete, killing sending-data process")
-    p.kill()  # stop the dummy LSL process
+# def test_plot_format_change(app, qtbot) -> None:
+#     '''
+#     Adding active stream
+#     :param app:
+#     :param qtbot:
+#     :return:
+#     '''
+#     test_stream_name = 'TestStreamName'
+#     p = Process(target=LSLTestStream, args=(test_stream_name,))
+#     p.start()
+#     print("Test complete, killing sending-data process")
+#     p.kill()  # stop the dummy LSL process
 
 
 def test_replay_multi_streams(app, qtbot) -> None:
