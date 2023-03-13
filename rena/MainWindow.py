@@ -32,7 +32,7 @@ from rena.ui.SettingsTab import SettingsTab
 from rena.ui.ReplayTab import ReplayTab
 from rena.utils.data_utils import window_slice
 from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor
+    process_preset_create_TImmWave_interface_startsensor, DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
     init_camera_widget, convert_rgb_to_qt_image, another_window
 
@@ -129,6 +129,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.get_layout().addWidget(self.settings_tab)
         self.settings_window.hide()
 
+        # global buffer object for visualization, recording, and scripting
+        self.global_stream_buffer = DataBuffer()
 
     def add_btn_clicked(self):
         """
