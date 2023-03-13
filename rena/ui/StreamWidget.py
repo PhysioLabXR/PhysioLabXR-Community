@@ -401,6 +401,7 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
+                print("StreamWidget updating buffers")
                 self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, )))  # NOTE performance test scripts, don't include in production code
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:

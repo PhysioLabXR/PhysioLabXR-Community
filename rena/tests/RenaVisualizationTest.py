@@ -114,14 +114,13 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
         assert app.stream_widgets[test_stream_name].is_stream_available
     qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the LSL stream becomes available
 
-    # get the messagebox about channel mismatch
     def handle_dialog():
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, QMessageBox):
             yes_button = w.button(QtWidgets.QMessageBox.Yes)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
 
-    t = threading.Timer(1, handle_dialog)
+    t = threading.Timer(1, handle_dialog)   # get the messagebox about channel mismatch
     t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
     t.join()
@@ -141,7 +140,7 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     '''
     test_stream_name = 'TestStreamName'
     port = '5556'
-    p = Process(target=ZMQTestStream, args=(test_stream_name, port, random.randint(100, 200)))
+    p = Process(target=ZMQTestStream, args=(test_stream_name, port))
     p.start()
 
     app.create_preset('TestStreamName', 'float', port, 'ZMQ', num_channels=random.randint(1, 99))  # add a default preset
