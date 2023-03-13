@@ -75,6 +75,8 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     result_plot_data_time = []
     test_context = TestContext(app, qtbot)
     for num_channels, sampling_rate in test_space:
+        print(f"Testing #channels {num_channels} and srate {sampling_rate}...", end='')
+        start_time = time.perf_counter()
         test_context.start_stream(test_stream_name, num_channels, sampling_rate)
         qtbot.wait(test_time_second_per_stream * 1e3)
         test_context.close_stream(test_stream_name)
@@ -85,6 +87,7 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
                                       np.std(app.stream_widgets[test_stream_name].plot_data_times)))
 
         test_context.remove_stream(test_stream_name)
+        # print(f"Took {timestart_time}.", end='')
 
     print(test_space)
     print(result_update_buffer_time)

@@ -247,7 +247,7 @@ class StreamWidget(QtWidgets.QWidget):
                     return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
-            self.reset_performance_meansures()
+            self.reset_performance_measures()
             if self.worker.is_streaming:
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()

@@ -218,11 +218,11 @@ class DataBufferSingleStream():
 
         # self.bu(self.buffer, data_dict)
         try:
-            pass
-            # self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+            # pass
+            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
         except ValueError:
             raise ChannelMismatchError(data_dict['frames'].shape[0])
-        # self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
+        self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
 
         buffer_time_points = self.buffer[0].shape[-1]
         cut_to = -np.min([buffer_time_points, self.buffer_size])
