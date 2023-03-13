@@ -204,25 +204,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.video_device_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
-
         for stream_name in stream_names:
             # check if the stream in setting's preset
-            if check_preset_exists(stream_name):
-                self.addStreamWidget.select_by_stream_name(stream_name)
-                self.addStreamWidget.add_btn.click()
-            else:  # add a new preset if the stream name is not defined
-                self.addStreamWidget.set_selection_text(stream_name)
-                self.addStreamWidget.add_btn.click()
-
-        # loading_dlg.close()
+            if stream_name not in self.stream_widgets.keys():
+                if check_preset_exists(stream_name):
+                    self.addStreamWidget.select_by_stream_name(stream_name)
+                    self.addStreamWidget.add_btn.click()
+                else:  # add a new preset if the stream name is not defined
+                    self.addStreamWidget.set_selection_text(stream_name)
+                    self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.add_streams_to_visualize(stream_names)
-        for stream_name in stream_names:
-            if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
-                self.stream_widgets[stream_name].StartStopStreamBtn.click()
+        # for stream_name in stream_names:
+        #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
+        #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
     def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
         error_initialization = False

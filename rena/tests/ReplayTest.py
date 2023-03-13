@@ -26,6 +26,7 @@ from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.tests.test_utils import get_random_test_stream_names
 from rena.utils.data_utils import RNStream
 from rena.utils.settings_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
@@ -78,8 +79,8 @@ def test_replay_multi_streams(app, qtbot) -> None:
 
     test_stream_names = []
     test_stream_processes = []
-    for i in range(num_stream_to_test):
-        ts_name = f'TestStreamName{i}-{uuid.uuid4()}'
+    ts_names = get_random_test_stream_names(num_stream_to_test)
+    for ts_name in ts_names:
         test_stream_names.append(ts_name)
         p = Process(target=LSLTestStream, args=(ts_name,))
         test_stream_processes.append(p)

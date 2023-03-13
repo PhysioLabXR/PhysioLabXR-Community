@@ -1,3 +1,5 @@
+import secrets
+import string
 from multiprocessing import Process
 
 from PyQt5 import QtCore, Qt
@@ -65,3 +67,16 @@ class TestContext:
 
     def __del__(self):
         self.clean_up()
+
+def secrets_random_choice(alphabet):
+    return ''.join(secrets.choice(alphabet) for _ in range(8))
+
+def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowercase + string.digits):
+    names = []
+    for i in range(num_names):
+        redraw = True
+        while redraw:
+            rand_name = secrets_random_choice(alphabet)
+            redraw = rand_name in names
+        names.append(rand_name)
+    return names
