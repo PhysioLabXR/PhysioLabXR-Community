@@ -152,8 +152,8 @@ class StreamWidget(QtWidgets.QWidget):
         """
         These attributes should be kept only on this perforamnce branch
         """
-        self.update_buffer_times = None
-        self.plot_data_times = None
+        self.update_buffer_times = []
+        self.plot_data_times = []
         ########################################################################
 
     def reset_performance_measures(self):
@@ -222,6 +222,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
                 self.update_stream_availability(self.worker.is_stream_available)
         else:
+            # self.reset_performance_measures()
             try:
                 self.worker.start_stream()
             except LSLStreamNotFoundError as e:
@@ -247,7 +248,6 @@ class StreamWidget(QtWidgets.QWidget):
                     return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
-            self.reset_performance_measures()
             if self.worker.is_streaming:
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
