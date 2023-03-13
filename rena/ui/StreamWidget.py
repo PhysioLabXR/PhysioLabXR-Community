@@ -18,6 +18,7 @@ from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.performance_utils import timeit
 from rena.utils.settings_utils import get_stream_preset_info, \
     collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
     set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
@@ -149,11 +150,15 @@ class StreamWidget(QtWidgets.QWidget):
 
         # Attributes purely for performance checks x############################
         """
-        These attributes should be kept only on this branch
+        These attributes should be kept only on this perforamnce branch
         """
+        self.update_buffer_times = None
+        self.plot_data_times = None
+        ########################################################################
+
+    def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
-        ########################################################################
 
     def update_stream_availability(self, is_stream_available):
         '''
@@ -242,10 +247,8 @@ class StreamWidget(QtWidgets.QWidget):
                     return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
-
+            self.reset_performance_meansures()
             if self.worker.is_streaming:
-                # started
-                # print("sensor stopped")
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
         self.main_parent.update_active_streams()
@@ -261,10 +264,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.reset_viz()
 
     def reset_viz(self):
-        '''
+        """
         caller to this function must ensure self.group_info is modified and up to date with user changes
-        :return:
-        '''
+        """
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
@@ -284,7 +286,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.main_parent.activateWindow()
         self.is_popped = False
         self.set_button_icons()
-
 
     def pop_window(self):
         w = AnotherWindow(self, self.remove_stream)
@@ -400,7 +401,8 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
-                self.viz_data_buffer.update_buffer(data_dict)
+                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, )))  # NOTE performance test scripts, don't include in production code
+                # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
                 reply = QMessageBox.question(self, 'Channel Mismatch',

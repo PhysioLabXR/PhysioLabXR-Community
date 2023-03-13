@@ -27,29 +27,38 @@ class TestContext:
     def cleanup(self):
         pass
 
-
-    def start_stream(self, test_stream_names: str, num_channels: int):
+    def start_stream(self, stream_name: str, num_channels: int, srate:int):
         """
         start a stream as a separate process, add it to the app's streams, and start it once it becomes
         available
-        @param test_stream_names:
+        @param stream_name:
         @param num_channels:
         """
-        if test_stream_names in self.send_data_processes.keys():
-            raise ValueError(f"Founding repeating test_stream_name : {test_stream_names}")
-        p = Process(target=LSLTestStream, args=(test_stream_names, num_channels))
+        if stream_name in self.send_data_processes.keys():
+            raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
+        p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
-        self.send_data_processes[test_stream_names] = p
-        self.app.create_preset(test_stream_names, 'float', None, 'LSL', num_channels=num_channels)  # add a default preset
+        self.send_data_processes[stream_name] = p
+        self.app.create_preset(stream_name, 'float', None, 'LSL', num_channels=num_channels)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
         self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
-        self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, test_stream_names)
+        self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
         self.qtbot.waitUntil(stream_is_available, timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
-        self.qtbot.mouseClick(self.app.stream_widgets[test_stream_names].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+
+
+    def close_stream(self, stream_name: str):
+        if stream_name not in self.send_data_processes.keys():
+            raise ValueError(f"Founding repeating test_stream_name : {stream_name}")
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        self.send_data_processes[stream_name].kill()
+
+    def remove_stream(self, stream_name: str):
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.LeftButton)
 
     def clean_up(self):
         [p.kill() for _, p in self.send_data_processes.items()]

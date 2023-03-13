@@ -2,7 +2,8 @@
 If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
 Otherwise, you will get either import error or file not found error
 """
-
+import itertools
+import math
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 import os
 import random
@@ -25,6 +26,7 @@ from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.tests.test_utils import TestContext
 from rena.utils.data_utils import RNStream
 from rena.utils.settings_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
@@ -50,11 +52,40 @@ def teardown_function(function):
     pass
 
 
-def test_stream_visualization_single_stream(app, qtbot) -> None:
+def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     '''
     Adding active stream
     :param app:
     :param qtbot:
     :return:
     '''
-    pass
+    test_stream_name = 'TestStreamName0'
+    test_time_second_per_stream = 10
+    sampling_rates_to_test = np.linspace(1, 2048, 1)
+    num_channels_to_test = np.linspace(1, 500, 1)
+
+    num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
+    sampling_rates_to_test = [math.ceil(x) for x in sampling_rates_to_test]
+    num_tests = len(sampling_rates_to_test) * len(num_channels_to_test)
+    print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
+    print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {num_tests * (test_time_second_per_stream + 3)}")
+
+    test_space = itertools.product(num_channels_to_test, sampling_rates_to_test)
+    result_update_buffer_time = []
+    result_plot_data_time = []
+    test_context = TestContext(app, qtbot)
+    for num_channels, sampling_rate in test_space:
+        test_context.start_stream(test_stream_name, num_channels, sampling_rate)
+        qtbot.wait(test_time_second_per_stream * 1e3)
+        test_context.close_stream(test_stream_name)
+
+        result_update_buffer_time.append((np.mean(app.stream_widgets[test_stream_name].update_buffer_times),
+                                          np.std(app.stream_widgets[test_stream_name].update_buffer_times)))
+        result_plot_data_time.append((np.mean(app.stream_widgets[test_stream_name].plot_data_times),
+                                      np.std(app.stream_widgets[test_stream_name].plot_data_times)))
+
+        test_context.remove_stream(test_stream_name)
+
+    print(test_space)
+    print(result_update_buffer_time)
+    print(result_plot_data_time)
