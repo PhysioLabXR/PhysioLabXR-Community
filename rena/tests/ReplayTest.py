@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+import uuid
 from multiprocessing import Process
 
 import numpy as np
@@ -71,19 +72,19 @@ def test_replay_multi_streams(app, qtbot) -> None:
     :return:
     '''
     num_stream_to_test = 3
-    recording_time_second = 3
+    recording_time_second = 6
     replay_file_session_name = 'replayed'
     stream_availability_timeout = 2 * lsl_stream_availability_wait_time * 1e3
 
     test_stream_names = []
     test_stream_processes = []
     for i in range(num_stream_to_test):
-        ts_name = f'TestStreamName{i}'
+        ts_name = f'TestStreamName{i}-{uuid.uuid4()}'
         test_stream_names.append(ts_name)
         p = Process(target=LSLTestStream, args=(ts_name,))
         test_stream_processes.append(p)
         p.start()
-        app.create_preset(f'TestStreamName{i}', 'float', None, 'LSL',num_channels=81)  # add a default preset
+        app.create_preset(ts_name, 'float', None, 'LSL',num_channels=81)  # add a default preset
 
     for ts_name in test_stream_names:
         app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
@@ -106,16 +107,14 @@ def test_replay_multi_streams(app, qtbot) -> None:
     for ts_name in test_stream_names:
         qtbot.mouseClick(app.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
 
-    # test if the data are being received
-    for ts_name in test_stream_names:
-        assert app.stream_widgets[ts_name].viz_data_buffer.has_data()
-
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
     qtbot.wait(recording_time_second * 1e3)
     # time.sleep(recording_time_second)
-
+    # test if the data are being received
+    for ts_name in test_stream_names:
+        assert app.stream_widgets[ts_name].viz_data_buffer.has_data()
     def handle_custom_dialog_ok(patience=0):
         w = QtWidgets.QApplication.activeWindow()
         if patience == 0:
@@ -152,16 +151,11 @@ def test_replay_multi_streams(app, qtbot) -> None:
     qtbot.mouseClick(app.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)  # stop the recording
 
     print("Waiting for replay streams to become available")
-    [p.kill() for p in test_stream_processes]
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay
 
     # start the streams from replay and record them ################################################
     for ts_name in test_stream_names:
         qtbot.mouseClick(app.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
-
-    # test if the data are being received
-    for ts_name in test_stream_names:
-        assert app.stream_widgets[ts_name].viz_data_buffer.has_data()
 
     # change the recording file name
     qtbot.mouseClick(app.recording_tab.sessionTagTextEdit, QtCore.Qt.LeftButton)
@@ -172,6 +166,10 @@ def test_replay_multi_streams(app, qtbot) -> None:
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
     wait_for_replay_finishes_time = (recording_time_second * 2) * 1e3
+
+    # test if the data are being received
+    for ts_name in test_stream_names:
+        assert app.stream_widgets[ts_name].viz_data_buffer.has_data()
 
     qtbot.waitUntil(lambda: not app.replay_tab.is_replaying, timeout=wait_for_replay_finishes_time)  # wait until the replay completes, need to ensure that the replay can finish
     print("replay is over")

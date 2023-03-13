@@ -46,20 +46,18 @@ class LSLInletInterface:
             assert actual_num_channels == self.lsl_num_chan
         except AssertionError:
             self.inlet.close_stream()
-            # raise LSLChannelMismatchError(
-            #     'The preset has {0} channel names, but the \n stream in LAN has {1} channels'.format(self.lsl_num_chan, actual_num_channels))
             raise ChannelMismatchError(actual_num_channels)
 
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
-        # read the channel names is there's any
-        # tell the sensor to start sending frames
     def is_stream_available(self):
         available_streams = [x.name() for x in lsl_continuous_resolver.results()] + [x.type() for x in lsl_continuous_resolver.results()]
         return self.lsl_stream_name in available_streams
 
     def process_frames(self):
-        # return one or more frames of the sensor
+        """
+        @return: one or more frames of the sensor
+        """
         try:
             frames, timestamps = self.inlet.pull_chunk()
         except LostError:
@@ -76,7 +74,7 @@ class LSLInletInterface:
         return self.inlet.info()
 
     def get_num_chan(self):
-        return self.lsl_num_channels
+        return self.lsl_num_chan
 
     def get_nominal_srate(self):
         return self.streams[0].nominal_srate()

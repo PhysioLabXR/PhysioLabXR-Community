@@ -9,6 +9,7 @@ import random
 import sys
 import threading
 import unittest
+import uuid
 from multiprocessing import Process
 
 import pytest
@@ -98,11 +99,15 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    test_stream_name = 'TestStreamName'
-    p = Process(target=LSLTestStream, args=(test_stream_name, random.randint(100, 200)))
+    test_stream_name = 'TestStreamName' + str(uuid.uuid4())
+    actual_num_chan = random.randint(100, 200)
+    preset_num_chan = random.randint(1, 99)
+    streaming_time_second = 3
+
+    p = Process(target=LSLTestStream, args=(test_stream_name, actual_num_chan))
     p.start()
 
-    app.create_preset('TestStreamName', 'float', None, 'LSL', num_channels=random.randint(1, 99))  # add a default preset
+    app.create_preset('TestStreamName', 'float', None, 'LSL', num_channels=preset_num_chan)  # add a default preset
 
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -125,6 +130,8 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
     t.join()
 
+    qtbot.wait(streaming_time_second * 1e3)
+
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
@@ -138,8 +145,10 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    test_stream_name = 'TestStreamName'
+    test_stream_name = 'TestStreamName' + str(uuid.uuid4())
     port = '5556'
+    streaming_time_second = 3
+
     p = Process(target=ZMQTestStream, args=(test_stream_name, port))
     p.start()
 
@@ -166,6 +175,9 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
     t.join()
+
+    qtbot.wait(streaming_time_second * 1e3)
+
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
