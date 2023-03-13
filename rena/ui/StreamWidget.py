@@ -401,7 +401,7 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
-                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, )))  # NOTE performance test scripts, don't include in production code
+                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
@@ -494,7 +494,8 @@ class StreamWidget(QtWidgets.QWidget):
         data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
-            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
         self.viz_components.fs_label.setText(

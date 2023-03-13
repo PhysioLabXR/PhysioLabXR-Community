@@ -3,7 +3,9 @@ import secrets
 import string
 from multiprocessing import Process
 
-from PyQt5 import QtCore, Qt
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
+
 from PyQt5.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 
@@ -13,6 +15,7 @@ from rena.tests.TestStream import LSLTestStream
 
 
 def stream_is_available(app: MainWindow, test_stream_name: str):
+    print(f"Stream name {test_stream_name} availability is {app.stream_widgets[test_stream_name].is_stream_available}")
     assert app.stream_widgets[test_stream_name].is_stream_available
 
 class TestContext:
@@ -25,7 +28,7 @@ class TestContext:
         self.app = app
         self.qtbot = qtbot
 
-        self.stream_availability_timeout = 2 * lsl_stream_availability_wait_time * 1e3
+        self.stream_availability_timeout = 4 * lsl_stream_availability_wait_time * 1e3
 
     def cleanup(self):
         pass
@@ -50,7 +53,7 @@ class TestContext:
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
-        self.qtbot.waitUntil(stream_is_available, timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
+        self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
 
 

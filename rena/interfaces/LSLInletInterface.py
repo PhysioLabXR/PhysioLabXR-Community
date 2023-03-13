@@ -5,6 +5,7 @@ from pylsl import StreamInlet, LostError, resolve_byprop
 
 from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
+from rena.config import lsl_stream_availability_wait_time
 from stream_shared import lsl_continuous_resolver
 
 
@@ -35,9 +36,11 @@ class LSLInletInterface:
 
     def start_sensor(self):
         # connect to the sensor
-        self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=0.1)
-        if len(self.streams) < 1: self.streams = resolve_byprop('type', self.lsl_stream_name, timeout=0.1)
-        if len(self.streams) < 1: raise LSLStreamNotFoundError('Unable to find LSL Stream with given name or type: {0}'.format(self.lsl_stream_name))
+        self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=lsl_stream_availability_wait_time)
+        if len(self.streams) < 1:
+            self.streams = resolve_byprop('type', self.lsl_stream_name, timeout=lsl_stream_availability_wait_time)
+        if len(self.streams) < 1:
+            raise LSLStreamNotFoundError(f'Unable to find LSL Stream with given name or type: {self.lsl_stream_name}')
         self.inlet = StreamInlet(self.streams[0])
         self.inlet.open_stream()
         actual_num_channels = self.inlet.channel_count
