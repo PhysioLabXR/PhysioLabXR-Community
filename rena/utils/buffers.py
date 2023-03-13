@@ -216,7 +216,6 @@ class DataBufferSingleStream():
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(data_dict['frames'].shape[0])
 
-        # self.bu(self.buffer, data_dict)
         try:
             # pass
             self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
@@ -228,11 +227,15 @@ class DataBufferSingleStream():
         cut_to = -np.min([buffer_time_points, self.buffer_size])
         self.buffer[0] = self.buffer[0][:, cut_to:]
         self.buffer[1] = self.buffer[1][cut_to:]
+
         self.samples_received += data_dict['frames'].shape[1]
 
     def init_buffer(self, num_channels):
         time_dim = self.buffer_size if self.append_zeros else 0
+
         self.buffer.append(np.zeros(shape=(num_channels, time_dim)))
+        # self.buffer.append(np.random.random(size=(num_channels, time_dim)))
+
         self.buffer.append(np.zeros(shape=(time_dim,)))  # data first, timestamps second
         self.samples_received = 0
 

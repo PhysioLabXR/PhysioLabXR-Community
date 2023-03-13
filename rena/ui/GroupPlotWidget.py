@@ -93,6 +93,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             downsample_method = 'mean' if self.sampling_rate > config.settings.value('downsample_method_mean_sr_threshold') else 'subsample'
             channel_plot_item.setDownsampling(auto=True, method=downsample_method)
             channel_plot_item.setClipToView(True)
+            channel_plot_item.setSkipFiniteCheck(True)
 
             self.channel_plot_item_dict[channel_name] = channel_plot_item
 
@@ -145,6 +146,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.viz_time_vector = self.get_viz_time_vector()
         if self.get_selected_format() == 0 and self.this_group_info["plot_format"]['time_series']['is_valid']:
             for index_in_group, channel_index in enumerate(self.this_group_info['channel_indices']):
+
                 self.linechart_widget.plotItem.curves[index_in_group].setData(self.viz_time_vector, data[int(channel_index), :])
         elif self.get_selected_format() == 1 and self.this_group_info["plot_format"]['image']['is_valid']:
             width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(self.get_group_name())
