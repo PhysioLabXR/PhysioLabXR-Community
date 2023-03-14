@@ -76,7 +76,7 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     test_axes = {"number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
 
     num_tests = len(sampling_rates_to_test) * len(num_channels_to_test)
-    test_stream_names = get_random_test_stream_names(num_tests)
+    test_stream_names = get_random_test_stream_names(num_tests * 2)
 
     print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
     print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {num_tests * (test_time_second_per_stream + 3)}")
@@ -84,10 +84,10 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     test_context = TestContext(app, qtbot)
 
     # test without recording
-    results_with_recording = run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)
+    results_with_recording = run_benchmark(test_context, test_stream_names[:int(len(test_stream_names)/2)], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)
     visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
 
-    results_without_recording = run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
+    results_without_recording = run_benchmark(test_context, test_stream_names[int(len(test_stream_names)/2):], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
     visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="Without recording")
 
     pickle.dump({'results_with_recording': results_with_recording, 'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
