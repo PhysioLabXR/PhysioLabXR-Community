@@ -2,12 +2,13 @@ import itertools
 import os
 import secrets
 import string
+import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
 
 import numpy as np
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 
 from PyQt5.QtWidgets import QWidget
@@ -17,11 +18,56 @@ from pytestqt.qtbot import QtBot
 from rena.MainWindow import MainWindow
 from rena.config import lsl_stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream
+from rena.utils.ui_utils import CustomDialog
 
 
 def stream_is_available(app: MainWindow, test_stream_name: str):
     # print(f"Stream name {test_stream_name} availability is {app.stream_widgets[test_stream_name].is_stream_available}")
     assert app.stream_widgets[test_stream_name].is_stream_available
+
+def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
+    if patience_second == 0:
+        w = QtWidgets.QApplication.activeWindow()
+        if isinstance(w, CustomDialog):
+            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)  # delay 1 second for the data to come in
+    else:
+        time_started = time.time()
+        while not isinstance(w := QtWidgets.QApplication.activeWindow(), CustomDialog):
+            time_waited = time.time() - time_started
+            if time_waited > patience_second:
+                raise TimeoutError
+            qtbot.wait(100)  # wait for 100 ms between tries
+            print(f"Waiting for the activate window to be a CustomDialog: {w}")
+        print(f": {w} is a CustomDialog, trying to click ok button")
+        yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
+
+def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
+    """
+    This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
+    @param app:
+    @param qtbot:
+    @param patience_second:
+    @param delay:
+    """
+    if patience_second == 0:
+        if isinstance(app.current_dialog, CustomDialog):
+            yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)  # delay 1 second for the data to come in
+        else:
+            raise ValueError(f"current dialog in main window is not CustomDialog. It is {type(app.current_dialog)}")
+    else:
+        time_started = time.time()
+        while not isinstance(app.current_dialog, CustomDialog):
+            time_waited = time.time() - time_started
+            if time_waited > patience_second:
+                raise TimeoutError
+            qtbot.wait(100)  # wait for 100 ms between tries
+            print(f"Waiting for the current dialogue to be a CustomDialog: {app.current_dialog}")
+        print(f": {app.current_dialog} is a CustomDialog, trying to click ok button")
+        yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
 
 class TestContext:
     """
@@ -50,7 +96,7 @@ class TestContext:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        self.app.create_preset(stream_name, 'float', None, 'LSL', num_channels=num_channels)  # add a default preset
+        self.app.create_preset(stream_name, 'float', None, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -60,7 +106,6 @@ class TestContext:
 
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
-
 
     def close_stream(self, stream_name: str):
         if stream_name not in self.send_data_processes.keys():
@@ -73,6 +118,14 @@ class TestContext:
 
     def clean_up(self):
         [p.kill() for _, p in self.send_data_processes.items()]
+
+    def stop_recording(self):
+        if not self.app.recording_tab.is_recording:
+            raise ValueError("App is not recording when calling stop_recording from test_context")
+        t = threading.Timer(1, lambda: handle_current_dialog_ok(app=self.app, qtbot=self.qtbot, patience_second=30000))
+        t.start()
+        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+        t.join()  # wait until the dialog is closed
 
     def __del__(self):
         self.clean_up()
@@ -95,11 +148,15 @@ def update_test_cwd():
         os.chdir('../')
 
 def run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
-    results = defaultdict(lambda: defaultdict(dict))
+    results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     for stream_name, (num_channels, sampling_rate) in zip(test_stream_names, itertools.product(num_channels_to_test, sampling_rates_to_test)):
         print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name {stream_name}...", end='')
         start_time = time.perf_counter()
         test_context.start_stream(stream_name, num_channels, sampling_rate)
+        if is_reocrding:
+            test_context.app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+            test_context.qtbot.mouseClick(test_context.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+
         test_context.qtbot.wait(test_time_second_per_stream * 1e3)
         test_context.close_stream(stream_name)
 
@@ -122,9 +179,15 @@ def run_benchmark(test_context, test_stream_names, num_channels_to_test, samplin
                 results[measure][num_channels, sampling_rate][measure] = test_context.app.stream_widgets[stream_name].get_fps()
             else:
                 raise ValueError(f"Unknown metric: {measure}")
+        if is_reocrding:
+            test_context.stop_recording()
+            recording_file_name = test_context.app.recording_tab.save_path
+            assert os.stat(recording_file_name).st_size != 0  # make sure recording file has content
+            os.remove(recording_file_name)
 
         test_context.remove_stream(stream_name)
         print(f"Took {time.perf_counter() - start_time}.", end='')
+
     return results
 
 

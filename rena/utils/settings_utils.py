@@ -313,12 +313,14 @@ def add_keys_to_preset(preset_dict):
     return preset_dict
 
 
-def create_default_preset(stream_name, data_type, port, networking_interface, num_channels):
+def create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate:int=None):
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
                    'NetworkingInterface': networking_interface,
                    'DataType': data_type,
                    'PortNumber': port}
+    if nominal_sample_rate:
+        preset_dict['NominalSamplingRate'] = nominal_sample_rate
     preset_dict = add_keys_to_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')

@@ -65,9 +65,9 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    test_time_second_per_stream = 3
-    sampling_rates_to_test = np.linspace(1, 2048, 3)
-    num_channels_to_test = np.linspace(1, 500, 3)
+    test_time_second_per_stream = 15
+    sampling_rates_to_test = np.linspace(1, 2048, 10)
+    num_channels_to_test = np.linspace(1, 500, 10)
     metrics = 'update buffer time', 'plot data time', 'viz fps'
 
     num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
@@ -84,10 +84,12 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     test_context = TestContext(app, qtbot)
 
     # test without recording
-    results = run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics)
-    visualize_benchmark_results(results, test_axes=test_axes, metrics=metrics)
+    results_with_recording = run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)
+    visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
 
-    # test with recording
+    results_without_recording = run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
+    visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
 
-    pickle.dump({'results': results, 'test_axes': test_axes}, open("single_stream_benchmark_results.p", 'wb'))
+    pickle.dump({'results_with_recording': results_with_recording, 'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark_results.p", 'wb'))
+
 

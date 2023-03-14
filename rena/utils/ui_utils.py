@@ -320,10 +320,11 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
             return
     dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
     if mode=='modal':
+        dlg.activateWindow()
         if dlg.exec_():
             print("Dialog popup")
         else:
-            print("Cancel!")
+            print("Dialog closed")
     elif mode=='modeless':
         dlg.show()
         dlg.activateWindow()

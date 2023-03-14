@@ -115,6 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # windows
         self.pop_windows = {}
+        self.current_dialog = None
 
         # actions for context menu
         self.actionDocumentation.triggered.connect(self.fire_action_documentation)
@@ -171,8 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels)  # create the preset
+    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
+        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):

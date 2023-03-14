@@ -61,7 +61,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def start_recording_btn_pressed(self):
         if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
-            dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
+            self.parent.current_dialog = dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
@@ -86,7 +86,7 @@ class RecordingsTab(QtWidgets.QWidget):
         if config.settings.value('file_format') != config.FILE_FORMATS[0]:
             self.convert_file_format(self.save_path, config.settings.value('file_format'))
         else:
-            dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
+            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless')
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
@@ -157,7 +157,7 @@ class RecordingsTab(QtWidgets.QWidget):
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.call([opener, "-R", config.settings.value('recording_file_location')])
         except FileNotFoundError:
-            dialog_popup(msg="Recording directory does not exist. "
+            self.parent.current_dialog = dialog_popup(msg="Recording directory does not exist. "
                              "Please use a valid directory in the Recording Tab.", title="Error")
 
     def convert_file_format(self, file_path, file_format):
