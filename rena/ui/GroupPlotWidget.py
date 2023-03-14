@@ -83,6 +83,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.linechart_layout.addWidget(self.linechart_widget)
         distinct_colors = get_distinct_colors(len(self.this_group_info['channel_indices']))
         self.legends = self.linechart_widget.addLegend()
+        # self.linechart_widget.enableAutoRange(enable=False)
         for channel_index_in_group, (channel_index, channel_name) in enumerate(
                 zip(self.channel_indices, self.channel_names)):
             is_channel_shown = self.this_group_info['is_channels_shown'][channel_index_in_group]
@@ -94,7 +95,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
             channel_plot_item.setDownsampling(auto=True, method=downsample_method)
             channel_plot_item.setClipToView(True)
             channel_plot_item.setSkipFiniteCheck(True)
-
             self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
@@ -146,8 +146,9 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.viz_time_vector = self.get_viz_time_vector()
         if self.get_selected_format() == 0 and self.this_group_info["plot_format"]['time_series']['is_valid']:
             for index_in_group, channel_index in enumerate(self.this_group_info['channel_indices']):
-
-                self.linechart_widget.plotItem.curves[index_in_group].setData(self.viz_time_vector, data[int(channel_index), :])
+                plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
+                if plot_data_item.isVisible():
+                    plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
         elif self.get_selected_format() == 1 and self.this_group_info["plot_format"]['image']['is_valid']:
             width, height, depth, image_format, channel_format, scaling_factor = self.get_image_format_and_shape(self.get_group_name())
             image_plot_data = data[self.this_group_info['channel_indices'], -1]  # only visualize the last frame

@@ -88,7 +88,7 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
 
     results_without_recording = run_benchmark(test_context, test_stream_names[int(len(test_stream_names)/2):], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
-    visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="Without recording")
+    visualize_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="Without recording")
 
     pickle.dump({'results_with_recording': results_with_recording, 'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
 
