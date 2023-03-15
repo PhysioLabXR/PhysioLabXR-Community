@@ -86,7 +86,7 @@ class SettingsTab(QtWidgets.QWidget):
     def set_recording_file_format(self):
         self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))
 
-    def set_recording_file_location(self, selected_data_dir):
+    def set_recording_file_location(self, selected_data_dir: str):
         if selected_data_dir != '':
             config.settings.setValue('recording_file_location', selected_data_dir)
             print("Selected data dir: ", config.settings.value('recording_file_location'))

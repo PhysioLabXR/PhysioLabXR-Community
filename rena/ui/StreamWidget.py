@@ -17,7 +17,8 @@ from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
-from rena.utils.general import DataBufferSingleStream
+from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.performance_utils import timeit
 from rena.utils.settings_utils import get_stream_preset_info, \
     collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
     set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
@@ -136,6 +137,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.group_name_plot_widget_dict = {}
         self.create_visualization_component()
 
+        self._has_new_viz_data = False
+
         # FPS counter``
         self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
 
@@ -146,6 +149,19 @@ class StreamWidget(QtWidgets.QWidget):
         # start the timers
         self.timer.start()
         self.v_timer.start()
+
+        # Attributes purely for performance checks x############################
+        """
+        These attributes should be kept only on this perforamnce branch
+        """
+        self.update_buffer_times = []
+        self.plot_data_times = []
+        ########################################################################
+
+
+    def reset_performance_measures(self):
+        self.update_buffer_times = []
+        self.plot_data_times = []
 
     def update_stream_availability(self, is_stream_available):
         '''
@@ -161,7 +177,7 @@ class StreamWidget(QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
+                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
         else:
             # is the stream is not available
             if is_stream_available:
@@ -209,35 +225,37 @@ class StreamWidget(QtWidgets.QWidget):
                 self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
                 self.update_stream_availability(self.worker.is_stream_available)
         else:
+            # self.reset_performance_measures()
             try:
                 self.worker.start_stream()
             except LSLStreamNotFoundError as e:
-                dialog_popup(msg=str(e), title='ERROR')
+                self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                 return
             except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-                reply = QMessageBox.question(self, 'Channel Mismatch',
-                                             'The stream with name {0} found on the network has {1}.\n'
-                                             'The preset has {2} channels. \n '
-                                             'Do you want to reset your preset to a default and start stream.\n'
-                                             'You can edit your stream channels in Options if you choose No'.format(
-                                                 self.stream_name, e.message,
-                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
+                # self.main_parent.current_dialog = reply = QMessageBox.question(self, 'Channel Mismatch',
+                #                              'The stream with name {0} found on the network has {1}.\n'
+                #                              'The preset has {2} channels. \n '
+                #                              'Do you want to reset your preset to a default and start stream.\n'
+                #                              'You can edit your stream channels in Options if you choose No'.format(
+                #                                  self.stream_name, e.message,
+                #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+
+                if reply.result():
                     self.reset_preset_by_num_channels(e.message)
                     try:
                         self.worker.start_stream()  # start the stream again with updated preset
                     except LSLStreamNotFoundError as e:
-                        dialog_popup(msg=str(e), title='ERROR')
+                        self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                         return
                 else:
                     return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
-
             if self.worker.is_streaming:
-                # started
-                # print("sensor stopped")
                 self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
         self.main_parent.update_active_streams()
@@ -253,10 +271,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.reset_viz()
 
     def reset_viz(self):
-        '''
+        """
         caller to this function must ensure self.group_info is modified and up to date with user changes
-        :return:
-        '''
+        """
         self.clear_stream_visualizations()
         self.create_visualization_component()
 
@@ -277,7 +294,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.is_popped = False
         self.set_button_icons()
 
-
     def pop_window(self):
         w = AnotherWindow(self, self.remove_stream)
         self.main_parent.pop_windows[self.stream_name] = w
@@ -293,7 +309,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.timer.stop()
         self.v_timer.stop()
         if self.main_parent.recording_tab.is_recording:
-            dialog_popup(msg='Cannot remove stream while recording.')
+            self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
         # stop_stream_btn.click()  # fire stop streaming first
         if self.worker.is_streaming:
@@ -392,18 +408,16 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
-                self.viz_data_buffer.update_buffer(data_dict)
+                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
+                self._has_new_viz_data = True
+                # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
-                reply = QMessageBox.question(self, 'Channel Mismatch',
-                                             'The stream with name {0} found on the network has {1}.\n'
-                                             'The preset has {2} channels. \n '
-                                             'Do you want to reset your preset to a default and start stream.\n'
-                                             'If you choose No, streaming will stop. You can edit your stream channels in Options'.format(
-                                                 self.stream_name, e.message,
-                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+
+                if reply.result():
                     self.reset_preset_by_num_channels(e.message)
                     self.in_error_state = False
                     return
@@ -479,18 +493,20 @@ class StreamWidget(QtWidgets.QWidget):
         # change to loop with type condition plot time_series and image
         # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
         # plot_channel_num_offset = 0
-        if not self.viz_data_buffer.has_data():
+        if not self._has_new_viz_data:
             return
         data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
-            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
         self.viz_components.fs_label.setText(
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.viz_components.ts_label.setText(
             'Current Time Stamp = {0}'.format(self.current_timestamp))
+        self._has_new_viz_data = False
 
     def ticks(self):
         self.worker.signal_data_tick.emit()

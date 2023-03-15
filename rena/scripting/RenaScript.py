@@ -14,7 +14,7 @@ from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_ST
     SCRIPT_PARAM_CHANGE, ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.general import get_fps, DataBuffer, check_buffer_timestamps_monotonic
+from rena.utils.buffers import get_fps, DataBuffer, check_buffer_timestamps_monotonic
 from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 

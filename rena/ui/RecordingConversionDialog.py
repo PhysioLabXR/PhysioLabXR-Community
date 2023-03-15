@@ -40,7 +40,7 @@ class RecordingConversionDialog(QtWidgets.QWidget):
         read_bytes, total_bytes = progresses
         self.progress_label.setText('Loading file back in: {} % loaded'.format(str(round(100 * read_bytes/total_bytes, 2))))
         self.progress_label.repaint()
-        print('updated progress label')
+        # print('updated progress label')
 
     def streamin_finished(self):
         self.progress_label.setText('Converting to {}'.format(self.file_format))

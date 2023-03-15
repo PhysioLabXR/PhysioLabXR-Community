@@ -31,8 +31,8 @@ from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsTab import SettingsTab
 from rena.ui.ReplayTab import ReplayTab
 from rena.utils.data_utils import window_slice
-from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor
+from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
+    process_preset_create_TImmWave_interface_startsensor, DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
     init_camera_widget, convert_rgb_to_qt_image, another_window
 
@@ -115,6 +115,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # windows
         self.pop_windows = {}
+        self.current_dialog = None
 
         # actions for context menu
         self.actionDocumentation.triggered.connect(self.fire_action_documentation)
@@ -129,6 +130,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.get_layout().addWidget(self.settings_tab)
         self.settings_window.hide()
 
+        # global buffer object for visualization, recording, and scripting
+        self.global_stream_buffer = DataBuffer()
 
     def add_btn_clicked(self):
         """
@@ -169,8 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels)  # create the preset
+    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
+        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
@@ -204,25 +207,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.video_device_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
-
         for stream_name in stream_names:
             # check if the stream in setting's preset
-            if check_preset_exists(stream_name):
-                self.addStreamWidget.select_by_stream_name(stream_name)
-                self.addStreamWidget.add_btn.click()
-            else:  # add a new preset if the stream name is not defined
-                self.addStreamWidget.set_selection_text(stream_name)
-                self.addStreamWidget.add_btn.click()
-
-        # loading_dlg.close()
+            if stream_name not in self.stream_widgets.keys():
+                if check_preset_exists(stream_name):
+                    self.addStreamWidget.select_by_stream_name(stream_name)
+                    self.addStreamWidget.add_btn.click()
+                else:  # add a new preset if the stream name is not defined
+                    self.addStreamWidget.set_selection_text(stream_name)
+                    self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to visulalization
         self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.add_streams_to_visualize(stream_names)
-        for stream_name in stream_names:
-            if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
-                self.stream_widgets[stream_name].StartStopStreamBtn.click()
+        # for stream_name in stream_names:
+        #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
+        #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
     def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
         error_initialization = False

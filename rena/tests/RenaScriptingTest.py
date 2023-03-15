@@ -13,10 +13,13 @@ from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream
 import importlib
 
+from rena.tests.test_utils import update_test_cwd
+
 
 @pytest.fixture
 def app(qtbot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)

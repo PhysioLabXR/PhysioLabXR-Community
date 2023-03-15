@@ -12,7 +12,7 @@ import brainflow
 
 # class P300DetectorMarker(Enum):
 #
-from rena.utils.general import DataBuffer
+from rena.utils.buffers import DataBuffer
 
 FLASH_START_MARKER = 9
 FLASH_END_MARKER = 10
