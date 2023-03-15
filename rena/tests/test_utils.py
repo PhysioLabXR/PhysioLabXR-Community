@@ -144,7 +144,7 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
     return names
 
 def update_test_cwd():
-    if os.getcwd().endswith('rena/tests'):
+    if os.getcwd().endswith(os.path.join('rena', 'tests')):
         os.chdir('../')
 
 def run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
@@ -157,7 +157,7 @@ def run_benchmark(test_context, test_stream_names, num_channels_to_test, samplin
             test_context.app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
             test_context.qtbot.mouseClick(test_context.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
-        test_context.qtbot.wait(test_time_second_per_stream * 1e3)
+        test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
         test_context.close_stream(stream_name)
 
         for measure in metrics:

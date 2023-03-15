@@ -137,6 +137,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.group_name_plot_widget_dict = {}
         self.create_visualization_component()
 
+        self._has_new_viz_data = False
+
         # FPS counter``
         self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
 
@@ -155,6 +157,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.update_buffer_times = []
         self.plot_data_times = []
         ########################################################################
+
 
     def reset_performance_measures(self):
         self.update_buffer_times = []
@@ -402,6 +405,7 @@ class StreamWidget(QtWidgets.QWidget):
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
                 self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
+                self._has_new_viz_data = True
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
@@ -489,7 +493,7 @@ class StreamWidget(QtWidgets.QWidget):
         # change to loop with type condition plot time_series and image
         # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
         # plot_channel_num_offset = 0
-        if not self.viz_data_buffer.has_data():
+        if not self._has_new_viz_data:
             return
         data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
@@ -502,6 +506,7 @@ class StreamWidget(QtWidgets.QWidget):
             'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.viz_components.ts_label.setText(
             'Current Time Stamp = {0}'.format(self.current_timestamp))
+        self._has_new_viz_data = False
 
     def ticks(self):
         self.worker.signal_data_tick.emit()

@@ -112,7 +112,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
-    qtbot.wait(recording_time_second * 1e3)
+    qtbot.wait(int(recording_time_second * 1e3))
     # time.sleep(recording_time_second)
     # test if the data are being received
     for ts_name in test_stream_names:
