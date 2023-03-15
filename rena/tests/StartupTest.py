@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
-from rena.config import lsl_stream_availability_wait_time
+from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd

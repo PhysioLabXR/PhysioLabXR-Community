@@ -177,7 +177,7 @@ class StreamWidget(QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
+                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
         else:
             # is the stream is not available
             if is_stream_available:
@@ -229,23 +229,27 @@ class StreamWidget(QtWidgets.QWidget):
             try:
                 self.worker.start_stream()
             except LSLStreamNotFoundError as e:
-                dialog_popup(msg=str(e), title='ERROR')
+                self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                 return
             except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-                reply = QMessageBox.question(self, 'Channel Mismatch',
-                                             'The stream with name {0} found on the network has {1}.\n'
-                                             'The preset has {2} channels. \n '
-                                             'Do you want to reset your preset to a default and start stream.\n'
-                                             'You can edit your stream channels in Options if you choose No'.format(
-                                                 self.stream_name, e.message,
-                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
+                # self.main_parent.current_dialog = reply = QMessageBox.question(self, 'Channel Mismatch',
+                #                              'The stream with name {0} found on the network has {1}.\n'
+                #                              'The preset has {2} channels. \n '
+                #                              'Do you want to reset your preset to a default and start stream.\n'
+                #                              'You can edit your stream channels in Options if you choose No'.format(
+                #                                  self.stream_name, e.message,
+                #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+
+                if reply.result():
                     self.reset_preset_by_num_channels(e.message)
                     try:
                         self.worker.start_stream()  # start the stream again with updated preset
                     except LSLStreamNotFoundError as e:
-                        dialog_popup(msg=str(e), title='ERROR')
+                        self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                         return
                 else:
                     return
@@ -305,7 +309,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.timer.stop()
         self.v_timer.stop()
         if self.main_parent.recording_tab.is_recording:
-            dialog_popup(msg='Cannot remove stream while recording.')
+            self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
         # stop_stream_btn.click()  # fire stop streaming first
         if self.worker.is_streaming:
@@ -409,15 +413,11 @@ class StreamWidget(QtWidgets.QWidget):
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
-                reply = QMessageBox.question(self, 'Channel Mismatch',
-                                             'The stream with name {0} found on the network has {1}.\n'
-                                             'The preset has {2} channels. \n '
-                                             'Do you want to reset your preset to a default and start stream.\n'
-                                             'If you choose No, streaming will stop. You can edit your stream channels in Options'.format(
-                                                 self.stream_name, e.message,
-                                                 len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.Yes:
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+
+                if reply.result():
                     self.reset_preset_by_num_channels(e.message)
                     self.in_error_state = False
                     return

@@ -307,7 +307,7 @@ class CustomDialog(QDialog):
             print('will show ' + self.dialog_name)
 
 
-def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False):
+def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None):
     if enable_dont_show:
         try:
             assert dialog_name is not None
@@ -319,6 +319,8 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
             print('Skipping showing dialog ' + dialog_name)
             return
     dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
+    if main_parent:
+        main_parent.current_dialog = dlg
     if mode=='modal':
         dlg.activateWindow()
         if dlg.exec_():

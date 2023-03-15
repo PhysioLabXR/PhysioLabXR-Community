@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
-from rena.config import lsl_stream_availability_wait_time
+from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd
@@ -76,7 +76,7 @@ def test_replay_multi_streams(app, qtbot) -> None:
     num_stream_to_test = 3
     recording_time_second = 6
     replay_file_session_name = 'replayed'
-    stream_availability_timeout = 2 * lsl_stream_availability_wait_time * 1e3
+    stream_availability_timeout = 2 * stream_availability_wait_time * 1e3
 
     test_stream_names = []
     test_stream_processes = []

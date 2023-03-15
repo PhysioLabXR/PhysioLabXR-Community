@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
-from rena.config import lsl_stream_availability_wait_time
+from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream
 from rena.utils.ui_utils import CustomDialog
 
@@ -30,7 +30,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
             yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)  # delay 1 second for the data to come in
+            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
     else:
         time_started = time.time()
         while not isinstance(w := QtWidgets.QApplication.activeWindow(), CustomDialog):
@@ -41,8 +41,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
             print(f"Waiting for the activate window to be a CustomDialog: {w}")
         print(f": {w} is a CustomDialog, trying to click ok button")
         yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
-
+        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
 def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
     """
     This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
@@ -54,7 +53,7 @@ def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, c
     if patience_second == 0:
         if isinstance(app.current_dialog, CustomDialog):
             yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)  # delay 1 second for the data to come in
+            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))  # delay 1 second for the data to come in
         else:
             raise ValueError(f"current dialog in main window is not CustomDialog. It is {type(app.current_dialog)}")
     else:
@@ -79,7 +78,7 @@ class TestContext:
         self.app = app
         self.qtbot = qtbot
 
-        self.stream_availability_timeout = 4 * lsl_stream_availability_wait_time * 1e3
+        self.stream_availability_timeout = 4 * stream_availability_wait_time * 1e3
 
     def cleanup(self):
         pass
