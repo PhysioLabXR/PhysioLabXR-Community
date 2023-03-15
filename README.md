@@ -37,7 +37,7 @@
 <h3 align="center">RenaLabApp</h3>
 
   <p align="center">
-    **_A Software Platform In Python For Multi-modal Brain-computer Interface And Real-time Experiment Pipelines_**
+    _A Software Platform In Python For Multi-modal Brain-computer Interface And Real-time Experiment Pipelines_
     <br />
     <a href="https://realitynavigationdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
