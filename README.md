@@ -30,8 +30,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/github_username/repo_name">
-    <img src="../../../Users/apoca/Downloads/Best-README-Template-master/Best-README-Template-master/images/logo.png" alt="Logo" width="80" height="80">
+  <a href="https://github.com/apocalyvec/renalabapp">
+    <img src="media/logo/RN.png" alt="Logo" width="180" height="89">
   </a>
 
 <h3 align="center">RenaLabApp</h3>
@@ -39,14 +39,14 @@
   <p align="center">
     project_description
     <br />
-    <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
+    <a href="https://realitynavigationdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/github_username/repo_name">View Demo</a>
+    <a href="https://github.com/apocalyvec/renalabapp">View Demo</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Report Bug</a>
+    <a href="https://github.com/apocalyvec/renalabapp/issues">Report Bug</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Request Feature</a>
+    <a href="https://github.com/apocalyvec/renalabapp/issues">Request Feature</a>
   </p>
 </div>
 
@@ -83,11 +83,16 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+[![RenaLabApp Screen Shot][product-screenshot]](media/example/screenshot.png)
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
+**RenaLabApp** (reality navigation laboratory application) is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
+data streams. RenaLabApp can help you build novel interaction interface like BCIs as well as aid you in 
+running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (~500Mbps/sec), real-time data streams.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+[//]: # (Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`)
+
+[//]: # ()
+[//]: # (<p align="right">&#40;<a href="#readme-top">back to top</a>&#41;</p>)
 
 
 
@@ -203,10 +208,12 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
+We thank the members from LIINC at Columbia University, Advance Human-computer Interaction Lab, and CWINS at Worcester Polytechnic Institute for their feedback in developing the App. ningkko for the great contribution to the original code base, and AlexG1031 for the help in the various versions.
+* [LIINC at Columbia](https://liinc.bme.columbia.edu/)
 
-* []()
-* []()
-* []()
+[//]: # (* []&#40;&#41;)
+
+[//]: # (* []&#40;&#41;)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -226,7 +233,7 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 [license-url]: https://github.com/apocalyvec/renalabapp/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/ziheng-leo-li/
-[product-screenshot]: media/screenshots/screenshot.png
+[product-screenshot]: media/example/screenshot.png
 
 [Python.org]: https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&color=3776AB&logoColor=white
 [Python-url]: https://python.org/
