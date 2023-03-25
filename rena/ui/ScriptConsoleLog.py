@@ -17,8 +17,13 @@ class ScriptConsoleLog(QtWidgets.QWidget):
         self.ts_labels = []
         self.add_msg_mutex = QMutex()
 
+        self.scroll_bar = self.scrollArea.verticalScrollBar()
+        self.auto_scroll = False
+
         self.ClearLogBtn.clicked.connect(self.clear_log_btn_clicked)
         self.SaveLogBtn.clicked.connect(self.save_log_btn_clicked)
+        self.scrollToBottomBtn.clicked.connect(self.scroll_to_bottom_btn_clicked)
+        self.scroll_bar.sliderMoved.connect(self.stop_auto_scroll)
 
     def print_msg(self, msg):
         self.add_msg_mutex.lock()
@@ -43,6 +48,8 @@ class ScriptConsoleLog(QtWidgets.QWidget):
 
         self.add_msg_mutex.unlock()
 
+        self.scroll_down()
+
     def clear_log_btn_clicked(self):
         self.add_msg_mutex.lock()
         for msg_label in self.msg_labels:
@@ -60,4 +67,12 @@ class ScriptConsoleLog(QtWidgets.QWidget):
                     f.write(ts_label.text() + msg_label.text() + '\n')
             self.add_msg_mutex.unlock()
 
+    def scroll_to_bottom_btn_clicked(self):
+        self.auto_scroll = True
 
+    def stop_auto_scroll(self):
+        self.auto_scroll = False
+
+    def scroll_down(self):
+        if self.auto_scroll:
+            self.scroll_bar.setSliderPosition(self.scroll_bar.maximum())
