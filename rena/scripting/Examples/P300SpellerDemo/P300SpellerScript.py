@@ -1,4 +1,7 @@
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
+import pickle
+from datetime import datetime
+
 from pylsl import StreamInfo, StreamOutlet
 from sklearn.linear_model import LogisticRegression
 
@@ -16,13 +19,17 @@ class P300Speller(RenaScript):
         # params = BrainFlowInputParams()
         # board = BoardShim(2, params)
         # self.eeg_names = board.get_eeg_names(2)
+
         self.info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
         self.info['description'] = 'P300Speller'
+
+        # during for egg time locking
         self.time_offset_before = -0.2
         self.time_offset_after = 1
+
         self.data_buffer = DataBuffer()
-        self.board_state = IDLE_STATE
-        self.game_state = IDLE_STATE
+        self.board_state = IDLE_STATE # game board state
+        self.game_state = IDLE_STATE  # game state
         self.model_name = 'P300SpellerModel'
         self.train_data_filename = ''
         self.test_data_filename = ''
@@ -46,6 +53,7 @@ class P300Speller(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
 
+        #
         if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
@@ -125,7 +133,7 @@ class P300Speller(RenaScript):
                 self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
                 self.inputs.clear_buffer_data()  # clear the data buffer
         else:
-            pass
+            print("WARNING: Unknown state")
 
     def training_callback(self):
         x_list = []
@@ -133,6 +141,7 @@ class P300Speller(RenaScript):
         epoch = None
         raw = self.generate_raw_data()
         self.training_raw.append(raw)
+        # run the post-processing for each trail
         for raw_array in self.training_raw:
             raw_processed = p300_speller_process_raw_data(raw_array, l_freq=1, h_freq=50, notch_f=60, picks='eeg',
                                                           )
@@ -146,6 +155,7 @@ class P300Speller(RenaScript):
             x_list.append(x)
             y_list.append(y)
 
+        # visualization function (optional)
         # visualize_eeg_epochs(epoch, event_id, event_color)
 
         x = np.concatenate([x for x in x_list]) # collect all x samples
@@ -210,7 +220,7 @@ class P300Speller(RenaScript):
         self.p300_speller_script_lsl.push_sample([TEST_RESPONSE_MARKER,target_char_index])
 
     def generate_raw_data(self):
-
+        # add stim channels to raw data
         flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts = self.get_p300_speller_events()
         raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
 
@@ -245,13 +255,4 @@ class P300Speller(RenaScript):
         flashing_ts = ts[flashing_markers_index]
         return flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts
 
-    # def save_data(self):
-    #     now = datetime.now()
-        # if self.game_state == TRAINING_STATE:
-        #     file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_train.pickle'
-        # elif self.game_state == TESTING_STATE:
-        #     file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_test.pickle'
-        # else:
-        #     return
-        # with open(file_name, 'wb') as handle:
-        #     pickle.dump(self.data_dict_buffer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
