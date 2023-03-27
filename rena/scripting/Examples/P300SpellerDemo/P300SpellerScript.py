@@ -1,91 +1,10 @@
-import pickle
-from enum import Enum
-
-import numpy as np
-import mne
-from brainflow import BrainFlowInputParams, BoardShim
-from matplotlib import pyplot as plt
-
 # from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
 from pylsl import StreamInfo, StreamOutlet
-
-from rena.scripting.RenaScript import RenaScript
-import brainflow
-from datetime import datetime
-# class P300DetectorMarker(Enum):
-#
-from rena.utils.general import DataBuffer
-from rena.scripting.Examples.P300SpellerDemo.P300Speller_params import *
-from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
 from sklearn.linear_model import LogisticRegression
 
-
-# START_TRAINING_MARKER = 90
-# END_TRAINING_MARKER = 91
-#
-# START_TESTING_MARKER = 100
-# END_TESTING_MARKER = 101
-#
-# FLASH_START_MARKER = 9
-# FLASH_END_MARKER = 10
-#
-# NONTARGET_MARKER = 11
-# TARGET_MARKER = 12
-#
-# ROW_FLASH_LABEL = 1
-# COL_FLASH_LABEL = 2
-#
-# IDLE_STATE = 0
-# RECORDING_STATE = 1
-#
-# TRAINING_STATE = 99
-# TESTING_STATE = 100
-#
-# START_FLASHING_MARKER = 3
-# END_FLASHING_MARKER = 4
-#
-# EEG_SAMPLING_RATE = 250.0
-#
-# Time_Window = 1.1  # second
-#
-# OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
-#
-# P300EventStreamName = 'P300Speller'
-#
-# sampling_rate = 250
-# data_duration = 2
-# channel_num = 8
-# data_array = np.random.rand(8, data_duration * sampling_rate)
-#
-# channel_types = ['eeg'] * 8
-# # channel_names = [
-# #     "Fp1",
-# #     "Fp2",
-# #     "C3",
-# #     "C4",
-# #     "P7",
-# #     "P8",
-# #     "O1",
-# #     "O2"
-# # ]
-# channel_names = [
-#     "Fz",
-#     "Cz",
-#     "Pz",
-#     "C3",
-#     "C4",
-#     "P3",
-#     "P4",
-#     "O1"
-# ]
-#
-# event_id = {'non_target': 11, 'target': 12}
-#
-# montage = 'standard_1005'
-
-
-# info = mne.create_info(channel_names, sampling_rate, channel_types)
-# info['description'] = 'P300Speller'
+from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
+from rena.scripting.RenaScript import RenaScript
+from rena.utils.general import DataBuffer
 
 
 class P300Speller(RenaScript):
@@ -290,13 +209,6 @@ class P300Speller(RenaScript):
         print(target_char_index)
         self.p300_speller_script_lsl.push_sample([TEST_RESPONSE_MARKER,target_char_index])
 
-        # training update
-
-
-        # def data_structure(self, raw, epoch, row_col_info):
-
-    #     return {'raw': raw, 'epochs': epoch, 'row_col_info': row_col_info}
-
     def generate_raw_data(self):
 
         flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts = self.get_p300_speller_events()
@@ -333,8 +245,8 @@ class P300Speller(RenaScript):
         flashing_ts = ts[flashing_markers_index]
         return flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts
 
-    def save_data(self):
-        now = datetime.now()
+    # def save_data(self):
+    #     now = datetime.now()
         # if self.game_state == TRAINING_STATE:
         #     file_name = now.strftime("%m_%d_%Y_%H_%M_%S") + '_train.pickle'
         # elif self.game_state == TESTING_STATE:

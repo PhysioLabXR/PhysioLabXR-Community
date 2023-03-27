@@ -20,13 +20,13 @@ def p300_speller_process_raw_data(raw, l_freq, h_freq, notch_f, picks):
     return raw_processed
 
 
-# def train_logistic_regression(X, y, model):
-#     # rebalance_classes(X, y)
-#     # X = X.reshape(X.shape[0],-1)
-#     x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
-#     model.fit(x_train, y_train)
-#     y_pred = model.predict(x_test)
-#     confusion_matrix(y_test, y_pred)
+def train_logistic_regression(X, y, model):
+    # rebalance_classes(X, y)
+    # X = X.reshape(X.shape[0],-1)
+    x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=test_size)
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    confusion_matrix(y_test, y_pred)
 
 
 def confusion_matrix(y_test, y_pred):
