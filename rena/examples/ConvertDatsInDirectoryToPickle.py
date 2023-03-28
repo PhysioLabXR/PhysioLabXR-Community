@@ -3,7 +3,7 @@ import pickle
 
 from rena.utils.data_utils import RNStream
 
-directory = 'C:/Users/LLINC-Lab/Dropbox/ReNa/data/ReNaPilot-2022Fall/Subjects-Test-IncompleteBlock/0'
+directory = f'D:\Dropbox\Dropbox\ReNa\data\RenaPipeline-2023Spring/1'
 
 files_to_convert = [os.path.join(directory, x) for x in os.listdir(directory) if x.endswith('.dats')]
 converted_file_paths = [x.replace('.dats', '.p') for x in files_to_convert]

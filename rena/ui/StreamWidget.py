@@ -419,7 +419,6 @@ class StreamWidget(QtWidgets.QWidget):
             self.main_parent.recording_tab.update_recording_buffer(data_dict)
             self.main_parent.scripting_tab.forward_data(data_dict)
             # scripting tab
-            # self.main_parent.inference_tab.update_buffers(data_dict)
 
     '''
     settings on change:
