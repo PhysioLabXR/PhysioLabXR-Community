@@ -14,6 +14,7 @@ from collections import defaultdict
 import mne
 import numpy as np
 import torch
+from mne import Epochs, EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
 from renaanalysis.learning.models import EEGPupilCNN
@@ -22,7 +23,7 @@ from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil, rando
 from renaanalysis.utils.Event import get_events
 from renaanalysis.utils.RenaDataFrame import RenaDataFrame
 from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined, \
-    binary_classification_metric
+    binary_classification_metric, _epochs_to_samples_eeg_pupil
 from renaanalysis.utils.utils import get_item_events, visualize_eeg_epochs, visualize_pupil_epochs
 from scipy.stats import stats
 from sklearn.metrics import confusion_matrix
@@ -354,6 +355,13 @@ class RenaProcessing(RenaScript):
                         print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
                         raise e
 
+                    try:
+                        assert len(np.unique([e.item_id for e in epoch_events if e.dtn==2.0])) == 1
+                    except AssertionError as e:
+                        print(
+                            f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
+                        raise e
+
                     if append_data:
                         self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)
                         print(f"[{self.loop_count}] AddingBlockData: Add {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
@@ -392,9 +400,20 @@ class RenaProcessing(RenaScript):
         else:  # append the data
             self.locking_data[locking_name][0][0] = np.concatenate([self.locking_data[locking_name][0][0], x[0]], axis=0)  # append EEG data
             self.locking_data[locking_name][0][1] = np.concatenate([self.locking_data[locking_name][0][1], x[1]], axis=0)  # append pupil data
-            self.locking_data[locking_name][2] = mne.concatenate_epochs([self.locking_data[locking_name][2], epochs_eeg])  # append EEG epochs
-            self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
-
+            try:
+                self.locking_data[locking_name][2] = mne.concatenate_epochs([self.locking_data[locking_name][2], epochs_eeg])  # append EEG epochs
+            except ValueError as e:
+                if str(e) == 'Epochs must have same times':
+                    self.locking_data[locking_name][2] = concatenate_as_epochArray([self.locking_data[locking_name][2], epochs_eeg])
+                else:
+                    raise e
+            try:
+                self.locking_data[locking_name][3] = mne.concatenate_epochs([self.locking_data[locking_name][3], epochs_pupil])  # append pupil epochs
+            except ValueError as e:
+                if str(e) == 'Epochs must have same times':
+                    self.locking_data[locking_name][3] = concatenate_as_epochArray([self.locking_data[locking_name][2], epochs_eeg])
+                else:
+                    raise e
             self.locking_data[locking_name][1] = np.concatenate([self.locking_data[locking_name][1], y], axis=0)  # append labels
             self.locking_data[locking_name][4] += epoch_events  # append labels
 
@@ -607,12 +626,18 @@ class RenaProcessing(RenaScript):
             raise e
 
     def preprocess_block_data(self, epochs_eeg, epochs_pupil, pca=None, ica=None, ar=None):
-
-        try:
-            x_eeg, x_pupil, y, ar, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds, ar=ar, return_rejections=True)  # apply auto reject
-        except ValueError as e:
-            print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
-            raise e
+        if len(epochs_eeg) > 1:
+            try:
+                x_eeg, x_pupil, y, ar, rejections = reject_combined(epochs_pupil, epochs_eeg, self.event_ids, n_jobs=1, n_folds=ar_cv_folds, ar=ar, return_rejections=True)  # apply auto reject
+            except ValueError as e:
+                print(f"[{self.loop_count}] preprocess_block_data: error in rejection, most likely the there are too few samples of fixations for it folds")
+                raise e
+        elif len(epochs_eeg) == 1:
+            print(f"[{self.loop_count}] preprocess_block_data: only find 1 eeg epoch, skip rejection")
+            x_eeg, x_pupil, y = _epochs_to_samples_eeg_pupil(epochs_pupil, epochs_eeg, self.event_ids)
+            ar, rejections = [None] * 2
+        else:
+            raise ValueError(f"[{self.loop_count}] preprocess_block_data: zero epoch is given to preprocess_block_data")
         print(f'[{self.loop_count}] target_identification: {len(epochs_eeg) - len(x_eeg)} epochs were auto rejected. Now with {np.sum(y == 1)} targets and {np.sum(y == 0)} distractors')
         if len(y) == 0:  # no data remains after rejection
             return [None] * 6
@@ -674,3 +699,18 @@ class RenaProcessing(RenaScript):
     # def get_item_event(self):
     #     for i in range(len(self.inputs['Unity.ReNa.EventMarkers'][1])):
     #         block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), i]
+
+
+def concatenate_as_epochArray(epochs_array):
+    """
+    Concatenate epochs_eeg and epochs_pupil into one EpochArray
+    :param epochs_eeg: EpochArray
+    :param epochs_pupil: EpochArray
+    :param event_ids: dict
+    :return: EpochArray
+    """
+    arrays = np.concatenate([x.get_data() for x in epochs_array], axis=0)
+    event_arrays = np.concatenate([x.events for x in epochs_array], axis=0)
+
+    epochs_concatenated = EpochsArray(arrays, epochs_array[0].info, events=event_arrays, event_id=epochs_array[0].event_id)
+    return epochs_concatenated
