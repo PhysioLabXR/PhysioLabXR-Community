@@ -2,6 +2,7 @@
 import time
 from collections import deque
 
+import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
@@ -480,6 +481,7 @@ class StreamWidget(QtWidgets.QWidget):
         # plot_channel_num_offset = 0
         if not self.viz_data_buffer.has_data():
             return
+        self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
         data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
         for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
