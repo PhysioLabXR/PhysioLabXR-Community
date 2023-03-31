@@ -355,11 +355,11 @@ class RenaProcessing(RenaScript):
                         print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
                         raise e
 
+                    target_item_id_count = len(np.unique([e.item_id for e in epoch_events if e.dtn==2.0]))
                     try:
-                        assert len(np.unique([e.item_id for e in epoch_events if e.dtn==2.0])) == 1
+                        assert target_item_id_count == 1 or target_item_id_count == 0
                     except AssertionError as e:
-                        print(
-                            f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
+                        print(f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
                         raise e
 
                     if append_data:
@@ -562,6 +562,8 @@ class RenaProcessing(RenaScript):
     def process_block_target_confidence(self, predicted_target_index_id_dict: dict):
         try:
             index_target_confidence = - np.ones(num_item_perblock)
+            if len(predicted_target_index_id_dict):  # if no target is predicted
+                return index_target_confidence
             all_probs = np.array(list(predicted_target_index_id_dict.values()))
             all_ids = np.array([item_id for item_id in predicted_target_index_id_dict.keys()])
             prob_threshold = np.quantile(all_probs, target_threshold_quantile)
