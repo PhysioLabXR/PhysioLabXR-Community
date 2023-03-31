@@ -16,7 +16,8 @@ import numpy as np
 import torch
 from mne import Epochs, EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
-from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim
+from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, \
+    gaze_event_detection_I_DT
 from renaanalysis.learning.models import EEGPupilCNN
 from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
 from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil, random_seed
@@ -25,6 +26,7 @@ from renaanalysis.utils.RenaDataFrame import RenaDataFrame
 from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined, \
     binary_classification_metric, _epochs_to_samples_eeg_pupil
 from renaanalysis.utils.utils import get_item_events, visualize_eeg_epochs, visualize_pupil_epochs
+from renaanalysis.utils.viz_utils import visualize_block_gaze_event
 from scipy.stats import stats
 from sklearn.metrics import confusion_matrix
 
@@ -45,7 +47,7 @@ is_simulating_predictions = False
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
 num_vs_to_train_in_classifier_prep = 8  # for a total of 8 VS blocks in each metablock
-num_vs_to_train_in_identifier_prep = 3  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_identifier_prep = 5  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
@@ -320,13 +322,14 @@ class RenaProcessing(RenaScript):
             rdf = RenaDataFrame()
             data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
             events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
-            events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events)
+            events += gaze_event_detection_I_DT(data['Unity.VarjoEyeTrackingComplete'], events, headtracking_data_timestamps=data['Unity.HeadTracker'])  # TODO no need to resample the headtracking data again
             events += gaze_event_detection_I_VT(data['Unity.VarjoEyeTrackingComplete'], events, headtracking_data_timestamps=data['Unity.HeadTracker'])
             if 'FixationDetection' in data.keys():
                 events += gaze_event_detection_PatchSim(data['FixationDetection'][0], data['FixationDetection'][1], events)
             else:
                 print(f"[{self.loop_count}] AddingBlockData: WARNING: not FixationDetection stream when trying to add block data")
-            rdf.add_participant_session(data, events, 0, 0, None, None, None)
+            rdf.add_participant_session(data, events, '0', 0, None, None, None)
+            visualize_block_gaze_event(rdf, participant='0', session=0, block_id=self.current_block_id, generate_video=False, video_fix_alg=None)
             try:
                 rdf.preprocess(is_running_ica=True, n_jobs=1, ocular_artifact_mode='proxy')
             except Exception as e:
@@ -337,7 +340,8 @@ class RenaProcessing(RenaScript):
                 if 'VS' in locking_name:  # TODO only care about VS conditions for now
                     print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
                     # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
-                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
+
+                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject='auto', plots='full', colors=colors, title=f'{locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
                     if x is None:
                         print(f"{bcolors.WARNING}[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}{bcolors.ENDC}")
                         continue
