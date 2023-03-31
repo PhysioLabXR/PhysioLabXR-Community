@@ -9,6 +9,7 @@ import random
 import sys
 import threading
 import unittest
+import uuid
 from multiprocessing import Process
 
 import pytest
@@ -18,22 +19,25 @@ from PyQt5.QtWidgets import QWidget, QMessageBox
 from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
-from rena.config import lsl_stream_availability_wait_time
+from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.tests.test_utils import update_test_cwd, handle_custom_dialog_ok, handle_current_dialog_ok
 from rena.utils.settings_utils import create_default_preset
+from rena.utils.ui_utils import CustomDialog
 
 
 @pytest.fixture
 def app(qtbot: QtBot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
-    # app initialization
+    # app initializationfix type error
     load_settings(revert_to_default=True, reload_presets=True)  # load the default settings
     test_renalabapp = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
-    # test_renalabapp.show()
+    test_renalabapp.show()
     qtbot.addWidget(test_renalabapp)
     return test_renalabapp
 
@@ -98,11 +102,15 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    test_stream_name = 'TestStreamName'
-    p = Process(target=LSLTestStream, args=(test_stream_name, random.randint(100, 200)))
+    test_stream_name = 'TestStreamName' + str(uuid.uuid4())
+    actual_num_chan = random.randint(100, 200)
+    preset_num_chan = random.randint(1, 99)
+    streaming_time_second = 3
+
+    p = Process(target=LSLTestStream, args=(test_stream_name, actual_num_chan))
     p.start()
 
-    app.create_preset('TestStreamName', 'float', None, 'LSL', num_channels=random.randint(1, 99))  # add a default preset
+    app.create_preset(test_stream_name, 'float', None, 'LSL', num_channels=preset_num_chan)  # add a default preset
 
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -110,27 +118,30 @@ def test_lsl_channel_mistmatch(app, qtbot) -> None:
     qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box, test_stream_name)
 
     qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.wait(int(stream_availability_wait_time * 1e3))
     def stream_is_available():
         assert app.stream_widgets[test_stream_name].is_stream_available
-    qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the LSL stream becomes available
+    qtbot.waitUntil(stream_is_available, timeout=int(2 * stream_availability_wait_time * 1e3))  # wait until the LSL stream becomes available
 
-    # get the messagebox about channel mismatch
-    def handle_dialog():
-        w = QtWidgets.QApplication.activeWindow()
-        if isinstance(w, QMessageBox):
-            yes_button = w.button(QtWidgets.QMessageBox.Yes)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+    # def handle_dialog():
+    #     w = app.current_dialog
+    #     if isinstance(w, CustomDialog):
+    #         yes_button = w.button(QtWidgets.QMessageBox.Yes)
+    #         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
 
-    t = threading.Timer(1, handle_dialog)
+    t = threading.Timer(1, lambda: handle_current_dialog_ok(app, qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
     t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
     t.join()
+
+    qtbot.wait(int(streaming_time_second * 1e3))
 
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
+
 
 def test_zmq_channel_mistmatch(app, qtbot) -> None:
     '''
@@ -139,12 +150,14 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    test_stream_name = 'TestStreamName'
+    test_stream_name = 'TestStreamName' + str(uuid.uuid4())
     port = '5556'
-    p = Process(target=ZMQTestStream, args=(test_stream_name, port, random.randint(100, 200)))
+    streaming_time_second = 3
+
+    p = Process(target=ZMQTestStream, args=(test_stream_name, port))
     p.start()
 
-    app.create_preset('TestStreamName', 'float', port, 'ZMQ', num_channels=random.randint(1, 99))  # add a default preset
+    app.create_preset(test_stream_name, 'float', port, 'ZMQ', num_channels=random.randint(1, 99))  # add a default preset
 
     app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -152,21 +165,27 @@ def test_zmq_channel_mistmatch(app, qtbot) -> None:
     qtbot.keyClicks(app.addStreamWidget.stream_name_combo_box, test_stream_name)
 
     qtbot.mouseClick(app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.wait(int(stream_availability_wait_time * 1e3))
+
     def stream_is_available():
         assert app.stream_widgets[test_stream_name].is_stream_available
-    qtbot.waitUntil(stream_is_available, timeout=2 * lsl_stream_availability_wait_time * 1e3)  # wait until the LSL stream becomes available
+    qtbot.waitUntil(stream_is_available, timeout=int(2 * stream_availability_wait_time * 1e3))  # wait until the LSL stream becomes available
 
-    # get the messagebox about channel mismatch
-    def handle_dialog():
-        w = QtWidgets.QApplication.activeWindow()
-        if isinstance(w, QMessageBox):
-            yes_button = w.button(QtWidgets.QMessageBox.Yes)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
-
-    t = threading.Timer(1, handle_dialog)
+    # def handle_dialog():
+    #     w = app.current_dialog
+    #     if isinstance(w, CustomDialog):
+    #         yes_button = w.button(QtWidgets.QMessageBox.Yes)
+    #         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+    def waitForCurrentDialog():
+        assert app.current_dialog
+    t = threading.Timer(4, lambda: handle_current_dialog_ok(app, qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
     t.start()
     qtbot.mouseClick(app.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    qtbot.waitUntil(waitForCurrentDialog)
     t.join()
+
+    qtbot.wait(int(streaming_time_second * 1e3))
+
     # check if data is being plotted
     assert app.stream_widgets[test_stream_name].viz_data_buffer.has_data()
 

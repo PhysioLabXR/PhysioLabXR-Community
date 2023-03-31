@@ -14,13 +14,9 @@ import zmq
 from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
-def LSLTestStream(stream_name, n_channels=81):
-    letters = string.digits
-
-    srate = 2048
+def LSLTestStream(stream_name, n_channels=81, srate=2048):
     print('Test stream name is ' + stream_name)
     type = 'EEG'
-    help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     info = StreamInfo(stream_name, type, n_channels, srate, 'float32', 'someuuid1234')
 
     # next make an outlet
@@ -42,7 +38,7 @@ def LSLTestStream(stream_name, n_channels=81):
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
 
-def ZMQTestStream(stream_name, port, n_channels=81):
+def ZMQTestStream(stream_name, port):
     topic = stream_name
     srate = 30
 
