@@ -45,7 +45,7 @@ def teardown_function(function):
     """
     pass
 
-def test_change_channel_name(app, qtbot) -> None:
+def test_change_channel_name(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -61,7 +61,7 @@ def test_change_channel_name(app, qtbot) -> None:
     p.kill()  # stop the dummy LSL process
 
 
-def test_change_group_name(app, qtbot) -> None:
+def test_change_group_name(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -76,7 +76,7 @@ def test_change_group_name(app, qtbot) -> None:
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
-def test_change_channel_name_multiple_times(app, qtbot) -> None:
+def test_change_channel_name_multiple_times(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -92,7 +92,7 @@ def test_change_channel_name_multiple_times(app, qtbot) -> None:
     p.kill()  # stop the dummy LSL process
 
 
-def test_change_channel_name_in_changed_group(app, qtbot) -> None:
+def test_change_channel_name_in_changed_group(app_main_window, qtbot) -> None:
     test_stream_name = 'TestStreamName'
     p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
@@ -101,7 +101,7 @@ def test_change_channel_name_in_changed_group(app, qtbot) -> None:
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
-def test_change_channel_name_after_create_new_group(app, qtbot) -> None:
+def test_change_channel_name_after_create_new_group(app_main_window, qtbot) -> None:
     # add new preset
     # create group
     # rearrange channels between groups

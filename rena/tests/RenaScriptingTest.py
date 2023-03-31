@@ -31,12 +31,12 @@ def app(qtbot):
     return test_renalabapp
 
 
-def test_create_script(app, qtbot):
-    app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+def test_create_script(app_main_window, qtbot):
+    app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
+    qtbot.mouseClick(app_main_window.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
     class_name = 'ScriptTest'
-    this_scripting_widget = app.scripting_tab.script_widgets[-1]
+    this_scripting_widget = app_main_window.scripting_tab.script_widgets[-1]
     script_path = os.path.join(os.getcwd(), class_name + '.py')  # TODO also need to test without .py
     this_scripting_widget.create_script(script_path, is_open_file=False)
 

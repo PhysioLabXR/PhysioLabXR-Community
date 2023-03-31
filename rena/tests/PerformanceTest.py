@@ -58,7 +58,7 @@ def teardown_function(function):
     pass
 
 
-def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
+def test_stream_visualization_single_stream_performance(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -81,7 +81,7 @@ def test_stream_visualization_single_stream_performance(app, qtbot) -> None:
     print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
     print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {num_tests * (test_time_second_per_stream + 3)}")
 
-    test_context = TestContext(app, qtbot)
+    test_context = TestContext(app_main_window, qtbot)
 
     # test without recording
     results_with_recording = run_benchmark(test_context, test_stream_names[:int(len(test_stream_names)/2)], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)

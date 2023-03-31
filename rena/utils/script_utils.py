@@ -58,8 +58,10 @@ def validate_script_path(script_path: str):
 def get_target_class(script_path):
     spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
     script_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(script_module)
-
+    try:
+        spec.loader.exec_module(script_module)
+    except ImportError as e:
+        raise ScriptMissingModuleError(script_path, e)
     classes = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
     classes = [script_module.__getattribute__(x) for x in classes if x != 'RenaScript']  # exclude RenaScript itself
