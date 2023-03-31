@@ -71,6 +71,11 @@ class RecordingsTab(QtWidgets.QWidget):
         self.StartStopRecordingBtn.setText(ui_shared.stop_recording_text)
         self.StartStopRecordingBtn.setIcon(stop_stream_icon)
 
+        # disable the text edit fields
+        self.experimentNameTextEdit.setEnabled(False)
+        self.subjectTagTextEdit.setEnabled(False)
+        self.sessionTagTextEdit.setEnabled(False)
+
         self.timer.start()
 
     def stop_recording_btn_pressed(self):
@@ -90,6 +95,11 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
+
+        # reenable the text edit fields
+        self.experimentNameTextEdit.setEnabled(True)
+        self.subjectTagTextEdit.setEnabled(True)
+        self.sessionTagTextEdit.setEnabled(True)
 
 
     def update_recording_buffer(self, data_dict: dict):
