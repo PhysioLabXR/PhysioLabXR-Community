@@ -15,22 +15,45 @@
 
 
 # Get the name of the Python unittest module from the first argument
-test_module="RenaVisualizationTest"
-function_prefix="test_"
+test_modules=(
+  RenaVisualizationTest
+  VisualizationLSLChannelTest
+  VisualizationZMQChannelTest
+  RecordingTest
+  ReplayTest
+)
 
-test_functions=$(python -c "import rena.tests.${test_module} as ${test_module}; print('\n'.join([f for f in dir(${test_module}) if f.startswith('${function_prefix}')]))")
+# Detect the operating system
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Linux
+    source venv/bin/activate
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Mac OSX
+    source venv/bin/activate
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+    # Windows with Cygwin
+    source venv/bin/activate
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # Windows with MSYS2
+    source venv/Scripts/activate
+elif [[ "$OSTYPE" == "win32" ]]; then
+    # Windows with native shell
+    source venv/Scripts/activate
+else
+    echo "Unknown operating system: $OSTYPE"
+    exit 1
+fi
 
 export PYTHONPATH="$(pwd)" # add content root to PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:$(pwd)/rena  # add source root to PYTHONPATH
 echo "Here is the PYTHONPATH: $PYTHONPATH"
 
 cd rena/tests
-
 # Loop through each test function in the module and run it
-echo "Starting Tests"
-for test_function in $test_functions; do
-    echo "calling test function $test_module.$test_function"
-    python -m unittest $test_module.$test_function
+for module in "${test_modules[@]}"
+do
+    echo "Running test: $module"
+    pytest $module.py
 done
 
 ## Wait for the user to press Enter before exiting

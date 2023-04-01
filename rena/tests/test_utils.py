@@ -20,7 +20,8 @@ from pytestqt.qtbot import QtBot
 from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream
+from rena.sub_process.pyzmq_utils import can_connect_to_port
+from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.utils.ui_utils import CustomDialog
 
 
@@ -123,6 +124,21 @@ class TestContext:
 
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+
+    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
+        using_port = None
+        for port in range(*port_range):
+            if not can_connect_to_port(port):
+                using_port = port
+                break
+        if using_port is None:
+            raise ValueError(f"Could not find a port in range {port_range}. Consider use a different range.")
+        if stream_name in self.send_data_processes.keys():
+            raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
+        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate))
+        p.start()
+        self.send_data_processes[stream_name] = p
+        return using_port
 
     def close_stream(self, stream_name: str):
         if stream_name not in self.send_data_processes.keys():
