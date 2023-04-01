@@ -38,7 +38,7 @@ def app_main_window(qtbot):
     app.quit()
 
 @pytest.fixture
-def test_context(app_main_window, qtbot):
+def m_test_context(app_main_window, qtbot):
     test_context = TestContext(app=app_main_window, qtbot=qtbot)
 
     yield test_context

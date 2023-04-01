@@ -1,4 +1,5 @@
 # replay
+import os
 from enum import Enum
 
 FAIL_INFO = 'fail!'
@@ -29,7 +30,10 @@ SCRIPT_PARAM_CHANGE = 'p'
 try:
     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
 except FileNotFoundError:
-    rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    try:
+        rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    except FileNotFoundError:
+        rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
 
 class ParamChange(Enum):
     ADD = 'a'

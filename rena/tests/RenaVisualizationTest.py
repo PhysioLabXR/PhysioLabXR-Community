@@ -4,28 +4,20 @@ Otherwise, you will get either import error or file not found error
 """
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
-import os
 import random
-import sys
 import threading
-import unittest
 import uuid
 from multiprocessing import Process
 
 import pytest
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QMessageBox
-from pytestqt.qtbot import QtBot
+from PyQt5.QtWidgets import QWidget
 
-from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
-from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import update_test_cwd, handle_custom_dialog_ok, handle_current_dialog_ok, app_fixture, \
+from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
     TestContext
-from rena.utils.settings_utils import create_default_preset
-from rena.utils.ui_utils import CustomDialog
 
 
 @pytest.fixture
@@ -35,11 +27,11 @@ def app_main_window(qtbot):
     app.quit()
 
 @pytest.fixture
-def test_context(app_main_window, qtbot):
+def m_test_context(app_main_window, qtbot):
     test_context = TestContext(app=app_main_window, qtbot=qtbot)
-
     yield test_context
     test_context.clean_up()
+
 def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
     '''
     Adding inactive stream

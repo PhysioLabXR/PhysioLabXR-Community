@@ -193,8 +193,13 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
     return names
 
 def update_test_cwd():
+    print('update_test_cwd: current working directory is', os.getcwd())
     if os.getcwd().endswith(os.path.join('rena', 'tests')):
         os.chdir('../')
+    elif 'rena' in os.listdir(os.getcwd()):
+        os.chdir('rena')
+    # else:
+    #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 
 def run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
