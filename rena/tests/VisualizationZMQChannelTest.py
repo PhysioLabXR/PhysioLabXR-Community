@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QWidget
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
-    TestContext
+    ContextBot
 
 
 @pytest.fixture
@@ -29,13 +29,13 @@ def app_main_window(qtbot):
 
 
 @pytest.fixture
-def m_test_context(app_main_window, qtbot):
-    test_context = TestContext(app=app_main_window, qtbot=qtbot)
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
     yield test_context
     test_context.clean_up()
 
 
-def test_zmq_channel_mistmatch(app_main_window, m_test_context, qtbot) -> None:
+def test_zmq_channel_mistmatch(app_main_window, context_bot, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -45,7 +45,7 @@ def test_zmq_channel_mistmatch(app_main_window, m_test_context, qtbot) -> None:
     test_stream_name = 'TestStreamName' + str(uuid.uuid4())
     streaming_time_second = 3
 
-    port = m_test_context.create_zmq_stream(test_stream_name, num_channels=random.randint(100, 200), srate=30)
+    port = context_bot.create_zmq_stream(test_stream_name, num_channels=random.randint(100, 200), srate=30)
     app_main_window.create_preset(test_stream_name, 'uint8', port, 'ZMQ', num_channels=random.randint(1, 99))  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget

@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import QWidget
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
-    TestContext
+    ContextBot
 
 
 @pytest.fixture
@@ -28,8 +28,8 @@ def app_main_window(qtbot):
 
 
 @pytest.fixture
-def m_test_context(app_main_window, qtbot):
-    test_context = TestContext(app=app_main_window, qtbot=qtbot)
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
     yield test_context
     test_context.clean_up()
 

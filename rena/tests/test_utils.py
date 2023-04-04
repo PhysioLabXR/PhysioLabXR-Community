@@ -87,7 +87,7 @@ def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, c
         yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
 
-class TestContext:
+class ContextBot:
     """
     Helper class for carrying out the most performed actions in the tests
 

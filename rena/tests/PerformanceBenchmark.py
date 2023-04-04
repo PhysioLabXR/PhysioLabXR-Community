@@ -29,7 +29,7 @@ from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import TestContext, update_test_cwd, get_random_test_stream_names, run_benchmark, \
+from rena.tests.test_utils import ContextBot, update_test_cwd, get_random_test_stream_names, run_benchmark, \
     visualize_benchmark_results, app_fixture
 from rena.utils.data_utils import RNStream
 from rena.utils.settings_utils import create_default_preset
@@ -43,8 +43,8 @@ def app_main_window(qtbot):
     app.quit()
 
 @pytest.fixture
-def m_test_context(app_main_window, qtbot):
-    test_context = TestContext(app=app_main_window, qtbot=qtbot)
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
     yield test_context
     test_context.clean_up()
 
@@ -72,7 +72,7 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
     print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {num_tests * (test_time_second_per_stream + 3)}")
 
-    test_context = TestContext(app_main_window, qtbot)
+    test_context = ContextBot(app_main_window, qtbot)
 
     # test without recording
     results_with_recording = run_benchmark(test_context, test_stream_names[:int(len(test_stream_names)/2)], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)

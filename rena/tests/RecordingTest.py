@@ -13,7 +13,7 @@ from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream
 import importlib
 
-from rena.tests.test_utils import update_test_cwd, TestContext, app_fixture
+from rena.tests.test_utils import update_test_cwd, ContextBot, app_fixture
 
 
 @pytest.fixture
@@ -23,13 +23,13 @@ def app_main_window(qtbot):
     app.quit()
 
 @pytest.fixture
-def m_test_context(app_main_window, qtbot):
-    test_context = TestContext(app=app_main_window, qtbot=qtbot)
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
 
     yield test_context
     test_context.clean_up()
 
-def test_recording_text_field_disabled_on_start(app_main_window, m_test_context, qtbot):
+def test_recording_text_field_disabled_on_start(app_main_window, context_bot, qtbot):
     num_streams_to_start = 3
 
     # check that the text field is enabled when the app starts
@@ -37,14 +37,14 @@ def test_recording_text_field_disabled_on_start(app_main_window, m_test_context,
     assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is True
     assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is True
 
-    m_test_context.start_streams_and_recording(num_streams_to_start)
+    context_bot.start_streams_and_recording(num_streams_to_start)
 
     # check that the text field is disabled
     assert app_main_window.recording_tab.experimentNameTextEdit.isEnabled() is False
     assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is False
     assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is False
 
-    m_test_context.stop_recording()
+    context_bot.stop_recording()
     assert app_main_window.recording_tab.experimentNameTextEdit.isEnabled() is True
     assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is True
     assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is True
