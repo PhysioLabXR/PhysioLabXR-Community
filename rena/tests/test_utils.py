@@ -2,10 +2,12 @@ import itertools
 import os
 import secrets
 import string
+import sys
 import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
+from typing import Union, Iterable
 
 import numpy as np
 from PyQt5 import QtCore, QtWidgets
@@ -17,9 +19,26 @@ from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
-from rena.tests.TestStream import LSLTestStream
+from rena.startup import load_settings
+from rena.sub_process.pyzmq_utils import can_connect_to_port
+from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.utils.ui_utils import CustomDialog
 
+
+def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=True):
+    print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
+    print(os.getcwd())
+    # ignore the splash screen and tree icon
+    app = QtWidgets.QApplication(sys.argv)
+    # app initializationfix type error
+    load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
+    test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
+    if show_window:
+        test_renalabapp_main_window.show()
+    qtbot.addWidget(test_renalabapp_main_window)
+
+    return app, test_renalabapp_main_window
 
 def stream_is_available(app: MainWindow, test_stream_name: str):
     # print(f"Stream name {test_stream_name} availability is {app.stream_widgets[test_stream_name].is_stream_available}")
@@ -68,7 +87,7 @@ def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, c
         yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
 
-class TestContext:
+class ContextBot:
     """
     Helper class for carrying out the most performed actions in the tests
 
@@ -106,6 +125,21 @@ class TestContext:
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
 
+    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
+        using_port = None
+        for port in range(*port_range):
+            if not can_connect_to_port(port):
+                using_port = port
+                break
+        if using_port is None:
+            raise ValueError(f"Could not find a port in range {port_range}. Consider use a different range.")
+        if stream_name in self.send_data_processes.keys():
+            raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
+        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate))
+        p.start()
+        self.send_data_processes[stream_name] = p
+        return using_port
+
     def close_stream(self, stream_name: str):
         if stream_name not in self.send_data_processes.keys():
             raise ValueError(f"Founding repeating test_stream_name : {stream_name}")
@@ -126,6 +160,38 @@ class TestContext:
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
         t.join()  # wait until the dialog is closed
 
+    def start_recording(self):
+        if self.app.recording_tab.is_recording:
+            raise ValueError("App is already recording when calling stop_recording from test_context")
+        self.app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+        self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
+        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+
+    def start_streams_and_recording(self, num_stream_to_test: int, num_channels: Union[int, Iterable[int]]=1, sampling_rate: Union[int, Iterable[int]]=1, stream_availability_timeout=2 * stream_availability_wait_time * 1e3):
+        """
+        start a given number of streams with given number of channels and sampling rate, and start recording.
+        @param num_stream_to_test: int, the number of streams to test
+        @param num_channels: int or iterable of int, the number of channels in the stream
+        @rtype: object
+        """
+
+        if isinstance(num_channels, int):
+            num_channels = [num_channels] * num_stream_to_test
+        if isinstance(sampling_rate, int):
+            sampling_rate = [sampling_rate] * num_stream_to_test
+
+        test_stream_names = []
+        ts_names = get_random_test_stream_names(num_stream_to_test)
+        for i, ts_name in enumerate(ts_names):
+            test_stream_names.append(ts_name)
+            self.start_stream(ts_name, num_channels[i], sampling_rate[i])
+        self.start_recording()
+        return test_stream_names
+
+    def get_active_send_data_stream_names(self):
+        return [stream_name for stream_name, process in self.send_data_processes.items() if process.is_alive()]
+
+
     def __del__(self):
         self.clean_up()
 
@@ -143,8 +209,13 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
     return names
 
 def update_test_cwd():
+    print('update_test_cwd: current working directory is', os.getcwd())
     if os.getcwd().endswith(os.path.join('rena', 'tests')):
         os.chdir('../')
+    elif 'rena' in os.listdir(os.getcwd()):
+        os.chdir('rena')
+    # else:
+    #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 
 def run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
@@ -153,34 +224,34 @@ def run_benchmark(test_context, test_stream_names, num_channels_to_test, samplin
         start_time = time.perf_counter()
         test_context.start_stream(stream_name, num_channels, sampling_rate)
         if is_reocrding:
-            test_context.app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
-            test_context.qtbot.mouseClick(test_context.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+            test_context.app_main_window.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+            test_context.qtbot.mouseClick(test_context.app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
         test_context.close_stream(stream_name)
 
         for measure in metrics:
             if measure == 'update buffer time':
-                update_buffer_time_mean = np.mean(test_context.app.stream_widgets[stream_name].update_buffer_times)
-                update_buffer_time_std = np.std(test_context.app.stream_widgets[stream_name].update_buffer_times)
+                update_buffer_time_mean = np.mean(test_context.app_main_window.stream_widgets[stream_name].update_buffer_times)
+                update_buffer_time_std = np.std(test_context.app_main_window.stream_widgets[stream_name].update_buffer_times)
                 if np.isnan(update_buffer_time_mean) or np.isnan(update_buffer_time_std):
                     raise ValueError()
                 results[measure][num_channels, sampling_rate][measure] = update_buffer_time_mean
                 # results[measure][num_channels, sampling_rate]['update_buffer_time_std'] = update_buffer_time_std
             elif measure == 'plot data time':
-                plot_data_time_mean = np.mean(test_context.app.stream_widgets[stream_name].plot_data_times)
-                plot_data_time_std = np.std(test_context.app.stream_widgets[stream_name].plot_data_times)
+                plot_data_time_mean = np.mean(test_context.app_main_window.stream_widgets[stream_name].plot_data_times)
+                plot_data_time_std = np.std(test_context.app_main_window.stream_widgets[stream_name].plot_data_times)
                 if np.isnan(plot_data_time_mean) or np.isnan(plot_data_time_std):
                     raise ValueError()
                 results[measure][num_channels, sampling_rate][measure] = plot_data_time_mean
                 # results[measure][num_channels, sampling_rate]['plot_data_time_std'] = plot_data_time_std
             elif measure == 'viz fps':
-                results[measure][num_channels, sampling_rate][measure] = test_context.app.stream_widgets[stream_name].get_fps()
+                results[measure][num_channels, sampling_rate][measure] = test_context.app_main_window.stream_widgets[stream_name].get_fps()
             else:
                 raise ValueError(f"Unknown metric: {measure}")
         if is_reocrding:
             test_context.stop_recording()
-            recording_file_name = test_context.app.recording_tab.save_path
+            recording_file_name = test_context.app_main_window.recording_tab.save_path
             assert os.stat(recording_file_name).st_size != 0  # make sure recording file has content
             os.remove(recording_file_name)
 
@@ -232,3 +303,5 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         plt.xlabel(axis_name)
         plt.ylabel(f'{measure} (seconds)')
         plt.show()
+
+

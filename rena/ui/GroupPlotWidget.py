@@ -41,6 +41,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.init_line_chart()
             self.init_image()
             self.init_bar_chart()
+            pass
         else:
             self.init_image()
             # TODO only show the image tab

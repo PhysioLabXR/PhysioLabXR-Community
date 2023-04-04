@@ -26,28 +26,21 @@ from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd
+from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.utils.data_utils import RNStream
 from rena.utils.settings_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
 
 
 @pytest.fixture
-def app(qtbot: QtBot):
-    print('Initializing test fixture for ' + 'Visualization Features')
-    update_test_cwd()
-    print(os.getcwd())
-    # ignore the splash screen and tree icon
-    app = QtWidgets.QApplication(sys.argv)
-    # app initialization
-    load_settings(revert_to_default=True, reload_presets=True)  # load the default settings
-    test_renalabapp = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
-    test_renalabapp.show()
-    qtbot.addWidget(test_renalabapp)
-    return test_renalabapp
+def app_main_window(qtbot):
+    app, test_renalabapp_main_window = app_fixture(qtbot)
+    yield test_renalabapp_main_window
+    app.quit()
 
-def teardown_function(function):
-    """ teardown any state that was previously setup with a setup_method
-    call.
-    """
-    pass
+
+@pytest.fixture
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
+    yield test_context
+    test_context.clean_up()

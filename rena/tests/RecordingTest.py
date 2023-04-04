@@ -13,24 +13,39 @@ from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream
 import importlib
 
-from rena.tests.test_utils import update_test_cwd
+from rena.tests.test_utils import update_test_cwd, ContextBot, app_fixture
 
 
 @pytest.fixture
-def app(qtbot):
-    print('Initializing test fixture for ' + 'Visualization Features')
-    update_test_cwd()
-    print(os.getcwd())
-    # ignore the splash screen and tree icon
-    app = QtWidgets.QApplication(sys.argv)
-    # app initialization
-    load_settings(revert_to_default=True, reload_presets=True)  # load the default settings
-    test_renalabapp = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
-    test_renalabapp.show()
-    qtbot.addWidget(test_renalabapp)
-    return test_renalabapp
+def app_main_window(qtbot):
+    app, test_renalabapp_main_window = app_fixture(qtbot)
+    yield test_renalabapp_main_window
+    app.quit()
 
+@pytest.fixture
+def context_bot(app_main_window, qtbot):
+    test_context = ContextBot(app=app_main_window, qtbot=qtbot)
 
-def test_record_data(app, qtbot):
-    # TODO
-    pass
+    yield test_context
+    test_context.clean_up()
+
+def test_recording_text_field_disabled_on_start(app_main_window, context_bot, qtbot):
+    num_streams_to_start = 3
+
+    # check that the text field is enabled when the app starts
+    assert app_main_window.recording_tab.experimentNameTextEdit.isEnabled() is True
+    assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is True
+    assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is True
+
+    context_bot.start_streams_and_recording(num_streams_to_start)
+
+    # check that the text field is disabled
+    assert app_main_window.recording_tab.experimentNameTextEdit.isEnabled() is False
+    assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is False
+    assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is False
+
+    context_bot.stop_recording()
+    assert app_main_window.recording_tab.experimentNameTextEdit.isEnabled() is True
+    assert app_main_window.recording_tab.subjectTagTextEdit.isEnabled() is True
+    assert app_main_window.recording_tab.sessionTagTextEdit.isEnabled() is True
+

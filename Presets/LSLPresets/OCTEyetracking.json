@@ -1,0 +1,7 @@
+{
+  "StreamName": "OctEyetracking",
+  "ChannelNames": [
+    "EventMarker"
+  ],
+  "NominalSamplingRate": 10
+}

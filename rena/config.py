@@ -113,7 +113,7 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 #     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
 # else:
 #     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
-DEFAULT_CHANNEL_DISPLAY_NUM = 100
+DEFAULT_CHANNEL_DISPLAY_NUM = 40
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 

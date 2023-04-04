@@ -38,14 +38,8 @@ def LSLTestStream(stream_name, n_channels=81, srate=2048):
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
 
-def ZMQTestStream(stream_name, port):
+def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
     topic = stream_name
-    srate = 30
-
-    c_channels = 3
-    width = 800
-    height = 800
-    n_channels = c_channels * width * height
 
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
@@ -60,7 +54,7 @@ def ZMQTestStream(stream_name, port):
         elapsed_time = time.time() - start_time
         required_samples = int(srate * elapsed_time) - sent_samples
         if required_samples > 0:
-            samples = np.random.rand(required_samples * n_channels).reshape((required_samples, -1))
+            samples = np.random.rand(required_samples * num_channels).reshape((required_samples, -1))
             samples = (samples * 255).astype(np.uint8)
             for sample_ix in range(required_samples):
                 mysample = samples[sample_ix]
