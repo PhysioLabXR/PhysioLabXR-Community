@@ -360,7 +360,7 @@ class StreamWidget(QtWidgets.QWidget):
     def clear_stream_visualizations(self):
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        clear_layout(self.viz_group_layout)
+        clear_layout(self.viz_group_scroll_layout)
 
     def init_stream_visualization(self):
 
@@ -389,7 +389,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]
             group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
-            self.viz_group_layout.addWidget(group_plot_widget_dict[group_name])
+            self.viz_group_scroll_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
         return group_plot_widget_dict
