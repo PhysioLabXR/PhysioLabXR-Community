@@ -114,8 +114,7 @@ class ReplayServer(threading.Thread):
                         self.slider_offset_time += slider_offset_time
                         self.set_to_time(set_to_time)
                         self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
-                    elif command == shared.STOP_COMMAND:
-                        # process stop command
+                    elif command == shared.STOP_COMMAND:  # process stop command
                         self.reset_replay()
                         self.is_replaying = False
                         self.is_paused = False  # reset is_paused in case is_paused had been set to True
@@ -125,11 +124,10 @@ class ReplayServer(threading.Thread):
                         self.running = False
                         break
 
-                print('replay finished')
+                print('Replay Server: exited replay loop')
+                self.reset_replay()
+
                 if self.is_replaying:  # the case of a finished replay
-                    self.reset_replay()
-                    self.is_paused = False
-                    self.is_replaying = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(np.array(-1.))
@@ -154,8 +152,13 @@ class ReplayServer(threading.Thread):
         self.stream_names = None
         self.remaining_stream_names = None
 
+        self.is_paused = False
+        self.is_replaying = False
+
         # close all outlets if there's any
-        del self.outlets
+        for stream_name in self.outlets.keys():
+            del self.outlets[stream_name]
+        print("Replay Server: Reset replay: removed all outlets")
 
     def replay(self):
         this_stream_name = None

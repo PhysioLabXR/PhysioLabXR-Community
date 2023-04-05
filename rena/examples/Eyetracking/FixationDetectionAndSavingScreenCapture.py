@@ -35,7 +35,7 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 # Disk Utilities Fields ########################################
 capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
-is_saving_captures = True
+is_saving_captures = False
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
@@ -62,7 +62,8 @@ while True:
         gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
 
         # save the original image
-        cv2.imwrite(os.path.join(capture_save_location, '{}.png'.format(frame_counter)), img)
+        if is_saving_captures:
+            cv2.imwrite(os.path.join(capture_save_location, '{}.png'.format(frame_counter)), img)
         frame_counter += 1
 
         # write to gaze info csv

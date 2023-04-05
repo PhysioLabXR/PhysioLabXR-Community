@@ -44,10 +44,11 @@ feedback_mode = 'weights'
 
 is_debugging = True
 is_simulating_predictions = False
+is_simulating_eeg = True
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
-num_vs_to_train_in_classifier_prep = 8  # for a total of 8 VS blocks in each metablock
-num_vs_to_train_in_identifier_prep = 5  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_classifier_prep = 2  # for a total of 8 VS blocks in each metablock
+num_vs_to_train_in_identifier_prep = 2  # for a total of 8 VS blocks in each metablock
 
 ar_cv_folds = 3
 
@@ -221,39 +222,40 @@ class RenaProcessing(RenaScript):
     def receive_prediction_feedback(self):
         try:
             if 'Unity.ReNa.PredictionFeedback' in self.inputs.keys() and len(self.inputs['Unity.ReNa.PredictionFeedback'][1]) - self.prediction_feedback_head > 0:  # there's new event marker
-                timestamp = self.inputs['Unity.ReNa.PredictionFeedback'][1][self.prediction_feedback_head]
-                feedbacks = self.inputs['Unity.ReNa.PredictionFeedback'][0][:, self.prediction_feedback_head]
-                self.prediction_feedback_head += 1
-                for locking_name in locking_filters.keys():
-                    if locking_name in self.predicted_block_dtn_dict.keys():
-                        y_pending_feedback = np.copy(self.this_block_data_pending_feedback[locking_name][1])  # get the y array
-                        item_indices_pending_feedbacks = [g.item_index for g in self.this_block_data_pending_feedback[locking_name][4]]
-                        item_ids_pending_feedbacks = [g.item_id for g in self.this_block_data_pending_feedback[locking_name][4]]
-                        for i, feedback_item_dtn in enumerate(feedbacks):
-                            # if feedback_item_dtn == 1 and self.predicted_block_dtn_dict[locking_name][i] == 2: # target got flipped to a distractor:
-                            # try:
-                            #     assert y_pending_feedback[item_indices_pending_feedbacks.index(i)] == 1  # y pred must be 1: target
-                            # except AssertionError as e:
-                            #     print(f"[{self.loop_count}] ReceivePredictionFeedback: predicted dtn not much y in the block data pending feedback. " + str(e))
-                            #     raise e
-                            if feedback_item_dtn != 0 and i in item_indices_pending_feedbacks:
-                                if y_pending_feedback[item_indices_pending_feedbacks.index(i)] != feedback_item_dtn - 1:
-                                    print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: feedback changed item id {item_ids_pending_feedbacks[item_indices_pending_feedbacks.index(i)]} at index {i} from {y_pending_feedback[item_indices_pending_feedbacks.index(i)]} to {feedback_item_dtn - 1}")
-                                y_pending_feedback[item_indices_pending_feedbacks.index(i)] = feedback_item_dtn - 1
-                        if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
-                            print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
-                            try:
-                                assert np.all(self.this_block_data_pending_feedback[locking_name][2].events[:, 2] == self.this_block_data_pending_feedback[locking_name][3].events[:, 2])
-                                assert np.all(self.this_block_data_pending_feedback[locking_name][3].events[:, 2] == self.this_block_data_pending_feedback[locking_name][1] + 1)
-                            except AssertionError:
-                                print(f'[{self.loop_count}] ReceivePredictionFeedback: epoch events do not match y')
-                            self.this_block_data_pending_feedback[locking_name][2].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
-                            self.this_block_data_pending_feedback[locking_name][3].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
-                            self.this_block_data_pending_feedback[locking_name][1] = y_pending_feedback
-                        else:
-                            print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: no y is changed. y is {self.this_block_data_pending_feedback[locking_name][1]}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
+                if self.predicted_block_dtn_dict is not None:
+                    timestamp = self.inputs['Unity.ReNa.PredictionFeedback'][1][self.prediction_feedback_head]
+                    feedbacks = self.inputs['Unity.ReNa.PredictionFeedback'][0][:, self.prediction_feedback_head]
+                    self.prediction_feedback_head += 1
+                    for locking_name in locking_filters.keys():
+                        if locking_name in self.predicted_block_dtn_dict.keys():
+                            y_pending_feedback = np.copy(self.this_block_data_pending_feedback[locking_name][1])  # get the y array
+                            item_indices_pending_feedbacks = [g.item_index for g in self.this_block_data_pending_feedback[locking_name][4]]
+                            item_ids_pending_feedbacks = [g.item_id for g in self.this_block_data_pending_feedback[locking_name][4]]
+                            for i, feedback_item_dtn in enumerate(feedbacks):
+                                # if feedback_item_dtn == 1 and self.predicted_block_dtn_dict[locking_name][i] == 2: # target got flipped to a distractor:
+                                # try:
+                                #     assert y_pending_feedback[item_indices_pending_feedbacks.index(i)] == 1  # y pred must be 1: target
+                                # except AssertionError as e:
+                                #     print(f"[{self.loop_count}] ReceivePredictionFeedback: predicted dtn not much y in the block data pending feedback. " + str(e))
+                                #     raise e
+                                if feedback_item_dtn != 0 and i in item_indices_pending_feedbacks:
+                                    if y_pending_feedback[item_indices_pending_feedbacks.index(i)] != feedback_item_dtn - 1:
+                                        print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: feedback changed item id {item_ids_pending_feedbacks[item_indices_pending_feedbacks.index(i)]} at index {i} from {y_pending_feedback[item_indices_pending_feedbacks.index(i)]} to {feedback_item_dtn - 1}")
+                                    y_pending_feedback[item_indices_pending_feedbacks.index(i)] = feedback_item_dtn - 1
+                            if np.any(self.this_block_data_pending_feedback[locking_name][1] != y_pending_feedback):
+                                print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: before y is {self.this_block_data_pending_feedback[locking_name][1]}, after is {y_pending_feedback}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
+                                try:
+                                    assert np.all(self.this_block_data_pending_feedback[locking_name][2].events[:, 2] == self.this_block_data_pending_feedback[locking_name][3].events[:, 2])
+                                    assert np.all(self.this_block_data_pending_feedback[locking_name][3].events[:, 2] == self.this_block_data_pending_feedback[locking_name][1] + 1)
+                                except AssertionError:
+                                    print(f'[{self.loop_count}] ReceivePredictionFeedback: epoch events do not match y')
+                                self.this_block_data_pending_feedback[locking_name][2].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
+                                self.this_block_data_pending_feedback[locking_name][3].events[:, 2] = y_pending_feedback + 1  # update the epoch DTN
+                                self.this_block_data_pending_feedback[locking_name][1] = y_pending_feedback
+                            else:
+                                print(f"[{self.loop_count}] ReceivePredictionFeedback: locking {locking_name}: no y is changed. y is {self.this_block_data_pending_feedback[locking_name][1]}, for items {item_ids_pending_feedbacks}, at indices {item_indices_pending_feedbacks}")
+                    self.add_block_data_all_lockings(self.this_block_data_pending_feedback)
 
-                self.add_block_data_all_lockings(self.this_block_data_pending_feedback)
                 if self.identifier_block_is_training_now:
                     self.train_identification_model()  # the next VS block will probably have wait here, if it ends before this function (training) returns
                 return 'idle'
@@ -332,8 +334,10 @@ class RenaProcessing(RenaScript):
             visualize_block_gaze_event(rdf, participant='0', session=0, block_id=self.current_block_id, generate_video=False, video_fix_alg=None)
             try:
                 rdf.preprocess(is_running_ica=True, n_jobs=1, ocular_artifact_mode='proxy')
+                if is_simulating_eeg:  # add in fake EEG data
+                    rdf.simulate_exg()
             except Exception as e:
-                print(f"Encountered value error when preprocessing rdf: {str(e)}")
+                print(f"{bcolors.WARNING}Encountered value error when preprocessing rdf: {str(e)}{bcolors.ENDC}")
                 return None
             this_locking_data = {}
             for locking_name, event_filters in locking_filters.items():

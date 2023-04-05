@@ -44,10 +44,6 @@ class ReplayTab(QtWidgets.QWidget):
                                                        pattern='router-dealer')
         self._create_playback_widget()
 
-        # self.replay_timer = QTimer()
-        # self.replay_timer.setInterval(config.REFRESH_INTERVAL)
-        # self.replay_timer.timeout.connect(self.ticks)
-
         self.replay_server_process = Process(target=start_replay_server)
         self.replay_server_process.start()
 
