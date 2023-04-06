@@ -149,7 +149,6 @@ class StreamGroupView(QTreeWidget):
         # self.setModel(self.model)
         self.group_widgets = {}  # group name: str -> group item: GroupItem)
         self.channel_widgets = []
-        self.stream_root = None
         self.create_tree_view(group_info)
 
         # self.setSelectionMode(self.SingleSelection)
@@ -195,18 +194,18 @@ class StreamGroupView(QTreeWidget):
         self.clear()
 
     def create_tree_view(self, group_info, image_ir_only=False):
-        self.stream_root = QTreeWidgetItem(self)
-        self.stream_root.item_type = 'stream_root'
-        self.stream_root.setText(0, self.stream_name)
-        self.stream_root.setFlags(self.stream_root.flags()
-                                  & (~Qt.ItemIsDragEnabled)
-                                  & (~Qt.ItemIsSelectable))
+        # self.stream_root = QTreeWidgetItem(self)
+        # self.stream_root.item_type = 'stream_root'
+        # self.stream_root.setText(0, self.stream_name)
+        # self.stream_root.setFlags(self.stream_root.flags()
+        #                           & (~Qt.ItemIsDragEnabled)
+        #                           & (~Qt.ItemIsSelectable))
         # self.stream_root.channel_group.setEditable(False)
 
         # get_childGroups_for_group('presets/')
         for group_name, group_values in group_info.items():
 
-            group = self.add_existing_group_item(parent_item=self.stream_root,
+            group = self.add_existing_group_item(parent_item=self,
                                                  group_name=group_name,
                                                  plot_format=group_values['plot_format'])
             # self.groups_widgets.append(group)
@@ -252,9 +251,9 @@ class StreamGroupView(QTreeWidget):
         if self.selection_state == group_selected or self.selection_state == groups_selected:  # is moving groups, we cannot drag one group into another
             [group_widget.setFlags(group_widget.flags() & (~Qt.ItemIsDropEnabled)) for group_widget in
              self.group_widgets.values()]
-        if self.selection_state==channel_selected or self.selection_state==channels_selected:
-            self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
-        #
+        # if self.selection_state==channel_selected or self.selection_state==channels_selected:
+        #     self.stream_root.setFlags(self.stream_root.flags() & (~Qt.ItemIsDropEnabled))
+        # #
         # self.clearSelection()
 
         self.disconnect_selection_changed()
@@ -264,13 +263,24 @@ class StreamGroupView(QTreeWidget):
         self.dragged = self.selectedItems()
 
     def dropEvent(self, event):
+        """
+        Handles the following events:
+        1. reordering groups by dragging group(s)
+        Constraints:
+        1. channel and group cannot be moved at the same time, this is handled in the startDrag function.
+        Thus, dropEvent only handles the case of moving groups or channels
+        2. cannot drop a group into a channel, this is handled by disabling the drop event for the channel at the startDrag
+        event of group(s)
+        @param event: the qt event of the drop action
+        @return: Given by the overridden function
+        """
         drop_target = self.itemAt(event.pos())
         if drop_target == None:
             self.reenable_dropdrag_for_root_and_group_items()
             return
         elif drop_target.data(0, 0) == self.stream_name:  #
             self.reenable_dropdrag_for_root_and_group_items()
-            return
+            return  # TODO this should not return, dropping to the root means putting the group at the first position
         else:
             QTreeWidget.dropEvent(self, event)
             self.reenable_dropdrag_for_root_and_group_items()
@@ -280,18 +290,31 @@ class StreamGroupView(QTreeWidget):
             print(drop_target.checkState(0))
 
         # group and channels cannot be moved at the same time
-        change_dict = {}  # group name -> channel name, lsl indices
-        if np.all([type(x) is ChannelItem for x in self.selected_channels]):  # only channel(s) is(are) being dragged
+
+        if len(self.selected_channels) > 0 and len(self.selected_groups) == 0:
+            change_dict = {}  # group name -> channel name, lsl indices
             target_group = drop_target.parent() if type(drop_target) is ChannelItem else drop_target
             change_dict[target_group.group_name] = target_group.children()  # get the indices of the changed group
+
             for selected_c in self.selected_channels:
                 if selected_c not in change_dict[target_group.group_name]: change_dict[target_group.group_name].append(selected_c)
                 this_changed_group = selected_c.previous_parent
                 if this_changed_group.group_name not in change_dict.keys():
                     change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
-                selected_c.previous_parent = target_group # set the parent to be the drop target
-        print('StreamGroupView: Changed groups: {}'.format(change_dict))
-        self.parent.channel_parent_group_changed(change_dict)
+                selected_c.previous_parent = target_group  # set the parent to be the drop target
+
+            print('StreamGroupView: Changed groups: {}'.format(change_dict))
+            self.parent.channel_parent_group_changed(change_dict)  # notify streamOptionsWindow of the change
+        elif len(self.selected_groups) > 0 and len(self.selected_channels) == 0:
+            print('Here')
+            new_group_order = []  # group name -> this group's new index
+            super().dropEvent(event)  # accept the drop event
+            for i in range(self.topLevelItemCount()):
+                item = self.topLevelItem(i)
+                new_group_order.append(item.text(0))
+            self.parent.group_order_changed(new_group_order)
+        else:
+            raise ValueError('StreamGroupView: dropEvent: Cannot move groups and channels at the same time')
         event.accept()
 
     def get_selected_channel_groups(self):
@@ -305,7 +328,7 @@ class StreamGroupView(QTreeWidget):
         return self.group_widgets[group_name]
 
     def reenable_dropdrag_for_root_and_group_items(self):
-        self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
+        # self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
         [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
          self.group_widgets.values()]
 
@@ -407,8 +430,8 @@ class StreamGroupView(QTreeWidget):
 
     def get_group_names(self):
         group_names = []
-        for index in range(0, self.stream_root.childCount()):
-            group_names.append(self.stream_root.child(index).data(0, 0))
+        for index in range(self.topLevelItemCount()):
+            group_names.append(self.topLevelItem(index).data(0, 0))
         return group_names
 
     def get_all_child(self, item):
@@ -419,15 +442,15 @@ class StreamGroupView(QTreeWidget):
         return children
 
     def remove_empty_groups(self):
-        children_num = self.stream_root.childCount()
+        children_num = self.topLevelItemCount()
         empty_groups = []
-        for child_index in range(0, children_num):
-            group = self.stream_root.child(child_index)
+        for child_index in range(children_num):
+            group = self.topLevelItem(child_index)
             if group.childCount() == 0:
                 empty_groups.append(group.group_name)
         for empty_group in empty_groups:
             removed_group_widget = self.group_widgets.pop(empty_group)
-            self.stream_root.removeChild(removed_group_widget)
+            self.takeTopLevelItem(self.indexOfTopLevelItem((removed_group_widget)))
 
     # def change_parent(self, item, new_parent):
     #     old_parent = item.parent
@@ -493,44 +516,6 @@ class StreamGroupView(QTreeWidget):
             parent_group = item.parent().data(0, 0)
             self.channel_is_display_changed_signal.emit((int(item.lsl_index), parent_group, checked))
 
-    # print(item.data(0, 0))
-
-    # def create_new_group(self, new_group_name):
-    #     group_names = self.get_group_names()
-    #     selected_items = self.selectedItems()
-    #     # new_group_name = self.newGroupNameTextbox.text()
-    #
-    #     if new_group_name:
-    #         if len(selected_items) == 0:
-    #             dialog_popup('please select at least one channel to create a group')
-    #         elif new_group_name in group_names:
-    #             dialog_popup('Cannot Have duplicated Group Names')
-    #             return
-    #         else:
-    #             for selected_item in selected_items:
-    #                 if type(selected_item) == GroupItem:
-    #                     dialog_popup('group item cannot be selected while creating new group')
-    #                     return
-    #             # create new group:
-    #
-    #             # self.disconnect_selection_changed()
-    #             self.clearSelection()
-    #
-    #             new_group = self.add_group_item(parent_item=self.stream_root,
-    #                                             group_name=new_group_name,
-    #                                             display=any([item.display for item in selected_items]),
-    #                                             plot_format='time_series')
-    #             for selected_item in selected_items:
-    #                 self.change_parent(item=selected_item, new_parent=new_group)
-    #
-    #             # self.reconnect_selection_changed()
-    #
-    #         self.remove_empty_groups()
-    #         self.expandAll()
-    #     else:
-    #         dialog_popup('please enter your group name first')
-    #         return
-
     def disconnect_selection_changed(self):
         self.selectionModel().selectionChanged.disconnect(self.selection_changed)
 
@@ -585,7 +570,7 @@ class StreamGroupView(QTreeWidget):
 
     def add_group(self):
         new_group_name = self.get_next_available_groupname()
-        new_group = self.add_new_group_item(parent_item=self.stream_root, group_name=new_group_name)  # default plot as time series
+        new_group = self.add_new_group_item(parent_item=self, group_name=new_group_name)  # default plot as time series
         selected = self.get_selected_channel_groups()
 
         self.disconnect_selection_changed()
