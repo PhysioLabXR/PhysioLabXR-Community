@@ -177,7 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
-        self.sensorTabSensorsHorizontalLayout.removeWidget(target)
+        self.streamsHorizontalLayout.removeWidget(target)
         self.update_active_streams()
         self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
@@ -200,9 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
         widget = VideoDeviceWidget(main_parent=self,
-                                   parent_layout=self.sensorTabSensorsHorizontalLayout,
+                                   parent_layout=self.camHorizontalLayout,
                                    video_device_name=video_device_name,
-                                   insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+                                   insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
@@ -231,13 +231,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # set up UI elements
         widget_name = networking_stream_name + '_widget'
         stream_widget = StreamWidget(main_parent=self,
-                                     parent=self.sensorTabSensorsHorizontalLayout,
+                                     parent=self.streamsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
                                      worker = worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
-                                     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+                                     insert_position=self.streamsHorizontalLayout.count() - 1)
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
         stream_widget.setObjectName(widget_name)
 

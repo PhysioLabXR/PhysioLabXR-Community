@@ -266,14 +266,14 @@ class StreamGroupView(QTreeWidget):
     def dropEvent(self, event):
         drop_target = self.itemAt(event.pos())
         if drop_target == None:
-            self.reset_drag_drop()
+            self.reenable_dropdrag_for_root_and_group_items()
             return
-        elif drop_target.data(0, 0) == self.stream_name:
-            self.reset_drag_drop()
+        elif drop_target.data(0, 0) == self.stream_name:  #
+            self.reenable_dropdrag_for_root_and_group_items()
             return
         else:
             QTreeWidget.dropEvent(self, event)
-            self.reset_drag_drop()
+            self.reenable_dropdrag_for_root_and_group_items()
 
             # check empty group
             self.remove_empty_groups()
@@ -304,7 +304,7 @@ class StreamGroupView(QTreeWidget):
     def get_group_item(self, group_name):
         return self.group_widgets[group_name]
 
-    def reset_drag_drop(self):
+    def reenable_dropdrag_for_root_and_group_items(self):
         self.stream_root.setFlags(self.stream_root.flags() | Qt.ItemIsDropEnabled)
         [group_widget.setFlags(group_widget.flags() | Qt.ItemIsDropEnabled) for group_widget in
          self.group_widgets.values()]
@@ -426,8 +426,8 @@ class StreamGroupView(QTreeWidget):
             if group.childCount() == 0:
                 empty_groups.append(group.group_name)
         for empty_group in empty_groups:
-            remvoed_group_widget = self.group_widgets.pop(empty_group)
-            self.stream_root.removeChild(remvoed_group_widget)
+            removed_group_widget = self.group_widgets.pop(empty_group)
+            self.stream_root.removeChild(removed_group_widget)
 
     # def change_parent(self, item, new_parent):
     #     old_parent = item.parent
