@@ -1,10 +1,8 @@
-# from rena.examples.MNE_Example.mne_raw_example import generate_mne_stim_channel, add_stim_channel_to_raw_array
 import pickle
 from datetime import datetime
-
 from pylsl import StreamInfo, StreamOutlet
 from sklearn.linear_model import LogisticRegression
-
+from rena.scripting.Examples.P300SpellerDemo.Cyton8ChannelsConfig import *
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
 from rena.scripting.RenaScript import RenaScript
 from rena.utils.general import DataBuffer
@@ -20,7 +18,7 @@ class P300Speller(RenaScript):
         # board = BoardShim(2, params)
         # self.eeg_names = board.get_eeg_names(2)
 
-        self.info = mne.create_info(channel_names, EEG_SAMPLING_RATE, ch_types='eeg')
+        self.info = mne.create_info(eeg_channel_names, EEG_SAMPLING_RATE, ch_types=channel_types)
         self.info['description'] = 'P300Speller'
 
         # during for egg time locking
@@ -156,7 +154,7 @@ class P300Speller(RenaScript):
             y_list.append(y)
 
         # visualization function (optional)
-        # visualize_eeg_epochs(epoch, event_id, event_color)
+        visualize_eeg_epochs(epoch, event_id, event_color, eeg_channel_names)
 
         x = np.concatenate([x for x in x_list]) # collect all x samples
         y = np.concatenate([y for y in y_list]) # collect all y samples

@@ -111,7 +111,7 @@ def rebalance_classes(x, y, by_channel=False):
 #     return events, event_ts, events_info
 
 
-def visualize_eeg_epochs(epochs, event_groups, colors, title='', out_dir=None, verbose='INFO', fig_size=(12.8, 7.2),
+def visualize_eeg_epochs(epochs, event_groups, colors, eeg_picks, title='', out_dir=None, verbose='INFO', fig_size=(12.8, 7.2),
                          is_plot_timeseries=True, is_plot_topo_map=True, gaze_behavior=None):
     mne.set_log_level(verbose=verbose)
     plt.rcParams["figure.figsize"] = fig_size

@@ -1,4 +1,5 @@
 
+
 # P300SpellerGameStateControlMarker
 START_TRAINING_MARKER = 1
 END_TRAINING_MARKER = 2
@@ -21,26 +22,25 @@ COL_FLASHING_MARKER = 2
 NONTARGET_MARKER = 1
 TARGET_MARKER = 2
 
-##########
+###########################################
 TRAIN_RESPONSE_MARKER = 1
 TEST_RESPONSE_MARKER = 2
 
 ###########################################
+# State representation
 IDLE_STATE = 0
 RECORDING_STATE = 1
-TRAINING_STATE = 99
-TESTING_STATE = 100
+TRAINING_STATE = 2
+TESTING_STATE = 3
 ############################################
 
+# IDLE_STATE
 EEG_SAMPLING_RATE = 250.0
 
-Time_Window = 1.1  # second
 
-OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
 
 P300EventStreamName = 'P300Speller'
 
-sampling_rate = 250
 data_duration = 2
 channel_num = 8
 
@@ -55,35 +55,14 @@ p300_speller_event_marker_channel_index = {
     "P300SpellerTargetNonTargetMarker": 5
 }
 
-channel_types = ['eeg'] * 8
-
-channel_names = [
-    "Fz",
-    "Cz",
-    "Pz",
-    "C3",
-    "C4",
-    "P3",
-    "P4",
-    "O1"
-]
+montage = 'standard_1005'
 
 event_id = {'non_target': NONTARGET_MARKER, 'target': TARGET_MARKER}
 event_color = {'non_target': 'blue', 'target': 'red'}
-montage = 'standard_1005'
+
 
 ##########################
 # Visualization Settings
 tmin_eeg_viz = -0.1
 tmax_eeg_viz = 1.
-eeg_picks = [
-    "Fz",
-    "Cz",
-    "Pz",
-    "C3",
-    "C4",
-    "P3",
-    "P4",
-    "O1"
-]
 
