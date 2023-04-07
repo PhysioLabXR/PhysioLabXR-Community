@@ -15,9 +15,7 @@ from sklearn import metrics
 import seaborn as sns
 from sklearn import metrics
 
-'''
 
-'''
 
 
 def p300_speller_process_raw_data(raw, l_freq, h_freq, notch_f, picks):
