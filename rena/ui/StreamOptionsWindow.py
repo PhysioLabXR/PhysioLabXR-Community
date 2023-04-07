@@ -262,6 +262,9 @@ class StreamOptionsWindow(QDialog):
     def channel_parent_group_changed(self, change_dict: dict):
         self.parent.channel_group_changed(change_dict)
 
+    def group_order_changed(self, new_group_order: dict):
+        self.parent.group_order_changed(new_group_order)
+
     @QtCore.pyqtSlot(dict)
     def plot_format_changed(self, info_dict: dict):
         # get current selected:

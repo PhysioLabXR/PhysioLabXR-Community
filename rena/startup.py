@@ -89,7 +89,7 @@ def load_ui_shared():
 
 def show_splash():
     splash = QLabel()
-    pixmap = QPixmap('../media/logo/RN.png')
+    pixmap = QPixmap('../media/logo/RenaLabApp.png')
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()

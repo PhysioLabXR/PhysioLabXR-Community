@@ -137,7 +137,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.FileSaveLabel.setText(ui_shared.recording_tab_file_save_label_prefix + self.generate_save_path())
 
     def on_option_button_clicked(self):
-        self.parent.fire_action_settings()
+        self.parent.open_settings_tab('recording')
 
     def generate_save_path(self):
         # datetime object containing current date and time

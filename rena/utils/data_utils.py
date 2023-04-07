@@ -78,7 +78,7 @@ class RNStream:
             try:
                 assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
             except AssertionError:
-                warnings.warn('timestamps must be in increasing order.', UserWarning)
+                warnings.warn(f'RNStream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)

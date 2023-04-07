@@ -14,10 +14,10 @@ from rena.startup import load_settings
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
 
-class SettingsTab(QtWidgets.QWidget):
+class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
-        self.ui = uic.loadUi("ui/SettingsTab.ui", self)
+        self.ui = uic.loadUi("ui/SettingsWidget.ui", self)
         self.parent = parent
         self.set_theme(config.settings.value('theme'))
 
@@ -41,6 +41,18 @@ class SettingsTab(QtWidgets.QWidget):
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(config.settings.value('visualization_refresh_interval'))))))
+
+    def switch_to_tab(self, tab_name: str):
+        if 'appearance' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_appearance_tab)
+        elif 'recording' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_recordings_tab)
+        elif 'video device' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_video_device_tab)
+        elif 'streams' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_streams_tab)
+        else:
+            raise ValueError(f'SettingsWidget: unknown tab name: {tab_name}')
 
     def toggle_theme_btn_pressed(self):
         print("toggling theme")

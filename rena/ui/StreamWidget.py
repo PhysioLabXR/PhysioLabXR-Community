@@ -633,6 +633,18 @@ class StreamWidget(QtWidgets.QWidget):
         export_group_info_to_settings(self.group_info, self.stream_name)
         self.reset_viz()
 
+    def group_order_changed(self, group_order):
+        """
+        Called when the group order is changed
+        @param group_order:
+        """
+        new_group_info = {}
+        for group_name in group_order:
+            new_group_info[group_name] = self.group_info.pop(group_name)
+        self.group_info = new_group_info
+        export_group_info_to_settings(self.group_info, self.stream_name)
+        self.reset_viz()
+
     def change_group_name(self, new_group_name, old_group_name):
         self.group_info[new_group_name] = self.group_info.pop(old_group_name)
         self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
