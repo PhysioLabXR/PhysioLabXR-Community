@@ -18,7 +18,7 @@ class P300Speller(RenaScript):
         # board = BoardShim(2, params)
         # self.eeg_names = board.get_eeg_names(2)
 
-        self.info = mne.create_info(eeg_channel_names, EEG_SAMPLING_RATE, ch_types=channel_types)
+        self.info = mne.create_info(eeg_channel_names, eeg_sampling_rate, ch_types=channel_types)
         self.info['description'] = 'P300Speller'
 
         # during for egg time locking

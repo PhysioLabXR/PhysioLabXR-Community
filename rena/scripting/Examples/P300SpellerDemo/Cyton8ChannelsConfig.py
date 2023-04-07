@@ -19,7 +19,7 @@
 OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
 
 # Sampling Rate
-sampling_rate = 250
+eeg_sampling_rate = 250
 
 # all channel names
 openbci_cython_8_channels = [
@@ -40,6 +40,8 @@ openbci_cython_8_channels = [
     "TimeStamp",
     "Marker"
 ]
+
+channel_num = 8
 
 # eeg channel index for the experiment. The Cython8 board has 8 eeg channels
 eeg_channel_index = [1, 2, 3, 4, 5, 6, 7, 8]
