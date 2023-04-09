@@ -54,7 +54,7 @@ class ReplayServer(threading.Thread):
     def run(self):
         while self.running:
             if not self.is_replaying:
-                print('ReplayClient: pending on start replay command')
+                print('ReplayServer: pending on start replay command')
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
@@ -384,7 +384,7 @@ class ReplayServer(threading.Thread):
             return 0
 
 def start_replay_server():
-    print("Replay Client Started")
+    print("Replay Server Started")
     # TODO connect to a different port if this port is already in use
     try:
         command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -395,8 +395,8 @@ def start_replay_server():
         print("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
         print("Replay Server exiting...No replay will be available for this session")
         return
-    replay_client_thread = ReplayServer(command_info_interface)
-    replay_client_thread.start()
+    replay_server_thread = ReplayServer(command_info_interface)
+    replay_server_thread.start()
 
 
 if __name__ == '__main__':
