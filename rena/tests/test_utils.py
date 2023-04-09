@@ -163,7 +163,7 @@ class ContextBot:
     def start_recording(self):
         if self.app.recording_tab.is_recording:
             raise ValueError("App is already recording when calling stop_recording from test_context")
-        self.app.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+        self.app.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
@@ -224,7 +224,7 @@ def run_benchmark(test_context, test_stream_names, num_channels_to_test, samplin
         start_time = time.perf_counter()
         test_context.start_stream(stream_name, num_channels, sampling_rate)
         if is_reocrding:
-            test_context.app_main_window.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+            test_context.app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
             test_context.qtbot.mouseClick(test_context.app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))

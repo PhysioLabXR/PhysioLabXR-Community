@@ -87,7 +87,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, ts_name)
         qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
-    app_main_window.settings_tab.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+    app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
 
     def stream_is_available():
         for ts_name in test_stream_names:
@@ -161,7 +161,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
     wait_for_replay_finishes_time = (recording_time_second * 2) * 1e3
 
-    # test if the data are being received
+    # test if the data are being received as they are being replayed
     for ts_name in test_stream_names:
         assert app_main_window.stream_widgets[ts_name].viz_data_buffer.has_data()
 

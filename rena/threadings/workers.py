@@ -644,7 +644,7 @@ class PlaybackWorker(QObject):
             self.command_info_interface.send_string(shared.VIRTUAL_CLOCK_REQUEST)
             virtual_clock = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
             virtual_clock = np.frombuffer(virtual_clock)[0]
-            if virtual_clock == -1:  # replay has finished
+            if virtual_clock == -1:  #  important, receiving a virtual clock of value -1 means that the replay has finished from the server end
                 self.replay_stopped()
                 self.send_command_mutex.unlock()
                 return

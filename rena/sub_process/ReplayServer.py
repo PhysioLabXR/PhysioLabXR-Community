@@ -70,19 +70,30 @@ class ReplayServer(threading.Thread):
                                 # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
                             else:
                                 self.send_string(shared.FAIL_INFO + 'Unsupported file type')
-                                return
+                                self.reset_replay()
+                                continue
                         except FileNotFoundError:
                             self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
-                            return
+                            self.reset_replay()
+                            continue
                     self.previous_file_loc = file_loc
                     self.previous_stream_data = self.stream_data
                     self.is_replaying = True
                     self.setup_stream()
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
-                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
-                    self.send_string('|'.join(self.stream_data.keys()))
+                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
+                    self.send_string('|'.join(self.stream_data.keys()))  # send the stream names
+
+                    command = self.recv_string(is_block=True)
+                    if command == shared.GO_AHEAD_COMMAND:
+                        pass
+                    elif command == shared.DUPLICATE_STREAM_STOP_COMMAND:
+                        self.reset_replay()
+                        continue
+
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
+                    break
             else:
                 while len(self.remaining_stream_names) > 0:
                     if not self.is_paused:
