@@ -39,6 +39,7 @@ class ReplayServer(threading.Thread):
 
         self.running = True
         self.main_program_routing_id = None
+        self.replay_finished = False
 
         # fps counter
         self.tick_times = deque(maxlen=50)
@@ -95,7 +96,10 @@ class ReplayServer(threading.Thread):
                     self.running = False
                     break
             else:
-                while len(self.remaining_stream_names) > 0:
+                while True:  # the replay loop
+                    if len(self.remaining_stream_names) == 0:
+                        self.replay_finished = True
+                        break
                     if not self.is_paused:
                         self.tick_times.append(time.time())
                         # print("Replay FPS {0}".format(self.get_fps()), end='\r')
@@ -137,8 +141,8 @@ class ReplayServer(threading.Thread):
 
                 print('Replay Server: exited replay loop')
                 self.reset_replay()
-
-                if self.is_replaying:  # the case of a finished replay
+                if self.replay_finished:  # the case of a finished replay
+                    self.replay_finished = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(np.array(-1.))
