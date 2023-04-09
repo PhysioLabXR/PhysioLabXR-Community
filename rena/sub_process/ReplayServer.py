@@ -39,6 +39,7 @@ class ReplayServer(threading.Thread):
 
         self.running = True
         self.main_program_routing_id = None
+        self.replay_finished = False
 
         # fps counter
         self.tick_times = deque(maxlen=50)
@@ -53,7 +54,7 @@ class ReplayServer(threading.Thread):
     def run(self):
         while self.running:
             if not self.is_replaying:
-                print('ReplayClient: pending on start replay command')
+                print('ReplayServer: pending on start replay command')
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
@@ -70,21 +71,35 @@ class ReplayServer(threading.Thread):
                                 # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
                             else:
                                 self.send_string(shared.FAIL_INFO + 'Unsupported file type')
-                                return
+                                self.reset_replay()
+                                continue
                         except FileNotFoundError:
                             self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
-                            return
+                            self.reset_replay()
+                            continue
                     self.previous_file_loc = file_loc
                     self.previous_stream_data = self.stream_data
                     self.is_replaying = True
                     self.setup_stream()
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
-                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
-                    self.send_string('|'.join(self.stream_data.keys()))
+                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
+                    self.send_string('|'.join(self.stream_data.keys()))  # send the stream names
+
+                    command = self.recv_string(is_block=True)
+                    if command == shared.GO_AHEAD_COMMAND:
+                        pass
+                    elif command == shared.DUPLICATE_STREAM_STOP_COMMAND:
+                        self.reset_replay()
+                        continue
+
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
+                    break
             else:
-                while len(self.remaining_stream_names) > 0:
+                while True:  # the replay loop
+                    if len(self.remaining_stream_names) == 0:
+                        self.replay_finished = True
+                        break
                     if not self.is_paused:
                         self.tick_times.append(time.time())
                         # print("Replay FPS {0}".format(self.get_fps()), end='\r')
@@ -126,8 +141,8 @@ class ReplayServer(threading.Thread):
 
                 print('Replay Server: exited replay loop')
                 self.reset_replay()
-
-                if self.is_replaying:  # the case of a finished replay
+                if self.replay_finished:  # the case of a finished replay
+                    self.replay_finished = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(np.array(-1.))
@@ -369,7 +384,7 @@ class ReplayServer(threading.Thread):
             return 0
 
 def start_replay_server():
-    print("Replay Client Started")
+    print("Replay Server Started")
     # TODO connect to a different port if this port is already in use
     try:
         command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -380,8 +395,8 @@ def start_replay_server():
         print("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
         print("Replay Server exiting...No replay will be available for this session")
         return
-    replay_client_thread = ReplayServer(command_info_interface)
-    replay_client_thread.start()
+    replay_server_thread = ReplayServer(command_info_interface)
+    replay_server_thread.start()
 
 
 if __name__ == '__main__':

@@ -17,6 +17,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
+from rena.utils.lsl_utils import get_available_lsl_streams
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     check_preset_exists, get_experiment_preset_streams
 
@@ -218,8 +219,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
-        # switch tab to visulalization
-        self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        # switch tab to stream
+        # self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
         self.add_streams_to_visualize(stream_names)
         # for stream_name in stream_names:
         #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
@@ -360,3 +362,4 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def get_added_stream_names(self):
         return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
+
