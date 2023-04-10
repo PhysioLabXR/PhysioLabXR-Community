@@ -393,7 +393,7 @@ class ScreenCaptureWorker(QObject, RenaWorker):
             self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
 
 
-class OpenBCIDeviceWorker(QObject):
+class OpenBCIDeviceWorker(QObject, RenaWorker):
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
@@ -440,6 +440,8 @@ class OpenBCIDeviceWorker(QObject):
 
     def is_stream_available(self):
         return True
+
+
 
 
 class MmwWorker(QObject):

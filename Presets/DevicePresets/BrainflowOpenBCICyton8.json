@@ -2,7 +2,7 @@
   "StreamType": "EEG",
   "DeviceType": "OpenBCI",
   "_SerialPort": "COM3",
-  "_Board_id": 2,
+  "_Board_id": 0,
   "ChannelNames":[
     "PackageNum",
     "Fp1","Fp2","C3","C4","P7","P8","O1","O2",
