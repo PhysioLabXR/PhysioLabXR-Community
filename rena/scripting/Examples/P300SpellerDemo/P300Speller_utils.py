@@ -27,7 +27,7 @@ def p300_speller_process_raw_data(raw, l_freq, h_freq, notch_f, picks):
         l_freq (float): Low cut frequency for the bandpass filter.
         h_freq (float): High cut frequency for the bandpass filter.
         notch_f (float): Frequency from the power source to remove using a notch filter. Typically 60Hz.
-        picks (list of str): List of channel names to filter.
+        picks (list of str or str): List of channel names to filter.
 
     Returns:
         mne.io.Raw: Filtered raw EEG data.
@@ -157,7 +157,7 @@ def add_stim_channel(raw_array, data_ts, event_ts, events, stim_channel_name='ST
     Add a stimulation channel to the MNE raw data object.
 
     Args:
-        raw_array (mne.io.Raw): MNE raw data object.
+        raw_array (mne.io.RawArray): MNE raw data object.
         data_ts (numpy.ndarray): Timestamps for the data stream.
         event_ts (numpy.ndarray): Timestamps for event markers.
         events (numpy.ndarray): Event markers.

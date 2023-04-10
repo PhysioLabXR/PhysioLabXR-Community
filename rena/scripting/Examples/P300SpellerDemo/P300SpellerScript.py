@@ -26,7 +26,7 @@ class P300Speller(RenaScript):
         self.time_offset_after = 1
 
         self.data_buffer = DataBuffer()
-        self.board_state = IDLE_STATE # game board state
+        self.board_state = IDLE_STATE  # game board state
         self.game_state = IDLE_STATE  # game state
         self.model_name = 'P300SpellerModel'
         self.train_data_filename = ''
@@ -156,10 +156,10 @@ class P300Speller(RenaScript):
         # visualization function (optional)
         visualize_eeg_epochs(epoch, event_id, event_color, eeg_channel_names)
 
-        x = np.concatenate([x for x in x_list]) # collect all x samples
-        y = np.concatenate([y for y in y_list]) # collect all y samples
+        x = np.concatenate([x for x in x_list])  # collect all x samples
+        y = np.concatenate([y for y in y_list])  # collect all y samples
         x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, test_size=test_size)
-        x_train, y_train = rebalance_classes(x_train, y_train, by_channel=True)  #re-balance the class
+        x_train, y_train = rebalance_classes(x_train, y_train, by_channel=True)  # re-balance the class
         x_train = x_train.reshape(x_train.shape[0], -1)
         x_test = x_test.reshape(x_test.shape[0], -1)
 
@@ -174,17 +174,17 @@ class P300Speller(RenaScript):
     def callback_to_lsl(self):
         pass
 
-
     def testing_callback(self):
         raw = self.generate_raw_data()
         self.testing_raw.append(raw)
         raw_processed = p300_speller_process_raw_data(raw, l_freq=1, h_freq=50, notch_f=60, picks='eeg')
         flashing_events = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingMarker')
-        epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0), event_id={'flashing_event':1},
+        epoch = mne.Epochs(raw_processed, flashing_events, tmin=-0.1, tmax=1, baseline=(-0.1, 0),
+                           event_id={'flashing_event': 1},
                            preload=True)
         x = epoch.get_data(picks='eeg')
         x = x.reshape(x.shape[0], -1)
-        y_pred_target_prob = self.model.predict_proba(x)[:,1]
+        y_pred_target_prob = self.model.predict_proba(x)[:, 1]
 
         colum_row_marker = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowOrColumMarker')[:, -1]
         colum_row_index = mne.find_events(raw_processed, stim_channel='P300SpellerFlashingRowColumIndexMarker')[:, -1]
@@ -205,33 +205,33 @@ class P300Speller(RenaScript):
         col_4 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 4)]]
         col_5 = y_pred_target_prob[[i for i, j in enumerate(merged_list) if j == (COL_FLASHING_MARKER, 5)]]
 
-
-        target_row_index = np.argmax([row_1.mean(), row_2.mean(), row_3.mean(), row_4.mean(), row_5.mean(), row_6.mean()])
+        target_row_index = np.argmax(
+            [row_1.mean(), row_2.mean(), row_3.mean(), row_4.mean(), row_5.mean(), row_6.mean()])
         target_col_index = np.argmax([col_1.mean(), col_2.mean(), col_3.mean(), col_4.mean(), col_5.mean()])
 
         # print("TargetRow: ", target_row_index)
         # print("TargetCol: ", target_col_index)
         #
-        target_char_index = target_row_index*5+target_col_index
+        target_char_index = target_row_index * 5 + target_col_index
         print("targetIndex:")
         print(target_char_index)
-        self.p300_speller_script_lsl.push_sample([TEST_RESPONSE_MARKER,target_char_index])
+        self.p300_speller_script_lsl.push_sample([TEST_RESPONSE_MARKER, target_char_index])
 
     def generate_raw_data(self):
         # add stim channels to raw data
         flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts = self.get_p300_speller_events()
-        raw = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
+        raw_array = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
 
-        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_markers,
+        add_stim_channel(raw_array, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_markers,
                          stim_channel_name='P300SpellerFlashingMarker')
-        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_or_colum_marker,
+        add_stim_channel(raw_array, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_or_colum_marker,
                          stim_channel_name='P300SpellerFlashingRowOrColumMarker')
-        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_colum_index_marker,
+        add_stim_channel(raw_array, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_row_colum_index_marker,
                          stim_channel_name='P300SpellerFlashingRowColumIndexMarker')
-        add_stim_channel(raw, self.data_buffer[OpenBCIStreamName][1], flashing_ts, target_non_target_marker,
+        add_stim_channel(raw_array, self.data_buffer[OpenBCIStreamName][1], flashing_ts, target_non_target_marker,
                          stim_channel_name='P300SpellerTargetNonTargetMarker')
 
-        return raw
+        return raw_array
 
     def get_p300_speller_events(self):
         markers = self.data_buffer[P300EventStreamName][0]
@@ -252,5 +252,3 @@ class P300Speller(RenaScript):
             flashing_markers_index]
         flashing_ts = ts[flashing_markers_index]
         return flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts
-
-
