@@ -128,7 +128,7 @@ class P300Speller(RenaScript):
                 self.inputs.clear_buffer_data()
                 self.board_state = IDLE_STATE
             else:
-                self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
+                self.data_buffer.update_buffers(self.inputs.buffer[eeg_channel_index,:])  # update the data_buffer with all inputs
                 self.inputs.clear_buffer_data()  # clear the data buffer
         else:
             print("WARNING: Unknown state")

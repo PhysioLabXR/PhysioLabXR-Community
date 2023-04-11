@@ -139,6 +139,7 @@ def run_test():
             # data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
             for data in new_data.T:
                 eeg_data = data[1:9]
+                print(eeg_data)
                 # aux_data = data[9:12]
                 # ######### notch and butter
 
