@@ -7,7 +7,7 @@ import numpy as np
 
 from exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
-from rena.interfaces.OpenBCILSLInterface import OpenBCILSLInterface
+from rena.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
@@ -34,7 +34,7 @@ def create_lsl_interface(lsl_name, channel_names):
 
 def process_preset_create_openBCI_interface_startsensor(device_name, serial_port, board_id):
     try:
-        interface = OpenBCILSLInterface(stream_name=device_name,
+        interface = OpenBCIDeviceInterface(stream_name=device_name,
                                         serial_port=serial_port,
                                         board_id=board_id,
                                         log='store_false', )
