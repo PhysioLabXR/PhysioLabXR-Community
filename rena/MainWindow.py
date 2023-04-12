@@ -368,6 +368,6 @@ class MainWindow(QtWidgets.QMainWindow):
         Check if any stream is streaming. Checks if any stream widget or video device widget is streaming.
         @return: return True if any network streams or video device is streaming, False otherwise
         """
-        is_stream_widgets_streaming = np.any([x.is_widget_streaming for x in self.stream_widgets])
-        is_video_device_widgets_streaming = np.any([x.is_widget_streaming for x in self.video_device_widgets])
+        is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
+        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
         return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])
