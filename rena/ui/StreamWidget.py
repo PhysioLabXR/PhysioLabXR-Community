@@ -6,7 +6,7 @@ import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QMessageBox
+from PyQt5.QtWidgets import QLabel, QMessageBox, QDialogButtonBox
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -243,7 +243,7 @@ class StreamWidget(QtWidgets.QWidget):
                 #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)

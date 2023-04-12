@@ -4,7 +4,7 @@ from multiprocessing import Process
 import numpy as np
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QDialogButtonBox
 
 from rena import config, shared
 from rena.sub_process.ReplayServer import start_replay_server
@@ -103,7 +103,8 @@ class ReplayTab(QtWidgets.QWidget):
                         f'The following streams are already added: {overlapping_streams}.\n'
                         f'Are you sure you want to proceed with replaying this file? \n'
                         f'Proceeding may result in unpredictable streaming behavior.'
-                        f'It is recommended to remove the other data stream with the same name as one of the replay\'s', title='Duplicate Stream Name', mode='modal', main_parent=self.parent)
+                        f'It is recommended to remove the other data stream with the same name as one of the replay\'s', title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
+                        buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
                     if not reply.result():
                         self.command_info_interface.send_string(shared.DUPLICATE_STREAM_STOP_COMMAND)
                         return

@@ -64,14 +64,24 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
 def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
     """
     This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
-    @param app:
-    @param qtbot:
-    @param patience_second:
-    @param delay:
+    @param app: the main window
+    @param qtbot: qtbot instance of the testing fixture
+    @param patience_second: how long to wait for the current dialog to be a CustomDialog
+    @param delay: how long to wait before clicking the button
+    """
+    handle_current_dialog_button(QtWidgets.QDialogButtonBox.Ok, app, qtbot, patience_second, click_delay_second)
+
+def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
+    """
+    This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
+    @param app: the main window
+    @param qtbot: qtbot instance of the testing fixture
+    @param patience_second: how long to wait for the current dialog to be a CustomDialog
+    @param delay: how long to wait before clicking the button
     """
     if patience_second == 0:
         if isinstance(app.current_dialog, CustomDialog):
-            yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+            yes_button = app.current_dialog.buttonBox.button(button)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))  # delay 1 second for the data to come in
         else:
             raise ValueError(f"current dialog in main window is not CustomDialog. It is {type(app.current_dialog)}")
@@ -84,7 +94,7 @@ def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, c
             qtbot.wait(100)  # wait for 100 ms between tries
             print(f"Waiting for the current dialogue to be a CustomDialog: {app.current_dialog}")
         print(f": {app.current_dialog} is a CustomDialog, trying to click ok button")
-        yes_button = app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        yes_button = app.current_dialog.buttonBox.button(button)
         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
 
 class ContextBot:

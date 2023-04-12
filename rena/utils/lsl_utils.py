@@ -11,4 +11,4 @@ def create_lsl_outlet(stream_name: str, n_channels, srate):
 
 def get_available_lsl_streams(wait_time=.1):
     available_streams = [x.name() for x in lsl_continuous_resolver.results()] + [x.type() for x in lsl_continuous_resolver.results()]
-    return [x.name() for x in available_streams]
+    return [x for x in available_streams]

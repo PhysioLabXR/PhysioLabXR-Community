@@ -236,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                      parent=self.streamsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
-                                     worker = worker,
+                                     worker=worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
                                      insert_position=self.streamsHorizontalLayout.count() - 1)
@@ -363,3 +363,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_added_stream_names(self):
         return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
 
+    def is_any_streaming(self):
+        """
+        Check if any stream is streaming. Checks if any stream widget or video device widget is streaming.
+        @return: return True if any network streams or video device is streaming, False otherwise
+        """
+        is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
+        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
+        return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])

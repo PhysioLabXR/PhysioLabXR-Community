@@ -134,7 +134,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         # relay the signal to the parent (replay tab) and then use that information in a method in replay tab
         if play_pause_command == 'pause':
             self.pause_replay()
-        else: # play_pause_command is 'resume':
+        else:  # play_pause_command is 'resume':
             self.resume_replay()
 
     def replay_stopped_signal_callback(self):
