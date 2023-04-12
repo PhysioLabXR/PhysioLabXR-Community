@@ -25,18 +25,36 @@
       </property>
       <widget class="QWidget" name="visualization_tab">
        <attribute name="title">
-        <string>Visualization</string>
+        <string>Stream</string>
        </attribute>
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>
-         <widget class="QWidget" name="sensorWidget" native="true">
-          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout">
-           <item>
-            <widget class="QWidget" name="camWidget" native="true">
-             <layout class="QVBoxLayout" name="camWidgetVerticalLayout"/>
-            </widget>
-           </item>
-          </layout>
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_3">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>1556</width>
+             <height>859</height>
+            </rect>
+           </property>
+           <layout class="QHBoxLayout" name="scrollAreaWidgetContents_3_layout">
+            <item>
+             <widget class="QWidget" name="StreamWidget" native="true">
+              <layout class="QHBoxLayout" name="streamsHorizontalLayout"/>
+             </widget>
+            </item>
+             <item>
+             <widget class="QWidget" name="camWidget" native="true">
+              <layout class="QHBoxLayout" name="camHorizontalLayout"/>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>

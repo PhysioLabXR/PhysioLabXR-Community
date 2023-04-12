@@ -133,3 +133,6 @@ class VideoDeviceWidget(QtWidgets.QWidget):
 
     def get_pull_data_delay(self):
         return self.worker.get_pull_data_delay()
+
+    def is_widget_streaming(self):
+        return self.worker.is_streaming

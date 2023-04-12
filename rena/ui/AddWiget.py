@@ -164,4 +164,4 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.DataTypeComboBox.setCurrentIndex(index)
         else:
             self.set_data_type_to_default()
-            print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
+            # print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))

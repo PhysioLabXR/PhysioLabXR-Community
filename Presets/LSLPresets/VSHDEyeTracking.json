@@ -1,0 +1,7 @@
+{ "StreamName":"VSHDEyeTracking",
+  "ChannelNames":[
+        "Horizontal",
+        "Vertical"
+  ],
+  "NominalSamplingRate":  60,
+  "DataType": "float32"}

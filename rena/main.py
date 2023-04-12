@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from MainWindow import MainWindow
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 
 # import and init shared global variables
 
@@ -15,17 +15,17 @@ app = None
 
 if __name__ == '__main__':
     # load default settings
-    load_default_settings()
+    load_settings(revert_to_default=False)
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
     tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
-    tray_icon.setToolTip('RNApp')
+    tray_icon.setToolTip('RenaLabApp')
     tray_icon.show()
 
     # splash screen
     splash = QLabel()
-    pixmap = QPixmap('../media/logo/RN.png')
+    pixmap = QPixmap('../media/logo/RenaLabApp.png')
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # inference_interface = InferenceInterface.InferenceInterface()
     window = MainWindow(app=app)
 
-    window.setWindowIcon(QIcon('../media/logo/RN.png'))
+    window.setWindowIcon(QIcon('../media/logo/RenaLabApp.png'))
     # make tray menu
     menu = QMenu()
     exit_action = menu.addAction('Exit')

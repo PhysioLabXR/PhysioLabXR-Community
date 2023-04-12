@@ -14,7 +14,7 @@ from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_ST
     SCRIPT_PARAM_CHANGE, ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.general import get_fps, DataBuffer, check_buffer_timestamps_monotonic
+from rena.utils.buffers import get_fps, DataBuffer, check_buffer_timestamps_monotonic
 from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 
@@ -24,7 +24,7 @@ class RenaScript(ABC, threading.Thread):
     An abstract class for implementing scripting models.
     """
 
-    def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params, port, run_frequency, time_window,
+    def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params: dict, port, run_frequency, time_window,
                  script_path, is_simulate, *args, **kwargs):
         """
 
@@ -161,8 +161,11 @@ class RenaScript(ABC, threading.Thread):
             for stream_name, data in self.outputs.items():
                 if data is not None:
                     try:
-                        validate_output(data, self.output_num_channels[stream_name])
-                        self.output_outlets[stream_name].push_sample(data)
+                        data, is_chunk = validate_output(data, self.output_num_channels[stream_name])
+                        if is_chunk:
+                            self.output_outlets[stream_name].push_chunk(data)
+                        else:
+                            self.output_outlets[stream_name].push_sample(data)
                     except Exception as e:
                         if type(e) == BadOutputError:
                             print('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))

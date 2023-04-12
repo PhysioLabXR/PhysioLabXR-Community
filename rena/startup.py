@@ -6,13 +6,13 @@ from PyQt5.QtWidgets import QLabel
 from rena.utils.video_capture_utils import get_working_camera_ports
 from rena.ui_shared import *
 from rena import config, config_ui
-from rena.utils.general import *
 from rena.utils.settings_utils import export_preset_to_settings, load_all_presets, \
     load_all_experiment_presets, process_plot_group
 from rena.utils.ui_utils import dialog_popup
 
-
-def load_default_settings(revert_to_default=False, reload_presets=True):
+default_settings_dict = {'theme': config_ui.default_theme,
+                         'file_format': config.DEFAULT_FILE_FORMAT}
+def load_settings(revert_to_default=True, reload_presets=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
@@ -24,6 +24,8 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
         config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
+        config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
+        config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -45,6 +47,8 @@ def load_default_settings(revert_to_default=False, reload_presets=True):
             config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         if not config.settings.contains('pull_data_interval') or config.settings.value('pull_data_interval') is None:
             config.settings.setValue('pull_data_interval', config.pull_data_interval)
+        if not config.settings.contains('visualization_refresh_interval') or config.settings.value('visualization_refresh_interval') is None:
+            config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
@@ -85,7 +89,7 @@ def load_ui_shared():
 
 def show_splash():
     splash = QLabel()
-    pixmap = QPixmap('../media/logo/RN.png')
+    pixmap = QPixmap('../media/logo/RenaLabApp.png')
     splash.setPixmap(pixmap)
     splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
     splash.show()

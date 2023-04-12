@@ -107,16 +107,26 @@ class InvalidPresetError(RenaError):
     def __init__(self, stream_name):
         super().__init__(stream_name)
     def __str__(self):
-        return 'The preset {0} does is not valid. Must have either Channelnames or NumChannels defined\n'.format(self.stream_name)
+        return 'The preset {0} does is not valid. Must have either Channelnames or NumChannels defined\n'.format(self.message)
 
-class InvalidScripPathError(RenaError):
+class InvalidScriptPathError(RenaError):
     def __init__(self, script_path, error):
         super().__init__(error)
         self.script_path = script_path
         self.error = error
 
     def __str__(self):
-        return 'Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)
+        return 'Unable to load custom script: Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)
+
+class ScriptMissingModuleError(RenaError):
+    def __init__(self, script_path, error):
+        super().__init__(error)
+        self.script_path = script_path
+        self.error = error
+
+    def __str__(self):
+        return 'Unable to load custom script: {0} \n One of the module it tries to import is missing from your python environment. \nError: {1}\n'.format(self.script_path, self.error)
+
 
 class BadOutputError(RenaError):
     def __init__(self, error):

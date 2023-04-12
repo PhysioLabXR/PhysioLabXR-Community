@@ -250,7 +250,7 @@
        <height>120</height>
       </size>
      </property>
-     <layout class="QVBoxLayout" name="MetaInfoVerticalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -264,19 +264,6 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLabel" name="fs_label">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Sampling Rate</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="ts_label">
         <property name="maximumSize">
          <size>
@@ -286,6 +273,19 @@
         </property>
         <property name="text">
          <string>Current Timestamp</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="fs_label">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Sampling Rate</string>
         </property>
        </widget>
       </item>
@@ -307,6 +307,24 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <item>
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>1580</width>
+           <height>1091</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="viz_group_scroll_layout"/>
+        </widget>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
