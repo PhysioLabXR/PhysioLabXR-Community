@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 
 from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
+from PyQt5.QtWidgets import QDialogButtonBox
 
 from rena import config, ui_shared
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
@@ -60,8 +61,9 @@ class RecordingsTab(QtWidgets.QWidget):
             self.start_recording_btn_pressed()
 
     def start_recording_btn_pressed(self):
-        if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
-            self.parent.current_dialog = dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
+        if not self.parent.is_any_streaming():
+            self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
+                                                      title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
@@ -91,7 +93,7 @@ class RecordingsTab(QtWidgets.QWidget):
         if config.settings.value('file_format') != config.FILE_FORMATS[0]:
             self.convert_file_format(self.save_path, config.settings.value('file_format'))
         else:
-            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless')
+            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok)
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
@@ -100,7 +102,6 @@ class RecordingsTab(QtWidgets.QWidget):
         self.experimentNameTextEdit.setEnabled(True)
         self.subjectTagTextEdit.setEnabled(True)
         self.sessionTagTextEdit.setEnabled(True)
-
 
     def update_recording_buffer(self, data_dict: dict):
         if self.is_recording:

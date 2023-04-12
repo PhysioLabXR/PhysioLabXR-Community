@@ -271,13 +271,13 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 
 class CustomDialog(QDialog):
-    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None):
+    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)
         self.dialog_name = dialog_name
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        QBtn = buttons
 
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -307,7 +307,7 @@ class CustomDialog(QDialog):
             print('will show ' + self.dialog_name)
 
 
-def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None):
+def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
     if enable_dont_show:
         try:
             assert dialog_name is not None
@@ -318,7 +318,7 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
         if config.settings.contains('show_' + dialog_name) and config.settings.value('show_' + dialog_name) == 'false':
             print('Skipping showing dialog ' + dialog_name)
             return
-    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
+    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show, buttons=buttons)  # If you pass self, the dialog will be centered over the main window as before.
     if main_parent:
         main_parent.current_dialog = dlg
     if mode=='modal':
