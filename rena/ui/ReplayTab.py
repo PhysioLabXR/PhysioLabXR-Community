@@ -100,10 +100,10 @@ class ReplayTab(QtWidgets.QWidget):
                 existing_streams = get_available_lsl_streams()
                 if (overlapping_streams := set(existing_streams).intersection(self.stream_names)):  # if there are streams that are already streaming on LSL
                     reply = dialog_popup(
-                        f'The following streams are already added: {overlapping_streams}.\n'
+                        f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
                         f'Are you sure you want to proceed with replaying this file? \n'
-                        f'Proceeding may result in unpredictable streaming behavior.'
-                        f'It is recommended to remove the other data stream with the same name as one of the replay\'s', title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
+                        f'Proceeding may result in unpredictable streaming behavior.\n'
+                        f'It is recommended to remove the other data stream with the same name.', title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
                         buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
                     if not reply.result():
                         self.command_info_interface.send_string(shared.DUPLICATE_STREAM_STOP_COMMAND)
