@@ -145,3 +145,5 @@ stream_availability_wait_time = 2  # in seconds
 
 # viz
 plot_fps_range = (1, 60)
+
+default_group_name = 'default group name '

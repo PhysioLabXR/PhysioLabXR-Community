@@ -26,6 +26,7 @@ def load_settings(revert_to_default=True, reload_presets=True):
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
         config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
         config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
+        config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -49,6 +50,8 @@ def load_settings(revert_to_default=True, reload_presets=True):
             config.settings.setValue('pull_data_interval', config.pull_data_interval)
         if not config.settings.contains('visualization_refresh_interval') or config.settings.value('visualization_refresh_interval') is None:
             config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
+        if not config.settings.contains('default_channel_display_num') or config.settings.value('default_channel_display_num') is None:
+            config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
@@ -66,7 +69,8 @@ def load_settings(revert_to_default=True, reload_presets=True):
         preset["NetworkingInterface"] = "Device"
 
     stream_presets_dict = {**LSL_presets_dict, **ZMQ_presets_dict, **device_presets_dict}  # merge the lsl and device presets
-    # add plot groups
+
+    # add plot groups  TODO: remove this, process plot group is part of load_all_presets now
     stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])
 
     [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]

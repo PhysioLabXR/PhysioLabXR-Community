@@ -763,3 +763,24 @@ def mode_by_column(array: np.ndarray, ignore=None):
         else:
             rtn.append(mode[0])
     return rtn
+
+def camel_to_snake_case(camel_case_string):
+    """
+    Converts a string from camel case to snake case.
+
+    Args:
+        camel_string (str): The input string in camel case.
+
+    Returns:
+        str: The input string in snake case.
+    """
+    return ''.join(['_' + char.lower() if char.isupper() and i > 0 else char.lower() for i, char in enumerate(camel_case_string)])
+
+
+def convert_dict_keys_to_snake_case(d: dict) -> dict:
+    """
+    Converts the keys of a dictionary from camel case to snake case.
+    @param d:
+    @return:
+    """
+    return {camel_to_snake_case(k): v for k, v in d.items()}

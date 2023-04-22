@@ -3,10 +3,13 @@ import os
 
 import numpy as np
 
-from exceptions.exceptions import InvalidPresetError
+from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
-from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP
+from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP, default_group_name
+from rena.settings.GroupEntry import GroupEntry
+from rena.settings.Presets import Presets
 from rena.shared import default_plot_format
+from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
 def get_presets_by_category(setting_category):
@@ -247,17 +250,41 @@ def export_preset_to_settings(preset, setting_category):
         config.settings.endGroup()
 
 
+# def load_all_presets(preset_roots):
+#     preset_file_names = os.listdir(preset_roots)
+#     preset_file_paths = [os.path.join(preset_roots, x) for x in preset_file_names]
+#     presets = Presets()
+#     for pf_path in preset_file_paths:
+#         loaded_preset_dict = json.load(open(pf_path))
+#
+#         presets[loaded_preset_dict['StreamName']]
+#
+#         preset_dict = validate_preset(loaded_preset_dict)
+#
+#
+#         stream_name = preset_dict['StreamName']
+#         presets[stream_name] = preset_dict
+#     return presets
+
 def load_all_presets(preset_roots):
+    """
+    load all presets from a directory
+
+    @param preset_roots:
+    @return:
+    """
     preset_file_names = os.listdir(preset_roots)
     preset_file_paths = [os.path.join(preset_roots, x) for x in preset_file_names]
-    presets = {}
+    presets = Presets()
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
-        preset_dict = add_keys_to_preset(loaded_preset_dict)
-        stream_name = preset_dict['StreamName']
-        presets[stream_name] = preset_dict
-    return presets
 
+        preset_dict = validate_preset(loaded_preset_dict)
+        preset_dict = process_plot_group(preset_dict)
+
+        presets.add_stream_preset(preset_dict)
+
+    return presets
 
 # def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
 #     preset_file_names = os.listdir(device_preset_roots)
@@ -281,37 +308,69 @@ def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets')
     return presets
 
 
-def add_keys_to_preset(preset_dict):
+# def validate_preset(preset_dict):
+#     if 'GroupInfo' in preset_dict.keys():
+#         try:
+#             assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
+#         except AssertionError:
+#             raise ValueError('Preset with stream name {0} has GroupChnanelsInPlot field. In this case, this preset must also have either ChannelNames field or NumChannels field'
+#                              '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
+#     if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
+#         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
+#     elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
+#         preset_dict['ChannelNames'] = ['Channel{0}'.format(x) for x in list(range(int(preset_dict['NumChannels'])))]
+#     else:
+#         raise InvalidPresetErrorChannelNameOrNumChannel(preset_dict['StreamName'])
+#     if 'GroupInfo' not in preset_dict.keys():
+#         preset_dict['GroupInfo'] = None
+#         preset_dict['GroupFormat'] = None
+#     if 'GroupFormat' not in preset_dict.keys():
+#         preset_dict['GroupFormat'] = None
+#     if 'NominalSamplingRate' not in preset_dict.keys():
+#         preset_dict['NominalSamplingRate'] = 1
+#     if 'DisplayDuration' not in preset_dict.keys():
+#         preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
+#
+#     if 'NetworkingInterface' not in preset_dict.keys():
+#         preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
+#     if 'PortNumber' not in preset_dict.keys():
+#         preset_dict['PortNumber'] = None
+#     if 'DataType' not in preset_dict.keys():
+#         preset_dict['DataType'] = 'float32'
+#     return preset_dict
+
+
+def validate_preset(preset_dict):
     if 'GroupInfo' in preset_dict.keys():
         try:
             assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
         except AssertionError:
-            raise ValueError('Preset with stream name {0} has GroupChnanlesInPlot field. In this case, this preset must also have either ChannelNmaes field or NumChannels field'
+            raise ValueError('Preset with stream name {0} has GroupChnanelsInPlot field. In this case, this preset must also have either ChannelNames field or NumChannels field'
                              '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
     if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
     elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
         preset_dict['ChannelNames'] = ['Channel{0}'.format(x) for x in list(range(int(preset_dict['NumChannels'])))]
     else:
-        raise InvalidPresetError(preset_dict['StreamName'])
-    if 'GroupInfo' not in preset_dict.keys():
-        preset_dict['GroupInfo'] = None
-        preset_dict['GroupFormat'] = None
-    if 'GroupFormat' not in preset_dict.keys():
-        preset_dict['GroupFormat'] = None
-    if 'NominalSamplingRate' not in preset_dict.keys():
-        preset_dict['NominalSamplingRate'] = 1
-    if 'DisplayDuration' not in preset_dict.keys():
-        preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
+        raise InvalidPresetErrorChannelNameOrNumChannel(preset_dict['StreamName'])
+    # if 'GroupInfo' not in preset_dict.keys():
+    #     preset_dict['GroupInfo'] = None
+    #     preset_dict['GroupFormat'] = None
+    # if 'GroupFormat' not in preset_dict.keys():
+    #     preset_dict['GroupFormat'] = None
+    # if 'NominalSamplingRate' not in preset_dict.keys():
+    #     preset_dict['NominalSamplingRate'] = 1
+    # if 'DisplayDuration' not in preset_dict.keys():
+    #     preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
 
-    if 'NetworkingInterface' not in preset_dict.keys():
-        preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
-    if 'PortNumber' not in preset_dict.keys():
-        preset_dict['PortNumber'] = None
-    if 'DataType' not in preset_dict.keys():
-        preset_dict['DataType'] = 'float32'
+    # if 'NetworkingInterface' not in preset_dict.keys():
+    #     preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
+    # if 'PortNumber' not in preset_dict.keys():
+    #     preset_dict['PortNumber'] = None
+    # if 'DataType' not in preset_dict.keys():
+    #     preset_dict['DataType'] = 'float32'
+    preset_dict = convert_dict_keys_to_snake_case(preset_dict)
     return preset_dict
-
 
 def create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate:int=None):
     preset_dict = {'StreamName': stream_name,
@@ -321,30 +380,34 @@ def create_default_preset(stream_name, data_type, port, networking_interface, nu
                    'PortNumber': port}
     if nominal_sample_rate:
         preset_dict['NominalSamplingRate'] = nominal_sample_rate
-    preset_dict = add_keys_to_preset(preset_dict)
+    preset_dict = validate_preset(preset_dict)
     preset_dict = process_plot_group(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
-def create_default_group_info(channel_num, group_name):
-    # create groupinfo from 0 to x
-    # if channel num is greater than 100, we hide the rest
-    if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM:
-        is_channels_shown = [1 for c in range(0, channel_num)]
-    else:
-        is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM)]
-        is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM, channel_num)])
+# def create_default_group_info(channel_num, group_name):
+#     # create groupinfo from 0 to x
+#     # if channel num is greater than 100, we hide the rest
+#     if channel_num <= DEFAULT_CHANNEL_DISPLAY_NUM_PER_GROUP:
+#         is_channels_shown = [1 for c in range(0, channel_num)]
+#     else:
+#         is_channels_shown = [1 for c in range(0, DEFAULT_CHANNEL_DISPLAY_NUM_PER_GROUP)]
+#         is_channels_shown.extend([0 for c in range(DEFAULT_CHANNEL_DISPLAY_NUM_PER_GROUP, channel_num)])
+#
+#     return {
+#         group_name: {
+#             'selected_plot_format': 0,
+#             "plot_format": default_plot_format,
+#             "channel_indices": [channel_index for channel_index in range(0, channel_num)],
+#             "is_channels_shown": is_channels_shown,
+#             "group_description": "",
+#             "is_image_only": channel_num > MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP
+#                 }
+#             }
 
-    return {
-        group_name: {
-            'selected_plot_format': 0,
-            "plot_format": default_plot_format,
-            "channel_indices": [channel_index for channel_index in range(0, channel_num)],
-            "is_channels_shown": is_channels_shown,
-            "group_description": "",
-            "is_image_only": channel_num > MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP
-                }
-            }
+def create_default_group_info(channel_num: int, group_name: str):  # TODO
+    group_entry = GroupEntry(group_name=group_name, channel_indices=[channel_index for channel_index in range(0, channel_num)])
+
 
 def update_selected_plot_format(stream_name, group_name, selected_format: int):
     config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)
@@ -358,14 +421,29 @@ def update_selected_plot_format(stream_name, group_name, selected_format: int):
 # }
 
 def process_plot_group(preset_dict):
+    """
+    create group info from the json format
+    Note on the json format:
+    the group info is a list of integers, where each integer is the indices at which a new group starts
 
-    channel_num = preset_dict['NumChannels']
-    if preset_dict['GroupInfo'] is None or 'GroupInfo' not in preset_dict:
-        preset_dict['GroupInfo'] = create_default_group_info(channel_num, "GroupName1")
+    Example:
+        1. for a stream that has eight channels, a group info defined as follows
+        [2, 4, 6]
+        will create four groups, where the first group has two channels, the second group has two channels, the third group has two channels, and the fourth group has two channels
+
+        2. for a stream with 65 channels, a group info defined as follows
+        [1]
+        will create two groups, where the first group has one channel, and the second group has 63 channels
+        The first channel could be the time series, and the rest are EEG. The time series obviously should be plotted in a separate plot
+        than EEG because they have very different numeric ranges.
+    """
+    channel_num = preset_dict['num_channels']
+    if preset_dict['group_info'] is None or 'group_info' not in preset_dict:
+        preset_dict['GroupInfo'] = create_default_group_info(channel_num, config.default_group_name)
     else:
         plot_group_slice = []
         head = 0
-        for x in preset_dict['GroupInfo']:
+        for x in preset_dict['group_info']:
             plot_group_slice.append((head, x))
             head = x
         if head != channel_num:
@@ -374,24 +452,37 @@ def process_plot_group(preset_dict):
             # create GroupInfo from 0 to x
             # preset_dict['GroupInfo'] = [[channel_index for channel_index in range(0, len(preset_dict['ChannelNames']))]]
 
-        if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:
-            preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupInfo']))
+        # if preset_dict['GroupFormat'] is None or 'GroupFormat' not in preset_dict:  # default is always time series
+        #     preset_dict['GroupFormat'] = ['time_series'] * (len(preset_dict['GroupInfo']))
 
-        preset_dict['GroupInfo'] = dict()
+        preset_dict['group_info'] = dict()
         num_shown_channel = 0
         for i, group in enumerate(plot_group_slice):
             channel_indices = list(range(*group))
             num_available_ch_shown = DEFAULT_CHANNEL_DISPLAY_NUM - num_shown_channel
             if num_available_ch_shown <= 0:
-                is_channels_shown = [0 for c in range(len(channel_indices))]
+                is_channels_shown = [True] * len(channel_indices)
+                # is_channels_shown = [0 for c in range(len(channel_indices))]
             else:
-                is_channels_shown = [1 for c in range(min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
-                is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
+                # is_channels_shown = [1 for c in range(min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
+                # is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
+
+                is_channels_shown = [True] * min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
+                is_channels_shown += [False] * (len(channel_indices) - len(is_channels_shown))
                 num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
 
-            preset_dict['GroupInfo']["GroupName{0}".format(i)] = \
+            # preset_dict['GroupInfo'][f"{default_group_name}{i}"] = \
+            #     {
+            #         'selected_plot_format': 0,
+            #         "plot_format": default_plot_format,
+            #         "channel_indices": channel_indices,
+            #         "is_channels_shown": is_channels_shown,
+            #         "group_description": ""
+            #     }
+            preset_dict['GroupInfo'][f"{default_group_name}{i}"] = GroupEntry(group_name=f"{default_group_name}{i}", channel_indices=channel_indices, is_channels_shown=is_channels_shown)
+
+            preset_dict['GroupInfo'][f"{default_group_name}{i}"] = \
                 {
-                    'selected_plot_format': 0,
                     "plot_format": default_plot_format,
                     "channel_indices": channel_indices,
                     "is_channels_shown": is_channels_shown,
