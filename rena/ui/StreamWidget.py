@@ -616,7 +616,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     #############################################
 
-    def channel_group_changed(self, change_dict):
+    def channel_group_changed(self, change_dict):  # TODO refactor for the change to group info
         """
         Called when one or more channel's parent group is changed
         @param change_dict:

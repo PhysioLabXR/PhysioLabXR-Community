@@ -1,9 +1,4 @@
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import List, DefaultDict
-
-from rena import config
-from rena.settings.GroupEntry import GroupEntry
+from dataclasses import dataclass, asdict
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -32,6 +27,12 @@ class PlotConfig:
     """
 
     """
-    time_series: dict
-    image_config: ImageConfig
-    barchart_config: BarChartConfig
+    barchart_config: BarChartConfig = BarChartConfig()
+    image_config: ImageConfig = ImageConfig()
+
+    def to_dict(self):
+        return {
+            "barchart_config": asdict(self.barchart_config),
+            "image_config": asdict(self.image_config)
+        }
+

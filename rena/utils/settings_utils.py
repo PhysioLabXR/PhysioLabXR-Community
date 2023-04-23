@@ -1,5 +1,6 @@
 import json
 import os
+from collections import defaultdict
 
 import numpy as np
 
@@ -7,6 +8,7 @@ from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP, default_group_name
 from rena.settings.GroupEntry import GroupEntry
+from rena.settings.PlotConfig import PlotConfig
 from rena.settings.Presets import Presets
 from rena.shared import default_plot_format
 from rena.utils.data_utils import convert_dict_keys_to_snake_case
@@ -249,6 +251,8 @@ def export_preset_to_settings(preset, setting_category):
 
         config.settings.endGroup()
 
+def export_preset_to_settings(preset, setting_category):
+    save_dct()
 
 # def load_all_presets(preset_roots):
 #     preset_file_names = os.listdir(preset_roots)
@@ -266,7 +270,7 @@ def export_preset_to_settings(preset, setting_category):
 #         presets[stream_name] = preset_dict
 #     return presets
 
-def load_all_presets(preset_roots):
+def load_stream_presets(preset_roots, presets, network_interface):
     """
     load all presets from a directory
 
@@ -275,17 +279,23 @@ def load_all_presets(preset_roots):
     """
     preset_file_names = os.listdir(preset_roots)
     preset_file_paths = [os.path.join(preset_roots, x) for x in preset_file_names]
-    presets = Presets()
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
 
-        preset_dict = validate_preset(loaded_preset_dict)
-        preset_dict = process_plot_group(preset_dict)
-
+        preset_dict = validate_preset_json_preset(loaded_preset_dict)
+        preset_dict['networking_interface'] = network_interface
+        preset_dict = process_plot_group_json_preset(preset_dict)
         presets.add_stream_preset(preset_dict)
 
     return presets
 
+def load_all_json_presets(preset_root):
+    presets = Presets()
+    presets = load_stream_presets(os.path.join(preset_root, 'LSLPresets'), presets, 'LSL')
+    presets = load_stream_presets(os.path.join(preset_root, 'ZMQPresets'), presets, 'ZMQ')
+    presets = load_stream_presets(os.path.join(preset_root, 'DevicePresets'), presets, 'Device')
+    presets = load_all_experiment_presets(os.path.join(preset_root, 'ExperimentPresets'), presets)
+    return presets
 # def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
 #     preset_file_names = os.listdir(device_preset_roots)
 #     preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
@@ -298,13 +308,12 @@ def load_all_presets(preset_roots):
 #     return presets
 
 
-def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets'):
+def load_all_experiment_presets(exp_preset_roots, presets):
     preset_file_names = os.listdir(exp_preset_roots)
     preset_file_paths = [os.path.join(exp_preset_roots, x) for x in preset_file_names]
-    presets = {}
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
-        presets[loaded_preset_dict['ExperimentName']] = loaded_preset_dict['PresetStreamNames']
+        presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
     return presets
 
 
@@ -340,13 +349,15 @@ def load_all_experiment_presets(exp_preset_roots='../Presets/ExperimentPresets')
 #     return preset_dict
 
 
-def validate_preset(preset_dict):
+def validate_preset_json_preset(preset_dict):
     if 'GroupInfo' in preset_dict.keys():
         try:
             assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
         except AssertionError:
             raise ValueError('Preset with stream name {0} has GroupChnanelsInPlot field. In this case, this preset must also have either ChannelNames field or NumChannels field'
                              '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
+    else:
+        preset_dict['GroupInfo'] = None
     if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
         preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
     elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
@@ -380,8 +391,8 @@ def create_default_preset(stream_name, data_type, port, networking_interface, nu
                    'PortNumber': port}
     if nominal_sample_rate:
         preset_dict['NominalSamplingRate'] = nominal_sample_rate
-    preset_dict = validate_preset(preset_dict)
-    preset_dict = process_plot_group(preset_dict)
+    preset_dict = validate_preset_json_preset(preset_dict)
+    preset_dict = process_plot_group_json_preset(preset_dict)
     export_preset_to_settings(preset_dict, setting_category='streampresets')
     return preset_dict
 
@@ -405,8 +416,17 @@ def create_default_preset(stream_name, data_type, port, networking_interface, nu
 #                 }
 #             }
 
-def create_default_group_info(channel_num: int, group_name: str):  # TODO
-    group_entry = GroupEntry(group_name=group_name, channel_indices=[channel_index for channel_index in range(0, channel_num)])
+def create_default_group_info(channel_num: int, group_name: str =config.default_group_name):
+    """
+
+    @param channel_num:
+    @param group_name: default is the default group name defined in config.py. This is used when calling process_plot_group_json_preset.
+    This is also used in StreamWidget to create the default group info.
+    @return:
+    """
+    group_entry = GroupEntry(group_name=group_name,
+                             channel_indices=[channel_index for channel_index in range(0, channel_num)])
+    return {group_name: group_entry}
 
 
 def update_selected_plot_format(stream_name, group_name, selected_format: int):
@@ -420,7 +440,7 @@ def update_selected_plot_format(stream_name, group_name, selected_format: int):
 # bar plot : {}
 # }
 
-def process_plot_group(preset_dict):
+def process_plot_group_json_preset(preset_dict):
     """
     create group info from the json format
     Note on the json format:
@@ -438,9 +458,9 @@ def process_plot_group(preset_dict):
         than EEG because they have very different numeric ranges.
     """
     channel_num = preset_dict['num_channels']
-    if preset_dict['group_info'] is None or 'group_info' not in preset_dict:
-        preset_dict['GroupInfo'] = create_default_group_info(channel_num, config.default_group_name)
-    else:
+    if preset_dict['group_info'] is None:  # group_info will be none if the json file does not contain group_info. In that case, a none group_info will added when calling validate_preset_json_preset
+        preset_dict['group_info'] = create_default_group_info(channel_num)
+    else:  # the only information the preset conveys is how to divide the channels into groups, only consecutive channels can be grouped together
         plot_group_slice = []
         head = 0
         for x in preset_dict['group_info']:
@@ -479,15 +499,18 @@ def process_plot_group(preset_dict):
             #         "is_channels_shown": is_channels_shown,
             #         "group_description": ""
             #     }
-            preset_dict['GroupInfo'][f"{default_group_name}{i}"] = GroupEntry(group_name=f"{default_group_name}{i}", channel_indices=channel_indices, is_channels_shown=is_channels_shown)
+            preset_dict['group_info'][f"{default_group_name}{i}"] = GroupEntry(
+                group_name=f"{default_group_name}{i}",
+                channel_indices=channel_indices,
+                is_channels_shown=is_channels_shown)  # nothing is loaded for plot config
 
-            preset_dict['GroupInfo'][f"{default_group_name}{i}"] = \
-                {
-                    "plot_format": default_plot_format,
-                    "channel_indices": channel_indices,
-                    "is_channels_shown": is_channels_shown,
-                    "group_description": ""
-                }
+            # preset_dict['GroupInfo'][f"{default_group_name}{i}"] = \
+            #     {
+            #         "plot_format": default_plot_format,
+            #         "channel_indices": channel_indices,
+            #         "is_channels_shown": is_channels_shown,
+            #         "group_description": ""
+            #     }
 
     return preset_dict
 

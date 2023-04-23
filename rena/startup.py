@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import QLabel
 from rena.utils.video_capture_utils import get_working_camera_ports
 from rena.ui_shared import *
 from rena import config, config_ui
-from rena.utils.settings_utils import export_preset_to_settings, load_all_presets, \
-    load_all_experiment_presets, process_plot_group
+from rena.utils.settings_utils import export_preset_to_settings, load_stream_presets, \
+    load_all_experiment_presets, process_plot_group_json_preset, load_all_json_presets
 from rena.utils.ui_utils import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme,
@@ -52,33 +52,15 @@ def load_settings(revert_to_default=True, reload_presets=True):
             config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
         if not config.settings.contains('default_channel_display_num') or config.settings.value('default_channel_display_num') is None:
             config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
+    config.settings.sync()
 
     print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
     if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
-    LSL_presets_dict = load_all_presets('../Presets/LSLPresets')
-    ZMQ_presets_dict = load_all_presets('../Presets/ZMQPresets')
-    device_presets_dict = load_all_presets('../Presets/DevicePresets')
-    experiment_presets_dict = load_all_experiment_presets()
+    presets = load_all_json_presets('../Presets')
+    presets.sync_local()
 
-    for _, preset in LSL_presets_dict.items():
-        preset["NetworkingInterface"] = "LSL"
-    for _, preset in ZMQ_presets_dict.items():
-        preset["NetworkingInterface"] = "ZMQ"
-    for _, preset in device_presets_dict.items():
-        preset["NetworkingInterface"] = "Device"
-
-    stream_presets_dict = {**LSL_presets_dict, **ZMQ_presets_dict, **device_presets_dict}  # merge the lsl and device presets
-
-    # add plot groups  TODO: remove this, process plot group is part of load_all_presets now
-    stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])
-
-    [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
-    [export_preset_to_settings(p, 'streampresets') for p in stream_presets_dict.values()]
-
-    config.settings.sync()
-
-    print('Loading avaiable cameras')
+    print('Loading available cameras')
     cameras = get_working_camera_ports()
     cameras = list(map(str, cameras[1]))
     config.settings.setValue('video_device', cameras + ['monitor1'])
