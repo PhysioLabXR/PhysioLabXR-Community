@@ -31,8 +31,5 @@ class PlotConfig:
     image_config: ImageConfig = ImageConfig()
 
     def to_dict(self):
-        return {
-            "barchart_config": asdict(self.barchart_config),
-            "image_config": asdict(self.image_config)
-        }
+        return {k: asdict(v) for k, v in self.__dict__.items() if not k.startswith("__")}
 

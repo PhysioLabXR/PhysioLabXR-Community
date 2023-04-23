@@ -77,19 +77,15 @@ class _StreamPreset:
         if self.display_duration is None:
             self.display_duration = config.settings.value('default_display_duration')
 
-    def to_dict(self):
-        return {
-            "stream_name": self.stream_name,
-            "channel_names": self.channel_names,
-            "num_channels": self.num_channels,
-            "group_info": {key: value.__dict__ for key, value in self.group_info.items()},
-            "device_info": self.device_info,
-            "networking_interface": self.networking_interface,
-            "data_type": self.data_type,
-            "port_number": self.port_number,
-            "display_duration": self.display_duration,
-            "nominal_sampling_rate": self.nominal_sampling_rate,
-        }
+    def to_dict(self) -> dict[str, Any]:
+        """
+        auto loop the attributes converting them to dictionary, in case of the GroupEntry object, it will call the asdict function
+        because GroupEntry is a dataclass nested under the StreamPreset class.
+        Devs: if you add another attribute that's a nested dataclass, you will need to add the todict call here, like how it's done for the GroupEntry
+        @return:  dictionary containing all the attributes of the StreamPreset class
+        """
+        return {attr: {group_name: group_entry.__dict__ for group_name, group_entry in value.items()} if attr == 'group_info' else value
+                for attr, value in self.__dict__.items()}
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets:
