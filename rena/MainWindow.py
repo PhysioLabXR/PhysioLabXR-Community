@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QWidget
 
 from exceptions.exceptions import RenaError
 from rena import config
+from rena.settings.Presets import Presets
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -78,6 +79,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # create sensor threads, worker threads for different sensors
         self.device_workers = {}
         self.lsl_workers = {}
+
+
+        presets = Presets()
 
         ######### init server
         print('Creating Rena Client')

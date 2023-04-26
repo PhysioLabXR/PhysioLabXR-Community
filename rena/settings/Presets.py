@@ -1,8 +1,8 @@
 import json
+import multiprocessing
 import os
-from collections import defaultdict
-from typing import Dict, Any, List, DefaultDict
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
+from typing import Dict, Any, List
 
 from PyQt5.QtCore import QStandardPaths
 
@@ -10,6 +10,9 @@ from rena import config
 from rena.config import app_data_name
 from rena.settings.GroupEntry import GroupEntry
 from rena.settings.PlotConfig import PlotConfig
+from rena.utils.Singleton import Singleton
+from rena.utils.fs_utils import get_file_changes_multiple_dir
+from rena.utils.settings_utils import validate_preset_json_preset, process_plot_group_json_preset
 
 
 # class DataclassEncoder(json.JSONEncoder):
@@ -22,9 +25,7 @@ from rena.settings.PlotConfig import PlotConfig
 #             return super().default(o)
 class PresetsEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, _StreamPreset):
-            return obj.to_dict()
-        if isinstance(obj, PlotConfig):
+        if isinstance(obj, _StreamPreset) or isinstance(obj, PlotConfig):
             return obj.to_dict()
         return super().default(obj)
 
@@ -87,18 +88,117 @@ class _StreamPreset:
         return {attr: {group_name: group_entry.__dict__ for group_name, group_entry in value.items()} if attr == 'group_info' else value
                 for attr, value in self.__dict__.items()}
 
+def save_local(app_data_path, preset_dict) -> None:
+    """
+    sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.
+    applies file lock while the json is being dumped. This will block another other process from accessing the file without
+    raising an exception.
+    """
+    if not os.path.exists(app_data_path):
+        os.makedirs(app_data_path)
+    path = os.path.join(app_data_path, 'Presets.json')
+    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
+
+    with open(path, 'w') as f:
+        f.write(json_data)
+
+
+def _load_stream_presets(presets, dirty_presets):
+    for category, dirty_preset_paths in dirty_presets.items():
+        for dirty_preset_path in dirty_preset_paths:
+            loaded_preset_dict = json.load(open(dirty_preset_path))
+
+            if category == 'LSL' or category == 'ZMQ' or category == 'Device':
+                stream_preset_dict = validate_preset_json_preset(loaded_preset_dict)
+                stream_preset_dict['networking_interface'] = category
+                stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
+                presets.add_stream_preset(stream_preset_dict)
+            elif category == 'Experiment':
+                presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
+            else:
+                raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
+
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class Presets:
+class Presets(metaclass=Singleton):
     """
     dataclass containing all the presets
 
     Attributes:
         stream_presets: dictionary containing all the stream presets. The key is the stream name and the value is the StreamPreset object
         experiment_presets: dictionary containing all the experiment presets. The key is the experiment name and the value is a list of stream names
+
+        _reset: if true, reload the presets. This is done in post_init by removing files at _last_mod_time_path and _preset_path.
     """
+    _preset_root: str = None
+    _reset: bool = False
+
+    _lsl_preset_root: str = 'LSLPresets'
+    _zmq_preset_root: str = 'ZMQPresets'
+    _device_preset_root: str = 'DevicePresets'
+    _experiment_preset_root: str = 'ExperimentPresets'
+
     stream_presets: Dict[str, _StreamPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
-    app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
+    _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
+    _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
+    _preset_path: str = os.path.join(_app_data_path, 'Presets.json')
+
+    def __post_init__(self):
+        """
+        1. load the presets from the local disk if it exists
+        """
+        if self._preset_root is None:
+            raise ValueError('preset root must not be None when first time initializing Presets')
+        if self._reset:
+            if os.path.exists(self._last_mod_time_path):
+                os.remove(self._last_mod_time_path)
+            if os.path.exists(self._preset_path):
+                os.remove(self._preset_path)
+
+        self._lsl_preset_root = os.path.join(self._preset_root, self._lsl_preset_root)
+        self._zmq_preset_root = os.path.join(self._preset_root, self._zmq_preset_root)
+        self._device_preset_root = os.path.join(self._preset_root, self._device_preset_root)
+        self._experiment_preset_root = os.path.join(self._preset_root, self._experiment_preset_root)
+        self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
+
+        if os.path.exists(self._preset_path):
+            print(f'Reloading presets from {self._app_data_path}')
+            with open(self._preset_path, 'r') as f:
+                preset_dict = json.load(f)
+                self.__dict__.update(preset_dict)
+        dirty_presets = self._record_presets_last_modified_times()
+
+        _load_stream_presets(self, dirty_presets)
+
+        self.save_async()
+        print("Presets instance successfully initialized")
+
+    def _record_presets_last_modified_times(self):
+        """
+        get all the dirty presets and record their last modified times to the last_mod_times.json file.
+        This will be called when the application is opened, because this is when the presets are loaded from the local disk.
+        @return:
+        """
+        if os.path.exists(self._last_mod_time_path):
+            with open(self._last_mod_time_path, 'r') as f:
+                last_mod_times = json.load(f)
+        else:  # if the last_mod_times.json doesn't exist, then all the presets are dirty
+            last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
+
+        dirty_presets = {'LSL': None, 'ZMQ': None, 'Device': None, 'Experiment': None}
+        (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'], dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
+
+        with open(self._last_mod_time_path, 'w') as f:
+            json.dump(current_mod_times, f)
+
+        return dirty_presets
+
+    def __del__(self):
+        """
+        save the presets to the local disk when the application is closed
+        """
+        save_local(self._app_data_path, self.__dict__)
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
         """
@@ -128,10 +228,10 @@ class Presets:
         """
         self.experiment_presets[experiment_name] = stream_names
 
-    def sync_local(self):
-        if not os.path.exists(self.app_data_path):
-            os.makedirs(self.app_data_path)
-        path = os.path.join(self.app_data_path, 'Presets.json')
-        json_data = json.dumps(self.__dict__, indent=4, cls=PresetsEncoder)
-        with open(path, 'w') as f:
-            f.write(json_data)
+    def save_async(self) -> None:
+        """
+        save the presets to the local disk asynchronously.
+        @return: None
+        """
+        p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
+        p.start()

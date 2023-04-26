@@ -3,11 +3,10 @@ import os.path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
+from rena.settings.Presets import Presets
 from rena.utils.video_capture_utils import get_working_camera_ports
 from rena.ui_shared import *
 from rena import config, config_ui
-from rena.utils.settings_utils import export_preset_to_settings, load_stream_presets, \
-    load_all_experiment_presets, process_plot_group_json_preset, load_all_json_presets
 from rena.utils.ui_utils import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme,
@@ -54,11 +53,8 @@ def load_settings(revert_to_default=True, reload_presets=True):
             config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     config.settings.sync()
 
-    print('Reloading presets from Preset directory to persistent settings')
     # load the presets, reload from local directory the default LSL, device and experiment presets
-    if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
-    presets = load_all_json_presets('../Presets')
-    presets.sync_local()
+    Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
 
     print('Loading available cameras')
     cameras = get_working_camera_ports()

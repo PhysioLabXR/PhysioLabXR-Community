@@ -1,16 +1,12 @@
 import json
 import os
-from collections import defaultdict
 
 import numpy as np
 
 from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
-from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP, default_group_name
+from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, default_group_name
 from rena.settings.GroupEntry import GroupEntry
-from rena.settings.PlotConfig import PlotConfig
-from rena.settings.Presets import Presets
-from rena.shared import default_plot_format
 from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
@@ -251,8 +247,6 @@ def export_preset_to_settings(preset, setting_category):
 
         config.settings.endGroup()
 
-def export_preset_to_settings(preset, setting_category):
-    save_dct()
 
 # def load_all_presets(preset_roots):
 #     preset_file_names = os.listdir(preset_roots)
@@ -282,20 +276,20 @@ def load_stream_presets(preset_roots, presets, network_interface):
     for pf_path in preset_file_paths:
         loaded_preset_dict = json.load(open(pf_path))
 
-        preset_dict = validate_preset_json_preset(loaded_preset_dict)
-        preset_dict['networking_interface'] = network_interface
-        preset_dict = process_plot_group_json_preset(preset_dict)
-        presets.add_stream_preset(preset_dict)
+        stream_preset_dict = validate_preset_json_preset(loaded_preset_dict)
+        stream_preset_dict['networking_interface'] = network_interface
+        stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
+        presets.add_stream_preset(stream_preset_dict)
 
     return presets
 
-def load_all_json_presets(preset_root):
-    presets = Presets()
-    presets = load_stream_presets(os.path.join(preset_root, 'LSLPresets'), presets, 'LSL')
-    presets = load_stream_presets(os.path.join(preset_root, 'ZMQPresets'), presets, 'ZMQ')
-    presets = load_stream_presets(os.path.join(preset_root, 'DevicePresets'), presets, 'Device')
-    presets = load_all_experiment_presets(os.path.join(preset_root, 'ExperimentPresets'), presets)
-    return presets
+# def load_all_json_presets(preset_root, presets):
+#     presets = load_stream_presets(os.path.join(preset_root, 'LSLPresets'), presets, 'LSL')
+#     presets = load_stream_presets(os.path.join(preset_root, 'ZMQPresets'), presets, 'ZMQ')
+#     presets = load_stream_presets(os.path.join(preset_root, 'DevicePresets'), presets, 'Device')
+#     presets = load_all_experiment_presets(os.path.join(preset_root, 'ExperimentPresets'), presets)
+#     return presets
+
 # def load_all_Device_presets(device_preset_roots='../Presets/DevicePresets'):
 #     preset_file_names = os.listdir(device_preset_roots)
 #     preset_file_paths = [os.path.join(device_preset_roots, x) for x in preset_file_names]
@@ -308,13 +302,13 @@ def load_all_json_presets(preset_root):
 #     return presets
 
 
-def load_all_experiment_presets(exp_preset_roots, presets):
-    preset_file_names = os.listdir(exp_preset_roots)
-    preset_file_paths = [os.path.join(exp_preset_roots, x) for x in preset_file_names]
-    for pf_path in preset_file_paths:
-        loaded_preset_dict = json.load(open(pf_path))
-        presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
-    return presets
+# def load_all_experiment_presets(exp_preset_roots, presets):
+#     preset_file_names = os.listdir(exp_preset_roots)
+#     preset_file_paths = [os.path.join(exp_preset_roots, x) for x in preset_file_names]
+#     for pf_path in preset_file_paths:
+#         loaded_preset_dict = json.load(open(pf_path))
+#         presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
+#     return presets
 
 
 # def validate_preset(preset_dict):
