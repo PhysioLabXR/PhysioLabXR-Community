@@ -2,6 +2,7 @@ import json
 import multiprocessing
 import os
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Dict, Any, List
 
 from PyQt5.QtCore import QStandardPaths
@@ -13,6 +14,7 @@ from rena.settings.PlotConfig import PlotConfig
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.utils.settings_utils import validate_preset_json_preset, process_plot_group_json_preset
+from rena.utils.video_capture_utils import get_working_camera_ports
 
 
 # class DataclassEncoder(json.JSONEncoder):
@@ -23,9 +25,25 @@ from rena.utils.settings_utils import validate_preset_json_preset, process_plot_
 #             return asdict(o)
 #         else:
 #             return super().default(o)
+
+class PresetType(Enum):
+    WEBCAM = 1
+    MONITOR = 2
+    LSL = 3
+    ZMQ = 4
+    DEVICE = 5
+    EXPERIMENT = 6
+
+class VideoDeviceTypeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Enum):
+            return obj.value
+        return json.JSONEncoder.default(self, obj)
+
+
 class PresetsEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, _StreamPreset) or isinstance(obj, PlotConfig):
+        if isinstance(obj, _StreamPreset) or isinstance(obj, PlotConfig) or isinstance(obj, _VideoPreset):
             return obj.to_dict()
         return super().default(obj)
 
@@ -60,7 +78,7 @@ class _StreamPreset:
 
     group_info: dict[str, GroupEntry]
     device_info: dict
-    networking_interface: str
+    preset_type: PresetType
 
     data_type: str = 'float32'
 
@@ -85,8 +103,33 @@ class _StreamPreset:
         Devs: if you add another attribute that's a nested dataclass, you will need to add the todict call here, like how it's done for the GroupEntry
         @return:  dictionary containing all the attributes of the StreamPreset class
         """
-        return {attr: {group_name: group_entry.__dict__ for group_name, group_entry in value.items()} if attr == 'group_info' else value
+        return {attr: {group_name: group_entry.__dict__ for group_name, group_entry in value.items()} if attr == 'group_info' else value.name if attr == 'preset_type' else value
                 for attr, value in self.__dict__.items()}
+
+
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class _VideoPreset:
+    """
+    Stream preset defines a stream to be loaded from the GUI.
+
+    IMPORTANT: the only entry point to create stream preset is through the add_stream_preset function in the Presets class.
+    attributes:
+        stream_name: name of the stream
+        video_type: can be webcam or monitor
+    """
+    stream_name: str
+    preset_type: PresetType
+    video_id: int
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        auto loop the attributes converting them to dictionary, in case of the GroupEntry object, it will call the asdict function
+        because GroupEntry is a dataclass nested under the StreamPreset class.
+        Devs: if you add another attribute that's a nested dataclass, you will need to add the todict call here, like how it's done for the GroupEntry
+        @return:  dictionary containing all the attributes of the StreamPreset class
+        """
+        return {attr: value.name if attr == 'preset_type' else value for attr, value in self.__dict__.items()}
+
 
 def save_local(app_data_path, preset_dict) -> None:
     """
@@ -110,7 +153,7 @@ def _load_stream_presets(presets, dirty_presets):
 
             if category == 'LSL' or category == 'ZMQ' or category == 'Device':
                 stream_preset_dict = validate_preset_json_preset(loaded_preset_dict)
-                stream_preset_dict['networking_interface'] = category
+                stream_preset_dict['preset_type'] = PresetType[category.upper()]
                 stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
                 presets.add_stream_preset(stream_preset_dict)
             elif category == 'Experiment':
@@ -118,6 +161,15 @@ def _load_stream_presets(presets, dirty_presets):
             else:
                 raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
 
+def _load_video_device_presets(presets):
+    print('Loading available cameras')
+    cameras = get_working_camera_ports()
+    working_cameras_ids = cameras[0]
+    working_cameras_stream_names = [f'Camera {x}' for x in cameras[0]]
+
+    for camera_id, camera_stream_name in zip(working_cameras_ids, working_cameras_stream_names):
+        presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
+    presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
@@ -139,6 +191,7 @@ class Presets(metaclass=Singleton):
     _experiment_preset_root: str = 'ExperimentPresets'
 
     stream_presets: Dict[str, _StreamPreset] = field(default_factory=dict)
+    video_presets: Dict[str, _VideoPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
@@ -171,6 +224,7 @@ class Presets(metaclass=Singleton):
 
         _load_stream_presets(self, dirty_presets)
 
+        _load_video_device_presets(self)
         self.save_async()
         print("Presets instance successfully initialized")
 
@@ -218,6 +272,9 @@ class Presets(metaclass=Singleton):
         stream_preset = _StreamPreset(**stream_preset_dict)
         self.stream_presets[stream_preset.stream_name] = stream_preset
 
+    def add_video_preset(self, stream_name, video_type, video_id):
+        video_preset = _VideoPreset(stream_name, video_type, video_id)
+        self.video_presets[video_preset.stream_name] = video_preset
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """
@@ -235,3 +292,12 @@ class Presets(metaclass=Singleton):
         """
         p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
         p.start()
+
+    def __getitem__(self, key):
+        for d in [self.stream_presets, self.video_presets, self.experiment_presets]:
+            if key in d:
+                return d[key]
+        raise KeyError(key)
+
+    def keys(self):
+        return self.stream_presets.keys() | self.video_presets.keys() | self.experiment_presets.keys()

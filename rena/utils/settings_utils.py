@@ -10,34 +10,13 @@ from rena.settings.GroupEntry import GroupEntry
 from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
-def get_presets_by_category(setting_category):
-    assert setting_category == 'streampresets' or setting_category == 'experimentpresets'
-    group = 'presets/{0}'.format(setting_category)
-    config.settings.beginGroup(group)
-    presets = list(config.settings.childGroups())
-    config.settings.endGroup()
-    return presets
-
-def get_preset_category(preset_name):
-    if preset_name in get_video_device_names():
-        return 'video'
-    elif preset_name in get_stream_preset_names():
-        return 'stream'
-    elif preset_name in get_experiment_preset_names():
-        return 'exp'
-    else:
-        return 'other'  # TODO use an exception type, default is stream
-
-def get_all_preset_names():
-    config.settings.beginGroup('presets/streampresets')
-    stream_preset_names = list(config.settings.childGroups())
-    config.settings.endGroup()
-    config.settings.beginGroup('presets/experimentpresets')
-    experiment_preset_names = list(config.settings.childGroups())
-    config.settings.endGroup()
-
-    video_devices = config.settings.value('video_device')
-    return stream_preset_names + experiment_preset_names + video_devices
+# def get_presets_by_category(setting_category):
+#     assert setting_category == 'streampresets' or setting_category == 'experimentpresets'
+#     group = 'presets/{0}'.format(setting_category)
+#     config.settings.beginGroup(group)
+#     presets = list(config.settings.childGroups())
+#     config.settings.endGroup()
+#     return presets
 
 def get_video_device_names():
     return config.settings.value('video_device')

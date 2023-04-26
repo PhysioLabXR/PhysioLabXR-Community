@@ -2,10 +2,12 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.config import valid_networking_interfaces, valid_preset_categories
+from rena.config import valid_preset_categories
+from rena.settings.Presets import PresetType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
-    get_preset_category, get_stream_preset_custom_info
+    get_stream_preset_custom_info
+from rena.utils.presets_utils import get_preset_category
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -85,38 +87,29 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def get_current_selected_type(self):
         stream_name = self.get_selected_stream_name()
-        preset_category = get_preset_category(stream_name)
-        if preset_category == 'stream':
-            networking_interface = get_stream_preset_info(stream_name, "NetworkingInterface")
-            if networking_interface in valid_networking_interfaces:
-                return networking_interface
-            else:
-                raise Exception("Unknown networking interface {}".format(networking_interface))
-        elif preset_category in valid_preset_categories:
-            return preset_category
-        else:
-            raise Exception('Unknown preset category {}'.format(preset_category))
+        preset_type = get_preset_category(stream_name)
+        return preset_type
 
     def on_streamName_combobox_text_changed(self):
         if len(self.device_property_fields) > 0:
             self.clear_custom_device_property_uis()
 
         stream_name = self.get_selected_stream_name()
-        selected_type = self.get_current_selected_type()
 
-        self.get_current_selected_type()
-        if selected_type == 'LSL':
+        try:
+            selected_type = self.get_current_selected_type()
+        except KeyError:
+            return
+        if selected_type == PresetType.LSL:
             self.LSL_preset_selected(stream_name)
-        elif selected_type == 'ZMQ':
+        elif selected_type == PresetType.ZMQ:
             port_number = get_stream_preset_info(stream_name, "PortNumber")
             self.ZMQ_preset_selected(stream_name, port_number)
-        elif selected_type == 'Device':
+        elif selected_type == PresetType.DEVICE:
             self.device_preset_selected(stream_name)
-        elif selected_type == 'other':
-            self.LSL_preset_selected(stream_name)
-        elif selected_type == 'video':
+        elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
-        elif selected_type == 'exp':
+        elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         else: raise Exception("Unknow preset type {}".format(selected_type))
 

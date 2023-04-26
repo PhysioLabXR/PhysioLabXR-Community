@@ -1,16 +1,12 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QLabel
 
 from rena import config
-from rena.config import valid_networking_interfaces, valid_preset_categories
 from rena.config_ui import image_depth_dict
-from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
-    get_preset_category, get_stream_preset_custom_info, is_group_shown, update_selected_plot_format
-from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox, get_distinct_colors, \
+from rena.utils.settings_utils import get_stream_preset_info, is_group_shown, update_selected_plot_format
+from rena.utils.ui_utils import get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 
 

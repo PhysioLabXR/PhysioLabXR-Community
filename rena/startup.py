@@ -54,12 +54,9 @@ def load_settings(revert_to_default=True, reload_presets=True):
     config.settings.sync()
 
     # load the presets, reload from local directory the default LSL, device and experiment presets
-    Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
+    presets = Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
 
-    print('Loading available cameras')
-    cameras = get_working_camera_ports()
-    cameras = list(map(str, cameras[1]))
-    config.settings.setValue('video_device', cameras + ['monitor1'])
+    pass
 
 def load_ui_shared():
     global stream_unavailable_pixmap

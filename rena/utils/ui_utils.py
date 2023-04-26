@@ -15,7 +15,8 @@ from qimage2ndarray.dynqt import QtGui
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.settings_utils import get_all_preset_names, get_stream_preset_names
+from rena.utils.settings_utils import get_stream_preset_names
+from rena.utils.presets_utils import get_all_preset_names
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 

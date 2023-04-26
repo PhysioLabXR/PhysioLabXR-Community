@@ -138,7 +138,6 @@ scripting_port = 8000
 CONSOLE_LOG_MAX_NUM_ROWS = 1000
 script_fps_counter_buffer_size = 10000
 
-valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
 valid_preset_categories = ['other', 'video', 'exp']
 
 stream_availability_wait_time = 2  # in seconds
@@ -149,3 +148,7 @@ plot_fps_range = (1, 60)
 default_group_name = 'default group name '
 
 app_data_name = 'RenaLabApp'
+
+
+def valid_networking_interfaces():
+    return None

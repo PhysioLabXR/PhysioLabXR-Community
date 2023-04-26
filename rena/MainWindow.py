@@ -1,14 +1,10 @@
 import os
-import random
 import sys
-import time
 import webbrowser
 
-import pyqtgraph as pg
-from PyQt5 import QtWidgets, sip, uic
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtWidgets import QWidget
 
 from exceptions.exceptions import RenaError
 from rena import config
@@ -18,9 +14,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.utils.lsl_utils import get_available_lsl_streams
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    check_preset_exists, get_experiment_preset_streams
+from rena.utils.settings_utils import create_default_preset, check_preset_exists, get_experiment_preset_streams
 from rena.utils.test_utils import some_test
 
 try:
@@ -33,14 +27,11 @@ from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
-from rena.utils.data_utils import window_slice
-from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor, DataBuffer
+from rena.utils.buffers import DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
-    init_camera_widget, convert_rgb_to_qt_image, another_window
+    another_window
 
 import numpy as np
-import collections
 
 
 # Define function to import external files when using PyInstaller.
