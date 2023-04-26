@@ -1,5 +1,5 @@
 # LSL Stream Name from the P300Speller game
-P300EventStreamName = 'P300Speller'
+P300SpellerEventStreamName = 'P300Speller'
 
 p300_speller_event_marker_channel_index = {
     "P300SpellerGameStateControlMarker": 0,

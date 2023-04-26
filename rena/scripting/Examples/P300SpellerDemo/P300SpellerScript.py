@@ -52,13 +52,13 @@ class P300Speller(RenaScript):
     def loop(self):
 
         #
-        if P300EventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
+        if P300SpellerEventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
         # print(self.inputs.get_data(P300EventStreamName)[
         #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']])
 
-        if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
+        if InterruptExperimentMarker in self.inputs.get_data(P300SpellerEventStreamName)[
             p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
             self.game_state = IDLE_STATE
             self.board_state = IDLE_STATE
@@ -72,20 +72,20 @@ class P300Speller(RenaScript):
             print("Game interrupted. Back to Idle state and aboard all the collected data")
 
         if self.game_state == IDLE_STATE:
-            if START_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName)[
+            if START_TRAINING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = TRAINING_STATE
                 # report final result
                 print('enter training state')
-            elif START_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
+            elif START_TESTING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = TESTING_STATE
                 print('enter testing state')
 
         elif self.game_state == TRAINING_STATE:
-            if END_TRAINING_MARKER in self.inputs.get_data(P300EventStreamName)[
+            if END_TRAINING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = IDLE_STATE
@@ -96,7 +96,7 @@ class P300Speller(RenaScript):
                 # print('collect training state data')
 
         elif self.game_state == TESTING_STATE:
-            if END_TESTING_MARKER in self.inputs.get_data(P300EventStreamName)[
+            if END_TESTING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.game_state = IDLE_STATE
@@ -114,14 +114,14 @@ class P300Speller(RenaScript):
 
     def collect_trail(self, callback_function):
         if self.board_state == IDLE_STATE:
-            if TRAIL_START_MARKER in self.inputs.get_data(P300EventStreamName)[
+            if TRAIL_START_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerStartTrailStartEndMarker']]:
                 # self.data_buffer = DataBuffer()
                 self.inputs.clear_buffer_data()  # clear buffer
                 self.board_state = RECORDING_STATE
 
         elif self.board_state == RECORDING_STATE:
-            if TRAIL_END_MARKER in self.inputs.get_data(P300EventStreamName)[
+            if TRAIL_END_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
                 p300_speller_event_marker_channel_index['P300SpellerStartTrailStartEndMarker']]:
                 callback_function()
                 self.data_buffer.clear_buffer_data()
@@ -234,8 +234,8 @@ class P300Speller(RenaScript):
         return raw_array
 
     def get_p300_speller_events(self):
-        markers = self.data_buffer[P300EventStreamName][0]
-        ts = self.data_buffer[P300EventStreamName][1]
+        markers = self.data_buffer[P300SpellerEventStreamName][0]
+        ts = self.data_buffer[P300SpellerEventStreamName][1]
 
         flashing_markers_channel = markers[p300_speller_event_marker_channel_index['P300SpellerFlashingMarker']]
         flashing_markers_index = np.where(flashing_markers_channel != 0)
