@@ -2,28 +2,28 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon, QPixmap
 
 from rena.config_ui import stream_widget_icon_size
+from rena.load_asset_file import load_media_icon
 
-start_stream_icon = QIcon('../media/icons/start.svg')
-stop_stream_icon = QIcon('../media/icons/stop.svg')
-terminate_icon = QIcon('../media/icons/terminate.svg') # QIcon instance only used in replay playback widget as of now
-options_icon = QIcon('../media/icons/options.svg')
-pop_window_icon = QIcon('../media/icons/popwindow.svg')
-dock_window_icon = QIcon('../media/icons/dockwindow.svg')
-remove_stream_icon = QIcon('../media/icons/removestream.svg')
+start_stream_icon = load_media_icon('start.svg')
+stop_stream_icon = load_media_icon('stop.svg')
+terminate_icon = load_media_icon('terminate.svg')  # Only used in replay playback widget as of now
+options_icon = load_media_icon('options.svg')
+pop_window_icon = load_media_icon('popwindow.svg')
+dock_window_icon = load_media_icon('dockwindow.svg')
+remove_stream_icon = load_media_icon('removestream.svg')
 
-add_icon = QIcon('../media/icons/add.svg')
-minus_icon = QIcon('../media/icons/minus.svg')
+add_icon = load_media_icon('add.svg')
+minus_icon = load_media_icon('minus.svg')
 
+pause_icon = load_media_icon('pause.svg')
 
-
-pause_icon = QIcon('../media/icons/pause.svg')
 
 # Stream widget icon in the visualization tab
-stream_unavailable_icon = QIcon('../media/icons/streamwidget_stream_unavailable.svg')
+stream_unavailable_icon = load_media_icon('streamwidget_stream_unavailable.svg')
 # stream_unavailable_pixmap = stream_unavailable_icon.pixmap(72, 72)
-stream_available_icon = QIcon('../media/icons/streamwidget_stream_available.svg')
+stream_available_icon = load_media_icon('streamwidget_stream_available.svg')
 # stream_available_pixmap = stream_available_icon.pixmap(72, 72)
-stream_active_icon = QIcon('../media/icons/streamwidget_stream_viz_active.svg')
+stream_active_icon = load_media_icon('streamwidget_stream_viz_active.svg')
 # stream_active_pixmap = stream_active_icon.pixmap(72, 72)
 
 

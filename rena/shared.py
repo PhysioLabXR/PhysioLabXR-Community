@@ -1,4 +1,5 @@
 # replay
+import os
 from enum import Enum
 
 FAIL_INFO = 'fail!'
@@ -6,11 +7,17 @@ START_COMMAND = 'start!'
 START_SUCCESS_INFO = 'start'
 VIRTUAL_CLOCK_REQUEST = 'v'
 
-PLAY_PAUSE_COMMAND = 'pp'
-PLAY_PAUSE_SUCCESS_INFO = 'pp!'
+PLAY_PAUSE_COMMAND = 'pp!'
+PLAY_PAUSE_SUCCESS_INFO = 'pp'
+
+SLIDER_MOVED_COMMAND = 'sm!'
+SLIDER_MOVED_SUCCESS_INFO = 'sm'
 
 STOP_COMMAND = 'stop!'
 STOP_SUCCESS_INFO = 'stop'
+
+GO_AHEAD_COMMAND = 'go'
+DUPLICATE_STREAM_STOP_COMMAND = 'ds!'
 
 TERMINATE_COMMAND = 't!'
 TERMINATE_SUCCESS_COMMAND = 't'
@@ -26,7 +33,10 @@ SCRIPT_PARAM_CHANGE = 'p'
 try:
     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
 except FileNotFoundError:
-    rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    try:
+        rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    except FileNotFoundError:
+        rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
 
 class ParamChange(Enum):
     ADD = 'a'
@@ -49,3 +59,28 @@ default_plot_format = {
                      'y_min': 0.0,
                      }
     }
+
+def parse_slider_moved_command(command_to_parse):
+    """
+    SLIDER_MOVED_COMMAND will be in the following format when received from ReplayServer: sm!:{position}
+    This function separates the original command string from the position value.
+
+    Params:
+        command_to_parse: command received from ReplayServer.
+
+    Returns:
+        updated_position: the updated slider position.
+    """
+
+    return command_to_parse.split(':')[1]
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'

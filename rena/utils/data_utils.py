@@ -1,11 +1,13 @@
 import os
 import warnings
 from pathlib import Path
+from datetime import datetime
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
+from scipy.stats import stats
 
 from exceptions.exceptions import BadOutputError
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
@@ -76,7 +78,7 @@ class RNStream:
             try:
                 assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
             except AssertionError:
-                warnings.warn('timestamps must be in increasing order.', UserWarning)
+                warnings.warn(f'RNStream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)
@@ -705,31 +707,37 @@ def replace_special(target_str: str, replacement_dict):
 #         pass
 
 def validate_output(data, expected_size):
-    if type(data) == np.ndarray:
-        try:
-            assert len(data.shape) == 2 or len(data.shape) == 1
-        except AssertionError:
-            raise BadOutputError('Output data must have one or two dimensions when given as a ndarray')
-        if len(data.shape) == 2:
-            try:
-                assert data.shape[0] == 1 or data.shape[1] == 1
-            except AssertionError:
-                raise BadOutputError('If two-dimensional, one of the output\'s data dimension must be 1')
-            data = np.squeeze(data)  # remove the one dimension
-        try:
-            assert len(data) == expected_size
-        except AssertionError:
-            raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
-    elif type(data) == list:
+    is_chunk = False
+
+    if type(data) == list:
         try:
             assert is_homogeneous_type(data)
         except AssertionError:
             raise BadOutputError('Output data must be a homogeneous (all elements are of the same type) when given as a list')
         try:
-            output = np.array(data)
+            data = np.array(data)
         except np.VisibleDeprecationWarning:
             raise BadOutputError('Output data must not be a ragged list (containing sublist of different length) when given as a list')
 
+    try:
+        assert len(data.shape) == 2 or len(data.shape) == 1
+    except AssertionError:
+        raise BadOutputError('Output data must have one or two dimensions when given as a ndarray')
+    if len(data.shape) == 2:
+        try:
+            assert data.shape[0] == expected_size or data.shape[1] == expected_size
+        except AssertionError:
+            raise BadOutputError(f'Out put data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
+        if data.shape[0] == expected_size:
+            data = np.transpose(data)  #  the first dimension is the number of samples and the second is channels
+        is_chunk = True
+    else:  # if one-dimensional
+        try:
+            assert len(data) == expected_size
+        except AssertionError:
+            raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
+
+    return data, is_chunk
 
 def is_homogeneous_type(seq):
     iseq = iter(seq)
@@ -739,3 +747,19 @@ def is_homogeneous_type(seq):
 def signal_generator(f, fs, duration, amp):
     wave = amp * (np.sin(2 * np.pi * np.arange(fs * duration) * f / fs)).astype(np.float32)
     return wave
+
+def get_date_string():
+    now = datetime.now()
+    dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
+    return dt_string
+
+def mode_by_column(array: np.ndarray, ignore=None):
+    assert len(array.shape) == 2
+    rtn = []
+    for i in range(array.shape[1]):
+        mode = stats.mode(array[:, i][array[:, i] != ignore], axis=0).mode
+        if len(mode) == 0:
+            rtn.append(ignore)
+        else:
+            rtn.append(mode[0])
+    return rtn

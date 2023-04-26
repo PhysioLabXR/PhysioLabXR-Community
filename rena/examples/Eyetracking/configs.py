@@ -1,7 +1,7 @@
 fixation_min_duration = .15
 fps = 30
 fixation_min_frame_count = int(fixation_min_duration * fps)
-similarity_threshold = .02
+similarity_threshold = .04
 
 patch_size = 63, 111  # width, height
 fovs = 115, 90  # horizontal, vertical, in degrees

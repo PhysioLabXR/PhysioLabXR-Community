@@ -4,12 +4,13 @@ from multiprocessing import Process
 import numpy as np
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QDialogButtonBox
 
 from rena import config, shared
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.PlayBackWidget import PlayBackWidget
+from rena.utils.lsl_utils import get_available_lsl_streams
 from rena.utils.ui_utils import another_window
 from rena.utils.ui_utils import dialog_popup
 
@@ -25,7 +26,7 @@ class ReplayTab(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi("ui/ReplayTab.ui", self)
-        self.is_replaying = False
+        self.is_replaying = False  # note this attribute will still be true even when the replay is paused
 
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
@@ -43,10 +44,6 @@ class ReplayTab(QtWidgets.QWidget):
                                                        identity='client',
                                                        pattern='router-dealer')
         self._create_playback_widget()
-
-        # self.replay_timer = QTimer()
-        # self.replay_timer.setInterval(config.REFRESH_INTERVAL)
-        # self.replay_timer.timeout.connect(self.ticks)
 
         self.replay_server_process = Process(target=start_replay_server)
         self.replay_server_process.start()
@@ -71,10 +68,12 @@ class ReplayTab(QtWidgets.QWidget):
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
-        selected_data_dir = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
+        selected_file = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
+        self.select_file(selected_file)
 
-        if selected_data_dir != '':
-            self.file_loc = selected_data_dir
+    def select_file(self, selected_file):
+        if selected_file != '':
+            self.file_loc = selected_file
 
         # self.file_loc = self.file_loc + 'data.dats'
 
@@ -95,11 +94,28 @@ class ReplayTab(QtWidgets.QWidget):
             elif client_info.startswith(shared.START_SUCCESS_INFO):
                 time_info = self.command_info_interface.socket.recv()
                 start_time, end_time, total_time, virtual_clock_offset = np.frombuffer(time_info)
+
+                self.stream_names = self.command_info_interface.recv_string().split('|')
+
+                existing_streams = get_available_lsl_streams()
+                if (overlapping_streams := set(existing_streams).intersection(self.stream_names)):  # if there are streams that are already streaming on LSL
+                    reply = dialog_popup(
+                        f'The following streams are already added: {overlapping_streams}.\n'
+                        f'Are you sure you want to proceed with replaying this file? \n'
+                        f'Proceeding may result in unpredictable streaming behavior.'
+                        f'It is recommended to remove the other data stream with the same name as one of the replay\'s', title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
+                        buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
+                    if not reply.result():
+                        self.command_info_interface.send_string(shared.DUPLICATE_STREAM_STOP_COMMAND)
+                        return
+
                 self.playback_window.show()
                 self.playback_window.activateWindow()
                 self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
-                self.stream_names = self.command_info_interface.recv_string().split('|')
+
+                self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
                 self.parent.add_streams_from_replay(self.stream_names)
+
                 print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
                 self.is_replaying = True
                 self.StartStopReplayBtn.setText('Stop Replay')

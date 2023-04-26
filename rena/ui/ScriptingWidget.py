@@ -15,7 +15,7 @@ from exceptions.exceptions import RenaError, MissingPresetError
 from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
-from rena.startup import load_default_settings
+from rena.startup import load_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
@@ -23,10 +23,11 @@ from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
-from rena.utils.general import DataBuffer, click_on_file
+from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_dict
 from rena.utils.script_utils import *
-from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists
+from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists, \
+    get_experiment_preset_names, get_experiment_preset_streams
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
     add_stream_presets_to_combobox, another_window, update_presets_to_combobox
@@ -46,7 +47,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.param_widgets = []
 
         # add all presents to camera
-        add_stream_presets_to_combobox(self.inputComboBox)
+        add_presets_to_combobox(self.inputComboBox)
 
         # set up the add buttons
         self.addInputBtn.setIcon(add_icon)
@@ -327,9 +328,19 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.export_script_args_to_settings()
 
     def process_add_input(self, input_preset_name):
-        input_widget = ScriptingInputWidget(input_preset_name)
+        existing_inputs = self.get_inputs()
+        if input_preset_name in get_stream_preset_names():
+            self.add_input_widget(input_preset_name)
+        elif input_preset_name in get_experiment_preset_names():
+            stream_names = get_experiment_preset_streams(input_preset_name)
+            for s_name in stream_names:
+                if s_name not in existing_inputs:
+                    self.add_input_widget(s_name)
+
+    def add_input_widget(self, stream_name):
+        input_widget = ScriptingInputWidget(stream_name)
         try:
-            input_widget.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
+            input_widget.set_input_info_text(self.get_preset_input_info_text(stream_name))
         except MissingPresetError as e:
             print(str(e))
             return
@@ -437,11 +448,18 @@ class ScriptingWidget(QtWidgets.QWidget):
         """
         will disable the add button if duplicate input exists
         """
+        experiment_presets = get_experiment_preset_names()
         input_preset_name = self.inputComboBox.currentText()
-        if input_preset_name in self.get_inputs() or input_preset_name not in get_stream_preset_names():
+        if input_preset_name in self.get_inputs() or input_preset_name not in get_stream_preset_names() + experiment_presets:
             self.addInputBtn.setEnabled(False)
         else:
             self.addInputBtn.setEnabled(True)
+
+        if input_preset_name in experiment_presets:
+            if np.all([x in self.get_inputs() for x in get_experiment_preset_streams(input_preset_name)]):
+                self.addInputBtn.setEnabled(False)
+            else:
+                self.addInputBtn.setEnabled(True)
 
     def check_can_add_output(self):
         output_name = self.output_lineEdit.text()

@@ -17,6 +17,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
+from rena.utils.lsl_utils import get_available_lsl_streams
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     check_preset_exists, get_experiment_preset_streams
 
@@ -28,11 +29,11 @@ except ModuleNotFoundError as e:
 import rena.threadings.workers as workers
 from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
-from rena.ui.SettingsTab import SettingsTab
+from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
 from rena.utils.data_utils import window_slice
-from rena.utils.general import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor
+from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
+    process_preset_create_TImmWave_interface_startsensor, DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
     init_camera_widget, convert_rgb_to_qt_image, another_window
 
@@ -115,6 +116,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # windows
         self.pop_windows = {}
+        self.current_dialog = None
 
         # actions for context menu
         self.actionDocumentation.triggered.connect(self.fire_action_documentation)
@@ -124,11 +126,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
         # create the settings window
-        settings_tab = SettingsTab(self)
+        self.settings_widget = SettingsWidget(self)
         self.settings_window = another_window('Settings')
-        self.settings_window.get_layout().addWidget(settings_tab)
+        self.settings_window.get_layout().addWidget(self.settings_widget)
         self.settings_window.hide()
 
+        # global buffer object for visualization, recording, and scripting
+        self.global_stream_buffer = DataBuffer()
 
     def add_btn_clicked(self):
         """
@@ -169,12 +173,12 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels)  # create the preset
+    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
+        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
-        self.sensorTabSensorsHorizontalLayout.removeWidget(target)
+        self.streamsHorizontalLayout.removeWidget(target)
         self.update_active_streams()
         self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
@@ -189,40 +193,39 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_all_btn.setEnabled(streaming_widget_count > 0)
 
     def on_start_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available and not x.is_widget_streaming()]
 
     def on_stop_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
         widget = VideoDeviceWidget(main_parent=self,
-                                   parent_layout=self.sensorTabSensorsHorizontalLayout,
+                                   parent_layout=self.camHorizontalLayout,
                                    video_device_name=video_device_name,
-                                   insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+                                   insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
-
         for stream_name in stream_names:
             # check if the stream in setting's preset
-            if check_preset_exists(stream_name):
-                self.addStreamWidget.select_by_stream_name(stream_name)
-                self.addStreamWidget.add_btn.click()
-            else:  # add a new preset if the stream name is not defined
-                self.addStreamWidget.set_selection_text(stream_name)
-                self.addStreamWidget.add_btn.click()
-
-        # loading_dlg.close()
+            if stream_name not in self.stream_widgets.keys():
+                if check_preset_exists(stream_name):
+                    self.addStreamWidget.select_by_stream_name(stream_name)
+                    self.addStreamWidget.add_btn.click()
+                else:  # add a new preset if the stream name is not defined
+                    self.addStreamWidget.set_selection_text(stream_name)
+                    self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
-        # switch tab to visulalization
-        self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        # switch tab to stream
+        # self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
         self.add_streams_to_visualize(stream_names)
-        for stream_name in stream_names:
-            if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
-                self.stream_widgets[stream_name].StartStopStreamBtn.click()
+        # for stream_name in stream_names:
+        #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
+        #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
     def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
         error_initialization = False
@@ -230,13 +233,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # set up UI elements
         widget_name = networking_stream_name + '_widget'
         stream_widget = StreamWidget(main_parent=self,
-                                     parent=self.sensorTabSensorsHorizontalLayout,
+                                     parent=self.streamsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
-                                     worker = worker,
+                                     worker=worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
-                                     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+                                     insert_position=self.streamsHorizontalLayout.count() - 1)
         start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
         stream_widget.setObjectName(widget_name)
 
@@ -352,5 +355,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_window.show()
         self.settings_window.activateWindow()
 
+    def open_settings_tab(self, tab_name: str):
+        self.settings_window.show()
+        self.settings_window.activateWindow()
+        self.settings_widget.switch_to_tab(tab_name)
+
     def get_added_stream_names(self):
         return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
+
+    def is_any_streaming(self):
+        """
+        Check if any stream is streaming. Checks if any stream widget or video device widget is streaming.
+        @return: return True if any network streams or video device is streaming, False otherwise
+        """
+        is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
+        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
+        return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])

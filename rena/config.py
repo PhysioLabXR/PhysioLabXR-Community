@@ -34,7 +34,7 @@ Advanced parameters:
 do not change these unless you know what you are doing
 '''
 DOWNSAMPLE_MULTIPLY_THRESHOLD = 5
-EVICTION_INTERVAL = 1000.  # in seconds, large eviction interval means laggier app, but faster loading the data back in
+EVICTION_INTERVAL = 1000  # in seconds, large eviction interval means laggier app, but faster loading the data back in
 
 '''
 ########################################################################################################################
@@ -113,7 +113,7 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 #     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
 # else:
 #     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
-DEFAULT_CHANNEL_DISPLAY_NUM = 20
+DEFAULT_CHANNEL_DISPLAY_NUM = 40
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
@@ -141,4 +141,7 @@ script_fps_counter_buffer_size = 10000
 valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
 valid_preset_categories = ['other', 'video', 'exp']
 
-lsl_stream_availability_wait_time = 2  # in seconds
+stream_availability_wait_time = 2  # in seconds
+
+# viz
+plot_fps_range = (1, 60)

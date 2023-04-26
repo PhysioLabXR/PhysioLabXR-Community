@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 
 from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
+from PyQt5.QtWidgets import QDialogButtonBox
 
 from rena import config, ui_shared
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
@@ -60,8 +61,9 @@ class RecordingsTab(QtWidgets.QWidget):
             self.start_recording_btn_pressed()
 
     def start_recording_btn_pressed(self):
-        if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
-            dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
+        if not self.parent.is_any_streaming():
+            self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
+                                                      title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
@@ -70,6 +72,11 @@ class RecordingsTab(QtWidgets.QWidget):
         self.recording_byte_count = 0
         self.StartStopRecordingBtn.setText(ui_shared.stop_recording_text)
         self.StartStopRecordingBtn.setIcon(stop_stream_icon)
+
+        # disable the text edit fields
+        self.experimentNameTextEdit.setEnabled(False)
+        self.subjectTagTextEdit.setEnabled(False)
+        self.sessionTagTextEdit.setEnabled(False)
 
         self.timer.start()
 
@@ -86,11 +93,15 @@ class RecordingsTab(QtWidgets.QWidget):
         if config.settings.value('file_format') != config.FILE_FORMATS[0]:
             self.convert_file_format(self.save_path, config.settings.value('file_format'))
         else:
-            dialog_popup('Saved to {0}'.format(self.save_path), title='Info')
+            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok)
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
 
+        # reenable the text edit fields
+        self.experimentNameTextEdit.setEnabled(True)
+        self.subjectTagTextEdit.setEnabled(True)
+        self.sessionTagTextEdit.setEnabled(True)
 
     def update_recording_buffer(self, data_dict: dict):
         if self.is_recording:
@@ -127,7 +138,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.FileSaveLabel.setText(ui_shared.recording_tab_file_save_label_prefix + self.generate_save_path())
 
     def on_option_button_clicked(self):
-        self.parent.fire_action_settings()
+        self.parent.open_settings_tab('recording')
 
     def generate_save_path(self):
         # datetime object containing current date and time
@@ -157,7 +168,7 @@ class RecordingsTab(QtWidgets.QWidget):
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.call([opener, "-R", config.settings.value('recording_file_location')])
         except FileNotFoundError:
-            dialog_popup(msg="Recording directory does not exist. "
+            self.parent.current_dialog = dialog_popup(msg="Recording directory does not exist. "
                              "Please use a valid directory in the Recording Tab.", title="Error")
 
     def convert_file_format(self, file_path, file_format):
