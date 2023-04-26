@@ -21,6 +21,7 @@ from rena.ui_shared import num_active_streams_label_text
 from rena.utils.lsl_utils import get_available_lsl_streams
 from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
     check_preset_exists, get_experiment_preset_streams
+from rena.utils.test_utils import some_test
 
 try:
     import rena.config
@@ -80,9 +81,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.device_workers = {}
         self.lsl_workers = {}
 
-
         presets = Presets()
+        # presets._preset_root = 'Hi'
 
+        some_test()
         ######### init server
         print('Creating Rena Client')
         self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
