@@ -26,7 +26,7 @@ class GroupEntry:
         """
         num_channels = len(self.channel_indices)
         if self.is_channels_shown is None:  # will only modify the channel indices if it is not set. It could be set from loading a preset json file
-            max_channel_shown_per_group = config.settings.value('default_channel_display_num_per_group')
+            max_channel_shown_per_group = config.settings.value('default_channel_display_num')
             if num_channels <= max_channel_shown_per_group:
                 self.is_channels_shown = [True] * num_channels
             else:

@@ -73,9 +73,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lsl_workers = {}
 
         presets = Presets()
-        # presets._preset_root = 'Hi'
-
+        presets._preset_root = 'Hi'
         some_test()
+
         ######### init server
         print('Creating Rena Client')
         self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
