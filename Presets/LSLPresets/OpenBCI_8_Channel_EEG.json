@@ -1,5 +1,5 @@
 {
-  "StreamName": "OpenBCI_Cyton_8_LSL",
+  "StreamName": "OpenBCI_8_Channel_EEG",
   "ChannelNames": [
     "Fz",
     "Cz",

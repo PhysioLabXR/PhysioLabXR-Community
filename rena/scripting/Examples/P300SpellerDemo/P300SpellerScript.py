@@ -55,6 +55,7 @@ class P300Speller(RenaScript):
         if P300SpellerEventStreamName not in self.inputs.keys() or OpenBCIStreamName not in self.inputs.keys():
             return
 
+        # print(self.inputs.get_data(P300SpellerEventStreamName))
         # print(self.inputs.get_data(P300EventStreamName)[
         #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']])
 
@@ -96,13 +97,13 @@ class P300Speller(RenaScript):
                 # print('collect training state data')
 
         elif self.game_state == TESTING_STATE:
-            if END_TESTING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
-                p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
-                self.inputs.clear_buffer_data()  # clear buffer
-                self.game_state = IDLE_STATE
-                print('end testing state')
-                # report final result
-            else:
+            # if END_TESTING_MARKER in self.inputs.get_data(P300SpellerEventStreamName)[
+            #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
+            #     self.inputs.clear_buffer_data()  # clear buffer
+            #     self.game_state = IDLE_STATE
+            #     print('end testing state')
+            #     # report final result
+            # else:
                 self.collect_trail(self.testing_callback)
                 # print('collect testing state data')
 
@@ -128,12 +129,15 @@ class P300Speller(RenaScript):
                 self.inputs.clear_buffer_data()
                 self.board_state = IDLE_STATE
             else:
-                self.data_buffer.update_buffers(self.inputs.buffer[eeg_channel_index,:])  # update the data_buffer with all inputs
+                self.data_buffer.update_buffers(self.inputs.buffer)  # update the data_buffer with all inputs
                 self.inputs.clear_buffer_data()  # clear the data buffer
         else:
             print("WARNING: Unknown state")
 
     def training_callback(self):
+        # # only keep the EEG channels in the data buffer based on eeg_channel_index eeg_channel_index = [1, 2, 3, 4, 5, 6, 7, 8]
+        # self.data_buffer[OpenBCIStreamName][0] = self.data_buffer[OpenBCIStreamName][0][eeg_channel_index,:]
+
         x_list = []
         y_list = []
         epoch = None
@@ -175,6 +179,10 @@ class P300Speller(RenaScript):
         pass
 
     def testing_callback(self):
+        # # only keep the EEG channels in the data buffer based on eeg_channel_index eeg_channel_index = [1, 2, 3, 4, 5, 6, 7, 8]
+        # self.data_buffer[OpenBCIStreamName][0] = self.data_buffer[OpenBCIStreamName][0][eeg_channel_index,:]
+
+
         raw = self.generate_raw_data()
         self.testing_raw.append(raw)
         raw_processed = p300_speller_process_raw_data(raw, l_freq=1, h_freq=50, notch_f=60, picks='eeg')
@@ -220,7 +228,7 @@ class P300Speller(RenaScript):
     def generate_raw_data(self):
         # add stim channels to raw data
         flashing_markers, flashing_row_or_colum_marker, flashing_row_colum_index_marker, target_non_target_marker, flashing_ts = self.get_p300_speller_events()
-        raw_array = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0], self.info)
+        raw_array = mne.io.RawArray(self.data_buffer[OpenBCIStreamName][0][eeg_channel_index,:], self.info) # only select the eeg channels
 
         add_stim_channel(raw_array, self.data_buffer[OpenBCIStreamName][1], flashing_ts, flashing_markers,
                          stim_channel_name='P300SpellerFlashingMarker')

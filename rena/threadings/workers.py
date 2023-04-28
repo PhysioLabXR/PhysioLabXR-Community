@@ -404,7 +404,7 @@ class OpenBCIDeviceWorker(QObject, RenaWorker):
     def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
         super(OpenBCIDeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
-
+        self.stream_name = stream_name
         self.interface = process_preset_create_openBCI_interface_startsensor(stream_name, serial_port, board_id)
         self.is_streaming = False
 
@@ -428,7 +428,7 @@ class OpenBCIDeviceWorker(QObject, RenaWorker):
             # sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
             sampling_rate = len(self.timestamps_queue) / (self.timestamps_queue[-1] - self.timestamps_queue[0]) if len(self.timestamps_queue) > 1 else 0
             # print("openbci sampling rate:", sampling_rate)
-            data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': self.stream_name, 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
     def start_stream(self):

@@ -14,7 +14,7 @@ p300_speller_event_marker_channel_index = {
 START_TRAINING_MARKER = 1
 END_TRAINING_MARKER = 2
 START_TESTING_MARKER = 3
-END_TESTING_MARKER = 4
+# END_TESTING_MARKER = 4 # END TESTING only go with interrupt button
 InterruptExperimentMarker = -1
 
 # P300SpellerStartTrailStartEndMarker

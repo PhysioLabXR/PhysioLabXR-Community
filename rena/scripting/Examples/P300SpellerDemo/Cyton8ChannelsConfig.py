@@ -1,7 +1,7 @@
 
 
 # OpenBCI Stream Name
-OpenBCIStreamName = 'OpenBCI_Cython_8_LSL'
+OpenBCIStreamName = 'OpenBCI_Cyton_8'
 
 # Sampling Rate
 eeg_sampling_rate = 250
