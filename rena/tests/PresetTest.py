@@ -29,12 +29,24 @@ def context_bot(app_main_window, qtbot):
     yield test_context
     test_context.clean_up()
 
-def test_reloading_modified_presets(app_main_window, context_bot, qtbot):
+def test_with_buggy_presets(app_main_window, context_bot, qtbot):
+    """
+    pass in a temporary preset root containing a buggy preset file
+    @param app_main_window:
+    @param context_bot:
+    @param qtbot:
+    @return:
+    """
     pass
 
+def test_reloading_modified_presets(app_main_window, context_bot, qtbot):
+    pass
 
 def test_reloading_new_presets(app_main_window, context_bot, qtbot):
     pass
 
 def test_reloading_remove_presets(app_main_window, context_bot, qtbot):
+    pass
+
+def test_existing_presets(app_main_window, context_bot, qtbot):
     pass

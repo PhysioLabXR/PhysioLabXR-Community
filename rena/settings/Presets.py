@@ -242,7 +242,8 @@ class Presets(metaclass=Singleton):
 
         dirty_presets = {'LSL': None, 'ZMQ': None, 'Device': None, 'Experiment': None}
         (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'], dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
-
+        if not os.path.exists(self._app_data_path):
+            os.makedirs(self._app_data_path)
         with open(self._last_mod_time_path, 'w') as f:
             json.dump(current_mod_times, f)
 
