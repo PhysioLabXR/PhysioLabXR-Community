@@ -14,7 +14,8 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.utils.settings_utils import create_default_preset, check_preset_exists, get_experiment_preset_streams
+from rena.utils.settings_utils import create_default_preset, check_preset_exists
+from rena.utils.presets_utils import get_experiment_preset_streams
 from rena.utils.test_utils import some_test
 
 try:

@@ -2,11 +2,9 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.config import valid_preset_categories
 from rena.settings.Presets import PresetType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
-    get_stream_preset_custom_info
+from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_custom_info
 from rena.utils.presets_utils import get_preset_category
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 

@@ -26,8 +26,9 @@ from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import recv_string_router, send_data_dict
 from rena.utils.script_utils import *
-from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists, \
-    get_experiment_preset_names, get_experiment_preset_streams
+from rena.utils.settings_utils import get_stream_preset_info, check_preset_exists, \
+    get_experiment_preset_names
+from rena.utils.presets_utils import get_stream_preset_names, get_experiment_preset_streams
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
     add_stream_presets_to_combobox, another_window, update_presets_to_combobox

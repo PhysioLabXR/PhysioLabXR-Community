@@ -18,27 +18,14 @@ from rena.utils.data_utils import convert_dict_keys_to_snake_case
 #     config.settings.endGroup()
 #     return presets
 
-def get_video_device_names():
-    return config.settings.value('video_device')
+# def get_video_device_names():
+#     return config.settings.value('video_device')
 
-def get_stream_preset_names():
-    config.settings.beginGroup('presets/streampresets')
-    stream_preset_names = list(config.settings.childGroups())
-    config.settings.endGroup()
-    return stream_preset_names
-
-def get_experiment_preset_names():
-    config.settings.beginGroup('presets/experimentpresets')
-    experiment_preset_names = list(config.settings.childGroups())
-    config.settings.endGroup()
-    return experiment_preset_names
-
-def get_experiment_preset_streams(exp_name):
-    try:
-        assert exp_name in get_experiment_preset_names()
-    except AssertionError:
-        raise Exception("Unknown experiment name")
-    return config.settings.value('presets/experimentpresets/{}/PresetStreamNames'.format(exp_name))
+# def get_experiment_preset_names():
+#     config.settings.beginGroup('presets/experimentpresets')
+#     experiment_preset_names = list(config.settings.childGroups())
+#     config.settings.endGroup()
+#     return experiment_preset_names
 
 
 def get_stream_preset_info(stream_name, key):
