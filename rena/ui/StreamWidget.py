@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QDialogButtonBox
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
-from rena.config_ui import image_depth_dict
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
@@ -20,10 +19,10 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.performance_utils import timeit
-from rena.utils.settings_utils import is_group_shown, remove_stream_preset_from_settings, \
-    update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
-    change_group_name
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, collect_stream_all_groups_info
+from rena.presets.load_user_preset import create_default_group_info
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
+    get_is_group_shown, save_preset, pop_group_from_stream_preset, add_group_dict_to_stream, set_group_channel_indices, \
+    set_group_channel_is_shown, change_stream_group_order, change_stream_group_name, pop_stream_preset_from_settings
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
@@ -95,9 +94,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.viz_components = None
         self.num_points_to_plot = None
 
-        # self.init_server_client()
-        self.group_info = collect_stream_all_groups_info(self.stream_name)
-
         # data elements
         self.viz_data_buffer = None
         self.create_buffer()
@@ -124,11 +120,10 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create option window
-        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name,
-                                                         group_info=self.group_info, plot_format_changed_signal=self.plot_format_changed_signal)
-        self.plot_format_changed_signal.connect(self.plot_format_on_change)
+        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
+        # self.plot_format_changed_signal.connect(self.plot_format_on_change)
         # self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        self.stream_options_window.image_change_signal.connect(self.image_changed)
+        # self.stream_options_window.image_change_signal.connect(self.image_changed)
 
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
@@ -262,12 +257,11 @@ class StreamWidget(QtWidgets.QWidget):
         self.main_parent.update_active_streams()
 
     def reset_preset_by_num_channels(self, num_channels):
-        remove_stream_preset_from_settings(self.stream_name)
+        pop_stream_preset_from_settings(self.stream_name)
         self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
 
-        self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
         self.stream_options_window.reload_preset_to_UI()
         self.reset_viz()
 
@@ -346,13 +340,12 @@ class StreamWidget(QtWidgets.QWidget):
     def update_channel_shown(self, channel_index, is_shown, group_name):
         channel_plot_widget = self.channel_index_plot_widget_dict[channel_index]
         channel_plot_widget.show() if is_shown else channel_plot_widget.hide()
-        self.group_info = collect_stream_all_groups_info(self.stream_name)  # just reload the group info from settings
         self.update_groups_shown(group_name)
 
     def update_groups_shown(self, group_name):
         # assuming group info is update to date with in the persist settings
         # check if there's active channels in this group
-        if is_group_shown(group_name, self.stream_name):
+        if get_is_group_shown(self.stream_name, group_name):
             self.group_name_plot_widget_dict[group_name].show()
         else:
             self.group_name_plot_widget_dict[group_name].hide()
@@ -382,13 +375,14 @@ class StreamWidget(QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
 
         group_plot_widget_dict = {}
-        for group_name in self.group_info.keys():
-            if is_only_image_enabled := self.group_info[group_name]['is_image_only']:
-                update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
-                self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info from settings
+        group_info = get_stream_group_info(self.stream_name)
+        for group_name in group_info.keys():
+            # if group_info[group_name].is_only_image_enabled:
+            #     update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
+            #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
 
-            group_channel_names = [channel_names[int(i)] for i in self.group_info[group_name]['channel_indices']]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, self.group_info[group_name], group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
+            group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
             self.viz_group_scroll_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -498,9 +492,9 @@ class StreamWidget(QtWidgets.QWidget):
         self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
         data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
-        for plot_group_index, (group_name) in enumerate(self.group_info.keys()):
-            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
-            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+        for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
+            # self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
         self.viz_components.fs_label.setText(
@@ -574,10 +568,10 @@ class StreamWidget(QtWidgets.QWidget):
     #     clear_layout(self.BarPlotWidgetLayout)
     #     self.create_visualization_component()
 
-    @QtCore.pyqtSlot(dict)
-    def plot_format_on_change(self, info_dict):
+    # @QtCore.pyqtSlot(dict)
+    # def plot_format_on_change(self, info_dict):
         # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
+        # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
 
         # self.preset_on_change()  # update the group info
 
@@ -588,31 +582,28 @@ class StreamWidget(QtWidgets.QWidget):
 
         # update the plot hide display
 
-    @QtCore.pyqtSlot(dict)
-    def image_changed(self, change: dict):
-        self.group_info[change['group_name']]['plot_format']['image'] = change['this_group_info_image']
-        if change['group_name'] in self.group_name_plot_widget_dict.keys():
-            self.group_name_plot_widget_dict[change['group_name']].update_image_info(change['this_group_info_image'])
+    # @QtCore.pyqtSlot(dict)
+    # def image_changed(self, change: dict):
+    #     if change['group_name'] in self.group_name_plot_widget_dict.keys():
+    #         self.group_name_plot_widget_dict[change['group_name']].update_image_info(change['this_group_info_image'])
 
-    def preset_on_change(self):
-        self.group_info = collect_stream_all_groups_info(self.stream_name)  # reload the group info
+    # def preset_on_change(self):
+    #     self.group_info = get_stream_group_info(self.stream_name)  # reload the group info
 
-    def get_image_format_and_shape(self, group_name):
-        width = self.group_info[group_name]['plot_format']['image']['width']
-        height = self.group_info[group_name]['plot_format']['image']['height']
-        image_format = self.group_info[group_name]['plot_format']['image']['image_format']
-        depth = image_depth_dict[image_format]
-        channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
-        scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
-
-        return width, height, depth, image_format, channel_format, scaling_factor
+    # def get_image_format_and_shape(self, group_name):
+    #     width = self.group_info[group_name]['plot_format']['image']['width']
+    #     height = self.group_info[group_name]['plot_format']['image']['height']
+    #     image_format = self.group_info[group_name]['plot_format']['image']['image_format']
+    #     depth = image_depth_dict[image_format]
+    #     channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
+    #     scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
+    #
+    #     return width, height, depth, image_format, channel_format, scaling_factor
 
     #############################################
 
-    def bar_chart_range_on_change(self, group_name, barchart_min, barchart_max):
-        self.group_info[group_name]['plot_format']['bar_chart']['y_min'] = barchart_min
-        self.group_info[group_name]['plot_format']['bar_chart']['y_max'] = barchart_max
-        self.viz_components.group_plots[group_name].update_bar_chart_range(self.group_info[group_name])
+    def bar_chart_range_on_change(self, group_name):
+        self.viz_components.group_plots[group_name].update_bar_chart_range()
 
     #############################################
 
@@ -624,13 +615,13 @@ class StreamWidget(QtWidgets.QWidget):
         # update the group info
         for group_name, child_channels in change_dict.items():
             if len(child_channels) == 0:
-                self.group_info.pop(group_name)
+                pop_group_from_stream_preset(self.stream_name, group_name)
             else:  # cover the cases for both changed groups and new group
-                if group_name not in self.group_info.keys():
-                    self.group_info[group_name] = create_default_group_info(len(child_channels), group_name)[group_name]  # add a default group info
-                self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
-                self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
-        export_group_info_to_settings(self.group_info, self.stream_name)
+                if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
+                    add_group_dict_to_stream(group_name, create_default_group_info(len(child_channels), group_name))
+                set_group_channel_indices(self.stream_name, group_name, [x.lsl_index for x in child_channels])
+                set_group_channel_is_shown(self.stream_name, group_name, [int(x.is_shown) for x in child_channels])
+        save_preset()
         self.reset_viz()
 
     def group_order_changed(self, group_order):
@@ -638,19 +629,14 @@ class StreamWidget(QtWidgets.QWidget):
         Called when the group order is changed
         @param group_order:
         """
-        new_group_info = {}
-        for group_name in group_order:
-            new_group_info[group_name] = self.group_info.pop(group_name)
-        self.group_info = new_group_info
-        export_group_info_to_settings(self.group_info, self.stream_name)
+        change_stream_group_order(self.stream_name, group_order)
+        save_preset()
         self.reset_viz()
 
     def change_group_name(self, new_group_name, old_group_name):
-        self.group_info[new_group_name] = self.group_info.pop(old_group_name)
+        change_stream_group_name(self.stream_name, new_group_name, old_group_name)
         self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
-
         self.viz_components.group_plots[new_group_name].change_group_name(new_group_name)
-        change_group_name(self.group_info[new_group_name], new_group_name, old_group_name, self.stream_name)
 
     def change_channel_name(self, group_name, new_ch_name, old_ch_name, lsl_index):
         # change channel name in the settings

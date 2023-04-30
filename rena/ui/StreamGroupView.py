@@ -5,8 +5,7 @@ from PyQt5.QtGui import *
 
 from rena import config
 from rena.config_ui import *
-from rena.utils.settings_utils import is_group_shown
-from rena.presets.presets_utils import get_stream_preset_info
+from rena.presets.presets_utils import get_stream_preset_info, get_stream_group_info, get_is_group_shown
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
@@ -126,10 +125,9 @@ class StreamGroupView(QTreeWidget):
 
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
-    def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name, group_info):
+    def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
-        self.group_info = group_info
         self.parent = parent_stream_options
         self.stream_widget = stream_widget
         self.format_widget = format_widget
@@ -145,7 +143,7 @@ class StreamGroupView(QTreeWidget):
         # self.setModel(self.model)
         self.group_widgets = {}  # group name: str -> group item: GroupItem)
         self.channel_widgets = []
-        self.create_tree_view(group_info)
+        self.create_tree_view()
 
         # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -199,21 +197,21 @@ class StreamGroupView(QTreeWidget):
         # self.stream_root.channel_group.setEditable(False)
 
         # get_childGroups_for_group('presets/')
-        group_info = self.group_info()
+        group_info = get_stream_group_info(self.stream_name)
+        channel_names = get_stream_preset_info(self.stream_name, key='ChannelNames')
         for group_name, group_entry in group_info.items():
 
             group = self.add_existing_group_item(parent_item=self,
                                                  group_name=group_name,
-                                                 plot_format=group_entry['plot_format'])
-            # self.groups_widgets.append(group)
-            if len(group_entry['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+                                                 plot_format=group_entry.selected_plot_format,
+                                                 is_shown=group_entry.is_group_shown)
+            if len(group_entry.channel_indices) > config.settings.value("max_timeseries_num_channels"):
+                dialog_popup(f'Warning: Number of Channels for stream {self.stream_name}\' group {group_name} Exceeds Maximum Number of Channels Allowed. Additional Channels Will Not Be Displayed.', mode='modeless')
                 continue  # skip adding channel items if exceeding maximum time series number of channels
-            for channel_index_in_group, channel_index in enumerate(group_entry['channel_indices']):
+            for channel_index_in_group, channel_index in enumerate(group_entry.channel_indices):
                 channel = self.add_channel_item(parent_item=group,
-                                                channel_name=
-                                                get_stream_preset_info(self.stream_name, key='ChannelNames')[
-                                                    int(channel_index)],
-                                                is_shown=group_entry['is_channels_shown'][channel_index_in_group],
+                                                channel_name= channel_names[int(channel_index)],
+                                                is_shown=group_entry.is_group_shown[channel_index_in_group],
                                                 lsl_index=channel_index)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)
@@ -390,14 +388,12 @@ class StreamGroupView(QTreeWidget):
     def add_new_group_item(self, parent_item, group_name):
         return self.add_group_item(parent_item, group_name, new_group_default_plot_format, True)
 
-    def add_existing_group_item(self, parent_item, group_name, plot_format):
+    def add_existing_group_item(self, parent_item, group_name, plot_format, is_shown):
         try:
             assert group_name not in self.group_widgets.keys()
         except AssertionError:
             raise Exception(f"There can't be duplicate group names {group_name}")
-        is_shown = is_group_shown(group_name, self.stream_name)
         return self.add_group_item(parent_item, group_name, plot_format, is_shown)
-
 
     def add_group_item(self, parent_item, group_name, plot_format, is_shown):
         item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name,

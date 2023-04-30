@@ -28,7 +28,7 @@ from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.utils.data_utils import RNStream
-from rena.utils.settings_utils import create_default_preset
+from rena.presets.presets_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
 
 

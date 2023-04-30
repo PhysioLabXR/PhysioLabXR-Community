@@ -108,3 +108,19 @@ if __name__ == '__main__':
     # script_path = '../scripting/IndexPen.py'
     script_path, script_args = pickle.load(open('start_script_args.p', 'rb'))
     start_script_server(script_path, script_args)
+
+
+def get_script_widgets_args():
+    rtn = dict()
+    config.settings.beginGroup('scripts')
+    for script_id in config.settings.childGroups():
+        config.settings.beginGroup(script_id)
+        rtn[script_id] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+        rtn[script_id]['id'] = script_id
+        config.settings.endGroup()
+    config.settings.endGroup()
+    return rtn
+
+
+def remove_script_from_settings(script_id):
+    config.settings.remove('scripts/{0}'.format(script_id))

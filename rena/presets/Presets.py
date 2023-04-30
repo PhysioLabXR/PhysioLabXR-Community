@@ -10,11 +10,11 @@ from PyQt5.QtCore import QStandardPaths
 from rena import config
 from rena.config import app_data_name
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.PlotConfig import PlotConfigs, TimeSeriesConfig, ImageConfig, BarChartConfig
 from rena.presets.preset_class_helpers import reload_enums, SubPreset
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
-from rena.utils.settings_utils import validate_preset_json_preset, process_plot_group_json_preset
+from rena.presets.load_user_preset import process_plot_group_json_preset
+from rena.presets.presets_utils import validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
@@ -147,14 +147,22 @@ def _load_stream_presets(presets, dirty_presets):
             loaded_preset_dict = json.load(open(dirty_preset_path))
 
             if category == 'LSL' or category == 'ZMQ' or category == 'Device':
-                stream_preset_dict = validate_preset_json_preset(loaded_preset_dict)
-                stream_preset_dict['preset_type'] = PresetType[category.upper()]
-                stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
+                stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
                 presets.add_stream_preset(stream_preset_dict)
             elif category == 'Experiment':
                 presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
             else:
                 raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
+
+def preprocess_stream_preset(stream_preset_dict, category):
+    """
+
+    """
+    stream_preset_dict = validate_preset_json_preset(stream_preset_dict)
+    stream_preset_dict['preset_type'] = PresetType[category.upper()]
+    stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
+    return stream_preset_dict
+
 
 def _load_video_device_presets(presets):
     print('Loading available cameras')

@@ -8,9 +8,9 @@ from rena.presets.preset_class_helpers import reload_enums, SubPreset
 
 
 class PlotFormat(Enum):
-    TIMESERIES = 'timeseries'
-    BARCHART = 'barchart'
-    IMAGE = 'image'
+    TIMESERIES = 0
+    BARCHART = 1
+    IMAGE = 2
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):
@@ -21,6 +21,7 @@ class GroupEntry(metaclass=SubPreset):
     group_name: str
     channel_indices: List[int]
     selected_plot_format: PlotFormat = None
+    is_group_shown: bool = True
     is_channels_shown: List[bool] = None
     plot_configs: PlotConfigs = PlotConfigs()
 
@@ -54,3 +55,6 @@ class GroupEntry(metaclass=SubPreset):
 
     def to_dict(self):
         return {attr: value.name if attr == 'selected_plot_format' else value for attr, value in self.__dict__.items()}
+
+    def is_image_only(self):
+        return self._is_image_only

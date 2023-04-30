@@ -5,8 +5,7 @@ from PyQt5 import QtWidgets, uic
 from rena import config
 from rena.ui.ScriptingWidget import ScriptingWidget
 from rena.ui_shared import add_icon
-from rena.utils.settings_utils import get_script_widgets_args, remove_script_from_settings
-from rena.utils.ui_utils import update_presets_to_combobox
+from rena.scripting.script_utils import get_script_widgets_args, remove_script_from_settings
 
 
 class ScriptingTab(QtWidgets.QWidget):

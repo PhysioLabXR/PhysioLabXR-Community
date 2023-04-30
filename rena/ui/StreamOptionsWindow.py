@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog, QPushButton
 
 from rena import config
 from rena.config_ui import *
+from rena.presets.GroupEntry import PlotFormat
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import num_points_shown_text
@@ -18,7 +19,7 @@ class StreamOptionsWindow(QDialog):
     # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, parent_stream_widget, stream_name, group_info, plot_format_changed_signal):
+    def __init__(self, parent_stream_widget, stream_name, plot_format_changed_signal):
         """
         note that this class does not keep a copy of the group_info
         @param parent_stream_widget:
@@ -33,7 +34,6 @@ class StreamOptionsWindow(QDialog):
         """
         self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
         self.parent = parent_stream_widget
-        self.group_info = group_info
         # add supported filter list
         # self.resize(1000, 1000)
 
@@ -50,7 +50,7 @@ class StreamOptionsWindow(QDialog):
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
 
         # stream group tree view
-        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name, group_info=group_info)
+        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name)
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
@@ -114,7 +114,7 @@ class StreamOptionsWindow(QDialog):
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name, this_group_info=self.group_info()[group_name])
+            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name)
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()
@@ -275,7 +275,7 @@ class StreamOptionsWindow(QDialog):
         # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
 
         # if new format is image, we disable all child
-        if plot_format_index_dict[info_dict['new_format']] == 'image' or plot_format_index_dict[info_dict['new_format']] == 'bar_chart':
+        if info_dict['new_format'] == PlotFormat.IMAGE or info_dict['new_format'] == PlotFormat.IMAGE:
             self.stream_group_view.disable_channels_in_group(group_item=group_item)
         else:
             self.stream_group_view.enable_channels_in_group(group_item=group_item)

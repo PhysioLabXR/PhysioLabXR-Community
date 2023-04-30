@@ -22,7 +22,7 @@ from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import update_test_cwd
-from rena.utils.settings_utils import create_default_preset
+from rena.presets.presets_utils import create_default_preset
 
 
 @pytest.fixture

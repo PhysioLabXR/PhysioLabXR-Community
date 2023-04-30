@@ -20,7 +20,7 @@ from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
-from rena.utils.script_utils import *
+from rena.scripting.script_utils import *
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
     get_experiment_preset_names, get_stream_preset_info, check_preset_exists
 
