@@ -9,47 +9,56 @@ from PyQt5.QtCore import QStandardPaths
 
 from rena import config
 from rena.config import app_data_name
-from rena.settings.GroupEntry import GroupEntry
-from rena.settings.PlotConfig import PlotConfig
+from rena.presets.GroupEntry import GroupEntry
+from rena.presets.PlotConfig import PlotConfigs, TimeSeriesConfig, ImageConfig, BarChartConfig
+from rena.presets.preset_class_helpers import reload_enums, SubPreset
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.utils.settings_utils import validate_preset_json_preset, process_plot_group_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
-# class DataclassEncoder(json.JSONEncoder):
-#     def default(self, o: Any) -> Any:
-#         if hasattr(o, '__dict__'):
-#             return o.__dict__
-#         elif hasattr(o, '__dataclass_fields__'):
-#             return asdict(o)
-#         else:
-#             return super().default(o)
-
 class PresetType(Enum):
-    WEBCAM = 1
-    MONITOR = 2
-    LSL = 3
-    ZMQ = 4
-    DEVICE = 5
-    EXPERIMENT = 6
+    WEBCAM = 'WEBCAM'
+    MONITOR = 'MONITOR'
+    LSL = 'LSL'
+    ZMQ = 'ZMQ'
+    DEVICE = 'DEVICE'
+    EXPERIMENT = 'EXPERIMENT'
 
-class VideoDeviceTypeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Enum):
-            return obj.value
-        return json.JSONEncoder.default(self, obj)
 
+# class VideoDeviceTypeEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, Enum):
+#             return obj.value
+#         return json.JSONEncoder.default(self, obj)
+
+
+# class PresetsEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, StreamPreset) or isinstance(obj, PlotConfigs) or isinstance(obj, VideoPreset):
+#             return obj.to_dict()
+#         return super().default(obj)
 
 class PresetsEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, _StreamPreset) or isinstance(obj, PlotConfig) or isinstance(obj, _VideoPreset):
-            return obj.to_dict()
-        return super().default(obj)
+    """
+    JSON encoder that can handle enums and objects whose metaclass is SubPreset.
 
+    Note all subclass under presets should have their metaclass be SubPreset. So that the encoder can handle them when
+    json serialization is called.
+
+    NOTE: if a SubPreset class has a field that is an enum,
+    """
+
+    def default(self, o):
+        if isinstance(o, Enum):
+            return o.name
+        if o.__class__.__class__ is SubPreset:
+            return o.__dict__
+        return super().default(o)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class _StreamPreset:
+class StreamPreset(metaclass=SubPreset):
     """
     Stream preset defines a stream to be loaded from the GUI.
 
@@ -94,21 +103,16 @@ class _StreamPreset:
         @return:
         """
         if self.display_duration is None:
-            self.display_duration = config.settings.value('default_display_duration')
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        auto loop the attributes converting them to dictionary, in case of the GroupEntry object, it will call the asdict function
-        because GroupEntry is a dataclass nested under the StreamPreset class.
-        Devs: if you add another attribute that's a nested dataclass, you will need to add the todict call here, like how it's done for the GroupEntry
-        @return:  dictionary containing all the attributes of the StreamPreset class
-        """
-        return {attr: {group_name: group_entry.__dict__ for group_name, group_entry in value.items()} if attr == 'group_info' else value.name if attr == 'preset_type' else value
-                for attr, value in self.__dict__.items()}
-
+            self.display_duration = config.settings.value('viz_display_duration')
+        # recreate the GroupEntry object from the dictionary
+        for key, value in self.group_info.items():
+            if isinstance(value, dict):
+                self.group_info[key] = GroupEntry(**value)
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class _VideoPreset:
+class VideoPreset(metaclass=SubPreset):
     """
     Stream preset defines a stream to be loaded from the GUI.
 
@@ -120,15 +124,6 @@ class _VideoPreset:
     stream_name: str
     preset_type: PresetType
     video_id: int
-
-    def to_dict(self) -> dict[str, Any]:
-        """
-        auto loop the attributes converting them to dictionary, in case of the GroupEntry object, it will call the asdict function
-        because GroupEntry is a dataclass nested under the StreamPreset class.
-        Devs: if you add another attribute that's a nested dataclass, you will need to add the todict call here, like how it's done for the GroupEntry
-        @return:  dictionary containing all the attributes of the StreamPreset class
-        """
-        return {attr: value.name if attr == 'preset_type' else value for attr, value in self.__dict__.items()}
 
 
 def save_local(app_data_path, preset_dict) -> None:
@@ -190,8 +185,8 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, _StreamPreset] = field(default_factory=dict)
-    video_presets: Dict[str, _VideoPreset] = field(default_factory=dict)
+    stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
+    video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
@@ -199,7 +194,12 @@ class Presets(metaclass=Singleton):
 
     def __post_init__(self):
         """
-        1. load the presets from the local disk if it exists
+        The post init of presets does the following:
+        1. if reset is true, remove the last mod time and preset json files
+        2. set the private path variables based on the given preset root, which makes the preset root a mandatory argument when first time initializing Presets globally.
+        3. load the presets from the local disk if it exists
+        4. check if any presets are dirty and load them
+        5. save the presets to the local disk
         """
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing Presets')
@@ -219,13 +219,19 @@ class Presets(metaclass=Singleton):
             print(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
+                for key, value in preset_dict['stream_presets'].items():
+                    preset = StreamPreset(**value)
+                    preset_dict['stream_presets'][key] = preset
+                for key, value in preset_dict['video_presets'].items():
+                    preset = VideoPreset(**value)
+                    preset_dict['video_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
 
         _load_video_device_presets(self)
-        self.save_async()
+        self.save(is_async=True)
         print("Presets instance successfully initialized")
 
     def _record_presets_last_modified_times(self):
@@ -254,6 +260,7 @@ class Presets(metaclass=Singleton):
         save the presets to the local disk when the application is closed
         """
         save_local(self._app_data_path, self.__dict__)
+        print(f"Presets instance successfully deleted with its contents saved to {self._app_data_path}")
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
         """
@@ -265,16 +272,16 @@ class Presets(metaclass=Singleton):
         :return: None
         """
         device_info = {}
-        device_specific_attribute_names = [attribute_name for attribute_name, attribute_value in stream_preset_dict.items() if attribute_name not in _StreamPreset.__annotations__]
+        device_specific_attribute_names = [attribute_name for attribute_name, attribute_value in stream_preset_dict.items() if attribute_name not in StreamPreset.__annotations__]
         for attribute_name in device_specific_attribute_names:
             device_info[attribute_name] = stream_preset_dict.pop(attribute_name)
         stream_preset_dict['device_info'] = device_info
 
-        stream_preset = _StreamPreset(**stream_preset_dict)
+        stream_preset = StreamPreset(**stream_preset_dict)
         self.stream_presets[stream_preset.stream_name] = stream_preset
 
     def add_video_preset(self, stream_name, video_type, video_id):
-        video_preset = _VideoPreset(stream_name, video_type, video_id)
+        video_preset = VideoPreset(stream_name, video_type, video_id)
         self.video_presets[video_preset.stream_name] = video_preset
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
@@ -286,13 +293,16 @@ class Presets(metaclass=Singleton):
         """
         self.experiment_presets[experiment_name] = stream_names
 
-    def save_async(self) -> None:
+    def save(self, is_async=False) -> None:
         """
         save the presets to the local disk asynchronously.
         @return: None
         """
-        p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
-        p.start()
+        if is_async:
+            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
+            p.start()
+        else:
+            save_local(self._app_data_path, self.__dict__)
 
     def __getitem__(self, key):
         for d in [self.stream_presets, self.video_presets, self.experiment_presets]:

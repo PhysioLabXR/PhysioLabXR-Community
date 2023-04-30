@@ -1,13 +1,11 @@
-import time
-import cv2
 import qimage2ndarray
 # from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
+    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
 from qimage2ndarray.dynqt import QtGui
@@ -15,8 +13,7 @@ from qimage2ndarray.dynqt import QtGui
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.presets_utils import get_all_preset_names, get_stream_preset_names
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):

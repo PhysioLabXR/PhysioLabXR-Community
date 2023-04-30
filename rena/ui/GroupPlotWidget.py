@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import QLabel
 
 from rena import config
 from rena.config_ui import image_depth_dict
-from rena.utils.settings_utils import get_stream_preset_info, is_group_shown, update_selected_plot_format
+from rena.utils.settings_utils import is_group_shown, update_selected_plot_format
+from rena.presets.presets_utils import get_stream_preset_info
 from rena.utils.ui_utils import get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 

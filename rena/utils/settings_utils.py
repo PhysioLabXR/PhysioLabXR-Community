@@ -6,7 +6,7 @@ import numpy as np
 from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, default_group_name
-from rena.settings.GroupEntry import GroupEntry
+from rena.presets.GroupEntry import GroupEntry
 from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
@@ -27,46 +27,6 @@ from rena.utils.data_utils import convert_dict_keys_to_snake_case
 #     config.settings.endGroup()
 #     return experiment_preset_names
 
-
-def get_stream_preset_info(stream_name, key):
-    rtn = config.settings.value('presets/streampresets/{0}/{1}'.format(stream_name, key))
-    if key == 'DisplayDuration':
-        rtn = float(rtn)
-    elif key == 'NominalSamplingRate':
-        rtn = int(rtn)
-    return rtn
-
-def get_stream_preset_custom_info(stream_name) -> dict:
-    config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
-    properties = config.settings.childKeys()
-    custom_properties = [p for p in properties if p.startswith('_')]
-    rtn = {}
-    for c_property in custom_properties:
-        p_value = config.settings.value(c_property)
-        rtn[c_property] = p_value
-    config.settings.endGroup()
-    return rtn
-
-def set_stream_preset_info(stream_name, key, value):
-    config.settings.setValue('presets/streampresets/{0}/{1}'.format(stream_name, key), value)
-
-
-def check_preset_exists(stream_name):
-    config.settings.beginGroup('presets/streampresets/')
-    rtn = stream_name in config.settings.childGroups()
-    config.settings.endGroup()
-    return rtn
-
-def collect_stream_all_groups_info(stream_name):
-    rtn = dict()
-    config.settings.beginGroup('presets/streampresets/{0}/GroupInfo'.format(stream_name))
-    for group_name in config.settings.childGroups():
-        rtn[group_name] = dict()
-    config.settings.endGroup()
-
-    for group_name in rtn:
-        rtn[group_name] = collect_stream_group_info(stream_name, group_name)
-    return rtn
 
 def collect_stream_group_info(stream_name, group_name):
     rtn = dict()
@@ -118,14 +78,14 @@ def collect_stream_group_plot_format(stream_name, group_name):
 
 
 
-def get_complete_stream_preset_info(stream_name):
-    rtn = dict()
-    config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
-    for field in config.settings.childKeys():
-        rtn[field] = config.settings.value(field)
-    config.settings.endGroup()
-    rtn['GroupInfo'] = collect_stream_all_groups_info(stream_name)
-    return rtn
+# def get_complete_stream_preset_info(stream_name):
+#     rtn = dict()
+#     config.settings.beginGroup('presets/streampresets/{0}'.format(stream_name))
+#     for field in config.settings.childKeys():
+#         rtn[field] = config.settings.value(field)
+#     config.settings.endGroup()
+#     rtn['GroupInfo'] = collect_stream_all_groups_info(stream_name)
+#     return rtn
 
 def get_childKeys_for_group(group):
     config.settings.beginGroup(group)

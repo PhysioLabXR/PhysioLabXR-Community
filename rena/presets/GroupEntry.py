@@ -1,23 +1,31 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
 from rena import config
-from rena.settings.PlotConfig import PlotConfig
+from rena.presets.PlotConfig import PlotConfigs
+from rena.presets.preset_class_helpers import reload_enums, SubPreset
 
+
+class PlotFormat(Enum):
+    TIMESERIES = 'timeseries'
+    BARCHART = 'barchart'
+    IMAGE = 'image'
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class GroupEntry:
+class GroupEntry(metaclass=SubPreset):
     """
     Group entry defines a group of channels to be shown in the same plot.
     Group entry is contained in the group_info dictionary of StreamPreset.
     """
     group_name: str
     channel_indices: List[int]
+    selected_plot_format: PlotFormat = None
     is_channels_shown: List[bool] = None
-    plot_config: PlotConfig = PlotConfig()
+    plot_configs: PlotConfigs = PlotConfigs()
 
     # read-only attributes
-    is_image_only: bool = None
+    _is_image_only: bool = None  # this attribute is not serialized to json
 
     def __post_init__(self):
         """
@@ -33,4 +41,16 @@ class GroupEntry:
                 is_channels_shown = [True] * max_channel_shown_per_group
                 is_channels_shown += [False] * (num_channels - max_channel_shown_per_group)
 
-        self.is_image_only = num_channels > config.settings.value('max_timeseries_num_channels')
+        self._is_image_only = num_channels > config.settings.value('max_timeseries_num_channels')
+        if self._is_image_only:
+            self.selected_plot_format = PlotFormat.IMAGE
+        if self.selected_plot_format is None:
+            self.selected_plot_format = PlotFormat.TIMESERIES
+
+        # recreate the PlotConfigs object from the dict
+        if isinstance(self.plot_configs, dict):
+            self.plot_configs = PlotConfigs(**self.plot_configs)
+        reload_enums(self)
+
+    def to_dict(self):
+        return {attr: value.name if attr == 'selected_plot_format' else value for attr, value in self.__dict__.items()}

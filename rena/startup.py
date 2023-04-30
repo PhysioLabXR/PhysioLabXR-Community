@@ -3,8 +3,7 @@ import os.path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
-from rena.settings.Presets import Presets
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.presets.Presets import Presets
 from rena.ui_shared import *
 from rena import config, config_ui
 from rena.utils.ui_utils import dialog_popup
@@ -52,7 +51,6 @@ def load_settings(revert_to_default=True, reload_presets=True):
         if not config.settings.contains('default_channel_display_num') or config.settings.value('default_channel_display_num') is None:
             config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     config.settings.sync()
-
     # load the presets, reload from local directory the default LSL, device and experiment presets
     presets = Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
 

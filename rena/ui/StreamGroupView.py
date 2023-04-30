@@ -1,19 +1,14 @@
-import sys
-from collections import deque, defaultdict
+from collections import defaultdict
 
-import PyQt5
-import numpy as np
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from PyQt5.QtCore import *
 
 from rena import config
 from rena.config_ui import *
-from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
-from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED
-from rena.utils.settings_utils import get_stream_preset_info, is_group_shown
+from rena.utils.settings_utils import is_group_shown
+from rena.presets.presets_utils import get_stream_preset_info
 from rena.utils.ui_utils import dialog_popup
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 
 ## Reference:
@@ -134,6 +129,7 @@ class StreamGroupView(QTreeWidget):
     def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name, group_info):
         # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
+        self.group_info = group_info
         self.parent = parent_stream_options
         self.stream_widget = stream_widget
         self.format_widget = format_widget
@@ -193,7 +189,7 @@ class StreamGroupView(QTreeWidget):
         self.group_widgets = dict()
         self.clear()
 
-    def create_tree_view(self, group_info, image_ir_only=False):
+    def create_tree_view(self, image_ir_only=False):
         # self.stream_root = QTreeWidgetItem(self)
         # self.stream_root.item_type = 'stream_root'
         # self.stream_root.setText(0, self.stream_name)
@@ -203,20 +199,21 @@ class StreamGroupView(QTreeWidget):
         # self.stream_root.channel_group.setEditable(False)
 
         # get_childGroups_for_group('presets/')
-        for group_name, group_values in group_info.items():
+        group_info = self.group_info()
+        for group_name, group_entry in group_info.items():
 
             group = self.add_existing_group_item(parent_item=self,
                                                  group_name=group_name,
-                                                 plot_format=group_values['plot_format'])
+                                                 plot_format=group_entry['plot_format'])
             # self.groups_widgets.append(group)
-            if len(group_values['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
+            if len(group_entry['channel_indices']) > config.settings.value("max_timeseries_num_channels"):
                 continue  # skip adding channel items if exceeding maximum time series number of channels
-            for channel_index_in_group, channel_index in enumerate(group_values['channel_indices']):
+            for channel_index_in_group, channel_index in enumerate(group_entry['channel_indices']):
                 channel = self.add_channel_item(parent_item=group,
                                                 channel_name=
                                                 get_stream_preset_info(self.stream_name, key='ChannelNames')[
                                                     int(channel_index)],
-                                                is_shown=group_values['is_channels_shown'][channel_index_in_group],
+                                                is_shown=group_entry['is_channels_shown'][channel_index_in_group],
                                                 lsl_index=channel_index)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)

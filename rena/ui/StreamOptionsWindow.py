@@ -1,19 +1,17 @@
 # This Python file uses the following encoding: utf-8
 import numpy as np
 from PyQt5 import uic
-from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtGui import QStandardItemModel, QIntValidator
-from PyQt5.QtWidgets import QDialog, QTreeWidget, QLabel, QTreeWidgetItem, QPushButton
+from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import QDialog, QPushButton
 
-from rena import config_signal, config
+from rena import config
 from rena.config_ui import *
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
-from rena.ui_shared import CHANNEL_ITEM_IS_DISPLAY_CHANGED, CHANNEL_ITEM_GROUP_CHANGED, num_points_shown_text
-from rena.utils.settings_utils import is_channel_in_group, is_channel_displayed, set_channel_displayed, \
-    collect_stream_all_groups_info, get_stream_preset_info, collect_stream_group_info
-from rena.utils.ui_utils import init_container, init_inputBox, dialog_popup, init_label, init_button, init_scroll_label
-from PyQt5 import QtCore, QtGui, QtWidgets
+from rena.ui_shared import num_points_shown_text
+from rena.presets.presets_utils import get_stream_preset_info
+from rena.utils.ui_utils import dialog_popup
+from PyQt5 import QtCore
 
 
 class StreamOptionsWindow(QDialog):
@@ -35,6 +33,7 @@ class StreamOptionsWindow(QDialog):
         """
         self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
         self.parent = parent_stream_widget
+        self.group_info = group_info
         # add supported filter list
         # self.resize(1000, 1000)
 
@@ -115,7 +114,7 @@ class StreamOptionsWindow(QDialog):
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
-            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name, this_group_info=self.parent.group_info[group_name])
+            self.plot_format_widget.set_plot_format_widget_info(group_name=group_name, this_group_info=self.group_info()[group_name])
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()
@@ -154,18 +153,22 @@ class StreamOptionsWindow(QDialog):
 
     #         self.infoWidgetLayout.addStretch()
 
-    def reload_preset_to_UI(self, group_info):
-        self.reload_group_info_in_treeview(group_info)
+    def reload_preset_to_UI(self):
+        """
+        reload the preset info to the UI
+        @return:
+        """
+        self.reload_group_info_in_treeview()
         self.load_sr_and_display_duration_from_settings_to_ui()
 
-    def reload_group_info_in_treeview(self, group_info):
+    def reload_group_info_in_treeview(self):
         '''
         this function is called when the group info in the persistent settings
         is changed externally
         :return:
         '''
         self.stream_group_view.clear_tree_view()
-        self.stream_group_view.create_tree_view(group_info)
+        self.stream_group_view.create_tree_view()
 
     # def merge_groups_btn_clicked(self):
     #     selection_state, selected_groups, selected_channels = \

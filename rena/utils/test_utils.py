@@ -1,4 +1,4 @@
-from rena.settings.Presets import Presets
+from rena.presets.Presets import Presets
 
 
 def some_test():

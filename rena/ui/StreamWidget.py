@@ -6,7 +6,7 @@ import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QMessageBox, QDialogButtonBox
+from PyQt5.QtWidgets import QDialogButtonBox
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -20,10 +20,10 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.performance_utils import timeit
-from rena.utils.settings_utils import get_stream_preset_info, \
-    collect_stream_all_groups_info, is_group_shown, remove_stream_preset_from_settings, \
-    set_stream_preset_info, update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
+from rena.utils.settings_utils import is_group_shown, remove_stream_preset_from_settings, \
+    update_selected_plot_format, export_group_info_to_settings, create_default_group_info, \
     change_group_name
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, collect_stream_all_groups_info
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
@@ -268,7 +268,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
 
         self.group_info = collect_stream_all_groups_info(self.stream_name)  # get again the group info
-        self.stream_options_window.reload_preset_to_UI(self.group_info)
+        self.stream_options_window.reload_preset_to_UI()
         self.reset_viz()
 
     def reset_viz(self):

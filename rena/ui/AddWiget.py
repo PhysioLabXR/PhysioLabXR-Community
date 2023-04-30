@@ -2,10 +2,9 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.settings.Presets import PresetType
+from rena.presets.Presets import PresetType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_custom_info
-from rena.utils.presets_utils import get_preset_category
+from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -101,7 +100,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         if selected_type == PresetType.LSL:
             self.LSL_preset_selected(stream_name)
         elif selected_type == PresetType.ZMQ:
-            port_number = get_stream_preset_info(stream_name, "PortNumber")
+            port_number = get_stream_preset_info(stream_name, "port_number")
             self.ZMQ_preset_selected(stream_name, port_number)
         elif selected_type == PresetType.DEVICE:
             self.device_preset_selected(stream_name)
@@ -143,13 +142,14 @@ class AddStreamWidget(QtWidgets.QWidget):
         for property_name, property_widget in self.device_property_fields.items():
             property_widget.deleteLater()
         self.device_property_fields = dict()
+
     def hide_stream_uis(self):
         self.DataTypeComboBox.setHidden(True)
         self.NetworkingInterfaceComboBox.setHidden(True)
         self.PortLineEdit.setHidden(True)
 
     def verify_data_type(self, stream_name):
-        data_type = get_stream_preset_info(stream_name, "DataType")
+        data_type = get_stream_preset_info(stream_name, "data_type")
         index = self.DataTypeComboBox.findText(data_type, QtCore.Qt.MatchFixedString)
         if index >= 0:
             self.DataTypeComboBox.setCurrentIndex(index)

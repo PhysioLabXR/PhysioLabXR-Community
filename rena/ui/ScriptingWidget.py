@@ -1,21 +1,16 @@
 # This Python file uses the following encoding: utf-8
-import json
-import os
-import shutil
 import uuid
 
 import numpy as np
-from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
-from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
-from rena.startup import load_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
@@ -24,15 +19,13 @@ from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
-from rena.utils.networking_utils import recv_string_router, send_data_dict
+from rena.utils.networking_utils import send_data_dict
 from rena.utils.script_utils import *
-from rena.utils.settings_utils import get_stream_preset_info, check_preset_exists, \
-    get_experiment_preset_names
-from rena.utils.presets_utils import get_stream_preset_names, get_experiment_preset_streams
+from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
+    get_experiment_preset_names, get_stream_preset_info, check_preset_exists
 
-from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
-    add_stream_presets_to_combobox, another_window, update_presets_to_combobox
-import pyqtgraph as pg
+from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
+    another_window, update_presets_to_combobox
 
 
 class ScriptingWidget(QtWidgets.QWidget):
