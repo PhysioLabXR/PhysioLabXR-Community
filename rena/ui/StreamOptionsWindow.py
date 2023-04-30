@@ -229,8 +229,8 @@ class StreamOptionsWindow(QDialog):
         # self.infoWidgetLayout.addWidget(self.OptionsWindowPlotFormatWidget)
 
     def load_sr_and_display_duration_from_settings_to_ui(self):
-        self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'NominalSamplingRate')))
-        self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'DisplayDuration')))
+        self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')))
+        self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'display_duration')))
 
     def set_nominal_sampling_rate_btn(self):
         new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()

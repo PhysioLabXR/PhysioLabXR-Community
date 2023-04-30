@@ -13,8 +13,7 @@ from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import reload_enums, SubPreset
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
-from rena.presets.load_user_preset import process_plot_group_json_preset
-from rena.presets.presets_utils import validate_preset_json_preset
+from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 

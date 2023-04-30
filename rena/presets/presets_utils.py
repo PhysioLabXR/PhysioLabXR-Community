@@ -1,10 +1,7 @@
 from typing import Union, List
 
-from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
-from rena import config
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset
-from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
 def get_preset_category(preset_name):
@@ -59,7 +56,7 @@ def get_is_group_shown(stream_name, group_name) -> List[bool]:
     return Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown
 
 def is_group_image_only(stream_name, group_name):
-    return Presets().stream_presets[stream_name].group_info[group_name].is_image_only
+    return Presets().stream_presets[stream_name].group_info[group_name].is_image_only()
 
 def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format: Union[str, int, PlotFormat]) -> PlotFormat:
     if isinstance(plot_format, str):
@@ -143,41 +140,6 @@ def change_stream_group_order(stream_name, group_order):
 def change_stream_group_name(stream_name, new_group_name, old_group_name):
     assert new_group_name not in Presets.stream_presets[stream_name].group_info.keys(), f'New group name {new_group_name} already exists for stream {stream_name}'
     Presets.stream_presets[stream_name].group_info[new_group_name] = Presets.stream_presets[stream_name].group_info.pop(old_group_name)
-
-
-def validate_preset_json_preset(preset_dict):
-    if 'GroupInfo' in preset_dict.keys():
-        try:
-            assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
-        except AssertionError:
-            raise ValueError('Preset with stream name {0} has GroupChnanelsInPlot field. In this case, this preset must also have either ChannelNames field or NumChannels field'
-                             '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
-    else:
-        preset_dict['GroupInfo'] = None
-    if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
-        preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
-    elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
-        preset_dict['ChannelNames'] = ['Channel{0}'.format(x) for x in list(range(int(preset_dict['NumChannels'])))]
-    else:
-        raise InvalidPresetErrorChannelNameOrNumChannel(preset_dict['StreamName'])
-    # if 'GroupInfo' not in preset_dict.keys():
-    #     preset_dict['GroupInfo'] = None
-    #     preset_dict['GroupFormat'] = None
-    # if 'GroupFormat' not in preset_dict.keys():
-    #     preset_dict['GroupFormat'] = None
-    # if 'NominalSamplingRate' not in preset_dict.keys():
-    #     preset_dict['NominalSamplingRate'] = 1
-    # if 'DisplayDuration' not in preset_dict.keys():
-    #     preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
-
-    # if 'NetworkingInterface' not in preset_dict.keys():
-    #     preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
-    # if 'PortNumber' not in preset_dict.keys():
-    #     preset_dict['PortNumber'] = None
-    # if 'DataType' not in preset_dict.keys():
-    #     preset_dict['DataType'] = 'float32'
-    preset_dict = convert_dict_keys_to_snake_case(preset_dict)
-    return preset_dict
 
 
 def pop_stream_preset_from_settings(stream_name):

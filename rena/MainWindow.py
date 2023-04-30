@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMessageBox
 
 from exceptions.exceptions import RenaError
 from rena import config
-from rena.presets.Presets import Presets
+from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -149,22 +149,28 @@ class MainWindow(QtWidgets.QMainWindow):
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            selected_type = self.addStreamWidget.get_current_selected_type()
-            if selected_type == 'video':  # add video device
-                self.init_video_device(selected_text)
-            elif selected_type == 'Device':  # if this is a device preset
-                self.init_device(selected_text)  # add device stream
-            elif selected_type == 'LSL' or selected_type == 'ZMQ':
-                self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
-            elif selected_type == 'exp':  # add multiple streams from an experiment preset
-                streams_for_experiment = get_experiment_preset_streams(selected_text)
-                self.add_streams_to_visualize(streams_for_experiment)
-            elif selected_type == 'other':  # add a previous unknown lsl stream
+            try:
+                is_new_preset = False
+                selected_type = self.addStreamWidget.get_current_selected_type()
+            except KeyError:
+                is_new_preset = True
+
+            if is_new_preset:
                 self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
-                raise Exception("Unknow preset type {}".format(selected_type))
+                if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
+                    self.init_video_device(selected_text)
+                elif selected_type == PresetType.DEVICE:  # if this is a device preset
+                    self.init_device(selected_text)  # add device stream
+                elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
+                    self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
+                elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
+                    streams_for_experiment = get_experiment_preset_streams(selected_text)
+                    self.add_streams_to_visualize(streams_for_experiment)
+                else:
+                    raise Exception("Unknow preset type {}".format(selected_type))
             self.update_active_streams()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')

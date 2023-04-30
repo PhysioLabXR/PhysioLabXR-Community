@@ -107,7 +107,7 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
-            channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+            channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
             self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
         elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
@@ -236,7 +236,7 @@ class StreamWidget(QtWidgets.QWidget):
                 #                                  self.stream_name, e.message,
                 #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
                 #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
                 reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
 
@@ -260,7 +260,7 @@ class StreamWidget(QtWidgets.QWidget):
         pop_stream_preset_from_settings(self.stream_name)
         self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
-        self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'ChannelNames'))
+        self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 
         self.stream_options_window.reload_preset_to_UI()
         self.reset_viz()
@@ -273,7 +273,7 @@ class StreamWidget(QtWidgets.QWidget):
         self.create_visualization_component()
 
     def create_buffer(self):
-        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
                                                       buffer_sizes=buffer_size, append_zeros=True)
@@ -372,7 +372,7 @@ class StreamWidget(QtWidgets.QWidget):
         plot_elements = {}
 
         # plot_formats = []
-        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
 
         group_plot_widget_dict = {}
         group_info = get_stream_group_info(self.stream_name)
@@ -408,7 +408,7 @@ class StreamWidget(QtWidgets.QWidget):
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'ChannelNames'))
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
                 reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
 
@@ -640,10 +640,10 @@ class StreamWidget(QtWidgets.QWidget):
 
     def change_channel_name(self, group_name, new_ch_name, old_ch_name, lsl_index):
         # change channel name in the settings
-        channel_names = get_stream_preset_info(self.stream_name, 'ChannelNames')
+        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         changing_channel_index = channel_names.index(old_ch_name)
         channel_names[changing_channel_index] = new_ch_name
-        set_stream_preset_info(self.stream_name, 'ChannelNames', channel_names)
+        set_stream_preset_info(self.stream_name, 'channel_names', channel_names)
 
         # change the name in the plots
         self.viz_components.group_plots[group_name].change_channel_name(new_ch_name, old_ch_name, lsl_index)

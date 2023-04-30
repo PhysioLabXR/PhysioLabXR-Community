@@ -1,6 +1,8 @@
+from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, default_group_name
 from rena.presets.GroupEntry import GroupEntry
+from rena.utils.data_utils import convert_dict_keys_to_snake_case
 
 
 # def get_presets_by_category(setting_category):
@@ -428,3 +430,36 @@ def process_plot_group_json_preset(preset_dict):
 #     config.settings.endGroup()
 
 #####################################################################
+def validate_preset_json_preset(preset_dict):
+    if 'GroupInfo' in preset_dict.keys():
+        try:
+            assert 'ChannelNames' in preset_dict.keys() or 'NumChannels' in preset_dict.keys()
+        except AssertionError:
+            raise ValueError('Preset with stream name {0} has GroupChnanelsInPlot field. In this case, this preset must also have either ChannelNames field or NumChannels field'
+                             '. This is likely a problem with the default presets or bug in preset creation'.format(preset_dict['StreamName']))
+    else:
+        preset_dict['GroupInfo'] = None
+    if 'ChannelNames' in preset_dict.keys() and 'NumChannels' not in preset_dict.keys():
+        preset_dict['NumChannels'] = len(preset_dict['ChannelNames'])
+    elif 'NumChannels' in preset_dict.keys() and 'ChannelNames' not in preset_dict.keys():
+        preset_dict['ChannelNames'] = ['Channel{0}'.format(x) for x in list(range(int(preset_dict['NumChannels'])))]
+    else:
+        raise InvalidPresetErrorChannelNameOrNumChannel(preset_dict['StreamName'])
+    # if 'GroupInfo' not in preset_dict.keys():
+    #     preset_dict['GroupInfo'] = None
+    #     preset_dict['GroupFormat'] = None
+    # if 'GroupFormat' not in preset_dict.keys():
+    #     preset_dict['GroupFormat'] = None
+    # if 'NominalSamplingRate' not in preset_dict.keys():
+    #     preset_dict['NominalSamplingRate'] = 1
+    # if 'DisplayDuration' not in preset_dict.keys():
+    #     preset_dict['DisplayDuration'] = config.settings.value('viz_display_duration')
+
+    # if 'NetworkingInterface' not in preset_dict.keys():
+    #     preset_dict['NetworkingInterface'] = 'LSL'  # default is LSL
+    # if 'PortNumber' not in preset_dict.keys():
+    #     preset_dict['PortNumber'] = None
+    # if 'DataType' not in preset_dict.keys():
+    #     preset_dict['DataType'] = 'float32'
+    preset_dict = convert_dict_keys_to_snake_case(preset_dict)
+    return preset_dict

@@ -198,7 +198,7 @@ class StreamGroupView(QTreeWidget):
 
         # get_childGroups_for_group('presets/')
         group_info = get_stream_group_info(self.stream_name)
-        channel_names = get_stream_preset_info(self.stream_name, key='ChannelNames')
+        channel_names = get_stream_preset_info(self.stream_name, key='channel_names')
         for group_name, group_entry in group_info.items():
 
             group = self.add_existing_group_item(parent_item=self,
@@ -211,7 +211,7 @@ class StreamGroupView(QTreeWidget):
             for channel_index_in_group, channel_index in enumerate(group_entry.channel_indices):
                 channel = self.add_channel_item(parent_item=group,
                                                 channel_name= channel_names[int(channel_index)],
-                                                is_shown=group_entry.is_group_shown[channel_index_in_group],
+                                                is_shown=group_entry.is_channels_shown[channel_index_in_group],
                                                 lsl_index=channel_index)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)
