@@ -11,6 +11,7 @@ class PlotFormat(Enum):
     TIMESERIES = 0
     IMAGE = 1
     BARCHART = 2
+    SPECTROGRAM = 3
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):

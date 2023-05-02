@@ -105,7 +105,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="tab_3">
          <property name="sizePolicy">
@@ -202,6 +202,12 @@
            <number>0</number>
           </property>
          </layout>
+        </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Spectrogram</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="spectrogram_layout"/>
         </widget>
        </widget>
       </item>
