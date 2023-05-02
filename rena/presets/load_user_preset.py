@@ -284,10 +284,14 @@ def create_default_group_info(channel_num: int, group_name: str =config.default_
     This is also used in StreamWidget to create the default group info.
     @return:
     """
-    channel_indices = [channel_index for channel_index in range(0, channel_num)] if channel_indices is None else channel_indices
-    group_entry = GroupEntry(group_name=group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown)
+    group_entry = create_default_group_entry(channel_num, group_name, channel_indices, is_channels_shown)
     return {group_name: group_entry}
 
+def create_default_group_entry(channel_num: int, group_name: str =config.default_group_name,
+                              channel_indices=None, is_channels_shown=None):
+    channel_indices = [channel_index for channel_index in range(0, channel_num)] if channel_indices is None else channel_indices
+    group_entry = GroupEntry(group_name=group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown)
+    return group_entry
 
 # def update_selected_plot_format(stream_name, group_name, selected_format: int):
 #     config.settings.setValue('presets/streampresets/{0}/GroupInfo/{1}/selected_plot_format'.format(stream_name, group_name, selected_format), selected_format)

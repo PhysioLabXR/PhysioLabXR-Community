@@ -26,7 +26,6 @@ class ImageConfig(metaclass=SubPreset):
     height: int = 0
     channel_format: str = ChannelFormat.channel_last
     scaling: int = 1
-    is_valid: bool = False
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)

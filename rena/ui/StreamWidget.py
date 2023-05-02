@@ -10,6 +10,10 @@ from PyQt5.QtWidgets import QDialogButtonBox
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
+from rena.presets.load_user_preset import create_default_group_entry
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
+    get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
+    change_stream_group_name, pop_stream_preset_from_settings
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
@@ -19,10 +23,6 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.performance_utils import timeit
-from rena.presets.load_user_preset import create_default_group_info
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
-    get_is_group_shown, save_preset, pop_group_from_stream_preset, add_group_dict_to_stream, set_group_channel_indices, \
-    set_group_channel_is_shown, change_stream_group_order, change_stream_group_name, pop_stream_preset_from_settings
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 
@@ -382,7 +382,7 @@ class StreamWidget(QtWidgets.QWidget):
             #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'NominalSamplingRate'), self.plot_format_changed_signal)
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
             self.viz_group_scroll_layout.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -557,8 +557,8 @@ class StreamWidget(QtWidgets.QWidget):
         :param new_display_duration:
         :return:
         '''
-        set_stream_preset_info(self.stream_name, 'NominalSamplingRate', new_sampling_rate)
-        set_stream_preset_info(self.stream_name, 'DisplayDuration', new_display_duration)
+        set_stream_preset_info(self.stream_name, 'nominal_sampling_rate', new_sampling_rate)
+        set_stream_preset_info(self.stream_name, 'display_duration', new_display_duration)
 
     # def reload_visualization_elements(self, info_dict):
     #     self.group_info = collect_stream_all_groups_info(self.stream_name)
@@ -607,7 +607,7 @@ class StreamWidget(QtWidgets.QWidget):
 
     #############################################
 
-    def channel_group_changed(self, change_dict):  # TODO refactor for the change to group info
+    def channel_group_changed(self, change_dict):
         """
         Called when one or more channel's parent group is changed
         @param change_dict:
@@ -618,10 +618,8 @@ class StreamWidget(QtWidgets.QWidget):
                 pop_group_from_stream_preset(self.stream_name, group_name)
             else:  # cover the cases for both changed groups and new group
                 if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
-                    add_group_dict_to_stream(group_name, create_default_group_info(len(child_channels), group_name))
-                set_group_channel_indices(self.stream_name, group_name, [x.lsl_index for x in child_channels])
-                set_group_channel_is_shown(self.stream_name, group_name, [int(x.is_shown) for x in child_channels])
-        save_preset()
+                    add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=[x.lsl_index for x in child_channels], is_channels_shown=[int(x.is_shown) for x in child_channels]))
+        # save_preset()
         self.reset_viz()
 
     def group_order_changed(self, group_order):
@@ -630,11 +628,14 @@ class StreamWidget(QtWidgets.QWidget):
         @param group_order:
         """
         change_stream_group_order(self.stream_name, group_order)
-        save_preset()
+        # save_preset()
         self.reset_viz()
 
     def change_group_name(self, new_group_name, old_group_name):
-        change_stream_group_name(self.stream_name, new_group_name, old_group_name)
+        try:
+            change_stream_group_name(self.stream_name, new_group_name, old_group_name)
+        except ValueError as e:
+            dialog_popup(str(e), mode='modeless')
         self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
         self.viz_components.group_plots[new_group_name].change_group_name(new_group_name)
 
@@ -649,8 +650,8 @@ class StreamWidget(QtWidgets.QWidget):
         self.viz_components.group_plots[group_name].change_channel_name(new_ch_name, old_ch_name, lsl_index)
 
     def get_num_points_to_plot(self):
-        display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
-        return int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
+        display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
+        return int(display_duration * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'))
 
     # def add_group(self, affected):
     #     new_group_name = self.get_next_available_groupname()

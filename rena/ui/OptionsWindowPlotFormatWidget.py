@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_group_info, get_stream_a_group_info, \
     set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_config, \
-    set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, set_group_image_valid, \
+    set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, \
     get_group_image_config
 
 
@@ -55,10 +55,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def set_plot_format_widget_info(self, group_name):
         self.group_name = group_name
-        # which one to select
-        self.update_display()
+        self._set_to_group()
 
-    def update_display(self):
+    def _set_to_group(self):
         this_group_entry = get_stream_a_group_info(self.stream_name, self.group_name)
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
@@ -78,6 +77,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # bar chart format information
         self.barPlotYMaxLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_max))
         self.barPlotYMinLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_min))
+        self.image_valid_update()
 
     def plot_format_tab_selection_changed(self, index):
         # create value
@@ -101,7 +101,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     @QtCore.pyqtSlot(dict)
     def plot_format_changed(self, info_dict):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
-            self.update_display()
+            self._set_to_group()
 
     def image_W_H_on_change(self):
         # check if W * H * D = Channel Num
@@ -125,32 +125,31 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.image_changed()
 
     def image_valid_update(self):
-        image_format_valid = self.image_format_valid()
-        set_group_image_valid(self.stream_name, self.group_name, image_format_valid)
-        image_config = get_group_image_config(self.stream_name, self.group_name)
-        channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
-        width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
+        if self.group_name is not None:
+            image_config = get_group_image_config(self.stream_name, self.group_name)
+            channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+            width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
 
-        self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
-            str(width * height * image_format.depth_dim()), str(channel_num)
-        ))
+            self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n Group Channel Number = {1}'.format(
+                str(width * height * image_format.depth_dim()), str(channel_num)
+            ))
 
-        if image_format_valid:
-            self.imageFormatInfoLabel.setStyleSheet('color: green')
-            print('Valid Image Format XD')
-        else:
-            self.imageFormatInfoLabel.setStyleSheet('color: red')
-            print('Invalid Image Format')
+            if get_stream_a_group_info(self.stream_name, self.group_name).is_image_valid():
+                self.imageFormatInfoLabel.setStyleSheet('color: green')
+                print('Valid Image Format XD')
+            else:
+                self.imageFormatInfoLabel.setStyleSheet('color: red')
+                print('Invalid Image Format')
 
 
-    def image_format_valid(self):
-        image_config = get_group_image_config(self.stream_name, self.group_name)
-        channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
-        width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
-        if channel_num != width * height * image_format.depth_dim():
-            return 0
-        else:
-            return 1
+    # def image_format_valid(self):
+    #     image_config = get_group_image_config(self.stream_name, self.group_name)
+    #     channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+    #     width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
+    #     if channel_num != width * height * image_format.depth_dim():
+    #         return 0
+    #     else:
+    #         return 1
 
     def get_image_width(self):
         try:

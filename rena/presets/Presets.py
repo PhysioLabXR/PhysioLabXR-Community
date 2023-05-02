@@ -110,6 +110,11 @@ class StreamPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
+    def add_group_entry(self, group_entry: GroupEntry):
+        assert group_entry.group_name not in self.group_info.keys(), f'Group {group_entry.group_name} already exists in the stream preset'
+        self.group_info[group_entry.group_name] = group_entry
+
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class VideoPreset(metaclass=SubPreset):
     """

@@ -130,14 +130,15 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def update_group_name(self, group_name):
         self.group_name_label.setText(group_name)
+        self.group_name = group_name
 
     def get_selected_format(self):
         return self.plot_tabs.currentIndex()
 
     def get_viz_time_vector(self):
-        display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
-        num_points_to_plot = int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
-        return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
+        display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
+        num_points_to_plot = int(display_duration * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'))
+        return np.linspace(0., get_stream_preset_info(self.stream_name, 'display_duration'), num_points_to_plot)
 
     def plot_data(self, data):
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
@@ -166,7 +167,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 self.image_label.setPixmap(image_plot_data)
 
             # if we chose PixelMap
-            if image_format == 'PixelMap':
+            if image_format == ImageFormat.pixelmap:
                 # pixel map return value
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
                 image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)

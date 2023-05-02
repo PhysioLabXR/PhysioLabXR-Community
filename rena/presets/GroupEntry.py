@@ -58,3 +58,8 @@ class GroupEntry(metaclass=SubPreset):
 
     def is_image_only(self):
         return self._is_image_only
+
+    def is_image_valid(self):
+        width, height, image_format = self.plot_configs.image_config.width, self.plot_configs.image_config.height, self.plot_configs.image_config.image_format
+        depth = image_format.depth_dim()
+        return len(self.channel_indices) == width * height * depth

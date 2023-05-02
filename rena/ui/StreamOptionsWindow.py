@@ -263,9 +263,11 @@ class StreamOptionsWindow(QDialog):
         #     self.parent.update_channel_shown(channel_index, checked, parent_group)
 
     def channel_parent_group_changed(self, change_dict: dict):
+        self.plot_format_widget.image_valid_update()
         self.parent.channel_group_changed(change_dict)
 
     def group_order_changed(self, new_group_order: dict):
+        self.plot_format_widget.image_valid_update()
         self.parent.group_order_changed(new_group_order)
 
     @QtCore.pyqtSlot(dict)
