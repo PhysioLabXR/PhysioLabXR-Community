@@ -4,8 +4,8 @@ from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtWidgets import QLabel
 
 from rena import config
-from rena.config_ui import image_depth_dict
 from rena.presets.GroupEntry import PlotFormat
+from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_preset_info, get_is_group_shown, \
     set_stream_a_group_selected_plot_format, \
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
@@ -151,24 +151,25 @@ class GroupPlotWidget(QtWidgets.QWidget):
                     plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
         elif self.get_selected_format() == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            width, height, depth, image_format, channel_format, scaling_factor = image_config.width, image_config.height, image_config.depth, image_config.image_format, image_config.channel_format, image_config.scaling_factor
+            width, height, image_format, channel_format, scaling = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling
+            depth = image_format.depth_dim()
             image_plot_data = data[channel_indices, -1]  # only visualize the last frame
-            if image_format == 'RGB':
-                if channel_format == 'channel_last':
+            if image_format == ImageFormat.rgb:
+                if channel_format == ChannelFormat.channel_last:
                     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
-                elif channel_format == 'channel_first':
+                elif channel_format == ChannelFormat.channel_first:
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
                 # image_plot_data = convert_numpy_to_uint8(image_plot_data)
                 image_plot_data = image_plot_data.astype(np.uint8)
-                image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling_factor)
+                image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling)
                 self.image_label.setPixmap(image_plot_data)
 
             # if we chose PixelMap
             if image_format == 'PixelMap':
                 # pixel map return value
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling_factor)
+                image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
                 self.image_label.setPixmap(image_plot_data)
         elif self.get_selected_format() == 2:
             bar_chart_plot_data = data[channel_indices, -1]  # only visualize the last frame

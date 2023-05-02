@@ -53,8 +53,8 @@ class GroupEntry(metaclass=SubPreset):
             self.plot_configs = PlotConfigs(**self.plot_configs)
         reload_enums(self)
 
-    def to_dict(self):
-        return {attr: value.name if attr == 'selected_plot_format' else value for attr, value in self.__dict__.items()}
+    # def to_dict(self):
+    #     return {attr: value.name if attr == 'selected_plot_format' else value for attr, value in self.__dict__.items()}
 
     def is_image_only(self):
         return self._is_image_only

@@ -1,17 +1,30 @@
 from dataclasses import dataclass, asdict
+from enum import Enum
 
 from rena.presets.preset_class_helpers import SubPreset
 
+class ImageFormat(Enum):
+    pixelmap = 0
+    rgb = 1
+    def depth_dim(self):
+        if self == ImageFormat.pixelmap:
+            return 1
+        elif self == ImageFormat.rgb:
+            return 3
+
+class ChannelFormat(Enum):
+    channel_first = 0
+    channel_last = 1
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class ImageConfig(metaclass=SubPreset):
     """
 
     """
-    image_format: str = 'pixel_map'
+    image_format: ImageFormat = ImageFormat.pixelmap
     width: int = 0
     height: int = 0
-    channel_format: str = 'channel_last'
+    channel_format: str = ChannelFormat.channel_last
     scaling: int = 1
     is_valid: bool = False
 
@@ -52,4 +65,6 @@ class PlotConfigs(metaclass=SubPreset):
 
     def to_dict(self):
         return {k: asdict(v) for k, v in self.__dict__.items() if not k.startswith("__")}
+
+
 

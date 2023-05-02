@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
-from rena.config_ui import image_depth_dict
+from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_group_info, get_stream_a_group_info, \
     set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_config, \
     set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, set_group_image_valid, \
@@ -36,6 +36,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageWidthLineEdit.textChanged.connect(self.image_W_H_on_change)
         self.imageHeightLineEdit.textChanged.connect(self.image_W_H_on_change)
         self.imageScalingFactorLineEdit.textChanged.connect(self.image_W_H_on_change)
+
+        self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
+        self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
+
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_channel_format_change)
 
@@ -58,7 +62,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         this_group_entry = get_stream_a_group_info(self.stream_name, self.group_name)
         # disconnect while switching selected group
         self.plotFormatTabWidget.currentChanged.disconnect()
-        self.plotFormatTabWidget.setCurrentIndex(this_group_entry.selected_plot_format)
+        self.plotFormatTabWidget.setCurrentIndex(this_group_entry.selected_plot_format.value)
         if this_group_entry.is_image_only():
             self.enable_only_image_tab()
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
@@ -68,8 +72,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
         self.imageHeightLineEdit.setText(str(this_group_entry.plot_configs.image_config.height))
         self.imageScalingFactorLineEdit.setText(str(this_group_entry.plot_configs.image_config.scaling))
-        self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format)
-        self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format)
+        self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
+        self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)
 
         # bar chart format information
         self.barPlotYMaxLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_max))
@@ -124,10 +128,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         image_format_valid = self.image_format_valid()
         set_group_image_valid(self.stream_name, self.group_name, image_format_valid)
         image_config = get_group_image_config(self.stream_name, self.group_name)
-        width, height, image_format, channel_format, channel_num = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.channel_num
+        channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+        width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
 
         self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n LSL Channel Number = {1}'.format(
-            str(width * height * image_depth_dict[image_format]), str(channel_num)
+            str(width * height * image_format.depth_dim()), str(channel_num)
         ))
 
         if image_format_valid:
@@ -140,8 +145,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def image_format_valid(self):
         image_config = get_group_image_config(self.stream_name, self.group_name)
-        width, height, image_format, channel_format, channel_num = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.channel_num
-        if channel_num != width * height * image_depth_dict[image_format]:
+        channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+        width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
+        if channel_num != width * height * image_format.depth_dim():
             return 0
         else:
             return 1
@@ -184,12 +190,12 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def get_image_format(self):
         current_format = self.imageFormatComboBox.currentText()
         # image_channel_num = image_depth_dict(current_format)
-        return current_format
+        return ImageFormat.__members__[current_format]
 
     def get_image_channel_format(self):
         current_format = self.channelFormatCombobox.currentText()
         # image_channel_num = image_depth_dict(current_format)
-        return current_format
+        return ChannelFormat.__members__[current_format]
 
     def image_changed(self):
         self.image_valid_update()

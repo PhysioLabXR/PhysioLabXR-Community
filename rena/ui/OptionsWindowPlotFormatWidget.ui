@@ -135,16 +135,6 @@
              </item>
              <item>
               <widget class="QComboBox" name="imageFormatComboBox">
-               <item>
-                <property name="text">
-                 <string>RGB</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>PixelMap</string>
-                </property>
-               </item>
               </widget>
              </item>
             </layout>
@@ -162,16 +152,6 @@
              </item>
              <item>
               <widget class="QComboBox" name="channelFormatCombobox">
-               <item>
-                <property name="text">
-                 <string>Channel First</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Channel Last</string>
-                </property>
-               </item>
               </widget>
              </item>
             </layout>
