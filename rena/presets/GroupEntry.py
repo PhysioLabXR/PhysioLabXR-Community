@@ -9,8 +9,8 @@ from rena.presets.preset_class_helpers import reload_enums, SubPreset
 
 class PlotFormat(Enum):
     TIMESERIES = 0
-    BARCHART = 1
-    IMAGE = 2
+    IMAGE = 1
+    BARCHART = 2
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):

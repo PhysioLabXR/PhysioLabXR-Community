@@ -219,7 +219,7 @@ class StreamWidget(QtWidgets.QWidget):
             if not self.worker.is_streaming:
                 # started
                 # print("sensor stopped")
-                self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
+                # self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
                 self.update_stream_availability(self.worker.is_stream_available)
         else:
             # self.reset_performance_measures()
@@ -252,8 +252,8 @@ class StreamWidget(QtWidgets.QWidget):
                     return
             except Exception as e:
                 raise UnsupportedErrorTypeError(str(e))
-            if self.worker.is_streaming:
-                self.StartStopStreamBtn.setText("Stop Stream")
+            # if self.worker.is_streaming:
+            #     self.StartStopStreamBtn.setText("Stop Stream")
         self.set_button_icons()
         self.main_parent.update_active_streams()
 
@@ -388,11 +388,6 @@ class StreamWidget(QtWidgets.QWidget):
             self.num_points_to_plot = self.get_num_points_to_plot()
 
         return group_plot_widget_dict
-
-    # def get_viz_time_vector(self):
-    #     display_duration = get_stream_preset_info(self.stream_name, 'DisplayDuration')
-    #     num_points_to_plot = int(display_duration * get_stream_preset_info(self.stream_name, 'NominalSamplingRate'))
-    #     return np.linspace(0., get_stream_preset_info(self.stream_name, 'DisplayDuration'), num_points_to_plot)
 
     def create_visualization_component(self):
         group_plot_dict = self.init_stream_visualization()

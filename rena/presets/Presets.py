@@ -102,7 +102,7 @@ class StreamPreset(metaclass=SubPreset):
         @return:
         """
         if self.display_duration is None:
-            self.display_duration = config.settings.value('viz_display_duration')
+            self.display_duration = float(config.settings.value('viz_display_duration'))
         # recreate the GroupEntry object from the dictionary
         for key, value in self.group_info.items():
             if isinstance(value, dict):

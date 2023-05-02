@@ -107,6 +107,8 @@ def get_selected_plot_format(stream_name, group_name) -> PlotFormat:
 
 
 def get_selected_plot_format_index(stream_name, group_name) -> int:
+    if Presets().stream_presets[stream_name].group_info[group_name].is_image_only():
+        Presets().stream_presets[stream_name].group_info[group_name].selected_plot_format = PlotFormat.IMAGE
     return Presets().stream_presets[stream_name].group_info[group_name].selected_plot_format.value
 
 def get_group_channel_indices(stream_name, group_name) -> list[int]:

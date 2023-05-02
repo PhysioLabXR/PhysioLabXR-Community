@@ -290,6 +290,7 @@ def create_default_group_info(channel_num: int, group_name: str =config.default_
 def create_default_group_entry(channel_num: int, group_name: str =config.default_group_name,
                               channel_indices=None, is_channels_shown=None):
     channel_indices = [channel_index for channel_index in range(0, channel_num)] if channel_indices is None else channel_indices
+    is_channels_shown = [True] * channel_num if is_channels_shown is None else is_channels_shown
     group_entry = GroupEntry(group_name=group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown)
     return group_entry
 

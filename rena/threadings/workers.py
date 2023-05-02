@@ -848,6 +848,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def start_stream(self):
         self.is_streaming = True
+        self.signal_stream_availability.emit(True)  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
         self.is_streaming = False
