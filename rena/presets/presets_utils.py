@@ -170,3 +170,12 @@ def change_stream_group_name(stream_name, new_group_name, old_group_name):
 
 def pop_stream_preset_from_settings(stream_name):
     return Presets().stream_presets.pop(stream_name)
+
+
+def spectrogram_time_second_per_segment(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_per_segment_second
+
+
+def spectrogram_time_second_overlap(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_overlap_second
+

@@ -4,6 +4,7 @@ from enum import Enum
 
 class SubPreset(type):
     pass
+
 def reload_enums(target):
     for attr, attr_type in target.__annotations__.items():
         if isinstance(attr_type, type) and issubclass(attr_type, enum.Enum):

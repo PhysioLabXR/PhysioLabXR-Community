@@ -2,6 +2,7 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtWidgets import QLabel
+from scipy import signal
 
 from rena import config
 from rena.presets.GroupEntry import PlotFormat
@@ -9,7 +10,8 @@ from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_preset_info, get_is_group_shown, \
     set_stream_a_group_selected_plot_format, \
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
-    get_group_channel_indices, get_group_image_valid, get_group_image_config
+    get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
+    spectrogram_time_second_overlap
 from rena.utils.ui_utils import get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 
@@ -35,8 +37,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_label = None
         self.barchart_widget = None
         self.legends = None
+        self.spectrogram_widget = None
+        self.spectrogram_img = None
 
-        if not is_group_image_only(self.stream_name, group_name):  # a stream will become image only when it has too many channels
+        if not is_group_image_only(self.stream_name, group_name):  # a stream will be image only only when it has too many channels
             self.init_line_chart()
             self.init_image()
             self.init_bar_chart()
@@ -105,13 +109,20 @@ class GroupPlotWidget(QtWidgets.QWidget):
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
         self.spectrogram_layout.addWidget(self.spectrogram_widget)
-        self.spectrogram_widget.setYRange(0, self.sampling_rate / 2)
+        fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+        self.spectrogram_widget.setYRange(0, fs / 2)
         self.spectrogram_widget.setXRange(0, 1)
         self.spectrogram_widget.setLabel('left', 'Frequency', units='Hz')
         self.spectrogram_widget.setLabel('bottom', 'Time', units='s')
-        self.spectrogram_widget.setLogMode(False, True)
+        # self.spectrogram_widget.setLogMode(False, True)
         self.spectrogram_widget.showGrid(x=True, y=True, alpha=0.5)
         self.spectrogram_widget.enableAutoRange(enable=False)
+
+        self.spectrogram_img = pg.ImageItem()
+        self.spectrogram_widget.addItem(self.spectrogram_img)
+    def update_nominal_sampling_rate(self):
+        fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+        self.spectrogram_widget.setYRange(0, fs / 2)
 
     def init_bar_chart(self):
         self.barchart_widget = pg.PlotWidget()
@@ -186,6 +197,17 @@ class GroupPlotWidget(QtWidgets.QWidget):
         elif self.get_selected_format() == 2:
             bar_chart_plot_data = data[channel_indices, -1]  # only visualize the last frame
             self.barchart_widget.plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1, brush='r')
+        elif self.get_selected_format() == 3:
+            spectrogram_plot_data = data[channel_indices, :]
+            # self.spectrogram_widget.setImage(spectrogram_plot_data, autoLevels=True, autoRange=True, autoHistogramRange=True)
+            fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+            nperseg = int(fs * spectrogram_time_second_per_segment(self.stream_name, self.group_name))
+            noverlap = int(fs * spectrogram_time_second_overlap(self.stream_name, self.group_name))
+            f, t, Sxx = signal.spectrogram(spectrogram_plot_data, fs, window='hanning',
+                                           nperseg=nperseg, noverlap=noverlap,
+                                           detrend=False, scaling='spectrum')
+            self.spectrogram_img.setLevels([np.percentile(Sxx, 5), np.percentile(Sxx, 95)])
+            self.spectrogram_img.setImage(np.mean(Sxx, axis=0).T)  # average across channels
 
     def update_bar_chart_range(self):
         if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group

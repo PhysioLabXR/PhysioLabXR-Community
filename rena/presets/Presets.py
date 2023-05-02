@@ -93,7 +93,7 @@ class StreamPreset(metaclass=SubPreset):
     port_number: int = None
 
     display_duration: float = None
-    nominal_sampling_rate: int = 1
+    nominal_sampling_rate: int = 10
 
     def __post_init__(self):
         """

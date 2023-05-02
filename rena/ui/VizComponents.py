@@ -10,3 +10,6 @@ class VizComponents():
         self.ts_label=ts_label
         self.group_plots = plot_elements
 
+    def update_nominal_sampling_rate(self, fs):
+        for group_plot in self.group_plots.values():
+            group_plot.update_nominal_sampling_rate(fs)

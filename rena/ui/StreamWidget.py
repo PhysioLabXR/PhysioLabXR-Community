@@ -547,6 +547,8 @@ class StreamWidget(QtWidgets.QWidget):
         '''
         self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
         self.num_points_to_plot = self.get_num_points_to_plot()
+        if self.viz_components is not None:
+            self.viz_components.update_nominal_sampling_rate()
 
     def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
         '''
