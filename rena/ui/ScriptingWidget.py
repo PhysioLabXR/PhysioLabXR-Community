@@ -488,7 +488,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         if not check_preset_exists(preset_name):
             raise MissingPresetError(preset_name)
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
-        num_channel = get_stream_preset_info(preset_name, 'NumChannels')
+        num_channel = get_stream_preset_info(preset_name, 'num_channels')
         _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
         return '[{0}, {1}]'.format(num_channel, _timewindow * sampling_rate)
 
@@ -529,7 +529,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.check_can_add_output()
 
     def send_input(self, data_dict):
-        if np.any(np.array(data_dict["timestamps"] )< 100):
+        if np.any(np.array(data_dict["timestamps"])< 100):
             print('Hoi')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)

@@ -72,10 +72,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.device_workers = {}
         self.lsl_workers = {}
 
-        presets = Presets()
-        presets._preset_root = 'Hi'
-        some_test()
-
         ######### init server
         print('Creating Rena Client')
         self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
@@ -83,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                 identity='client')
 
         #########
-        # meta data udpate timer
+        # meta data update timer
         self.meta_data_update_timer = QTimer()
         self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.meta_data_update_timer.timeout.connect(self.update_meta_data)

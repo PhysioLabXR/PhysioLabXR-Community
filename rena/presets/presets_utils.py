@@ -13,15 +13,15 @@ def get_preset_category(preset_name):
 
 
 def get_all_preset_names():
-    return Presets().keys()
+    return list(Presets().keys())
 
 
 def get_stream_preset_names():
-    return Presets().stream_presets.keys()
+    return list(Presets().stream_presets.keys())
 
 
 def get_experiment_preset_names():
-    return Presets().experiment_presets.keys()
+    return list(Presets().experiment_presets.keys())
 
 
 def get_experiment_preset_streams(exp_name):
