@@ -134,14 +134,23 @@ def create_default_preset(stream_name, data_type, port, preset_type_str, num_cha
 def pop_group_from_stream_preset(stream_name, group_name) -> GroupEntry:
     return Presets().stream_presets[stream_name].group_info.pop(group_name)
 
+
 def add_group_entry_to_stream(stream_name, group_entry):
     Presets().stream_presets[stream_name].add_group_entry(group_entry)
+
+
+def change_group_channels(stream_name, group_name, channel_indices, is_channels_shown):
+    Presets().stream_presets[stream_name].group_info[group_name].channel_indices = channel_indices
+    Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown = is_channels_shown
+
 
 def set_group_channel_indices(stream_name, group_name, channel_indices):
     Presets().stream_presets[stream_name].group_info[group_name].channel_indices = channel_indices
 
+
 def set_group_channel_is_shown(stream_name, group_name, is_shown):
     Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown = is_shown
+
 
 def change_stream_group_order(stream_name, group_order):
     new_group_info = dict()

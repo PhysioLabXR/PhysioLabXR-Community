@@ -1,7 +1,8 @@
 from dataclasses import dataclass, asdict
 from enum import Enum
 
-from rena.presets.preset_class_helpers import SubPreset
+from rena.presets.preset_class_helpers import SubPreset, reload_enums
+
 
 class ImageFormat(Enum):
     pixelmap = 0
@@ -24,9 +25,11 @@ class ImageConfig(metaclass=SubPreset):
     image_format: ImageFormat = ImageFormat.pixelmap
     width: int = 0
     height: int = 0
-    channel_format: str = ChannelFormat.channel_last
+    channel_format: ChannelFormat = ChannelFormat.channel_last
     scaling: int = 1
 
+    def __post_init__(self):
+        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class BarChartConfig(metaclass=SubPreset):

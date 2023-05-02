@@ -20,10 +20,10 @@ class GroupEntry(metaclass=SubPreset):
     """
     group_name: str
     channel_indices: List[int]
-    selected_plot_format: PlotFormat = None
-    is_group_shown: bool = True
     is_channels_shown: List[bool] = None
+    is_group_shown: bool = True
     plot_configs: PlotConfigs = PlotConfigs()
+    selected_plot_format: PlotFormat = None
 
     # read-only attributes
     _is_image_only: bool = None  # this attribute is not serialized to json

@@ -10,10 +10,11 @@ from PyQt5.QtWidgets import QDialogButtonBox
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
+from rena.presets.Presets import Presets
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings
+    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
@@ -617,8 +618,12 @@ class StreamWidget(QtWidgets.QWidget):
             if len(child_channels) == 0:
                 pop_group_from_stream_preset(self.stream_name, group_name)
             else:  # cover the cases for both changed groups and new group
+                channel_indices = [x.lsl_index for x in child_channels]
+                is_channels_shown = [x.is_shown for x in child_channels]
                 if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
-                    add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=[x.lsl_index for x in child_channels], is_channels_shown=[int(x.is_shown) for x in child_channels]))
+                    add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown))
+                else:
+                    change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
         # save_preset()
         self.reset_viz()
 
