@@ -29,6 +29,8 @@ from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
 
 class StreamWidget(QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
+
+    channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
     def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
         """
@@ -239,7 +241,7 @@ class StreamWidget(QtWidgets.QWidget):
                 #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=QDialogButtonBox.Yes | QDialogButtonBox.No)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
@@ -406,7 +408,7 @@ class StreamWidget(QtWidgets.QWidget):
                 self.in_error_state = True
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
