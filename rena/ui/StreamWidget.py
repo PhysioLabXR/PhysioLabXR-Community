@@ -6,7 +6,7 @@ import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt5.QtWidgets import QDialogButtonBox, QSplitter, QFrame
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui

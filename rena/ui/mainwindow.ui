@@ -48,7 +48,7 @@
               <layout class="QHBoxLayout" name="streamsHorizontalLayout"/>
              </widget>
             </item>
-             <item>
+            <item>
              <widget class="QWidget" name="camWidget" native="true">
               <layout class="QHBoxLayout" name="camHorizontalLayout"/>
              </widget>

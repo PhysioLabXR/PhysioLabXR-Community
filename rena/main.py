@@ -19,6 +19,7 @@ if __name__ == '__main__':
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle("fusion")
     tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
     tray_icon.setToolTip('RenaLabApp')
     tray_icon.show()
