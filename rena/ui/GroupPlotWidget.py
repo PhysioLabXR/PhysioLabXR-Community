@@ -212,7 +212,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
                                            nperseg=nperseg, noverlap=noverlap,
                                            detrend=False, scaling='spectrum')
             self.spectrogram_img.setLevels([np.percentile(Sxx, 5), np.percentile(Sxx, 95)])
-            self.spectrogram_img.setImage(np.mean(Sxx, axis=0).T)  # average across channels
+            Sxx = np.mean(Sxx, axis=0)
+            expansion_factor = np.diff(f)[0]
+            Sxx = np.repeat(Sxx, expansion_factor, axis=0)
+            self.spectrogram_img.setImage(Sxx.T)  # average across channels
 
     def update_bar_chart_range(self):
         if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
