@@ -472,6 +472,11 @@ def clear_layout(layout):
         if child.widget():
             child.widget().deleteLater()
 
+def clear_widget(target_widget):
+    for i in reversed(range(target_widget.count())):
+        widget = target_widget.widget(i)
+        widget.deleteLater()
+
 # def change_plot_label(plot, plotItem, name):
 #     # change the label of given PlotDataItem in the plot's legend
 #     plot.legend.removeItem(plotItem)

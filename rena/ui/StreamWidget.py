@@ -4,9 +4,9 @@ from collections import deque
 
 import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex
+from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox
+from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -24,7 +24,7 @@ from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon,
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.performance_utils import timeit
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout
+from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout, clear_widget
 
 
 class StreamWidget(QtWidgets.QWidget):
@@ -131,9 +131,19 @@ class StreamWidget(QtWidgets.QWidget):
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
-        # create visualization component, must be after the option window
+        # create visualization component, must be after the option window ##################
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
+        # add splitter to the layout
+        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: lightgray;
+                border: 1px solid gray;
+            }
+        """)
+        self.viz_group_scroll_layout.addWidget(self.splitter)
+
         self.create_visualization_component()
 
         self._has_new_viz_data = False
@@ -356,25 +366,9 @@ class StreamWidget(QtWidgets.QWidget):
     def clear_stream_visualizations(self):
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        clear_layout(self.viz_group_scroll_layout)
+        clear_widget(self.splitter)
 
     def init_stream_visualization(self):
-
-        # init stream view with LSL
-        # time_series_widget = self.TimeSeriesPlotsLayout
-
-        # fs_label = QLabel(text='Sampling rate = ')
-        # ts_label = QLabel(text='Current Time Stamp = ')
-        # self.MetaInfoVerticalLayout.addWidget(fs_label)
-        # self.MetaInfoVerticalLayout.addWidget(ts_label)
-        # if plot_group_slices:
-        time_series_widgets = {}
-        image_labels = {}
-        barchart_widgets = {}
-        plots = []
-        plot_elements = {}
-
-        # plot_formats = []
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
 
         group_plot_widget_dict = {}
@@ -386,7 +380,7 @@ class StreamWidget(QtWidgets.QWidget):
 
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
             group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
-            self.viz_group_scroll_layout.addWidget(group_plot_widget_dict[group_name])
+            self.splitter.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
         return group_plot_widget_dict
