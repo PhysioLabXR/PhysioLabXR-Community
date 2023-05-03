@@ -52,6 +52,7 @@ class TimeSeriesConfig(metaclass=SubPreset):
     y_min: float = 0
     y_max: float = 1
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class SpectrogramConfig(metaclass=SubPreset):
     """
     Configuration for spectrogram plot

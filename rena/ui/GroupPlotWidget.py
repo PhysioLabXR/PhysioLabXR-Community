@@ -242,3 +242,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         index_in_group = channel_indices.index(lsl_index)
         self.legends.items[index_in_group][1].setText(new_ch_name)
 
+    def set_spectrogram_cmap(self):
+        lut = get_spectrogram_cmap_lut(self.stream_name, self.group_name)
+        self.spectrogram_img.setLookupTable(lut)

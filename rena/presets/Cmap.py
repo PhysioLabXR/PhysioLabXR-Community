@@ -3,15 +3,15 @@ import numpy as np
 import pyqtgraph as pg
 
 class Cmap(Enum):
-    VIRIDIS = 'viridis'
-    GRAY = 'greys'
-    HOT = 'Reds'
-    PLASMA = 'plasma'
-    SPRING = 'spring'
-    SUMMER = 'summer'
-    AUTUMN = 'autumn'
-    WINTER = 'winter'
-    COOL = 'COOL'
+    VIRIDIS = 0
+    GRAY = 1
+    HOT = 2
+    PLASMA = 3
+    SPRING = 4
+    SUMMER = 5
+    AUTUMN = 6
+    WINTER = 7
+    COOL = 8
 
     def get_lookup_table(self):
         # pos = np.array([0.0, 0.5, 1.0])  # absolute scale here relative to the expected data not important I believe

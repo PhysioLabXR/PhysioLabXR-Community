@@ -4,11 +4,13 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5 import uic
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 
+from rena.presets.Cmap import Cmap
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_group_info, get_stream_a_group_info, \
     set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_config, \
     set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, \
-    get_group_image_config
+    get_group_image_config, set_spectrogram_time_per_segment, set_spectrogram_time_overlap, \
+    get_spectrogram_time_per_segment, get_spectrogram_time_overlap, set_spectrogram_cmap
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -39,6 +41,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.barPlotYMaxLineEdit.setValidator(QDoubleValidator())
         self.barPlotYMinLineEdit.setValidator(QDoubleValidator())
 
+        self.line_edit_time_per_segments.setValidator(QDoubleValidator())
+        self.line_edit_overlap_between_segments.setValidator(QDoubleValidator())
+
+        self.last_time_per_segment = None
+        self.last_time_overlap = None
         # self.image_format_on_change_signal.connect(self.image_valid_update)
         # image format change
         self.plot_format_changed_signal = plot_format_changed_signal
@@ -57,13 +64,20 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         if self.group_name is not None:
+            # image
             self.imageWidthLineEdit.textChanged.disconnect()
             self.imageHeightLineEdit.textChanged.disconnect()
             self.imageScalingFactorLineEdit.textChanged.disconnect()
             self.imageFormatComboBox.currentTextChanged.disconnect()
             self.channelFormatCombobox.currentTextChanged.disconnect()
+
+            # barplot
             self.barPlotYMaxLineEdit.textChanged.disconnect()
             self.barPlotYMinLineEdit.textChanged.disconnect()
+
+            # spectrogram
+            self.line_edit_time_per_segments.textChanged.disconnect()
+            self.line_edit_overlap_between_segments.textChanged.disconnect()
 
         # image format information
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
@@ -80,14 +94,29 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.barPlotYMaxLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_max))
         self.barPlotYMinLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_min))
+        self.last_time_per_segment = this_group_entry.plot_configs.spectrogram_config.time_per_segment_second
+        self.last_time_overlap = this_group_entry.plot_configs.spectrogram_config.time_overlap_second
 
         self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
         self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
 
-        self.image_valid_update()
+        # spectrogram
+        self.line_edit_time_per_segments.setText(str(this_group_entry.plot_configs.spectrogram_config.time_per_segment_second))
+        self.line_edit_overlap_between_segments.setText(str(this_group_entry.plot_configs.spectrogram_config.time_overlap_second))
 
+        self.line_edit_time_per_segments.textChanged.connect(self.time_per_segment_changed)
+        self.line_edit_overlap_between_segments.textChanged.connect(self.time_overlap_changed)
+
+        self.image_valid_update()
         self.group_name = group_name
 
+        self.label_invalid_spectrogram_param.setStyleSheet("color: red")
+        self.label_invalid_spectrogram_param.setVisible(False)
+
+        self.comboBox_spectrogram_cmap.addItems([name for name, member in Cmap.__members__.items()])
+        self.comboBox_spectrogram_cmap.setCurrentIndex(this_group_entry.plot_configs.spectrogram_config.cmap.value)
+        self.parent.set_spectrogram_cmap(self.group_name)
+        self.comboBox_spectrogram_cmap.currentTextChanged.connect(self.spectrogram_cmap_changed)
 
     def plot_format_tab_selection_changed(self, index):
         # create value
@@ -146,12 +175,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
             if get_stream_a_group_info(self.stream_name, self.group_name).is_image_valid():
                 self.imageFormatInfoLabel.setStyleSheet('color: green')
-                print('Valid Image Format XD')
+                print('Valid Image Format')
             else:
                 self.imageFormatInfoLabel.setStyleSheet('color: red')
                 print('Invalid Image Format')
 
-
+    def spectrogram_valid_update(self, is_valid):
+        self.label_invalid_spectrogram_param.setVisible(not is_valid)
     # def image_format_valid(self):
     #     image_config = get_group_image_config(self.stream_name, self.group_name)
     #     channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
@@ -223,3 +253,48 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def change_group_name(self, new_name):
         self.group_name = new_name
+
+    def time_per_segment_changed(self):
+        """
+        the invalid check ensures that invalid values are never saved to the preset
+        """
+        try:
+            time_per_segment = float(self.line_edit_time_per_segments.text())
+        except ValueError:
+            time_per_segment = 0
+
+        if time_per_segment < get_spectrogram_time_overlap(self.stream_name, self.group_name):
+            time_per_segment = 0
+
+        if time_per_segment == 0:
+            time_per_segment = self.last_time_per_segment
+            self.spectrogram_valid_update(False)
+        else:
+            self.last_time_per_segment = time_per_segment
+            self.spectrogram_valid_update(True)
+
+        set_spectrogram_time_per_segment(self.stream_name, self.group_name, time_per_segment)
+
+    def time_overlap_changed(self):
+        """
+        the invalid check ensures that invalid values are never saved to the preset
+        """
+        try:
+            overlap = float(self.line_edit_overlap_between_segments.text())
+        except ValueError:
+            overlap = 0
+        if overlap > get_spectrogram_time_per_segment(self.stream_name, self.group_name):
+            overlap = 0
+
+        if overlap == 0:
+            overlap = self.last_time_overlap
+            self.spectrogram_valid_update(False)
+        else:
+            self.spectrogram_valid_update(True)
+            self.last_time_overlap = overlap
+        set_spectrogram_time_overlap(self.stream_name, self.group_name, overlap)
+
+    def spectrogram_cmap_changed(self):
+        selected_cmap = getattr(Cmap, self.comboBox_spectrogram_cmap.currentText())
+        set_spectrogram_cmap(self.stream_name, self.group_name, selected_cmap)
+        self.parent.set_spectrogram_cmap(self.group_name)

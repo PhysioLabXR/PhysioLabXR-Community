@@ -289,3 +289,5 @@ class StreamOptionsWindow(QDialog):
     #     assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
     #     return group_info
 
+    def set_spectrogram_cmap(self, group_name: str):
+        self.parent.set_spectrogram_cmap(group_name)

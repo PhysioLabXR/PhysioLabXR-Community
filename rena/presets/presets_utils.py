@@ -1,5 +1,6 @@
 from typing import Union, List
 
+from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset
 
@@ -182,3 +183,19 @@ def spectrogram_time_second_overlap(stream_name, group_name):
 
 def get_spectrogram_cmap_lut(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.cmap.get_lookup_table()
+
+def set_spectrogram_time_per_segment(stream_name, group_name, time_per_segment_second):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_per_segment_second = time_per_segment_second
+
+def set_spectrogram_time_overlap(stream_name, group_name, time_overlap_second):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_overlap_second = time_overlap_second
+
+def get_spectrogram_time_per_segment(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_per_segment_second
+
+
+def get_spectrogram_time_overlap(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_overlap_second
+
+def set_spectrogram_cmap(stream_name: str, group_name: str, cmap: Cmap):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.cmap = cmap

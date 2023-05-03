@@ -672,3 +672,6 @@ class StreamWidget(QtWidgets.QWidget):
 
     def get_pull_data_delay(self):
         return self.worker.get_pull_data_delay()
+
+    def set_spectrogram_cmap(self, group_name):
+        self.viz_components.set_spectrogram_cmap(group_name)

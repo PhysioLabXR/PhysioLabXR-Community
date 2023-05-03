@@ -12,4 +12,7 @@ class VizComponents():
 
     def update_nominal_sampling_rate(self, fs):
         for group_plot in self.group_plots.values():
-            group_plot.update_nominal_sampling_rate(fs)
+            group_plot.update_nominal_sampling_rate()
+
+    def set_spectrogram_cmap(self, group_name):
+        self.group_plots[group_name].set_spectrogram_cmap()
