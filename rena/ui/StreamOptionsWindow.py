@@ -78,6 +78,7 @@ class StreamOptionsWindow(QDialog):
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
         if num_points_to_plot == 0: return
+
         num_points_to_plot = int(np.min([num_points_to_plot, config.settings.value('viz_data_buffer_max_size')]))
         self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
         self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration)
@@ -94,6 +95,11 @@ class StreamOptionsWindow(QDialog):
             new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
         except ValueError:  # in case the string cannot be convert to a float
             return 0
+
+        if new_sampling_rate == 0:
+            new_sampling_rate = self.last_sampling_rate
+        else:
+            self.last_sampling_rate = new_sampling_rate
         return new_sampling_rate
 
     def get_num_points_to_plot_info(self):
@@ -230,6 +236,7 @@ class StreamOptionsWindow(QDialog):
 
     def load_sr_and_display_duration_from_settings_to_ui(self):
         self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')))
+        self.last_sampling_rate = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'display_duration')))
 
     def set_nominal_sampling_rate_btn(self):

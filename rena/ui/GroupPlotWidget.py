@@ -206,6 +206,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
             fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
             nperseg = int(fs * spectrogram_time_second_per_segment(self.stream_name, self.group_name))
             noverlap = int(fs * spectrogram_time_second_overlap(self.stream_name, self.group_name))
+            if nperseg == 0 or noverlap == 0:
+                return
             f, t, Sxx = signal.spectrogram(spectrogram_plot_data, fs, window='hanning',
                                            nperseg=nperseg, noverlap=noverlap,
                                            detrend=False, scaling='spectrum')
