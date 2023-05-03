@@ -179,3 +179,6 @@ def spectrogram_time_second_per_segment(stream_name, group_name):
 def spectrogram_time_second_overlap(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_overlap_second
 
+
+def get_spectrogram_cmap_lut(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.cmap.get_lookup_table()

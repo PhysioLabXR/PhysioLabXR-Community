@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 from enum import Enum
 
+from rena.presets.Cmap import Cmap
 from rena.presets.preset_class_helpers import SubPreset, reload_enums
 
 
@@ -16,6 +17,7 @@ class ImageFormat(Enum):
 class ChannelFormat(Enum):
     channel_first = 0
     channel_last = 1
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class ImageConfig(metaclass=SubPreset):
@@ -56,6 +58,10 @@ class SpectrogramConfig(metaclass=SubPreset):
     """
     time_per_segment_second: float = 1/4
     time_overlap_second: float = 1/8
+    cmap: Cmap = Cmap.VIRIDIS
+
+    def __post_init__(self):
+        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class PlotConfigs(metaclass=SubPreset):

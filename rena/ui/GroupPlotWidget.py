@@ -11,7 +11,7 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     set_stream_a_group_selected_plot_format, \
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
-    spectrogram_time_second_overlap
+    spectrogram_time_second_overlap, get_spectrogram_cmap_lut
 from rena.utils.ui_utils import get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 
@@ -119,7 +119,16 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.enableAutoRange(enable=False)
 
         self.spectrogram_img = pg.ImageItem()
+
+        # create a color map that goes from full red, to yellow, then to full green
+        # pos = np.array([0.0, 0.5, 1.0])  # absolute scale here relative to the expected data not important I believe
+        # color = np.array([[255, 0, 0, 255], [255, 255, 0, 255], [0, 255, 0, 255]], dtype=np.ubyte)
+        # colmap = pg.ColorMap(pos, color)
+        # lut = colmap.getLookupTable(0, 1.0, 2000)
+        lut = get_spectrogram_cmap_lut(self.stream_name, self.group_name)
+        self.spectrogram_img.setLookupTable(lut)
         self.spectrogram_widget.addItem(self.spectrogram_img)
+
     def update_nominal_sampling_rate(self):
         fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         self.spectrogram_widget.setYRange(0, fs / 2)
