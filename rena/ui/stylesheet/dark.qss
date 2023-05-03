@@ -53,7 +53,7 @@ QWidget
     selection-color: #eff0f1;
     background-clip: border;
     border-image: none;
-    border: 0px transparent black;
+/*    border: 0px transparent black;*/
     outline: 0;
 }
 

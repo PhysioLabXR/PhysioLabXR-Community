@@ -50,7 +50,7 @@ QWidget
     selection-color: #31363B;
     background-clip: border;
     border-image: none;
-    border: 0px transparent black;
+/*    border: 0px transparent black;*/
     outline: 0;
 }
 
