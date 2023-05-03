@@ -33,8 +33,8 @@ class GroupItem(QTreeWidgetItem):
         if type(value) is str and column == 0 and self.group_name != value:
             # check with StreamGroupView for duplicate group name
             if value in self.group_view.get_group_names():
+                dialog_popup(f"Cannot have repeating group names for a stream: {value}", title="Warning")
                 value = self.group_name  # revert to old group name
-                dialog_popup("Cannot have duplicate group names for a stream", title="Warning")
             else:
                 self.group_view.change_group_name(new_group_name=value, old_group_name=self.group_name)
                 self.group_name = value  # update self's group name
@@ -83,8 +83,8 @@ class ChannelItem(QTreeWidgetItem):
         if role == Qt.EditRole and type(value) is str and column == 0:
             # editing the name
             if value in self.group_view.get_channel_names():
+                dialog_popup(f"Cannot have repeating channel names for a stream: {value}", title="Warning")
                 value = self.channel_name  # revert to old group name
-                dialog_popup("Cannot have duplicate channel names for a stream", title="Warning")
             else:
                 self.group_view.change_channel_name(group_name=self.parent().group_name, new_channel_name=value, old_channel_name=self.channel_name, lsl_index=self.lsl_index)
                 self.channel_name = value
@@ -163,13 +163,6 @@ class StreamGroupView(QTreeWidget):
 
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.itemDoubleClicked.connect(self.item_double_clicked_handler)
-
-    def on_group_name_change(self):
-
-        pass
-
-    def on_channel_name_change(self):
-        pass
 
     def item_double_clicked_handler(self, item:QTreeWidgetItem, column):
         if column == 0:
@@ -478,7 +471,8 @@ class StreamGroupView(QTreeWidget):
         elif len(selected_channels) > 0 and len(selected_groups) > 0:  # channel(s) and group(s)
             self.selection_state = mix_selected
         else:
-            print(": ) What are you doing???")
+            print(f"Unrecognized selections: selected channels = {selected_channels}. selected groups = {selected_groups}."
+                  f"Please report this bug to the developer")
 
         self.selection_changed_signal.emit("Selection Changed")
         print("Selection Changed")

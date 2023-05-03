@@ -50,7 +50,7 @@ def main(argv):
         for sample_ix in range(required_samples):
             # create a new sample with two sine wave oscillatory components at 50 Hz and 150 Hz
             t = time.time()  # current time in seconds
-            sample = [np.sin(2 * np.pi * 50 * t), np.sin(2 * np.pi * 150 * t)]
+            sample = [np.sin(2 * np.pi * 20 * t) + np.sin(2 * np.pi * 50 * t), np.sin(2 * np.pi * 50 * t)]
             outlet.push_sample(sample)
         sent_samples += required_samples
         # sleep for a bit before sending the next batch of samples

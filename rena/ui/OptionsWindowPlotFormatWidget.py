@@ -107,8 +107,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.line_edit_time_per_segments.textChanged.connect(self.time_per_segment_changed)
         self.line_edit_overlap_between_segments.textChanged.connect(self.time_overlap_changed)
 
-        self.image_valid_update()
         self.group_name = group_name
+        self.image_valid_update()
 
         self.label_invalid_spectrogram_param.setStyleSheet("color: red")
         self.label_invalid_spectrogram_param.setVisible(False)
