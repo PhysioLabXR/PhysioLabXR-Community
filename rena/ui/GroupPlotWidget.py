@@ -119,12 +119,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.enableAutoRange(enable=False)
 
         self.spectrogram_img = pg.ImageItem()
-
-        # create a color map that goes from full red, to yellow, then to full green
-        # pos = np.array([0.0, 0.5, 1.0])  # absolute scale here relative to the expected data not important I believe
-        # color = np.array([[255, 0, 0, 255], [255, 255, 0, 255], [0, 255, 0, 255]], dtype=np.ubyte)
-        # colmap = pg.ColorMap(pos, color)
-        # lut = colmap.getLookupTable(0, 1.0, 2000)
         lut = get_spectrogram_cmap_lut(self.stream_name, self.group_name)
         self.spectrogram_img.setLookupTable(lut)
         self.spectrogram_widget.addItem(self.spectrogram_img)
