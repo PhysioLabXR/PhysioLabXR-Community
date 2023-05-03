@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIntValidator
 from rena.presets.Presets import PresetType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
+from rena.ui_shared import add_icon
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -17,6 +18,8 @@ class AddStreamWidget(QtWidgets.QWidget):
         super().__init__()
         self.parent = parent
         self.ui = uic.loadUi("ui/AddWidget.ui", self)
+        self.add_btn.setIcon(add_icon)
+
         add_presets_to_combobox(self.stream_name_combo_box)
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)

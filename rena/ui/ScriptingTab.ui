@@ -42,24 +42,17 @@
         </property>
        </widget>
       </item>
-<!--      <item>-->
-<!--       <widget class="QPushButton" name="pushButton">-->
-<!--        <property name="maximumSize">-->
-<!--         <size>-->
-<!--          <width>180</width>-->
-<!--          <height>36</height>-->
-<!--         </size>-->
-<!--        </property>-->
-<!--        <property name="text">-->
-<!--         <string>Locate and Load</string>-->
-<!--        </property>-->
-<!--       </widget>-->
-<!--      </item>-->
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QScrollArea" name="scrollArea">
@@ -72,15 +65,14 @@
            <x>0</x>
            <y>0</y>
            <width>1562</width>
-           <height>1115</height>
+           <height>1089</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="ScriptingWidgetScrollLayout"/>
         </widget>
        </widget>
       </item>
-     </layout>
-    </widget>
+     </layout>    </widget>
    </item>
   </layout>
  </widget>
