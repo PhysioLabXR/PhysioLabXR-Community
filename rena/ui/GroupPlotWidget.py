@@ -11,7 +11,8 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     set_stream_a_group_selected_plot_format, \
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
-    spectrogram_time_second_overlap, get_spectrogram_cmap_lut
+    spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
+    get_spectrogram_percentile_level_min
 from rena.utils.ui_utils import get_distinct_colors, \
     convert_rgb_to_qt_image, convert_array_to_qt_heatmap
 
@@ -208,14 +209,16 @@ class GroupPlotWidget(QtWidgets.QWidget):
             noverlap = int(fs * spectrogram_time_second_overlap(self.stream_name, self.group_name))
             if nperseg == 0 or noverlap == 0 or nperseg < noverlap:
                 return
-            f, t, Sxx = signal.spectrogram(spectrogram_plot_data, fs, window='hanning',
-                                           nperseg=nperseg, noverlap=noverlap,
+            f, t, Sxx = signal.spectrogram(spectrogram_plot_data, fs, window=signal.get_window('hann', nperseg),
+                                           noverlap=noverlap,
                                            detrend=False, scaling='spectrum')
-            self.spectrogram_img.setLevels([np.percentile(Sxx, 5), np.percentile(Sxx, 95)])
-            Sxx = np.mean(Sxx, axis=0)
-            expansion_factor = np.diff(f)[0]
-            Sxx = np.repeat(Sxx, expansion_factor, axis=0)
-            self.spectrogram_img.setImage(Sxx.T)  # average across channels
+            percentile_level_min = get_spectrogram_percentile_level_min(self.stream_name, self.group_name)
+            percentile_level_max = get_spectrogram_percentile_level_max(self.stream_name, self.group_name)
+            self.spectrogram_img.setLevels([np.percentile(Sxx, percentile_level_min), np.percentile(Sxx, percentile_level_max)])
+            Sxx = np.mean(Sxx, axis=0)  # average across channels
+            # Sxx = resize(Sxx, (fs/2, Sxx.shape[-1]))
+            self.spectrogram_img.setImage(Sxx.T, autoLevels=False)  # average across channels
+            self.spectrogram_img.setRect((0, 0, get_stream_preset_info(self.stream_name, 'display_duration'), fs/2))
 
     def update_bar_chart_range(self):
         if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group

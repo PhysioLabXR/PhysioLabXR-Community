@@ -15,7 +15,7 @@ MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP = 512
 MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM = 1000
 
 VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
-VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
+VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
 VIDEO_DEVICE_REFRESH_INTERVAL = 33
 MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500

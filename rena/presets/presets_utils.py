@@ -199,3 +199,10 @@ def get_spectrogram_time_overlap(stream_name, group_name):
 
 def set_spectrogram_cmap(stream_name: str, group_name: str, cmap: Cmap):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.cmap = cmap
+
+
+def get_spectrogram_percentile_level_min(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_min
+
+def get_spectrogram_percentile_level_max(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_max

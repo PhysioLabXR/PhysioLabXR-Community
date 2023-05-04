@@ -79,7 +79,7 @@ class StreamOptionsWindow(QDialog):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
         if num_points_to_plot == 0: return
 
-        num_points_to_plot = int(np.min([num_points_to_plot, config.settings.value('viz_data_buffer_max_size')]))
+        num_points_to_plot = int(np.min([num_points_to_plot, config.VIZ_DATA_BUFFER_MAX_SIZE]))
         self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
         self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration)
 

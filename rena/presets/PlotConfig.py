@@ -60,6 +60,8 @@ class SpectrogramConfig(metaclass=SubPreset):
     time_per_segment_second: float = 1/4
     time_overlap_second: float = 1/8
     cmap: Cmap = Cmap.VIRIDIS
+    percentile_level_min: float = 5
+    percentile_level_max: float = 95
 
     def __post_init__(self):
         reload_enums(self)
