@@ -23,7 +23,7 @@ class GroupEntry(metaclass=SubPreset):
     channel_indices: List[int]
     is_channels_shown: List[bool] = None
     is_group_shown: bool = True
-    plot_configs: PlotConfigs = PlotConfigs()
+    plot_configs: PlotConfigs = None
     selected_plot_format: PlotFormat = None
 
     # read-only attributes
@@ -50,8 +50,12 @@ class GroupEntry(metaclass=SubPreset):
             self.selected_plot_format = PlotFormat.TIMESERIES
 
         # recreate the PlotConfigs object from the dict
-        if isinstance(self.plot_configs, dict):
+        if self.plot_configs is None:
+            self.plot_configs = PlotConfigs()
+        elif isinstance(self.plot_configs, dict):
             self.plot_configs = PlotConfigs(**self.plot_configs)
+        else:
+            raise ValueError(f'plot_configs must be a dict or None: {type(self.plot_configs)}')
         reload_enums(self)
 
     # def to_dict(self):

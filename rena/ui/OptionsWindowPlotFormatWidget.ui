@@ -229,14 +229,7 @@
       <attribute name="title">
        <string>Spectrogram</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string>Time per segment (seconds)</string>
-         </property>
-        </widget>
-       </item>
+      <layout class="QGridLayout" name="spectrogram_gridLayout">
        <item row="2" column="0">
         <widget class="QLabel" name="label_12">
          <property name="text">
@@ -246,6 +239,13 @@
        </item>
        <item row="1" column="1">
         <widget class="QLineEdit" name="line_edit_time_per_segments"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Time per segment (seconds)</string>
+         </property>
+        </widget>
        </item>
        <item row="4" column="0">
         <widget class="QLabel" name="label_13">
@@ -270,6 +270,20 @@
          </property>
          <property name="text">
           <string>Invalid parameters: Time per segment must be greater than overlap between segments!</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Spectragrom Display Min Percentile (%)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Spectrogram Display Max Percentile (%)</string>
          </property>
         </widget>
        </item>

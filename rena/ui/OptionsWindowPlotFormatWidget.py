@@ -10,7 +10,9 @@ from rena.presets.presets_utils import get_stream_group_info, get_stream_a_group
     set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_config, \
     set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, \
     get_group_image_config, set_spectrogram_time_per_segment, set_spectrogram_time_overlap, \
-    get_spectrogram_time_per_segment, get_spectrogram_time_overlap, set_spectrogram_cmap
+    get_spectrogram_time_per_segment, get_spectrogram_time_overlap, set_spectrogram_cmap, \
+    set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max
+from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -28,27 +30,33 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.group_name = None
         self.parent = parent
         self.stream_widget = stream_widget
-        # self.stream_name = stream_name
-        # self.grou_name = group_name
+        self.plot_format_changed_signal = plot_format_changed_signal
+
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+
+        # image ###############################################################
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
         self.imageScalingFactorLineEdit.setValidator(QIntValidator())
-
         self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
         self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
 
+        # barplot ###############################################################
         self.barPlotYMaxLineEdit.setValidator(QDoubleValidator())
         self.barPlotYMinLineEdit.setValidator(QDoubleValidator())
 
+        # spectrogram ###############################################################
         self.line_edit_time_per_segments.setValidator(QDoubleValidator())
         self.line_edit_overlap_between_segments.setValidator(QDoubleValidator())
+        self.label_invalid_spectrogram_param.setStyleSheet("color: red")
+
+        self.slider_spectrogram_percentile_max = SliderWithValueLabel(minimum=1, maximum=100, value=100)
+        self.slider_spectrogram_percentile_min = SliderWithValueLabel(minimum=0, maximum=99, value=1)
+        self.spectrogram_gridLayout.addWidget(self.slider_spectrogram_percentile_max, 6, 1)
+        self.spectrogram_gridLayout.addWidget(self.slider_spectrogram_percentile_min, 5, 1)
 
         self.last_time_per_segment = None
         self.last_time_overlap = None
-        # self.image_format_on_change_signal.connect(self.image_valid_update)
-        # image format change
-        self.plot_format_changed_signal = plot_format_changed_signal
 
     def set_plot_format_widget_info(self, group_name):
         self._set_to_group(group_name)
@@ -64,22 +72,25 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         if self.group_name is not None:
-            # image
+            # image ###############################################################
             self.imageWidthLineEdit.textChanged.disconnect()
             self.imageHeightLineEdit.textChanged.disconnect()
             self.imageScalingFactorLineEdit.textChanged.disconnect()
             self.imageFormatComboBox.currentTextChanged.disconnect()
             self.channelFormatCombobox.currentTextChanged.disconnect()
 
-            # barplot
+            # barplot ###############################################################
             self.barPlotYMaxLineEdit.textChanged.disconnect()
             self.barPlotYMinLineEdit.textChanged.disconnect()
 
-            # spectrogram
+            # spectrogram ###############################################################
             self.line_edit_time_per_segments.textChanged.disconnect()
             self.line_edit_overlap_between_segments.textChanged.disconnect()
 
-        # image format information
+            self.slider_spectrogram_percentile_min.valueChanged.disconnect(self.spectrogram_percentile_min_changed)  # only disconnect this one, as there are other signals connected to the same slot
+            self.slider_spectrogram_percentile_max.valueChanged.disconnect(self.spectrogram_percentile_max_changed)
+
+        # image ###############################################################
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
         self.imageHeightLineEdit.setText(str(this_group_entry.plot_configs.image_config.height))
         self.imageScalingFactorLineEdit.setText(str(this_group_entry.plot_configs.image_config.scaling))
@@ -92,31 +103,47 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.channelFormatCombobox.currentTextChanged.connect(self.image_channel_format_change)
 
+        # barplot ###############################################################
         self.barPlotYMaxLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_max))
         self.barPlotYMinLineEdit.setText(str(this_group_entry.plot_configs.barchart_config.y_min))
-        self.last_time_per_segment = this_group_entry.plot_configs.spectrogram_config.time_per_segment_second
-        self.last_time_overlap = this_group_entry.plot_configs.spectrogram_config.time_overlap_second
 
         self.barPlotYMaxLineEdit.textChanged.connect(self.bar_chart_range_on_change)
         self.barPlotYMinLineEdit.textChanged.connect(self.bar_chart_range_on_change)
 
-        # spectrogram
+        # spectrogram ###############################################################
         self.line_edit_time_per_segments.setText(str(this_group_entry.plot_configs.spectrogram_config.time_per_segment_second))
         self.line_edit_overlap_between_segments.setText(str(this_group_entry.plot_configs.spectrogram_config.time_overlap_second))
 
         self.line_edit_time_per_segments.textChanged.connect(self.time_per_segment_changed)
         self.line_edit_overlap_between_segments.textChanged.connect(self.time_overlap_changed)
 
-        self.group_name = group_name
-        self.image_valid_update()
+        self.last_time_per_segment = this_group_entry.plot_configs.spectrogram_config.time_per_segment_second
+        self.last_time_overlap = this_group_entry.plot_configs.spectrogram_config.time_overlap_second
 
-        self.label_invalid_spectrogram_param.setStyleSheet("color: red")
+        self.slider_spectrogram_percentile_min.setValue(this_group_entry.plot_configs.spectrogram_config.percentile_level_min)
+        self.slider_spectrogram_percentile_max.setValue(this_group_entry.plot_configs.spectrogram_config.percentile_level_max)
+        self.slider_spectrogram_percentile_min.valueChanged.connect(self.spectrogram_percentile_min_changed)
+        self.slider_spectrogram_percentile_max.valueChanged.connect(self.spectrogram_percentile_max_changed)
+
         self.label_invalid_spectrogram_param.setVisible(False)
 
         self.comboBox_spectrogram_cmap.addItems([name for name, member in Cmap.__members__.items()])
         self.comboBox_spectrogram_cmap.setCurrentIndex(this_group_entry.plot_configs.spectrogram_config.cmap.value)
-        self.parent.set_spectrogram_cmap(self.group_name)
+        self.parent.set_spectrogram_cmap(group_name)  # Call stack: StreamOptionsWindow -> StreamWindow -> VizComponents -> GroupPlotWidget
         self.comboBox_spectrogram_cmap.currentTextChanged.connect(self.spectrogram_cmap_changed)
+
+        self.group_name = group_name
+        self.image_valid_update()
+
+    def spectrogram_percentile_min_changed(self, value):
+        if value >= self.slider_spectrogram_percentile_max.value():
+            self.slider_spectrogram_percentile_max.setValue(value + 1)
+        set_spectrogram_percentile_level_min(self.stream_name, self.group_name, value)
+
+    def spectrogram_percentile_max_changed(self, value):
+        if value <= self.slider_spectrogram_percentile_min.value():
+            self.slider_spectrogram_percentile_min.setValue(value - 1)
+        set_spectrogram_percentile_level_max(self.stream_name, self.group_name, value)
 
     def plot_format_tab_selection_changed(self, index):
         # create value

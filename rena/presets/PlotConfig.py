@@ -73,10 +73,10 @@ class PlotConfigs(metaclass=SubPreset):
     Developers are free to add more plot types and configurations. Simply add a new class with the desired configuration
     attributes.
     """
-    time_series_config: TimeSeriesConfig = TimeSeriesConfig()
-    barchart_config: BarChartConfig = BarChartConfig()
-    image_config: ImageConfig = ImageConfig()
-    spectrogram_config: SpectrogramConfig = SpectrogramConfig()
+    time_series_config: TimeSeriesConfig = None
+    barchart_config: BarChartConfig = None
+    image_config: ImageConfig = None
+    spectrogram_config: SpectrogramConfig = None
 
     def __post_init__(self):
         # retrieve the type annotations for the __init__ method
@@ -86,8 +86,13 @@ class PlotConfigs(metaclass=SubPreset):
         for attr, cls in init_annotations.items():
             if attr == "return":
                 continue
-            if isinstance(getattr(self, attr), dict):
+            elif getattr(self, attr) is None:
+                setattr(self, attr, cls())
+            elif isinstance(getattr(self, attr), dict):
                 setattr(self, attr, cls(**getattr(self, attr)))
+            else:
+                raise TypeError(f"Unexpected type for {attr}: {type(getattr(self, attr))}")
+
 
     # def to_dict(self):
     #     return {k: asdict(v) for k, v in self.__dict__.items() if not k.startswith("__")}

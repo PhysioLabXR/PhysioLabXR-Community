@@ -206,3 +206,9 @@ def get_spectrogram_percentile_level_min(stream_name, group_name):
 
 def get_spectrogram_percentile_level_max(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_max
+
+def set_spectrogram_percentile_level_min(stream_name, group_name, percentile_level_min):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_min = percentile_level_min
+
+def set_spectrogram_percentile_level_max(stream_name, group_name, percentile_level_max):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_max = percentile_level_max
