@@ -28,7 +28,6 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.ui = uic.loadUi("ui/VideoDeviceWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
-        self.ui = uic.loadUi("ui/VideoDeviceWidget.ui", self)
         if type(insert_position) == int:
             parent_layout.insertWidget(insert_position, self)
         else:
@@ -36,6 +35,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.parent_layout = parent_layout
         self.main_parent = parent_widget
         self.video_device_name = video_device_name
+        self.VideoDeviceNameLabel.setText(self.video_device_name)
 
         # check if the video device is a camera or screen capture ####################################
         self.is_webcam = video_device_name.isnumeric()
