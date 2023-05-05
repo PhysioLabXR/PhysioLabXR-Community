@@ -136,12 +136,6 @@ class StreamWidget(QtWidgets.QWidget):
         self.group_name_plot_widget_dict = {}
         # add splitter to the layout
         self.splitter = QSplitter(Qt.Vertical)
-        self.splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: lightgray;
-                border: 1px solid gray;
-            }
-        """)
         self.viz_group_scroll_layout.addWidget(self.splitter)
 
         self.create_visualization_component()
@@ -490,9 +484,9 @@ class StreamWidget(QtWidgets.QWidget):
 
         # show the label
         self.viz_components.fs_label.setText(
-            'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        self.viz_components.ts_label.setText(
-            'Current Time Stamp = {0}'.format(self.current_timestamp))
+            'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
+
         self._has_new_viz_data = False
 
     def ticks(self):

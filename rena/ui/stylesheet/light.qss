@@ -645,7 +645,7 @@ QPushButton
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 5em;
+    min-width: 3em;
 }
 
 QPushButton:disabled
@@ -661,7 +661,7 @@ QPushButton:disabled
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 5em;
+    min-width: 3em;
 }
 
 QPushButton:focus
@@ -1560,7 +1560,8 @@ QStatusBar::item
 
 QSplitter::handle
 {
-    border: 0.1ex dashed #BAB9B8;
+    background-color: #31363b;
+    border: 1px solid gray;
 }
 
 QSplitter::handle:hover

@@ -640,7 +640,8 @@ QPushButton
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 10em;
+    min-width: 3em;
+
 }
 
 QPushButton:disabled
@@ -656,7 +657,7 @@ QPushButton:disabled
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 10em;
+    min-width: 3em;
 }
 
 QPushButton:focus
@@ -1563,7 +1564,8 @@ QFrame[width="3"]
 
 QSplitter::handle
 {
-    border: 0.1ex dashed #76797c;
+    background-color: #31363b;
+    border: 1px solid gray;
 }
 
 QSplitter::handle:hover
@@ -1574,13 +1576,14 @@ QSplitter::handle:hover
 
 QSplitter::handle:horizontal
 {
-    width: 0.1ex;
+    width: 0.1px;
 }
 
 QSplitter::handle:vertical
 {
     height: 0.1ex;
 }
+
 
 QProgressBar:horizontal
 {

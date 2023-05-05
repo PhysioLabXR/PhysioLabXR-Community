@@ -59,8 +59,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1552</width>
-                <height>855</height>
+                <width>1554</width>
+                <height>848</height>
                </rect>
               </property>
               <layout class="QHBoxLayout" name="scrollAreaWidgetContents_3_layout">
@@ -133,6 +133,12 @@
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
       <item>
        <widget class="QPushButton" name="start_all_btn">
         <property name="maximumSize">
@@ -159,11 +165,11 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="numActiveStreamsLabel">
         <property name="minimumSize">
          <size>
-          <width>300</width>
+          <width>0</width>
           <height>0</height>
          </size>
         </property>
@@ -188,7 +194,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="visualizationFPSTextLabel">
         <property name="maximumSize">
          <size>
@@ -201,7 +207,7 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="visualizationFPSLabel">
         <property name="maximumSize">
          <size>
@@ -230,7 +236,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="tickFrequencyLabel">
         <property name="maximumSize">
          <size>
@@ -243,7 +249,7 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="pull_data_delay_label">
         <property name="maximumSize">
          <size>
@@ -272,7 +278,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="recordingFileSizeLabel">
         <property name="text">
          <string>    Recording file size: </string>
