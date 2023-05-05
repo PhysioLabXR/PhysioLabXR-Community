@@ -22,12 +22,13 @@ class ChannelFormat(Enum):
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class ImageConfig(metaclass=SubPreset):
     """
-
+    Note: if an attribute is a class, do not use default value otherwise it will be shared by all instances
     """
     image_format: ImageFormat = ImageFormat.pixelmap
+    channel_format: ChannelFormat = ChannelFormat.channel_last
+
     width: int = 0
     height: int = 0
-    channel_format: ChannelFormat = ChannelFormat.channel_last
     scaling: int = 1
 
     def __post_init__(self):
@@ -69,9 +70,10 @@ class SpectrogramConfig(metaclass=SubPreset):
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class PlotConfigs(metaclass=SubPreset):
     """
-
     Developers are free to add more plot types and configurations. Simply add a new class with the desired configuration
     attributes.
+
+    Note: if an attribute is a class, do not use default value otherwise it will be shared by all instances
     """
     time_series_config: TimeSeriesConfig = None
     barchart_config: BarChartConfig = None
