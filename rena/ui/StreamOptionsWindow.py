@@ -69,6 +69,12 @@ class StreamOptionsWindow(QDialog):
 
         self.update_num_points_to_display()
 
+        self.lineedit_style_sheet = self.nominalSamplingRateIineEdit.styleSheet()
+        self.label_style_sheet = self.nominalSamplingRateIineEdit.styleSheet()
+
+        self.error_lineedit_style_sheet = self.lineedit_style_sheet + "border: 1px solid red;"
+        self.error_label_style_sheet = self.label_style_sheet + "color: red;"
+
     def add_group_clicked(self):
         change_dict = self.stream_group_view.add_group()
         self.parent.channel_group_changed(change_dict)
@@ -96,16 +102,13 @@ class StreamOptionsWindow(QDialog):
 
     def show_valid_num_points_to_plot(self, is_valid):
         if is_valid:
-            print("Reset color")
-            palette = QPalette()
+            self.numPointsShownLabel.setStyleSheet(self.label_style_sheet)
+            self.nominalSamplingRateIineEdit.setStyleSheet(self.lineedit_style_sheet)
+            self.dataDisplayDurationLineEdit.setStyleSheet(self.lineedit_style_sheet)
         else:
-            palette = QPalette()
-            palette.setColor(QPalette.Base, Qt.red)
-            palette.setColor(QPalette.WindowText, Qt.red)
-        self.numPointsShownLabel.setPalette(palette)
-        self.nominalSamplingRateIineEdit.setPalette(palette)
-        self.dataDisplayDurationLineEdit.setPalette(palette)
-
+            self.numPointsShownLabel.setStyleSheet(self.error_label_style_sheet)
+            self.nominalSamplingRateIineEdit.setStyleSheet(self.error_lineedit_style_sheet)
+            self.dataDisplayDurationLineEdit.setStyleSheet(self.error_lineedit_style_sheet)
 
     def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
         '''
