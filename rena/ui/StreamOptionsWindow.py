@@ -81,13 +81,14 @@ class StreamOptionsWindow(QDialog):
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
+        self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
 
         if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE or num_points_to_plot == 0:
             if not self.has_reported_invalid_num_points:  # will only report once
+                self.show_valid_num_points_to_plot(False)
                 dialog_popup(f'The number of points to display is too large. Max number of points to point is {config.VIZ_DATA_BUFFER_MAX_SIZE}' if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE else 'The number of points to display must be greater than 0.'
                              'Please change the sampling rate or display duration.', mode='modal')
                 self.has_reported_invalid_num_points = True
-                self.show_valid_num_points_to_plot(False)
             return
         else:
             if self.has_reported_invalid_num_points:
@@ -96,7 +97,6 @@ class StreamOptionsWindow(QDialog):
 
         num_points_to_plot = int(num_points_to_plot)
         assert num_points_to_plot <= config.VIZ_DATA_BUFFER_MAX_SIZE
-        self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
         self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
         self.parent.on_num_points_to_display_change()
 
@@ -133,10 +133,10 @@ class StreamOptionsWindow(QDialog):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
 
-        if new_sampling_rate == 0:
-            new_sampling_rate = self.last_sampling_rate
-        else:
-            self.last_sampling_rate = new_sampling_rate
+        # if new_sampling_rate == 0:
+        #     new_sampling_rate = self.last_sampling_rate
+        # else:
+        #     self.last_sampling_rate = new_sampling_rate
         return new_sampling_rate
 
     def get_num_points_to_plot_info(self):
