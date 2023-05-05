@@ -54,6 +54,15 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="leftMargin">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>9</number>
+      </property>
+      <property name="rightMargin">
+       <number>1</number>
+      </property>
       <item>
        <widget class="QScrollArea" name="scrollArea">
         <property name="widgetResizable">
@@ -64,15 +73,23 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>1562</width>
-           <height>1089</height>
+           <width>1576</width>
+           <height>1112</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="ScriptingWidgetScrollLayout"/>
+         <layout class="QVBoxLayout" name="ScriptingWidgetScrollLayout">
+          <property name="leftMargin">
+           <number>1</number>
+          </property>
+          <property name="rightMargin">
+           <number>1</number>
+          </property>
+         </layout>
         </widget>
        </widget>
       </item>
-     </layout>    </widget>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>
