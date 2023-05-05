@@ -1,7 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import numpy as np
 from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIntValidator, QPalette
 from PyQt5.QtWidgets import QDialog, QPushButton
 
 from rena import config
@@ -10,7 +11,7 @@ from rena.presets.GroupEntry import PlotFormat
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import num_points_shown_text
-from rena.presets.presets_utils import get_stream_preset_info
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore
 
@@ -34,10 +35,7 @@ class StreamOptionsWindow(QDialog):
         """
         self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
         self.parent = parent_stream_widget
-        # add supported filter list
-        # self.resize(1000, 1000)
-
-        # self.setNominalSamplingRateBtn.clicked.connect(self.set_nominal_sampling_rate_btn)
+        self.has_reported_invalid_num_points = False
 
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
@@ -77,11 +75,47 @@ class StreamOptionsWindow(QDialog):
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
-        if num_points_to_plot == 0: return
 
-        num_points_to_plot = int(np.min([num_points_to_plot, config.VIZ_DATA_BUFFER_MAX_SIZE]))
+        if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE or num_points_to_plot == 0:
+            if not self.has_reported_invalid_num_points:  # will only report once
+                dialog_popup(f'The number of points to display is too large. Max number of points to point is {config.VIZ_DATA_BUFFER_MAX_SIZE}' if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE else 'The number of points to display must be greater than 0.'
+                             'Please change the sampling rate or display duration.', mode='modal')
+                self.has_reported_invalid_num_points = True
+                self.show_valid_num_points_to_plot(False)
+            return
+        else:
+            if self.has_reported_invalid_num_points:
+                self.show_valid_num_points_to_plot(True)
+                self.has_reported_invalid_num_points = False
+
+        num_points_to_plot = int(num_points_to_plot)
+        assert num_points_to_plot <= config.VIZ_DATA_BUFFER_MAX_SIZE
         self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
-        self.parent.on_num_points_to_display_change(num_points_to_plot, new_sampling_rate, new_display_duration)
+        self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
+        self.parent.on_num_points_to_display_change()
+
+    def show_valid_num_points_to_plot(self, is_valid):
+        if is_valid:
+            print("Reset color")
+            palette = QPalette()
+        else:
+            palette = QPalette()
+            palette.setColor(QPalette.Base, Qt.red)
+            palette.setColor(QPalette.WindowText, Qt.red)
+        self.numPointsShownLabel.setPalette(palette)
+        self.nominalSamplingRateIineEdit.setPalette(palette)
+        self.dataDisplayDurationLineEdit.setPalette(palette)
+
+
+    def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
+        '''
+        this function is called by StreamWidget when on_num_points_to_display_change is called
+        :param new_sampling_rate:
+        :param new_display_duration:
+        :return:
+        '''
+        set_stream_preset_info(self.stream_name, 'nominal_sampling_rate', new_sampling_rate)
+        set_stream_preset_info(self.stream_name, 'display_duration', new_display_duration)
 
     def get_display_duration(self):
         try:

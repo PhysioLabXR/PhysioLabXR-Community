@@ -524,29 +524,19 @@ class StreamWidget(QtWidgets.QWidget):
     def is_widget_streaming(self):
         return self.worker.is_streaming
 
-    def on_num_points_to_display_change(self, num_points_to_plot, new_sampling_rate, new_display_duration):
+    def on_num_points_to_display_change(self):
         '''
         this function is called by StreamOptionWindow when user change number of points to plot by changing
-        the sampling rate or the display duration
-        :param num_points_to_plot:
+        the sampling rate or the display duration.
+        Changing the num points to plot here will cause, in the next plot cycle, GroupPlotWidget will have a mismatch between
+        the data received from here and its time vector. This will cause the GroupPlotWidget to update its time vector
         :param new_sampling_rate:
         :param new_display_duration:
         :return:
         '''
-        self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
         self.num_points_to_plot = self.get_num_points_to_plot()
         if self.viz_components is not None:
             self.viz_components.update_nominal_sampling_rate()
-
-    def update_sr_and_display_duration_in_settings(self, new_sampling_rate, new_display_duration):
-        '''
-        this function is called by StreamWidget when on_num_points_to_display_change is called
-        :param new_sampling_rate:
-        :param new_display_duration:
-        :return:
-        '''
-        set_stream_preset_info(self.stream_name, 'nominal_sampling_rate', new_sampling_rate)
-        set_stream_preset_info(self.stream_name, 'display_duration', new_display_duration)
 
     # def reload_visualization_elements(self, info_dict):
     #     self.group_info = collect_stream_all_groups_info(self.stream_name)
