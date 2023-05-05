@@ -29,15 +29,15 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
+
     def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
         """
-        LSL interface is created in StreamWidget
-        :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
-        :rtype: object
-        :worker usually None, networking_interface unless is device
+        StreamWidget is the main interface with plots and a single stream of data.
+        The stream can be either LSL or ZMQ.
+        @param parent_widget: the MainWindow
+        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
         """
 
         # GUI elements
