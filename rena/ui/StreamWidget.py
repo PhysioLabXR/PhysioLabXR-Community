@@ -6,11 +6,10 @@ import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter, QFrame
+from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
-from rena.presets.Presets import Presets
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
@@ -18,20 +17,21 @@ from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
+from rena.ui.PoppableWidget import Poppable
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.performance_utils import timeit
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, clear_layout, clear_widget
+from rena.utils.ui_utils import dialog_popup, clear_widget
 
 
-class StreamWidget(QtWidgets.QWidget):
+class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
 
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
-    def __init__(self, main_parent, parent, stream_name, data_type, worker, networking_interface, port_number,
+    def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
         """
         LSL interface is created in StreamWidget
@@ -41,14 +41,16 @@ class StreamWidget(QtWidgets.QWidget):
         """
 
         # GUI elements
-        super().__init__()
+        super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
         self.ui = uic.loadUi("ui/StreamContainer.ui", self)
+        self.set_pop_button(self.PopWindowBtn)
+
         if type(insert_position) == int:
-            parent.insertWidget(insert_position, self)
+            parent_layout.insertWidget(insert_position, self)
         else:
-            parent.addWidget(self)
-        self.parent = parent
-        self.main_parent = main_parent
+            parent_layout.addWidget(self)
+        self.parent = parent_layout
+        self.main_parent = parent_widget
 
         ##
         self.stream_name = stream_name  # this also keeps the subtopic name if using ZMQ
@@ -66,7 +68,6 @@ class StreamWidget(QtWidgets.QWidget):
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
-        self.is_popped = False
 
         # visualization data buffer
         self.current_timestamp = 0
@@ -84,7 +85,6 @@ class StreamWidget(QtWidgets.QWidget):
         # connect btn
         self.StartStopStreamBtn.clicked.connect(self.start_stop_stream_btn_clicked)
         self.OptionsBtn.clicked.connect(self.options_btn_clicked)
-        self.PopWindowBtn.clicked.connect(self.pop_window)
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
         # inefficient loading of assets TODO need to confirm creating Pixmap in ui_shared result in crash
@@ -285,63 +285,24 @@ class StreamWidget(QtWidgets.QWidget):
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
                                                       buffer_sizes=buffer_size, append_zeros=True)
 
-    def dock_window(self):
-        self.parent.insertWidget(self.parent.count() - 1, self)
-        self.PopWindowBtn.clicked.disconnect()
-        self.PopWindowBtn.clicked.connect(self.pop_window)
-        # self.PopWindowBtn.setText('Pop Window')
-        self.main_parent.pop_windows[self.stream_name].hide()  # tetentive measures
-        self.main_parent.pop_windows.pop(self.stream_name)
-        self.main_parent.activateWindow()
-        self.is_popped = False
-        self.set_button_icons()
-
-    def pop_window(self):
-        w = AnotherWindow(self, self.remove_stream)
-        self.main_parent.pop_windows[self.stream_name] = w
-        w.setWindowTitle(self.stream_name)
-        # self.PopWindowBtn.setText('Dock Window')
-        w.show()
-        self.PopWindowBtn.clicked.disconnect()
-        self.PopWindowBtn.clicked.connect(self.dock_window)
-        self.is_popped = True
-        self.set_button_icons()
-
     def remove_stream(self):
         self.timer.stop()
         self.v_timer.stop()
         if self.main_parent.recording_tab.is_recording:
             self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
-        # stop_stream_btn.click()  # fire stop streaming first
         if self.worker.is_streaming:
             self.worker.stop_stream()
-        # if self.lsl_worker.dsp_on:
-        #     self.lsl_worker.remove_stream()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
-
-        # self.main_parent.lsl_workers.pop(self.stream_name)
-        # self.main_parent.worker_threads.pop(self.stream_name)
-        # if this lsl connect to a device:
-
-        # TODO: we do not consider device at this stage
-        # if self.stream_name in self.main_parent.device_workers.keys():
-        #     self.main_parent.device_workers[self.stream_name].stop_stream()
-        #     self.main_parent.device_workers.pop(self.stream_name)
 
         self.main_parent.stream_widgets.pop(self.stream_name)
         self.main_parent.remove_stream_widget(self)
         # close window if popped
-        if self.stream_name in self.main_parent.pop_windows.keys():
-            self.main_parent.pop_windows[self.stream_name].hide()
-            # self.main_parent.pop_windows.pop(self.stream_name)
-            self.deleteLater()
-        else:  # use recursive delete if docked
-            self.deleteLater()
-        # self.main_parent.LSL_data_buffer_dicts.pop(self.stream_name)
+        if self.is_popped:
+            self.delete_window()
+        self.deleteLater()
         self.stream_options_window.close()
-        # close the signal option window
         return True
 
     def update_channel_shown(self, channel_index, is_shown, group_name):
@@ -634,19 +595,6 @@ class StreamWidget(QtWidgets.QWidget):
     def get_num_points_to_plot(self):
         display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
         return int(display_duration * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'))
-
-    # def add_group(self, affected):
-    #     new_group_name = self.get_next_available_groupname()
-    #     print("StreamOptionsWindow: creating new group {}".format(new_group_name))
-    #
-    #     for group_name, child_channels in affected.items():
-    #         self.group_info
-    #         if len(child_channels) == 0:
-    #             self.group_info.pop(group_name)
-    #         else:
-    #             self.group_info[group_name]['channel_indices'] = [x.lsl_index for x in child_channels]
-    #             self.group_info[group_name]['is_channels_shown'] = [int(x.is_shown) for x in child_channels]
-    #     return new_group_name
 
     def get_pull_data_delay(self):
         return self.worker.get_pull_data_delay()

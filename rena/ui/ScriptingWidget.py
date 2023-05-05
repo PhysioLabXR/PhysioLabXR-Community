@@ -113,6 +113,8 @@ class ScriptingWidget(QtWidgets.QWidget):
 
         self.internal_data_buffer = None
 
+
+
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
                                                       port_id=self.port + 1,

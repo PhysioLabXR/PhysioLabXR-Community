@@ -199,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
-        widget = VideoDeviceWidget(main_parent=self,
+        widget = VideoDeviceWidget(parent_widget=self,
                                    parent_layout=self.camHorizontalLayout,
                                    video_device_name=video_device_name,
                                    insert_position=self.camHorizontalLayout.count() - 1)
@@ -231,21 +231,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set up UI elements
         widget_name = networking_stream_name + '_widget'
-        stream_widget = StreamWidget(main_parent=self,
-                                     parent=self.streamsHorizontalLayout,
+        stream_widget = StreamWidget(parent_widget=self,
+                                     parent_layout=self.streamsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
                                      worker=worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
                                      insert_position=self.streamsHorizontalLayout.count() - 1)
-        start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
         stream_widget.setObjectName(widget_name)
-
         self.stream_widgets[networking_stream_name] = stream_widget
 
         if error_initialization:
-            remove_stream_btn.click()
+            stream_widget.RemoveStreamBtn.click()
         config.settings.endGroup()
 
     def update_meta_data(self):

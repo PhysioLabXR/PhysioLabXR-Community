@@ -9,40 +9,41 @@ from PyQt5.QtCore import QTimer
 from rena import config
 from rena.config import settings
 from rena.threadings import workers
+from rena.ui.PoppableWidget import Poppable
 from rena.ui_shared import pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.ui_utils import AnotherWindow, dialog_popup, convert_rgb_to_qt_image
 
 
-class VideoDeviceWidget(QtWidgets.QWidget):
-    def __init__(self, main_parent, parent_layout, video_device_name, insert_position=None):
+class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
+    def __init__(self, parent_widget, parent_layout, video_device_name, insert_position=None):
         """
 
-        @param main_parent:
+        @param parent_widget:
         @param parent_layout:
         @param video_device_name:
         @param insert_position:
         """
-        super().__init__()
+        super().__init__(video_device_name, parent_widget, parent_layout, self.remove_video_device)
+        self.ui = uic.loadUi("ui/VideoDeviceWidget.ui", self)
+        self.set_pop_button(self.PopWindowBtn)
+
         self.ui = uic.loadUi("ui/VideoDeviceWidget.ui", self)
         if type(insert_position) == int:
             parent_layout.insertWidget(insert_position, self)
         else:
             parent_layout.addWidget(self)
         self.parent_layout = parent_layout
-        self.main_parent = main_parent
+        self.main_parent = parent_widget
         self.video_device_name = video_device_name
 
         # check if the video device is a camera or screen capture ####################################
         self.is_webcam = video_device_name.isnumeric()
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
-        self.is_popped = False
         # Connect UIs ##########################################
         self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
-        self.PopWindowBtn.clicked.connect(self.pop_window)
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
-        self.set_button_icons()
 
         # FPS counter``
         self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
@@ -83,47 +84,14 @@ class VideoDeviceWidget(QtWidgets.QWidget):
         self.main_parent.video_device_widgets.pop(self.video_device_name)
         self.main_parent.remove_stream_widget(self)
 
-        # loop = QEventLoop()
-        # QTimer.singleShot(250, loop.quit)
-        # loop.exec_()
         # close window if popped
-        if self.video_device_name in self.main_parent.pop_windows.keys():
-            self.main_parent.pop_windows[self.video_device_name].hide()
-            self.deleteLater()
-        else:  # use recursive delete if docked
-            self.deleteLater()
+        if self.is_popped:
+            self.delete_window()
+        self.deleteLater()
         return True
-
-    def pop_window(self):
-        w = AnotherWindow(self, close_function=self.remove_video_device)
-        self.main_parent.pop_windows[self.video_device_name] = w
-        w.setWindowTitle(self.video_device_long_name)
-        self.PopWindowBtn.setText('Dock Window')
-        w.show()
-        self.PopWindowBtn.clicked.disconnect()
-        self.PopWindowBtn.clicked.connect(self.dock_window)
-        self.is_popped = True
-        self.set_button_icons()
-
-    def dock_window(self):
-        self.parent_layout.insertWidget(self.parent_layout.count() - 1, self)
-        self.PopWindowBtn.clicked.disconnect()
-        self.PopWindowBtn.clicked.connect(self.pop_window)
-        self.PopWindowBtn.setText('Pop Window')
-        self.main_parent.pop_windows[self.video_device_name].hide()
-        self.main_parent.pop_windows.pop(self.video_device_name)
-        self.main_parent.activateWindow()
-        self.is_popped = False
-        self.set_button_icons()
 
     def ticks(self):
         self.worker.tick_signal.emit()
-
-    def set_button_icons(self):
-        if not self.is_popped:
-            self.PopWindowBtn.setIcon(pop_window_icon)
-        else:
-            self.PopWindowBtn.setIcon(dock_window_icon)
 
     def get_fps(self):
         try:

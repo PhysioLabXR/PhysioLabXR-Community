@@ -401,7 +401,7 @@ class AnotherWindow(QWidget):
     will appear as a free-floating window as we want.
     """
 
-    def __init__(self, widget_to_add: QWidget, close_function):
+    def __init__(self, widget_to_add: QWidget, close_function: callable):
         super().__init__()
         layout = QVBoxLayout()
         layout.addWidget(widget_to_add)
@@ -409,7 +409,6 @@ class AnotherWindow(QWidget):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        # do stuff
         print('Window closed')
         if self.close_function():
             event.accept()  # let the window close
