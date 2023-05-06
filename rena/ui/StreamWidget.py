@@ -58,7 +58,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.port_number = port_number
         self.data_type = data_type
         # self.preset = get_complete_stream_preset_info(self.stream_name)
-        ##
 
         self.actualSamplingRate = 0
 

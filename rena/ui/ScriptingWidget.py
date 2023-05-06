@@ -13,6 +13,7 @@ from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
+from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
@@ -28,12 +29,14 @@ from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
     another_window, update_presets_to_combobox
 
 
-class ScriptingWidget(QtWidgets.QWidget):
+class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent, port, args):
-        super().__init__()
+    def __init__(self, parent_widget: QtWidgets, port, args):
+        super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
-        self.parent = parent
+        self.set_pop_button(self.PopWindowBtn)
+
+        self.parent = parent_widget
         self.port = port
         self.script = None
         self.input_widgets = []
@@ -44,6 +47,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         add_presets_to_combobox(self.inputComboBox)
 
         # set up the add buttons
+        self.removeBtn.clicked.connect(self.remove_script_clicked)
         self.addInputBtn.setIcon(add_icon)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
         self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
@@ -521,8 +525,13 @@ class ScriptingWidget(QtWidgets.QWidget):
         print('Script widget closed')
         return True
 
-    def set_remove_btn_callback(self, callback):
-        self.removeBtn.clicked.connect(callback)
+    def remove_script_clicked(self):
+        # self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
+        if self.is_popped:
+            self.delete_window()
+        self.deleteLater()
+        remove_script_from_settings(self.id)
+        self.script_console_log_window.close()
 
     def on_input_combobox_changed(self):
         self.check_can_add_input()

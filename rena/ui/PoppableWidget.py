@@ -18,7 +18,9 @@ class Poppable(QtWidgets.QWidget):
 
     def set_pop_button(self, pop_button: QPushButton):
         self.pop_button = pop_button
+
         self.pop_button.clicked.connect(self.pop_window)
+        self.set_button_icons()
 
     def dock_window(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling dock_window"
