@@ -157,7 +157,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.plot_data_times = []
         ########################################################################
 
-
     def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
@@ -210,6 +209,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         print("Option window button clicked")
         self.stream_options_window.show()
         self.stream_options_window.activateWindow()
+    def group_plot_widget_edit_option_clicked(self, group_name: str):
+        self.options_btn_clicked()
+        self.stream_options_window.set_selected_group(group_name)
 
     def is_streaming(self):
         return self.worker.is_streaming

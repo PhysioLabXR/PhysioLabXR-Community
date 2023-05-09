@@ -598,3 +598,6 @@ class StreamGroupView(QTreeWidget):
 
     def get_channel_names(self):
         return [x.channel_name for x in self.channel_widgets]
+
+    def select_group_item(self, group_name):
+        self.setCurrentItem(self.group_widgets[group_name])

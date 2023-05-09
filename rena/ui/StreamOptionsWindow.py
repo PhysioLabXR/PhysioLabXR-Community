@@ -328,3 +328,6 @@ class StreamOptionsWindow(QDialog):
 
     def set_spectrogram_cmap(self, group_name: str):
         self.parent.set_spectrogram_cmap(group_name)
+
+    def set_selected_group(self, group_name: str):
+        self.stream_group_view.select_group_item(group_name)

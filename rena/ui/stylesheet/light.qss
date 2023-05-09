@@ -1345,7 +1345,8 @@ QSlider::sub-page:vertical
 QToolButton
 {
     background-color: transparent;
-    border: 0.1ex solid #BAB9B8;
+    border: solid #BAB9B8;
+    border-width: 2px;
     border-radius: 0.2ex;
     margin: 0.3ex;
     padding: 0.5ex;
@@ -1380,7 +1381,8 @@ QToolButton:hover,
 QToolButton::menu-button:hover
 {
     background-color: transparent;
-    border: 0.1ex solid #33A4DF;
+    border: solid #33A4DF;
+    border-width: 2px;
 }
 
 QToolButton:checked,
