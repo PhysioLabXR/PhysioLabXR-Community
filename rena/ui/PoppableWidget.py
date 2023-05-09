@@ -18,7 +18,6 @@ class Poppable(QtWidgets.QWidget):
 
     def set_pop_button(self, pop_button: QPushButton):
         self.pop_button = pop_button
-
         self.pop_button.clicked.connect(self.pop_window)
         self.set_pop_icons()
 
@@ -50,6 +49,7 @@ class Poppable(QtWidgets.QWidget):
         self.set_pop_icons()
 
     def set_pop_icons(self):
+        assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling pop_window"
         if not self.is_popped:
             self.pop_button.setIcon(pop_window_icon)
         else:
