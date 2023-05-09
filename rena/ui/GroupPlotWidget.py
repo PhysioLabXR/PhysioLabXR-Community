@@ -57,14 +57,14 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.plot_tabs.setCurrentIndex(get_selected_plot_format_index(self.stream_name, group_name))
 
         self.plot_format_changed_signal = plot_format_changed_signal
-        self.plot_format_changed_signal.connect(self.plot_format_on_change)
+        self.plot_format_changed_signal.connect(self.plot_format_tab_chanaged)
         self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
 
     # def update_image_info(self, new_image_info):
     #     self.this_group_info['image'] = new_image_info
 
     @QtCore.pyqtSlot(dict)
-    def plot_format_on_change(self, info_dict):
+    def plot_format_tab_chanaged(self, info_dict):
         if self.group_name == info_dict['group_name']:
             self.plot_tabs.currentChanged.disconnect(self.plot_tab_changed)
             self.plot_tabs.setCurrentIndex(info_dict['new_format'].value)  # get the value of the PlotFormat enum
@@ -77,7 +77,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
             'group_name': self.group_name,
             'new_format': new_plot_format
         }
+        self.plot_format_changed_signal.disconnect(self.plot_format_tab_chanaged)
         self.plot_format_changed_signal.emit(info_dict)
+        self.plot_format_changed_signal.connect(self.plot_format_tab_chanaged)
+
 
     def init_line_chart(self):
         self.linechart_widget = pg.PlotWidget()
