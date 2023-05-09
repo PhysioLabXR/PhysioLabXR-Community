@@ -31,6 +31,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.parent = parent
         self.stream_widget = stream_widget
         self.plot_format_changed_signal = plot_format_changed_signal
+        self.plot_format_changed_signal.connect(self.plot_format_tab_changed)
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
 
@@ -69,7 +70,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         if this_group_entry.is_image_only():
             self.enable_only_image_tab()
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
-        self.plot_format_changed_signal.connect(self.plot_format_changed)
+        # self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         if self.group_name is not None:
             # image ###############################################################
@@ -147,14 +148,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
     def plot_format_tab_selection_changed(self, index):
         # create value
-        # update the index in display
-        # get current selected
-        # update_selected_plot_format
-        # if index==2:
-        # update_selected_plot_format(self.stream_name, self.group_name, index)
         new_plot_format = set_stream_a_group_selected_plot_format(self.stream_name, self.group_name, index)
-
-        # self.this_group_info['selected_plot_format'] = index
 
         # new format, old format
         info_dict = {
@@ -162,10 +156,12 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             'group_name': self.group_name,
             'new_format': new_plot_format
         }
+        self.plot_format_changed_signal.disconnect(self.plot_format_tab_changed)
         self.plot_format_changed_signal.emit(info_dict)
+        self.plot_format_changed_signal.connect(self.plot_format_tab_changed)
 
     @QtCore.pyqtSlot(dict)
-    def plot_format_changed(self, info_dict):
+    def plot_format_tab_changed(self, info_dict):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
             self._set_to_group(self.group_name)
 

@@ -123,9 +123,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # create option window
         self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
-        # self.plot_format_changed_signal.connect(self.plot_format_on_change)
-        # self.stream_options_window.plot_format_on_change_signal.connect(self.plot_format_on_change)
-        # self.stream_options_window.image_change_signal.connect(self.image_changed)
 
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
@@ -210,7 +207,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             self.PopWindowBtn.setIcon(dock_window_icon)
 
     def options_btn_clicked(self):
-        print("Option window open")
+        print("Option window button clicked")
         self.stream_options_window.show()
         self.stream_options_window.activateWindow()
 

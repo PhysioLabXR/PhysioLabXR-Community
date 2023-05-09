@@ -276,26 +276,26 @@ class StreamOptionsWindow(QDialog):
         self.last_sampling_rate = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'display_duration')))
 
-    def set_nominal_sampling_rate_btn(self):
-        new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()
-        if new_nominal_sampling_rate.isnumeric():
-            new_nominal_sampling_rate = float(new_nominal_sampling_rate)
-            if new_nominal_sampling_rate > 0:
-                print(new_nominal_sampling_rate)  # TODO: update in preset and GUI
-            else:
-                dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
-        else:
-            dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
+    # def set_nominal_sampling_rate_btn(self):
+    #     new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()
+    #     if new_nominal_sampling_rate.isnumeric():
+    #         new_nominal_sampling_rate = float(new_nominal_sampling_rate)
+    #         if new_nominal_sampling_rate > 0:
+    #             print(new_nominal_sampling_rate)  # TODO: update in preset and GUI
+    #         else:
+    #             dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
+    #     else:
+    #         dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
 
-    def clearLayout(self, layout):
-        if layout is not None:
-            while layout.count():
-                item = layout.takeAt(0)
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-                else:
-                    self.clearLayout(item.layout())
+    # def clearLayout(self, layout):
+    #     if layout is not None:
+    #         while layout.count():
+    #             item = layout.takeAt(0)
+    #             widget = item.widget()
+    #             if widget is not None:
+    #                 widget.deleteLater()
+    #             else:
+    #                 self.clearLayout(item.layout())
 
     @QtCore.pyqtSlot(tuple)
     def channel_is_display_changed(self, change: tuple):
@@ -325,13 +325,6 @@ class StreamOptionsWindow(QDialog):
             self.stream_group_view.disable_channels_in_group(group_item=group_item)
         else:
             self.stream_group_view.enable_channels_in_group(group_item=group_item)
-
-
-    # def get_group_info(self, group_name):
-    #     group_info = self.parent.group_info[group_name]
-    #     # parent (stream widget)'s group info should have been updated by this point, because the signal to plotformat changed is connected to parent (stream widget) first
-    #     assert group_info == collect_stream_group_info(stream_name=self.stream_name, group_name=group_name)  # update the group info
-    #     return group_info
 
     def set_spectrogram_cmap(self, group_name: str):
         self.parent.set_spectrogram_cmap(group_name)
