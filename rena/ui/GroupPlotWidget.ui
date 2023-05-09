@@ -100,6 +100,9 @@
          </item>
          <item alignment="Qt::AlignRight">
           <widget class="QToolButton" name="group_option_button">
+           <property name="toolTip">
+            <string>Open plot settings for this group</string>
+           </property>
            <property name="text">
             <string>...</string>
            </property>

@@ -127,7 +127,7 @@ class StreamOptionsWindow(QDialog):
             return 0
         return new_display_duration
 
-    def get_nomimal_sampling_rate(self):
+    def get_nominal_sampling_rate(self):
         try:
             new_sampling_rate = abs(float(self.nominalSamplingRateIineEdit.text()))
         except ValueError:  # in case the string cannot be convert to a float
@@ -140,7 +140,7 @@ class StreamOptionsWindow(QDialog):
         return new_sampling_rate
 
     def get_num_points_to_plot_info(self):
-        new_sampling_rate = self.get_nomimal_sampling_rate()
+        new_sampling_rate = self.get_nominal_sampling_rate()
         new_display_duration = self.get_display_duration()
         num_points_to_plot = new_sampling_rate * new_display_duration
         return num_points_to_plot, new_sampling_rate, new_display_duration
