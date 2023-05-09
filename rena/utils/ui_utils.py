@@ -1,5 +1,4 @@
 import qimage2ndarray
-# from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream

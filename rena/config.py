@@ -4,6 +4,8 @@ import numpy as np
 from PyQt5.QtCore import QSettings
 from sys import platform
 
+from PyQt5.QtGui import QIcon
+
 '''
 ########################################################################################################################
 User parameters:
@@ -149,6 +151,7 @@ default_group_name = 'default group name '
 
 app_data_name = 'RenaLabApp'
 
+app_logo_path = '../media/logo/RenaLabApp.png'
 
 def valid_networking_interfaces():
     return None

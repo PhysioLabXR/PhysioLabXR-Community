@@ -1,22 +1,21 @@
 # This Python file uses the following encoding: utf-8
-import numpy as np
+from PyQt5 import QtCore
 from PyQt5 import uic
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIntValidator, QPalette
-from PyQt5.QtWidgets import QDialog, QPushButton
+from PyQt5.QtGui import QIntValidator, QIcon
+from PyQt5.QtWidgets import QPushButton, QWidget
 
 from rena import config
+from rena.config import app_logo_path
 from rena.config_ui import *
 from rena.presets.GroupEntry import PlotFormat
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import num_points_shown_text
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info
 from rena.utils.ui_utils import dialog_popup
-from PyQt5 import QtCore
 
 
-class StreamOptionsWindow(QDialog):
+class StreamOptionsWindow(QWidget):
     # plot_format_on_change_signal = QtCore.pyqtSignal(dict)
     bar_chart_range_on_change_signal = QtCore.pyqtSignal(str, str)
 
@@ -27,18 +26,19 @@ class StreamOptionsWindow(QDialog):
         @param stream_name:
         @param group_info:
         @param plot_format_changed_signal:
-        """
-        super().__init__()
-        """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
+        super().__init__()
+
         self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
         self.parent = parent_stream_widget
         self.has_reported_invalid_num_points = False
 
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
+        window_icon = QIcon(app_logo_path)
+        self.setWindowIcon(window_icon)
 
         # plot format
         self.plot_format_widget = OptionsWindowPlotFormatWidget(self, self.parent, stream_name, plot_format_changed_signal)

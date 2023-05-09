@@ -1,6 +1,8 @@
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QLayout, QPushButton
 
+from rena.config import app_logo_path
 from rena.ui_shared import pop_window_icon, dock_window_icon
 from rena.utils.ui_utils import AnotherWindow
 
@@ -15,6 +17,7 @@ class Poppable(QtWidgets.QWidget):
         self.close_function = close_function
 
         self.is_popped = False
+        self.window_icon = QIcon(app_logo_path)
 
     def set_pop_button(self, pop_button: QPushButton):
         self.pop_button = pop_button
@@ -38,6 +41,7 @@ class Poppable(QtWidgets.QWidget):
     def pop_window(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling pop_window"
         self.another_window = AnotherWindow(self, self.close_function)
+        self.another_window.setWindowIcon(self.window_icon)
         self.another_window.setWindowTitle(self.window_title)
         self.another_window.show()
         self.another_window.activateWindow()
