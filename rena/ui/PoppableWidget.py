@@ -20,7 +20,7 @@ class Poppable(QtWidgets.QWidget):
         self.pop_button = pop_button
 
         self.pop_button.clicked.connect(self.pop_window)
-        self.set_button_icons()
+        self.set_pop_icons()
 
     def dock_window(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling dock_window"
@@ -34,7 +34,7 @@ class Poppable(QtWidgets.QWidget):
         self.pop_button.clicked.connect(self.pop_window)
 
         self.is_popped = False
-        self.set_button_icons()
+        self.set_pop_icons()
 
     def pop_window(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling pop_window"
@@ -47,9 +47,9 @@ class Poppable(QtWidgets.QWidget):
         self.pop_button.clicked.connect(self.dock_window)
 
         self.is_popped = True
-        self.set_button_icons()
+        self.set_pop_icons()
 
-    def set_button_icons(self):
+    def set_pop_icons(self):
         if not self.is_popped:
             self.pop_button.setIcon(pop_window_icon)
         else:
