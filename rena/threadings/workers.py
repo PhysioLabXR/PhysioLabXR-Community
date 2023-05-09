@@ -241,7 +241,7 @@ class LSLInletWorker(QObject, RenaWorker):
         self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
-        # self.dsp_on = True
+        self.timestamp_queue = deque(maxlen=1024)
 
         self.start_time = time.time()
         self.num_samples = 0
@@ -257,16 +257,18 @@ class LSLInletWorker(QObject, RenaWorker):
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
             frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            self.timestamp_queue.extend(timestamps)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+
             self.interface_mutex.unlock()
 
             if frames.shape[-1] == 0:
                 return
 
             self.num_samples += len(timestamps)
-            try:
-                sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
-            except ZeroDivisionError:
-                sampling_rate = 0
             # if self.dsp_on:
             #     current_time = time.time()
             #     self._rena_tcp_interface.send_array(frames)

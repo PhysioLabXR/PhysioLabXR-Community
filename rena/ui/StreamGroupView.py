@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
 from rena import config
+from rena.config import default_group_name
 from rena.config_ui import *
+from rena.presets.Presets import Presets
 from rena.presets.presets_utils import get_stream_preset_info, get_stream_group_info, get_is_group_shown
 from rena.utils.ui_utils import dialog_popup
 from PyQt5 import QtCore
@@ -266,35 +268,44 @@ class StreamGroupView(QTreeWidget):
         if drop_target == None:
             self.reenable_dropdrag_for_root_and_group_items()
             return
-        elif drop_target.data(0, 0) == self.stream_name:  #
-            self.reenable_dropdrag_for_root_and_group_items()
-            return  # TODO this should not return, dropping to the root means putting the group at the first position
+        # if drop_target.parent() is None:
+        #     self.reenable_dropdrag_for_root_and_group_items()
+        #     dialog_popup(f"Cannot put a channel at root (group level)", title="Warning")
+        #     return
         else:
             QTreeWidget.dropEvent(self, event)
             self.reenable_dropdrag_for_root_and_group_items()
-
-            # check empty group
-            self.remove_empty_groups()
-            print(drop_target.checkState(0))
+            self.remove_empty_groups()  # check empty group
+            # print(drop_target.checkState(0))
 
         # group and channels cannot be moved at the same time
 
         if len(self.selected_channels) > 0 and len(self.selected_groups) == 0:
             change_dict = {}  # group name -> channel name, lsl indices
-            target_group = drop_target.parent() if type(drop_target) is ChannelItem else drop_target
-            change_dict[target_group.group_name] = target_group.children()  # get the indices of the changed group
+
+            if self.selected_channels[0].parent() is None:  # if the drop target is the root, create a new group
+                new_group_name, new_group_item = self.add_new_group()
+                for c in self.selected_channels:  # put the selected channels into the new group
+                    index = self.invisibleRootItem().indexOfChild(c)
+                    channel_without_parent = self.takeTopLevelItem(index)
+                    new_group_item.addChild(channel_without_parent)
+                change_dict[new_group_name] = new_group_item.children()  # get the indices of the changed group
+                target_group_item = new_group_item
+            else:
+                target_group_item = drop_target.parent() if type(drop_target) is ChannelItem else drop_target
+                change_dict[target_group_item.group_name] = target_group_item.children()  # get the indices of the changed group
 
             for selected_c in self.selected_channels:
-                if selected_c not in change_dict[target_group.group_name]: change_dict[target_group.group_name].append(selected_c)
-                this_changed_group = selected_c.previous_parent
-                if this_changed_group.group_name not in change_dict.keys():
-                    change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
-                selected_c.previous_parent = target_group  # set the parent to be the drop target
+                if selected_c not in change_dict[target_group_item.group_name]:
+                    change_dict[target_group_item.group_name].append(selected_c)
+                selected_c_previous_group = selected_c.previous_parent
+                if selected_c_previous_group.group_name not in change_dict.keys():  # add the other affected groups (the selected channels' previous groups/parents)
+                    change_dict[selected_c_previous_group.group_name] = selected_c_previous_group.children()  # get the indices of the changed group
+                selected_c.previous_parent = target_group_item  # set the parent to be the drop target
 
             print('StreamGroupView: Changed groups: {}'.format(change_dict))
             self.parent.channel_parent_group_changed(change_dict)  # notify streamOptionsWindow of the change
         elif len(self.selected_groups) > 0 and len(self.selected_channels) == 0:
-            print('Here')
             new_group_order = []  # group name -> this group's new index
             super().dropEvent(event)  # accept the drop event
             for i in range(self.topLevelItemCount()):
@@ -388,15 +399,15 @@ class StreamGroupView(QTreeWidget):
             raise Exception(f"There can't be duplicate group names {group_name}")
         return self.add_group_item(parent_item, group_name, plot_format, is_shown)
 
-    def add_group_item(self, parent_item, group_name, plot_format, is_shown):
+    def add_group_item(self, parent_item, group_name, plot_format, is_shown, is_expanded=True):
         item = GroupItem(parent=parent_item, is_shown=is_shown, plot_format=plot_format, stream_name=self.stream_name,
                          group_name=group_name, group_view=self)
-        # item.setText(0, group_name)
         if is_shown:
             item.setForeground(0, QBrush(QColor(color_green)))
             item.setCheckState(0, Qt.Checked)
         else:
             item.setCheckState(0, Qt.Unchecked)
+        item.setExpanded(is_expanded)
 
         item.setFlags(
             item.flags()
@@ -407,12 +418,8 @@ class StreamGroupView(QTreeWidget):
             | Qt.ItemIsDropEnabled
         )
         self.group_widgets[group_name] = item
+
         return item
-    # def add_group(self, display_text, item_type='group', display=1, item_index=None):
-    #     new_group = self.add_item(self.stream_root, display_text, item_type, plot_format='time_series', display=display,
-    #                               item_index=item_index)
-    #     self.groups_widgets.append(new_group)
-    #     return new_group
 
     def get_group_names(self):
         group_names = []
@@ -431,9 +438,9 @@ class StreamGroupView(QTreeWidget):
         children_num = self.topLevelItemCount()
         empty_groups = []
         for child_index in range(children_num):
-            group = self.topLevelItem(child_index)
-            if group.childCount() == 0:
-                empty_groups.append(group.group_name)
+            tree_item = self.topLevelItem(child_index)
+            if isinstance(tree_item, GroupItem) and tree_item.childCount() == 0:
+                empty_groups.append(tree_item.group_name)
         for empty_group in empty_groups:
             removed_group_widget = self.group_widgets.pop(empty_group)
             self.takeTopLevelItem(self.indexOfTopLevelItem((removed_group_widget)))
@@ -536,51 +543,38 @@ class StreamGroupView(QTreeWidget):
 
         for i in range(0, group_item.childCount()):
             group_item.child(i).setDisabled(False)
-            # group_item.child(i).setFlags(
-            #     group_item.child(i).flags()
-            #     | Qt.ItemIsTristate
-            #     | Qt.ItemIsUserCheckable
-            #     | Qt.ItemIsEditable
-            #     | Qt.ItemIsDragEnabled
-            #     | Qt.ItemIsDropEnabled
-            # )
 
-
-    # def update_group_child_selectable(self,group_name):
-    #     pass
-    #     # make all child unselectable
-    def get_next_available_groupname(self):
-        i = 0
-        while (rtn := 'GroupName{}'.format(i)) in self.group_widgets.keys():
-            i += 1
-        return rtn
 
     def add_group(self):
-        new_group_name = self.get_next_available_groupname()
-        new_group = self.add_new_group_item(parent_item=self, group_name=new_group_name)  # default plot as time series
+        self.disconnect_selection_changed()
+        new_group_name, new_group_item = self.add_new_group()
         selected = self.get_selected_channel_groups()
 
-        self.disconnect_selection_changed()
         for old_group_name, channels in selected.items():
             old_group = self.group_widgets[old_group_name]
             for c in channels:
                 index = old_group.indexOfChild(c)
                 channel_item_without_parent = old_group.takeChild(index)  # this will remove the child from selected channels
-                new_group.addChild(channel_item_without_parent)
+                new_group_item.addChild(channel_item_without_parent)
 
         change_dict = {}  # group name -> channel name, lsl indices
-        change_dict[new_group_name] = new_group.children()  # get the indices of the changed group
+        change_dict[new_group_name] = new_group_item.children()  # get the indices of the changed group
         for selected_c in self.selected_channels:
             if selected_c not in change_dict[new_group_name]:
                 change_dict[new_group_name].append(selected_c)
             this_changed_group = selected_c.previous_parent
             if this_changed_group.group_name not in change_dict.keys():
                 change_dict[this_changed_group.group_name] = this_changed_group.children()  # get the indices of the changed group
-            selected_c.previous_parent = new_group # set the parent to be the drop target
+            selected_c.previous_parent = new_group_item # set the parent to be the drop target
         print('StreamGroupView: Changed groups: {}'.format(change_dict))
         self.remove_empty_groups()
         self.reconnect_selection_changed()
         return change_dict
+
+    def add_new_group(self):
+        new_group_name = Presets().stream_presets[self.stream_name].get_next_available_groupname()
+        new_group_item = self.add_new_group_item(parent_item=self, group_name=new_group_name)  # default plot as time series
+        return new_group_name, new_group_item
 
     def change_group_name(self, new_group_name, old_group_name):
         self.group_widgets[new_group_name] = self.group_widgets.pop(old_group_name)

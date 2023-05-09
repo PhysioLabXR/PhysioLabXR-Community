@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from PyQt5.QtCore import QStandardPaths
 
 from rena import config
-from rena.config import app_data_name
+from rena.config import app_data_name, default_group_name
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import reload_enums, SubPreset
 from rena.utils.Singleton import Singleton
@@ -114,7 +114,14 @@ class StreamPreset(metaclass=SubPreset):
         assert group_entry.group_name not in self.group_info.keys(), f'Group {group_entry.group_name} already exists in the stream preset'
         self.group_info[group_entry.group_name] = group_entry
 
+    def get_next_available_groupname(self):
+        i = 0
+        rtn = f'{default_group_name}{i}'
+        while rtn in self.group_info.keys():
+            i += 1
+            rtn = f'{default_group_name}{i}'
 
+        return rtn
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class VideoPreset(metaclass=SubPreset):
     """
