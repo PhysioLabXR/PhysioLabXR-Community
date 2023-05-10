@@ -1,6 +1,8 @@
 from PyQt5 import uic
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget
 
+from rena.config import app_logo_path
 from rena.presets.Presets import VideoDeviceChannelOrder
 from rena.presets.presets_utils import set_video_scale, set_video_channel_order
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
@@ -9,6 +11,9 @@ from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 class VideoDeviceOptions(QWidget):
     def __init__(self, parent_stream_widget, video_device_name):
         super().__init__()
+        self.setWindowTitle('Options for {}'.format(video_device_name))
+        window_icon = QIcon(app_logo_path)
+        self.setWindowIcon(window_icon)
 
         self.ui = uic.loadUi("ui/VideoDeviceOptions.ui", self)
         self.parent = parent_stream_widget

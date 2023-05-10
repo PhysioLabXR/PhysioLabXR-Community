@@ -233,3 +233,9 @@ def get_video_scale(video_device_name) -> float:
 
 def get_video_channel_order(video_device_name) -> VideoDeviceChannelOrder:
     return Presets().video_presets[video_device_name].channel_order
+
+def is_video_webcam(video_device_name) -> bool:
+    return Presets().video_presets[video_device_name].preset_type == PresetType.WEBCAM
+
+def get_video_device_id(video_device_name) -> int:
+    return Presets().video_presets[video_device_name].video_id

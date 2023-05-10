@@ -10,13 +10,12 @@ from PyQt5.QtCore import QTimer
 import rena.threadings.ScreenCaptureWorker
 import rena.threadings.WebcamWorker
 from rena.config import settings
-from rena.presets.presets_utils import get_video_scale, get_video_channel_order
-from rena.threadings import workers
+from rena.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.VideoDeviceOptions import VideoDeviceOptions
 from rena.ui_shared import remove_stream_icon, \
     options_icon
-from rena.utils.ui_utils import dialog_popup, convert_rgb_to_qt_image
+from rena.utils.ui_utils import dialog_popup
 
 
 class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
@@ -42,7 +41,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.VideoDeviceNameLabel.setText(self.video_device_name)
 
         # check if the video device is a camera or screen capture ####################################
-        self.is_webcam = video_device_name.isnumeric()
+        self.is_webcam = is_video_webcam(self.video_device_name)
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
         # Connect UIs ##########################################
         self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
@@ -69,7 +68,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
 
         video_scale, channel_order = get_video_scale(self.video_device_name), get_video_channel_order(self.video_device_name)
         if self.is_webcam:
-            self.worker = rena.threadings.WebcamWorker.WebcamWorker(video_device_name, video_scale, channel_order)
+            self.worker = rena.threadings.WebcamWorker.WebcamWorker(get_video_device_id(video_device_name), video_scale, channel_order)
         else:
             self.worker = rena.threadings.ScreenCaptureWorker.ScreenCaptureWorker(video_device_name, video_scale, channel_order)
         self.worker.change_pixmap_signal.connect(self.visualize)

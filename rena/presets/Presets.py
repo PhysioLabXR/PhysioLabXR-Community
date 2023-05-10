@@ -192,11 +192,10 @@ def preprocess_stream_preset(stream_preset_dict, category):
 
 def _load_video_device_presets(presets):
     print('Loading available cameras')
-    cameras = get_working_camera_ports()
-    working_cameras_ids = cameras[0]
-    working_cameras_stream_names = [f'Camera {x}' for x in cameras[0]]
+    _, working_camera_ports, _ = get_working_camera_ports()
+    working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
 
-    for camera_id, camera_stream_name in zip(working_cameras_ids, working_cameras_stream_names):
+    for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
         presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 

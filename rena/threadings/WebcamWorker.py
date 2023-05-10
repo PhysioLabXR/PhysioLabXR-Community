@@ -19,7 +19,7 @@ class WebcamWorker(QObject, RenaWorker):
         super().__init__()
         self.cap = None
         self.cam_id = cam_id
-        self.cap = cv2.VideoCapture(int(self.cam_id))
+        self.cap = cv2.VideoCapture(self.cam_id)
         self.tick_signal.connect(self.process_on_tick)
         self.is_streaming = True
 
@@ -39,5 +39,6 @@ class WebcamWorker(QObject, RenaWorker):
             if ret:
                 cv_img = cv_img.astype(np.uint8)
                 cv_img = process_image(cv_img, self.channel_order, self.video_scale)
+                cv_img = np.flip(cv_img, axis=0)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
