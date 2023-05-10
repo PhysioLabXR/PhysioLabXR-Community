@@ -26,6 +26,10 @@ class PresetType(Enum):
     EXPERIMENT = 'EXPERIMENT'
 
 
+class VideoDeviceChannelOrder(Enum):
+    RGB = 0
+    BGR = 1
+
 # class VideoDeviceTypeEncoder(json.JSONEncoder):
 #     def default(self, obj):
 #         if isinstance(obj, Enum):
@@ -103,8 +107,7 @@ class StreamPreset(metaclass=SubPreset):
         """
         if self.display_duration is None:
             self.display_duration = float(config.settings.value('viz_display_duration'))
-        # recreate the GroupEntry object from the dictionary
-        for key, value in self.group_info.items():
+        for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
             if isinstance(value, dict):
                 self.group_info[key] = GroupEntry(**value)
         # convert any enum attribute loaded as string to the corresponding enum value
@@ -122,6 +125,7 @@ class StreamPreset(metaclass=SubPreset):
             rtn = f'{default_group_name}{i}'
 
         return rtn
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class VideoPreset(metaclass=SubPreset):
     """
@@ -135,6 +139,17 @@ class VideoPreset(metaclass=SubPreset):
     stream_name: str
     preset_type: PresetType
     video_id: int
+
+    video_scale: float = 1.0
+    channel_order: VideoDeviceChannelOrder = VideoDeviceChannelOrder.RGB
+
+    def __post_init__(self):
+        """
+        VideoPreset's post init function.
+        @return:
+        """
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
 
 
 def save_local(app_data_path, preset_dict) -> None:

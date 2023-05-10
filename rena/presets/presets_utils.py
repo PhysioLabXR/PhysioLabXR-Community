@@ -2,7 +2,7 @@ from typing import Union, List
 
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
-from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset
+from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder
 
 
 def get_preset_category(preset_name):
@@ -212,3 +212,24 @@ def set_spectrogram_percentile_level_min(stream_name, group_name, percentile_lev
 
 def set_spectrogram_percentile_level_max(stream_name, group_name, percentile_level_max):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.percentile_level_max = percentile_level_max
+
+
+def set_video_scale(video_device_name, scale: float):
+    Presets().video_presets[video_device_name].video_scale = scale
+
+
+def set_video_channel_order(video_device_name, channel_order: Union[str, int, VideoDeviceChannelOrder]) -> VideoDeviceChannelOrder:
+    if isinstance(channel_order, str):
+        channel_order = VideoDeviceChannelOrder[channel_order.upper()]
+    elif isinstance(channel_order, int):
+        channel_order = VideoDeviceChannelOrder(channel_order)
+
+    Presets().video_presets[video_device_name].channel_order = channel_order
+    return channel_order
+
+
+def get_video_scale(video_device_name) -> float:
+    return Presets().video_presets[video_device_name].video_scale
+
+def get_video_channel_order(video_device_name) -> VideoDeviceChannelOrder:
+    return Presets().video_presets[video_device_name].channel_order

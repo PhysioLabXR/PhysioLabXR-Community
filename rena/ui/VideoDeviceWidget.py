@@ -2,13 +2,18 @@
 import time
 from collections import deque
 
+import numpy as np
 import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 
+import rena.threadings.ScreenCaptureWorker
+import rena.threadings.WebcamWorker
 from rena.config import settings
+from rena.presets.presets_utils import get_video_scale, get_video_channel_order
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
+from rena.ui.VideoDeviceOptions import VideoDeviceOptions
 from rena.ui_shared import remove_stream_icon, \
     options_icon
 from rena.utils.ui_utils import dialog_popup, convert_rgb_to_qt_image
@@ -47,10 +52,26 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         # FPS counter``
         self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
 
+        # image label
+        self.plot_widget = pg.PlotWidget()
+        self.ImageWidget.layout().addWidget(self.plot_widget)
+        self.plot_widget.enableAutoRange(enable=False)
+        self.image_item = pg.ImageItem()
+        self.plot_widget.addItem(self.image_item)
+
+        # create options window ##########################################
+        self.video_options_window = VideoDeviceOptions(parent_stream_widget=self, video_device_name=self.video_device_name)
+        self.video_options_window.hide()
+        self.OptionsBtn.clicked.connect(lambda: (self.video_options_window.show(), self.video_options_window.activateWindow()))
+
         # worker and worker threads ##########################################
         self.worker_thread = pg.QtCore.QThread(self)
 
-        self.worker = workers.WebcamWorker(cam_id=video_device_name) if self.is_webcam else workers.ScreenCaptureWorker(video_device_name)
+        video_scale, channel_order = get_video_scale(self.video_device_name), get_video_channel_order(self.video_device_name)
+        if self.is_webcam:
+            self.worker = rena.threadings.WebcamWorker.WebcamWorker(video_device_name, video_scale, channel_order)
+        else:
+            self.worker = rena.threadings.ScreenCaptureWorker.ScreenCaptureWorker(video_device_name, video_scale, channel_order)
         self.worker.change_pixmap_signal.connect(self.visualize)
         self.worker.moveToThread(self.worker_thread)
 
@@ -62,12 +83,16 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
         self.timer.start()
 
+
     def visualize(self, cam_id_cv_img_timestamp):
         self.tick_times.append(time.time())
-        cam_id, cv_img, timestamp = cam_id_cv_img_timestamp
-        qt_img = convert_rgb_to_qt_image(cv_img)
-        self.ImageLabel.setPixmap(qt_img)
-        self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, cv_img, timestamp)
+        cam_id, image, timestamp = cam_id_cv_img_timestamp
+        # qt_img = convert_rgb_to_qt_image(image)
+        image = np.swapaxes(image, 0, 1)
+        self.image_item.setImage(image)
+
+        # self.ImageLabel.setPixmap(qt_img)
+        self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, image, timestamp)
 
     def remove_video_device(self):
         self.timer.stop()
@@ -101,3 +126,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
 
     def is_widget_streaming(self):
         return self.worker.is_streaming
+
+    def video_preset_changed(self):
+        self.worker.video_scale = get_video_scale(self.video_device_name)
+        self.worker.channel_order = get_video_channel_order(self.video_device_name)
