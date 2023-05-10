@@ -6,13 +6,12 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 
-from rena import config
 from rena.config import settings
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
-from rena.ui_shared import pop_window_icon, dock_window_icon, remove_stream_icon, \
+from rena.ui_shared import remove_stream_icon, \
     options_icon
-from rena.utils.ui_utils import AnotherWindow, dialog_popup, convert_rgb_to_qt_image
+from rena.utils.ui_utils import dialog_popup, convert_rgb_to_qt_image
 
 
 class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
@@ -59,8 +58,6 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.timer = QTimer()
         self.timer.setInterval(settings.value('video_device_refresh_interval'))
         self.timer.timeout.connect(self.ticks)
-
-        self.set_button_icons()
 
         self.worker_thread.start()
         self.timer.start()
