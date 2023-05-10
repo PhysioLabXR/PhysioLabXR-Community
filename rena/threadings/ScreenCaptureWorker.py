@@ -36,5 +36,6 @@ class ScreenCaptureWorker(QObject, RenaWorker):
             frame = np.array(img)
             frame = frame.astype(np.uint8)
             frame = process_image(frame, self.channel_order, self.video_scale)
+            frame = np.flip(frame, axis=0)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
             self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
