@@ -128,26 +128,18 @@ class StreamGroupView(QTreeWidget):
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
     def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name):
-        # super(SignalTreeViewWindow, self).__init__(parent=parent)
         super().__init__()
         self.parent = parent_stream_options
         self.stream_widget = stream_widget
         self.format_widget = format_widget
         self.stream_name = stream_name
 
-        # self.model = QStandardItemModel()
-        # self.model.setHorizontalHeaderLabels(['Display', 'Name'])
+        self.setHeaderLabels(["Group/Channel", "Data Frame Index"])
 
-        # self.header().setDefaultSectionSize(180)
-        # self.setHeaderHidden(True)
-        self.setHeaderLabels(["Name", "LSL Index"])
-
-        # self.setModel(self.model)
         self.group_widgets = {}  # group name: str -> group item: GroupItem)
         self.channel_widgets = []
         self.create_tree_view()
 
-        # self.setSelectionMode(self.SingleSelection)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setDragDropMode(QAbstractItemView.InternalMove)
 

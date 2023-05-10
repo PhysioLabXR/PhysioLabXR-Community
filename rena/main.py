@@ -33,7 +33,6 @@ if __name__ == '__main__':
     splash.show()
 
     # main window init
-    # inference_interface = InferenceInterface.InferenceInterface()
     window = MainWindow(app=app)
 
     window.setWindowIcon(QIcon(app_logo_path))

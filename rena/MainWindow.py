@@ -59,7 +59,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
-        self.setWindowTitle('Reality Navigation')
+        self.setWindowTitle('RenaLabApp')
         self.app = app
         self.ask_to_close = ask_to_close
 
