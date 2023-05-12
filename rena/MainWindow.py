@@ -1,6 +1,7 @@
 import os
 import sys
 import webbrowser
+from typing import Dict
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
@@ -64,8 +65,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ask_to_close = ask_to_close
 
         ############
-        self.stream_widgets = {}  # key: stream -> value: stream_widget
-        self.video_device_widgets = {}  # key: stream -> value: stream_widget
+        self.stream_widgets: Dict[str, StreamWidget] = {}
+        self.video_device_widgets: Dict[str, VideoDeviceWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors
@@ -324,10 +325,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Yes:
             if self.settings_window is not None:
                 self.settings_window.close()
-            remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
-            [x.click() for x in remove_btns]
 
             # close other tabs
+            stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
+            video_close_calls = [v_widgets.try_close for v_widgets in self.video_device_widgets.values()]
+            [c() for c in stream_close_calls]
+            [v() for v in video_close_calls]
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
 
