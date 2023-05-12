@@ -23,7 +23,7 @@ VIDEO_DEVICE_REFRESH_INTERVAL = 33
 MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
 VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 
-VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 15)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
+VIZ_DATA_BUFFER_MAX_SIZE = int(2 ** 18)  # max data buffer size for visualization, you can reduce this number to reduce memory usage
 
 SCRIPTING_UPDATE_REFRESH_INTERVA = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
