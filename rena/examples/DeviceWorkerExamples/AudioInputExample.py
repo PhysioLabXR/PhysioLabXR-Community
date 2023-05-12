@@ -1,3 +1,5 @@
+import time
+
 import pyaudio
 import wave
 import numpy as np
@@ -22,7 +24,7 @@ stream = p.open(format=sample_format,
                 rate=fs,
                 frames_per_buffer=chunk,
                 input=True,
-                input_device_index=3)
+                input_device_index=2)
 
 frames = []  # list to store audio frames
 
@@ -30,6 +32,7 @@ frames = []  # list to store audio frames
 for i in range(0, int(fs / chunk * seconds)):
     data = stream.read(chunk)
     frames.append(data)
+    # print(time.time())
 
 # stop and close the stream
 stream.stop_stream()

@@ -24,6 +24,7 @@ class PresetType(Enum):
     ZMQ = 'ZMQ'
     DEVICE = 'DEVICE'
     EXPERIMENT = 'EXPERIMENT'
+    AUDIOINPUT = "AUDIOINPUT"
 
 
 class VideoDeviceChannelOrder(Enum):
