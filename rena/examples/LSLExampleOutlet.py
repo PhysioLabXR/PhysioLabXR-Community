@@ -12,8 +12,6 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
 def main(argv):
-    letters = string.digits
-
     srate = 128
     name = 'Dummy-8Chan'
     print('Stream name is ' + name)
@@ -37,12 +35,6 @@ def main(argv):
             name = arg
         elif opt in ("-t", "--type"):
             type = arg
-
-    # first create a new stream info (here we set the name to BioSemi,
-    # the content-type to EEG, 8 channels, 100 Hz, and float-valued data) The
-    # last value would be the serial number of the device or some other more or
-    # less locally unique identifier for the stream as far as available (you
-    # could also omit it but interrupted connections wouldn't auto-recover)
     info = StreamInfo(name, type, n_channels, srate, 'float32', 'someuuid1234')
 
     # next make an outlet

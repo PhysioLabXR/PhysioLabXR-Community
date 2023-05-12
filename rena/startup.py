@@ -3,11 +3,9 @@ import os.path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.presets.Presets import Presets
 from rena.ui_shared import *
 from rena import config, config_ui
-from rena.utils.settings_utils import export_preset_to_settings, load_all_presets, \
-    load_all_experiment_presets, process_plot_group
 from rena.utils.ui_utils import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme,
@@ -26,6 +24,7 @@ def load_settings(revert_to_default=True, reload_presets=True):
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
         config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
         config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
+        config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
@@ -49,35 +48,13 @@ def load_settings(revert_to_default=True, reload_presets=True):
             config.settings.setValue('pull_data_interval', config.pull_data_interval)
         if not config.settings.contains('visualization_refresh_interval') or config.settings.value('visualization_refresh_interval') is None:
             config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
-
-    print('Reloading presets from Preset directory to persistent settings')
-    # load the presets, reload from local directory the default LSL, device and experiment presets
-    if reload_presets: config.settings.remove('presets')  # TODO: in production, change this to change if preset changed on file system
-    LSL_presets_dict = load_all_presets('../Presets/LSLPresets')
-    ZMQ_presets_dict = load_all_presets('../Presets/ZMQPresets')
-    device_presets_dict = load_all_presets('../Presets/DevicePresets')
-    experiment_presets_dict = load_all_experiment_presets()
-
-    for _, preset in LSL_presets_dict.items():
-        preset["NetworkingInterface"] = "LSL"
-    for _, preset in ZMQ_presets_dict.items():
-        preset["NetworkingInterface"] = "ZMQ"
-    for _, preset in device_presets_dict.items():
-        preset["NetworkingInterface"] = "Device"
-
-    stream_presets_dict = {**LSL_presets_dict, **ZMQ_presets_dict, **device_presets_dict}  # merge the lsl and device presets
-    # add plot groups
-    stream_presets_dict = dict([(stream_name, process_plot_group(preset)) for stream_name, preset in stream_presets_dict.items()])
-
-    [export_preset_to_settings(p, 'experimentpresets') for p in experiment_presets_dict.items()]
-    [export_preset_to_settings(p, 'streampresets') for p in stream_presets_dict.values()]
-
+        if not config.settings.contains('default_channel_display_num') or config.settings.value('default_channel_display_num') is None:
+            config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     config.settings.sync()
+    # load the presets, reload from local directory the default LSL, device and experiment presets
+    presets = Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
 
-    print('Loading avaiable cameras')
-    cameras = get_working_camera_ports()
-    cameras = list(map(str, cameras[1]))
-    config.settings.setValue('video_device', cameras + ['monitor1'])
+    pass
 
 def load_ui_shared():
     global stream_unavailable_pixmap

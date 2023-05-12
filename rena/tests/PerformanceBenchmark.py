@@ -32,7 +32,7 @@ from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import ContextBot, update_test_cwd, get_random_test_stream_names, run_benchmark, \
     visualize_benchmark_results, app_fixture
 from rena.utils.data_utils import RNStream
-from rena.utils.settings_utils import create_default_preset
+from rena.presets.presets_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
 
 

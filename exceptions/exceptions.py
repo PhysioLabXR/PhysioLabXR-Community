@@ -103,11 +103,11 @@ class UnsupportedErrorTypeError(RenaError):
     def __str__(self):
         return 'This error type should not be raised \n' + self.message
 
-class InvalidPresetError(RenaError):
+class InvalidPresetErrorChannelNameOrNumChannel(RenaError):
     def __init__(self, stream_name):
         super().__init__(stream_name)
     def __str__(self):
-        return 'The preset {0} does is not valid. Must have either Channelnames or NumChannels defined\n'.format(self.message)
+        return 'The preset {0} does is not valid. Must have either ChannelNames or NumChannels defined\n'.format(self.message)
 
 class InvalidScriptPathError(RenaError):
     def __init__(self, script_path, error):

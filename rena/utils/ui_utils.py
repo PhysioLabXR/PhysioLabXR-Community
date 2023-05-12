@@ -1,13 +1,10 @@
-import time
-import cv2
 import qimage2ndarray
-# from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
+    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
 from qimage2ndarray.dynqt import QtGui
@@ -15,8 +12,7 @@ from qimage2ndarray.dynqt import QtGui
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.settings_utils import get_all_preset_names, get_stream_preset_names
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
@@ -404,7 +400,7 @@ class AnotherWindow(QWidget):
     will appear as a free-floating window as we want.
     """
 
-    def __init__(self, widget_to_add: QWidget, close_function):
+    def __init__(self, widget_to_add: QWidget, close_function: callable):
         super().__init__()
         layout = QVBoxLayout()
         layout.addWidget(widget_to_add)
@@ -412,7 +408,6 @@ class AnotherWindow(QWidget):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        # do stuff
         print('Window closed')
         if self.close_function():
             event.accept()  # let the window close
@@ -474,6 +469,11 @@ def clear_layout(layout):
         child = layout.takeAt(0)
         if child.widget():
             child.widget().deleteLater()
+
+def clear_widget(target_widget):
+    for i in reversed(range(target_widget.count())):
+        widget = target_widget.widget(i)
+        widget.deleteLater()
 
 # def change_plot_label(plot, plotItem, name):
 #     # change the label of given PlotDataItem in the plot's legend

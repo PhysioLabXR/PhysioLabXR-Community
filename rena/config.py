@@ -4,6 +4,8 @@ import numpy as np
 from PyQt5.QtCore import QSettings
 from sys import platform
 
+from PyQt5.QtGui import QIcon
+
 '''
 ########################################################################################################################
 User parameters:
@@ -15,7 +17,7 @@ MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP = 512
 MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM = 1000
 
 VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
-VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20 # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
+VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
 VIDEO_DEVICE_REFRESH_INTERVAL = 33
 MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
@@ -138,10 +140,18 @@ scripting_port = 8000
 CONSOLE_LOG_MAX_NUM_ROWS = 1000
 script_fps_counter_buffer_size = 10000
 
-valid_networking_interfaces = ['LSL', 'ZMQ', 'Device']
 valid_preset_categories = ['other', 'video', 'exp']
 
 stream_availability_wait_time = 2  # in seconds
 
 # viz
 plot_fps_range = (1, 60)
+
+default_group_name = 'default group name '
+
+app_data_name = 'RenaLabApp'
+
+app_logo_path = '../media/logo/RenaLabApp.png'
+
+def valid_networking_interfaces():
+    return None

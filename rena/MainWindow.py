@@ -1,25 +1,21 @@
 import os
-import random
 import sys
-import time
 import webbrowser
 
-import pyqtgraph as pg
-from PyQt5 import QtWidgets, sip, uic
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtWidgets import QWidget
 
 from exceptions.exceptions import RenaError
 from rena import config
+from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.utils.lsl_utils import get_available_lsl_streams
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    check_preset_exists, get_experiment_preset_streams
+from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset
+from rena.utils.test_utils import some_test
 
 try:
     import rena.config
@@ -31,14 +27,11 @@ from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
-from rena.utils.data_utils import window_slice
-from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor, DataBuffer
+from rena.utils.buffers import DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
-    init_camera_widget, convert_rgb_to_qt_image, another_window
+    another_window
 
 import numpy as np
-import collections
 
 
 # Define function to import external files when using PyInstaller.
@@ -66,7 +59,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         super().__init__(*args, **kwargs)
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
-        self.setWindowTitle('Reality Navigation')
+        self.setWindowTitle('RenaLabApp')
         self.app = app
         self.ask_to_close = ask_to_close
 
@@ -86,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                 identity='client')
 
         #########
-        # meta data udpate timer
+        # meta data update timer
         self.meta_data_update_timer = QTimer()
         self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.meta_data_update_timer.timeout.connect(self.update_meta_data)
@@ -152,22 +145,28 @@ class MainWindow(QtWidgets.QMainWindow):
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            selected_type = self.addStreamWidget.get_current_selected_type()
-            if selected_type == 'video':  # add video device
-                self.init_video_device(selected_text)
-            elif selected_type == 'Device':  # if this is a device preset
-                self.init_device(selected_text)  # add device stream
-            elif selected_type == 'LSL' or selected_type == 'ZMQ':
-                self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
-            elif selected_type == 'exp':  # add multiple streams from an experiment preset
-                streams_for_experiment = get_experiment_preset_streams(selected_text)
-                self.add_streams_to_visualize(streams_for_experiment)
-            elif selected_type == 'other':  # add a previous unknown lsl stream
+            try:
+                is_new_preset = False
+                selected_type = self.addStreamWidget.get_current_selected_type()
+            except KeyError:
+                is_new_preset = True
+
+            if is_new_preset:
                 self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
-                raise Exception("Unknow preset type {}".format(selected_type))
+                if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
+                    self.init_video_device(selected_text)
+                elif selected_type == PresetType.DEVICE:  # if this is a device preset
+                    self.init_device(selected_text)  # add device stream
+                elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
+                    self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
+                elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
+                    streams_for_experiment = get_experiment_preset_streams(selected_text)
+                    self.add_streams_to_visualize(streams_for_experiment)
+                else:
+                    raise Exception("Unknow preset type {}".format(selected_type))
             self.update_active_streams()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -200,7 +199,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
-        widget = VideoDeviceWidget(main_parent=self,
+        widget = VideoDeviceWidget(parent_widget=self,
                                    parent_layout=self.camHorizontalLayout,
                                    video_device_name=video_device_name,
                                    insert_position=self.camHorizontalLayout.count() - 1)
@@ -232,21 +231,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # set up UI elements
         widget_name = networking_stream_name + '_widget'
-        stream_widget = StreamWidget(main_parent=self,
-                                     parent=self.streamsHorizontalLayout,
+        stream_widget = StreamWidget(parent_widget=self,
+                                     parent_layout=self.streamsHorizontalLayout,
                                      stream_name=networking_stream_name,
                                      data_type=data_type,
                                      worker=worker,
                                      networking_interface=networking_interface,
                                      port_number=port_number,
                                      insert_position=self.streamsHorizontalLayout.count() - 1)
-        start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
         stream_widget.setObjectName(widget_name)
-
         self.stream_widgets[networking_stream_name] = stream_widget
 
         if error_initialization:
-            remove_stream_btn.click()
+            stream_widget.RemoveStreamBtn.click()
         config.settings.endGroup()
 
     def update_meta_data(self):
@@ -334,6 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
 
+            Presets().__del__()
             event.accept()
             self.app.quit()
         else:

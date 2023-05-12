@@ -50,7 +50,7 @@ QWidget
     selection-color: #31363B;
     background-clip: border;
     border-image: none;
-    border: 0px transparent black;
+/*    border: 0px transparent black;*/
     outline: 0;
 }
 
@@ -645,7 +645,7 @@ QPushButton
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 5em;
+    min-width: 3em;
 }
 
 QPushButton:disabled
@@ -661,7 +661,7 @@ QPushButton:disabled
     border-radius:  10px;
     outline: none;
     font: 13px;
-    min-width: 5em;
+    min-width: 3em;
 }
 
 QPushButton:focus
@@ -1345,7 +1345,8 @@ QSlider::sub-page:vertical
 QToolButton
 {
     background-color: transparent;
-    border: 0.1ex solid #BAB9B8;
+    border: solid #BAB9B8;
+    border-width: 2px;
     border-radius: 0.2ex;
     margin: 0.3ex;
     padding: 0.5ex;
@@ -1380,7 +1381,8 @@ QToolButton:hover,
 QToolButton::menu-button:hover
 {
     background-color: transparent;
-    border: 0.1ex solid #33A4DF;
+    border: solid #33A4DF;
+    border-width: 2px;
 }
 
 QToolButton:checked,
@@ -1560,7 +1562,8 @@ QStatusBar::item
 
 QSplitter::handle
 {
-    border: 0.1ex dashed #BAB9B8;
+    background-color: #31363b;
+    border: 1px solid gray;
 }
 
 QSplitter::handle:hover

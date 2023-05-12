@@ -1,7 +1,6 @@
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtGui import QIntValidator
 
-from rena.utils.settings_utils import set_stream_preset_info
+from rena.presets.presets_utils import set_stream_preset_info
 
 
 class CustomPropertyWidget(QtWidgets.QWidget):

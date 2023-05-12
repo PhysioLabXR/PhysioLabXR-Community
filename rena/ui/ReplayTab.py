@@ -27,7 +27,9 @@ class ReplayTab(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi("ui/ReplayTab.ui", self)
         self.is_replaying = False  # note this attribute will still be true even when the replay is paused
+        self.replay_speed = 1
 
+        self.PreloadBtn.clicked.connect(self.preload_btn_pressed)
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
@@ -80,6 +82,9 @@ class ReplayTab(QtWidgets.QWidget):
         print("Selected file: ", self.file_loc)
         self.ReplayFileLoc.setText(self.file_loc + '/')
         self.StartStopReplayBtn.setEnabled(True)
+
+    def preload_btn_pressed(self):
+        pass
 
     def start_stop_replay_btn_pressed(self):
         """

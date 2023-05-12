@@ -1,12 +1,9 @@
 import abc
 import time
-import time
 from collections import deque
 
-import cv2
 import numpy as np
 import psutil as psutil
-import pyautogui
 import pyqtgraph as pg
 import zmq
 from PyQt5 import QtCore
@@ -15,17 +12,16 @@ from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
 from exceptions.exceptions import DataPortNotOpenError
-from rena import config_ui, config_signal, shared, config
-from rena.config import STOP_PROCESS_KILL_TIMEOUT, REQUEST_REALTIME_INFO_TIMEOUT
-from rena.interfaces import InferenceInterface, LSLInletInterface
-from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
+from rena import config_signal, shared, config
+from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
+from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
-from rena.utils.sim import sim_openBCI_eeg, sim_unityLSL, sim_inference
+
 
 class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
     pass
@@ -241,7 +237,7 @@ class LSLInletWorker(QObject, RenaWorker):
         self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
-        # self.dsp_on = True
+        self.timestamp_queue = deque(maxlen=1024)
 
         self.start_time = time.time()
         self.num_samples = 0
@@ -257,16 +253,18 @@ class LSLInletWorker(QObject, RenaWorker):
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
             frames, timestamps = self._lslInlet_interface.process_frames()  # get all data and remove it from internal buffer
+            self.timestamp_queue.extend(timestamps)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+
             self.interface_mutex.unlock()
 
             if frames.shape[-1] == 0:
                 return
 
             self.num_samples += len(timestamps)
-            try:
-                sampling_rate = self.num_samples / (time.time() - self.start_time) if self.num_samples > 0 else 0
-            except ZeroDivisionError:
-                sampling_rate = 0
             # if self.dsp_on:
             #     current_time = time.time()
             #     self._rena_tcp_interface.send_array(frames)
@@ -339,62 +337,7 @@ class LSLInletWorker(QObject, RenaWorker):
             # self.dsp_server_process.close()
 
 
-class WebcamWorker(QObject, RenaWorker):
-    tick_signal = pyqtSignal()
-    change_pixmap_signal = pyqtSignal(tuple)
-
-    def __init__(self, cam_id):
-        super().__init__()
-        self.cap = None
-        self.cam_id = cam_id
-        self.cap = cv2.VideoCapture(int(self.cam_id))
-        self.tick_signal.connect(self.process_on_tick)
-        self.is_streaming = True
-
-    def stop_stream(self):
-        self.is_streaming = False
-        if self.cap is not None:
-            self.cap.release()
-
-    @pg.QtCore.pyqtSlot()
-    def process_on_tick(self):
-        if self.is_streaming:
-            pull_data_start_time = time.perf_counter()
-            ret, cv_img = self.cap.read()
-            if ret:
-                cv_img = cv_img.astype(np.uint8)
-                cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-                cv_img = cv2.resize(cv_img, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-                self.change_pixmap_signal.emit((self.cam_id, cv_img, local_clock()))  # uses lsl local clock for syncing
-
-
-class ScreenCaptureWorker(QObject, RenaWorker):
-    tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
-    change_pixmap_signal = pyqtSignal(tuple)
-
-    def __init__(self, screen_label):
-        super().__init__()
-        self.tick_signal.connect(self.process_on_tick)
-        self.screen_label = screen_label
-        self.is_streaming = True
-
-    def stop_stream(self):
-        self.is_streaming = False
-
-    @pg.QtCore.pyqtSlot()
-    def process_on_tick(self):
-        if self.is_streaming:
-            pull_data_start_time = time.perf_counter()
-            img = pyautogui.screenshot()
-            frame = np.array(img)
-            frame = frame.astype(np.uint8)
-            frame = cv2.resize(frame, (config_ui.cam_display_width, config_ui.cam_display_height), interpolation=cv2.INTER_NEAREST)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-            self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
-
-
-class OpenBCIDeviceWorker(QObject, RenaWorker):
+class OpenBCIDeviceWorker(QObject):
     # for passing data to the gesture tab
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
@@ -859,6 +802,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def start_stream(self):
         self.is_streaming = True
+        self.signal_stream_availability.emit(True)  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
         self.is_streaming = False

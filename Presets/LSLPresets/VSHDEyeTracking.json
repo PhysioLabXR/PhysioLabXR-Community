@@ -1,7 +1,11 @@
 { "StreamName":"VSHDEyeTracking",
   "ChannelNames":[
-        "Horizontal",
-        "Vertical"
+        "GazeHorizontal",
+        "GazeVertical",
+        "PupilHorizontal",
+        "PupilVertical"
   ],
   "NominalSamplingRate":  60,
-  "DataType": "float32"}
+  "DataType": "float32",
+  "GroupInfo":  [2]
+}
