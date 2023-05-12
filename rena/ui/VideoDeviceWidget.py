@@ -101,10 +101,10 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, image, timestamp)
 
     def remove_video_device(self):
-        self.timer.stop()
         if self.main_parent.recording_tab.is_recording:
             dialog_popup(msg='Cannot remove stream while recording.')
             return False
+        self.timer.stop()
         self.worker.stop_stream()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
@@ -137,3 +137,6 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.worker.video_scale = get_video_scale(self.video_device_name)
         self.worker.channel_order = get_video_channel_order(self.video_device_name)
         self.is_image_fitted_to_frame = False
+
+    def try_close(self):
+        return self.remove_video_device()
