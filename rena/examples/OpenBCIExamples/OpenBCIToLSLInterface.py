@@ -6,7 +6,7 @@ from pylsl import StreamInfo, StreamOutlet
 from rena.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 
-class OpenBCILSLInterface:
+class OpenBCIToLSLInterface:
 
     def __init__(self, stream_name, stream_type='EEG', serial_port='COM5', board_id="0",
                  log='store_true', streamer_params='',

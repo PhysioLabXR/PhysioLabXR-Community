@@ -353,15 +353,24 @@ class OpenBCIDeviceWorker(QObject):
 
         self.start_time = time.time()
 
+        self.timestamps_queue = deque(maxlen=self.interface.get_sampling_rate() * 10)  # TODO move this number to settings
+
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             data = self.interface.process_frames()  # get all data and remove it from internal buffer
             # notify the eeg data for the radar tab
-            to_local_lock = time.time() - local_clock()
-            timestamps = data[-2,:] - to_local_lock
+            # to_local_clock = time.time() - local_clock()
+            # timestamps = data[-2,:] - to_local_clock
 
-            sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
+            timestamps = data[-2, :] - data[-2, :][-1] + local_clock() if len(data[-2, :]) > 0 else []
+            #print("samplee num = ", len(data[-2,:]))
+
+            self.timestamps_queue.extend(timestamps)
+
+            # sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
+            sampling_rate = len(self.timestamps_queue) / (self.timestamps_queue[-1] - self.timestamps_queue[0]) if len(self.timestamps_queue) > 1 else 0
+            # print("openbci sampling rate:", sampling_rate)
             data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
 
@@ -384,6 +393,8 @@ class OpenBCIDeviceWorker(QObject):
 
     def is_stream_available(self):
         return True
+
+
 
 
 class MmwWorker(QObject):
