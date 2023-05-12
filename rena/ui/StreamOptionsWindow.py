@@ -81,7 +81,7 @@ class StreamOptionsWindow(QWidget):
 
     def update_num_points_to_display(self):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
-        self.numPointsShownLabel.setText(num_points_shown_text.format(num_points_to_plot))
+        self.numPointsShownLabel.setText(num_points_shown_text.format(int(num_points_to_plot)))
 
         if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE or num_points_to_plot == 0:
             if not self.has_reported_invalid_num_points:  # will only report once
