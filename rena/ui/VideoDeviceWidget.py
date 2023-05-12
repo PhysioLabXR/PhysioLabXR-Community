@@ -82,6 +82,8 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
         self.timer.start()
 
+        self.is_image_fitted_to_frame = False
+
 
     def visualize(self, cam_id_cv_img_timestamp):
         self.tick_times.append(time.time())
@@ -89,6 +91,11 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         # qt_img = convert_rgb_to_qt_image(image)
         image = np.swapaxes(image, 0, 1)
         self.image_item.setImage(image)
+
+        if not self.is_image_fitted_to_frame:
+            self.plot_widget.setXRange(0, image.shape[0])
+            self.plot_widget.setYRange(0, image.shape[1])
+            self.is_image_fitted_to_frame = True
 
         # self.ImageLabel.setPixmap(qt_img)
         self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, image, timestamp)
@@ -129,3 +136,4 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
     def video_preset_changed(self):
         self.worker.video_scale = get_video_scale(self.video_device_name)
         self.worker.channel_order = get_video_channel_order(self.video_device_name)
+        self.is_image_fitted_to_frame = False

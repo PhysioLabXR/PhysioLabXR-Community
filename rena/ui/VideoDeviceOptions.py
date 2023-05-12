@@ -11,11 +11,12 @@ from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 class VideoDeviceOptions(QWidget):
     def __init__(self, parent_stream_widget, video_device_name):
         super().__init__()
-        self.setWindowTitle('Options for {}'.format(video_device_name))
+        self.ui = uic.loadUi("ui/VideoDeviceOptions.ui", self)
+
         window_icon = QIcon(app_logo_path)
         self.setWindowIcon(window_icon)
+        self.setWindowTitle('Options for {}'.format(video_device_name))
 
-        self.ui = uic.loadUi("ui/VideoDeviceOptions.ui", self)
         self.parent = parent_stream_widget
         self.video_device_name = video_device_name
 
