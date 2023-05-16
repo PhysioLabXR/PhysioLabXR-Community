@@ -5,7 +5,7 @@ import numpy as np
 # Set parameters for recording
 chunk = 1024
 sample_format = pyaudio.paInt16
-channels = 2
+channels = 1
 fs = 44100
 seconds = 5
 input_device_index = 2
@@ -23,6 +23,8 @@ stream = p.open(format=sample_format,
                 input_device_index=input_device_index)
 
 frames = []
+
+stream.is_active()
 
 # Record audio for the specified number of seconds
 for i in range(0, int(fs / chunk * seconds)):

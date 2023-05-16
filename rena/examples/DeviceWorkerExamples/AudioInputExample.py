@@ -30,6 +30,7 @@ frames = []  # list to store audio frames
 
 # record audio for the specified duration
 for i in range(0, int(fs / chunk * seconds)):
+    print(stream.get_read_available())
     data = stream.read(chunk)
     frames.append(data)
     # print(time.time())
