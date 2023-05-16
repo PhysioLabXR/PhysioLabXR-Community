@@ -1,7 +1,8 @@
 import time
 import numpy as np
 import pyaudio
-
+from pylsl import local_clock
+import soundfile as sf
 from pylsl import StreamInlet, LostError, resolve_byprop
 
 from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
@@ -38,11 +39,34 @@ class RenaAudioInputInterface:
     def process_frames(self):
 
 
+
+
+
+        # read all data from the buffer
         data = self.stream.read(self.stream.get_read_available())
+
+        # get current timestamp with LSL
         current_time = time.time()
+        # timestamps array
         samples = len(data) // (self.channels * self.audio.get_sample_size(self.format))
-        frame_timestamps = [current_time - (samples - i) * self.frame_duration for i in range(samples)]
+        # timestamps
+        timestamps = np.array([current_time - (samples - i) * self.frame_duration for i in range(samples)])
+        timestamps = timestamps - timestamps[-1] + local_clock() if len(timestamps) > 0 else np.array([])
+
+
+
         data = np.frombuffer(data, dtype=np.int16)
+        data = np.array_split(data, self.channels)
+
+        return np.array(data), timestamps
+
+
+        # try:
+        #     a = time.time()
+
+        # split_channels = sf.blocks(audio_data, blocksize=self.channels * .get_sample_size(sample_format),
+        #                            dtype=sample_format, channels=channels)
+
 
         # self = stream_availab
 
@@ -115,4 +139,4 @@ if __name__ == '__main__':
     audio_interface = RenaAudioInputInterface()
     audio_interface.start_sensor()
     while 1:
-        new_data = audio_interface.process_frames()
+        frame_data, timestamps = audio_interface.process_frames()
