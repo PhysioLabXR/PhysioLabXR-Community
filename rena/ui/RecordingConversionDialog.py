@@ -78,4 +78,6 @@ class RecordingConversionWorker(QObject):
         elif self.file_format == "Pickel (.p)":
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
+        else:
+            raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
