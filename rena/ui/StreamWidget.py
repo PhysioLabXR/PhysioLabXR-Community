@@ -284,11 +284,12 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                                                       buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
-        self.timer.stop()
-        self.v_timer.stop()
+
         if self.main_parent.recording_tab.is_recording:
             self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
+        self.timer.stop()
+        self.v_timer.stop()
         if self.worker.is_streaming:
             self.worker.stop_stream()
         self.worker_thread.exit()
@@ -599,3 +600,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def set_spectrogram_cmap(self, group_name):
         self.viz_components.set_spectrogram_cmap(group_name)
+
+    def try_close(self):
+        return self.remove_stream()
