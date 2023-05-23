@@ -158,6 +158,8 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
                     self.init_video_device(selected_text)
+                elif selected_type == PresetType.AUDIOINPUT:  # add audio device
+                    self.init_video_device(selected_text)
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
                 elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
@@ -198,6 +200,15 @@ class MainWindow(QtWidgets.QMainWindow):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name):
+        widget_name = video_device_name + '_widget'
+        widget = VideoDeviceWidget(parent_widget=self,
+                                   parent_layout=self.camHorizontalLayout,
+                                   video_device_name=video_device_name,
+                                   insert_position=self.camHorizontalLayout.count() - 1)
+        widget.setObjectName(widget_name)
+        self.video_device_widgets[video_device_name] = widget
+
+    def init_audio_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
         widget = VideoDeviceWidget(parent_widget=self,
                                    parent_layout=self.camHorizontalLayout,
