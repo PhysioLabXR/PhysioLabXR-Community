@@ -16,4 +16,4 @@ def get_audio_devices():
 
 
 if __name__ == '__main__':
-    print("John")
+    get_audio_devices()

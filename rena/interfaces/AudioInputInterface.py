@@ -14,27 +14,30 @@ from stream_shared import lsl_continuous_resolver
 
 class RenaAudioInputInterface:
 
-    def __init__(self, input_device_index=0, frames_per_buffer=128, format=pyaudio.paInt16, channels=1, rate=4410):
+    def __init__(self, input_device_index, frames_per_buffer=128, data_format=pyaudio.paInt16, channels=1, sampling_rate=4410):
         self.input_device_index = input_device_index
         self.frames_per_buffer = frames_per_buffer
-        self.format = format
+        self.format = data_format
         self.channels = channels
-        self.rate = rate
+        self.sampling_rate = sampling_rate
 
-        self.frame_duration = 1 / rate
+        self.frame_duration = 1 / sampling_rate
 
         self.audio = None
         self.stream = None
 
     def start_sensor(self):
         self.audio = pyaudio.PyAudio()
+
+        # open stream
         self.stream = self.audio.open(format=self.format,
                                       channels=self.channels,
-                                      rate=self.rate,
+                                      rate=self.sampling_rate,
                                       frames_per_buffer=self.frames_per_buffer,
                                       input=True,
                                       input_device_index=self.input_device_index)
-        # self.stream.start_stream()
+        # start stream
+        self.stream.start_stream()
 
     def process_frames(self):
 
