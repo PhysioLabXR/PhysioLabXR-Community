@@ -284,6 +284,7 @@ class Presets(metaclass=Singleton):
     video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
     audio_device_presets: Dict[str, AudioDevicePreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
+
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
     _preset_path: str = os.path.join(_app_data_path, 'Presets.json')
@@ -330,12 +331,19 @@ class Presets(metaclass=Singleton):
         # video Presets
         _load_video_device_presets(self)
 
+
         # audio device Presets
         _load_audio_device_presets(self)
 
 
         self.save(is_async=True)
         print("Presets instance successfully initialized")
+
+    def _get_all_presets(self):
+        """
+        this function needs to be modified if new preset dict are added
+        """
+        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
@@ -417,10 +425,7 @@ class Presets(metaclass=Singleton):
             save_local(self._app_data_path, self.__dict__)
 
     def __getitem__(self, key):
-        for d in [self.stream_presets, self.video_presets, self.experiment_presets]:
-            if key in d:
-                return d[key]
-        raise KeyError(key)
+        return self._get_all_presets()[key]
 
     def keys(self):
-        return self.stream_presets.keys() | self.video_presets.keys() | self.experiment_presets.keys()
+        return self._get_all_presets().keys()
