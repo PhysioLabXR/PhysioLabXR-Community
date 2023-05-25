@@ -4,6 +4,8 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 import pyqtgraph as pg
 from scipy.io import savemat
+import numpy as np
+import os
 
 from rena.utils.data_utils import RNStream
 
@@ -78,6 +80,20 @@ class RecordingConversionWorker(QObject):
         elif self.file_format == "Pickel (.p)":
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
+        elif self.file_format == "Comma separate values (.CSV)":
+            if not os.path.exists(self.file_path.replace('.dats', '')):
+                newfile_path = os.mkdir(self.file_path.replace('.dats', ''))
+            for key, value in buffer.items():
+                # np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), value[0], delimiter=',') if (value[0].ndim <= 2) else np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.reshape(buffer['monitor 0'][0],(buffer['monitor 0'][0].shape[0]*buffer['monitor 0'][0].shape[2], buffer['monitor 0'][0].shape[1]*buffer['monitor 0'][0].shape[3])), delimiter=',')
+                if value[0].ndim <= 2:
+                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.append(value[0], np.reshape(value[1], (1, -1)), axis=0), delimiter=',')
+                elif key == 'monitor 0':
+                    shape_0 = value[0].shape[0] * value[0].shape[2]
+                    shape_1 = value[0].shape[1] * value[0].shape[3]
+                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.reshape(np.append(value[0], np.reshape(value[1], (1, 1, 1, -1)), axis=0), (shape_0, shape_1)), delimiter=',', fmt='%d')
+                else:
+                    raise Exception(f"Unknown stream data shape")
+
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
