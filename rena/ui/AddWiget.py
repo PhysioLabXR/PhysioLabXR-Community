@@ -109,6 +109,8 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.device_preset_selected(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
+        elif selected_type == PresetType.AUDIOINPUT:
+            self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         else: raise Exception("Unknow preset type {}".format(selected_type))

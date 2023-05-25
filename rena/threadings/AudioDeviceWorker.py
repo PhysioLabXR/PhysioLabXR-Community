@@ -16,7 +16,7 @@ class AudioDeviceWorker(QObject, RenaWorker):
     tick_signal = pyqtSignal()
     # = pyqtSignal(tuple)
 
-    def __init__(self, audio_device_index, channel_num):
+    def __init__(self, audio_device_index, channel_num=1):
         super(AudioDeviceWorker, self).__init__()
         self._audio_input_interface = RenaAudioInputInterface(audio_device_index)
         self.is_streaming = False

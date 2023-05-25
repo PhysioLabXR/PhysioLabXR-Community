@@ -27,7 +27,7 @@ from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
 
 
-class AudioDeviceStreamWidget(Poppable, QtWidgets.QWidget):
+class AudioDeviceWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
 

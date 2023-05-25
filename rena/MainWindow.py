@@ -11,7 +11,9 @@ from exceptions.exceptions import RenaError
 from rena import config
 from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.threadings.AudioDeviceWorker import AudioDeviceWorker
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.AudioDeviceWidget import AudioDeviceWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
@@ -160,7 +162,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
                     self.init_video_device(selected_text)
                 elif selected_type == PresetType.AUDIOINPUT:  # add audio device
-                    self.init_video_device(selected_text)
+                    self.init_audio_device(selected_text)
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
                 elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
@@ -209,14 +211,18 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.video_device_widgets[video_device_name] = widget
 
-    def init_audio_device(self, video_device_name):
-        widget_name = video_device_name + '_widget'
-        widget = VideoDeviceWidget(parent_widget=self,
-                                   parent_layout=self.camHorizontalLayout,
-                                   video_device_name=video_device_name,
-                                   insert_position=self.camHorizontalLayout.count() - 1)
-        widget.setObjectName(widget_name)
-        self.video_device_widgets[video_device_name] = widget
+    def init_audio_device(self, audio_device_name):
+        # audio_device_index = Presets()[audio_device_name].audio_device_index
+        # worker = AudioDeviceWorker(audio_device_index=audio_device_index)
+        # self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+        pass
+        # widget_name = video_device_name + '_widget'
+        # widget = AudioDeviceWidget(parent_widget=self,
+        #                            parent_layout=self.camHorizontalLayout,
+        #                            video_device_name=video_device_name,
+        #                            insert_position=self.camHorizontalLayout.count() - 1)
+        # widget.setObjectName(widget_name)
+        # self.video_device_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
         for stream_name in stream_names:

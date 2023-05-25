@@ -343,7 +343,7 @@ class Presets(metaclass=Singleton):
         """
         this function needs to be modified if new preset dict are added
         """
-        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
+        return {**self.stream_presets, **self.video_presets , **self.audio_device_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
