@@ -221,7 +221,6 @@ class Presets(metaclass=Singleton):
     stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
     video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
-    _all_presets: List[Field] = field(default_factory=list)
 
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
