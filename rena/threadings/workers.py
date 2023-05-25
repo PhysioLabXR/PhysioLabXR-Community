@@ -29,13 +29,6 @@ class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
 class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
-    # def __init__(self):
-    #     super().__init__()
-        # self.dsp_on = True
-        # self.dsp_processor = None
-        # self.dsp_server_process = None
-        # self.dsp_client = None
-        # self.init_dsp_client_server('John')
     pull_data_times = deque(maxlen=100 * config.pull_data_interval)
 
     @pg.QtCore.pyqtSlot()
@@ -733,6 +726,8 @@ class ScriptInfoWorker(QObject):
 class ZMQWorker(QObject, RenaWorker):
     """
     Rena's implementation of working with ZMQ's tcp interfaces
+
+    The supported socket patterns is SUB/PUB
     """
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
