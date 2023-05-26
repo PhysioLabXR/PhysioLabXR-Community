@@ -6,6 +6,7 @@ import pyqtgraph as pg
 from scipy.io import savemat
 import numpy as np
 import os
+import csv
 
 from rena.configs.configs import RecordingFileFormat
 from rena.utils.data_utils import RNStream
@@ -91,7 +92,11 @@ class RecordingConversionWorker(QObject):
                 elif key == 'monitor 0':
                     shape_0 = value[0].shape[0] * value[0].shape[2]
                     shape_1 = value[0].shape[1] * value[0].shape[3]
-                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.reshape(np.append(value[0], np.reshape(value[1], (1, 1, 1, -1)), axis=0), (shape_0, shape_1)), delimiter=',', fmt='%d')
+                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}.csv'), np.reshape(value[0], (shape_0, shape_1)), delimiter=',', fmt='%d')
+                    with open(os.path.join(self.file_path.replace('.dats', ''), f'{key}.csv'), 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow(value[1])
+                        writer.writerow(value[0].shape)
                 else:
                     raise Exception(f"Unknown stream data shape")
 
