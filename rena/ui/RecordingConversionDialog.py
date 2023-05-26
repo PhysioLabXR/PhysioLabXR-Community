@@ -52,6 +52,41 @@ class RecordingConversionDialog(QtWidgets.QWidget):
         self.close()
         self.thread.quit()
 
+class CsvConverter:
+    def __init__(self, data):
+        self.data = data
+
+    def store_csv(self, file_path):
+        if not os.path.exists(file_path.replace('.dats', '')):
+            newfile_path = file_path.replace('.dats', '')
+            os.mkdir(newfile_path)
+        for key, value in self.data.items():
+            if value[0].ndim <= 2:
+                np.savetxt(os.path.join(newfile_path, f'{key}_y.csv'),
+                           np.append(value[0], np.reshape(value[1], (1, -1)), axis=0), delimiter=',')
+            elif key == 'monitor 0':
+                shape_0 = value[0].shape[0] * value[0].shape[2]
+                shape_1 = value[0].shape[1] * value[0].shape[3]
+                np.savetxt(os.path.join(newfile_path, f'{key}.csv'),
+                           np.reshape(value[0], (shape_0, shape_1)), delimiter=',', fmt='%d')
+                with open(os.path.join(newfile_path, f'{key}.csv'), 'a', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(value[1])
+                    writer.writerow(value[0].shape)
+            else:
+                raise Exception(f"Unknown stream data shape")
+
+    def reload_csv(self, file_path):
+        # Open the CSV file for reading
+        with open(file_path, 'r') as file:
+            # Read the contents of the file
+            reader = csv.reader(file)
+            contents = list(reader)
+
+        # Retrieve the last row from the contents
+        last_row = contents[-1]
+
+
 
 class RecordingConversionWorker(QObject):
     finished_streamin = pyqtSignal()
@@ -82,23 +117,8 @@ class RecordingConversionWorker(QObject):
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
         elif self.file_format == "Comma separate values (.CSV)":
-            if not os.path.exists(self.file_path.replace('.dats', '')):
-                newfile_path = os.mkdir(self.file_path.replace('.dats', ''))
-            for key, value in buffer.items():
-                # np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), value[0], delimiter=',') if (value[0].ndim <= 2) else np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.reshape(buffer['monitor 0'][0],(buffer['monitor 0'][0].shape[0]*buffer['monitor 0'][0].shape[2], buffer['monitor 0'][0].shape[1]*buffer['monitor 0'][0].shape[3])), delimiter=',')
-                if value[0].ndim <= 2:
-                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}_y.csv'), np.append(value[0], np.reshape(value[1], (1, -1)), axis=0), delimiter=',')
-                elif key == 'monitor 0':
-                    shape_0 = value[0].shape[0] * value[0].shape[2]
-                    shape_1 = value[0].shape[1] * value[0].shape[3]
-                    np.savetxt(os.path.join(self.file_path.replace('.dats', ''), f'{key}.csv'), np.reshape(value[0], (shape_0, shape_1)), delimiter=',', fmt='%d')
-                    with open(os.path.join(self.file_path.replace('.dats', ''), f'{key}.csv'), 'a', newline='') as csvfile:
-                        writer = csv.writer(csvfile)
-                        writer.writerow(value[1])
-                        writer.writerow(value[0].shape)
-                else:
-                    raise Exception(f"Unknown stream data shape")
-
+            csv_converter = CsvConverter(buffer)
+            csv_converter.store_csv(self.file_path)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
