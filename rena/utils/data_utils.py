@@ -2,6 +2,7 @@ import os
 import warnings
 from pathlib import Path
 from datetime import datetime
+import csv
 
 import cv2
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ from scipy.signal import resample
 from scipy.stats import stats
 
 from exceptions.exceptions import BadOutputError
+from rena.utils.Singleton import Singleton
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
 
 
@@ -784,3 +786,50 @@ def convert_dict_keys_to_snake_case(d: dict) -> dict:
     @return:
     """
     return {camel_to_snake_case(k): v for k, v in d.items()}
+
+class CsvStoreLoad:
+    def store_csv(self, data, file_path):
+        if not os.path.exists(file_path.replace('.dats', '')):
+            newfile_path = file_path.replace('.dats', '')
+            os.mkdir(newfile_path)
+        for key, value in data.items():
+            if value[0].ndim <= 2:
+                np.savetxt(os.path.join(newfile_path, f'{key}.csv'),
+                           np.append(value[0], np.reshape(value[1], (1, -1)), axis=0), delimiter=',')
+            elif key == 'monitor 0':
+                shape_0 = value[0].shape[0] * value[0].shape[2]
+                shape_1 = value[0].shape[1] * value[0].shape[3]
+                np.savetxt(os.path.join(newfile_path, f'{key}.csv'),
+                           np.reshape(value[0], (shape_0, shape_1)), delimiter=',', fmt='%d')
+                with open(os.path.join(newfile_path, f'{key}.csv'), 'a', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(value[1])
+                    writer.writerow(value[0].shape)
+            else:
+                raise Exception(f"Unknown stream data shape")
+
+
+    def reload_csv(self, dir_path):
+        # Open the CSV file for reading
+        file_list = os.listdir(dir_path)
+        data = {}
+        for file_name in file_list:
+            key = file_name.replace('.csv', '')
+            value = []
+            with open(os.path.join(dir_path, file_name), 'r') as file:
+                # Read the contents of the file
+                reader = csv.reader(file)
+                contents = list(reader)
+            if key == 'monitor 0':
+                converted = [[float(element) for element in row] for row in contents[:-2]]
+                value.append(np.array(converted))
+                value.append(np.array([float(element) for element in contents[-2]]))
+                dim = [int(element) for element in contents[-1]]
+                np.reshape(value[0], tuple(dim))
+            else:
+                converted = [[float(element) for element in row] for row in contents[:-1]]
+                value.append(np.array(converted))
+                value.append(np.array([float(element) for element in contents[-1]]))
+            data[key] = value
+        return data
+
