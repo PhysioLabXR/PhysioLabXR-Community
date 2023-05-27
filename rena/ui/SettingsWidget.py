@@ -84,7 +84,7 @@ class SettingsWidget(QtWidgets.QWidget):
         # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
         if self.saveFormatComboBox.currentText() != "Rena Native (.dats)":
             dialog_popup('Using data format other than Rena Native will result in a conversion time after finishing a '
-                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
+                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True, mode="modeless")
         config.settings.setValue('file_format', self.saveFormatComboBox.currentText())
 
     def reset_default(self):

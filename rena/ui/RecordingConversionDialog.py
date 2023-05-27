@@ -83,8 +83,8 @@ class RecordingConversionWorker(QObject):
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
         elif self.file_format == "Comma separate values (.CSV)":
-            csv_converter = CsvStoreLoad()
-            csv_converter.store_csv(buffer, self.file_path)
+            csv_store = CsvStoreLoad()
+            csv_store.store_csv(buffer, self.file_path)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
