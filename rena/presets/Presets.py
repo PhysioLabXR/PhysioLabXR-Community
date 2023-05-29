@@ -164,15 +164,17 @@ class AudioDevicePreset(metaclass=SubPreset):
         stream_name: name of the stream
         audio_device_id: the index of the audio device, it should be unique on the same PC
     """
+
     stream_name: str
-    preset_type: PresetType
     audio_device_index: int
+    channel_num: int
 
-    frames_per_buffer: int = 128
-    data_format: int = pyaudio.paInt16
-    channels: int = 1
-    sampling_rate: int = 4410
+    channel_names: List[str]
 
+    preset_type: PresetType = PresetType.AUDIOINPUT
+
+    nominal_sampling_rate: int = 4410
+    display_duration: int = 10
 
     def __post_init__(self):
         """
@@ -181,6 +183,73 @@ class AudioDevicePreset(metaclass=SubPreset):
         """
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
+
+
+    # group_info: dict[str, GroupEntry]
+    # device_info: dict
+    # preset_type: PresetType
+    #
+    # data_type: str = 'float32'
+    #
+    # port_number: int = None
+    #
+    # display_duration: float = None
+    # nominal_sampling_rate: int = 4410
+    #
+    # frames_per_buffer: int = 128
+    # sampling_rate: int = 4410
+
+
+
+    # stream_name: str
+    #
+    # # unique audio index
+    # audio_device_index: int
+    #
+    # # channel info
+    # num_channels: int
+    # channel_names: List[str]
+    # group_info: dict[str, GroupEntry]
+    #
+    # preset_type: PresetType
+    # data_type: int = pyaudio.paInt16
+    #
+    # display_duration: float = None
+    # nominal_sampling_rate: int = 4410
+    #
+    # # unique
+    # frames_per_buffer: int = 128
+    # sampling_rate: int = 4410
+
+
+
+
+    # def __post_init__(self):
+    #     """
+    #     StreamPreset's post init function. It will set the display_duration attribute based on the default_display_duration in the config file.
+    #     Note any attributes loaded from the config will need to be loaded into the class's attribute here
+    #     @return:
+    #     """
+    #     if self.display_duration is None:
+    #         self.display_duration = float(config.settings.value('viz_display_duration'))
+    #     for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
+    #         if isinstance(value, dict):
+    #             self.group_info[key] = GroupEntry(**value)
+    #     # convert any enum attribute loaded as string to the corresponding enum value
+    #     reload_enums(self)
+    #
+    # def add_group_entry(self, group_entry: GroupEntry):
+    #     assert group_entry.group_name not in self.group_info.keys(), f'Group {group_entry.group_name} already exists in the stream preset'
+    #     self.group_info[group_entry.group_name] = group_entry
+    #
+    # def get_next_available_groupname(self):
+    #     i = 0
+    #     rtn = f'{default_group_name}{i}'
+    #     while rtn in self.group_info.keys():
+    #         i += 1
+    #         rtn = f'{default_group_name}{i}'
+    #
+    #     return rtn
 
 
         # convert any enum attribute loaded as string to the corresponding enum value
@@ -396,12 +465,34 @@ class Presets(metaclass=Singleton):
         self.video_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, audio_device:AudioDevice):
+        audio_device_preset = AudioDevicePreset(
+            stream_name=audio_device.stream_name,
+            audio_device_index=audio_device.audio_device_index,
+            channel_num = audio_device.channel_num,
+            channel_names=audio_device.channel_names,
+        )
 
-        audio_device_preset = AudioDevicePreset(stream_name=audio_device.stream_name,
-                                                audio_device_index=audio_device.device_index,
-                                                preset_type=PresetType.AUDIOINPUT)
         self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
-        print(audio_device_preset.stream_name)
+
+        # audio_device_preset = AudioDevicePreset(stream_name=audio_device.stream_name,
+        #                                         audio_device_index=audio_device.audio_device_index,
+        #                                         channel_names=audio_device.channel_names,
+        #                                         num_channels=audio_device.num_channels,
+        #                                         group_info=audio_device.group_info,
+        #                                         device_info={},
+        #                                         preset_type=PresetType.AUDIOINPUT)
+        # self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
+
+        # audio_device_preset = AudioDevicePreset()
+        # audio_device_preset = AudioDevicePreset(stream_name=audio_device.stream_name,
+        #                                         audio_device_index=audio_device.audio_device_index,
+        #                                         num_channels= audio_device.num_channels,
+        #
+        #                                         preset_type=PresetType.AUDIOINPUT)
+        # self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
+        # print(audio_device_preset.stream_name)
+
+        pass
 
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):

@@ -239,3 +239,10 @@ def is_video_webcam(video_device_name) -> bool:
 
 def get_video_device_id(video_device_name) -> int:
     return Presets().video_presets[video_device_name].video_id
+
+def get_audio_device_index(audio_device_name) -> int:
+    return Presets().audio_device_presets[audio_device_name].audio_device_index
+
+def get_audio_device_channel_num(audio_device_name) -> int:
+    return Presets().audio_device_presets[audio_device_name].channel_num
+
