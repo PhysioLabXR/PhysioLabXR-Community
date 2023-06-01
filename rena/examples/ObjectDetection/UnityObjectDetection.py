@@ -36,6 +36,8 @@ od_req_socket.bind(rep_tcpAddress)
 
 print('Sockets connected, entering image loop')
 
+
+
 def processDepthImage(depthROI):
     near = 0.1
     far = 20.0
@@ -115,6 +117,9 @@ while True:
                         (np.max((0, np.min((input_size[0], box[0] + 10)))),
                          np.max((0, np.min((input_size[1], box[1] + 30))))),
                         cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
+
+            # if classNames[class_id - 1] == 'motorcycle':
+            #     # Get depth information of bounding box region
 
         # get dimensions of image
         dimensions = colorImg.shape
