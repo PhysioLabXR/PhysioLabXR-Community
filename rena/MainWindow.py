@@ -215,13 +215,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_audio_device(self, audio_device_name):
 
-        widget_name = audio_device_name + '_widget'
-        widget = AudioDeviceWidget(parent_widget=self,
-                                   parent_layout=self.camHorizontalLayout,
-                                   audio_device_name=audio_device_name,
-                                   insert_position=self.camHorizontalLayout.count() - 1)
-        widget.setObjectName(widget_name)
-        self.audio_device_widgets[audio_device_name] = widget
+        # widget_name = audio_device_name + '_widget'
+        # widget = AudioDeviceWidget(parent_widget=self,
+        #                            parent_layout=self.camHorizontalLayout,
+        #                            audio_device_name=audio_device_name,
+        #                            insert_position=self.camHorizontalLayout.count() - 1)
+        # widget.setObjectName(widget_name)
+        # self.audio_device_widgets[audio_device_name] = widget
 
 
         # audio_device_index = get_audio_device_index(audio_device_name=audio_device_name)

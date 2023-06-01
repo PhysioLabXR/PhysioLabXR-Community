@@ -13,11 +13,13 @@ from rena.utils.image_utils import process_image
 
 
 class AudioDeviceWorker(QObject, RenaWorker):
-    tick_signal = pyqtSignal()
-    # = pyqtSignal(tuple)
+    signal_data = pyqtSignal(dict)
+    signal_data_tick = pyqtSignal()
 
     def __init__(self, audio_device_index, channel_num=1):
         super(AudioDeviceWorker, self).__init__()
+        self.signal_data_tick.connect(self.process_on_tick)
+
         self._audio_input_interface = RenaAudioInputInterface(audio_device_index)
         self.is_streaming = False
         self.interface_mutex = QMutex()
@@ -36,7 +38,7 @@ class AudioDeviceWorker(QObject, RenaWorker):
             self.signal_data.emit(data_dict)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
-            self.interface_mutex.lock()
+            self.interface_mutex.unlock()
 
 
     def start_stream(self):

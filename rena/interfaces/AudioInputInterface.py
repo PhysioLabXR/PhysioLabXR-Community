@@ -73,7 +73,7 @@ class RenaAudioInputInterface:
 
 if __name__ == '__main__':
     # LSL example
-    info = pylsl.StreamInfo("MyStream", "MyData", 1, 44100, pylsl.cf_int16, "myuniqueid")
+    info = pylsl.StreamInfo("AudioStream", "MyData", 1, 44100, pylsl.cf_int16, "myuniqueid")
     outlet = pylsl.StreamOutlet(info)
 
     audio_interface = RenaAudioInputInterface(input_device_index=1)
