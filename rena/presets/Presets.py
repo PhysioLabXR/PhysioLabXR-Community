@@ -3,7 +3,7 @@ import multiprocessing
 import os
 from dataclasses import dataclass, field, fields, Field
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 from PyQt5.QtCore import QStandardPaths
 
@@ -218,8 +218,7 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
-    video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
@@ -272,7 +271,7 @@ class Presets(metaclass=Singleton):
         """
         this function needs to be modified if new preset dict are added
         """
-        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
+        return {**self.stream_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
@@ -322,7 +321,7 @@ class Presets(metaclass=Singleton):
 
     def add_video_preset(self, stream_name, video_type, video_id):
         video_preset = VideoPreset(stream_name, video_type, video_id)
-        self.video_presets[video_preset.stream_name] = video_preset
+        self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """
