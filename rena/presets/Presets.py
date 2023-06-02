@@ -10,28 +10,37 @@ from PyQt5.QtCore import QStandardPaths
 from rena import config
 from rena.config import app_data_name, default_group_name
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.preset_class_helpers import reload_enums, SubPreset
+from rena.presets.preset_class_helpers import reload_enums, SubPreset, DevicePreset
 from rena.utils.Singleton import Singleton
-from rena.utils.audio_device_utils import get_audio_devices_dict, AudioDevice
+# from rena.utils.audio_device_utils import get_audio_devices_dict
+from rena.utils.audio_device_utils import get_audio_device_info_dict
 from rena.utils.fs_utils import get_file_changes_multiple_dir
-from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
+from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset, \
+    create_default_group_info
 from rena.utils.video_capture_utils import get_working_camera_ports
 import pyaudio
 
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
-    AUDIOINPUT = "AUDIOINPUT"
+    AUDIODEVICE = "AUDIODEVICE"
     LSL = 'LSL'
     ZMQ = 'ZMQ'
     DEVICE = 'DEVICE'
     EXPERIMENT = 'EXPERIMENT'
 
 
+class DeviceType(Enum):
+    AUDIOINPUT = "AUDIOINPUT"
+    EEG = "EEG"
+
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
+
+
+
 
 # class VideoDeviceTypeEncoder(json.JSONEncoder):
 #     def default(self, obj):
@@ -93,8 +102,10 @@ class StreamPreset(metaclass=SubPreset):
 
     group_info: dict[str, GroupEntry]
     device_info: dict
+
     preset_type: PresetType
 
+    device_preset: DevicePreset = None
     data_type: str = 'float32'
 
     port_number: int = None
@@ -155,26 +166,20 @@ class VideoPreset(metaclass=SubPreset):
         reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class AudioDevicePreset(metaclass=SubPreset):
+class AudioDevicePreset(DevicePreset):
     """
     Stream preset defines a stream to be loaded from the GUI.
 
     IMPORTANT: the only entry point to create stream preset is through the add_stream_preset function in the Presets class.
     attributes:
         stream_name: name of the stream
-        audio_device_id: the index of the audio device, it should be unique on the same PC
+        video_type: can be webcam or monitor
     """
+    _audio_device_index: int
+    _audio_data_type: int = pyaudio.paInt16
+    _audio_device_frames_per_buffer: int = 128
+    _audio_device_sampling_rate: int = 4410
 
-    stream_name: str
-    audio_device_index: int
-    channel_num: int
-
-    channel_names: List[str]
-
-    preset_type: PresetType = PresetType.AUDIOINPUT
-
-    nominal_sampling_rate: int = 4410
-    display_duration: int = 10
 
     def __post_init__(self):
         """
@@ -184,72 +189,6 @@ class AudioDevicePreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
-
-    # group_info: dict[str, GroupEntry]
-    # device_info: dict
-    # preset_type: PresetType
-    #
-    # data_type: str = 'float32'
-    #
-    # port_number: int = None
-    #
-    # display_duration: float = None
-    # nominal_sampling_rate: int = 4410
-    #
-    # frames_per_buffer: int = 128
-    # sampling_rate: int = 4410
-
-
-
-    # stream_name: str
-    #
-    # # unique audio index
-    # audio_device_index: int
-    #
-    # # channel info
-    # num_channels: int
-    # channel_names: List[str]
-    # group_info: dict[str, GroupEntry]
-    #
-    # preset_type: PresetType
-    # data_type: int = pyaudio.paInt16
-    #
-    # display_duration: float = None
-    # nominal_sampling_rate: int = 4410
-    #
-    # # unique
-    # frames_per_buffer: int = 128
-    # sampling_rate: int = 4410
-
-
-
-
-    # def __post_init__(self):
-    #     """
-    #     StreamPreset's post init function. It will set the display_duration attribute based on the default_display_duration in the config file.
-    #     Note any attributes loaded from the config will need to be loaded into the class's attribute here
-    #     @return:
-    #     """
-    #     if self.display_duration is None:
-    #         self.display_duration = float(config.settings.value('viz_display_duration'))
-    #     for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
-    #         if isinstance(value, dict):
-    #             self.group_info[key] = GroupEntry(**value)
-    #     # convert any enum attribute loaded as string to the corresponding enum value
-    #     reload_enums(self)
-    #
-    # def add_group_entry(self, group_entry: GroupEntry):
-    #     assert group_entry.group_name not in self.group_info.keys(), f'Group {group_entry.group_name} already exists in the stream preset'
-    #     self.group_info[group_entry.group_name] = group_entry
-    #
-    # def get_next_available_groupname(self):
-    #     i = 0
-    #     rtn = f'{default_group_name}{i}'
-    #     while rtn in self.group_info.keys():
-    #         i += 1
-    #         rtn = f'{default_group_name}{i}'
-    #
-    #     return rtn
 
 
         # convert any enum attribute loaded as string to the corresponding enum value
@@ -315,10 +254,10 @@ def _load_video_device_presets(presets):
 
 def _load_audio_device_presets(presets):
     print('Loading available audio devices')
-    audio_devices_dict = get_audio_devices_dict()
+    audio_devices_info_dict = get_audio_device_info_dict()
 
-    for audio_device_index in audio_devices_dict:
-        presets.add_audio_device_preset(audio_devices_dict[audio_device_index])
+    for audio_devices in audio_devices_info_dict:
+        presets.add_audio_device_preset(**audio_devices_info_dict[audio_devices])
 
 
 
@@ -351,7 +290,7 @@ class Presets(metaclass=Singleton):
 
     stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
     video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
-    audio_device_presets: Dict[str, AudioDevicePreset] = field(default_factory=dict)
+    # audio_device_presets: Dict[str, AudioDevicePreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
@@ -412,7 +351,7 @@ class Presets(metaclass=Singleton):
         """
         this function needs to be modified if new preset dict are added
         """
-        return {**self.stream_presets, **self.video_presets , **self.audio_device_presets, **self.experiment_presets}
+        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
@@ -464,35 +403,23 @@ class Presets(metaclass=Singleton):
         video_preset = VideoPreset(stream_name, video_type, video_id)
         self.video_presets[video_preset.stream_name] = video_preset
 
-    def add_audio_device_preset(self, audio_device:AudioDevice):
-        audio_device_preset = AudioDevicePreset(
-            stream_name=audio_device.stream_name,
-            audio_device_index=audio_device.audio_device_index,
-            channel_num = audio_device.channel_num,
-            channel_names=audio_device.channel_names,
+    def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
+        audio_device_preset = AudioDevicePreset(_audio_device_index=audio_device_index)
+        channel_indices = list(range(channel_num))
+        channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
+        audio_device_preset = StreamPreset(
+            stream_name=stream_name,
+            channel_names=channel_names,
+            num_channels=channel_num,
+            group_info=create_default_group_info(channel_num=channel_num),
+            data_type='int16',
+            device_info={},
+            preset_type=PresetType.AUDIODEVICE,
+            device_preset=audio_device_preset
         )
 
-        self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
+        self.stream_presets[audio_device_preset.stream_name] = audio_device_preset
 
-        # audio_device_preset = AudioDevicePreset(stream_name=audio_device.stream_name,
-        #                                         audio_device_index=audio_device.audio_device_index,
-        #                                         channel_names=audio_device.channel_names,
-        #                                         num_channels=audio_device.num_channels,
-        #                                         group_info=audio_device.group_info,
-        #                                         device_info={},
-        #                                         preset_type=PresetType.AUDIOINPUT)
-        # self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
-
-        # audio_device_preset = AudioDevicePreset()
-        # audio_device_preset = AudioDevicePreset(stream_name=audio_device.stream_name,
-        #                                         audio_device_index=audio_device.audio_device_index,
-        #                                         num_channels= audio_device.num_channels,
-        #
-        #                                         preset_type=PresetType.AUDIOINPUT)
-        # self.audio_device_presets[audio_device_preset.stream_name] = audio_device_preset
-        # print(audio_device_preset.stream_name)
-
-        pass
 
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
@@ -520,3 +447,34 @@ class Presets(metaclass=Singleton):
 
     def keys(self):
         return self._get_all_presets().keys()
+
+
+############################################ Device Presets ###############################
+# @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+# class AudioDevicePreset(metaclass=SubPreset):
+#     """
+#     Stream preset defines a stream to be loaded from the GUI.
+#
+#     IMPORTANT: the only entry point to create stream preset is through the add_stream_preset function in the Presets class.
+#     attributes:
+#         stream_name: name of the stream
+#         video_type: can be webcam or monitor
+#     """
+#     _audio_device_index: int
+#     # _device_type: PresetType = PresetType.AUDIOINPUT
+#     _audio_data_type: int = pyaudio.paInt16
+#     _audio_device_frames_per_buffer: int = 128
+#     _audio_device_sampling_rate: int = 4410
+#
+#
+#     def __post_init__(self):
+#         """
+#         VideoPreset's post init function.
+#         @return:
+#         """
+#         # convert any enum attribute loaded as string to the corresponding enum value
+#         reload_enums(self)
+
+
+
+

@@ -109,7 +109,7 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.device_preset_selected(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
-        elif selected_type == PresetType.AUDIOINPUT:
+        elif selected_type == PresetType.AUDIODEVICE:
             self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()

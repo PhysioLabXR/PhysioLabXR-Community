@@ -229,6 +229,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             # self.reset_performance_measures()
             try:
                 self.worker.start_stream()
+                self.worker.timestamp_queue.clear()
             except LSLStreamNotFoundError as e:
                 self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                 return

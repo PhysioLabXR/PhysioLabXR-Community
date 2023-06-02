@@ -5,6 +5,15 @@ from enum import Enum
 class SubPreset(type):
     pass
 
+class DevicePreset(metaclass=SubPreset):
+    pass
+
+# @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+# class TobiiDeviceInfo(metaclass=SubPreset, DeviceInfo)
+
+# class Deviceinfo(type, metaclass=SubPr`):
+#     pass
+
 def reload_enums(target):
     for attr, attr_type in target.__annotations__.items():
         if isinstance(attr_type, type) and issubclass(attr_type, enum.Enum):

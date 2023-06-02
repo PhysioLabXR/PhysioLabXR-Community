@@ -132,7 +132,7 @@ def create_default_preset(stream_name, data_type, port, preset_type_str, num_cha
 
     stream_preset_dict = preprocess_stream_preset(preset_dict, preset_type_str)
     Presets().add_stream_preset(stream_preset_dict)
-    return preset_dict
+    return stream_preset_dict
 
 def pop_group_from_stream_preset(stream_name, group_name) -> GroupEntry:
     return Presets().stream_presets[stream_name].group_info.pop(group_name)
@@ -241,8 +241,8 @@ def get_video_device_id(video_device_name) -> int:
     return Presets().video_presets[video_device_name].video_id
 
 def get_audio_device_index(audio_device_name) -> int:
-    return Presets().audio_device_presets[audio_device_name].audio_device_index
+    return Presets().stream_presets[audio_device_name].device_preset._audio_device_index
 
 def get_audio_device_channel_num(audio_device_name) -> int:
-    return Presets().audio_device_presets[audio_device_name].channel_num
+    return Presets().stream_presets[audio_device_name].num_channels
 

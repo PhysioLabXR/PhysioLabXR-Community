@@ -6,14 +6,12 @@ from typing import Dict
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
-
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.AudioDeviceWorker import AudioDeviceWorker
 from rena.ui.AddWiget import AddStreamWidget
-from rena.ui.AudioDeviceWidget import AudioDeviceWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
@@ -70,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ############
         self.stream_widgets: Dict[str, StreamWidget] = {}
         self.video_device_widgets: Dict[str, VideoDeviceWidget] = {}
-        self.audio_device_widgets: Dict[str, AudioDeviceWidget] = {}
+        # self.audio_device_widgets: Dict[str, AudioDeviceWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors
@@ -163,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
                     self.init_video_device(selected_text)
-                elif selected_type == PresetType.AUDIOINPUT:  # add audio device
+                elif selected_type == PresetType.AUDIODEVICE:  # add audio device
                     self.init_audio_device(selected_text)
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
@@ -216,6 +214,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_audio_device(self, audio_device_name):
 
         # widget_name = audio_device_name + '_widget'
+        worker = AudioDeviceWorker(audio_device_name,
+                                   get_audio_device_index(audio_device_name),
+                                   get_audio_device_channel_num(audio_device_name))
+
+
+        self.init_network_streaming(networking_stream_name=audio_device_name, networking_interface='Device', data_type=None,
+                                    port_number=None, worker=worker)
         # widget = AudioDeviceWidget(parent_widget=self,
         #                            parent_layout=self.camHorizontalLayout,
         #                            audio_device_name=audio_device_name,
@@ -237,12 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.init_network_streaming(networking_stream_name=audio_device_name, networking_interface="Device", worker=worker)
         # self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
         pass
-        # widget_name = video_device_name + '_widget'
-        # widget = AudioDeviceWidget(parent_widget=self,
-        #                            parent_layout=self.camHorizontalLayout,
-        #                            video_device_name=video_device_name,
-        #                            insert_position=self.camHorizontalLayout.count() - 1)
-        # widget.setObjectName(widget_name)
+
 
     def add_streams_to_visualize(self, stream_names):
         for stream_name in stream_names:

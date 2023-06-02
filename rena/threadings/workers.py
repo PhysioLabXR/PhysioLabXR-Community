@@ -31,6 +31,9 @@ class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data_tick = pyqtSignal()
     pull_data_times = deque(maxlen=100 * config.pull_data_interval)
 
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
+
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         pass

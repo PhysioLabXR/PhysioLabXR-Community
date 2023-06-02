@@ -1,4 +1,5 @@
 import time
+from collections import deque
 
 import cv2
 import numpy as np
@@ -16,14 +17,19 @@ class AudioDeviceWorker(QObject, RenaWorker):
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
 
-    def __init__(self, audio_device_index, channel_num=1):
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
+    def __init__(self,stream_name, audio_device_index, channel_num):
         super(AudioDeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
 
-        self._audio_input_interface = RenaAudioInputInterface(audio_device_index)
+        self._audio_input_interface = RenaAudioInputInterface(stream_name=stream_name, audio_device_index=audio_device_index, channels=channel_num)
         self.is_streaming = False
         self.interface_mutex = QMutex()
 
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        self.timestamp_queue = deque(maxlen=self._audio_input_interface.get_sampling_rate() * 10)
 
 
     @pg.QtCore.pyqtSlot()
@@ -34,7 +40,15 @@ class AudioDeviceWorker(QObject, RenaWorker):
             self.interface_mutex.lock()
 
             frames, timestamps = self._audio_input_interface.process_frames()
-            data_dict = {'stream_name': self._audio_input_interface.input_device_index, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': 1000}
+
+            self.timestamp_queue.extend(timestamps)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+
+
+            data_dict = {'stream_name': self._audio_input_interface.audio_device_index, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
@@ -53,6 +67,16 @@ class AudioDeviceWorker(QObject, RenaWorker):
         self.is_streaming = False
         self.interface_mutex.unlock()
 
+
+    @pg.QtCore.pyqtSlot()
+    def process_stream_availability(self):
+        self.signal_stream_availability.emit(self.is_stream_available())
+
+    def is_stream_available(self):
+        return True
+
+    # def is_streaming(self):
+    #     return self.is_streaming
 
         # def __init__(self, input_device_index=0, frames_per_buffer=128, format=pyaudio.paInt16, channels=1, rate=4410):
         #     self.input_device_index = input_device_index

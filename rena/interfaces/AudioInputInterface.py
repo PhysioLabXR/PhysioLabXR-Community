@@ -14,8 +14,9 @@ from stream_shared import lsl_continuous_resolver
 
 class RenaAudioInputInterface:
 
-    def __init__(self, input_device_index, frames_per_buffer=128, data_format=pyaudio.paInt16, channels=1, sampling_rate=4410):
-        self.input_device_index = input_device_index
+    def __init__(self, stream_name, audio_device_index,  channels, frames_per_buffer=128, data_format=pyaudio.paInt16, sampling_rate=4410):
+        self.stream_name = stream_name
+        self.audio_device_index = audio_device_index
         self.frames_per_buffer = frames_per_buffer
         self.format = data_format
         self.channels = channels
@@ -35,7 +36,7 @@ class RenaAudioInputInterface:
                                       rate=self.sampling_rate,
                                       frames_per_buffer=self.frames_per_buffer,
                                       input=True,
-                                      input_device_index=self.input_device_index)
+                                      input_device_index=self.audio_device_index)
         # start stream
         self.stream.start_stream()
 
@@ -70,13 +71,16 @@ class RenaAudioInputInterface:
             self.stream.close()
             self.audio.terminate()
 
+    def get_sampling_rate(self):
+        return self.sampling_rate
+
 
 if __name__ == '__main__':
     # LSL example
     info = pylsl.StreamInfo("AudioStream", "MyData", 1, 44100, pylsl.cf_int16, "myuniqueid")
     outlet = pylsl.StreamOutlet(info)
 
-    audio_interface = RenaAudioInputInterface(input_device_index=1)
+    audio_interface = RenaAudioInputInterface(stream_name="test", audio_device_index=1, channels=1)
     audio_interface.start_sensor()
     while 1:
         data, timestamps = audio_interface.process_frames()
