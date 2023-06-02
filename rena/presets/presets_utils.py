@@ -132,7 +132,7 @@ def create_default_preset(stream_name, data_type, port, preset_type_str, num_cha
 
     stream_preset_dict = preprocess_stream_preset(preset_dict, preset_type_str)
     Presets().add_stream_preset(stream_preset_dict)
-    return stream_preset_dict
+    return stream_preset_dict # changed preset_dict to stream_preset_dict
 
 def pop_group_from_stream_preset(stream_name, group_name) -> GroupEntry:
     return Presets().stream_presets[stream_name].group_info.pop(group_name)
