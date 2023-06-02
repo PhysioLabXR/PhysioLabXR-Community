@@ -3,7 +3,7 @@ import multiprocessing
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 from PyQt5.QtCore import QStandardPaths
 
@@ -165,45 +165,6 @@ class VideoPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
-@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class AudioDevicePreset(DevicePreset):
-    """
-    Stream preset defines a stream to be loaded from the GUI.
-
-    IMPORTANT: the only entry point to create stream preset is through the add_stream_preset function in the Presets class.
-    attributes:
-        stream_name: name of the stream
-        video_type: can be webcam or monitor
-    """
-    _audio_device_index: int
-    _audio_data_type: int = pyaudio.paInt16
-    _audio_device_frames_per_buffer: int = 128
-    _audio_device_sampling_rate: int = 4410
-
-
-    def __post_init__(self):
-        """
-        VideoPreset's post init function.
-        @return:
-        """
-        # convert any enum attribute loaded as string to the corresponding enum value
-        reload_enums(self)
-
-
-
-        # convert any enum attribute loaded as string to the corresponding enum value
-        #reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
-        # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
-        # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
-        # please keep this comments and push to main you please** do it
-
-        # convert any enum attribute loaded as string to the corresponding enum value
-        #reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
-        # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
-        # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
-        # please keep this comments and push to main you please** do it
-
-
 
 def save_local(app_data_path, preset_dict) -> None:
     """
@@ -252,23 +213,6 @@ def _load_video_device_presets(presets):
         presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 
-def _load_audio_device_presets(presets):
-    print('Loading available audio devices')
-    audio_devices_info_dict = get_audio_device_info_dict()
-
-    for audio_devices in audio_devices_info_dict:
-        presets.add_audio_device_preset(**audio_devices_info_dict[audio_devices])
-
-
-
-    # print('Loading available cameras')
-    # _, working_camera_ports, _ = get_working_camera_ports()
-    # working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
-    #
-    # for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
-    #     presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
-    # presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
-
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
     """
@@ -288,9 +232,10 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
-    video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
+    # stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
+    # video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
     # audio_device_presets: Dict[str, AudioDevicePreset] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
@@ -337,12 +282,7 @@ class Presets(metaclass=Singleton):
         _load_stream_presets(self, dirty_presets)
 
         # video Presets
-        _load_video_device_presets(self)
-
-
-        # audio device Presets
-        _load_audio_device_presets(self)
-
+        # _load_video_device_presets(self)
 
         self.save(is_async=True)
         print("Presets instance successfully initialized")
@@ -351,7 +291,7 @@ class Presets(metaclass=Singleton):
         """
         this function needs to be modified if new preset dict are added
         """
-        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
+        return {**self.stream_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
@@ -401,7 +341,7 @@ class Presets(metaclass=Singleton):
 
     def add_video_preset(self, stream_name, video_type, video_id):
         video_preset = VideoPreset(stream_name, video_type, video_id)
-        self.video_presets[video_preset.stream_name] = video_preset
+        self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
         audio_device_preset = AudioDevicePreset(_audio_device_index=audio_device_index)
