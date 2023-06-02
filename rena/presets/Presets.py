@@ -253,11 +253,15 @@ class Presets(metaclass=Singleton):
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 for key, value in preset_dict['stream_presets'].items():
-                    preset = StreamPreset(**value)
+                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
+                        preset = StreamPreset(**value)
+                    elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
+                        preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
-                for key, value in preset_dict['video_presets'].items():
-                    preset = VideoPreset(**value)
-                    preset_dict['video_presets'][key] = preset
+
+                # for key, value in preset_dict['video_presets'].items():
+                #     preset = VideoPreset(**value)
+                #     preset_dict['video_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 

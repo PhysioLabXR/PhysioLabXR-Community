@@ -1,5 +1,6 @@
 import os.path
 
+import pyqtgraph
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
@@ -54,7 +55,7 @@ def load_settings(revert_to_default=True, reload_presets=True):
     # load the presets, reload from local directory the default LSL, device and experiment presets
     presets = Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
 
-    pass
+    pyqtgraph.setConfigOptions(useNumba=True)
 
 def load_ui_shared():
     global stream_unavailable_pixmap
