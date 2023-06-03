@@ -445,8 +445,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
         for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
-            # self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
-            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
         self.viz_components.fs_label.setText(
