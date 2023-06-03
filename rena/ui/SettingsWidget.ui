@@ -20,7 +20,7 @@
       <item>
        <widget class="QTabWidget" name="settings_tabs">
         <property name="currentIndex">
-         <number>1</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="settings_appearance_tab">
          <attribute name="title">
@@ -160,6 +160,22 @@
              <enum>Qt::LeftToRight</enum>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QWidget" name="widget_2" native="true">
+               <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <item>
+                 <widget class="QLabel" name="label">
+                  <property name="text">
+                   <string>Line chart visualization mode</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="linechart_viz_mode_combobox"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
              <item>
               <widget class="QWidget" name="widget_3" native="true">
                <layout class="QHBoxLayout" name="horizontalLayout_5">

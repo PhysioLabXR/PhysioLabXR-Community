@@ -2,15 +2,15 @@ import sys
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-# Press the green button in the gutter to run the script.
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
-from MainWindow import MainWindow
 from rena.config import app_logo_path
-from rena.startup import load_settings
+from rena.configs.configs import AppConfigs
 
-# import and init shared global variables
+AppConfigs(_reset=False)  # create the singleton app configs object
+from MainWindow import MainWindow
+from rena.startup import load_settings
 
 app = None
 

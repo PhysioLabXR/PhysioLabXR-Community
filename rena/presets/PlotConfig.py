@@ -2,7 +2,8 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 
 from rena.presets.Cmap import Cmap
-from rena.presets.preset_class_helpers import SubPreset, reload_enums
+from rena.presets.preset_class_helpers import SubPreset
+from rena.utils.ConfigPresetUtils import reload_enums
 
 
 class ImageFormat(Enum):

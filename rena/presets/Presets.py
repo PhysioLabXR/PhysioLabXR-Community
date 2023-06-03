@@ -1,7 +1,7 @@
 import json
 import multiprocessing
 import os
-from dataclasses import dataclass, field, fields, Field
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Union
 
@@ -9,8 +9,10 @@ from PyQt5.QtCore import QStandardPaths
 
 from rena import config
 from rena.config import app_data_name, default_group_name
+from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.preset_class_helpers import reload_enums, SubPreset
+from rena.presets.preset_class_helpers import SubPreset
+from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
@@ -152,21 +154,6 @@ class VideoPreset(metaclass=SubPreset):
         reload_enums(self)
 
 
-def save_local(app_data_path, preset_dict) -> None:
-    """
-    sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.
-    applies file lock while the json is being dumped. This will block another other process from accessing the file without
-    raising an exception.
-    """
-    if not os.path.exists(app_data_path):
-        os.makedirs(app_data_path)
-    path = os.path.join(app_data_path, 'Presets.json')
-    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
-
-    with open(path, 'w') as f:
-        f.write(json_data)
-
-
 def _load_stream_presets(presets, dirty_presets):
     for category, dirty_preset_paths in dirty_presets.items():
         for dirty_preset_path in dirty_preset_paths:
@@ -221,7 +208,7 @@ class Presets(metaclass=Singleton):
     stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
-    _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
+    _app_data_path: str = AppConfigs().app_data_path
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
     _preset_path: str = os.path.join(_app_data_path, 'Presets.json')
 
@@ -302,7 +289,7 @@ class Presets(metaclass=Singleton):
         """
         save the presets to the local disk when the application is closed
         """
-        save_local(self._app_data_path, self.__dict__)
+        save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
         print(f"Presets instance successfully deleted with its contents saved to {self._app_data_path}")
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
@@ -342,10 +329,10 @@ class Presets(metaclass=Singleton):
         @return: None
         """
         if is_async:
-            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
+            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__, 'Presets.json', PresetsEncoder))
             p.start()
         else:
-            save_local(self._app_data_path, self.__dict__)
+            save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
 
     def __getitem__(self, key):
         return self._get_all_presets()[key]
