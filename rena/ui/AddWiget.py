@@ -106,11 +106,13 @@ class AddStreamWidget(QtWidgets.QWidget):
             port_number = get_stream_preset_info(stream_name, "port_number")
             self.ZMQ_preset_selected(stream_name, port_number)
         elif selected_type == PresetType.DEVICE:
-            self.device_preset_selected(stream_name)
+            self.hide_stream_uis()
+            #self.device_preset_selected(stream_name)
+
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
-        elif selected_type == PresetType.AUDIODEVICE:
-            self.hide_stream_uis()
+        # elif selected_type == PresetType.AUDIODEVICE:
+        #     self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         else: raise Exception("Unknow preset type {}".format(selected_type))

@@ -9,23 +9,21 @@ from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType
+from rena.presets.Presets import Presets, PresetType, DeviceType
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.threadings.AudioDeviceWorker import AudioDeviceWorker
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
+from rena.ui.device_ui.audio_device_ui.AudioDeviceWidget import AudioDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset, \
-    get_audio_device_index, get_audio_device_channel_num
-from rena.utils.test_utils import some_test
+    get_device_type
 
 try:
     import rena.config
 except ModuleNotFoundError as e:
     print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
     raise e
-import rena.threadings.workers as workers
 from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsWidget import SettingsWidget
@@ -147,7 +145,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),
+                             title='Warning')
                 return
             try:
                 is_new_preset = False
@@ -158,12 +157,13 @@ class MainWindow(QtWidgets.QMainWindow):
             if is_new_preset:
                 self.create_preset(selected_text, data_type, port, networking_interface)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type=data_type,
+                                            port_number=port)  # TODO this can also be a device or experiment preset
             else:
                 if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
                     self.init_video_device(selected_text)
-                elif selected_type == PresetType.AUDIODEVICE:  # add audio device
-                    self.init_audio_device(selected_text)
+                # elif selected_type == PresetType.AUDIODEVICE:  # add audio device
+                #     self.init_audio_device(selected_text)
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
                 elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
@@ -178,8 +178,10 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
+    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1,
+                      nominal_sample_rate=None):
+        create_default_preset(stream_name, data_type, port, networking_interface, num_channels,
+                              nominal_sample_rate)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
@@ -198,10 +200,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_all_btn.setEnabled(streaming_widget_count > 0)
 
     def on_start_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available and not x.is_widget_streaming()]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if
+         x.is_stream_available and not x.is_widget_streaming()]
 
     def on_stop_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if
+         x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
@@ -213,37 +217,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.video_device_widgets[video_device_name] = widget
 
     def init_audio_device(self, audio_device_name):
-
-        # widget_name = audio_device_name + '_widget'
-        worker = AudioDeviceWorker(audio_device_name,
-                                   get_audio_device_index(audio_device_name),
-                                   get_audio_device_channel_num(audio_device_name))
-
-
-        self.init_network_streaming(networking_stream_name=audio_device_name, networking_interface='Device', data_type=None,
-                                    port_number=None, worker=worker)
-        # widget = AudioDeviceWidget(parent_widget=self,
-        #                            parent_layout=self.camHorizontalLayout,
-        #                            audio_device_name=audio_device_name,
-        #                            insert_position=self.camHorizontalLayout.count() - 1)
-        # widget.setObjectName(widget_name)
-        # self.audio_device_widgets[audio_device_name] = widget
-
-
-        # audio_device_index = get_audio_device_index(audio_device_name=audio_device_name)
-        # channel_num = get_audio_device_channel_num(audio_device_name=audio_device_name)
-        # worker = AudioDeviceWorker(audio_device_index=audio_device_index,
-        #                            channel_num=channel_num
-        #                            )
-
-
-
-
-        # worker = AudioDeviceWorker(audio_device_index=audio_device_index)
-        # self.init_network_streaming(networking_stream_name=audio_device_name, networking_interface="Device", worker=worker)
-        # self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
         pass
 
+        # widget_name = audio_device_name + '_widget'
+        # worker = AudioDeviceWorker(audio_device_name,
+        #                            get_audio_device_index(audio_device_name),
+        #                            get_audio_device_channel_num(audio_device_name))
+        #
+        # self.init_device_streaming(networking_stream_name=audio_device_name, networking_interface='Device',
+        #                            data_type=None,
+        #                            port_number=None, worker=worker)
 
     def add_streams_to_visualize(self, stream_names):
         for stream_name in stream_names:
@@ -265,7 +248,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
         #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
+    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None,
+                               port_number=None, worker=None):
         error_initialization = False
 
         # set up UI elements
@@ -285,10 +269,32 @@ class MainWindow(QtWidgets.QMainWindow):
             stream_widget.RemoveStreamBtn.click()
         config.settings.endGroup()
 
+    def init_audio_device_streaming(self, networking_stream_name, networking_interface='DEVICE', data_type=None,
+                                    port_number=None, worker=None):
+        # error_initialization = False
+        #
+        # # set up UI elements
+        # widget_name = networking_stream_name + '_widget'
+        stream_widget = AudioDeviceWidget(parent_widget=self,
+                                          parent_layout=self.streamsHorizontalLayout,
+                                          stream_name=networking_stream_name,
+                                          data_type=data_type,
+                                          worker=worker,
+                                          networking_interface=networking_interface,
+                                          port_number=port_number,
+                                          insert_position=self.streamsHorizontalLayout.count() - 1)
+        # stream_widget.setObjectName(widget_name)
+        # self.stream_widgets[networking_stream_name] = stream_widget
+        #
+        # if error_initialization:
+        #     stream_widget.RemoveStreamBtn.click()
+
     def update_meta_data(self):
         # get the stream viz fps
-        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
-        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in
+                                                                                    self.video_device_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [
+            v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
         if len(fps_list) == 0:
             return
         if np.all(fps_list == 0):
@@ -304,42 +310,55 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
 
     def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
-        device_type = config.settings.value('DeviceType')
 
-        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
-            serial_port = config.settings.value('_SerialPort')
-            board_id = config.settings.value('_Board_id')
-            # create and start this device's worker thread
-            worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
-            config.settings.endGroup()
-            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
-        # TI mmWave connection
+        device_type = get_device_type(device_name)
 
-        # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
-        #     print('mmWave test')
-        #     try:
-        #         # mmWave connect, send config, start sensor
-        #         num_range_bin = config.settings.value('NumRangeBin')
-        #         Dport = config.settings.value['Dport(Standard)']
-        #         Uport = config.settings.value['Uport(Enhanced)']
-        #         config_path = config.settings.value['ConfigPath']
-        #
-        #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
-        #             num_range_bin, Dport, Uport, config_path)
-        #     except AssertionError as e:
-        #         dialog_popup(str(e))
-        #         config.settings.endGroup()
-        #         return None
-        #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
-        #     worker_thread = pg.QtCore.QThread(self)
-        #     self.worker_threads[device_name] = worker_thread
-        #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-        #     worker_thread.start()
-        #     self.init_network_streaming(device_name)  # TODO test needed
+        if device_type in DeviceType:
+            # audio device
+            if device_type == DeviceType.AUDIOINPUT:
+                self.init_audio_device(device_name)
+
+
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
-        config.settings.endGroup()
+
+    # def init_device(self, device_name):
+    #     config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
+    #     device_type = config.settings.value('DeviceType')
+    #
+    #     if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
+    #         serial_port = config.settings.value('_SerialPort')
+    #         board_id = config.settings.value('_Board_id')
+    #         # create and start this device's worker thread
+    #         worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
+    #         config.settings.endGroup()
+    #         self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+    #     # TI mmWave connection
+    #
+    #     # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
+    #     #     print('mmWave test')
+    #     #     try:
+    #     #         # mmWave connect, send config, start sensor
+    #     #         num_range_bin = config.settings.value('NumRangeBin')
+    #     #         Dport = config.settings.value['Dport(Standard)']
+    #     #         Uport = config.settings.value['Uport(Enhanced)']
+    #     #         config_path = config.settings.value['ConfigPath']
+    #     #
+    #     #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
+    #     #             num_range_bin, Dport, Uport, config_path)
+    #     #     except AssertionError as e:
+    #     #         dialog_popup(str(e))
+    #     #         config.settings.endGroup()
+    #     #         return None
+    #     #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
+    #     #     worker_thread = pg.QtCore.QThread(self)
+    #     #     self.worker_threads[device_name] = worker_thread
+    #     #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
+    #     #     worker_thread.start()
+    #     #     self.init_network_streaming(device_name)  # TODO test needed
+    #     else:
+    #         dialog_popup('We are not supporting this Device or the Device has been added')
+    #     config.settings.endGroup()
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
@@ -409,5 +428,6 @@ class MainWindow(QtWidgets.QMainWindow):
         @return: return True if any network streams or video device is streaming, False otherwise
         """
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
-        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
+        is_video_device_widgets_streaming = np.any(
+            [x.is_widget_streaming() for x in self.video_device_widgets.values()])
         return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])

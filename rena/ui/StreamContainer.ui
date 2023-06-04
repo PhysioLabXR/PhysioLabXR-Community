@@ -255,7 +255,7 @@
                  <x>0</x>
                  <y>0</y>
                  <width>1540</width>
-                 <height>1106</height>
+                 <height>1043</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="viz_group_scroll_layout">
@@ -383,6 +383,28 @@
               </property>
               <property name="text">
                <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QWidget" name="DeviceOptionsButtonWidget" native="true">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QPushButton" name="DeviceOptionsBtn">
+              <property name="text">
+               <string>Device</string>
               </property>
              </widget>
             </item>

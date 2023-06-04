@@ -9,18 +9,20 @@ import pylsl
 from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
 from rena.config import stream_availability_wait_time
+from rena.interfaces.DeviceInterface import DeviceInterface
 from stream_shared import lsl_continuous_resolver
 
 
-class RenaAudioInputInterface:
+class RenaAudioInputInterface(DeviceInterface):
 
-    def __init__(self, stream_name, audio_device_index,  channels, frames_per_buffer=128, data_format=pyaudio.paInt16, sampling_rate=4410):
-        self.stream_name = stream_name
+    def __init__(self, stream_name, audio_device_index, channels, frames_per_buffer=128, data_format=pyaudio.paInt16,
+                 sampling_rate=4410):
+        super().__init__(stream_name, sampling_rate=sampling_rate)
+
         self.audio_device_index = audio_device_index
         self.frames_per_buffer = frames_per_buffer
         self.format = data_format
         self.channels = channels
-        self.sampling_rate = sampling_rate
 
         self.frame_duration = 1 / sampling_rate
 

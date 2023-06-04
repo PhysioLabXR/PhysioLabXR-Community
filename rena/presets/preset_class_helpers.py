@@ -1,8 +1,25 @@
+# from dataclasses import dataclass
+#
+# from rena.presets.Presets import DeviceType
+
+
 class SubPreset(type):
     pass
 
+
 class DevicePreset(metaclass=SubPreset):
     pass
+    # def __post_init__(self):
+    #     """
+    #     VideoPreset's post init function.
+    #     @return:
+    #     """
+    #     # convert any enum attribute loaded as string to the corresponding enum value
+    #     reload_enums(self)
+
+    # @property
+    # def device_type(self):
+    #     return self._device_type
 
 # @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 # class TobiiDeviceInfo(metaclass=SubPreset, DeviceInfo)
@@ -21,7 +38,3 @@ class DevicePreset(metaclass=SubPreset):
 #             value = getattr(target, attr)
 #             if isinstance(value, list):
 #                 setattr(target, attr, [attr_type.__args__[0][v] if isinstance(v, str) else v for v in value])
-
-
-
-

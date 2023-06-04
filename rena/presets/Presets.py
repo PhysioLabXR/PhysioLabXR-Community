@@ -26,7 +26,7 @@ import pyaudio
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
-    AUDIODEVICE = "AUDIODEVICE"
+    # AUDIODEVICE = "AUDIODEVICE"
     LSL = 'LSL'
     ZMQ = 'ZMQ'
     DEVICE = 'DEVICE'
@@ -34,8 +34,12 @@ class PresetType(Enum):
 
 
 class DeviceType(Enum):
-    AUDIOINPUT = "AUDIOINPUT"
-    EEG = "EEG"
+    AUDIOINPUT = 'AUDIOINPUT'
+    OPENBCI = 'OPENBCI'
+    TOBIIPRO = 'TOBIIPRO'
+    MONITOR = 'MONITOR'
+    MMWAVE = 'MMWAVE'
+
 
 
 class VideoDeviceChannelOrder(Enum):
@@ -178,11 +182,14 @@ class AudioDevicePreset(DevicePreset):
         stream_name: name of the stream
         video_type: can be webcam or monitor
     """
-    _audio_device_index: int
-    _audio_data_type: int = pyaudio.paInt16
-    _audio_device_frames_per_buffer: int = 128
-    _audio_device_sampling_rate: int = 4410
 
+
+    audio_device_index: int
+    audio_device_data_type: int = pyaudio.paInt16
+    audio_device_frames_per_buffer: int = 128
+    audio_device_sampling_rate: int = 4410
+
+    _device_type: DeviceType = DeviceType.AUDIOINPUT
 
     def __post_init__(self):
         """
@@ -191,6 +198,9 @@ class AudioDevicePreset(DevicePreset):
         """
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
+
+
+
 
 
 
@@ -397,7 +407,7 @@ class Presets(metaclass=Singleton):
         self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
-        audio_device_preset = AudioDevicePreset(_audio_device_index=audio_device_index)
+        audio_device_preset = AudioDevicePreset(audio_device_index=audio_device_index)
         channel_indices = list(range(channel_num))
         channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
         audio_device_preset = StreamPreset(
@@ -407,7 +417,7 @@ class Presets(metaclass=Singleton):
             group_info=create_default_group_info(channel_num=channel_num),
             data_type='int16',
             device_info={},
-            preset_type=PresetType.AUDIODEVICE,
+            preset_type=PresetType.DEVICE,
             device_preset=audio_device_preset
         )
 

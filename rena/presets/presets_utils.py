@@ -241,8 +241,27 @@ def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
     return Presets().video_presets[video_device_name].video_id
 
+
+# device Presets utils
+##############################################################################
+def get_device_type(device_name):
+    return Presets().stream_presets[device_name].device_preset._device_type
+
+
+
+
 def get_audio_device_index(audio_device_name) -> int:
-    return Presets().stream_presets[audio_device_name].device_preset._audio_device_index
+    return Presets().stream_presets[audio_device_name].device_preset.audio_device_index
+
+
+def get_audio_device_data_format(audio_device_name) -> int:
+    return Presets().stream_presets[audio_device_name].device_preset.audio_device_data_type
+
+def get_audio_device_frames_per_buffer(audio_device_name) -> int:
+    return Presets().stream_presets[audio_device_name].device_preset.audio_device_frames_per_buffer
+
+def get_audio_device_sampling_rate(audio_device_name) -> int:
+    return Presets().stream_presets[audio_device_name].device_preset.audio_device_sampling_rate
 
 def get_audio_device_channel_num(audio_device_name) -> int:
     return Presets().stream_presets[audio_device_name].num_channels

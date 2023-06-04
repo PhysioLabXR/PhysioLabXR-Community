@@ -114,7 +114,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
         elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
-        elif self.networking_interface == 'Device':
+        elif self.networking_interface == 'DEVICE':
             assert worker
             self.worker = worker
         self.worker.signal_data.connect(self.process_stream_data)
