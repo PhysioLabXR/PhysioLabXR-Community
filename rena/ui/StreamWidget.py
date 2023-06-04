@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
+from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
@@ -136,6 +137,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.create_visualization_component()
 
         self._has_new_viz_data = False
+        self.viz_data_head = 0
 
         # FPS counter``
         self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
@@ -350,6 +352,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
+                self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
                 self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
                 self._has_new_viz_data = True
                 # self.viz_data_buffer.update_buffer(data_dict)
@@ -437,11 +440,14 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         if not self._has_new_viz_data:
             return
         self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
-        data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
 
+        if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
+            data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
+        elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
+            data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
         for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
-            # self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
-            self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
         self.viz_components.fs_label.setText(
@@ -449,6 +455,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
 
         self._has_new_viz_data = False
+        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
+            self.viz_data_head = 0
 
     def ticks(self):
         self.worker.signal_data_tick.emit()

@@ -56,9 +56,9 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     :param qtbot:
     :return:
     '''
-    test_time_second_per_stream = 15
+    test_time_second_per_stream = 60
     sampling_rates_to_test = np.linspace(1, 2048, 10)
-    num_channels_to_test = np.linspace(1, 500, 10)
+    num_channels_to_test = np.linspace(1, 128, 10)
     metrics = 'update buffer time', 'plot data time', 'viz fps'
 
     num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
@@ -75,12 +75,13 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     test_context = ContextBot(app_main_window, qtbot)
 
     # test without recording
-    results_with_recording = run_benchmark(test_context, test_stream_names[:int(len(test_stream_names)/2)], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)
-    visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
+    # results_with_recording = run_benchmark(test_context, test_stream_names[:int(len(test_stream_names)/2)], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=True)
+    # visualize_benchmark_results(results_with_recording, test_axes=test_axes, metrics=metrics, notes="With recording")
 
-    results_without_recording = run_benchmark(test_context, test_stream_names[int(len(test_stream_names)/2):], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
+    results_without_recording = run_benchmark(app_main_window, test_context, test_stream_names[int(len(test_stream_names)/2):], num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
     visualize_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="Without recording")
 
-    pickle.dump({'results_with_recording': results_with_recording, 'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
+    # pickle.dump({'results_with_recording': results_with_recording, 'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
+    pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
 
 

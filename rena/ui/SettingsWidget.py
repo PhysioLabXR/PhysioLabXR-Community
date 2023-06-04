@@ -9,7 +9,9 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QFileDialog
 
 from rena import config_ui, config
+from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.startup import load_settings
+from rena.utils.string_utils import remove_space_all_caps
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
@@ -41,6 +43,10 @@ class SettingsWidget(QtWidgets.QWidget):
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(config.settings.value('visualization_refresh_interval'))))))
+
+        self.linechart_viz_mode_combobox.addItems([member.value for member in LinechartVizMode.__members__.values()])
+        self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)
+        self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
 
     def switch_to_tab(self, tab_name: str):
         if 'appearance' in tab_name.lower():
@@ -116,3 +122,7 @@ class SettingsWidget(QtWidgets.QWidget):
                 print(f'Set viz refresh interval to {new_refresh_interval}')
             else:
                 dialog_popup(f"Plot FPS range is {config.plot_fps_range}. Please input a number within this range.", enable_dont_show=True, dialog_name='PlotFPSOutOfRangePopup')
+
+    def on_linechart_viz_mode_changed(self):
+        AppConfigs().linechart_viz_mode = LinechartVizMode(self.linechart_viz_mode_combobox.currentText())
+        print(f'Linechart viz mode changed to {AppConfigs().linechart_viz_mode}')

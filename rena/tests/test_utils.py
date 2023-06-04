@@ -227,41 +227,41 @@ def update_test_cwd():
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 
-def run_benchmark(test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
+def run_benchmark(app_main_window, test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     for stream_name, (num_channels, sampling_rate) in zip(test_stream_names, itertools.product(num_channels_to_test, sampling_rates_to_test)):
         print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name {stream_name}...", end='')
         start_time = time.perf_counter()
         test_context.start_stream(stream_name, num_channels, sampling_rate)
         if is_reocrding:
-            test_context.app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
-            test_context.qtbot.mouseClick(test_context.app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+            app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+            test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
         test_context.close_stream(stream_name)
 
         for measure in metrics:
             if measure == 'update buffer time':
-                update_buffer_time_mean = np.mean(test_context.app_main_window.stream_widgets[stream_name].update_buffer_times)
-                update_buffer_time_std = np.std(test_context.app_main_window.stream_widgets[stream_name].update_buffer_times)
+                update_buffer_time_mean = np.mean(app_main_window.stream_widgets[stream_name].update_buffer_times)
+                update_buffer_time_std = np.std(app_main_window.stream_widgets[stream_name].update_buffer_times)
                 if np.isnan(update_buffer_time_mean) or np.isnan(update_buffer_time_std):
                     raise ValueError()
                 results[measure][num_channels, sampling_rate][measure] = update_buffer_time_mean
                 # results[measure][num_channels, sampling_rate]['update_buffer_time_std'] = update_buffer_time_std
             elif measure == 'plot data time':
-                plot_data_time_mean = np.mean(test_context.app_main_window.stream_widgets[stream_name].plot_data_times)
-                plot_data_time_std = np.std(test_context.app_main_window.stream_widgets[stream_name].plot_data_times)
+                plot_data_time_mean = np.mean(app_main_window.stream_widgets[stream_name].plot_data_times)
+                plot_data_time_std = np.std(app_main_window.stream_widgets[stream_name].plot_data_times)
                 if np.isnan(plot_data_time_mean) or np.isnan(plot_data_time_std):
                     raise ValueError()
                 results[measure][num_channels, sampling_rate][measure] = plot_data_time_mean
                 # results[measure][num_channels, sampling_rate]['plot_data_time_std'] = plot_data_time_std
             elif measure == 'viz fps':
-                results[measure][num_channels, sampling_rate][measure] = test_context.app_main_window.stream_widgets[stream_name].get_fps()
+                results[measure][num_channels, sampling_rate][measure] = app_main_window.stream_widgets[stream_name].get_fps()
             else:
                 raise ValueError(f"Unknown metric: {measure}")
         if is_reocrding:
             test_context.stop_recording()
-            recording_file_name = test_context.app_main_window.recording_tab.save_path
+            recording_file_name = app_main_window.recording_tab.save_path
             assert os.stat(recording_file_name).st_size != 0  # make sure recording file has content
             os.remove(recording_file_name)
 

@@ -3,14 +3,17 @@ import multiprocessing
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 from PyQt5.QtCore import QStandardPaths
 
 from rena import config
 from rena.config import app_data_name, default_group_name
+from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import reload_enums, SubPreset, DevicePreset
+from rena.presets.preset_class_helpers import SubPreset
+from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
 # from rena.utils.audio_device_utils import get_audio_devices_dict
 from rena.utils.audio_device_utils import get_audio_device_info_dict
@@ -205,21 +208,6 @@ class AudioDevicePreset(DevicePreset):
 
 
 
-def save_local(app_data_path, preset_dict) -> None:
-    """
-    sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.
-    applies file lock while the json is being dumped. This will block another other process from accessing the file without
-    raising an exception.
-    """
-    if not os.path.exists(app_data_path):
-        os.makedirs(app_data_path)
-    path = os.path.join(app_data_path, 'Presets.json')
-    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
-
-    with open(path, 'w') as f:
-        f.write(json_data)
-
-
 def _load_stream_presets(presets, dirty_presets):
     for category, dirty_preset_paths in dirty_presets.items():
         for dirty_preset_path in dirty_preset_paths:
@@ -288,12 +276,13 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
     stream_presets: Dict[str, StreamPreset] = field(default_factory=dict)
     video_presets: Dict[str, VideoPreset] = field(default_factory=dict)
     # audio_device_presets: Dict[str, AudioDevicePreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
-    _app_data_path: str = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), app_data_name)
+    _app_data_path: str = AppConfigs().app_data_path
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
     _preset_path: str = os.path.join(_app_data_path, 'Presets.json')
 
@@ -325,11 +314,15 @@ class Presets(metaclass=Singleton):
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 for key, value in preset_dict['stream_presets'].items():
-                    preset = StreamPreset(**value)
+                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
+                        preset = StreamPreset(**value)
+                    elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
+                        preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
-                for key, value in preset_dict['video_presets'].items():
-                    preset = VideoPreset(**value)
-                    preset_dict['video_presets'][key] = preset
+
+                # for key, value in preset_dict['video_presets'].items():
+                #     preset = VideoPreset(**value)
+                #     preset_dict['video_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
@@ -351,7 +344,7 @@ class Presets(metaclass=Singleton):
         """
         this function needs to be modified if new preset dict are added
         """
-        return {**self.stream_presets, **self.video_presets, **self.experiment_presets}
+        return {**self.stream_presets, **self.experiment_presets}
 
     def _record_presets_last_modified_times(self):
         """
@@ -378,7 +371,7 @@ class Presets(metaclass=Singleton):
         """
         save the presets to the local disk when the application is closed
         """
-        save_local(self._app_data_path, self.__dict__)
+        save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
         print(f"Presets instance successfully deleted with its contents saved to {self._app_data_path}")
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
@@ -401,7 +394,7 @@ class Presets(metaclass=Singleton):
 
     def add_video_preset(self, stream_name, video_type, video_id):
         video_preset = VideoPreset(stream_name, video_type, video_id)
-        self.video_presets[video_preset.stream_name] = video_preset
+        self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
         audio_device_preset = AudioDevicePreset(_audio_device_index=audio_device_index)
@@ -437,10 +430,10 @@ class Presets(metaclass=Singleton):
         @return: None
         """
         if is_async:
-            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__))
+            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__, 'Presets.json', PresetsEncoder))
             p.start()
         else:
-            save_local(self._app_data_path, self.__dict__)
+            save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
 
     def __getitem__(self, key):
         return self._get_all_presets()[key]

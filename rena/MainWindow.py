@@ -8,6 +8,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.AudioDeviceWorker import AudioDeviceWorker
@@ -372,6 +373,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.replay_tab.try_close()
 
             Presets().__del__()
+            AppConfigs().__del__()
             event.accept()
             self.app.quit()
         else:

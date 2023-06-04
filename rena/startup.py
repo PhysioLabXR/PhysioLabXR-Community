@@ -1,8 +1,10 @@
 import os.path
 
+import pyqtgraph
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLabel
 
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.ui_shared import *
 from rena import config, config_ui
@@ -10,7 +12,7 @@ from rena.utils.ui_utils import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme,
                          'file_format': config.DEFAULT_FILE_FORMAT}
-def load_settings(revert_to_default=True, reload_presets=True):
+def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
@@ -52,9 +54,8 @@ def load_settings(revert_to_default=True, reload_presets=True):
             config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     config.settings.sync()
     # load the presets, reload from local directory the default LSL, device and experiment presets
-    presets = Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
-
-    pass
+    Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
+    pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)
 
 def load_ui_shared():
     global stream_unavailable_pixmap

@@ -215,7 +215,7 @@ def set_spectrogram_percentile_level_max(stream_name, group_name, percentile_lev
 
 
 def set_video_scale(video_device_name, scale: float):
-    Presets().video_presets[video_device_name].video_scale = scale
+    Presets().stream_presets[video_device_name].video_scale = scale
 
 
 def set_video_channel_order(video_device_name, channel_order: Union[str, int, VideoDeviceChannelOrder]) -> VideoDeviceChannelOrder:
@@ -224,20 +224,21 @@ def set_video_channel_order(video_device_name, channel_order: Union[str, int, Vi
     elif isinstance(channel_order, int):
         channel_order = VideoDeviceChannelOrder(channel_order)
 
-    Presets().video_presets[video_device_name].channel_order = channel_order
+    Presets().stream_presets[video_device_name].channel_order = channel_order
     return channel_order
 
 
 def get_video_scale(video_device_name) -> float:
-    return Presets().video_presets[video_device_name].video_scale
+    return Presets().stream_presets[video_device_name].video_scale
 
 def get_video_channel_order(video_device_name) -> VideoDeviceChannelOrder:
-    return Presets().video_presets[video_device_name].channel_order
+    return Presets().stream_presets[video_device_name].channel_order
 
 def is_video_webcam(video_device_name) -> bool:
-    return Presets().video_presets[video_device_name].preset_type == PresetType.WEBCAM
+    return Presets().stream_presets[video_device_name].preset_type == PresetType.WEBCAM
 
 def get_video_device_id(video_device_name) -> int:
+    return Presets().stream_presets[video_device_name].video_id
     return Presets().video_presets[video_device_name].video_id
 
 def get_audio_device_index(audio_device_name) -> int:

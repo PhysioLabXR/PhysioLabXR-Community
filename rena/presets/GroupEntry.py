@@ -4,7 +4,8 @@ from typing import List
 
 from rena import config
 from rena.presets.PlotConfig import PlotConfigs
-from rena.presets.preset_class_helpers import reload_enums, SubPreset
+from rena.presets.preset_class_helpers import SubPreset
+from rena.utils.ConfigPresetUtils import reload_enums
 
 
 class PlotFormat(Enum):

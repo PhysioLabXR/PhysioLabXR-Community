@@ -85,6 +85,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
     def init_line_chart(self):
         self.linechart_widget = pg.PlotWidget()
         self.linechart_layout.addWidget(self.linechart_widget)
+        self.linechart_widget.setXRange(0, get_stream_preset_info(self.stream_name, 'display_duration'))
 
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
         is_channels_shown = get_is_group_shown(self.stream_name, self.group_name)
@@ -174,11 +175,20 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
         if data.shape[1] != len(self.viz_time_vector):  # num_points_to_plot has been updated
             self.viz_time_vector = self.get_viz_time_vector()
-        if self.get_selected_format() == 0:
+        if self.get_selected_format() == 0:  # linechart
+
+            # for index_in_group, channel_index in enumerate(channel_indices):
+            #     plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
+            #     if plot_data_item.isVisible():
+            #         plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
+
+            duration = data.shape[1] / get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+            time_vector = np.linspace(0., duration, data.shape[1])
             for index_in_group, channel_index in enumerate(channel_indices):
                 plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
                 if plot_data_item.isVisible():
-                    plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
+                    plot_data_item.setData(time_vector, data[int(channel_index), :])
+
         elif self.get_selected_format() == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
             width, height, image_format, channel_format, scaling = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling
