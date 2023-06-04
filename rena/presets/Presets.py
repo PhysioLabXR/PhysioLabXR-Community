@@ -11,7 +11,7 @@ from rena import config
 from rena.config import app_data_name, default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.preset_class_helpers import reload_enums, SubPreset, DevicePreset
+from rena.presets.preset_class_helpers import SubPreset, DevicePreset
 from rena.presets.preset_class_helpers import SubPreset
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
