@@ -161,6 +161,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
     def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
+        self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
 
     def update_stream_availability(self, is_stream_available):
         '''

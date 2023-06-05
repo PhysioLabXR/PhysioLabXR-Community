@@ -22,6 +22,7 @@ from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.sub_process.pyzmq_utils import can_connect_to_port
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.utils.buffers import flatten
 from rena.utils.ui_utils import CustomDialog
 
 
@@ -227,51 +228,57 @@ def update_test_cwd():
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 
-def run_benchmark(app_main_window, test_context, test_stream_names, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
+def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
-    for stream_name, (num_channels, sampling_rate) in zip(test_stream_names, itertools.product(num_channels_to_test, sampling_rates_to_test)):
-        print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name {stream_name}...", end='')
+    for n_streams, num_channels, sampling_rate in itertools.product(num_streams_to_test, num_channels_to_test, sampling_rates_to_test):
+        stream_names = [test_stream_names.pop(0) for _ in range(n_streams)]
+        print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {stream_names}...", end='')
         start_time = time.perf_counter()
-        test_context.start_stream(stream_name, num_channels, sampling_rate)
+        for s_name in stream_names:
+            test_context.start_stream(s_name, num_channels, sampling_rate)
         if is_reocrding:
             app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
             test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
-        test_context.close_stream(stream_name)
-
+        for s_name in stream_names:
+            test_context.close_stream(s_name)
         for measure in metrics:
             if measure == 'update buffer time':
-                update_buffer_time_mean = np.mean(app_main_window.stream_widgets[stream_name].update_buffer_times)
-                update_buffer_time_std = np.std(app_main_window.stream_widgets[stream_name].update_buffer_times)
+                update_buffer_times = flatten([app_main_window.stream_widgets[s_name].update_buffer_times for s_name in stream_names])
+                update_buffer_time_mean = np.mean(update_buffer_times)
+                update_buffer_time_std = np.std(update_buffer_times)
                 if np.isnan(update_buffer_time_mean) or np.isnan(update_buffer_time_std):
                     raise ValueError()
-                results[measure][num_channels, sampling_rate][measure] = update_buffer_time_mean
+                results[measure][n_streams, num_channels, sampling_rate][measure] = update_buffer_time_mean
                 # results[measure][num_channels, sampling_rate]['update_buffer_time_std'] = update_buffer_time_std
             elif measure == 'plot data time':
-                plot_data_time_mean = np.mean(app_main_window.stream_widgets[stream_name].plot_data_times)
-                plot_data_time_std = np.std(app_main_window.stream_widgets[stream_name].plot_data_times)
+                plot_data_times = flatten([app_main_window.stream_widgets[s_name].plot_data_times for s_name in stream_names])
+                plot_data_time_mean = np.mean(plot_data_times)
+                plot_data_time_std = np.std(plot_data_times)
                 if np.isnan(plot_data_time_mean) or np.isnan(plot_data_time_std):
                     raise ValueError()
-                results[measure][num_channels, sampling_rate][measure] = plot_data_time_mean
+                results[measure][n_streams, num_channels, sampling_rate][measure] = plot_data_time_mean
                 # results[measure][num_channels, sampling_rate]['plot_data_time_std'] = plot_data_time_std
             elif measure == 'viz fps':
-                results[measure][num_channels, sampling_rate][measure] = app_main_window.stream_widgets[stream_name].get_fps()
+                results[measure][n_streams, num_channels, sampling_rate][measure] = np.mean([app_main_window.stream_widgets[s_name].get_fps() for s_name in stream_names])
             else:
                 raise ValueError(f"Unknown metric: {measure}")
+        [app_main_window.stream_widgets[s_name].reset_performance_measures() for s_name in stream_names]
+
         if is_reocrding:
             test_context.stop_recording()
             recording_file_name = app_main_window.recording_tab.save_path
             assert os.stat(recording_file_name).st_size != 0  # make sure recording file has content
             os.remove(recording_file_name)
-
-        test_context.remove_stream(stream_name)
+        for s_name in stream_names:
+            test_context.remove_stream(s_name)
         print(f"Took {time.perf_counter() - start_time}.", end='')
 
     return results
 
 
-def visualize_benchmark_results(results, test_axes, metrics, notes=''):
+def visualize_benchmark_results(results,test_axes, metrics, notes=''):
     """
     the key for results[measure] are the test axes, these keys must be in the same order as test axes
     @param results:
@@ -284,20 +291,24 @@ def visualize_benchmark_results(results, test_axes, metrics, notes=''):
 
     sampling_rates_to_test = test_axes["sampling rate (Hz)"]
     num_channels_to_test = test_axes["number of channels"]
-    visualize_metrics_across_num_chan_sampling_rate(results, metrics, sampling_rates_to_test, num_channels_to_test, notes=notes)
+    num_streams_to_test = test_axes["number of streams"]
 
-def visualize_metrics_across_num_chan_sampling_rate(results, metrics, sampling_rates_to_test, num_channels_to_test, notes=''):
+    for n_streams in num_streams_to_test:
+        visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
+
+
+def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
     for measure in metrics:
         result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
         for i, num_channels in enumerate(num_channels_to_test):
             for j, sampling_rate in enumerate(sampling_rates_to_test):
-                result_matrix[i, j] = results[measure][num_channels, sampling_rate][measure]
+                result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
         plt.imshow(result_matrix[:, :, 0])
         plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
         plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
         plt.xlabel("Sampling Rate (Hz)")
         plt.ylabel("Number of channels")
-        plt.title(f'Rena Benchmark: single stream: {measure}. {notes}')
+        plt.title(f'{number_of_streams} stream{"s" if number_of_streams > 1 else ""}: {measure}. {notes}')
         plt.colorbar()
         plt.show()
 
