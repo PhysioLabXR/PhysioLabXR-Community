@@ -92,7 +92,7 @@ class SettingsWidget(QtWidgets.QWidget):
     def recording_file_format_change(self):
         if self.saveFormatComboBox.currentText() != RecordingFileFormat.dats.value:
             dialog_popup('Using data format other than Rena Native will result in a conversion time after finishing a '
-                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
+                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True, mode='modeless')
         AppConfigs().recording_file_format = RecordingFileFormat(self.saveFormatComboBox.currentText())
         print(f"recording_file_format_change: {AppConfigs().recording_file_format}")
 
