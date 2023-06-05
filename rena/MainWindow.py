@@ -17,8 +17,6 @@ from rena.threadings.DeviceWorker import DeviceWorker
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
-from rena.ui.device_ui.DeviceWidget import DeviceWidget
-from rena.ui.device_ui.audio_device_ui.AudioDeviceWidget import AudioDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset, \
     get_device_type, get_stream_device_preset, dataclass_to_dict
@@ -278,22 +276,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_device_streaming(self, stream_name, networking_interface='DEVICE', data_type=None,
                                     port_number=None, worker=None):
 
-
-        error_initialization = False
-        widget_name = stream_name + '_widget'
-        stream_widget = DeviceWidget(parent_widget=self,
-                                          parent_layout=self.streamsHorizontalLayout,
-                                          stream_name=stream_name,
-                                          data_type=data_type,
-                                          worker=worker,
-                                          networking_interface=networking_interface,
-                                          port_number=port_number,
-                                          insert_position=self.streamsHorizontalLayout.count() - 1)
-        stream_widget.setObjectName(widget_name)
-        self.stream_widgets[stream_name] = stream_widget
-
-        if error_initialization:
-            stream_widget.RemoveStreamBtn.click()
+        pass
+        # error_initialization = False
+        # widget_name = stream_name + '_widget'
+        # stream_widget = DeviceWidget(parent_widget=self,
+        #                                   parent_layout=self.streamsHorizontalLayout,
+        #                                   stream_name=stream_name,
+        #                                   data_type=data_type,
+        #                                   worker=worker,
+        #                                   networking_interface=networking_interface,
+        #                                   port_number=port_number,
+        #                                   insert_position=self.streamsHorizontalLayout.count() - 1)
+        # stream_widget.setObjectName(widget_name)
+        # self.stream_widgets[stream_name] = stream_widget
+        #
+        # if error_initialization:
+        #     stream_widget.RemoveStreamBtn.click()
         #
         # # set up UI elements
         # widget_name = networking_stream_name + '_widget'
@@ -331,22 +329,22 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
 
     def init_device(self, device_name):
-
-        device_type = get_device_type(device_name)
-
-        if device_type in DeviceType:
-
-            device_preset_dict = dataclass_to_dict(get_stream_device_preset(stream_name=device_name))
-            device_interface:DeviceInterface
-            if device_type == DeviceType.AUDIOINPUT:
-                device_interface = RenaAudioInputInterface(**device_preset_dict)
-
-            device_worker = DeviceWorker(device_interface=device_interface)
-            self.init_device_streaming(stream_name=device_name, worker=device_worker)
-
-
-        else:
-            dialog_popup('We are not supporting this Device or the Device has been added')
+        pass
+        # device_type = get_device_type(device_name)
+        #
+        # if device_type in DeviceType:
+        #
+        #     device_preset_dict = dataclass_to_dict(get_stream_device_preset(stream_name=device_name))
+        #     device_interface:DeviceInterface
+        #     if device_type == DeviceType.AUDIOINPUT:
+        #         device_interface = RenaAudioInputInterface(**device_preset_dict)
+        #
+        #     device_worker = DeviceWorker(device_interface=device_interface)
+        #     self.init_device_streaming(stream_name=device_name, worker=device_worker)
+        #
+        #
+        # else:
+        #     dialog_popup('We are not supporting this Device or the Device has been added')
 
     # def init_device(self, device_name):
     #     config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
