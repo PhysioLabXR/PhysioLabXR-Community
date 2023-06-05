@@ -182,7 +182,7 @@ class AudioDevicePreset(DevicePreset):
     audio_device_data_format: int = pyaudio.paInt16
     audio_device_frames_per_buffer: int = 128
     audio_device_sampling_rate: int = 4410
-    device_nominal_sampling_rate = 4410
+    # device_nominal_sampling_rate: int
 
     # _device_type: DeviceType = DeviceType.AUDIOINPUT
 

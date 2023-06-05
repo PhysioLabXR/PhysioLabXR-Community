@@ -3,7 +3,7 @@ from typing import Union, List
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder
-
+from dataclasses import dataclass, fields
 
 def get_preset_category(preset_name):
     preset = Presets()
@@ -266,3 +266,14 @@ def get_audio_device_sampling_rate(audio_device_name) -> int:
 def get_audio_device_channel_num(audio_device_name) -> int:
     return Presets().stream_presets[audio_device_name].num_channels
 
+def get_stream_device_preset(stream_name):
+    return Presets().stream_presets[stream_name].device_preset
+
+def dataclass_to_dict(dataclass):
+    attributes = fields(dataclass)
+    return {attr.name: getattr(dataclass, attr.name) for attr in attributes}
+
+
+
+def set_preset_value(x, y, v):
+    setattr(x, y, v)

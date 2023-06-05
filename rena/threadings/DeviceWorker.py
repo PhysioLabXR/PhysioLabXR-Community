@@ -40,7 +40,7 @@ class DeviceWorker(QObject, RenaWorker):
 
             self.interface_mutex.lock()
 
-            frames, timestamps = self._audio_input_interface.process_frames()
+            frames, timestamps = self._device_interface.process_frames()
 
             self.timestamp_queue.extend(timestamps)
             if len(self.timestamp_queue) > 1:

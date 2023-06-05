@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>240</width>
-    <height>82</height>
+    <width>311</width>
+    <height>58</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>240</width>
-    <height>82</height>
+    <width>500</width>
+    <height>58</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>64</height>
+       <height>30</height>
       </size>
      </property>
      <property name="maximumSize">
@@ -51,13 +51,12 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>200</width>
           <height>48</height>
          </size>
         </property>
         <property name="font">
          <font>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -70,7 +69,7 @@
        <widget class="QLineEdit" name="PropertyLineEdit">
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>200</width>
           <height>16777215</height>
          </size>
         </property>
