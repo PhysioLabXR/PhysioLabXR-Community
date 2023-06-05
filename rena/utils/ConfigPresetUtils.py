@@ -2,6 +2,16 @@ import enum
 import json
 import os
 
+
+class DeviceType(enum.Enum):
+    AUDIOINPUT = 'AUDIOINPUT'
+    OPENBCI = 'OPENBCI'
+    TOBIIPRO = 'TOBIIPRO'
+    MONITOR = 'MONITOR'
+    MMWAVE = 'MMWAVE'
+
+
+
 def save_local(app_data_path, preset_dict, file_name, encoder=None) -> None:
     """
     sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.

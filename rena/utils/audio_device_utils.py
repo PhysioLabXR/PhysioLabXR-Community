@@ -21,7 +21,6 @@ def get_audio_device_info_dict():
             # )
 
     return audio_devices_info_dict
-#
 
 
 # def create_audio_device_stream_preset(stream_name, audio_device_index,  channel_num):

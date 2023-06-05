@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType, DeviceType
+from rena.presets.Presets import Presets, PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -18,6 +18,7 @@ from rena.ui.device_ui.audio_device_ui.AudioDeviceWidget import AudioDeviceWidge
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset, \
     get_device_type
+from rena.utils.ConfigPresetUtils import DeviceType
 
 try:
     import rena.config
@@ -314,9 +315,10 @@ class MainWindow(QtWidgets.QMainWindow):
         device_type = get_device_type(device_name)
 
         if device_type in DeviceType:
+            pass
             # audio device
-            if device_type == DeviceType.AUDIOINPUT:
-                self.init_audio_device(device_name)
+            # if device_type == DeviceType.AUDIOINPUT:
+            #     self.init_audio_device(device_name)
 
 
         else:

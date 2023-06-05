@@ -25,13 +25,12 @@ class DeviceWorker(QObject, RenaWorker):
         super(DeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self._device_interface = device_interface
-        #self._audio_input_interface = RenaAudioInputInterface(stream_name=stream_name, audio_device_index=audio_device_index, channels=channel_num)
         self.is_streaming = False
         self.interface_mutex = QMutex()
 
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.timestamp_queue = deque(maxlen=self._audio_input_interface.get_sampling_rate() * 10)
+        self.timestamp_queue = deque(maxlen=self._device_interface.get_device_nominal_sampling_rate() * 10)
 
 
     @pg.QtCore.pyqtSlot()
@@ -50,7 +49,7 @@ class DeviceWorker(QObject, RenaWorker):
                 sampling_rate = np.nan
 
 
-            data_dict = {'stream_name': self._audio_input_interface.audio_device_index, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': self._device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 

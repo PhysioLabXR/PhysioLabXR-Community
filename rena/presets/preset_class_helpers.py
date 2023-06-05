@@ -1,14 +1,40 @@
 # from dataclasses import dataclass
-#
-# from rena.presets.Presets import DeviceType
+
+from dataclasses import dataclass
+
+from rena.utils.ConfigPresetUtils import reload_enums, DeviceType
 
 
 class SubPreset(type):
     pass
 
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class DevicePreset(metaclass=SubPreset):
-    pass
+    _device_name: str
+    _device_type: DeviceType
+    device_nominal_sampling_rate = 4410
+
+    def get_device_name(self):
+        return self._device_name
+
+    def get_device_type(self):
+        return self._device_type
+
+    def set_device_name(self, device_name: str):
+        self._device_name = device_name
+
+    def set_device_type(self, device_type: DeviceType):
+        self._device_type = device_type
+
+    def __post_init__(self):
+        """
+        VideoPreset's post init function.
+        @return:
+        """
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
+
     # def __post_init__(self):
     #     """
     #     VideoPreset's post init function.

@@ -13,7 +13,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset, DevicePreset
 from rena.presets.preset_class_helpers import SubPreset
-from rena.utils.ConfigPresetUtils import save_local, reload_enums
+from rena.utils.ConfigPresetUtils import save_local, reload_enums, DeviceType
 from rena.utils.Singleton import Singleton
 # from rena.utils.audio_device_utils import get_audio_devices_dict
 from rena.utils.audio_device_utils import get_audio_device_info_dict
@@ -22,6 +22,7 @@ from rena.presets.load_user_preset import process_plot_group_json_preset, valida
     create_default_group_info
 from rena.utils.video_capture_utils import get_working_camera_ports
 import pyaudio
+
 
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
@@ -33,20 +34,11 @@ class PresetType(Enum):
     EXPERIMENT = 'EXPERIMENT'
 
 
-class DeviceType(Enum):
-    AUDIOINPUT = 'AUDIOINPUT'
-    OPENBCI = 'OPENBCI'
-    TOBIIPRO = 'TOBIIPRO'
-    MONITOR = 'MONITOR'
-    MMWAVE = 'MMWAVE'
-
 
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
-
-
 
 
 # class VideoDeviceTypeEncoder(json.JSONEncoder):
@@ -78,6 +70,7 @@ class PresetsEncoder(json.JSONEncoder):
         if o.__class__.__class__ is SubPreset:
             return o.__dict__
         return super().default(o)
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class StreamPreset(metaclass=SubPreset):
@@ -147,6 +140,7 @@ class StreamPreset(metaclass=SubPreset):
 
         return rtn
 
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class VideoPreset(metaclass=SubPreset):
     """
@@ -172,6 +166,7 @@ class VideoPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class AudioDevicePreset(DevicePreset):
     """
@@ -182,40 +177,36 @@ class AudioDevicePreset(DevicePreset):
         stream_name: name of the stream
         video_type: can be webcam or monitor
     """
-
-
-    audio_device_index: int
-    audio_device_data_type: int = pyaudio.paInt16
+    _device_name: str
+    _audio_device_index: int
+    _audio_device_channel: int
+    _device_type: DeviceType = DeviceType.AUDIOINPUT
+    audio_device_data_format: int = pyaudio.paInt16
     audio_device_frames_per_buffer: int = 128
     audio_device_sampling_rate: int = 4410
+    device_nominal_sampling_rate = 4410
 
-    _device_type: DeviceType = DeviceType.AUDIOINPUT
-
-    def __post_init__(self):
-        """
-        VideoPreset's post init function.
-        @return:
-        """
-        # convert any enum attribute loaded as string to the corresponding enum value
-        reload_enums(self)
-
-
-
+    # def __post_init__(self):
+    #     """
+    #     VideoPreset's post init function.
+    #     @return:
+    #     """
+    #     # convert any enum attribute loaded as string to the corresponding enum value
+    #     reload_enums(self)
 
 
 
         # convert any enum attribute loaded as string to the corresponding enum value
-        #reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
+        # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
         # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
         # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
         # please keep this comments and push to main you please** do it
 
         # convert any enum attribute loaded as string to the corresponding enum value
-        #reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
+        # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
         # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
         # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
         # please keep this comments and push to main you please** do it
-
 
 
 def _load_stream_presets(presets, dirty_presets):
@@ -227,9 +218,11 @@ def _load_stream_presets(presets, dirty_presets):
                 stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
                 presets.add_stream_preset(stream_preset_dict)
             elif category == 'Experiment':
-                presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
+                presets.add_experiment_preset(loaded_preset_dict['ExperimentName'],
+                                              loaded_preset_dict['PresetStreamNames'])
             else:
                 raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
+
 
 def preprocess_stream_preset(stream_preset_dict, category):
     """
@@ -250,14 +243,13 @@ def _load_video_device_presets(presets):
         presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 
+
 def _load_audio_device_presets(presets):
     print('Loading available audio devices')
     audio_devices_info_dict = get_audio_device_info_dict()
 
     for audio_devices in audio_devices_info_dict:
         presets.add_audio_device_preset(**audio_devices_info_dict[audio_devices])
-
-
 
     # print('Loading available cameras')
     # _, working_camera_ports, _ = get_working_camera_ports()
@@ -266,6 +258,7 @@ def _load_audio_device_presets(presets):
     # for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
     #     presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     # presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
@@ -317,14 +310,16 @@ class Presets(metaclass=Singleton):
         self._zmq_preset_root = os.path.join(self._preset_root, self._zmq_preset_root)
         self._device_preset_root = os.path.join(self._preset_root, self._device_preset_root)
         self._experiment_preset_root = os.path.join(self._preset_root, self._experiment_preset_root)
-        self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
+        self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root,
+                              self._experiment_preset_root]
 
         if os.path.exists(self._preset_path):
             print(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 for key, value in preset_dict['stream_presets'].items():
-                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
+                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value[
+                        'preset_type'] == 'Device':
                         preset = StreamPreset(**value)
                     elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
                         preset = VideoPreset(**value)
@@ -342,10 +337,8 @@ class Presets(metaclass=Singleton):
         # video Presets
         _load_video_device_presets(self)
 
-
         # audio device Presets
         _load_audio_device_presets(self)
-
 
         self.save(is_async=True)
         print("Presets instance successfully initialized")
@@ -369,7 +362,9 @@ class Presets(metaclass=Singleton):
             last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
 
         dirty_presets = {'LSL': None, 'ZMQ': None, 'Device': None, 'Experiment': None}
-        (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'], dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
+        (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'],
+         dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots,
+                                                                                         last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
         with open(self._last_mod_time_path, 'w') as f:
@@ -394,7 +389,9 @@ class Presets(metaclass=Singleton):
         :return: None
         """
         device_info = {}
-        device_specific_attribute_names = [attribute_name for attribute_name, attribute_value in stream_preset_dict.items() if attribute_name not in StreamPreset.__annotations__]
+        device_specific_attribute_names = [attribute_name for attribute_name, attribute_value in
+                                           stream_preset_dict.items() if
+                                           attribute_name not in StreamPreset.__annotations__]
         for attribute_name in device_specific_attribute_names:
             device_info[attribute_name] = stream_preset_dict.pop(attribute_name)
         stream_preset_dict['device_info'] = device_info
@@ -407,7 +404,12 @@ class Presets(metaclass=Singleton):
         self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
-        audio_device_preset = AudioDevicePreset(audio_device_index=audio_device_index)
+
+        audio_device_preset = AudioDevicePreset(_device_name=stream_name,
+                                                _device_type=DeviceType.AUDIOINPUT,
+                                                _audio_device_index=audio_device_index,
+                                                _audio_device_channel=channel_num)
+
         channel_indices = list(range(channel_num))
         channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
         audio_device_preset = StreamPreset(
@@ -422,7 +424,6 @@ class Presets(metaclass=Singleton):
         )
 
         self.stream_presets[audio_device_preset.stream_name] = audio_device_preset
-
 
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
@@ -440,7 +441,8 @@ class Presets(metaclass=Singleton):
         @return: None
         """
         if is_async:
-            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__, 'Presets.json', PresetsEncoder))
+            p = multiprocessing.Process(target=save_local,
+                                        args=(self._app_data_path, self.__dict__, 'Presets.json', PresetsEncoder))
             p.start()
         else:
             save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
@@ -450,7 +452,6 @@ class Presets(metaclass=Singleton):
 
     def keys(self):
         return self._get_all_presets().keys()
-
 
 ############################################ Device Presets ###############################
 # @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -477,7 +478,3 @@ class Presets(metaclass=Singleton):
 #         """
 #         # convert any enum attribute loaded as string to the corresponding enum value
 #         reload_enums(self)
-
-
-
-
