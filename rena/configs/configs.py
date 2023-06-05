@@ -1,6 +1,6 @@
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum
 
 from PyQt5.QtCore import QStandardPaths
@@ -12,6 +12,14 @@ from rena.utils.Singleton import Singleton
 class LinechartVizMode(Enum):
     INPLACE = "in place"
     CONTINUOUS = "continuous"
+
+
+class RecordingFileFormat(Enum):
+    dats = "data arrays and timestamps (.dats)"
+    pickle = "pickle (.pkl)"
+    matlab = "matlab (.mat)"
+    csv = "comma separated values (.csv)"
+    xdf = "extended data format (.xdf)"
 
 
 class AppConfigsEncoder(json.JSONEncoder):
@@ -57,6 +65,7 @@ class AppConfigs(metaclass=Singleton):
     app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), _app_data_name)
 
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
+    recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
 
     def __post_init__(self):
         self._app_config_path: str = os.path.join(self.app_data_path, self._file_name)
@@ -74,3 +83,8 @@ class AppConfigs(metaclass=Singleton):
 
     def get_app_data_path(self):
         return os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), self._app_data_name)
+
+    def revert_to_default(self):
+        for field in fields(self):
+            if not field.name.startswith("_"):
+                setattr(self, field.name, field.default)
