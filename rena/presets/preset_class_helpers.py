@@ -13,7 +13,7 @@ class SubPreset(type):
 class DevicePreset(metaclass=SubPreset):
     _device_name: str
     _device_type: DeviceType
-    device_nominal_sampling_rate = 4410
+    device_nominal_sampling_rate: int
 
     def get_device_name(self):
         return self._device_name

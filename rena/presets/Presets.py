@@ -34,8 +34,6 @@ class PresetType(Enum):
     EXPERIMENT = 'EXPERIMENT'
 
 
-
-
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
@@ -101,10 +99,11 @@ class StreamPreset(metaclass=SubPreset):
     num_channels: int
 
     group_info: dict[str, GroupEntry]
-    device_info: dict
+
 
     preset_type: PresetType
 
+    device_info: dict = None
     device_preset: DevicePreset = None
     data_type: str = 'float32'
 
@@ -180,11 +179,12 @@ class AudioDevicePreset(DevicePreset):
     _device_name: str
     _audio_device_index: int
     _audio_device_channel: int
-    _device_type: DeviceType = DeviceType.AUDIOINPUT
     audio_device_data_format: int = pyaudio.paInt16
     audio_device_frames_per_buffer: int = 128
     audio_device_sampling_rate: int = 4410
     device_nominal_sampling_rate = 4410
+
+    # _device_type: DeviceType = DeviceType.AUDIOINPUT
 
     # def __post_init__(self):
     #     """
@@ -194,19 +194,17 @@ class AudioDevicePreset(DevicePreset):
     #     # convert any enum attribute loaded as string to the corresponding enum value
     #     reload_enums(self)
 
+    # convert any enum attribute loaded as string to the corresponding enum value
+    # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
+    # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
+    # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
+    # please keep this comments and push to main you please** do it
 
-
-        # convert any enum attribute loaded as string to the corresponding enum value
-        # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
-        # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
-        # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
-        # please keep this comments and push to main you please** do it
-
-        # convert any enum attribute loaded as string to the corresponding enum value
-        # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
-        # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
-        # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
-        # please keep this comments and push to main you please** do it
+    # convert any enum attribute loaded as string to the corresponding enum value
+    # reload_enums(self)我需要改这个吗 该杀！改啥？ 就是这一行 上面是property 确实该杀了 if you have enum in your class attributes, you need this reload_enum line in the __post__init__. What it does is it loops through all teh
+    # what it does is it loops through all the attrivutes of the class. Look for any attributes whose type hint says it's enum but the value this attribute actaully have is not enum. It then cast these values  into enums.
+    # this is needed when loading these classes back from jsons, where enums are saved as strings. Is it clear? zhong
+    # please keep this comments and push to main you please** do it
 
 
 def _load_stream_presets(presets, dirty_presets):
@@ -406,9 +404,10 @@ class Presets(metaclass=Singleton):
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
 
         audio_device_preset = AudioDevicePreset(_device_name=stream_name,
-                                                _device_type=DeviceType.AUDIOINPUT,
                                                 _audio_device_index=audio_device_index,
-                                                _audio_device_channel=channel_num)
+                                                _audio_device_channel=channel_num,
+                                                _device_type=DeviceType.AUDIOINPUT,
+                                                device_nominal_sampling_rate=4410)
 
         channel_indices = list(range(channel_num))
         channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
@@ -418,13 +417,11 @@ class Presets(metaclass=Singleton):
             num_channels=channel_num,
             group_info=create_default_group_info(channel_num=channel_num),
             data_type='int16',
-            device_info={},
             preset_type=PresetType.DEVICE,
             device_preset=audio_device_preset
         )
 
         self.stream_presets[audio_device_preset.stream_name] = audio_device_preset
-
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """

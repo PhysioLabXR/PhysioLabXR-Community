@@ -317,8 +317,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if device_type in DeviceType:
             pass
             # audio device
-            # if device_type == DeviceType.AUDIOINPUT:
-            #     self.init_audio_device(device_name)
+            if device_type == DeviceType.AUDIOINPUT:
+                self.init_audio_device(device_name)
 
 
         else:

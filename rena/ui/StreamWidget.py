@@ -44,6 +44,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # GUI elements
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
         self.ui = uic.loadUi("ui/StreamContainer.ui", self)
+        self.DeviceOptionsButtonWidget.hide()
         self.set_pop_button(self.PopWindowBtn)
 
         if type(insert_position) == int:
