@@ -87,8 +87,8 @@ class RenaAudioInputInterface(DeviceInterface):
             self.stream.close()
             self.audio.terminate()
 
-    def get_sampling_rate(self):
-        return self.sampling_rate
+    # def get_sampling_rate(self):
+    #     return self.n
 
 
 # class RenaAudioInputInterface(DeviceInterface):
