@@ -254,24 +254,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None,
                                port_number=None, worker=None):
-        error_initialization = False
-
-        # set up UI elements
-        widget_name = networking_stream_name + '_widget'
-        stream_widget = StreamWidget(parent_widget=self,
-                                     parent_layout=self.streamsHorizontalLayout,
-                                     stream_name=networking_stream_name,
-                                     data_type=data_type,
-                                     worker=worker,
-                                     networking_interface=networking_interface,
-                                     port_number=port_number,
-                                     insert_position=self.streamsHorizontalLayout.count() - 1)
-        stream_widget.setObjectName(widget_name)
-        self.stream_widgets[networking_stream_name] = stream_widget
-
-        if error_initialization:
-            stream_widget.RemoveStreamBtn.click()
-        config.settings.endGroup()
+        pass
+        # error_initialization = False
+        #
+        # # set up UI elements
+        # widget_name = networking_stream_name + '_widget'
+        # stream_widget = StreamWidget(parent_widget=self,
+        #                              parent_layout=self.streamsHorizontalLayout,
+        #                              stream_name=networking_stream_name,
+        #                              data_type=data_type,
+        #                              worker=worker,
+        #                              networking_interface=networking_interface,
+        #                              port_number=port_number,
+        #                              insert_position=self.streamsHorizontalLayout.count() - 1)
+        # stream_widget.setObjectName(widget_name)
+        # self.stream_widgets[networking_stream_name] = stream_widget
+        #
+        # if error_initialization:
+        #     stream_widget.RemoveStreamBtn.click()
+        # config.settings.endGroup()
 
     def init_device_streaming(self, stream_name, networking_interface='DEVICE', data_type=None,
                                     port_number=None, worker=None):

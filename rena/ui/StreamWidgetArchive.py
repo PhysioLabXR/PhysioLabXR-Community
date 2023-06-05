@@ -32,8 +32,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
 
-    def __init__(self, parent_widget, parent_layout, stream_name, worker,
-                 insert_position=None):
+    def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
+                 insert_position=None, ):
         """
         StreamWidget is the main interface with plots and a single stream of data.
         The stream can be either LSL or ZMQ.
@@ -56,9 +56,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         ##
         self.stream_name = stream_name  # this also keeps the subtopic name if using ZMQ
-        # self.networking_interface = networking_interface
-        # self.port_number = port_number
-        # self.data_type = data_type
+        self.networking_interface = networking_interface
+        self.port_number = port_number
+        self.data_type = data_type
         # self.preset = get_complete_stream_preset_info(self.stream_name)
 
         self.actualSamplingRate = 0
@@ -102,17 +102,22 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_data_buffer = None
         self.create_buffer()
 
+        # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
+        #     print('The stream {0} found in LAN has sampling rate of {1}, '
+        #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
+        #     config.settings.setValue('NominalSamplingRate', stream_srate)
+
+        # load default settings from settings
 
         self.worker_thread = QThread(self)
-        self.worker = worker
-        # if self.networking_interface == 'LSL':
-        #     channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        #     self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
-        # elif self.networking_interface == 'ZMQ':
-        #     self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
-        # elif self.networking_interface == 'DEVICE':
-        #     assert worker
-        #     self.worker = worker
+        if self.networking_interface == 'LSL':
+            channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
+            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
+        elif self.networking_interface == 'ZMQ':
+            self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
+        elif self.networking_interface == 'DEVICE':
+            assert worker
+            self.worker = worker
         self.worker.signal_data.connect(self.process_stream_data)
         self.worker.signal_stream_availability.connect(self.update_stream_availability)
         self.worker.moveToThread(self.worker_thread)
@@ -215,61 +220,59 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         return self.worker.is_streaming
 
     def start_stop_stream_btn_clicked(self):
-        pass
         # check if is streaming
-        # if self.worker.is_streaming:
-        #     self.worker.stop_stream()
-        #     if not self.worker.is_streaming:
-        #         # started
-        #         # print("sensor stopped")
-        #         # self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
-        #         self.update_stream_availability(self.worker.is_stream_available)
-        # else:
-        #     # self.reset_performance_measures()
-        #     try:
-        #         self.worker.start_stream()
-        #         self.worker.timestamp_queue.clear()
-        #     except LSLStreamNotFoundError as e:
-        #         self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-        #         return
-        #     except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-        #         # self.main_parent.current_dialog = reply = QMessageBox.question(self, 'Channel Mismatch',
-        #         #                              'The stream with name {0} found on the network has {1}.\n'
-        #         #                              'The preset has {2} channels. \n '
-        #         #                              'Do you want to reset your preset to a default and start stream.\n'
-        #         #                              'You can edit your stream channels in Options if you choose No'.format(
-        #         #                                  self.stream_name, e.message,
-        #         #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-        #         #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        #         preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
-        #         message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-        #         reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
-        #
-        #         if reply.result():
-        #             self.reset_preset_by_num_channels(e.message)
-        #             try:
-        #                 self.worker.start_stream()  # start the stream again with updated preset
-        #             except LSLStreamNotFoundError as e:
-        #                 self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-        #                 return
-        #         else:
-        #             return
-        #     except Exception as e:
-        #         raise UnsupportedErrorTypeError(str(e))
-        #     # if self.worker.is_streaming:
-        #     #     self.StartStopStreamBtn.setText("Stop Stream")
-        # self.set_button_icons()
-        # self.main_parent.update_active_streams()
+        if self.worker.is_streaming:
+            self.worker.stop_stream()
+            if not self.worker.is_streaming:
+                # started
+                # print("sensor stopped")
+                # self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
+                self.update_stream_availability(self.worker.is_stream_available)
+        else:
+            # self.reset_performance_measures()
+            try:
+                self.worker.start_stream()
+                self.worker.timestamp_queue.clear()
+            except LSLStreamNotFoundError as e:
+                self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
+                return
+            except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
+                # self.main_parent.current_dialog = reply = QMessageBox.question(self, 'Channel Mismatch',
+                #                              'The stream with name {0} found on the network has {1}.\n'
+                #                              'The preset has {2} channels. \n '
+                #                              'Do you want to reset your preset to a default and start stream.\n'
+                #                              'You can edit your stream channels in Options if you choose No'.format(
+                #                                  self.stream_name, e.message,
+                #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
+                #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
+                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
+
+                if reply.result():
+                    self.reset_preset_by_num_channels(e.message)
+                    try:
+                        self.worker.start_stream()  # start the stream again with updated preset
+                    except LSLStreamNotFoundError as e:
+                        self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
+                        return
+                else:
+                    return
+            except Exception as e:
+                raise UnsupportedErrorTypeError(str(e))
+            # if self.worker.is_streaming:
+            #     self.StartStopStreamBtn.setText("Stop Stream")
+        self.set_button_icons()
+        self.main_parent.update_active_streams()
 
     def reset_preset_by_num_channels(self, num_channels):
-        pass
-        # pop_stream_preset_from_settings(self.stream_name)
-        # self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
-        # self.create_buffer()  # recreate the interface and buffer, using the new preset
-        # self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
-        #
-        # self.stream_options_window.reload_preset_to_UI()
-        # self.reset_viz()
+        pop_stream_preset_from_settings(self.stream_name)
+        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
+        self.create_buffer()  # recreate the interface and buffer, using the new preset
+        self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
+
+        self.stream_options_window.reload_preset_to_UI()
+        self.reset_viz()
 
     def reset_viz(self):
         """

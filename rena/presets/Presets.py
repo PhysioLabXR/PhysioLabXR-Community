@@ -100,17 +100,14 @@ class StreamPreset(metaclass=SubPreset):
 
     group_info: dict[str, GroupEntry]
 
-
     preset_type: PresetType
 
-    device_info: dict = None
-    device_preset: DevicePreset = None
-    data_type: str = 'float32'
-
-    port_number: int = None
-
-    display_duration: float = None
-    nominal_sampling_rate: int = 10
+    # device_info: dict = None
+    # device_preset: DevicePreset = None
+    # port_number: int = None
+    data_type: str = field(default='float32', init=False)
+    display_duration: float = field(default=1, init=False)
+    nominal_sampling_rate: int = field(default=10, init=False)
 
     def __post_init__(self):
         """
@@ -138,6 +135,21 @@ class StreamPreset(metaclass=SubPreset):
             rtn = f'{default_group_name}{i}'
 
         return rtn
+
+
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class LSLStreamPreset(StreamPreset):
+    pass
+    # preset_type: PresetType
+
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class ZMQStreamPreset(StreamPreset):
+    port_number: int
+
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class DeviceStreamPreset(StreamPreset):
+    pass
+
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -402,26 +414,26 @@ class Presets(metaclass=Singleton):
         self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_audio_device_preset(self, stream_name, audio_device_index, channel_num):
-
-        audio_device_preset = AudioDevicePreset(_device_name=stream_name,
-                                                _audio_device_index=audio_device_index,
-                                                _audio_device_channel=channel_num,
-                                                _device_type=DeviceType.AUDIOINPUT,
-                                                device_nominal_sampling_rate=4410)
-
-        channel_indices = list(range(channel_num))
-        channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
-        audio_device_preset = StreamPreset(
-            stream_name=stream_name,
-            channel_names=channel_names,
-            num_channels=channel_num,
-            group_info=create_default_group_info(channel_num=channel_num),
-            data_type='int16',
-            preset_type=PresetType.DEVICE,
-            device_preset=audio_device_preset
-        )
-
-        self.stream_presets[audio_device_preset.stream_name] = audio_device_preset
+        pass
+        # audio_device_preset = AudioDevicePreset(_device_name=stream_name,
+        #                                         _audio_device_index=audio_device_index,
+        #                                         _audio_device_channel=channel_num,
+        #                                         _device_type=DeviceType.AUDIOINPUT,
+        #                                         device_nominal_sampling_rate=4410)
+        #
+        # channel_indices = list(range(channel_num))
+        # channel_names = ["channel" + str(channel_indices[i]) for i in channel_indices]
+        # audio_device_preset = StreamPreset(
+        #     stream_name=stream_name,
+        #     channel_names=channel_names,
+        #     num_channels=channel_num,
+        #     group_info=create_default_group_info(channel_num=channel_num),
+        #     data_type='int16',
+        #     preset_type=PresetType.DEVICE,
+        #     device_preset=audio_device_preset
+        # )
+        #
+        # self.stream_presets[audio_device_preset.stream_name] = audio_device_preset
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """
