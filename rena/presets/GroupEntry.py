@@ -6,13 +6,17 @@ from rena import config
 from rena.presets.PlotConfig import PlotConfigs
 from rena.presets.preset_class_helpers import SubPreset
 from rena.utils.ConfigPresetUtils import reload_enums
-
+from rena.utils.realtime_DSP import *
+from dataclasses import field
 
 class PlotFormat(Enum):
     TIMESERIES = 0
     IMAGE = 1
     BARCHART = 2
     SPECTROGRAM = 3
+
+# @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+# class DSPEntry
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):
@@ -29,6 +33,8 @@ class GroupEntry(metaclass=SubPreset):
 
     # read-only attributes
     _is_image_only: bool = None  # this attribute is not serialized to json
+
+    dsp_pipeline: List[DataProcessor] = field(default_factory=list)
 
     def __post_init__(self):
         """
