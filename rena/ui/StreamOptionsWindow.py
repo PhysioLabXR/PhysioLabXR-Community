@@ -8,7 +8,7 @@ from rena import config
 from rena.config import app_logo_path
 from rena.config_ui import *
 from rena.presets.GroupEntry import PlotFormat
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info
+from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, is_group_image_only
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui_shared import num_points_shown_text
@@ -327,7 +327,8 @@ class StreamOptionsWindow(QWidget):
             self.stream_group_view.enable_channels_in_group(group_item=group_item)
 
     def set_spectrogram_cmap(self, group_name: str):
-        self.parent.set_spectrogram_cmap(group_name)
+        if not is_group_image_only(self.stream_name, group_name):
+            self.parent.set_spectrogram_cmap(group_name)
 
     def set_selected_group(self, group_name: str):
         self.stream_group_view.select_group_item(group_name)
