@@ -7,17 +7,17 @@ Otherwise, you will get either import error or file not found error
 import random
 import threading
 import uuid
-from multiprocessing import Process
 
 import pytest
-import zmq
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
 
+from rena.configs.configs import AppConfigs
+
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
+from rena.tests.test_utils import app_fixture, \
     ContextBot, handle_current_dialog_button
 
 

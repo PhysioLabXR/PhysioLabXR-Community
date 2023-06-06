@@ -13,7 +13,9 @@ import pytest
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
+from rena.configs.configs import AppConfigs
 
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \

@@ -42,7 +42,7 @@ class ReplayServer(threading.Thread):
         self.replay_finished = False
 
         # fps counter
-        self.tick_times = deque(maxlen=50)
+        self.tick_times = deque(maxlen=2 ** 16)
 
         self.c = 0  # use for counting in the pause session
         self.pause_time_offset_total = 0  # use for tracking the total paused time for this replay
@@ -91,6 +91,8 @@ class ReplayServer(threading.Thread):
                     elif command == shared.DUPLICATE_STREAM_STOP_COMMAND:
                         self.reset_replay()
                         continue
+                elif command == shared.PERFORMANCE_REQUEST_COMMAND:
+                    self.send(self.get_average_loop_time())
 
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
@@ -153,7 +155,7 @@ class ReplayServer(threading.Thread):
         # return here
 
     def reset_replay(self):
-        self.tick_times = deque(maxlen=50)
+        self.tick_times = deque(maxlen=2 ** 16)
         self.outlets = {}
         self.next_sample_index_of_stream = {}
         self.chunk_sizes = {}  # chunk sizes are initialized to 1 in setup stream
@@ -382,6 +384,13 @@ class ReplayServer(threading.Thread):
             return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
         except ZeroDivisionError:
             return 0
+
+    def get_average_loop_time(self):
+        try:
+            return np.mean(np.diff(self.tick_times))
+        except ZeroDivisionError:
+            return 0
+
 
 def start_replay_server():
     print("Replay Server Started")
