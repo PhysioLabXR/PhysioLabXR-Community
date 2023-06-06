@@ -10,13 +10,11 @@ from rena.ui_shared import *
 from rena import config, config_ui
 from rena.utils.ui_utils import dialog_popup
 
-default_settings_dict = {'theme': config_ui.default_theme,
-                         'file_format': config.DEFAULT_FILE_FORMAT}
+default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
-        config.settings.setValue('file_format', config.DEFAULT_FILE_FORMAT)
         load_default_recording_file_location()
         config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
@@ -30,8 +28,6 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
-        if not config.settings.contains('file_format') or config.settings.value('file_format') is None:
-            config.settings.setValue('file_format', config.DEFAULT_FILE_FORMAT)
         if not config.settings.contains('recording_file_location') or config.settings.value('recording_file_location') is None:
             load_default_recording_file_location()
         if not config.settings.contains('viz_data_buffer_max_size') or config.settings.value('viz_data_buffer_max_size') is None:

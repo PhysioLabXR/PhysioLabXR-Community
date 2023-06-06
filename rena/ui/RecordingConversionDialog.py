@@ -5,11 +5,12 @@ from PyQt5.QtCore import QObject, pyqtSignal, QThread
 import pyqtgraph as pg
 from scipy.io import savemat
 
+from rena.configs.configs import RecordingFileFormat
 from rena.utils.data_utils import RNStream
 
 
 class RecordingConversionDialog(QtWidgets.QWidget):
-    def __init__(self,  file_path, file_format):
+    def __init__(self,  file_path, file_format: RecordingFileFormat):
         super().__init__()
         self.ui = uic.loadUi("ui/RecordingConversionDialog.ui", self)
         self.setWindowTitle('Please wait for file conversion')
@@ -55,7 +56,7 @@ class RecordingConversionWorker(QObject):
     finished_conversion = pyqtSignal(str)
     progress = pyqtSignal(list)
 
-    def __init__(self, stream, file_format, file_path):
+    def __init__(self, stream, file_format: RecordingFileFormat, file_path):
         super().__init__()
         self.stream = stream
         self.file_format = file_format
@@ -72,10 +73,10 @@ class RecordingConversionWorker(QObject):
         self.finished_streamin.emit()
 
         newfile_path = self.file_path
-        if self.file_format == "MATLAB (.m)":
+        if self.file_format == RecordingFileFormat.matlab:
             newfile_path = self.file_path.replace('.dats', '.m')
             savemat(newfile_path, buffer, oned_as='row')
-        elif self.file_format == "Pickel (.p)":
+        elif self.file_format == RecordingFileFormat.pickle:
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
         else:

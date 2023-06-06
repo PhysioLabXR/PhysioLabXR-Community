@@ -169,3 +169,10 @@ class ReplayTab(QtWidgets.QWidget):
 
     def get_num_replay_channels(self):
         return len(self.stream_names)
+
+    def _request_replay_performance(self):
+        print('Sending performance request command ReplayClient')  # TODO change the send to a progress bar
+        self.command_info_interface.send_string(shared.PERFORMANCE_REQUEST_COMMAND)
+        average_loop_time = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
+        average_loop_time = np.frombuffer(average_loop_time)[0]
+        return average_loop_time
