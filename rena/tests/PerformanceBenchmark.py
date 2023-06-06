@@ -11,7 +11,9 @@ import pytest
 from rena.configs.configs import AppConfigs
 
 AppConfigs(_reset=True)  # create the singleton app configs object
-from rena.tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, run_replay_benchmark, visualize_metric_across_test_space_axis
+from rena.tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
+    run_replay_benchmark, plot_replay_benchmark_results, \
+    plot_viz_benchmark_results
 
 
 @pytest.fixture
@@ -56,19 +58,19 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     results_without_recording = run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
     pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
 
-    visualize_metric_across_test_space_axis(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")
+    plot_viz_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")
 
 
 def test_replay_data_throughput(app_main_window, qtbot) -> None:
-    # test_time_second_per_stream = 60
-    # num_streams_to_test = [1, 3, 5, 7, 9]
-    # sampling_rates_to_test = np.linspace(1, 2048, 10)
-    # num_channels_to_test = np.linspace(1, 128, 10)
+    test_time_second_per_stream = 60
+    num_streams_to_test = [1, 3, 5, 7, 9]
+    sampling_rates_to_test = np.linspace(1, 2048, 10)
+    num_channels_to_test = np.linspace(1, 128, 10)
 
-    test_time_second_per_stream = 10
-    num_streams_to_test = [1, 3]
-    sampling_rates_to_test = np.linspace(1, 2048, 2)
-    num_channels_to_test = np.linspace(1, 128, 2)
+    # test_time_second_per_stream = 10
+    # num_streams_to_test = [1]
+    # sampling_rates_to_test = np.linspace(1, 2048, 1)
+    # num_channels_to_test = np.linspace(1, 128, 1)
     metrics = 'replay push data loop time', 'timestamp reenactment accuracy'
 
     num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
@@ -88,4 +90,4 @@ def test_replay_data_throughput(app_main_window, qtbot) -> None:
 
     pickle.dump({'results': results, 'test_axes': test_axes}, open("replay_benchmark.p", 'wb'))
 
-    # plot_viz_benchmark_results(results, test_axes=test_axes, metrics=metrics, notes="")
+    plot_replay_benchmark_results(results, test_axes=test_axes, metrics=metrics, notes="")

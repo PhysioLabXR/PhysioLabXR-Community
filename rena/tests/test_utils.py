@@ -306,6 +306,18 @@ def plot_viz_benchmark_results(results, test_axes, metrics, notes=''):
     for n_streams in num_streams_to_test:
         visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
 
+def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test_variables, metrics, notes=''):
+    for measure in metrics:
+        means = np.zeros(len(test_variables))
+        for j, test_variable_value in enumerate(test_variables):
+            this_test_variable_measure_means = [value[measure] for key, value in results[measure].items() if key[axis_index] == test_variable_value]
+            means[j] = np.mean(this_test_variable_measure_means)
+        plt.scatter(test_variables, means)
+        plt.plot(test_variables, means)
+        plt.title(f"Rena Benchmark: single stream {measure} across number of channels. {notes}")
+        plt.xlabel(axis_name)
+        plt.ylabel(f'{measure} (seconds)')
+        plt.show()
 
 def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
     for measure in metrics:
@@ -391,24 +403,24 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
     return results
 
 def get_replay_time_reenactment_accuracy(data_original, data_replayed, stream_names):
-    tick_time_discrepencies = np.empty(0)
-    for stream_names in stream_names:
-        a = data_original[stream_names][0]
-        b = data_replayed[stream_names][0]
+    tick_time_discrepancies = np.empty(0)
+    for s_name in stream_names:
+        a = data_original[s_name][0]
+        b = data_replayed[s_name][0]
         assert np.all(a[:, -b.shape[1]:] == b)
 
-        timesttamps_original = data_original[stream_names][1]
-        timesttamps_replayed = data_replayed[stream_names][1]
-        timesttamps_original_cut = timesttamps_original[-timesttamps_replayed.shape[0]:]
+        a = data_original[s_name][1]
+        b = data_replayed[s_name][1]
+        c = a[-b.shape[0]:]
 
-        tick_times_original = np.diff(timesttamps_original_cut)
-        tick_times_replayed = np.diff(b)
+        d = np.diff(c)
+        e = np.diff(b)
 
-        np.concatenate([tick_time_discrepencies, np.abs(tick_times_original - tick_times_replayed).flatten()])
-    return tick_time_discrepencies
+        tick_time_discrepancies = np.concatenate([tick_time_discrepancies, np.abs(e - d).flatten()])
+    return tick_time_discrepancies
 
 
-def plot_viz_benchmark_results(results, test_axes, metrics, notes=''):
+def plot_replay_benchmark_results(results, test_axes, metrics, notes=''):
     """
     the key for results[measure] are the test axes, these keys must be in the same order as test axes
     @param results:
@@ -420,34 +432,20 @@ def plot_viz_benchmark_results(results, test_axes, metrics, notes=''):
     num_channels_to_test = test_axes["number of channels"]
     num_streams_to_test = test_axes["number of streams"]
 
-    for n_streams in num_streams_to_test:
-        visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
+    if 'replay push data loop time' in metrics:
+        for n_streams in num_streams_to_test:
+            visualize_metrics_across_num_chan_sampling_rate(results, ['replay push data loop time'], n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
 
-
-def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
-    for measure in metrics:
-        result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
-        for i, num_channels in enumerate(num_channels_to_test):
-            for j, sampling_rate in enumerate(sampling_rates_to_test):
-                result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
-        plt.imshow(result_matrix[:, :, 0], cmap='plasma')
-        plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
-        plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
-        plt.xlabel("Sampling Rate (Hz)")
-        plt.ylabel("Number of channels")
-        plt.title(f'{number_of_streams} stream{"s" if number_of_streams > 1 else ""}: {measure}. {notes}')
-        plt.colorbar()
-        plt.show()
-
-def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test_variables, metrics, notes=''):
-    for measure in metrics:
-        means = np.zeros(len(test_variables))
-        for j, test_variable_value in enumerate(test_variables):
-            this_test_variable_measure_means = [value[measure] for key, value in results[measure].items() if key[axis_index] == test_variable_value]
-            means[j] = np.mean(this_test_variable_measure_means)
-        plt.scatter(test_variables, means)
-        plt.plot(test_variables, means)
-        plt.title(f"Rena Benchmark: single stream {measure} across number of channels. {notes}")
-        plt.xlabel(axis_name)
-        plt.ylabel(f'{measure} (seconds)')
+    if 'timestamp reenactment accuracy' in metrics:
+        print()
+        timestamps_renactments_discrepencies = []
+        for n_streams in num_streams_to_test:
+            results_this_n_streams = np.empty(0)
+            for i, num_channels in enumerate(num_channels_to_test):
+                for j, sampling_rate in enumerate(sampling_rates_to_test):
+                    results_this_n_streams = np.concatenate([results_this_n_streams, results['timestamp reenactment accuracy'][n_streams, num_channels, sampling_rate]['timestamp reenactment accuracy']])
+            timestamps_renactments_discrepencies.append(results_this_n_streams)
+        plt.boxplot(timestamps_renactments_discrepencies)
+        plt.xlabel('number of streams')
+        plt.ylabel('discrepancy between original and replayed stream timestamps (second)')
         plt.show()

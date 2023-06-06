@@ -43,6 +43,7 @@ class ReplayServer(threading.Thread):
 
         # fps counter
         self.tick_times = deque(maxlen=2 ** 16)
+        self.push_data_times = deque(maxlen=2 ** 16)
 
         self.c = 0  # use for counting in the pause session
         self.pause_time_offset_total = 0  # use for tracking the total paused time for this replay
@@ -155,7 +156,6 @@ class ReplayServer(threading.Thread):
         # return here
 
     def reset_replay(self):
-        self.tick_times = deque(maxlen=2 ** 16)
         self.outlets = {}
         self.next_sample_index_of_stream = {}
         self.chunk_sizes = {}  # chunk sizes are initialized to 1 in setup stream
@@ -227,6 +227,7 @@ class ReplayServer(threading.Thread):
 
         outlet = self.outlets[this_stream_name]
         # print("outlet for this replay is: ", outlet)
+        push_call_start_time = time.perf_counter()
         if this_chunk_size == 1:
             # the data sample's timestamp is equal to (this sample's timestamp minus the first timestamp of the original data) + time since replay start
             outlet.push_sample(this_chunk_data[0], this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time)
@@ -238,6 +239,7 @@ class ReplayServer(threading.Thread):
             # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable
+        self.push_data_times.append(time.perf_counter() - push_call_start_time)
 
         # remove this stream from the list if there are no remaining samples
         if self.next_sample_index_of_stream[this_stream_name] >= stream_total_num_samples:
@@ -255,6 +257,8 @@ class ReplayServer(threading.Thread):
         self.end_time = - math.inf
         self.outlets = {}
         self.slider_offset_time = 0
+        self.tick_times = deque(maxlen=2 ** 16)
+        self.push_data_times = deque(maxlen=2 ** 16)
 
         # flatten any high dim data
         video_keys = []
@@ -387,7 +391,7 @@ class ReplayServer(threading.Thread):
 
     def get_average_loop_time(self):
         try:
-            return np.mean(np.diff(self.tick_times))
+            return np.mean(self.push_data_times)
         except ZeroDivisionError:
             return 0
 
