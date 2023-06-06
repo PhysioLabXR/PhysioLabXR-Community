@@ -27,9 +27,9 @@ class DeviceWidget(StreamWidget):
                          insert_position)
 
         # enable device settings widget
-        self.DeviceOptionsButtonWidget.show()
-        self.device_options_window: DeviceOptionsWindow = DeviceOptionsWindow(stream_name=self.stream_name, parent_widget=self)
-        self.device_options_window.show()
+        # self.DeviceOptionsButtonWidget.show()
+        # self.device_options_window: DeviceOptionsWindow = DeviceOptionsWindow(stream_name=self.stream_name, parent_widget=self)
+        # self.device_options_window.show()
 
 
 
