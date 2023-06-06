@@ -1,0 +1,6 @@
+{ "StreamName":"Image Stream",
+  "NumChannels": 43021500,
+  "NominalSamplingRate":  2,
+  "DataType": "uint8",
+  "PortNumber":  5558
+  }
