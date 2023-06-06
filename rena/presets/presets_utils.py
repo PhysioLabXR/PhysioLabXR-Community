@@ -3,6 +3,7 @@ from typing import Union, List
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder
+from rena.utils.realtime_DSP import DataProcessor
 
 
 def get_preset_category(preset_name):
@@ -239,3 +240,7 @@ def is_video_webcam(video_device_name) -> bool:
 
 def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
+
+
+def get_group_data_processors(stream_name, group_name) ->list[DataProcessor]:
+    return Presets().stream_presets[stream_name].group_info[group_name].data_processors

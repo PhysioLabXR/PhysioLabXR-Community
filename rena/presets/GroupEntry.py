@@ -34,7 +34,7 @@ class GroupEntry(metaclass=SubPreset):
     # read-only attributes
     _is_image_only: bool = None  # this attribute is not serialized to json
 
-    dsp_pipeline: List[DataProcessor] = field(default_factory=list)
+    data_processors: List[DataProcessor] = field(default_factory=list)
 
     def __post_init__(self):
         """

@@ -11,6 +11,7 @@ from rena.presets.GroupEntry import PlotFormat
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
+from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import num_points_shown_text
 from rena.utils.ui_utils import dialog_popup
 
@@ -46,6 +47,11 @@ class StreamOptionsWindow(QWidget):
         self.image_change_signal = self.plot_format_widget.image_change_signal
         self.plot_format_widget.hide()
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+
+        # data processor
+        self.data_processor_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
+        self.data_processor_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.data_processor_widget)
 
         # stream group tree view
         self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name)
@@ -154,9 +160,12 @@ class StreamOptionsWindow(QWidget):
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
             self.plot_format_widget.hide()
+            self.data_processor_widget.hide()
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
+            self.data_processor_widget.show()
+
             self.plot_format_widget.set_plot_format_widget_info(group_name=group_name)
 
         if selection_state == channels_selected or selection_state == channel_selected:
