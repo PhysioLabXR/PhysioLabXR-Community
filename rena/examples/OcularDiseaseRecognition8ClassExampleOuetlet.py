@@ -12,11 +12,11 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 from scipy.special import softmax
 
 def main(argv):
-    srate = 10
-    name = 'Ocular-Disease-Prediction'
+    srate = 1
+    name = 'Ocular Disease Prediction'
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 8
+    n_channels = 2
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])
@@ -49,9 +49,8 @@ def main(argv):
         for sample_ix in range(required_samples):
             # make a new random n_channels sample; this is converted into a
             # pylsl.vectorf (the data type that is expected by push_sample)
-            prediction_result = [0.0001, 0.2, 3, 0.021, 0.12, 0.051, 0.011, 0.5]
+            prediction_result = [0.0001, 2]
             prediction_result = softmax(prediction_result)
-            print(prediction_result)
             mysample = prediction_result
             # now send it
             outlet.push_sample(mysample)

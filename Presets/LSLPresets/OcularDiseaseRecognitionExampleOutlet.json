@@ -1,12 +1,7 @@
-{ "StreamName":"Ocular-Disease-Prediction",
+{ "StreamName":"Ocular Disease Prediction",
   "ChannelNames":[
     "Normal (N)",
-    "Diabetes (D)",
-    "Glaucoma (G)",
-    "Cataract (C)",
-    "Age related Macular Degeneration (A)",
-    "Hypertension (H)",
-    "Pathological Myopia (M)",
-    "Other diseases/abnormalities (O)"],
-  "NominalSamplingRate":  10,
+    "Glaucoma (G)"
+  ],
+  "NominalSamplingRate":  1,
   "DataType": "float32"}

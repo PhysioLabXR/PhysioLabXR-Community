@@ -1,5 +1,5 @@
-{ "StreamName":"Tobii",
-  "NominalSamplingRate":  90,
+{ "StreamName":"Tobii Pro",
+  "NominalSamplingRate":  120,
   "ChannelNames":  [
     "device_time_stamp",
 
@@ -40,5 +40,4 @@
 
     "left_pupil_diameter",
     "right_pupil_diameter"],
-  "GroupInfo":  [1, 23, 25],
   "DataType": "float32"}
