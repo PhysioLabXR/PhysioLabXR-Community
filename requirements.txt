@@ -16,3 +16,4 @@ pyzmq
 setuptools~=57.1.0
 psutil
 pytest-qt
+numba

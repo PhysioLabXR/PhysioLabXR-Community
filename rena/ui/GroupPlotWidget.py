@@ -173,6 +173,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def plot_data(self, data):
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
+        duration = data.shape[1] / get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
 
         if data.shape[1] != len(self.viz_time_vector):  # num_points_to_plot has been updated
             self.viz_time_vector = self.get_viz_time_vector()
@@ -183,12 +184,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             #     if plot_data_item.isVisible():
             #         plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
 
-            duration = data.shape[1] / get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
             time_vector = np.linspace(0., duration, data.shape[1])
             for index_in_group, channel_index in enumerate(channel_indices):
                 plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
                 if plot_data_item.isVisible():
-                    plot_data_item.setData(time_vector, data[int(channel_index), :])
+                    plot_data_item.setData(time_vector, data[channel_index, :])
 
         elif self.get_selected_format() == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
@@ -221,7 +221,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
             nperseg = int(fs * spectrogram_time_second_per_segment(self.stream_name, self.group_name))
             noverlap = int(fs * spectrogram_time_second_overlap(self.stream_name, self.group_name))
-            if nperseg == 0 or noverlap == 0 or nperseg < noverlap:
+            if nperseg == 0 or noverlap == 0 or nperseg < noverlap or nperseg > spectrogram_plot_data.shape[1]:
                 return
             f, t, Sxx = signal.spectrogram(spectrogram_plot_data, fs, window=signal.get_window('hann', nperseg),
                                            noverlap=noverlap,
@@ -232,7 +232,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             Sxx = np.mean(Sxx, axis=0)  # average across channels
             # Sxx = resize(Sxx, (fs/2, Sxx.shape[-1]))
             self.spectrogram_img.setImage(Sxx.T, autoLevels=False)  # average across channels
-            self.spectrogram_img.setRect((0, 0, get_stream_preset_info(self.stream_name, 'display_duration'), fs/2))
+            self.spectrogram_img.setRect((0, 0, duration, fs/2))
 
     def update_bar_chart_range(self):
         if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
