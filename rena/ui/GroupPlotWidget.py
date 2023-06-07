@@ -50,6 +50,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.init_image()
             self.plot_tabs.setTabEnabled(0, False)
             self.plot_tabs.setTabEnabled(2, False)
+            self.plot_tabs.setTabEnabled(3, False)
             assert get_selected_plot_format(self.stream_name, group_name) == PlotFormat.IMAGE
         self.viz_time_vector = self.get_viz_time_vector()
 
