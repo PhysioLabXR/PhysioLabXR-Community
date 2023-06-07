@@ -12,15 +12,20 @@ from random import random as rand
 import zmq
 from pylsl import local_clock
 import imageio
+import cv2
 
 def main():
 
     # read image to numpy
-    image = imageio.imread('OCT_Image.png')
-    image_array = np.array(image)
-    image_array = image_array.flatten()
+    image = cv2.imread('OCT_Image.png')
+    # image_array = np.array(image)
+    width = 5375
+    height = 2668
+    res = cv2.resize(image, dsize=(int(width*0.1), int(height*0.1)), interpolation=cv2.INTER_CUBIC)
+    image_array = res.flatten()
+
     topic = "Image Stream"
-    srate = 2
+    srate = 30
     port = "5558"
 
     c_channels = 3
