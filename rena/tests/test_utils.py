@@ -1,5 +1,6 @@
 import itertools
 import os
+import pickle
 import secrets
 import string
 import sys
@@ -335,9 +336,10 @@ def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_
         plt.show()
 
 
-def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics):
+def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     start_time = time.perf_counter()
+    test_axes = {"number of streams": num_streams_to_test, "number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
 
     for n_streams, num_channels, sampling_rate in itertools.product(num_streams_to_test, num_channels_to_test, sampling_rates_to_test):
         this_stream_names = [test_stream_names.pop(0) for _ in range(n_streams)]
@@ -397,6 +399,7 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
 
         os.remove(replayed_file_name)
         os.remove(recording_file_name)
+        pickle.dump({'results': results, 'test_axes': test_axes}, open(results_path, 'wb'))
 
     print(f"Took {time.perf_counter() - start_time}.", end='')
 

@@ -51,7 +51,7 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     test_stream_names = get_random_test_stream_names(np.sum([n_stream * len(sampling_rates_to_test) * len(num_channels_to_test) for n_stream in num_streams_to_test]))
 
     print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
-    print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {num_tests * (test_time_second_per_stream + 3)} seconds.")
+    print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {2 * (num_tests * (test_time_second_per_stream + 3))} seconds.")
 
     test_context = ContextBot(app_main_window, qtbot)
 
@@ -62,6 +62,7 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
 
 
 def test_replay_data_throughput(app_main_window, qtbot) -> None:
+    results_path = "replay_benchmark.p"
     test_time_second_per_stream = 60
     num_streams_to_test = [1, 3, 5, 7, 9]
     sampling_rates_to_test = np.linspace(1, 2048, 10)
@@ -86,8 +87,7 @@ def test_replay_data_throughput(app_main_window, qtbot) -> None:
 
     test_context = ContextBot(app_main_window, qtbot)
 
-    results = run_replay_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test,num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics)
-
-    pickle.dump({'results': results, 'test_axes': test_axes}, open("replay_benchmark.p", 'wb'))
+    results = run_replay_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test,num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path)
+    pickle.dump({'results': results, 'test_axes': test_axes}, open(results_path, 'wb'))
 
     plot_replay_benchmark_results(results, test_axes=test_axes, metrics=metrics, notes="")
