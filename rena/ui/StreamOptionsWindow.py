@@ -165,7 +165,7 @@ class StreamOptionsWindow(QWidget):
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
             self.plot_format_widget.hide()
-            self.data_processor_widget.hide()
+            self.data_processing_widget.hide()
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()

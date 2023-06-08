@@ -18,6 +18,9 @@ class DataProcessor:
         self.data_processor_type = data_processor_type
         self.data_processor_activated = False
         self.data_processor_valid = False
+        self.channel_num = None
+
+
 
     def process_sample(self, data):
         return data
@@ -38,7 +41,14 @@ class DataProcessor:
         self.data_processor_activated = False
 
     def evoke_data_processor(self):
+        # set data_processor_valid
         pass
+
+    def set_data_processor_params(self, **params):
+        pass
+
+    def set_channel_num(self, channel_num):
+        self.channel_num = channel_num
 
 # class IIRFilter(DataProcessor):
 #
@@ -68,49 +78,69 @@ class DataProcessor:
 #         self.x_tap.fill(0)
 #         self.y_tap.fill(0)
 
-class RealtimeNotch(DataProcessor):
-    def __init__(self, w0: float = 60.0, Q: float = 20.0, fs: float = 250.0, channel_num: int = 8):
-        super().__init__(data_processor_type=DataProcessorType.RealtimeNotch)
-        self.w0 = w0
-        self.Q = Q
-        self.fs = fs
-        self.channel_num = channel_num
-        self.b, self.a = iirnotch(w0=w0, Q=self.Q, fs=self.fs)
-        self.x_tap = np.zeros((self.channel_num, len(self.b)))
-        self.y_tap = np.zeros((self.channel_num, len(self.a)))
+# class RealtimeNotch(DataProcessor):
+#     def __init__(self, w0: float = 60.0, Q: float = 20.0, fs: float = 250.0, channel_num: int = 8):
+#         super().__init__(data_processor_type=DataProcessorType.RealtimeNotch)
+#         self.w0 = w0
+#         self.Q = Q
+#         self.fs = fs
+#         self.channel_num = channel_num
+#         self.b, self.a = iirnotch(w0=w0, Q=self.Q, fs=self.fs)
+#         self.x_tap = np.zeros((self.channel_num, len(self.b)))
+#         self.y_tap = np.zeros((self.channel_num, len(self.a)))
+#
+#     def process_sample(self, data):
+#         # perform realtime filter with tap
+#
+#         # push x
+#         self.x_tap[:, 1:] = self.x_tap[:, : -1]
+#         self.x_tap[:, 0] = data
+#         # push y
+#         self.y_tap[:, 1:] = self.y_tap[:, : -1]
+#         # calculate new y
+#         self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
+#                            np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+#
+#         data = self.y_tap[:, 0]
+#         return data
+#
+#     def reset_tap(self):
+#         self.x_tap.fill(0)
+#         self.y_tap.fill(0)
 
-    def process_sample(self, data):
-        # perform realtime filter with tap
-
-        # push x
-        self.x_tap[:, 1:] = self.x_tap[:, : -1]
-        self.x_tap[:, 0] = data
-        # push y
-        self.y_tap[:, 1:] = self.y_tap[:, : -1]
-        # calculate new y
-        self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
-                           np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
-
-        data = self.y_tap[:, 0]
-        return data
-
-    def reset_tap(self):
-        self.x_tap.fill(0)
-        self.y_tap.fill(0)
 
 
 class RealtimeButterworthBandpass(DataProcessor):
-    def __init__(self, lowcut: float = 5.0, highcut: float = 50.0, fs: float = 250.0, order: int = 5,
-                 channel_num: int = 8):
+    def __init__(self, lowcut: float = 0, highcut: float = 0, fs: float = 0, order: int = 0,
+                 channel_num: int = 0):
         super().__init__(data_processor_type=DataProcessorType.RealtimeButterworthBandpass)
         self.lowcut = lowcut
         self.highcut = highcut
         self.fs = fs
         self.order = order
         self.channel_num = channel_num
-        self.b, self.a = self.butter_bandpass(lowcut=self.lowcut, highcut=self.highcut, fs=self.fs, order=self.order)
-        self.x_tap = np.zeros((self.channel_num, len(self.b)))
-        self.y_tap = np.zeros((self.channel_num, len(self.a)))
+
+    def evoke_data_processor(self):
+        try:
+            self.b, self.a = self.butter_bandpass(lowcut=self.lowcut, highcut=self.highcut, fs=self.fs, order=self.order)
+            self.x_tap = np.zeros((self.channel_num, len(self.b)))
+            self.y_tap = np.zeros((self.channel_num, len(self.a)))
+            self.data_processor_valid = True
+            print("data_processor_valid")
+        except (ValueError, ZeroDivisionError) as e:
+            self.data_processor_valid = False
+            print(e)
+            # print('Data Processor Evoke Failed Error')
+
+    def set_data_processor_params(self, lowcut=None, highcut=None, fs=None, order=None):
+        self.lowcut = lowcut
+        self.highcut = highcut
+        self.fs = fs
+        self.order = order
+
+        self.evoke_data_processor()
+
+
 
     def process_sample(self, data):
         # perform realtime filter with tap
