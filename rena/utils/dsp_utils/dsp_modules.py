@@ -31,7 +31,7 @@ class DataProcessor:
             output_buffer[:, index] = self.process_sample(data[:, index])
         return output_buffer
 
-    def reset_tap(self):
+    def reset_data_processor(self):
         pass
 
     def activate_data_processor(self):
@@ -74,7 +74,7 @@ class DataProcessor:
 #         data = self.y_tap[:, 0]
 #         return data
 #
-#     def reset_tap(self):
+#     def reset_data_processor(self):
 #         self.x_tap.fill(0)
 #         self.y_tap.fill(0)
 
@@ -104,7 +104,7 @@ class DataProcessor:
 #         data = self.y_tap[:, 0]
 #         return data
 #
-#     def reset_tap(self):
+#     def reset_data_processor(self):
 #         self.x_tap.fill(0)
 #         self.y_tap.fill(0)
 
@@ -126,6 +126,7 @@ class RealtimeButterworthBandpass(DataProcessor):
             self.x_tap = np.zeros((self.channel_num, len(self.b)))
             self.y_tap = np.zeros((self.channel_num, len(self.a)))
             self.data_processor_valid = True
+            self.reset_data_processor()
             print("data_processor_valid")
         except (ValueError, ZeroDivisionError) as e:
             self.data_processor_valid = False
@@ -164,7 +165,7 @@ class RealtimeButterworthBandpass(DataProcessor):
         b, a = butter(order, [low, high], btype='band')
         return b, a
 
-    def reset_tap(self):
+    def reset_data_processor(self):
         self.x_tap.fill(0)
         self.y_tap.fill(0)
 
@@ -191,7 +192,7 @@ class RealtimeVrms(DataProcessor):
         # print(vrms)
         return vrms
 
-    def reset_tap(self):
+    def reset_data_processor(self):
         self.data_buffer.fill(0)
 
 
