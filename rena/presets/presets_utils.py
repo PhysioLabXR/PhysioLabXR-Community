@@ -244,3 +244,9 @@ def get_video_device_id(video_device_name) -> int:
 
 def get_group_data_processors(stream_name, group_name) ->list[DataProcessor]:
     return Presets().stream_presets[stream_name].group_info[group_name].data_processors
+
+def add_data_processor_to_group_entry(stream_name, group_name, data_processor:DataProcessor) ->None:
+    Presets().stream_presets[stream_name].group_info[group_name].data_processors.append(data_processor)
+
+def remove_data_processor_to_group_entry(stream_name, group_name, data_processor: DataProcessor) ->None:
+    Presets().stream_presets[stream_name].group_info[group_name].data_processors.remove(data_processor)

@@ -49,12 +49,17 @@ class StreamOptionsWindow(QWidget):
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
 
         # data processor
-        self.data_processor_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
-        self.data_processor_widget.hide()
-        self.actionsWidgetLayout.addWidget(self.data_processor_widget)
+        self.data_processing_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
+        self.data_processing_widget.hide()
+        self.actionsWidgetLayout.addWidget(self.data_processing_widget)
 
         # stream group tree view
-        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name)
+        self.stream_group_view = StreamGroupView(parent_stream_options=self,
+                                                 stream_widget=parent_stream_widget,
+                                                 format_widget=self.plot_format_widget,
+                                                 data_processing_widget=self.data_processing_widget,
+                                                 stream_name=stream_name)
+
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
@@ -164,9 +169,10 @@ class StreamOptionsWindow(QWidget):
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
-            self.data_processor_widget.show()
+            self.data_processing_widget.show()
 
             self.plot_format_widget.set_plot_format_widget_info(group_name=group_name)
+            self.data_processing_widget.set_data_processing_widget_info(group_name=group_name)
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()

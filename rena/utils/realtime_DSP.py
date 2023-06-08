@@ -12,8 +12,8 @@ class DataProcessorType(Enum):
     RealtimeVrms = 'RealtimeVrms'
 
 class DataProcessor:
-    def __init__(self, data_process_type: DataProcessorType):
-        self.data_process_type = data_process_type
+    def __init__(self, data_processor_type: DataProcessorType):
+        self.data_processor_type = data_processor_type
         self.data_processor_activated = False
 
     def process_sample(self, data):

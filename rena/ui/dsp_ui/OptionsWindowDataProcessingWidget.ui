@@ -62,18 +62,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="DataProcessorComboBox">
-           <item>
-            <property name="text">
-             <string>RealtimeButterWorthBandPass</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>RealtimeNotch</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="DataProcessorComboBox"/>
          </item>
          <item>
           <widget class="QPushButton" name="AddDataProcessorBtn">
@@ -105,7 +94,7 @@
               <x>0</x>
               <y>0</y>
               <width>809</width>
-              <height>358</height>
+              <height>349</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="DataProcessorScrollAreaVerticalLayout"/>

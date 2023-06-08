@@ -6,15 +6,18 @@ from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
 from enum import Enum
 
+
 class DataProcessorType(Enum):
     RealtimeNotch = 'RealtimeNotch'
-    RealtimeButterBandpass = 'RealtimeButterBandpass'
+    RealtimeButterworthBandpass = 'RealtimeButterworthBandpass'
     RealtimeVrms = 'RealtimeVrms'
 
+
 class DataProcessor:
-    def __init__(self, data_process_type: DataProcessorType):
-        self.data_process_type = data_process_type
+    def __init__(self, data_processor_type: DataProcessorType = None):
+        self.data_processor_type = data_processor_type
         self.data_processor_activated = False
+        self.data_processor_valid = False
 
     def process_sample(self, data):
         return data
@@ -29,6 +32,12 @@ class DataProcessor:
         pass
 
     def activate_data_processor(self):
+        self.data_processor_activated = True
+
+    def deactivate_data_processor(self):
+        self.data_processor_activated = False
+
+    def evoke_data_processor(self):
         pass
 
 # class IIRFilter(DataProcessor):
@@ -60,8 +69,8 @@ class DataProcessor:
 #         self.y_tap.fill(0)
 
 class RealtimeNotch(DataProcessor):
-    def __init__(self, w0=60, Q=20, fs=250, channel_num=8):
-        super().__init__(DataProcessorType.RealtimeNotch)
+    def __init__(self, w0: float = 60.0, Q: float = 20.0, fs: float = 250.0, channel_num: int = 8):
+        super().__init__(data_processor_type=DataProcessorType.RealtimeNotch)
         self.w0 = w0
         self.Q = Q
         self.fs = fs
@@ -90,9 +99,10 @@ class RealtimeNotch(DataProcessor):
         self.y_tap.fill(0)
 
 
-class RealtimeButterBandpass(DataProcessor):
-    def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
-        super().__init__(DataProcessorType.RealtimeButterBandpass)
+class RealtimeButterworthBandpass(DataProcessor):
+    def __init__(self, lowcut: float = 5.0, highcut: float = 50.0, fs: float = 250.0, order: int = 5,
+                 channel_num: int = 8):
+        super().__init__(data_processor_type=DataProcessorType.RealtimeButterworthBandpass)
         self.lowcut = lowcut
         self.highcut = highcut
         self.fs = fs
@@ -155,17 +165,25 @@ class RealtimeVrms(DataProcessor):
         self.data_buffer.fill(0)
 
 
+# class DataProcessorType(Enum):
+#     RealtimeNotch = RealtimeNotch
+#     RealtimeButterBandpass = RealtimeButterBandpass
+#     RealtimeVrms = RealtimeVrms
 
 
-def get_processor_class(data_processor_type):
-    if data_processor_type == DataProcessorType.RealtimeNotch:
-        return RealtimeNotch
-    elif data_processor_type == DataProcessorType.RealtimeButterBandpass:
-        return RealtimeButterBandpass
-    elif data_processor_type == DataProcessorType.RealtimeVrms:
-        return RealtimeVrms
+# def get_processor_class(data_processor_type):
+#     if data_processor_type == DataProcessorType.RealtimeNotch:
+#         return RealtimeNotch
+#     elif data_processor_type == DataProcessorType.RealtimeButterBandpass:
+#         return RealtimeButterBandpass
+#     elif data_processor_type == DataProcessorType.RealtimeVrms:
+#         return RealtimeVrms
 
 
 if __name__ == '__main__':
-    a = RealtimeButterBandpass()
-    print(type)
+    a = RealtimeButterworthBandpass(lowcut=5)
+    # print("test")
+    # a = RealtimeButterBandpass()
+    # print("end")
+    # # a = RealtimeButterBandpass()
+    # # print(type)

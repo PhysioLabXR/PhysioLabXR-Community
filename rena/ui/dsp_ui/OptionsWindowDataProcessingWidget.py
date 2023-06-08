@@ -22,9 +22,9 @@ from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
-from rena.ui.dsp_ui.DataProcessorWidget import RealtimeButterworthBandPassWidget, DataProcessorWidgetType
-from rena.utils.realtime_DSP import DataProcessorType
+from rena.ui.dsp_ui.DataProcessorWidget import DataProcessorWidgetType
 from enum import Enum
+from rena.utils.dsp_utils.dsp_modules import *
 
 
 
@@ -32,6 +32,8 @@ from enum import Enum
 # class data_processor_widget_type:
 #     def __init__(self, stream_name):
 #         self.RealtimeButterWorthBandPass = RealtimeButterworthBandPassWidget()
+from rena.utils.ui_utils import clear_layout
+
 
 class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
 
@@ -41,35 +43,44 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
         self.parent = parent
         self.stream_widget = stream_widget
         self.stream_name = stream_name
-
-        self.AddDataProcessorBtn.clicked.connect(self.add_processor_btn_clicked)
         self.group_name = None
 
-    def init_data_processor_widget(self, selected_group_name):
-        data_processors = get_group_data_processors(self.stream_name, group_name=selected_group_name)
+        self.AddDataProcessorBtn.clicked.connect(self.add_processor_btn_clicked)
+
+
+        self.init_data_processor_combobox()
+
+    def init_data_processor_combobox(self):
+        for data_processor_type in DataProcessorType:
+            self.DataProcessorComboBox.addItem(data_processor_type.value)
+
+    def set_data_processing_widget_info(self, group_name):
+        # set group name
+        self.group_name = group_name
+
+        clear_layout(self.DataProcessorScrollAreaVerticalLayout)
+        data_processors = get_group_data_processors(self.stream_name, group_name=group_name)
         for data_processor in data_processors:
-            pass
-            # data_processor =
-            # data_processor_widget = data_processor.data_processor_type.get_processor_class()
-            #
-            # if data_processor.data_processor_type == DataProcessorType.RealtimeButterBandpass:
-            #     data_processor_widget = RealtimeButterworthBandPassWidget(data_processor)
-
-            # self.DataProcessorScrollArea.addWidget(data_processor_widget)
-
+            data_processor_widget = getattr(DataProcessorWidgetType, data_processor.data_processor_type.value).value(self, data_processor)
+            self.DataProcessorScrollAreaVerticalLayout.addWidget(data_processor_widget)
 
     def add_processor_btn_clicked(self):
         print('add_processor_btn_clicked')
         selected_data_processor = self.DataProcessorComboBox.currentText()
-        data_processor_widget  = getattr(DataProcessorWidgetType, selected_data_processor).value()
-        print("True")
-        # data_processor_selector = data_processor_widget_type(self.stream_name)
-        # selected_data_processor = self.DataProcessorComboBox.currentText()
-        # data_processor_widget = getattr(data_processor_selector, selected_data_processor)
-        # self.DataProcessorScrollAreaVerticalLayout.addWidget(data_processor_widget)
+        data_processor_widget = getattr(DataProcessorWidgetType, selected_data_processor).value(self, adding_data_processor=True)
+        self.DataProcessorScrollAreaVerticalLayout.addWidget(data_processor_widget)
+
+    def remove_data_processor_widget(self, target):
+        self.DataProcessorScrollAreaVerticalLayout.removeWidget(target)
+        target.deleteLater()
+
 
     def change_group_name(self, new_name):
         self.group_name = new_name
+
+
+
+
 
 
 

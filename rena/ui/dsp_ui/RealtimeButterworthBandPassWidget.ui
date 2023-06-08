@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>583</width>
-    <height>58</height>
+    <width>757</width>
+    <height>62</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,7 +18,7 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>16777215</width>
+    <width>1000</width>
     <height>82</height>
    </size>
   </property>
@@ -72,7 +72,7 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>16777215</width>
+          <width>200</width>
           <height>32</height>
          </size>
         </property>
@@ -90,7 +90,13 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="filterRangeWidget" native="true">
+    <widget class="QWidget" name="filterFrequencyRangeWidget" native="true">
+     <property name="maximumSize">
+      <size>
+       <width>250</width>
+       <height>16777215</height>
+      </size>
+     </property>
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QLabel" name="rangeLable">
@@ -115,7 +121,7 @@
       <item>
        <widget class="QLabel" name="dash">
         <property name="text">
-         <string>----</string>
+         <string>---</string>
         </property>
        </widget>
       </item>
@@ -136,19 +142,22 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="filterOrderWidget" native="true">
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <widget class="QWidget" name="widget_2" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="rangeLable_2">
         <property name="text">
-         <string>Order</string>
+         <string>fs:</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit">
+       <widget class="QLineEdit" name="samplingRateLineEdit">
+        <property name="text">
+         <string/>
+        </property>
         <property name="placeholderText">
-         <string>order</string>
+         <string>(Hz)</string>
         </property>
        </widget>
       </item>
@@ -156,7 +165,30 @@
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="remove_btn">
+    <widget class="QWidget" name="filterOrderWidget" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Order:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="orderLineEdit">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="placeholderText">
+         <string>int</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="removeDataProcessorBtn">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -176,7 +208,7 @@
       </size>
      </property>
      <property name="text">
-      <string/>
+      <string>-</string>
      </property>
     </widget>
    </item>
