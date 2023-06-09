@@ -92,7 +92,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
         # convert file format
         if AppConfigs().recording_file_format != RecordingFileFormat.dats:
-            self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
+            self.conversion_dialog = self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
         else:
             self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok)
 
@@ -176,6 +176,7 @@ class RecordingsTab(QtWidgets.QWidget):
         #first load the .dats back
         recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
         recordingConversionDialog.show()
+        return recordingConversionDialog
 
 
 

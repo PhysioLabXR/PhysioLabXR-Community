@@ -1,5 +1,6 @@
 import pickle
 
+import pyxdf
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 import pyqtgraph as pg
@@ -9,7 +10,7 @@ import os
 import csv
 
 from rena.configs.configs import RecordingFileFormat
-from rena.utils.data_utils import RNStream
+from rena.utils.data_utils import RNStream, CsvStoreLoad
 
 
 class RecordingConversionDialog(QtWidgets.QWidget):
@@ -32,6 +33,7 @@ class RecordingConversionDialog(QtWidgets.QWidget):
 
         self.finish_button.clicked.connect(self.on_finish_button_clicked)
         self.finish_button.hide()
+        self.is_conversion_complete = False
 
         self.thread.start()
 
@@ -39,6 +41,7 @@ class RecordingConversionDialog(QtWidgets.QWidget):
         print('Conversion finished, showing the finish button')
         self.progress_label.setText('Complete saving file to {}'.format(newfile_path))
         self.finish_button.show()
+        self.is_conversion_complete = True
 
     def conversion_progress(self, progresses):
         read_bytes, total_bytes = progresses
@@ -117,9 +120,12 @@ class RecordingConversionWorker(QObject):
         elif self.file_format == RecordingFileFormat.pickle:
             newfile_path = self.file_path.replace('.dats', '.p')
             pickle.dump(buffer, open(newfile_path, 'wb'))
-        elif self.file_format == "Comma separate values (.CSV)":
+        elif self.file_format == RecordingFileFormat.csv:
             csv_store = CsvStoreLoad()
             csv_store.store_csv(buffer, self.file_path)
+        elif self.file_format == RecordingFileFormat.xdf:
+            newfile_path = self.file_path.replace('.dats', '.xdf')
+            pyxdf.write_xdf(newfile_path, buffer)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
