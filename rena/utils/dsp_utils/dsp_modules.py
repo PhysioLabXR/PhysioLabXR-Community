@@ -26,10 +26,13 @@ class DataProcessor:
         return data
 
     def process_buffer(self, data):
-        output_buffer = np.empty(shape=data.shape)
-        for index in range(0, data.shape[1]):
-            output_buffer[:, index] = self.process_sample(data[:, index])
-        return output_buffer
+        if self.data_processor_valid:
+            output_buffer = np.empty(shape=data.shape)
+            for index in range(0, data.shape[1]):
+                output_buffer[:, index] = self.process_sample(data[:, index])
+            return output_buffer
+        else:
+            return data
 
     def reset_data_processor(self):
         pass
@@ -211,8 +214,15 @@ class RealtimeVrms(DataProcessor):
 #         return RealtimeVrms
 
 
-if __name__ == '__main__':
-    a = RealtimeButterworthBandpass(lowcut=5)
+def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
+    for data_processor in data_processor_pipeline:
+        data = data_processor.process_buffer(data)
+
+    return data
+
+# if __name__ == '__main__':
+#     pass
+    # a = RealtimeButterworthBandpass(lowcut=5)
     # print("test")
     # a = RealtimeButterBandpass()
     # print("end")

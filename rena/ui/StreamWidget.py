@@ -24,6 +24,7 @@ from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
 
@@ -611,8 +612,19 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
     def set_spectrogram_cmap(self, group_name):
         self.viz_components.set_spectrogram_cmap(group_name)
 
-    def run_data_processor(self, data):
-        pass
+    def run_data_processor(self, data_dict):
+        data = data_dict['frames']
+        group_info = get_stream_group_info(self.stream_name)
+
+        for this_group_info in group_info.values():
+            processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
+            data[this_group_info.channel_indices] = processed_data
+        # for this_group_info in group_info.values():
+        #     data
+            # print(info.channel_indices)
+        # for group_ in my_dict.values():
+        #     print(value)
+
         # get_group_channel_indices
 
 

@@ -72,6 +72,9 @@ class RealtimeButterworthBandPassWidget(DataProcessorWidget):
         self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
         self.orderLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
 
+    def set_data_processor_input_field_value(self):
+        pass
+
     def data_processor_settings_on_changed(self):
         lowcut = self.get_lowcut()
         highcut = self.get_highcut()
