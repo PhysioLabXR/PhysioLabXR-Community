@@ -616,7 +616,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         data = data_dict['frames']
         group_info = get_stream_group_info(self.stream_name)
 
-        for this_group_info in group_info.values():
+        for this_group_info in group_info.values(): # TODO: potentially optimize using pool
             processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
             data[this_group_info.channel_indices] = processed_data
         # for this_group_info in group_info.values():

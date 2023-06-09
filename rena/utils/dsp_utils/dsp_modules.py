@@ -20,8 +20,6 @@ class DataProcessor:
         self.data_processor_valid = False
         self.channel_num = None
 
-
-
     def process_sample(self, data):
         return data
 
@@ -143,8 +141,6 @@ class RealtimeButterworthBandpass(DataProcessor):
         self.order = order
 
         self.evoke_data_processor()
-
-
 
     def process_sample(self, data):
         # perform realtime filter with tap
