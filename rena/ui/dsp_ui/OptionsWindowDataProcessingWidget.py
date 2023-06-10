@@ -24,6 +24,8 @@ from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
 from rena.ui.dsp_ui.DataProcessorWidget import DataProcessorWidgetType
 from enum import Enum
+
+from rena.ui_shared import add_icon
 from rena.utils.dsp_utils.dsp_modules import *
 
 
@@ -46,6 +48,8 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
         self.group_name = None
 
         self.AddDataProcessorBtn.clicked.connect(self.add_processor_btn_clicked)
+        # add add button icon
+        self.AddDataProcessorBtn.setIcon(add_icon)
 
 
         self.init_data_processor_combobox()

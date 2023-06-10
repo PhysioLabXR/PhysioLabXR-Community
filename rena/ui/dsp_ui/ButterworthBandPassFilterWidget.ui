@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>665</width>
+    <width>585</width>
     <height>44</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -39,7 +39,7 @@
     <number>1</number>
    </property>
    <item>
-    <widget class="QFrame" name="frame_3">
+    <widget class="QFrame" name="frame_1">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>
@@ -48,16 +48,16 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_12">
       <property name="leftMargin">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="topMargin">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="rightMargin">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="bottomMargin">
-       <number>2</number>
+       <number>1</number>
       </property>
       <item>
        <widget class="QWidget" name="dataProessorNameWidget" native="true">
@@ -75,7 +75,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QFrame" name="frame1">
+          <widget class="QFrame" name="frame_2">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -84,16 +84,16 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <property name="leftMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <item>
              <widget class="QLabel" name="dataProcessorNameLabel">
@@ -150,7 +150,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QFrame" name="frame2">
+          <widget class="QFrame" name="frame_3">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -159,16 +159,16 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_8">
             <property name="leftMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <item>
              <widget class="QLabel" name="rangeLable">
@@ -232,7 +232,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QFrame" name="frame_6">
+          <widget class="QFrame" name="frame_4">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -241,16 +241,16 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout">
             <property name="leftMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <item>
              <widget class="QLabel" name="fsLabel">
@@ -291,7 +291,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QFrame" name="frame_7">
+          <widget class="QFrame" name="frame_5">
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -300,16 +300,16 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
             <property name="leftMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="topMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="rightMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <property name="bottomMargin">
-             <number>2</number>
+             <number>1</number>
             </property>
             <item>
              <widget class="QLabel" name="orderLabel">
@@ -355,7 +355,7 @@
          </size>
         </property>
         <property name="text">
-         <string>-</string>
+         <string/>
         </property>
        </widget>
       </item>
