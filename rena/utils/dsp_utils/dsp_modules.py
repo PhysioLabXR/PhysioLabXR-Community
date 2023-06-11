@@ -20,11 +20,10 @@ class DataProcessorType(Enum):
     # RealtimeVrms = 'RealtimeVrms'
 
 
-class SubDataProcessor(type):
-    pass
+# class SubDataProcessor(type):
+#     pass
 
-
-class DataProcessor(metaclass=SubDataProcessor, QObject):
+class DataProcessor(QObject):
     data_processor_valid_signal = pyqtSignal()
     data_processor_activated_signal = pyqtSignal()
 
@@ -256,3 +255,13 @@ def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
         data = data_processor.process_buffer(data)
 
     return data
+
+# if __name__ == '__main__':
+#     a = NotchFilter(w0=60, Q=20, fs=300)
+#     c = ButterworthBandpassFilter()
+#     dict_record = c.__dict__
+#     b = NotchFilter()
+#     for key, value in dict_record.items():
+#         setattr(b, key, value)
+#     print('John')
+

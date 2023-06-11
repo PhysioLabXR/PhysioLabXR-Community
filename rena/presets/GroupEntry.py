@@ -64,6 +64,7 @@ class GroupEntry(metaclass=SubPreset):
         else:
             raise ValueError(f'plot_configs must be a dict or None: {type(self.plot_configs)}')
         reload_enums(self)
+        self.load_data_processor()
 
     # def to_dict(self):
     #     return {attr: value.name if attr == 'selected_plot_format' else value for attr, value in self.__dict__.items()}
