@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>865</width>
-    <height>502</height>
+    <height>230</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,250 +17,262 @@
    <set>Qt::ImhNone</set>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item alignment="Qt::AlignTop">
-    <widget class="QTabWidget" name="plotFormatTabWidget">
-     <property name="currentIndex">
-      <number>0</number>
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
      </property>
-     <property name="iconSize">
-      <size>
-       <width>160</width>
-       <height>160</height>
-      </size>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QWidget" name="timeseriestab">
-      <attribute name="title">
-       <string>Time Series</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QWidget" name="NominalSamplingRateWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+     <layout class="QVBoxLayout" name="verticalLayout_12">
+      <item>
+       <widget class="QTabWidget" name="plotFormatTabWidget">
+        <property name="currentIndex">
+         <number>2</number>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>160</width>
+          <height>160</height>
+         </size>
+        </property>
+        <widget class="QWidget" name="timeseriestab">
+         <attribute name="title">
+          <string>Time Series</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QWidget" name="NominalSamplingRateWidget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+           </widget>
+          </item>
+         </layout>
         </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="imagetab">
-      <attribute name="title">
-       <string>Image</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QWidget" name="ImageInfoWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout">
+        <widget class="QWidget" name="imagetab">
+         <attribute name="title">
+          <string>Image</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
-           <widget class="QWidget" name="WidthWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_3">
+           <widget class="QWidget" name="ImageInfoWidget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>Width</string>
-               </property>
+              <widget class="QWidget" name="WidthWidget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                 <widget class="QLabel" name="label_3">
+                  <property name="text">
+                   <string>Width</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="imageWidthLineEdit"/>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="imageWidthLineEdit"/>
+              <widget class="QWidget" name="HeightWidget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_5">
+                <item>
+                 <widget class="QLabel" name="label_5">
+                  <property name="text">
+                   <string>Height</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="imageHeightLineEdit"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="widget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_8">
+                <item>
+                 <widget class="QLabel" name="label_4">
+                  <property name="text">
+                   <string>Scaling Factor</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="imageScalingFactorLineEdit"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="ImageFormatWidget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_6">
+                <item>
+                 <widget class="QLabel" name="label_6">
+                  <property name="text">
+                   <string>Image Format</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="imageFormatComboBox"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="ChannelFormatWidget" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_7">
+                <item>
+                 <widget class="QLabel" name="label_7">
+                  <property name="text">
+                   <string>Channel Format</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QComboBox" name="channelFormatCombobox"/>
+                </item>
+               </layout>
+              </widget>
              </item>
             </layout>
            </widget>
           </item>
           <item>
-           <widget class="QWidget" name="HeightWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_5">
-             <item>
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Height</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="imageHeightLineEdit"/>
-             </item>
-            </layout>
+           <widget class="QLabel" name="imageFormatInfoLabel">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
            </widget>
           </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="barplottab">
+         <attribute name="title">
+          <string>Bar Plot</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_9">
           <item>
-           <widget class="QWidget" name="widget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_8">
+           <widget class="QWidget" name="widget_2" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>Scaling Factor</string>
-               </property>
+              <widget class="QWidget" name="widget_3" native="true">
+               <layout class="QHBoxLayout" name="horizontalLayout_5">
+                <item>
+                 <widget class="QLabel" name="label_8">
+                  <property name="text">
+                   <string>Plot Range:</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="imageScalingFactorLineEdit"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="ImageFormatWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_6">
-             <item>
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>Image Format</string>
-               </property>
+              <widget class="QWidget" name="widget_5" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item alignment="Qt::AlignHCenter">
+                 <widget class="QLabel" name="label_10">
+                  <property name="text">
+                   <string>Min</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="barPlotYMinLineEdit"/>
+                </item>
+               </layout>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="imageFormatComboBox"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="ChannelFormatWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_7">
-             <item>
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Channel Format</string>
-               </property>
+              <widget class="QWidget" name="widget_4" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_10">
+                <item alignment="Qt::AlignHCenter">
+                 <widget class="QLabel" name="label_9">
+                  <property name="text">
+                   <string>Max</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="barPlotYMaxLineEdit"/>
+                </item>
+               </layout>
               </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="channelFormatCombobox"/>
              </item>
             </layout>
            </widget>
           </item>
          </layout>
         </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="imageFormatInfoLabel">
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="barplottab">
-      <attribute name="title">
-       <string>Bar Plot</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_9">
-       <item>
-        <widget class="QWidget" name="widget_2" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QWidget" name="widget_3" native="true">
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Plot Range:</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Spectrogram</string>
+         </attribute>
+         <layout class="QGridLayout" name="spectrogram_gridLayout">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Overlap between segments (seconds)</string>
+            </property>
            </widget>
           </item>
-          <item>
-           <widget class="QWidget" name="widget_5" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_11">
-             <item alignment="Qt::AlignHCenter">
-              <widget class="QLabel" name="label_10">
-               <property name="text">
-                <string>Min</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="barPlotYMinLineEdit"/>
-             </item>
-            </layout>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="line_edit_time_per_segments"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Time per segment (seconds)</string>
+            </property>
            </widget>
           </item>
-          <item>
-           <widget class="QWidget" name="widget_4" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_10">
-             <item alignment="Qt::AlignHCenter">
-              <widget class="QLabel" name="label_9">
-               <property name="text">
-                <string>Max</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="barPlotYMaxLineEdit"/>
-             </item>
-            </layout>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>Color map</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="comboBox_spectrogram_cmap"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="line_edit_overlap_between_segments"/>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_invalid_spectrogram_param">
+            <property name="font">
+             <font>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Invalid parameters: Time per segment must be greater than overlap between segments!</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Spectragrom Display Min Percentile (%)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>Spectrogram Display Max Percentile (%)</string>
+            </property>
            </widget>
           </item>
          </layout>
         </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="tab">
-      <attribute name="title">
-       <string>Spectrogram</string>
-      </attribute>
-      <layout class="QGridLayout" name="spectrogram_gridLayout">
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_12">
-         <property name="text">
-          <string>Overlap between segments (seconds)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="line_edit_time_per_segments"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_11">
-         <property name="text">
-          <string>Time per segment (seconds)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="label_13">
-         <property name="text">
-          <string>Color map</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QComboBox" name="comboBox_spectrogram_cmap"/>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="line_edit_overlap_between_segments"/>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="label_invalid_spectrogram_param">
-         <property name="font">
-          <font>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>Invalid parameters: Time per segment must be greater than overlap between segments!</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0">
-        <widget class="QLabel" name="label_14">
-         <property name="text">
-          <string>Spectragrom Display Min Percentile (%)</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="label_15">
-         <property name="text">
-          <string>Spectrogram Display Max Percentile (%)</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

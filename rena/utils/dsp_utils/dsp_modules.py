@@ -7,6 +7,8 @@ from scipy.sparse.linalg import spsolve
 from enum import Enum
 from PyQt5.QtCore import (QObject, pyqtSignal)
 
+from exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError
+
 
 class DataProcessorType(Enum):
     NotchFilter = 'NotchFilter'
@@ -47,7 +49,6 @@ class DataProcessor(QObject):
         self.data_processor_activated = False
 
     def evoke_data_processor(self):
-        # set data_processor_valid
         pass
 
     def set_data_processor_params(self, **params):
@@ -55,7 +56,6 @@ class DataProcessor(QObject):
 
     def set_channel_num(self, channel_num):
         self.channel_num = channel_num
-        self.evoke_data_processor()
 
     def set_data_processor_activated(self, data_processor_activated):
         self.data_processor_activated = data_processor_activated
@@ -90,6 +90,19 @@ class IIRFilter(DataProcessor):
         data = self._y_tap[:, 0]
         return data
 
+    def evoke_data_processor(self):
+        try:
+            self.evoke_function()
+            self.set_data_processor_valid(True)
+            self.reset_data_processor()
+        except Exception as e:
+            self.set_data_processor_valid(False)
+            print('Data Processor Evoke Failed Error: ' + str(e))
+            raise DataProcessorEvokeFailedError(str(e))
+
+    def evoke_function(self):
+        pass
+
     def reset_data_processor(self):
         self._x_tap.fill(0)
         self._y_tap.fill(0)
@@ -102,24 +115,15 @@ class NotchFilter(IIRFilter):
         self.Q = Q
         self.fs = fs
 
-    def evoke_data_processor(self):
-        try:
-            self._b, self._a = iirnotch(w0=self.w0, Q=self.Q, fs=self.fs)
-            self._x_tap = np.zeros((self.channel_num, len(self._b)))
-            self._y_tap = np.zeros((self.channel_num, len(self._a)))
-            self.set_data_processor_valid(True)
-            self.reset_data_processor()
-        except (ValueError, ZeroDivisionError, TypeError) as e:
-            self.data_processor_valid = False
-            print(e)
-            print('Data Processor Evoke Failed Error')
+    def evoke_function(self):
+        self._b, self._a = iirnotch(w0=self.w0, Q=self.Q, fs=self.fs)
+        self._x_tap = np.zeros((self.channel_num, len(self._b)))
+        self._y_tap = np.zeros((self.channel_num, len(self._a)))
 
     def set_data_processor_params(self, w0, Q, fs):
         self.w0 = w0
         self.Q = Q
         self.fs = fs
-
-        self.evoke_data_processor()
 
 
 class ButterworthBandpassFilter(IIRFilter):
@@ -130,21 +134,13 @@ class ButterworthBandpassFilter(IIRFilter):
         self.fs = fs
         self.order = order
 
-    def evoke_data_processor(self):
-        try:
-            self._b, self._a = self.butter_bandpass(lowcut=self.lowcut,
-                                                    highcut=self.highcut,
-                                                    fs=self.fs,
-                                                    order=self.order)
-            self._x_tap = np.zeros((self.channel_num, len(self._b)))
-            self._y_tap = np.zeros((self.channel_num, len(self._a)))
-            self.set_data_processor_valid(True)
-            self.reset_data_processor()
-            print("data_processor_valid")
-        except (ValueError, ZeroDivisionError, TypeError) as e:
-            self.set_data_processor_valid(False)
-            print(e)
-            print('Data Processor Evoke Failed Error')
+    def evoke_function(self):
+        self._b, self._a = self.butter_bandpass(lowcut=self.lowcut,
+                                                highcut=self.highcut,
+                                                fs=self.fs,
+                                                order=self.order)
+        self._x_tap = np.zeros((self.channel_num, len(self._b)))
+        self._y_tap = np.zeros((self.channel_num, len(self._a)))
 
     def set_data_processor_params(self, lowcut, highcut, fs, order):
         self.lowcut = lowcut
@@ -152,7 +148,7 @@ class ButterworthBandpassFilter(IIRFilter):
         self.fs = fs
         self.order = order
 
-        self.evoke_data_processor()
+        # self.evoke_data_processor()
 
     def butter_bandpass(self, lowcut, highcut, fs, order=5):
         nyq = 0.5 * fs
@@ -228,7 +224,6 @@ def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
         data = data_processor.process_buffer(data)
 
     return data
-
 
 # if __name__ == '__main__':
 #     pass
