@@ -60,7 +60,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
                  adding_data_processor=False):
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/ButterworthBandPassFilterWidget.ui", self)
-        self.data_processor = data_processor
+        # self.data_processor = data_processor
 
 
 
