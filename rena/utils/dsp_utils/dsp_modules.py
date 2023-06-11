@@ -5,6 +5,7 @@ from scipy import sparse
 from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
 from enum import Enum
+from PyQt5.QtCore import (QObject, pyqtSignal)
 
 
 class DataProcessorType(Enum):
@@ -13,8 +14,12 @@ class DataProcessorType(Enum):
     RealtimeVrms = 'RealtimeVrms'
 
 
-class DataProcessor:
+class DataProcessor(QObject):
+    data_processor_valid_signal = pyqtSignal()
+    data_processor_activated_signal = pyqtSignal()
+
     def __init__(self, data_processor_type: DataProcessorType = None):
+        super().__init__()
         self.data_processor_type = data_processor_type
         self.data_processor_activated = False
         self.data_processor_valid = False
@@ -24,7 +29,7 @@ class DataProcessor:
         return data
 
     def process_buffer(self, data):
-        if self.data_processor_valid:
+        if self.data_processor_valid and self.data_processor_activated:
             output_buffer = np.empty(shape=data.shape)
             for index in range(0, data.shape[1]):
                 output_buffer[:, index] = self.process_sample(data[:, index])
@@ -51,6 +56,14 @@ class DataProcessor:
     def set_channel_num(self, channel_num):
         self.channel_num = channel_num
         self.evoke_data_processor()
+
+    def set_data_processor_activated(self, data_processor_activated):
+        self.data_processor_activated = data_processor_activated
+        self.data_processor_activated_signal.emit()
+
+    def set_data_processor_valid(self, data_processor_valid):
+        self.data_processor_valid = data_processor_valid
+        self.data_processor_valid_signal.emit()
 
 
 class IIRFilter(DataProcessor):
@@ -94,6 +107,8 @@ class NotchFilter(IIRFilter):
             self._b, self._a = iirnotch(w0=self.w0, Q=self.Q, fs=self.fs)
             self._x_tap = np.zeros((self.channel_num, len(self._b)))
             self._y_tap = np.zeros((self.channel_num, len(self._a)))
+            self.set_data_processor_valid(True)
+            self.reset_data_processor()
         except (ValueError, ZeroDivisionError, TypeError) as e:
             self.data_processor_valid = False
             print(e)
@@ -104,24 +119,7 @@ class NotchFilter(IIRFilter):
         self.Q = Q
         self.fs = fs
 
-    # def process_sample(self, data):
-    #     # perform realtime filter with tap
-    #
-    #     # push x
-    #     self._x_tap[:, 1:] = self._x_tap[:, : -1]
-    #     self._x_tap[:, 0] = data
-    #     # push y
-    #     self._y_tap[:, 1:] = self._y_tap[:, : -1]
-    #     # calculate new y
-    #     self._y_tap[:, 0] = np.sum(np.multiply(self._x_tap, self._b), axis=1) - \
-    #                        np.sum(np.multiply(self._y_tap[:, 1:], self._a[1:]), axis=1)
-    #
-    #     data = self._y_tap[:, 0]
-    #     return data
-    #
-    # def reset_data_processor(self):
-    #     self._x_tap.fill(0)
-    #     self._y_tap.fill(0)
+        self.evoke_data_processor()
 
 
 class ButterworthBandpassFilter(IIRFilter):
@@ -140,11 +138,11 @@ class ButterworthBandpassFilter(IIRFilter):
                                                     order=self.order)
             self._x_tap = np.zeros((self.channel_num, len(self._b)))
             self._y_tap = np.zeros((self.channel_num, len(self._a)))
-            self.data_processor_valid = True
+            self.set_data_processor_valid(True)
             self.reset_data_processor()
             print("data_processor_valid")
         except (ValueError, ZeroDivisionError, TypeError) as e:
-            self.data_processor_valid = False
+            self.set_data_processor_valid(False)
             print(e)
             print('Data Processor Evoke Failed Error')
 
@@ -232,8 +230,8 @@ def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
     return data
 
 
-if __name__ == '__main__':
-    pass
-    a = ButterworthBandpassFilter()
-    a.process_sample([1, 2])
-    print(a)
+# if __name__ == '__main__':
+#     pass
+#     a = ButterworthBandpassFilter()
+#     a.process_sample([1, 2])
+#     print(a)
