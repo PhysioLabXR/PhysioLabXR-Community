@@ -51,7 +51,6 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
         # add add button icon
         self.AddDataProcessorBtn.setIcon(add_icon)
 
-
         self.init_data_processor_combobox()
 
     def init_data_processor_combobox(self):

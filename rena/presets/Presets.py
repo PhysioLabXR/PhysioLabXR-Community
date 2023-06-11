@@ -14,6 +14,7 @@ from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
+from rena.utils.dsp_utils.dsp_modules import NotchFilter
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.realtime_DSP import DataProcessor
@@ -59,7 +60,7 @@ class PresetsEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Enum):
             return o.name
-        if isinstance(o, DataProcessor):
+        if isinstance(o, NotchFilter):
             return
         if o.__class__.__class__ is SubPreset:
             return o.__dict__

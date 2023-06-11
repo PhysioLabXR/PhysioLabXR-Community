@@ -15,12 +15,16 @@ class DataProcessorType(Enum):
     ButterworthLowpassFilter = 'ButterworthLowpassFilter'
     ButterworthHighpassFilter = 'ButterworthHighpassFilter'
     ButterworthBandpassFilter = 'ButterworthBandpassFilter'
-
+    # RealtimeVrms = 'RealtimeVrms'
 
     # RealtimeVrms = 'RealtimeVrms'
 
 
-class DataProcessor(QObject):
+class SubDataProcessor(type):
+    pass
+
+
+class DataProcessor(metaclass=SubDataProcessor, QObject):
     data_processor_valid_signal = pyqtSignal()
     data_processor_activated_signal = pyqtSignal()
 
@@ -53,7 +57,14 @@ class DataProcessor(QObject):
         self.data_processor_activated = False
 
     def evoke_data_processor(self):
-        pass
+        try:
+            self.evoke_function()
+            self.set_data_processor_valid(True)
+            self.reset_data_processor()
+        except Exception as e:
+            self.set_data_processor_valid(False)
+            print('Data Processor Evoke Failed Error: ' + str(e))
+            raise DataProcessorEvokeFailedError(str(e))
 
     def set_data_processor_params(self, **params):
         pass
@@ -208,6 +219,36 @@ class ButterworthHighpassFilter(IIRFilter):
         normal_cutoff = cutoff / nyq
         b, a = butter(order, normal_cutoff, btype='high')
         return b, a
+
+
+class RootMeanSquare(DataProcessor):
+
+    def __init__(self, fs=0, interval_ms=0):  # interval in ms
+        super().__init__(data_processor_type=DataProcessorType.RealtimeVrms)
+        self.fs = fs
+        self.interval_ms = interval_ms
+
+        self._data_buffer_size = None
+        self._data_buffer = None
+
+    def evoke_function(self):
+        self._data_buffer_size = round(self.fs * self.interval_ms * 0.001)
+        self._data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
+
+    def set_data_processor_params(self, fs, interval_ms):
+        self.fs = fs
+        self.interval_ms = interval_ms
+
+    def process_sample(self, data):
+        self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
+        self.data_buffer[:, 0] = data
+        vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
+        # vrms = np.mean(self.data_buffer, axis=1)
+        # print(vrms)
+        return vrms
+
+    def reset_data_processor(self):
+        self.data_buffer.fill(0)
 
 
 def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
