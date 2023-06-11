@@ -75,3 +75,7 @@ class GroupEntry(metaclass=SubPreset):
         width, height, image_format = self.plot_configs.image_config.width, self.plot_configs.image_config.height, self.plot_configs.image_config.image_format
         depth = image_format.depth_dim()
         return len(self.channel_indices) == width * height * depth
+
+    def load_data_processor(self):
+        for data_processor_dict in self.data_processors:
+            print(data_processor_dict)

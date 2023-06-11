@@ -158,4 +158,4 @@ class DataProcessorEvokeFailedError(RenaError):
         self.error = error
 
     def __str__(self):
-        return 'DataProcessorEvokeFailedError ' + self.error
+        return 'DataProcessorEvokeFailedError: ' + self.error

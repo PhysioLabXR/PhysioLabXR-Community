@@ -102,6 +102,68 @@ class DataProcessorWidget(QtWidgets.QWidget):
             self.DataProcessorStateLabel.setPixmap(self.data_processor_invalid_pixmap)
 
 
+class NotchFilterWidget(DataProcessorWidget):
+
+    def __init__(self, parent, data_processor=None,
+                 adding_data_processor=False):
+        if data_processor is None:
+            data_processor = NotchFilter()
+
+        super().__init__(parent, data_processor, adding_data_processor)
+        self.ui = uic.loadUi("ui/dsp_ui/NotchFilterWidget.ui", self)
+        # self.data_processor = data_processor
+
+        ####################
+        self.__post_init__()
+
+    def set_data_processor_input_field_value(self):
+        super(NotchFilterWidget, self).set_data_processor_input_field_value()
+
+        self.w0LineEdit.setText(str(self.data_processor.w0))
+        self.QLineEdit.setText(str(self.data_processor.Q))
+        self.fsLineEdit.setText(str(self.data_processor.fs))
+
+    def set_data_processor_input_field_constrain(self):
+        self.w0LineEdit.setValidator(QDoubleValidator())
+        self.QLineEdit.setValidator(QDoubleValidator())
+        self.fsLineEdit.setValidator(QDoubleValidator())
+
+    def connect_data_processor_input_field_signal(self):
+        super(NotchFilterWidget, self).connect_data_processor_input_field_signal()
+
+        self.w0LineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.QLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+
+    def set_data_processor_params(self):
+        w0 = self.get_w0()
+        Q = self.get_Q()
+        fs = self.get_fs()
+
+        self.data_processor.set_data_processor_params(w0=w0, Q=Q, fs=fs)
+
+    def get_w0(self):
+        try:
+            w0_value = float(self.w0LineEdit.text())
+        except ValueError:
+            return 0
+        return w0_value
+
+    def get_Q(self):
+        try:
+            Q_value = float(self.QLineEdit.text())
+        except ValueError:
+            return 0
+        return Q_value
+
+    def get_fs(self):
+        try:
+            fs = abs(float(self.fsLineEdit.text()))
+        except ValueError:
+            return 0
+        return fs
+
+
 class ButterworthBandPassFilterWidget(DataProcessorWidget):
 
     def __init__(self, parent, data_processor=None,
@@ -119,21 +181,21 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
     def set_data_processor_input_field_value(self):
         super(ButterworthBandPassFilterWidget, self).set_data_processor_input_field_value()
 
-        self.lowCutLineEdit.setText(str(self.data_processor.lowcut))
-        self.highCutLineEdit.setText(str(self.data_processor.highcut))
+        self.lowcutLineEdit.setText(str(self.data_processor.lowcut))
+        self.highcutLineEdit.setText(str(self.data_processor.highcut))
         self.fsLineEdit.setText(str(self.data_processor.fs))
         self.orderLineEdit.setText(str(self.data_processor.order))
 
     def set_data_processor_input_field_constrain(self):
-        self.lowCutLineEdit.setValidator(QDoubleValidator())
-        self.highCutLineEdit.setValidator(QDoubleValidator())
+        self.lowcutLineEdit.setValidator(QDoubleValidator())
+        self.highcutLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
         self.orderLineEdit.setValidator(QIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthBandPassFilterWidget, self).connect_data_processor_input_field_signal()
-        self.lowCutLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
-        self.highCutLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.lowcutLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.highcutLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
         self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
         self.orderLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
 
@@ -142,36 +204,147 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
         highcut = self.get_highcut()
         fs = self.get_fs()
         order = self.get_order()
-        # try evoke data processor
-        self.data_processor.set_data_processor_params(lowcut=lowcut, highcut=highcut, fs=fs, order=order)
 
-    # def data_processor_settings_on_changed(self):
-    #     try:
-    #
-    #         self.data_processor.evoke_data_processor()
-    #     except DataProcessorEvokeFailedError as e:
-    #         print(str(e))
+        self.data_processor.set_data_processor_params(lowcut=lowcut, highcut=highcut, fs=fs, order=order)
 
     def get_lowcut(self):
         try:
-            lowcut = abs(float(self.lowCutLineEdit.text()))
+            lowcut = abs(float(self.lowcutLineEdit.text()))
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return lowcut
 
     def get_highcut(self):
         try:
-            highcut = abs(float(self.highCutLineEdit.text()))
+            highcut = abs(float(self.highcutLineEdit.text()))
         except ValueError:
             return 0
         return highcut
 
     def get_fs(self):
         try:
-            sampling_rate = abs(float(self.fsLineEdit.text()))
+            fs = abs(float(self.fsLineEdit.text()))
         except ValueError:
             return 0
-        return sampling_rate
+        return fs
+
+    def get_order(self):
+        try:
+            order = abs(int(self.orderLineEdit.text()))
+        except ValueError:
+            return 0
+        return order
+
+
+class ButterworthLowpassFilterWidget(DataProcessorWidget):
+    def __init__(self, parent, data_processor=None, adding_data_processor=False):
+        if data_processor is None:
+            data_processor = ButterworthLowpassFilter()
+
+        super().__init__(parent, data_processor, adding_data_processor)
+        self.ui = uic.loadUi("ui/dsp_ui/ButterworthLowpassFilterWidget.ui", self)
+        # self.data_processor = data_processor
+
+        ####################
+        self.__post_init__()
+
+    def set_data_processor_input_field_value(self):
+        super(ButterworthLowpassFilterWidget, self).set_data_processor_input_field_value()
+
+        self.cutoffLineEdit.setText(str(self.data_processor.cutoff))
+        self.fsLineEdit.setText(str(self.data_processor.fs))
+        self.orderLineEdit.setText(str(self.data_processor.order))
+
+    def set_data_processor_input_field_constrain(self):
+        self.cutoffLineEdit.setValidator(QDoubleValidator())
+        self.fsLineEdit.setValidator(QDoubleValidator())
+        self.orderLineEdit.setValidator(QIntValidator())
+
+    def connect_data_processor_input_field_signal(self):
+        super(ButterworthLowpassFilterWidget, self).connect_data_processor_input_field_signal()
+        self.cutoffLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.orderLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+
+    def set_data_processor_params(self):
+        cutoff = self.get_cutoff()
+        fs = self.get_fs()
+        order = self.get_order()
+
+        self.data_processor.set_data_processor_params(cutoff=cutoff, fs=fs, order=order)
+
+    def get_cutoff(self):
+        try:
+            cutoff = abs(float(self.cutoffLineEdit.text()))
+        except ValueError:
+            return 0
+        return cutoff
+
+    def get_fs(self):
+        try:
+            fs = abs(float(self.fsLineEdit.text()))
+        except ValueError:
+            return 0
+        return fs
+
+    def get_order(self):
+        try:
+            order = abs(int(self.orderLineEdit.text()))
+        except ValueError:
+            return 0
+        return order
+
+
+class ButterworthHighpassFilterWidget(DataProcessorWidget):
+    def __init__(self, parent, data_processor=None, adding_data_processor=False):
+        if data_processor is None:
+            data_processor = ButterworthHighpassFilter()
+
+        super().__init__(parent, data_processor, adding_data_processor)
+        self.ui = uic.loadUi("ui/dsp_ui/ButterworthHighpassFilterWidget.ui", self)
+        # self.data_processor = data_processor
+
+        ####################
+        self.__post_init__()
+
+    def set_data_processor_input_field_value(self):
+        super(ButterworthHighpassFilterWidget, self).set_data_processor_input_field_value()
+
+        self.cutoffLineEdit.setText(str(self.data_processor.cutoff))
+        self.fsLineEdit.setText(str(self.data_processor.fs))
+        self.orderLineEdit.setText(str(self.data_processor.order))
+
+    def set_data_processor_input_field_constrain(self):
+        self.cutoffLineEdit.setValidator(QDoubleValidator())
+        self.fsLineEdit.setValidator(QDoubleValidator())
+        self.orderLineEdit.setValidator(QIntValidator())
+
+    def connect_data_processor_input_field_signal(self):
+        super(ButterworthHighpassFilterWidget, self).connect_data_processor_input_field_signal()
+        self.cutoffLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.orderLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+
+    def set_data_processor_params(self):
+        cutoff = self.get_cutoff()
+        fs = self.get_fs()
+        order = self.get_order()
+
+        self.data_processor.set_data_processor_params(cutoff=cutoff, fs=fs, order=order)
+
+    def get_cutoff(self):
+        try:
+            cutoff = abs(float(self.cutoffLineEdit.text()))
+        except ValueError:
+            return 0
+        return cutoff
+
+    def get_fs(self):
+        try:
+            fs = abs(float(self.fsLineEdit.text()))
+        except ValueError:
+            return 0
+        return fs
 
     def get_order(self):
         try:
@@ -182,4 +355,8 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
 
 
 class DataProcessorWidgetType(Enum):
+    NotchFilter = NotchFilterWidget
+    ButterworthLowpassFilter = ButterworthLowpassFilterWidget
+    ButterworthHighpassFilter = ButterworthHighpassFilterWidget
     ButterworthBandpassFilter = ButterworthBandPassFilterWidget
+

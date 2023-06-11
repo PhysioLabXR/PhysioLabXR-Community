@@ -261,7 +261,7 @@
                      </font>
                     </property>
                     <property name="text">
-                     <string>ButterworthBandpass</string>
+                     <string>ButterworthLowpass</string>
                     </property>
                    </widget>
                   </item>
@@ -321,27 +321,7 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLineEdit" name="lowcutLineEdit">
-                    <property name="inputMask">
-                     <string/>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="placeholderText">
-                     <string>LowCut</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="dash">
-                    <property name="text">
-                     <string>---</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLineEdit" name="highcutLineEdit">
+                   <widget class="QLineEdit" name="cutoffLineEdit">
                     <property name="inputMask">
                      <string/>
                     </property>

@@ -12,8 +12,12 @@ from exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeF
 
 class DataProcessorType(Enum):
     NotchFilter = 'NotchFilter'
+    ButterworthLowpassFilter = 'ButterworthLowpassFilter'
+    ButterworthHighpassFilter = 'ButterworthHighpassFilter'
     ButterworthBandpassFilter = 'ButterworthBandpassFilter'
-    RealtimeVrms = 'RealtimeVrms'
+
+
+    # RealtimeVrms = 'RealtimeVrms'
 
 
 class DataProcessor(QObject):
@@ -150,73 +154,60 @@ class ButterworthBandpassFilter(IIRFilter):
 
         # self.evoke_data_processor()
 
-    def butter_bandpass(self, lowcut, highcut, fs, order=5):
+    def butter_bandpass(self, lowcut, highcut, fs, order):
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
         b, a = butter(order, [low, high], btype='band')
         return b, a
 
-    # def process_sample(self, data):
-    #     # perform realtime filter with tap
-    #
-    #     # push x
-    #     self._x_tap[:, 1:] = self._x_tap[:, : -1]
-    #     self._x_tap[:, 0] = data
-    #     # push y
-    #     self._y_tap[:, 1:] = self._y_tap[:, : -1]
-    #     # calculate new y
-    #     self._y_tap[:, 0] = np.sum(np.multiply(self._x_tap, self._b), axis=1) - \
-    #                         np.sum(np.multiply(self._y_tap[:, 1:], self._a[1:]), axis=1)
-    #
-    #     data = self._y_tap[:, 0]
-    #     return data
-    #
-    # def reset_data_processor(self):
-    #     self._x_tap.fill(0)
-    #     self._y_tap.fill(0)
-    #
+
+class ButterworthLowpassFilter(IIRFilter):
+    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 0):
+        super().__init__(data_processor_type=DataProcessorType.ButterworthLowpassFilter)
+        self.cutoff = cutoff
+        self.fs = fs
+        self.order = order
+
+    def evoke_function(self):
+        self._b, self._a = self.butter_lowpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
+        self._x_tap = np.zeros((self.channel_num, len(self._b)))
+        self._y_tap = np.zeros((self.channel_num, len(self._a)))
+
+    def set_data_processor_params(self, cutoff, fs, order):
+        self.cutoff = cutoff
+        self.fs = fs
+        self.order = order
+
+    def butter_lowpass(self, cutoff, fs, order):
+        nyq = 0.5 * fs
+        normal_cutoff = cutoff / nyq
+        b, a = butter(order, normal_cutoff, btype='low')
+        return b, a
 
 
-# class RealtimeVrms(DataProcessor):
-#     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
-#         super().__init__(data_processor_type=DataProcessorType.RealtimeVrms)
-#         self.fs = fs
-#         self.channel_num = channel_num
-#         self.interval_ms = interval_ms
-#         self.offset_ms = offset_ms
-#         self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
-#         self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
-#
-#     # def init_buffer(self):
-#     #     self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
-#     #     self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
-#
-#     def process_sample(self, data):
-#         self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
-#         self.data_buffer[:, 0] = data
-#         vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
-#         # vrms = np.mean(self.data_buffer, axis=1)
-#         # print(vrms)
-#         return vrms
-#
-#     def reset_data_processor(self):
-#         self.data_buffer.fill(0)
+class ButterworthHighpassFilter(IIRFilter):
+    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 0):
+        super().__init__(data_processor_type=DataProcessorType.ButterworthHighpassFilter)
+        self.cutoff = cutoff
+        self.fs = fs
+        self.order = order
 
+    def evoke_function(self):
+        self._b, self._a = self.butter_highpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
+        self._x_tap = np.zeros((self.channel_num, len(self._b)))
+        self._y_tap = np.zeros((self.channel_num, len(self._a)))
 
-# class DataProcessorType(Enum):
-#     NotchFilter = NotchFilter
-#     RealtimeButterBandpass = RealtimeButterBandpass
-#     RealtimeVrms = RealtimeVrms
+    def set_data_processor_params(self, cutoff, fs, order):
+        self.cutoff = cutoff
+        self.fs = fs
+        self.order = order
 
-
-# def get_processor_class(data_processor_type):
-#     if data_processor_type == DataProcessorType.NotchFilter:
-#         return NotchFilter
-#     elif data_processor_type == DataProcessorType.RealtimeButterBandpass:
-#         return RealtimeButterBandpass
-#     elif data_processor_type == DataProcessorType.RealtimeVrms:
-#         return RealtimeVrms
+    def butter_highpass(self, cutoff, fs, order):
+        nyq = 0.5 * fs
+        normal_cutoff = cutoff / nyq
+        b, a = butter(order, normal_cutoff, btype='high')
+        return b, a
 
 
 def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
@@ -224,9 +215,3 @@ def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
         data = data_processor.process_buffer(data)
 
     return data
-
-# if __name__ == '__main__':
-#     pass
-#     a = ButterworthBandpassFilter()
-#     a.process_sample([1, 2])
-#     print(a)
