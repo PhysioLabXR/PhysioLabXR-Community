@@ -356,9 +356,93 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
         return order
 
 
+class RootMeanSquareWidget(DataProcessorWidget):
+    def __init__(self, parent, data_processor=None, adding_data_processor=False):
+        if data_processor is None:
+            data_processor = RootMeanSquare()
+
+        super().__init__(parent, data_processor, adding_data_processor)
+        self.ui = uic.loadUi("ui/dsp_ui/RootMeanSquareWidget.ui", self)
+
+        ####################
+        self.__post_init__()
+
+    def set_data_processor_input_field_value(self):
+        super(RootMeanSquareWidget, self).set_data_processor_input_field_value()
+
+        self.fsLineEdit.setText(str(self.data_processor.fs))
+        self.windowLineEdit.setText(str(self.data_processor.window))
+
+    def set_data_processor_input_field_constrain(self):
+        self.fsLineEdit.setValidator(QDoubleValidator())
+        self.windowLineEdit.setValidator(QDoubleValidator())
+
+    def connect_data_processor_input_field_signal(self):
+        super(RootMeanSquareWidget, self).connect_data_processor_input_field_signal()
+        self.fsLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+        self.windowLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+
+    def set_data_processor_params(self):
+        fs = self.get_fs()
+        window = self.get_window()
+
+        self.data_processor.set_data_processor_params(fs=fs, window=window)
+
+    def get_fs(self):
+        try:
+            fs = abs(float(self.fsLineEdit.text()))
+        except ValueError:
+            return 0
+        return fs
+
+    def get_window(self):
+        try:
+            window = abs(float(self.windowLineEdit.text()))
+        except ValueError:
+            return 0
+        return window
+
+
+class ClutterRemovalWidget(DataProcessorWidget):
+    def __init__(self, parent, data_processor=None, adding_data_processor=False):
+        if data_processor is None:
+            data_processor = ClutterRemoval()
+
+        super().__init__(parent, data_processor, adding_data_processor)
+        self.ui = uic.loadUi("ui/dsp_ui/ClutterRemovalWidget.ui", self)
+
+        ####################
+        self.__post_init__()
+
+    def set_data_processor_input_field_value(self):
+        super(ClutterRemovalWidget, self).set_data_processor_input_field_value()
+
+        self.signalClutterRatioLineEdit.setText(str(self.data_processor.signal_clutter_ratio))
+
+    def set_data_processor_input_field_constrain(self):
+        self.signalClutterRatioLineEdit.setValidator(QDoubleValidator())
+
+    def connect_data_processor_input_field_signal(self):
+        super(ClutterRemovalWidget, self).connect_data_processor_input_field_signal()
+        self.signalClutterRatioLineEdit.textChanged.connect(self.data_processor_settings_on_changed)
+
+    def set_data_processor_params(self):
+        signal_clutter_ratio = self.get_signal_clutter_ratio()
+
+        self.data_processor.set_data_processor_params(signal_clutter_ratio=signal_clutter_ratio)
+
+    def get_signal_clutter_ratio(self):
+        try:
+            signal_clutter_ratio = float(self.signalClutterRatioLineEdit.text())
+        except ValueError:
+            return 0
+        return signal_clutter_ratio
+
+
 class DataProcessorWidgetType(Enum):
     NotchFilter = NotchFilterWidget
     ButterworthLowpassFilter = ButterworthLowpassFilterWidget
     ButterworthHighpassFilter = ButterworthHighpassFilterWidget
     ButterworthBandpassFilter = ButterworthBandPassFilterWidget
-
+    RootMeanSquare = RootMeanSquareWidget
+    ClutterRemoval = ClutterRemovalWidget
