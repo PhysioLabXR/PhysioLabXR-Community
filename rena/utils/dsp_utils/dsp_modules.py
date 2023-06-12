@@ -15,9 +15,8 @@ class DataProcessorType(Enum):
     ButterworthLowpassFilter = 'ButterworthLowpassFilter'
     ButterworthHighpassFilter = 'ButterworthHighpassFilter'
     ButterworthBandpassFilter = 'ButterworthBandpassFilter'
-    # RealtimeVrms = 'RealtimeVrms'
-
-    # RealtimeVrms = 'RealtimeVrms'
+    RootMeanSquare = 'RootMeanSquare'
+    ClutterRemoval = 'ClutterRemoval'
 
 
 # class SubDataProcessor(type):
@@ -81,7 +80,6 @@ class DataProcessor:  # (QObject):
 
     def serialize_data_processor_params(self):
         return {key: value for key, value in vars(self).items() if not key.startswith('_')}
-
 
 
 class IIRFilter(DataProcessor):
@@ -226,44 +224,75 @@ class ButterworthHighpassFilter(IIRFilter):
 
 class RootMeanSquare(DataProcessor):
 
-    def __init__(self, fs=0, interval_ms=0):  # interval in ms
-        super().__init__(data_processor_type=DataProcessorType.RealtimeVrms)
+    def __init__(self, fs=0, window=0):  # interval in ms
+        super().__init__(data_processor_type=DataProcessorType.RootMeanSquare)
         self.fs = fs
-        self.interval_ms = interval_ms
+        self.window = window
 
         self._data_buffer_size = None
         self._data_buffer = None
 
     def evoke_function(self):
-        self._data_buffer_size = round(self.fs * self.interval_ms * 0.001)
+        self._data_buffer_size = round(self.fs * self.window * 0.001)
+        if self._data_buffer_size<=0:
+            raise DataProcessorEvokeFailedError('self._data_buffer_size = round(self.fs * self.window * 0.001) returns zero.')
         self._data_buffer = np.zeros((self.channel_num, self._data_buffer_size))
 
-    def set_data_processor_params(self, fs, interval_ms):
+    def set_data_processor_params(self, fs, window):
         self.fs = fs
-        self.interval_ms = interval_ms
+        self.window = window
 
     def process_sample(self, data):
         self._data_buffer[:, 1:] = self._data_buffer[:, : -1]
         self._data_buffer[:, 0] = data
-        vrms = np.sqrt(1 / self._data_buffer_size * np.sum(np.square(self._data_buffer), axis=1))
+        data = np.sqrt(1 / self._data_buffer_size * np.sum(np.square(self._data_buffer), axis=1))
         # vrms = np.mean(self.data_buffer, axis=1)
         # print(vrms)
-        return vrms
+        return data
 
     def reset_data_processor(self):
-        self.data_buffer.fill(0)
+        self._data_buffer.fill(0)
+
+
+class ClutterRemoval(DataProcessor):
+
+    def __init__(self, signal_clutter_ratio=0):  # interval in ms
+        super().__init__(data_processor_type=DataProcessorType.RootMeanSquare)
+        self.signal_clutter_ratio = signal_clutter_ratio
+        self._clutter = None
+
+    def evoke_function(self):
+        pass
+
+    def set_data_processor_params(self, signal_clutter_ratio):
+        self.signal_clutter_ratio = signal_clutter_ratio
+
+    def process_sample(self, data):
+        if self._clutter is None:
+            self._clutter = data
+        else:
+            self._clutter = self.signal_clutter_ratio * self._clutter + (1 - self.signal_clutter_ratio) * data
+
+        data = data - self._clutter
+        return data
+
+    def reset_data_processor(self):
+        self._clutter = None
 
 
 data_processor_lookup_table = {
     DataProcessorType.NotchFilter: NotchFilter,
     DataProcessorType.ButterworthLowpassFilter: ButterworthLowpassFilter,
     DataProcessorType.ButterworthHighpassFilter: ButterworthHighpassFilter,
-    DataProcessorType.ButterworthBandpassFilter: ButterworthBandpassFilter
+    DataProcessorType.ButterworthBandpassFilter: ButterworthBandpassFilter,
+    DataProcessorType.RootMeanSquare: RootMeanSquare,
+    DataProcessorType.ClutterRemoval: ClutterRemoval
 }
 
 
 def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
     for data_processor in data_processor_pipeline:
+        # if data_processor.data_processor_valid and data_processor.data_processor_activated:
         data = data_processor.process_buffer(data)
 
     return data
