@@ -5,9 +5,11 @@ from typing import List
 from rena import config
 from rena.presets.PlotConfig import PlotConfigs
 from rena.presets.preset_class_helpers import SubPreset
-from rena.utils.ConfigPresetUtils import reload_enums
-from rena.utils.realtime_DSP import *
+from rena.utils.ConfigPresetUtils import reload_enums, target_to_enum
 from dataclasses import field
+
+from rena.utils.dsp_utils.dsp_modules import *
+
 
 class PlotFormat(Enum):
     TIMESERIES = 0
@@ -78,5 +80,20 @@ class GroupEntry(metaclass=SubPreset):
         return len(self.channel_indices) == width * height * depth
 
     def load_data_processor(self):
+        data_processors = []
         for data_processor_dict in self.data_processors:
-            print(data_processor_dict)
+            data_processor_dict['data_processor_type'] = target_to_enum(data_processor_dict['data_processor_type'], DataProcessorType)
+            data_processor = data_processor_lookup_table[data_processor_dict['data_processor_type']]()
+            # load data processor values
+            for key, value in data_processor_dict.items():
+                setattr(data_processor, key, value)
+
+            try:
+                data_processor.evoke_data_processor()
+                print('data processor from json evoke succeed')
+            except DataProcessorEvokeFailedError as e:
+                print('data processor from json evoke failed')
+
+            data_processors.append(data_processor)
+
+        self.data_processors = data_processors

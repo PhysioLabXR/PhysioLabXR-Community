@@ -32,8 +32,8 @@ class DataProcessorWidget(QtWidgets.QWidget):
         self.connect_data_processor_input_field_signal()
         self.set_data_processor_state_label()
 
-        self.data_processor.data_processor_valid_signal.connect(self.set_data_processor_state_label)
-        self.data_processor.data_processor_activated_signal.connect(self.set_data_processor_state_label)
+        # self.data_processor.data_processor_valid_signal.connect(self.set_data_processor_state_label)
+        # self.data_processor.data_processor_activated_signal.connect(self.set_data_processor_state_label)
 
     def add_data_processor_to_group_entry(self):
         # add data processor to group
@@ -71,10 +71,12 @@ class DataProcessorWidget(QtWidgets.QWidget):
             self.data_processor.set_data_processor_activated(True)
         else:
             self.data_processor.set_data_processor_activated(False)
+        self.set_data_processor_state_label()
 
     def data_processor_settings_on_changed(self):
         self.set_data_processor_params()
         self.evoke_data_processor()
+        self.set_data_processor_state_label()
 
     def evoke_data_processor(self):
         try:

@@ -23,9 +23,9 @@ class DataProcessorType(Enum):
 # class SubDataProcessor(type):
 #     pass
 
-class DataProcessor(QObject):
-    data_processor_valid_signal = pyqtSignal()
-    data_processor_activated_signal = pyqtSignal()
+class DataProcessor:  # (QObject):
+    # data_processor_valid_signal = pyqtSignal()
+    # data_processor_activated_signal = pyqtSignal()
 
     def __init__(self, data_processor_type: DataProcessorType = None):
         super().__init__()
@@ -73,11 +73,15 @@ class DataProcessor(QObject):
 
     def set_data_processor_activated(self, data_processor_activated):
         self.data_processor_activated = data_processor_activated
-        self.data_processor_activated_signal.emit()
+        # self.data_processor_activated_signal.emit()
 
     def set_data_processor_valid(self, data_processor_valid):
         self.data_processor_valid = data_processor_valid
-        self.data_processor_valid_signal.emit()
+        # self.data_processor_valid_signal.emit()
+
+    def serialize_data_processor_params(self):
+        return {key: value for key, value in vars(self).items() if not key.startswith('_')}
+
 
 
 class IIRFilter(DataProcessor):
@@ -232,22 +236,30 @@ class RootMeanSquare(DataProcessor):
 
     def evoke_function(self):
         self._data_buffer_size = round(self.fs * self.interval_ms * 0.001)
-        self._data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
+        self._data_buffer = np.zeros((self.channel_num, self._data_buffer_size))
 
     def set_data_processor_params(self, fs, interval_ms):
         self.fs = fs
         self.interval_ms = interval_ms
 
     def process_sample(self, data):
-        self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
-        self.data_buffer[:, 0] = data
-        vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
+        self._data_buffer[:, 1:] = self._data_buffer[:, : -1]
+        self._data_buffer[:, 0] = data
+        vrms = np.sqrt(1 / self._data_buffer_size * np.sum(np.square(self._data_buffer), axis=1))
         # vrms = np.mean(self.data_buffer, axis=1)
         # print(vrms)
         return vrms
 
     def reset_data_processor(self):
         self.data_buffer.fill(0)
+
+
+data_processor_lookup_table = {
+    DataProcessorType.NotchFilter: NotchFilter,
+    DataProcessorType.ButterworthLowpassFilter: ButterworthLowpassFilter,
+    DataProcessorType.ButterworthHighpassFilter: ButterworthHighpassFilter,
+    DataProcessorType.ButterworthBandpassFilter: ButterworthBandpassFilter
+}
 
 
 def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
@@ -264,4 +276,3 @@ def run_data_processors(data, data_processor_pipeline: list[DataProcessor]):
 #     for key, value in dict_record.items():
 #         setattr(b, key, value)
 #     print('John')
-

@@ -60,7 +60,7 @@ class PresetsEncoder(json.JSONEncoder):
         if isinstance(o, Enum):
             return o.name
         if isinstance(o, DataProcessor):
-            return o.__dict__
+            return o.serialize_data_processor_params()
         if o.__class__.__class__ is SubPreset:
             return o.__dict__
         return super().default(o)
@@ -336,6 +336,7 @@ class Presets(metaclass=Singleton):
             p.start()
         else:
             save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
+        # pass
 
     def __getitem__(self, key):
         return self._get_all_presets()[key]
