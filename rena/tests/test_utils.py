@@ -1,5 +1,6 @@
 import itertools
 import os
+import pickle
 import secrets
 import string
 import sys
@@ -104,7 +105,7 @@ def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience
             print(f"Waiting for the current dialogue to be a CustomDialog: {app.current_dialog}")
         print(f": {app.current_dialog} is a CustomDialog, trying to click ok button")
         yes_button = app.current_dialog.buttonBox.button(button)
-        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
+        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
 
 class ContextBot:
     """
@@ -335,16 +336,18 @@ def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_
         plt.show()
 
 
-def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics):
+def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     start_time = time.perf_counter()
+    test_axes = {"number of streams": num_streams_to_test, "number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
 
     for n_streams, num_channels, sampling_rate in itertools.product(num_streams_to_test, num_channels_to_test, sampling_rates_to_test):
         this_stream_names = [test_stream_names.pop(0) for _ in range(n_streams)]
-        print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {this_stream_names}...", end='')
+        print(f"test: testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {this_stream_names}...", end='')
 
         # play streams and record them #################################################################################
         # start the designated number of streams with given number of channels and sampling rate
+        print("test: starting the original streams as separate processes")
         for s_name in this_stream_names:
             test_context.start_stream(s_name, num_channels, sampling_rate)
         test_context.start_recording()
@@ -352,38 +355,51 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         # wait for experiment time
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
 
-        # close the all the sterams
+        # close the all the streams
         for s_name in this_stream_names:
+            print(f"test: closing original stream process with name {s_name}")
             test_context.close_stream(s_name)
         test_context.stop_recording()
+        print("test: recording stopped for the original streams")
 
         # replay the streams ##########################################################################################
+        print("test: loading back the recorded streams")
         recording_file_name = app_main_window.recording_tab.save_path
         data_original = RNStream(recording_file_name).stream_in()  # this original data will be compared with replayed data later
+        print("test: recorded streams successfully loaded. now moving on to replaying")
 
         app_main_window.replay_tab.select_file(recording_file_name)
-        test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)  # stop the recording
+
+        print(f"test: selected file at {recording_file_name} for replaying. starting replay")
+        test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)
         test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
         # start the streams from replay and record them ################################################
+        print("test: replayed streams is now available, start the streams in their StreamWidget")
         for ts_name in this_stream_names:
             test_context.qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        print("test: start recording replayed streams")
         test_context.start_recording()
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
 
         # test if the data are being received as they are being replayed
         for ts_name in this_stream_names:
+            print(f"test: checking if the stream widgets are receiving data from replayed streams. Working on stream name {ts_name}")
             assert app_main_window.stream_widgets[ts_name].viz_data_buffer.has_data()
         test_context.qtbot.waitUntil(lambda: not app_main_window.replay_tab.is_replaying, timeout=test_time_second_per_stream * 1e3)  # wait until the replay completes, need to ensure that the replay can finish
 
-        # remove the streams from the stream widgets
+        print("test: stop recording replayed streams")
         test_context.stop_recording()
+        # remove the streams from the stream widgets
         for ts_name in this_stream_names:
             test_context.remove_stream(ts_name)
+            print(f"test: after replay completes, removed stream widget with stream name {ts_name}")
 
         # load the replay file
+        print("test: loading replayed file")
         replayed_file_name = app_main_window.recording_tab.save_path
         data_replayed = RNStream(replayed_file_name).stream_in()  # this original data will be compared with replayed data later
 
+        print("test: completed loading replayed file, now computing performance metrics")
         for measure in metrics:
             if measure == 'replay push data loop time':
                 average_loop_time = app_main_window.replay_tab._request_replay_performance()
@@ -395,8 +411,10 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
             else:
                 raise ValueError(f"Unknown metric: {measure}")
 
+        print("test: metrics computed, now removing replayed file")
         os.remove(replayed_file_name)
         os.remove(recording_file_name)
+        pickle.dump({'results': results, 'test_axes': test_axes}, open(results_path, 'wb'))
 
     print(f"Took {time.perf_counter() - start_time}.", end='')
 
