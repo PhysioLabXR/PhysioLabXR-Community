@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
 from scipy.stats import stats
+import xml.etree.ElementTree as ET
 
 from exceptions.exceptions import BadOutputError
 from rena.utils.Singleton import Singleton
@@ -859,3 +860,46 @@ class CsvStoreLoad:
             data[key] = value
         return data
 
+def create_xml_string(child_dict: dict):
+    root = ET.Element("info")
+    childs = []
+    for key, value in child_dict.items():
+        child = ET.SubElement(root, key)
+        child.text = value
+        childs.append(child)
+
+    # Create the XML string from the root element
+    xml_string = ET.tostring(root, encoding="utf-8", method="xml")
+
+    # Print the XML string
+    return xml_string.decode("utf-8")
+
+class XDF:
+    def __init__(self, file_header_xml, stream_header_xml, stream_footer_xml):
+        self.file_header = file_header_xml
+        self.stream_header = stream_header_xml
+        self.stream_footer = stream_footer_xml
+
+    def store_xdf(self, file_path, buffer):
+        magic = b'XDF:'
+        out_file = open(file_path, "ab")
+        for stream_label, data_ts_array in buffer.items():
+            data_array, ts_array = data_ts_array[0], data_ts_array[1]
+
+            # cast the arrays in
+            if type(data_array) != np.ndarray:
+                data_array = np.array(data_array)
+            if type(ts_array) != np.ndarray:
+                ts_array = np.array(ts_array)
+
+            try:
+                assert len(ts_array.shape) == 1
+            except AssertionError:
+                raise Exception('timestamps must have exactly one dimension.')
+
+            try:
+                assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
+            except AssertionError:
+                warnings.warn(f'Stream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
+
+            file_header_len = len(self.header)
