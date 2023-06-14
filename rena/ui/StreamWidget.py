@@ -32,7 +32,7 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-    channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
+    channel_mismatch_buttons = buttons = QDialogButtonBox.Yes | QDialogButtonBox.No
 
     def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
@@ -113,7 +113,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
             channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
+            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type,
+                                                 RenaTCPInterface=None)
         elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
         elif self.networking_interface == 'Device':
@@ -125,7 +126,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create option window
-        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
+        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name,
+                                                         plot_format_changed_signal=self.plot_format_changed_signal)
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
@@ -179,7 +181,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
+                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name),
+                                                               title='Warning', mode='modeless')
         else:
             # is the stream is not available
             if is_stream_available:
@@ -249,7 +252,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                 #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
+                                     buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
@@ -269,7 +273,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def reset_preset_by_num_channels(self, num_channels):
         pop_stream_preset_from_settings(self.stream_name)
-        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
+        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface,
+                                       num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 
@@ -285,7 +290,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
+        buffer_size = 1 if len(
+            channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
                                                       buffer_sizes=buffer_size, append_zeros=True)
 
@@ -339,7 +345,11 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name,
+                                                                 group_channel_names,
+                                                                 get_stream_preset_info(self.stream_name,
+                                                                                        'nominal_sampling_rate'),
+                                                                 self.plot_format_changed_signal)
             self.splitter.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -357,14 +367,16 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             try:
                 self.run_data_processor(data_dict)
                 self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
-                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
+                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
+                                                    1])  # NOTE performance test scripts, don't include in production code
                 self._has_new_viz_data = True
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
                 self.in_error_state = True
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
+                                     buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
@@ -450,7 +462,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
         for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
-            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot,))[
+                                            1])  # NOTE performance test scripts, don't include in production code
             # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
@@ -459,7 +472,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
 
         self._has_new_viz_data = False
-        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
+        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(
+                self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
             self.viz_data_head = 0
 
     def ticks(self):
@@ -521,17 +535,17 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     # @QtCore.pyqtSlot(dict)
     # def plot_format_on_change(self, info_dict):
-        # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
+    # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
+    # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
 
-        # self.preset_on_change()  # update the group info
+    # self.preset_on_change()  # update the group info
 
-        # self.viz_components.group_plots[plot_format_index_dict[old_format]][
-        #     info_dict['group_name']].hide()
-        # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
-        #     info_dict['group_name']].show()
+    # self.viz_components.group_plots[plot_format_index_dict[old_format]][
+    #     info_dict['group_name']].hide()
+    # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
+    #     info_dict['group_name']].show()
 
-        # update the plot hide display
+    # update the plot hide display
 
     # @QtCore.pyqtSlot(dict)
     # def image_changed(self, change: dict):
@@ -571,12 +585,15 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                 channel_indices = [x.lsl_index for x in child_channels]
                 is_channels_shown = [x.is_shown for x in child_channels]
                 if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
-                    add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown))
+                    add_group_entry_to_stream(self.stream_name,
+                                              create_default_group_entry(len(child_channels), group_name,
+                                                                         channel_indices=channel_indices,
+                                                                         is_channels_shown=is_channels_shown))
                 else:
                     change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
 
-
         # reset data processor
+        # TODO: optimize for changed group reset. Reset visualization buffer after regrouped ?
         reset_all_group_data_processors(self.stream_name)
 
         # save_preset()
@@ -623,17 +640,16 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         data = data_dict['frames']
         group_info = get_stream_group_info(self.stream_name)
 
-        for this_group_info in group_info.values(): # TODO: potentially optimize using pool
+        for this_group_info in group_info.values():  # TODO: potentially optimize using pool
             processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
             data[this_group_info.channel_indices] = processed_data
         # for this_group_info in group_info.values():
         #     data
-            # print(info.channel_indices)
+        # print(info.channel_indices)
         # for group_ in my_dict.values():
         #     print(value)
 
         # get_group_channel_indices
-
 
     def try_close(self):
         return self.remove_stream()
