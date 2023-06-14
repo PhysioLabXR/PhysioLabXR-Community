@@ -14,7 +14,8 @@ from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, get_group_channel_indices
+    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, get_group_channel_indices, \
+    reset_all_group_data_processors
 from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
@@ -232,6 +233,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         else:
             # self.reset_performance_measures()
             try:
+                reset_all_group_data_processors(self.stream_name)
                 self.worker.start_stream()
             except LSLStreamNotFoundError as e:
                 self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
@@ -572,6 +574,11 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                     add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown))
                 else:
                     change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
+
+
+        # reset data processor
+        reset_all_group_data_processors(self.stream_name)
+
         # save_preset()
         self.reset_viz()
 

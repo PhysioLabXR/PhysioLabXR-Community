@@ -97,3 +97,9 @@ class GroupEntry(metaclass=SubPreset):
             data_processors.append(data_processor)
 
         self.data_processors = data_processors
+
+    def reset_data_processors(self):
+        for data_processor in self.data_processors:
+            if data_processor.data_processor_valid:
+                data_processor.set_channel_num(channel_num=len(self.channel_indices))
+                data_processor.evoke_data_processor()

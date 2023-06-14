@@ -229,8 +229,8 @@ class RootMeanSquare(DataProcessor):
         self.fs = fs
         self.window = window
 
-        self._data_buffer_size = None
-        self._data_buffer = None
+        self._data_buffer_size = 0
+        self._data_buffer = np.empty(0)
 
     def evoke_function(self):
         self._data_buffer_size = round(self.fs * self.window * 0.001)

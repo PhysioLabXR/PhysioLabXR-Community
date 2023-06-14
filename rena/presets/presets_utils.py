@@ -147,6 +147,15 @@ def change_group_channels(stream_name, group_name, channel_indices, is_channels_
     Presets().stream_presets[stream_name].group_info[group_name].channel_indices = channel_indices
     Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown = is_channels_shown
 
+
+def reset_group_data_processors(stream_name, group_name)-> None:
+    Presets().stream_presets[stream_name].group_info[group_name].reset_data_processors()
+
+def reset_all_group_data_processors(stream_name)-> None:
+    for group_name in Presets().stream_presets[stream_name].group_info:
+        reset_group_data_processors(stream_name, group_name)
+
+
 def get_group_channel_num(stream_name, group_name)-> int:
     return len(Presets().stream_presets[stream_name].group_info[group_name].channel_indices)
 
