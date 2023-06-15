@@ -94,7 +94,7 @@ class RecordingsTab(QtWidgets.QWidget):
         if AppConfigs().recording_file_format != RecordingFileFormat.dats:
             self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
         else:
-            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok)
+            dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok, main_parent=self.parent)
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)

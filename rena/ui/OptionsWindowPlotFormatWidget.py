@@ -273,6 +273,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def enable_only_image_tab(self):
         self.plotFormatTabWidget.setTabEnabled(0, False)
         self.plotFormatTabWidget.setTabEnabled(2, False)
+        self.plotFormatTabWidget.setTabEnabled(3, False)
 
     def change_group_name(self, new_name):
         self.group_name = new_name

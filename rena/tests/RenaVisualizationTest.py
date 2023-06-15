@@ -4,19 +4,17 @@ Otherwise, you will get either import error or file not found error
 """
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
-import random
-import threading
-import uuid
 from multiprocessing import Process
 
 import pytest
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
+from rena.configs.configs import AppConfigs
 
-from rena.config import stream_availability_wait_time
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
+AppConfigs(_reset=True)  # create the singleton app configs object
+from rena.tests.TestStream import LSLTestStream
+from rena.tests.test_utils import app_fixture, \
     ContextBot
 
 

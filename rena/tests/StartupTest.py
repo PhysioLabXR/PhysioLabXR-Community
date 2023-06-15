@@ -4,32 +4,12 @@ Otherwise, you will get either import error or file not found error
 """
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
-import os
-import random
-import shutil
-import sys
-import tempfile
-import threading
-import time
-import unittest
-import uuid
-from multiprocessing import Process
 
-import numpy as np
 import pytest
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QMessageBox
-from pytestqt.qtbot import QtBot
+from rena.configs.configs import AppConfigs
 
-from rena.MainWindow import MainWindow
-from rena.config import stream_availability_wait_time
-from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
-from rena.utils.data_utils import RNStream
-from rena.presets.presets_utils import create_default_preset
-from rena.utils.ui_utils import CustomDialog
+AppConfigs(_reset=True)  # create the singleton app configs object
+from rena.tests.test_utils import app_fixture, ContextBot
 
 
 @pytest.fixture
