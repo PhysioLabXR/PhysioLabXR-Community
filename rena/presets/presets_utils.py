@@ -239,3 +239,6 @@ def is_video_webcam(video_device_name) -> bool:
 
 def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
+
+def get_stream_data_type(stream_name) -> str:
+    return Presets().stream_presets[stream_name].data_type

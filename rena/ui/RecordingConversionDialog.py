@@ -10,7 +10,9 @@ import os
 import csv
 
 from rena.configs.configs import RecordingFileFormat
+from rena.presets.Presets import Presets
 from rena.utils.data_utils import RNStream, CsvStoreLoad
+from rena.utils.xdf_utils import create_xml_string, XDF
 
 
 class RecordingConversionDialog(QtWidgets.QWidget):
@@ -91,7 +93,20 @@ class RecordingConversionWorker(QObject):
             csv_store.store_csv(buffer, self.file_path)
         elif self.file_format == RecordingFileFormat.xdf:
             newfile_path = self.file_path.replace('.dats', '.xdf')
-            pyxdf.write_xdf(newfile_path, buffer)
+            file_header_info = {'name': 'Test', 'user': 'ixi'}
+            file_header_xml = create_xml_string(file_header_info)
+            stream_headers = {}
+            stream_footers = {}
+            for stream_label, data_ts_array in buffer.items():
+                stream_header_info = {'name': stream_label, 'channel_count': data_ts_array[0].shape[0], 'data_format': Presets().stream_presets[stream_label].data_type}
+                stream_header_xml = create_xml_string(stream_header_info)
+                stream_headers[stream_label] = stream_header_xml
+                stream_footer_info = {'first_timestamp': data_ts_array[1][0], 'last_timestamp': data_ts_array[1][-1], 'sample_count': len(data_ts_array[1])}
+                stream_footer_xml = create_xml_string(stream_footer_info)
+                stream_footers[stream_label] = stream_footer_xml
+
+            xdffile = XDF(file_header_xml, stream_headers, stream_footers)
+            xdffile.store_xdf(newfile_path, buffer)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)
