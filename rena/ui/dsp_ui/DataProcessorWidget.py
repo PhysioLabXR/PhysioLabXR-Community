@@ -5,14 +5,15 @@ from PyQt5 import uic
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtGui import QPixmap
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
-    get_group_channel_num, get_group_data_processors
+    get_group_channel_num, get_group_data_processors, get_stream_nominal_sampling_rate
+from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import minus_icon
 from rena.utils.dsp_utils.dsp_modules import *
 
 
 class DataProcessorWidget(QtWidgets.QWidget):
 
-    def __init__(self, parent, data_processor: DataProcessor, adding_data_processor=False):
+    def __init__(self, parent: OptionsWindowDataProcessingWidget, data_processor: DataProcessor, adding_data_processor=False):
         super().__init__()
         self.parent = parent
         self.data_processor_invalid_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
@@ -110,6 +111,8 @@ class NotchFilterWidget(DataProcessorWidget):
                  adding_data_processor=False):
         if data_processor is None:
             data_processor = NotchFilter()
+            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/NotchFilterWidget.ui", self)
@@ -172,6 +175,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
                  adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthBandpassFilter()
+            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/ButterworthBandPassFilterWidget.ui", self)
@@ -242,6 +246,8 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthLowpassFilter()
+            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/ButterworthLowpassFilterWidget.ui", self)
@@ -301,6 +307,8 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthHighpassFilter()
+            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/ButterworthHighpassFilterWidget.ui", self)
@@ -360,6 +368,8 @@ class RootMeanSquareWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = RootMeanSquare()
+            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/RootMeanSquareWidget.ui", self)

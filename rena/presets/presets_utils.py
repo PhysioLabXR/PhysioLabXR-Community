@@ -46,6 +46,8 @@ def set_stream_preset_info(stream_name, key, value):
 def check_preset_exists(stream_name):
     return stream_name in Presets().stream_presets.keys()
 
+def get_stream_nominal_sampling_rate(stream_name):# ->float:
+    return Presets().stream_presets[stream_name].nominal_sampling_rate
 
 def get_stream_group_info(stream_name) -> dict[str, GroupEntry]:
     return Presets().stream_presets[stream_name].group_info
