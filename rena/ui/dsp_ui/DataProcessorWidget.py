@@ -6,14 +6,14 @@ from PyQt5.QtGui import QIntValidator, QDoubleValidator
 from PyQt5.QtGui import QPixmap
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
     get_group_channel_num, get_group_data_processors, get_stream_nominal_sampling_rate
-from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
+# from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import minus_icon
 from rena.utils.dsp_utils.dsp_modules import *
 
 
 class DataProcessorWidget(QtWidgets.QWidget):
 
-    def __init__(self, parent: OptionsWindowDataProcessingWidget, data_processor: DataProcessor, adding_data_processor=False):
+    def __init__(self, parent, data_processor: DataProcessor, adding_data_processor=False):
         super().__init__()
         self.parent = parent
         self.data_processor_invalid_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
