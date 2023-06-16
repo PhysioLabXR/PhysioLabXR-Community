@@ -17,9 +17,6 @@ class PlotFormat(Enum):
     BARCHART = 2
     SPECTROGRAM = 3
 
-# @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-# class DSPEntry
-
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):
     """
