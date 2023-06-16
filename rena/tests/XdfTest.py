@@ -6,6 +6,8 @@ import time
 
 from multiprocessing import Process
 from random import random as rand
+
+import pyxdf
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMessageBox
@@ -131,9 +133,8 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
     # reload recorded file
-    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '')
-    load_csv = CsvStoreLoad()
-    csv_data = load_csv.reload_csv(saved_file_path)
+    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
+    xdf_data = pyxdf.load_xdf(saved_file_path)
 
     def compare_column_vec(vec1, vec2, persentage):
         percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
@@ -161,9 +162,9 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
 
 
 
-    for ts_name in ts_names:
-        is_passing = compare(samples[ts_name], csv_data[ts_name][0], persentage=1)
+    for idx, ts_name in enumerate(ts_names):
+        is_passing = compare(samples[ts_name], xdf_data[0][idx]['time_series'].T, persentage=0.1)
         assert is_passing
 
-    assert compare(samples['monitor 0'], csv_data[ts_name][0], persentage=1)
+    assert compare(samples['monitor 0'], xdf_data[ts_name][0], persentage=1)
 

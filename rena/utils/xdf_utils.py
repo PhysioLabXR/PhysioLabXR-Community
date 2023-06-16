@@ -34,12 +34,12 @@ def create_xml_string(child_dict: dict):
 
 
 class XdfTag(Enum):
-    FileHeader: 1
-    StreamHeader: 2
-    Samples: 3
-    ClockOffset: 4
-    Boundary: 5
-    StreamFooter: 6
+    FileHeader = 1
+    StreamHeader = 2
+    Samples = 3
+    ClockOffset = 4
+    Boundary = 5
+    StreamFooter = 6
 
 
 class XDF:
@@ -57,12 +57,12 @@ class XDF:
         file_header_len = len(self.file_header) + 2
         file_header_len_bytes = NumLenByte_decoder(file_header_len)
         file_header = file_header_len_bytes.to_bytes(1, byteorder='little') + file_header_len.to_bytes(
-            file_header_len_bytes, byteorder='little') + XdfTag.FileHeader.to_bytes(2,
-                                                                                    byteorder='little') + self.file_header
+            file_header_len_bytes, byteorder='little') + XdfTag.FileHeader.value.to_bytes(2, byteorder='little') + self.file_header.encode('utf-8')
         # write file header
         out_file.write(file_header)
         stream_label_list = list(buffer)
-        id_encoding = lambda idx: stream_label_list[idx]
+        id_encoding = lambda stream_label: stream_label_list.index(stream_label)
+        id_decoding = lambda idx: stream_label_list[idx]
         for stream_label, _ in buffer.items():
             stream_header_len = len(self.stream_headers[stream_label]) + 2 + 4
             stream_data_type = np.dtype(get_stream_data_type(stream_label))
@@ -71,8 +71,8 @@ class XDF:
 
             stream_header = stream_header_len_bytes.to_bytes(1, byteorder='little') + \
                             stream_header_len.to_bytes(stream_header_len_bytes, byteorder='little') + \
-                            XdfTag.StreamHeader.to_bytes(2, byteorder='little') + \
-                            id_encoding(stream_label).to_bytes(4, byteorder='little') + self.stream_headers[stream_label]
+                            XdfTag.StreamHeader.value.to_bytes(2, byteorder='little') + \
+                            id_encoding(stream_label).to_bytes(4, byteorder='little') + self.stream_headers[stream_label].encode('utf-8')
 
             # write stream header
             out_file.write(stream_header)
@@ -103,15 +103,15 @@ class XDF:
             nchannels = data_array.shape[0]
             samples_stored = 0
             for i in range(n_sample_chunks):
-                if i != n_sample_chunks:
+                if i != n_sample_chunks - 1:
                     num_sample_bytes = NumLenByte_decoder(sample_chunk_max_size)
                     # compute the total sample chunk length
-                    samples_byte_len = 9 * sample_chunk_max_size + nchannels * sample_chunk_max_size * struct.calcsize(stream_data_type)
+                    samples_byte_len = 9 * sample_chunk_max_size + nchannels * sample_chunk_max_size * stream_data_type.itemsize
                     content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
                     num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len) # the byte length of the total chunk
                     stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
                                           content_tag_byte_len.to_bytes(num_chunk_byte_len, byteorder='little') + \
-                                          XdfTag.Samples.to_bytes(2, byteorder='little') + \
+                                          XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
                                           stream_id.to_bytes(4, byteorder='little') + \
                                           num_sample_bytes.to_bytes(1, byteorder='little') + \
                                           sample_chunk_max_size.to_bytes(num_sample_bytes, byteorder='little')
@@ -141,16 +141,15 @@ class XDF:
                     num_samples = total_samples - samples_stored
                     num_sample_bytes = NumLenByte_decoder(num_samples)
                     # compute the total sample chunk length
-                    samples_byte_len = 9 * sample_chunk_max_size + nchannels * num_samples * struct.calcsize(
-                        stream_data_type)
+                    samples_byte_len = 9 * num_samples + nchannels * num_samples * stream_data_type.itemsize
                     content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len  # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
                     num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len)  # the byte length of the total chunk
                     stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
                                           content_tag_byte_len.to_bytes(num_chunk_byte_len, byteorder='little') + \
-                                          XdfTag.Samples.to_bytes(2, byteorder='little') + \
+                                          XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
                                           stream_id.to_bytes(4, byteorder='little') + \
                                           num_sample_bytes.to_bytes(1, byteorder='little') + \
-                                          sample_chunk_max_size.to_bytes(num_sample_bytes, byteorder='little')
+                                          num_samples.to_bytes(num_sample_bytes, byteorder='little')
                     out_file.write(stream_content_head)
                     for j in range(num_samples):
                         timestampbytes = int(8).to_bytes(1, byteorder='little')
@@ -179,12 +178,14 @@ class XDF:
             stream_footer_len_bytes = NumLenByte_decoder(stream_footer_len)
             stream_footer = stream_footer_len_bytes.to_bytes(1, byteorder='little') + \
                             stream_footer_len.to_bytes(stream_footer_len_bytes, byteorder='little') + \
-                            self.stream_footers[stream_label]
+                            XdfTag.StreamFooter.value.to_bytes(2, byteorder='little') + \
+                            id_encoding(stream_label).to_bytes(4, byteorder='little') + \
+                            self.stream_footers[stream_label].encode('utf-8')
             out_file.write(stream_footer)
 
         out_file.close()
 
-        return id_encoding
+        return id_decoding
 
 
 
