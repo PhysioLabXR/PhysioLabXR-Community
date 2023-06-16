@@ -104,6 +104,10 @@ class DataProcessorWidget(QtWidgets.QWidget):
         else:
             self.DataProcessorStateLabel.setPixmap(self.data_processor_invalid_pixmap)
 
+    def init_data_processor(self):
+        # create corresponding data processor if data processor is None and fill with the default parameters
+        pass
+
 
 class NotchFilterWidget(DataProcessorWidget):
 
