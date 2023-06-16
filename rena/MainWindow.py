@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType
+from rena.presets.Presets import Presets, PresetType, DataType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -154,7 +154,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 is_new_preset = True
 
             if is_new_preset:
-                self.create_preset(selected_text, data_type, port, networking_interface)
+                self.create_preset(selected_text, port, networking_interface, data_type)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
@@ -174,8 +174,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
+    def create_preset(self, stream_name, port, networking_interface, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None):
+        create_default_preset(stream_name, port, networking_interface, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):

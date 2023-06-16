@@ -72,7 +72,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         p = Process(target=LSLTestStream, args=(ts_name,))
         test_stream_processes.append(p)
         p.start()
-        app_main_window.create_preset(ts_name, 'float', None, 'LSL', num_channels=81)  # add a default preset
+        app_main_window.create_preset(ts_name, None, 'LSL', num_channels=81)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget

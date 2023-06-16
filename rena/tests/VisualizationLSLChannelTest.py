@@ -50,7 +50,7 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
     p = Process(target=LSLTestStream, args=(test_stream_name, actual_num_chan))
     p.start()
 
-    app_main_window.create_preset(test_stream_name, 'float', None, 'LSL', num_channels=preset_num_chan)  # add a default preset
+    app_main_window.create_preset(test_stream_name, None, 'LSL', num_channels=preset_num_chan)  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
