@@ -99,7 +99,7 @@ class RecordingConversionWorker(QObject):
             stream_footers = {}
             for stream_label, data_ts_array in buffer.items():
                 stream_header_info = {'name': stream_label, 'nominal_srate': str(Presets().stream_presets[stream_label].nominal_sampling_rate),
-                                      'channel_count': str(data_ts_array[0].shape[0]), 'channel_format': 'double64' if Presets().stream_presets[stream_label].data_type == 'float' else Presets().stream_presets[stream_label].data_type}
+                                      'channel_count': str(data_ts_array[0].shape[0]), 'channel_format': 'double64' if Presets().stream_presets[stream_label].data_type == 'float64' else Presets().stream_presets[stream_label].data_type}
                 Presets().stream_presets[stream_label].nominal_sampling_rate
                 stream_header_xml = create_xml_string(stream_header_info)
                 stream_headers[stream_label] = stream_header_xml
