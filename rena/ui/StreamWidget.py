@@ -113,8 +113,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread = QThread(self)
         if self.networking_interface == 'LSL':
             channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type,
-                                                 RenaTCPInterface=None)
+            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
         elif self.networking_interface == 'ZMQ':
             self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
         elif self.networking_interface == 'Device':
@@ -126,8 +125,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
 
         # create option window
-        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name,
-                                                         plot_format_changed_signal=self.plot_format_changed_signal)
+        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
         self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
         self.stream_options_window.hide()
 
@@ -181,8 +179,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name),
-                                                               title='Warning', mode='modeless')
+                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
         else:
             # is the stream is not available
             if is_stream_available:
@@ -252,8 +249,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                 #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
-                                     buttons=self.channel_mismatch_buttons)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
@@ -292,8 +288,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         buffer_size = 1 if len(
             channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
-                                                      buffer_sizes=buffer_size, append_zeros=True)
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
 
@@ -345,7 +340,8 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name,
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, 
+                                                                 group_name,
                                                                  group_channel_names,
                                                                  get_stream_preset_info(self.stream_name,
                                                                                         'nominal_sampling_rate'),
@@ -375,8 +371,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                 self.in_error_state = True
                 preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
                 message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
-                                     buttons=self.channel_mismatch_buttons)
+                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
 
                 if reply.result():
                     self.reset_preset_by_num_channels(e.message)
@@ -432,27 +427,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
         actual_sampling_rate = self.actualSamplingRate
         # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
-
-        # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-
-        # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-        #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-        #     # start = time.time()
-        #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-        #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-        #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-        #                             axis=1)  # resample to 100 hz with retain history of 10 sec
-        #     # print(time.time()-start)
-        #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-        # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-        #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        #
-        # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-        #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-        # change to loop with type condition plot time_series and image
-        # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-        # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
         self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
@@ -478,13 +452,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def ticks(self):
         self.worker.signal_data_tick.emit()
-        #     self.recent_tick_refresh_timestamps.append(time.time())
-        #     if len(self.recent_tick_refresh_timestamps) > 2:
-        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-        #                     len(self.recent_tick_refresh_timestamps) - 1))
-        #
-        #     self.tickFrequencyLabel.setText(
-        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def init_server_client(self):
         print('John')
