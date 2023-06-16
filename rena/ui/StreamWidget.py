@@ -266,7 +266,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def reset_preset_by_num_channels(self, num_channels):
         pop_stream_preset_from_settings(self.stream_name)
-        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface, num_channels=num_channels)  # update preset in settings
+        self.main_parent.create_preset(self.stream_name, self.port_number, self.networking_interface, data_type=self.data_type, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 

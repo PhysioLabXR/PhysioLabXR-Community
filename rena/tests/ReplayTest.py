@@ -5,31 +5,25 @@ Otherwise, you will get either import error or file not found error
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 import os
-import random
-import shutil
-import sys
-import tempfile
 import threading
 import time
-import unittest
-import uuid
 from multiprocessing import Process
 
 import numpy as np
 import pytest
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QMessageBox
-from pytestqt.qtbot import QtBot
+from PyQt5.QtWidgets import QWidget
 
-from rena.MainWindow import MainWindow
+from rena.configs.configs import AppConfigs
+
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
-from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
+from rena.tests.TestStream import LSLTestStream
+from rena.tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
 from rena.utils.data_utils import RNStream
-from rena.presets.presets_utils import create_default_preset
 from rena.utils.ui_utils import CustomDialog
+
 
 @pytest.fixture
 def app_main_window(qtbot):
@@ -78,7 +72,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         p = Process(target=LSLTestStream, args=(ts_name,))
         test_stream_processes.append(p)
         p.start()
-        app_main_window.create_preset(ts_name, 'float', None, 'LSL', num_channels=81)  # add a default preset
+        app_main_window.create_preset(ts_name, None, 'LSL', num_channels=81)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget

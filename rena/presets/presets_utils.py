@@ -2,7 +2,7 @@ from typing import Union, List
 
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
-from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder
+from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
 
 
 def get_preset_category(preset_name):
@@ -120,7 +120,7 @@ def save_preset(is_async=True):
     Presets().save(is_async=is_async)
 
 
-def create_default_preset(stream_name, data_type, port, preset_type_str, num_channels, nominal_sample_rate: int=None):
+def create_default_preset(stream_name, port, preset_type_str, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,

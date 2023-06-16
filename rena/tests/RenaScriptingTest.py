@@ -1,18 +1,16 @@
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
+import importlib
 import os
 import sys
-from multiprocessing import Process
 
 import pytest
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QWidget
+from rena.configs.configs import AppConfigs
 
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.MainWindow import MainWindow
-from rena.interfaces import InferenceInterface
 from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream
-import importlib
-
 from rena.tests.test_utils import update_test_cwd
 
 

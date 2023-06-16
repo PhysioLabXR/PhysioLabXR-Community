@@ -13,7 +13,9 @@ import pytest
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
+from rena.configs.configs import AppConfigs
 
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
@@ -48,7 +50,7 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
     p = Process(target=LSLTestStream, args=(test_stream_name, actual_num_chan))
     p.start()
 
-    app_main_window.create_preset(test_stream_name, 'float', None, 'LSL', num_channels=preset_num_chan)  # add a default preset
+    app_main_window.create_preset(test_stream_name, None, 'LSL', num_channels=preset_num_chan)  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box

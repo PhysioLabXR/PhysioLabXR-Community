@@ -1,5 +1,6 @@
 import itertools
 import os
+import pickle
 import secrets
 import string
 import sys
@@ -7,7 +8,7 @@ import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
-from typing import Union, Iterable
+from typing import Union, Iterable, List
 
 import numpy as np
 from PyQt5 import QtCore, QtWidgets
@@ -23,6 +24,7 @@ from rena.startup import load_settings
 from rena.sub_process.pyzmq_utils import can_connect_to_port
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.utils.buffers import flatten
+from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import CustomDialog
 
 
@@ -32,7 +34,6 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
-    # app initializationfix type error
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     if show_window:
@@ -44,6 +45,14 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
 def stream_is_available(app: MainWindow, test_stream_name: str):
     # print(f"Stream name {test_stream_name} availability is {app.stream_widgets[test_stream_name].is_stream_available}")
     assert app.stream_widgets[test_stream_name].is_stream_available
+
+def streams_are_available(app: MainWindow, test_stream_names: List[str]):
+    # print(f"Stream name {test_stream_name} availability is {app.stream_widgets[test_stream_name].is_stream_available}")
+    for ts_name in test_stream_names:
+        assert app.stream_widgets[ts_name].is_stream_available
+
+def stream_is_unavailable(app_main_window, stream_name):
+    assert not app_main_window.stream_widgets[stream_name].is_stream_available
 
 def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
     if patience_second == 0:
@@ -96,7 +105,7 @@ def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience
             print(f"Waiting for the current dialogue to be a CustomDialog: {app.current_dialog}")
         print(f": {app.current_dialog} is a CustomDialog, trying to click ok button")
         yes_button = app.current_dialog.buttonBox.button(button)
-        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=click_delay_second * 1e3)
+        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
 
 class ContextBot:
     """
@@ -125,7 +134,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        self.app.create_preset(stream_name, 'float', None, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
+        self.app.create_preset(stream_name, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -157,6 +166,8 @@ class ContextBot:
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
         self.send_data_processes[stream_name].kill()
 
+        self.qtbot.waitUntil(lambda: stream_is_unavailable(self.app, stream_name), timeout=self.stream_availability_timeout)  # wait until the stream becomes unavailable
+
     def remove_stream(self, stream_name: str):
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.LeftButton)
 
@@ -175,7 +186,7 @@ class ContextBot:
         if self.app.recording_tab.is_recording:
             raise ValueError("App is already recording when calling stop_recording from test_context")
         self.app.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
-        self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
+        # self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
 
     def start_streams_and_recording(self, num_stream_to_test: int, num_channels: Union[int, Iterable[int]]=1, sampling_rate: Union[int, Iterable[int]]=1, stream_availability_timeout=2 * stream_availability_wait_time * 1e3):
@@ -278,7 +289,7 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
     return results
 
 
-def visualize_benchmark_results(results,test_axes, metrics, notes=''):
+def plot_viz_benchmark_results(results, test_axes, metrics, notes=''):
     """
     the key for results[measure] are the test axes, these keys must be in the same order as test axes
     @param results:
@@ -296,22 +307,6 @@ def visualize_benchmark_results(results,test_axes, metrics, notes=''):
     for n_streams in num_streams_to_test:
         visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
 
-
-def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
-    for measure in metrics:
-        result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
-        for i, num_channels in enumerate(num_channels_to_test):
-            for j, sampling_rate in enumerate(sampling_rates_to_test):
-                result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
-        plt.imshow(result_matrix[:, :, 0])
-        plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
-        plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
-        plt.xlabel("Sampling Rate (Hz)")
-        plt.ylabel("Number of channels")
-        plt.title(f'{number_of_streams} stream{"s" if number_of_streams > 1 else ""}: {measure}. {notes}')
-        plt.colorbar()
-        plt.show()
-
 def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test_variables, metrics, notes=''):
     for measure in metrics:
         means = np.zeros(len(test_variables))
@@ -325,4 +320,150 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         plt.ylabel(f'{measure} (seconds)')
         plt.show()
 
+def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
+    for measure in metrics:
+        result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
+        for i, num_channels in enumerate(num_channels_to_test):
+            for j, sampling_rate in enumerate(sampling_rates_to_test):
+                result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
+        plt.imshow(result_matrix[:, :, 0], cmap='plasma')
+        plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
+        plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
+        plt.xlabel("Sampling Rate (Hz)")
+        plt.ylabel("Number of channels")
+        plt.title(f'{number_of_streams} stream{"s" if number_of_streams > 1 else ""}: {measure}. {notes}')
+        plt.colorbar()
+        plt.show()
 
+
+def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path):
+    results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
+    start_time = time.perf_counter()
+    test_axes = {"number of streams": num_streams_to_test, "number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
+
+    for n_streams, num_channels, sampling_rate in itertools.product(num_streams_to_test, num_channels_to_test, sampling_rates_to_test):
+        this_stream_names = [test_stream_names.pop(0) for _ in range(n_streams)]
+        print(f"test: testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {this_stream_names}...", end='')
+
+        # play streams and record them #################################################################################
+        # start the designated number of streams with given number of channels and sampling rate
+        print("test: starting the original streams as separate processes")
+        for s_name in this_stream_names:
+            test_context.start_stream(s_name, num_channels, sampling_rate)
+        test_context.start_recording()
+
+        # wait for experiment time
+        test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
+
+        # close the all the streams
+        for s_name in this_stream_names:
+            print(f"test: closing original stream process with name {s_name}")
+            test_context.close_stream(s_name)
+        test_context.stop_recording()
+        print("test: recording stopped for the original streams")
+
+        # replay the streams ##########################################################################################
+        print("test: loading back the recorded streams")
+        recording_file_name = app_main_window.recording_tab.save_path
+        data_original = RNStream(recording_file_name).stream_in()  # this original data will be compared with replayed data later
+        print("test: recorded streams successfully loaded. now moving on to replaying")
+
+        app_main_window.replay_tab.select_file(recording_file_name)
+
+        print(f"test: selected file at {recording_file_name} for replaying. starting replay")
+        test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)
+        test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
+        # start the streams from replay and record them ################################################
+        print("test: replayed streams is now available, start the streams in their StreamWidget")
+        for ts_name in this_stream_names:
+            test_context.qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        print("test: start recording replayed streams")
+        test_context.start_recording()
+        test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
+
+        # test if the data are being received as they are being replayed
+        for ts_name in this_stream_names:
+            print(f"test: checking if the stream widgets are receiving data from replayed streams. Working on stream name {ts_name}")
+            assert app_main_window.stream_widgets[ts_name].viz_data_buffer.has_data()
+        test_context.qtbot.waitUntil(lambda: not app_main_window.replay_tab.is_replaying, timeout=test_time_second_per_stream * 1e3)  # wait until the replay completes, need to ensure that the replay can finish
+
+        print("test: stop recording replayed streams")
+        test_context.stop_recording()
+        # remove the streams from the stream widgets
+        for ts_name in this_stream_names:
+            test_context.remove_stream(ts_name)
+            print(f"test: after replay completes, removed stream widget with stream name {ts_name}")
+
+        # load the replay file
+        print("test: loading replayed file")
+        replayed_file_name = app_main_window.recording_tab.save_path
+        data_replayed = RNStream(replayed_file_name).stream_in()  # this original data will be compared with replayed data later
+
+        print("test: completed loading replayed file, now computing performance metrics")
+        for measure in metrics:
+            if measure == 'replay push data loop time':
+                average_loop_time = app_main_window.replay_tab._request_replay_performance()
+                if average_loop_time == 0:
+                    raise ValueError()
+                results[measure][n_streams, num_channels, sampling_rate][measure] = average_loop_time
+            elif measure == 'timestamp reenactment accuracy':
+                results[measure][n_streams, num_channels, sampling_rate][measure] = get_replay_time_reenactment_accuracy(data_original, data_replayed, this_stream_names)
+            else:
+                raise ValueError(f"Unknown metric: {measure}")
+
+        print("test: metrics computed, now removing replayed file")
+        os.remove(replayed_file_name)
+        os.remove(recording_file_name)
+        pickle.dump({'results': results, 'test_axes': test_axes}, open(results_path, 'wb'))
+
+    print(f"Took {time.perf_counter() - start_time}.", end='')
+
+    return results
+
+def get_replay_time_reenactment_accuracy(data_original, data_replayed, stream_names):
+    tick_time_discrepancies = np.empty(0)
+    for s_name in stream_names:
+        a = data_original[s_name][0]
+        b = data_replayed[s_name][0]
+        assert np.all(a[:, -b.shape[1]:] == b)
+
+        a = data_original[s_name][1]
+        b = data_replayed[s_name][1]
+        c = a[-b.shape[0]:]
+
+        d = np.diff(c)
+        e = np.diff(b)
+
+        tick_time_discrepancies = np.concatenate([tick_time_discrepancies, np.abs(e - d).flatten()])
+    return tick_time_discrepancies
+
+
+def plot_replay_benchmark_results(results, test_axes, metrics, notes=''):
+    """
+    the key for results[measure] are the test axes, these keys must be in the same order as test axes
+    @param results:
+    @param test_axes:
+    @param metrics:
+    @return:
+    """
+    sampling_rates_to_test = test_axes["sampling rate (Hz)"]
+    num_channels_to_test = test_axes["number of channels"]
+    num_streams_to_test = test_axes["number of streams"]
+
+    if 'replay push data loop time' in metrics:
+        for n_streams in num_streams_to_test:
+            visualize_metrics_across_num_chan_sampling_rate(results, ['replay push data loop time'], n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
+
+    if 'timestamp reenactment accuracy' in metrics:
+        print()
+        timestamps_renactments_discrepencies = []
+        for n_streams in num_streams_to_test:
+            results_this_n_streams = np.empty(0)
+            for i, num_channels in enumerate(num_channels_to_test):
+                for j, sampling_rate in enumerate(sampling_rates_to_test):
+                    results_this_n_streams = np.concatenate([results_this_n_streams, results['timestamp reenactment accuracy'][n_streams, num_channels, sampling_rate]['timestamp reenactment accuracy']])
+            timestamps_renactments_discrepencies.append(results_this_n_streams)
+        plt.boxplot(timestamps_renactments_discrepencies)
+        plt.xlabel('number of streams')
+        plt.ylabel('discrepancy between original and replayed stream timestamps (second)')
+        plt.show()

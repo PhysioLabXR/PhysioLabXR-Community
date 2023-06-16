@@ -7,17 +7,18 @@ Otherwise, you will get either import error or file not found error
 import random
 import threading
 import uuid
-from multiprocessing import Process
 
 import pytest
-import zmq
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
 
+from rena.configs.configs import AppConfigs
+from rena.presets.Presets import DataType
+
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
+from rena.tests.test_utils import app_fixture, \
     ContextBot, handle_current_dialog_button
 
 
@@ -46,7 +47,7 @@ def test_zmq_channel_mistmatch(app_main_window, context_bot, qtbot) -> None:
     streaming_time_second = 3
 
     port = context_bot.create_zmq_stream(test_stream_name, num_channels=random.randint(100, 200), srate=30)
-    app_main_window.create_preset(test_stream_name, 'uint8', port, 'ZMQ', num_channels=random.randint(1, 99))  # add a default preset
+    app_main_window.create_preset(test_stream_name, port, 'ZMQ', num_channels=random.randint(1, 99), data_type=DataType.uint8)  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
