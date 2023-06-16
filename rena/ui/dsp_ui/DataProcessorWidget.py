@@ -115,7 +115,7 @@ class NotchFilterWidget(DataProcessorWidget):
                  adding_data_processor=False):
         if data_processor is None:
             data_processor = NotchFilter()
-            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+            data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
 
         super().__init__(parent, data_processor, adding_data_processor)
@@ -179,7 +179,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
                  adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthBandpassFilter()
-            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+            data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
         super().__init__(parent, data_processor, adding_data_processor)
         self.ui = uic.loadUi("ui/dsp_ui/ButterworthBandPassFilterWidget.ui", self)
@@ -250,7 +250,7 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthLowpassFilter()
-            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+            data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
 
         super().__init__(parent, data_processor, adding_data_processor)
@@ -311,7 +311,7 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = ButterworthHighpassFilter()
-            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+            data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
 
         super().__init__(parent, data_processor, adding_data_processor)
@@ -372,7 +372,7 @@ class RootMeanSquareWidget(DataProcessorWidget):
     def __init__(self, parent, data_processor=None, adding_data_processor=False):
         if data_processor is None:
             data_processor = RootMeanSquare()
-            data_processor.fs = float(get_stream_nominal_sampling_rate(self.parent.stream_name))
+            data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
 
         super().__init__(parent, data_processor, adding_data_processor)
