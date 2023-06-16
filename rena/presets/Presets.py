@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Union
 
+import numpy as np
 from PyQt5.QtCore import QStandardPaths
 
 from rena import config
@@ -18,6 +19,52 @@ from rena.utils.dsp_utils.dsp_modules import DataProcessor, NotchFilter, IIRFilt
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
+
+
+class DataType(Enum):
+    """
+    Data types supported by RenaLabApp.
+    Calling the enum with a value will return the same value of the  corresponding numpy data type.
+    Use the class method get_data_type to get actual data type.
+    """
+    uint8 = "uint8"
+    uint16 = "uint16"
+    uint32 = "uint32"
+    uint64 = "uint64"
+    int8 = "int8"
+    int16 = "int16"
+    int32 = "int32"
+    int64 = "int64"
+    float16 = "float16"
+    float32 = "float32"
+    float64 = "float64"
+
+    def __call__(self, *args, **kwargs):
+        return self.get_data_type()(args[0])
+
+    def get_data_type(self):
+        if self == DataType.uint8:
+            return np.uint8
+        elif self == DataType.uint16:
+            return np.uint16
+        elif self == DataType.uint32:
+            return np.uint32
+        elif self == DataType.uint64:
+            return np.uint64
+        elif self == DataType.int8:
+            return np.int8
+        elif self == DataType.int16:
+            return np.int16
+        elif self == DataType.int32:
+            return np.int32
+        elif self == DataType.int64:
+            return np.int64
+        elif self == DataType.float16:
+            return np.float16
+        elif self == DataType.float32:
+            return np.float32
+        elif self == DataType.float64:
+            return np.float64
 
 
 class PresetType(Enum):
@@ -65,6 +112,9 @@ class PresetsEncoder(json.JSONEncoder):
             return o.__dict__
         return super().default(o)
 
+
+
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class StreamPreset(metaclass=SubPreset):
     """
@@ -97,10 +147,8 @@ class StreamPreset(metaclass=SubPreset):
     device_info: dict
     preset_type: PresetType
 
-    data_type: str = 'float32'
-
+    data_type: DataType = DataType.float32
     port_number: int = None
-
     display_duration: float = None
     nominal_sampling_rate: int = 10
 
@@ -343,3 +391,5 @@ class Presets(metaclass=Singleton):
 
     def keys(self):
         return self._get_all_presets().keys()
+
+

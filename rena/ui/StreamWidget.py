@@ -269,8 +269,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def reset_preset_by_num_channels(self, num_channels):
         pop_stream_preset_from_settings(self.stream_name)
-        self.main_parent.create_preset(self.stream_name, self.data_type, self.port_number, self.networking_interface,
-                                       num_channels=num_channels)  # update preset in settings
+        self.main_parent.create_preset(self.stream_name, self.port_number, self.networking_interface, data_type=self.data_type, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 
@@ -286,9 +285,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        buffer_size = 1 if len(
-            channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
+        buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
+                                                      buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
 
@@ -340,12 +339,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
 
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, 
-                                                                 group_name,
-                                                                 group_channel_names,
-                                                                 get_stream_preset_info(self.stream_name,
-                                                                                        'nominal_sampling_rate'),
-                                                                 self.plot_format_changed_signal)
+            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
             self.splitter.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
 
@@ -363,8 +357,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             try:
                 self.run_data_processor(data_dict)
                 self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
-                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
-                                                    1])  # NOTE performance test scripts, don't include in production code
+                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
                 self._has_new_viz_data = True
                 # self.viz_data_buffer.update_buffer(data_dict)
             except ChannelMismatchError as e:
@@ -427,6 +420,27 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
         actual_sampling_rate = self.actualSamplingRate
         # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
+
+        # reduce the number of points to plot to the number of pixels in the corresponding plot widget
+
+        # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
+        #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
+        #     # start = time.time()
+        #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
+        #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
+        #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
+        #                             axis=1)  # resample to 100 hz with retain history of 10 sec
+        #     # print(time.time()-start)
+        #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
+
+        # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
+        #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        #
+        # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
+        #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
+        # change to loop with type condition plot time_series and image
+        # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
+        # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
         self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
@@ -436,8 +450,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
         for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
-            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot,))[
-                                            1])  # NOTE performance test scripts, don't include in production code
+            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
             # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
         # show the label
@@ -446,12 +459,18 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
 
         self._has_new_viz_data = False
-        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(
-                self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
+        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
             self.viz_data_head = 0
 
     def ticks(self):
         self.worker.signal_data_tick.emit()
+        #     self.recent_tick_refresh_timestamps.append(time.time())
+        #     if len(self.recent_tick_refresh_timestamps) > 2:
+        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
+        #                     len(self.recent_tick_refresh_timestamps) - 1))
+        #
+        #     self.tickFrequencyLabel.setText(
+        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
     def init_server_client(self):
         print('John')
@@ -502,17 +521,17 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     # @QtCore.pyqtSlot(dict)
     # def plot_format_on_change(self, info_dict):
-    # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-    # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
+        # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
+        # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
 
-    # self.preset_on_change()  # update the group info
+        # self.preset_on_change()  # update the group info
 
-    # self.viz_components.group_plots[plot_format_index_dict[old_format]][
-    #     info_dict['group_name']].hide()
-    # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
-    #     info_dict['group_name']].show()
+        # self.viz_components.group_plots[plot_format_index_dict[old_format]][
+        #     info_dict['group_name']].hide()
+        # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
+        #     info_dict['group_name']].show()
 
-    # update the plot hide display
+        # update the plot hide display
 
     # @QtCore.pyqtSlot(dict)
     # def image_changed(self, change: dict):
@@ -552,10 +571,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                 channel_indices = [x.lsl_index for x in child_channels]
                 is_channels_shown = [x.is_shown for x in child_channels]
                 if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
-                    add_group_entry_to_stream(self.stream_name,
-                                              create_default_group_entry(len(child_channels), group_name,
-                                                                         channel_indices=channel_indices,
-                                                                         is_channels_shown=is_channels_shown))
+                    add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown))
                 else:
                     change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
 

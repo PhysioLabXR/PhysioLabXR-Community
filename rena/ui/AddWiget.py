@@ -2,7 +2,7 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.presets.Presets import PresetType
+from rena.presets.Presets import PresetType, DataType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.ui_shared import add_icon
@@ -21,6 +21,10 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.add_btn.setIcon(add_icon)
 
         add_presets_to_combobox(self.stream_name_combo_box)
+
+        for data_type in DataType:
+            self.data_type_combo_box.addItem(data_type.value)
+
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
@@ -50,7 +54,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         return self.PortLineEdit.text()
 
     def get_data_type(self):
-        return self.DataTypeComboBox.currentText()
+        return self.data_type_combo_box.currentText()
 
     def set_selection_text(self, stream_name):
         self.stream_name_combo_box.lineEdit().setText(stream_name)
@@ -114,7 +118,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         else: raise Exception("Unknow preset type {}".format(selected_type))
 
     def set_data_type_to_default(self):
-        self.DataTypeComboBox.setCurrentIndex(1)
+        self.data_type_combo_box.setCurrentIndex(1)
 
     def LSL_preset_selected(self, stream_name):
         self.NetworkingInterfaceComboBox.setCurrentIndex(0)
@@ -124,7 +128,7 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def ZMQ_preset_selected(self, stream_name, port_number):
         self.NetworkingInterfaceComboBox.show()
-        self.DataTypeComboBox.show()
+        self.data_type_combo_box.show()
         self.NetworkingInterfaceComboBox.setCurrentIndex(1)
         self.PortLineEdit.setText(str(port_number))
         self.PortLineEdit.show()
@@ -147,15 +151,15 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.device_property_fields = dict()
 
     def hide_stream_uis(self):
-        self.DataTypeComboBox.setHidden(True)
+        self.data_type_combo_box.setHidden(True)
         self.NetworkingInterfaceComboBox.setHidden(True)
         self.PortLineEdit.setHidden(True)
 
     def verify_data_type(self, stream_name):
-        data_type = get_stream_preset_info(stream_name, "data_type")
-        index = self.DataTypeComboBox.findText(data_type, QtCore.Qt.MatchFixedString)
+        data_type_str = get_stream_preset_info(stream_name, "data_type").value
+        index = self.data_type_combo_box.findText(data_type_str, QtCore.Qt.MatchFixedString)
         if index >= 0:
-            self.DataTypeComboBox.setCurrentIndex(index)
+            self.data_type_combo_box.setCurrentIndex(index)
         else:
             self.set_data_type_to_default()
             # print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
