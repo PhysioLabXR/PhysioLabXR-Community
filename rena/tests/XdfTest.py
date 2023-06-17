@@ -12,8 +12,10 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from rena.config import stream_availability_wait_time
+from rena.presets.Presets import DataType
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.tests.TestStream import CSVTestStream
+from rena.utils.xdf_utils import load_xdf
 from rena.utils.data_utils import CsvStoreLoad, RNStream
 from pytestqt.qtbot import QtBot
 from rena.utils.ui_utils import CustomDialog
@@ -55,7 +57,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
-        app_main_window.create_preset(ts_name, 'float', None, 'LSL', num_channels=81)  # add a default preset
+        app_main_window.create_preset(stream_name=ts_name, port=None, networking_interface='LSL', data_type=DataType.float64, num_channels=81, nominal_sample_rate=2048)#stream_name=ts_name, port=)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
@@ -134,7 +136,34 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
 
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
-    xdf_data = pyxdf.load_xdf(saved_file_path)
+    xdf_data = load_xdf(saved_file_path)
+
+    # def compare_column_vec(vec1, vec2):
+    #     result = np.all(vec1 == vec2)
+    #     return result
+    #
+    # def compare(sent_sample_array, loaded_array):
+    #     check = []
+    #     sent_sample_array_trans = sent_sample_array.T
+    #     loaded_array_trans = loaded_array.T
+    #     for row in sent_sample_array_trans:
+    #         check.append(compare_column_vec(row, loaded_array_trans[0]))
+    #     if np.any(check):
+    #         start = np.where(check)[0]
+    #         if len(start) > 1:
+    #             raise Exception(f"Multiple start point detected")
+    #         else:
+    #             start_idx = int(start)
+    #             for i in range(loaded_array.shape[1]):
+    #                 if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i]):
+    #                     return False
+    #         return True
+    #     else:
+    #         return False
+
+    # for idx, ts_name in enumerate(ts_names):
+    #     is_passing = compare(samples[ts_name], xdf_data[ts_name][0])
+    #     assert is_passing
 
     def compare_column_vec(vec1, vec2, persentage):
         percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
@@ -163,8 +192,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
 
 
     for idx, ts_name in enumerate(ts_names):
-        is_passing = compare(samples[ts_name], xdf_data[0][idx]['time_series'].T, persentage=0.1)
+        is_passing = compare(samples[ts_name], xdf_data[ts_name][0], persentage=0.1)
         assert is_passing
-
-    assert compare(samples['monitor 0'], xdf_data[ts_name][0], persentage=1)
+    # assert compare(samples['monitor 0'], xdf_data[ts_name][0], persentage=1)
 

@@ -12,6 +12,7 @@ from scipy.signal import resample
 from scipy.stats import stats
 import xml.etree.ElementTree as ET
 from enum import Enum
+import pyxdf
 
 from exceptions.exceptions import BadOutputError
 from rena.presets.presets_utils import get_stream_data_type
@@ -23,7 +24,7 @@ def create_xml_string(child_dict: dict):
     childs = []
     for key, value in child_dict.items():
         child = ET.SubElement(root, key)
-        child.text = value
+        child.text = value if isinstance(value, str) else str(value)
         childs.append(child)
 
     # Create the XML string from the root element
@@ -61,18 +62,16 @@ class XDF:
         # write file header
         out_file.write(file_header)
         stream_label_list = list(buffer)
-        id_encoding = lambda stream_label: stream_label_list.index(stream_label)
-        id_decoding = lambda idx: stream_label_list[idx]
         for stream_label, _ in buffer.items():
             stream_header_len = len(self.stream_headers[stream_label]) + 2 + 4
-            stream_data_type = np.dtype(get_stream_data_type(stream_label))
+            stream_data_type = np.dtype(get_stream_data_type(stream_label).value)
 
             stream_header_len_bytes = NumLenByte_decoder(stream_header_len)
 
             stream_header = stream_header_len_bytes.to_bytes(1, byteorder='little') + \
                             stream_header_len.to_bytes(stream_header_len_bytes, byteorder='little') + \
                             XdfTag.StreamHeader.value.to_bytes(2, byteorder='little') + \
-                            id_encoding(stream_label).to_bytes(4, byteorder='little') + self.stream_headers[stream_label].encode('utf-8')
+                            self.stream_footers[stream_label]['stream_id'].to_bytes(4, byteorder='little') + self.stream_headers[stream_label].encode('utf-8')
 
             # write stream header
             out_file.write(stream_header)
@@ -99,7 +98,7 @@ class XDF:
 
             total_samples = len(ts_array)
             n_sample_chunks = total_samples // 50 + 1
-            stream_id = id_encoding(stream_label)
+            stream_id = self.stream_footers[stream_label]['stream_id']
             nchannels = data_array.shape[0]
             samples_stored = 0
             for i in range(n_sample_chunks):
@@ -174,21 +173,27 @@ class XDF:
 
         # write stream footers
         for stream_label, _ in buffer.items():
-            stream_footer_len = len(self.stream_footers[stream_label]) + 2 + 4
+            footer = create_xml_string(self.stream_footers[stream_label])
+            stream_footer_len = len(footer) + 2 + 4
             stream_footer_len_bytes = NumLenByte_decoder(stream_footer_len)
             stream_footer = stream_footer_len_bytes.to_bytes(1, byteorder='little') + \
                             stream_footer_len.to_bytes(stream_footer_len_bytes, byteorder='little') + \
                             XdfTag.StreamFooter.value.to_bytes(2, byteorder='little') + \
-                            id_encoding(stream_label).to_bytes(4, byteorder='little') + \
-                            self.stream_footers[stream_label].encode('utf-8')
+                            self.stream_footers[stream_label]['stream_id'].to_bytes(4, byteorder='little') + \
+                            footer.encode('utf-8')
             out_file.write(stream_footer)
 
         out_file.close()
 
-        return id_decoding
-
-
-
+def load_xdf(filename):
+    xdf_data = pyxdf.load_xdf(filename)
+    dats_data = {}
+    for stream_data in xdf_data[0]:
+        stream_footer = stream_data['footer']
+        stream_name = stream_footer['info']['stream_name'][0]
+        data = [stream_data['time_series'].T, stream_data['time_stamps']]
+        dats_data[stream_name] = data
+    return dats_data
 
 
 
