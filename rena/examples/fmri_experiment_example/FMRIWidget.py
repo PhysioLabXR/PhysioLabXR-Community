@@ -5,7 +5,11 @@ from PyQt5 import QtWidgets, uic
 from rena.ui.PoppableWidget import Poppable
 from rena.ui_shared import remove_stream_icon, \
     options_icon
-
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor
+from OpenGL.GL import *
+from OpenGL.GLUT import *
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
     def __init__(self, parent_widget, parent_layout, window_title,
