@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
+from rena.examples.fmri_experiment_example.FMRIWidget import FMRIWidget
 from rena.presets.Presets import Presets, PresetType, DataType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
@@ -128,6 +129,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
+
+        # fmri widget
+        self.fmri_widget = FMRIWidget(parent_widget=self,
+                                   parent_layout=self.camHorizontalLayout,
+                                   window_title="FMRI")
+        self.fmri_widget.setObjectName("FMRIWidget")
+        self.fmri_widget.show()
 
     def add_btn_clicked(self):
         """
