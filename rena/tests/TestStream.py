@@ -41,7 +41,7 @@ def LSLTestStream(stream_name, n_channels=81, srate=2048):
 def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
     print('Test stream name is ' + stream_name)
     type = 'EEG'
-    info = StreamInfo(stream_name, type, n_channels, srate, 'float32', 'someuuid1234')
+    info = StreamInfo(stream_name, type, n_channels, srate, 'double64', 'someuuid1234')
 
     # next make an outlet
     outlet = StreamOutlet(info)

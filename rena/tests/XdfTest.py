@@ -138,44 +138,16 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
     xdf_data = load_xdf(saved_file_path)
 
-    # def compare_column_vec(vec1, vec2):
-    #     result = np.all(vec1 == vec2)
-    #     return result
-    #
-    # def compare(sent_sample_array, loaded_array):
-    #     check = []
-    #     sent_sample_array_trans = sent_sample_array.T
-    #     loaded_array_trans = loaded_array.T
-    #     for row in sent_sample_array_trans:
-    #         check.append(compare_column_vec(row, loaded_array_trans[0]))
-    #     if np.any(check):
-    #         start = np.where(check)[0]
-    #         if len(start) > 1:
-    #             raise Exception(f"Multiple start point detected")
-    #         else:
-    #             start_idx = int(start)
-    #             for i in range(loaded_array.shape[1]):
-    #                 if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i]):
-    #                     return False
-    #         return True
-    #     else:
-    #         return False
-
-    # for idx, ts_name in enumerate(ts_names):
-    #     is_passing = compare(samples[ts_name], xdf_data[ts_name][0])
-    #     assert is_passing
-
-    def compare_column_vec(vec1, vec2, persentage):
-        percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
-        result = np.all(percentage_diff < persentage)
+    def compare_column_vec(vec1, vec2):
+        result = np.all(vec1 == vec2)
         return result
 
-    def compare(sent_sample_array, loaded_array, persentage=1):
+    def compare(sent_sample_array, loaded_array):
         check = []
         sent_sample_array_trans = sent_sample_array.T
         loaded_array_trans = loaded_array.T
         for row in sent_sample_array_trans:
-            check.append(compare_column_vec(row, loaded_array_trans[0], persentage))
+            check.append(compare_column_vec(row, loaded_array_trans[0]))
         if np.any(check):
             start = np.where(check)[0]
             if len(start) > 1:
@@ -183,16 +155,15 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
             else:
                 start_idx = int(start)
                 for i in range(loaded_array.shape[1]):
-                    if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i], persentage):
+                    if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i]):
                         return False
             return True
         else:
             return False
 
-
-
     for idx, ts_name in enumerate(ts_names):
-        is_passing = compare(samples[ts_name], xdf_data[ts_name][0], persentage=0.1)
+        is_passing = compare(samples[ts_name], xdf_data[ts_name][0])
         assert is_passing
+
     # assert compare(samples['monitor 0'], xdf_data[ts_name][0], persentage=1)
 
