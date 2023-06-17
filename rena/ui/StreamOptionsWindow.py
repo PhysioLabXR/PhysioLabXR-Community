@@ -46,12 +46,12 @@ class StreamOptionsWindow(QWidget):
         plot_format_changed_signal.connect(self.plot_format_changed)
         self.image_change_signal = self.plot_format_widget.image_change_signal
         self.plot_format_widget.hide()
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
-
+        self.signalActionsSplitter.addWidget(self.plot_format_widget)
+        # signalActionsSplitter
         # data processor
         self.data_processing_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
         self.data_processing_widget.hide()
-        self.actionsWidgetLayout.addWidget(self.data_processing_widget)
+        self.signalActionsSplitter.addWidget(self.data_processing_widget)
 
         # stream group tree view
         self.stream_group_view = StreamGroupView(parent_stream_options=self,
@@ -72,11 +72,11 @@ class StreamOptionsWindow(QWidget):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.add_group_btn = QPushButton()
-        self.add_group_btn.setText('Create New Group')
-        self.add_group_btn.hide()
-        self.add_group_btn.clicked.connect(self.add_group_clicked)
-        self.actionsWidgetLayout.addWidget(self.add_group_btn)
+        # self.add_group_btn = QPushButton()
+        # self.add_group_btn.setText('Create New Group')
+        # self.add_group_btn.hide()
+        # self.add_group_btn.clicked.connect(self.add_group_clicked)
+        # self.actionsWidgetLayout.addWidget(self.add_group_btn)
 
         self.update_num_points_to_display()
 
