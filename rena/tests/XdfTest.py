@@ -66,10 +66,10 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
         qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, ts_name)
         qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton) # click the add widget combo box
 
-    # qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    # qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
-    # qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, 'monitor 0')
-    # qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, 'monitor 0')
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
     app_main_window.settings_widget.set_recording_file_location(record_path)
     app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(4) # set recording file format to xdf

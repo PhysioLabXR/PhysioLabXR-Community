@@ -64,7 +64,6 @@ class XDF:
         stream_label_list = list(buffer)
         for stream_label, _ in buffer.items():
             stream_header_len = len(self.stream_headers[stream_label]) + 2 + 4
-            stream_data_type = np.dtype(get_stream_data_type(stream_label).value)
 
             stream_header_len_bytes = NumLenByte_decoder(stream_header_len)
 
@@ -96,51 +95,15 @@ class XDF:
             except AssertionError:
                 warnings.warn(f'Stream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
 
-            total_samples = len(ts_array)
-            n_sample_chunks = total_samples // 50 + 1
-            stream_id = self.stream_footers[stream_label]['stream_id']
-            nchannels = data_array.shape[0]
-            samples_stored = 0
-            for i in range(n_sample_chunks):
-                if i != n_sample_chunks - 1:
-                    num_sample_bytes = NumLenByte_decoder(sample_chunk_max_size)
-                    # compute the total sample chunk length
-                    samples_byte_len = 9 * sample_chunk_max_size + nchannels * sample_chunk_max_size * stream_data_type.itemsize
-                    content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
-                    num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len) # the byte length of the total chunk
-                    stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
-                                          content_tag_byte_len.to_bytes(num_chunk_byte_len, byteorder='little') + \
-                                          XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
-                                          stream_id.to_bytes(4, byteorder='little') + \
-                                          num_sample_bytes.to_bytes(1, byteorder='little') + \
-                                          sample_chunk_max_size.to_bytes(num_sample_bytes, byteorder='little')
-                    out_file.write(stream_content_head)
-                    for j in range(sample_chunk_max_size):
-                        timestampbytes = int(8).to_bytes(1, byteorder='little')
-                        timestamp = struct.pack('<d', ts_array[i * sample_chunk_max_size + j])
-                        values = b''
-                        if stream_data_type == 'float64':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<d', k)
-                        elif stream_data_type == 'float32':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<f', k)
-                        elif stream_data_type == 'int64':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<q', k)
-                        elif stream_data_type == 'int32':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<i', k)
-                        elif stream_data_type == 'uint8':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<B', k)
-                        out_file.write(timestampbytes + timestamp + values)
-                    samples_stored += sample_chunk_max_size
-                else:
-                    num_samples = total_samples - samples_stored
-                    num_sample_bytes = NumLenByte_decoder(num_samples)
-                    # compute the total sample chunk length
-                    samples_byte_len = 9 * num_samples + nchannels * num_samples * stream_data_type.itemsize
+            if stream_label == 'monitor 0':
+                total_samples = len(ts_array)
+                # write one sample per chunk
+                stream_id = self.stream_footers[stream_label]['stream_id']
+                nchannels = data_array.shape[0] * data_array.shape[1] * data_array.shape[2]
+                samples_per_chunk = 1
+                for i in range(total_samples):
+                    num_sample_bytes = NumLenByte_decoder(samples_per_chunk)
+                    samples_byte_len = 9 * samples_per_chunk + nchannels * samples_per_chunk * 1
                     content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len  # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
                     num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len)  # the byte length of the total chunk
                     stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
@@ -148,28 +111,88 @@ class XDF:
                                           XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
                                           stream_id.to_bytes(4, byteorder='little') + \
                                           num_sample_bytes.to_bytes(1, byteorder='little') + \
-                                          num_samples.to_bytes(num_sample_bytes, byteorder='little')
+                                          samples_per_chunk.to_bytes(num_sample_bytes, byteorder='little')
                     out_file.write(stream_content_head)
-                    for j in range(num_samples):
-                        timestampbytes = int(8).to_bytes(1, byteorder='little')
-                        timestamp = struct.pack('<d', ts_array[i * sample_chunk_max_size + j])
-                        values = b''
-                        if stream_data_type == 'float64':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<d', k)
-                        elif stream_data_type == 'float32':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<f', k)
-                        elif stream_data_type == 'int64':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<q', k)
-                        elif stream_data_type == 'int32':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<i', k)
-                        elif stream_data_type == 'uint8':
-                            for k in data_array[:, i * sample_chunk_max_size + j]:
-                                values += struct.pack('<B', k)
-                        out_file.write(timestampbytes + timestamp + values)
+                    timestampbytes = int(8).to_bytes(1, byteorder='little')
+                    timestamp = struct.pack('<d', ts_array[i])
+                    values = data_array[:, :, :, i].tobytes()
+                    out_file.write(timestampbytes + timestamp + values)
+            else:
+                stream_data_type = np.dtype(get_stream_data_type(stream_label).value)
+                total_samples = len(ts_array)
+                n_sample_chunks = total_samples // 50 + 1
+                stream_id = self.stream_footers[stream_label]['stream_id']
+                nchannels = data_array.shape[0]
+                samples_stored = 0
+                for i in range(n_sample_chunks):
+                    if i != n_sample_chunks - 1:
+                        num_sample_bytes = NumLenByte_decoder(sample_chunk_max_size)
+                        # compute the total sample chunk length
+                        samples_byte_len = 9 * sample_chunk_max_size + nchannels * sample_chunk_max_size * stream_data_type.itemsize
+                        content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
+                        num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len) # the byte length of the total chunk
+                        stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
+                                              content_tag_byte_len.to_bytes(num_chunk_byte_len, byteorder='little') + \
+                                              XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
+                                              stream_id.to_bytes(4, byteorder='little') + \
+                                              num_sample_bytes.to_bytes(1, byteorder='little') + \
+                                              sample_chunk_max_size.to_bytes(num_sample_bytes, byteorder='little')
+                        out_file.write(stream_content_head)
+                        for j in range(sample_chunk_max_size):
+                            timestampbytes = int(8).to_bytes(1, byteorder='little')
+                            timestamp = struct.pack('<d', ts_array[i * sample_chunk_max_size + j])
+                            values = b''
+                            if stream_data_type == 'float64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<d', k)
+                            elif stream_data_type == 'float32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<f', k)
+                            elif stream_data_type == 'int64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<q', k)
+                            elif stream_data_type == 'int32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<i', k)
+                            elif stream_data_type == 'uint8':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<B', k)
+                            out_file.write(timestampbytes + timestamp + values)
+                        samples_stored += sample_chunk_max_size
+                    else:
+                        num_samples = total_samples - samples_stored
+                        num_sample_bytes = NumLenByte_decoder(num_samples)
+                        # compute the total sample chunk length
+                        samples_byte_len = 9 * num_samples + nchannels * num_samples * stream_data_type.itemsize
+                        content_tag_byte_len = 2 + 4 + 1 + num_sample_bytes + samples_byte_len  # the length of the content plus tag in bytes, 2 for tag, 4 for stream id, 1 for NumSampleBytes
+                        num_chunk_byte_len = NumLenByte_decoder(content_tag_byte_len)  # the byte length of the total chunk
+                        stream_content_head = num_chunk_byte_len.to_bytes(1, byteorder='little') + \
+                                              content_tag_byte_len.to_bytes(num_chunk_byte_len, byteorder='little') + \
+                                              XdfTag.Samples.value.to_bytes(2, byteorder='little') + \
+                                              stream_id.to_bytes(4, byteorder='little') + \
+                                              num_sample_bytes.to_bytes(1, byteorder='little') + \
+                                              num_samples.to_bytes(num_sample_bytes, byteorder='little')
+                        out_file.write(stream_content_head)
+                        for j in range(num_samples):
+                            timestampbytes = int(8).to_bytes(1, byteorder='little')
+                            timestamp = struct.pack('<d', ts_array[i * sample_chunk_max_size + j])
+                            values = b''
+                            if stream_data_type == 'float64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<d', k)
+                            elif stream_data_type == 'float32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<f', k)
+                            elif stream_data_type == 'int64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<q', k)
+                            elif stream_data_type == 'int32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<i', k)
+                            elif stream_data_type == 'uint8':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<B', k)
+                            out_file.write(timestampbytes + timestamp + values)
 
         # write stream footers
         for stream_label, _ in buffer.items():
@@ -191,8 +214,15 @@ def load_xdf(filename):
     for stream_data in xdf_data[0]:
         stream_footer = stream_data['footer']
         stream_name = stream_footer['info']['stream_name'][0]
-        data = [stream_data['time_series'].T, stream_data['time_stamps']]
-        dats_data[stream_name] = data
+        if stream_name == 'monitor 0':
+            sample_array = stream_data['time_series']
+            stream_shape = eval(stream_footer['info']['frame_dimension'][0]) + (sample_array.shape[0],)
+            sample_array = sample_array.T.reshape(stream_shape)
+            sample_array = sample_array.astype(np.uint8)
+            dats_data[stream_name] = [sample_array, stream_data['time_stamps']]
+        else:
+            data = [stream_data['time_series'].T, stream_data['time_stamps']]
+            dats_data[stream_name] = data
     return dats_data
 
 
