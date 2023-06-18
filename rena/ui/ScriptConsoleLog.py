@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 
 from PyQt5 import QtWidgets, uic
@@ -17,13 +18,21 @@ class ScriptConsoleLog(QtWidgets.QWidget):
         self.ts_labels = []
         self.add_msg_mutex = QMutex()
 
-        self.scroll_bar = self.scrollArea.verticalScrollBar()
         self.auto_scroll = False
+        # One way to stop auto scrolling is by moving the mouse wheel.
+        self.super_wheelEvent = copy.deepcopy(self.scrollArea.wheelEvent)
+        self.scrollArea.wheelEvent = self.new_wheel_event
+        # A second way to stop auto scrolling is by dragging the slider.
+        self.scroll_bar = self.scrollArea.verticalScrollBar()
+        self.scroll_bar.sliderMoved.connect(self.stop_auto_scroll)
 
         self.ClearLogBtn.clicked.connect(self.clear_log_btn_clicked)
         self.SaveLogBtn.clicked.connect(self.save_log_btn_clicked)
         self.scrollToBottomBtn.clicked.connect(self.scroll_to_bottom_btn_clicked)
-        self.scroll_bar.sliderMoved.connect(self.stop_auto_scroll)
+
+    def new_wheel_event(self, e):
+        self.stop_auto_scroll()
+        self.super_wheelEvent(e)
 
     def print_msg(self, msg):
         self.add_msg_mutex.lock()
@@ -48,7 +57,7 @@ class ScriptConsoleLog(QtWidgets.QWidget):
 
         self.add_msg_mutex.unlock()
 
-        self.scroll_down()
+        self.optionally_scroll_down()
 
     def clear_log_btn_clicked(self):
         self.add_msg_mutex.lock()
@@ -73,6 +82,6 @@ class ScriptConsoleLog(QtWidgets.QWidget):
     def stop_auto_scroll(self):
         self.auto_scroll = False
 
-    def scroll_down(self):
+    def optionally_scroll_down(self):
         if self.auto_scroll:
             self.scroll_bar.setSliderPosition(self.scroll_bar.maximum())
