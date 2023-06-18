@@ -32,6 +32,13 @@ def load_nii_gz_file(file_path: str):
 
     return image_header, numpy_array
 
+def volume_to_gl_volume_item(volume_data:np.ndarray, alpha_interpretation=False):
+    volume_data_rgba = np.zeros(volume_data.shape + (4,), dtype=np.ubyte)
+    volume_data_rgba[..., 0] = volume_data * 255  # R channel
+    volume_data_rgba[..., 1] = volume_data * 255  # G channel
+    volume_data_rgba[..., 2] = volume_data * 255  # B channel
+    volume_data_rgba[..., 3] = 225  # Alpha channel
+
 
 
 

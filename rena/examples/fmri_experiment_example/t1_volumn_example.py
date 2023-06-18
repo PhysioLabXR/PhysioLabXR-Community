@@ -12,7 +12,7 @@ w.setWindowTitle('pyqtgraph example: GLVolumeItem')
 w.setCameraPosition(distance=200)
 
 g = gl.GLGridItem()
-g.scale(10, 10, 100)
+g.scale(100, 100, 100)
 w.addItem(g)
 
 ## Hydrogen electron probability density
@@ -33,100 +33,79 @@ def psi(i, j, k, offset=(50,50,100)):
     )
 
 
-data = np.fromfunction(psi, (100,100,200))
-# _, data = load_nii_gz_file(file_path='avg152T1_LR_nifti.nii.gz')
-with np.errstate(divide = 'ignore'):
-    positive = np.log(fn.clip_array(data, 0, data.max())**2)
-    negative = np.log(fn.clip_array(-data, 0, -data.min())**2)
+# data = np.fromfunction(psi, (100,100,200))
+_, volume_data = load_nii_gz_file(file_path='structural_brain.nii.gz')
+# with np.errstate(divide = 'ignore'):
+#     positive = np.log(fn.clip_array(data, 0, data.max())**2)
+#     negative = np.log(fn.clip_array(-data, 0, -data.min())**2)
+#
+# d2 = np.empty(data.shape + (4,), dtype=np.ubyte)
+#
+# # Original Code
+# # d2[..., 0] = positive * (255./positive.max())
+# # d2[..., 1] = negative * (255./negative.max())
+#
+# # Reformulated Code
+# # Both positive.max() and negative.max() are negative-valued.
+# # Thus the next 2 lines are _not_ bounded to [0, 255]
+# positive = positive * (255./positive.max())
+# negative = negative * (255./negative.max())
+# # When casting to ubyte, the original code relied on +Inf to be
+# # converted to 0. On arm64, it gets converted to 255.
+# # Thus the next 2 lines change +Inf explicitly to 0 instead.
+# positive[np.isinf(positive)] = 0
+# negative[np.isinf(negative)] = 0
+# # When casting to ubyte, the original code relied on the conversion
+# # to do modulo 256. The next 2 lines do it explicitly instead as
+# # documentation.
+# d2[..., 0] = positive.astype(int) % 256
+# d2[..., 1] = negative.astype(int) % 256
+#
+# d2[..., 2] = d2[...,1]
+# d2[..., 3] = d2[..., 0]*0.3 + d2[..., 1]*0.3
+# d2[..., 3] = (d2[..., 3].astype(float) / 255.) **2 * 255
+#
+# d2[:, 0, 0] = [255,0,0,100]
+# d2[0, :, 0] = [0,255,0,100]
+# d2[0, 0, :] = [0,0,255,100]
 
-d2 = np.empty(data.shape + (4,), dtype=np.ubyte)
+# shape = (50, 50, 50)
+# volume_data = np.random.randint(0, 255, shape + (4,), dtype=np.ubyte)
 
-# Original Code
-# d2[..., 0] = positive * (255./positive.max())
-# d2[..., 1] = negative * (255./negative.max())
 
-# Reformulated Code
-# Both positive.max() and negative.max() are negative-valued.
-# Thus the next 2 lines are _not_ bounded to [0, 255]
-positive = positive * (255./positive.max())
-negative = negative * (255./negative.max())
-# When casting to ubyte, the original code relied on +Inf to be
-# converted to 0. On arm64, it gets converted to 255.
-# Thus the next 2 lines change +Inf explicitly to 0 instead.
-positive[np.isinf(positive)] = 0
-negative[np.isinf(negative)] = 0
-# When casting to ubyte, the original code relied on the conversion
-# to do modulo 256. The next 2 lines do it explicitly instead as
-# documentation.
-d2[..., 0] = positive.astype(int) % 256
-d2[..., 1] = negative.astype(int) % 256
+volume_data = (volume_data - np.min(volume_data)) / (np.max(volume_data) - np.min(volume_data))
+alpha_channel = np.interp(volume_data, (0, 1), (0, 255))
 
-d2[..., 2] = d2[...,1]
-d2[..., 3] = d2[..., 0]*0.3 + d2[..., 1]*0.3
-d2[..., 3] = (d2[..., 3].astype(float) / 255.) **2 * 255
+# Add an alpha channel to the volume data
+volume_data_rgba = np.zeros(volume_data.shape + (4,), dtype=np.ubyte)
+volume_data_rgba[..., 0] = volume_data * 255  # R channel
+volume_data_rgba[..., 1] = volume_data * 255  # G channel
+volume_data_rgba[..., 2] = volume_data * 255  # B channel
+volume_data_rgba[..., 3] = alpha_channel  # Alpha channel
 
-d2[:, 0, 0] = [255,0,0,100]
-d2[0, :, 0] = [0,255,0,100]
-d2[0, 0, :] = [0,0,255,100]
+# Get the volume dimensions
+x_size, y_size, z_size = volume_data.shape
 
-v = gl.GLVolumeItem(d2)
-v.translate(-50,-50,-100)
+
+
+
+v = gl.GLVolumeItem(volume_data_rgba)
+
+
+# Shift the center of the volume to (0, 0, 0)
+v.translate(-x_size/2, -y_size/2, -z_size/2)
+
+# Set camera position and orientation
+# view.setCameraPosition(distance=200)
+
+# v.translate(-50,-50,-100)
 w.addItem(v)
+
+
 
 ax = gl.GLAxisItem()
 w.addItem(ax)
 
 if __name__ == '__main__':
     pg.exec()
-
-
-# import sys
-# from PyQt5.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
-# from PyQt5.QtGui import QPainter
-# from PyQt5.QtCore import Qt
-# from OpenGL.GL import *
-#
-#
-# class MyGLWidget(QOpenGLWidget):
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#
-#     def initializeGL(self):
-#         glClearColor(0.2, 0.2, 0.2, 1.0)
-#
-#     def paintGL(self):
-#         glClear(GL_COLOR_BUFFER_BIT)
-#
-#         glColor3f(1.0, 0.0, 0.0)
-#         glBegin(GL_TRIANGLES)
-#         glVertex2f(-0.5, -0.5)
-#         glVertex2f(0.5, -0.5)
-#         glVertex2f(0.0, 0.5)
-#         glEnd()
-#
-#     def resizeGL(self, width, height):
-#         glViewport(0, 0, width, height)
-#         glMatrixMode(GL_PROJECTION)
-#         glLoadIdentity()
-#         glOrtho(-1, 1, -1, 1, -1, 1)
-#         glMatrixMode(GL_MODELVIEW)
-#
-#
-# class MainWindow(QMainWindow):
-#     def __init__(self):
-#         super().__init__()
-#
-#         self.setWindowTitle("PyQt OpenGL Example")
-#         self.setGeometry(100, 100, 400, 400)
-#
-#         gl_widget = MyGLWidget(self)
-#         self.setCentralWidget(gl_widget)
-#
-#
-# if __name__ == '__main__':
-#     app = QApplication(sys.argv)
-#     window = MainWindow()
-#     window.show()
-#     sys.exit(app.exec_())
-
 
