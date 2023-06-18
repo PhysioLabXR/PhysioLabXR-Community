@@ -40,7 +40,7 @@
       <item>
        <widget class="QPushButton" name="scrollToBottomBtn">
         <property name="text">
-         <string>Scroll To Bottom</string>
+         <string>Stop Autoscroll</string>
         </property>
        </widget>
       </item>
