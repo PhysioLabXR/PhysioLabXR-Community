@@ -3,6 +3,7 @@
 from PyQt5 import QtWidgets, uic
 
 from rena.ui.PoppableWidget import Poppable
+from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 from rena.ui_shared import remove_stream_icon, \
     options_icon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
@@ -10,6 +11,29 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from OpenGL.GL import *
 from OpenGL.GLUT import *
+
+import numpy as np
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+from pyqtgraph import functions as fn
+import nibabel as nib
+
+
+
+def load_nii_gz_file(file_path: str):
+    nifti_image = nib.load(file_path)
+
+    # Access the image data and header
+    image_data = nifti_image.get_fdata()
+    image_header = nifti_image.header
+
+    # Convert the image data to a NumPy array
+    numpy_array = np.array(image_data)
+
+    return image_header, numpy_array
+
+
+
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
     def __init__(self, parent_widget, parent_layout, window_title,
@@ -22,117 +46,39 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         @param insert_position:
         """
         super().__init__(window_title, parent_widget, parent_layout, self.remove_function)
+
         self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
-        # if type(insert_position) == int:
-        #     parent_layout.insertWidget(insert_position, self)
-        # else:
-        #     parent_layout.addWidget(self)
-        # self.parent_layout = parent_layout
-        # self.main_parent = parent_widget
-        # self.video_device_name = video_device_name
-        # self.VideoDeviceNameLabel.setText(self.video_device_name)
-
-        # # check if the video device is a camera or screen capture ####################################
-        # self.is_webcam = is_video_webcam(self.video_device_name)
-        # self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
-        # # Connect UIs ##########################################
-        # self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
 
-        # # FPS counter``
-        # self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
-        #
-        # # image label
-        # self.plot_widget = pg.PlotWidget()
-        # self.ImageWidget.layout().addWidget(self.plot_widget)
-        # self.plot_widget.enableAutoRange(enable=False)
-        # self.image_item = pg.ImageItem()
-        # self.plot_widget.addItem(self.image_item)
-        #
-        # # create options window ##########################################
-        # self.video_options_window = VideoDeviceOptions(parent_stream_widget=self, video_device_name=self.video_device_name)
-        # self.video_options_window.hide()
-        # self.OptionsBtn.clicked.connect(lambda: (self.video_options_window.show(), self.video_options_window.activateWindow()))
-        #
-        # # worker and worker threads ##########################################
-        # self.worker_thread = pg.QtCore.QThread(self)
-        #
-        # video_scale, channel_order = get_video_scale(self.video_device_name), get_video_channel_order(self.video_device_name)
-        # if self.is_webcam:
-        #     self.worker = rena.threadings.WebcamWorker.WebcamWorker(get_video_device_id(video_device_name), video_scale, channel_order)
-        # else:
-        #     self.worker = rena.threadings.ScreenCaptureWorker.ScreenCaptureWorker(video_device_name, video_scale, channel_order)
-        # self.worker.change_pixmap_signal.connect(self.visualize)
-        # self.worker.moveToThread(self.worker_thread)
-        #
-        # # define timer ##########################################
-        # self.timer = QTimer()
-        # self.timer.setInterval(settings.value('video_device_refresh_interval'))
-        # self.timer.timeout.connect(self.ticks)
-        #
-        # self.worker_thread.start()
-        # self.timer.start()
-        #
-        # self.is_image_fitted_to_frame = False
+        self.init_graphic_components()
 
+    def init_graphic_components(self):
+        self.volume_view_plot = gl.GLViewWidget()
+        self.VolumnViewPlotWidget.layout().addWidget(self.volume_view_plot)
 
-    # def visualize(self, cam_id_cv_img_timestamp):
-    #     self.tick_times.append(time.time())
-    #     cam_id, image, timestamp = cam_id_cv_img_timestamp
-    #     # qt_img = convert_rgb_to_qt_image(image)
-    #     image = np.swapaxes(image, 0, 1)
-    #     self.image_item.setImage(image)
-    #
-    #     if not self.is_image_fitted_to_frame:
-    #         self.plot_widget.setXRange(0, image.shape[0])
-    #         self.plot_widget.setYRange(0, image.shape[1])
-    #         self.is_image_fitted_to_frame = True
-    #
-    #     # self.ImageLabel.setPixmap(qt_img)
-    #     self.main_parent.recording_tab.update_camera_screen_buffer(cam_id, image, timestamp)
-    #
-    # def remove_video_device(self):
-    #     if self.main_parent.recording_tab.is_recording:
-    #         dialog_popup(msg='Cannot remove stream while recording.')
-    #         return False
-    #     self.timer.stop()
-    #     self.worker.stop_stream()
-    #     self.worker_thread.exit()
-    #     self.worker_thread.wait()  # wait for the thread to exit
-    #
-    #     self.main_parent.video_device_widgets.pop(self.video_device_name)
-    #     self.main_parent.remove_stream_widget(self)
-    #
-    #     # close window if popped
-    #     if self.is_popped:
-    #         self.delete_window()
-    #     self.deleteLater()
-    #     return True
-    #
-    # def ticks(self):
-    #     self.worker.tick_signal.emit()
-    #
-    # def get_fps(self):
-    #     try:
-    #         return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
-    #     except (ZeroDivisionError, IndexError) as e:
-    #         return 0
-    #
-    # def get_pull_data_delay(self):
-    #     return self.worker.get_pull_data_delay()
-    #
-    # def is_widget_streaming(self):
-    #     return self.worker.is_streaming
-    #
-    # def video_preset_changed(self):
-    #     self.worker.video_scale = get_video_scale(self.video_device_name)
-    #     self.worker.channel_order = get_video_channel_order(self.video_device_name)
-    #     self.is_image_fitted_to_frame = False
-    #
-    # def try_close(self):
-    #     return self.remove_video_device()
+        self.sagittal_view_plot = pg.PlotWidget()
+        self.SagittalViewPlotWidget.layout().addWidget(self.sagittal_view_plot)
+        self.sagital_view_slider = SliderWithValueLabel()
+        self.SagittalViewSliderWidget.layout().addWidget(self.sagital_view_slider)
+
+        self.coronal_view_plot = pg.PlotWidget()
+        self.CoronalViewPlotWidget.layout().addWidget(self.coronal_view_plot)
+        self.coronal_view_slider = SliderWithValueLabel()
+        self.CoronalViewSliderWidget.layout().addWidget(self.coronal_view_slider)
+
+        self.axial_view_plot = pg.PlotWidget()
+        self.AxiaViewPlotWidget.layout().addWidget(self.axial_view_plot)
+        self.axial_view_slider = SliderWithValueLabel()
+        self.AxiaViewSliderWidget.layout().addWidget(self.axial_view_slider)
+
+    def load_volume(self):
+
+        pass
+
     def remove_function(self):
         pass
+
+
