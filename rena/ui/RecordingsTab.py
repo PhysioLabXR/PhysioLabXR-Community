@@ -43,10 +43,6 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.save_path = ''
 
-        self.timer = QTimer()
-        self.timer.setInterval(config.EVICTION_INTERVAL)
-        self.timer.timeout.connect(self.evict_buffer)
-
         self.recording_byte_count = 0
 
         self.experimentNameTextEdit.textChanged.connect(self.update_ui_save_file)
@@ -54,6 +50,8 @@ class RecordingsTab(QtWidgets.QWidget):
         self.sessionTagTextEdit.textChanged.connect(self.update_ui_save_file)
 
         self.update_ui_save_file()
+
+        self.timer = QTimer()
 
     def start_stop_recording_pressed(self):
         if self.is_recording:
@@ -79,6 +77,8 @@ class RecordingsTab(QtWidgets.QWidget):
         self.subjectTagTextEdit.setEnabled(False)
         self.sessionTagTextEdit.setEnabled(False)
 
+        self.timer.setInterval(AppConfigs.eviction_interval)
+        self.timer.timeout.connect(self.evict_buffer)
         self.timer.start()
 
     def stop_recording_btn_pressed(self):
