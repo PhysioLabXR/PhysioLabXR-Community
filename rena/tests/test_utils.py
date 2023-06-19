@@ -20,6 +20,7 @@ from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
+from rena.presets.Presets import DataType
 from rena.startup import load_settings
 from rena.sub_process.pyzmq_utils import can_connect_to_port
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
@@ -134,7 +135,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        self.app.create_preset(stream_name, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
+        self.app.create_preset(stream_name=stream_name, port=None, networking_interface='LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
