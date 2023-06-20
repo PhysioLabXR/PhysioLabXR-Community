@@ -79,10 +79,18 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         self.init_mri_graphic_components()
         self.init_fmri_graphic_component()
+
+
+
         self.load_mri_volume()
         self.load_fmri_volume()
+        self.__post_init__()
 
-
+    def __post_init__(self):
+        self.sagittal_view_slider_value = 0
+        self.coronal_view_slider_value = 0
+        self.axial_view_slider_value = 0
+        self.fmri_timestamp_slider_value = 0
 
 
     def init_mri_graphic_components(self):
@@ -133,6 +141,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def init_fmri_graphic_component(self):
         self.fmri_timestamp_slider = SliderWithValueLabel()
+        self.fmri_timestamp_slider.valueChanged.connect(self.fmri_timestamp_slider_on_change)
         self.FMRITimestampSliderWidget.layout().addWidget(self.fmri_timestamp_slider)
 
 
@@ -163,6 +172,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.sagittal_view_slider.setRange(minValue=0, maxValue=get_mri_sagittal_view_dimension(self.mri_volume_data) - 1)
         self.axial_view_slider.setRange(minValue=0, maxValue=get_mri_axial_view_dimension(self.mri_volume_data) - 1)
 
+
         self.coronal_view_slider.setValue(0)
         self.sagittal_view_slider.setValue(0)
         self.axial_view_slider.setValue(0)
@@ -178,22 +188,41 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
     def coronal_view_slider_on_change(self):
         self.coronal_view_slider_value = self.coronal_view_slider.value()
         self.coronal_view_mri_image_item.setImage(get_mri_coronal_view_slice(self.mri_volume_data, index=self.coronal_view_slider_value))
-        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
 
+        self.set_coronal_view_fmri()
 
     def sagittal_view_slider_on_change(self):
         self.sagittal_view_slider_value = self.sagittal_view_slider.value()
         self.sagittal_view_mri_image_item.setImage(get_mri_sagittal_view_slice(self.mri_volume_data, index=self.sagittal_view_slider_value))
-        fmri_slice = get_fmri_sagittal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
 
+        self.set_sagittal_view_fmri()
 
     def axial_view_slider_on_change(self):
         self.axial_view_slider_value = self.axial_view_slider.value()
         self.axial_view_mri_image_item.setImage(get_mri_axial_view_slice(self.mri_volume_data, index=self.axial_view_slider_value))
-        fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
+
+        self.set_axial_view_fmri()
+
+    def set_coronal_view_fmri(self):
+        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
+        self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+
+    def set_sagittal_view_fmri(self):
+        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.sagittal_view_slider_value, self.fmri_timestamp_slider_value)
+        self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+
+    def set_axial_view_fmri(self):
+        fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.axial_view_slider_value, self.fmri_timestamp_slider_value)
+        self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
 
 
 
+    def fmri_timestamp_slider_on_change(self):
+        self.fmri_timestamp_slider_value = self.fmri_timestamp_slider.value()
+
+        self.set_coronal_view_fmri()
+        self.set_sagittal_view_fmri()
+        self.set_axial_view_fmri()
 
 
 
