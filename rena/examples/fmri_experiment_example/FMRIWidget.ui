@@ -245,6 +245,11 @@
        </widget>
       </item>
       <item>
+       <widget class="QWidget" name="FMRITimestampSliderWidget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_3"/>
+       </widget>
+      </item>
+      <item>
        <widget class="QWidget" name="ActionButtonWidget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
