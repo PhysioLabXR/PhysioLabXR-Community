@@ -131,6 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.global_stream_buffer = DataBuffer()
 
         # fmri widget
+        # TODO: FMRI WIDGET
         self.fmri_widget = FMRIWidget(parent_widget=self,
                                    parent_layout=self.camHorizontalLayout,
                                    window_title="FMRI")
