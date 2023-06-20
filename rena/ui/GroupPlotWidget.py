@@ -23,6 +23,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         :param channel_names: channel names for all the channels in this group
         """
         super().__init__()
+
         self.parent = parent
         self.ui = uic.loadUi("ui/GroupPlotWidget.ui", self)
         self.update_group_name(group_name)
@@ -35,7 +36,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.channel_plot_item_dict = dict()
 
         self.linechart_widget = None
-        self.image_label = None
+        # self.image_label = None
+        self.image_item = None
+        self.plot_widget = None
+
         self.barchart_widget = None
         self.legends = None
         self.spectrogram_widget = None
@@ -108,9 +112,15 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
-        self.image_label = QLabel('Image_Label')
-        self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.image_layout.addWidget(self.image_label)
+        self.plot_widget = pg.PlotWidget()
+        self.image_layout.addWidget(self.plot_widget)
+        self.plot_widget.enableAutoRange(enable=False)
+        self.image_item = pg.ImageItem()
+        self.plot_widget.addItem(self.image_item)
+
+        # self.image_label = QLabel('Image_Label')
+        # self.image_label.setAlignment(QtCore.Qt.AlignCenter)
+        # self.image_layout.addWidget(self.image_label)
 
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
@@ -202,16 +212,16 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 elif channel_format == ChannelFormat.channel_first:
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
                 # image_plot_data = convert_numpy_to_uint8(image_plot_data)
-                image_plot_data = image_plot_data.astype(np.uint8)
-                image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling)
-                self.image_label.setPixmap(image_plot_data)
+                # image_plot_data = image_plot_data.astype(np.uint8)
+                # image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling)
 
             # if we chose PixelMap
             if image_format == ImageFormat.pixelmap:
                 # pixel map return value
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
-                self.image_label.setPixmap(image_plot_data)
+                # image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
+            self.image_item.setImage(image_plot_data)
+            # self.image_label.setPixmap(image_plot_data)
         elif self.get_selected_format() == 2:
             bar_chart_plot_data = data[channel_indices, -1]  # only visualize the last frame
             self.barchart_widget.plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1, brush='r')

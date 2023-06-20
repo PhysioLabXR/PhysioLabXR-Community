@@ -66,6 +66,7 @@ class AppConfigs(metaclass=Singleton):
 
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
+    eviction_interval: int = 1000
 
     def __post_init__(self):
         self._app_config_path: str = os.path.join(self.app_data_path, self._file_name)
