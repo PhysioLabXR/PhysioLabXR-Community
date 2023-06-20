@@ -74,8 +74,8 @@ class StreamOptionsWindow(QWidget):
 
         # self.add_group_btn = QPushButton()
         # self.add_group_btn.setText('Create New Group')
-        # self.add_group_btn.hide()
-        # self.add_group_btn.clicked.connect(self.add_group_clicked)
+        self.add_group_btn.hide()
+        self.add_group_btn.clicked.connect(self.add_group_clicked)
         # self.actionsWidgetLayout.addWidget(self.add_group_btn)
 
         self.update_num_points_to_display()

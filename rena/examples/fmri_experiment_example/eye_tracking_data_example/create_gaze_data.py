@@ -118,11 +118,10 @@ gaze_locations = np.array(gaze_locations)
 left_pupil_size = left_pupil_size[:, np.newaxis]
 right_pupil_size = right_pupil_size[:, np.newaxis]
 
-gaze_data = np.concatenate((gaze_locations, left_pupil_size, left_pupil_size), axis=1)
+gaze_data = np.concatenate((gaze_locations, left_pupil_size, right_pupil_size), axis=1)
 
-
-
-
+with open('eyelink_1000_dummy.p', 'wb') as file:
+    pickle.dump(gaze_data, file)
 
 print(gaze_locations)
 
