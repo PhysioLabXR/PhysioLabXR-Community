@@ -75,10 +75,14 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
 
+        self.fmri_timestamp_slider_value = 0
+
         self.init_mri_graphic_components()
         self.init_fmri_graphic_component()
         self.load_mri_volume()
         self.load_fmri_volume()
+
+
 
 
     def init_mri_graphic_components(self):
@@ -91,8 +95,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.sagittal_view_plot = pg.PlotWidget()
         self.SagittalViewPlotWidget.layout().addWidget(self.sagittal_view_plot)
-        self.sagittal_view_image_item = pg.ImageItem()
-        self.sagittal_view_plot.addItem(self.sagittal_view_image_item)
+        self.sagittal_view_mri_image_item = pg.ImageItem()
+        self.sagittal_view_fmri_image_item = pg.ImageItem()
+        self.sagittal_view_plot.addItem(self.sagittal_view_mri_image_item)
+        self.sagittal_view_plot.addItem(self.sagittal_view_fmri_image_item)
 
         self.sagittal_view_slider = SliderWithValueLabel()
         self.sagittal_view_slider.valueChanged.connect(self.sagittal_view_slider_on_change)
@@ -103,8 +109,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.coronal_view_plot = pg.PlotWidget()
         self.CoronalViewPlotWidget.layout().addWidget(self.coronal_view_plot)
-        self.coronal_view_image_item = pg.ImageItem()
-        self.coronal_view_plot.addItem(self.coronal_view_image_item)
+        self.coronal_view_mri_image_item = pg.ImageItem()
+        self.coronal_view_fmri_image_item = pg.ImageItem()
+        self.coronal_view_plot.addItem(self.coronal_view_mri_image_item)
+        self.coronal_view_plot.addItem(self.coronal_view_fmri_image_item)
 
         self.coronal_view_slider = SliderWithValueLabel()
         self.coronal_view_slider.valueChanged.connect(self.coronal_view_slider_on_change)
@@ -114,8 +122,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.axial_view_plot = pg.PlotWidget()
         self.AxiaViewPlotWidget.layout().addWidget(self.axial_view_plot)
-        self.axial_view_image_item = pg.ImageItem()
-        self.axial_view_plot.addItem(self.axial_view_image_item)
+        self.axial_view_mri_image_item = pg.ImageItem()
+        self.axial_view_fmri_image_item = pg.ImageItem()
+        self.axial_view_plot.addItem(self.axial_view_mri_image_item)
+        self.axial_view_plot.addItem(self.axial_view_fmri_image_item)
 
         self.axial_view_slider = SliderWithValueLabel()
         self.axial_view_slider.valueChanged.connect(self.axial_view_slider_on_change)
@@ -166,16 +176,26 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
 
     def coronal_view_slider_on_change(self):
-        slider_value = self.coronal_view_slider.value()
-        self.coronal_view_image_item.setImage(get_mri_coronal_view_slice(self.mri_volume_data, index=slider_value))
+        self.coronal_view_slider_value = self.coronal_view_slider.value()
+        self.coronal_view_mri_image_item.setImage(get_mri_coronal_view_slice(self.mri_volume_data, index=self.coronal_view_slider_value))
+        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
+
 
     def sagittal_view_slider_on_change(self):
-        slider_value = self.sagittal_view_slider.value()
-        self.sagittal_view_image_item.setImage(get_mri_sagittal_view_slice(self.mri_volume_data, index=slider_value))
+        self.sagittal_view_slider_value = self.sagittal_view_slider.value()
+        self.sagittal_view_mri_image_item.setImage(get_mri_sagittal_view_slice(self.mri_volume_data, index=self.sagittal_view_slider_value))
+        fmri_slice = get_fmri_sagittal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
+
 
     def axial_view_slider_on_change(self):
-        slider_value = self.axial_view_slider.value()
-        self.axial_view_image_item.setImage(get_mri_axial_view_slice(self.mri_volume_data, index=slider_value))
+        self.axial_view_slider_value = self.axial_view_slider.value()
+        self.axial_view_mri_image_item.setImage(get_mri_axial_view_slice(self.mri_volume_data, index=self.axial_view_slider_value))
+        fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.coronal_view_slider_value, self.fmri_timestamp_slider_value)
+
+
+
+
+
 
     def remove_function(self):
         pass

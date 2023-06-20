@@ -11,12 +11,17 @@ from nilearn.image import resample_img
 from nilearn import plotting
 import matplotlib.pyplot as plt
 
+
 def get_mri_coronal_view_dimension(volume_data: np.ndarray):
     return volume_data.shape[0]
 
 
 def get_mri_coronal_view_slice(volume_data, index):
     return volume_data[index, :, :]
+
+
+def get_fmri_coronal_view_slice(volume_data, index, timestamp):
+    return volume_data[index, :, :, timestamp]
 
 
 def get_mri_sagittal_view_dimension(volume_data: np.ndarray) -> int:
@@ -27,12 +32,20 @@ def get_mri_sagittal_view_slice(volume_data, index):
     return volume_data[:, index, :]
 
 
+def get_fmri_sagittal_view_slice(volume_data, index, timestamp):
+    return volume_data[:, index, :, timestamp]
+
+
 def get_mri_axial_view_dimension(volume_data: np.ndarray) -> int:
     return volume_data.shape[2]
 
 
 def get_mri_axial_view_slice(volume_data, index):
     return volume_data[:, :, index]
+
+
+def get_fmri_axial_view_slice(volume_data, index, timestamp):
+    return volume_data[:, :, index, timestamp]
 
 
 def load_nii_gz_file(file_path: str, normalized=True):
@@ -91,8 +104,6 @@ if __name__ == '__main__':
     _, mri_data = load_nii_gz_file(file_path='structural.nii.gz')
     _, fmri_data = load_nii_gz_file(file_path='resampled_fmri.nii.gz')
 
-
-
     print("finished loading")
     # pass
     # mri_data = nib.load('structural.nii.gz')
@@ -116,4 +127,3 @@ if __name__ == '__main__':
     #     title="Resampled t-map",
     # )
     # plotting.show()
-
