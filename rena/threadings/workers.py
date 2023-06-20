@@ -779,6 +779,7 @@ class ZMQWorker(QObject, RenaWorker):
                 sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
             else:
                 sampling_rate = np.nan
+            data = bytearray(data) # make the array mutable TODO：Optimize this line
             data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
             data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)

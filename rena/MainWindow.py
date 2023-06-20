@@ -132,11 +132,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # fmri widget
         # TODO: FMRI WIDGET
-        self.fmri_widget = FMRIWidget(parent_widget=self,
-                                   parent_layout=self.camHorizontalLayout,
-                                   window_title="FMRI")
-        self.fmri_widget.setObjectName("FMRIWidget")
-        self.fmri_widget.show()
+        # self.fmri_widget = FMRIWidget(parent_widget=self,
+        #                            parent_layout=self.camHorizontalLayout,
+        #                            window_title="FMRI")
+        # self.fmri_widget.setObjectName("FMRIWidget")
+        # self.fmri_widget.show()
 
     def add_btn_clicked(self):
         """
