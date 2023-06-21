@@ -1,0 +1,7 @@
+{ "StreamName":"Target vs Distractor Prediction",
+  "ChannelNames":[
+    "Target",
+    "Distractor"
+  ],
+  "NominalSamplingRate":  10,
+  "DataType": "float32"}
