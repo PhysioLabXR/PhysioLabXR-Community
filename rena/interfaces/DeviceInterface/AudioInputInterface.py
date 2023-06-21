@@ -160,10 +160,10 @@ class AudioInputInterface(DeviceInterface):
 if __name__ == '__main__':
     print()
     # LSL example
-    info = pylsl.StreamInfo("AudioStream", "MyData", 2, 8000, pylsl.cf_int16, "myuniqueid")
+    info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 8000, pylsl.cf_int16, "myuniqueid")
     outlet = pylsl.StreamOutlet(info)
 
-    audio_interface = AudioInputInterface(_device_name='John',
+    audio_interface = AudioInputInterface(_device_name='Participant Microphone',
                                           _audio_device_index=0,
                                           _audio_device_channel=2,
                                           _device_type=DeviceType.AUDIOINPUT)
