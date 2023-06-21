@@ -22,9 +22,10 @@ def main():
     # image_array = np.array(image)
     width = 2555
     height = 1246
-    res = cv2.resize(image, dsize=(int(width*0.5), int(height*0.5)), interpolation=cv2.INTER_CUBIC)
+    image = cv2.resize(image, dsize=(int(width*0.5), int(height*0.5)), interpolation=cv2.INTER_CUBIC)
+    image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     # (623, 1277, 3) 2386713
-    image_array = res.flatten()
+    image_array = image.flatten()
 
     topic = "Image Stream"
     srate = 30
