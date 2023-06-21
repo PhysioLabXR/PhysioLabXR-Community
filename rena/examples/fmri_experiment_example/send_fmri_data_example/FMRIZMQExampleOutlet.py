@@ -30,9 +30,9 @@ def main():
     # (623, 1277, 3) 2386713
     image_array = image.flatten()
 
-    topic = "Image Stream"
+    topic = "fMRI"
     srate = 2
-    port = "5558"
+    port = "5559"
 
     context = zmq.Context()
     socket = context.socket(zmq.PUB)

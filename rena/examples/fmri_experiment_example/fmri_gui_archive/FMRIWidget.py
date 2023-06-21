@@ -5,8 +5,6 @@ from PyQt5 import QtWidgets, uic
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
-from rena.presets.Presets import DataType
-from rena.threadings.workers import ZMQWorker
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 from rena.ui_shared import remove_stream_icon, \
@@ -16,12 +14,47 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 from OpenGL.GL import *
 from OpenGL.GLUT import *
-from PyQt5.QtCore import QTimer
+
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from pyqtgraph import functions as fn
 import nibabel as nib
+
+
+
+    # if alpha_interpolate:
+    #     alpha_channel = np.interp(volume_data, (0, 1), (0, 255))
+    # else:
+    #     alpha_channel = 225
+    # # Add an alpha channel to the volume data
+    # volume_data_rgba = np.zeros(volume_data.shape + (4,), dtype=np.ubyte)
+    # volume_data_rgba[..., 0] = volume_data * 255  # R channel
+    # volume_data_rgba[..., 1] = volume_data * 255  # G channel
+    # volume_data_rgba[..., 2] = volume_data * 255  # B channel
+    #
+    # volume_data_rgba[..., 3] = alpha_channel  # Alpha channel
+    # gl_volume_item = gl.GLVolumeItem(data=volume_data_rgba)
+    #
+    # if centralized:
+    #     x_size, y_size, z_size = volume_data.shape
+    #     gl_volume_item.translate(-x_size / 2, -y_size / 2, -z_size / 2)
+    #
+    # return gl_volume_item
+
+
+# def volume_to_gl_volume_item(volume_data:np.ndarray, alpha_interpretation=False):
+#
+#
+#     volume_data_rgba = np.zeros(volume_data.shape + (4,), dtype=np.ubyte)
+#     volume_data_rgba[..., 0] = volume_data * 255  # R channel
+#     volume_data_rgba[..., 1] = volume_data * 255  # G channel
+#     volume_data_rgba[..., 2] = volume_data * 255  # B channel
+#
+#     volume_data_rgba[..., 3] = 225  # Alpha channel
+#
+#     gl_volume_item = gl.GLVolumeItem(data=volume_data_rgba)
+#     return gl_volume_item
 
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
@@ -47,13 +80,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.init_mri_graphic_components()
         self.init_fmri_graphic_component()
 
-        self.timer = QTimer()
+
 
         self.load_mri_volume()
         self.load_fmri_volume()
-
-        self.worker = ZMQWorker(port_number=5559, subtopic='fMRI', data_type=DataType.float64)
-
         self.__post_init__()
 
     def __post_init__(self):
