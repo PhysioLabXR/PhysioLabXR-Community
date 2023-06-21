@@ -29,7 +29,7 @@ def context_bot(app_main_window, qtbot):
     test_context.clean_up()
 
 
-def test_stream_visualization_single_stream_performance(app_main_window, qtbot) -> None:
+def test_stream_visualization_dummy_streams_performance(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -59,6 +59,36 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
 
     plot_viz_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")
+
+
+def test_stream_visualization_real_streams_performance(app_main_window, qtbot) -> None:
+    '''
+    Adding active stream
+    :param app:
+    :param qtbot:
+    :return:
+    '''
+    test_time_second_per_stream = 60
+    test_combos = [['EEG', 'EventMarker'],
+                   ['EEG', 'EventMarker', 'Eyetracking'],
+                   ['EEG', 'EventMarker', 'fMRI'],
+                   ['EEG', 'EventMarker', 'Eyetracking', 'fMRI'],
+                   ['EEG', 'EventMarker', 'Eyetracking', 'fMRI', 'CamCapture']]
+    metrics = 'update buffer time', 'plot data time', 'viz fps'
+
+    # test_axes = {"number of streams": num_streams_to_test, "number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
+    # num_tests = len(num_streams_to_test) * len(sampling_rates_to_test) * len(num_channels_to_test)
+    # test_stream_names = get_random_test_stream_names(np.sum([n_stream * len(sampling_rates_to_test) * len(num_channels_to_test) for n_stream in num_streams_to_test]))
+    #
+    # print(f"Testing performance for a single stream, with sampling rates: {sampling_rates_to_test}\n, #channels {num_channels_to_test}. ")
+    # print(f"Test time per stream is {test_time_second_per_stream}, with {num_tests} tests. ETA {2 * (num_tests * (test_time_second_per_stream + 3))} seconds.")
+    #
+    # test_context = ContextBot(app_main_window, qtbot)
+    #
+    # results_without_recording = run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
+    # pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
+    #
+    # plot_viz_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")
 
 
 def test_replay_data_throughput(app_main_window, qtbot) -> None:
