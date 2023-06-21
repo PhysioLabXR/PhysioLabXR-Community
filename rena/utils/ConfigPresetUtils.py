@@ -4,6 +4,14 @@ import os
 
 from rena.utils.dsp_utils.dsp_modules import DataProcessorType
 
+class DeviceType(enum.Enum):
+    AUDIOINPUT = 'AUDIOINPUT'
+    OPENBCI = 'OPENBCI'
+    TOBIIPRO = 'TOBIIPRO'
+    MONITOR = 'MONITOR'
+    MMWAVE = 'MMWAVE'
+
+
 
 def save_local(app_data_path, preset_dict, file_name, encoder=None) -> None:
     """
