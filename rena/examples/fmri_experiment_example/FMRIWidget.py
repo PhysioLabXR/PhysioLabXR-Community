@@ -39,11 +39,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.init_mri_graphic_components()
         self.init_fmri_graphic_component()
 
-        self.timer = QTimer()
-
         self.load_mri_volume()
         self.load_fmri_volume()
 
+        self.timer = QTimer()
         self.worker_thread = QThread(self)
         self.worker = ZMQWorker(port_number=5559, subtopic='fMRI', data_type=DataType.float64)
         self.worker.moveToThread(self.worker_thread)
