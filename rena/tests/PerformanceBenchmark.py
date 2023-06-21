@@ -12,8 +12,8 @@ from rena.configs.configs import AppConfigs
 
 AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
-    run_replay_benchmark, plot_replay_benchmark_results, \
-    plot_viz_benchmark_results
+    run_replay_benchmark, plot_viz_benchmark_results
+from rena.tests.test_viz import plot_replay_benchmark_results
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
     :return:
     '''
     test_time_second_per_stream = 60
-    num_streams_to_test = [1, 3, 7]
+    num_streams_to_test = [1, 5, 3, 7, 9]
     sampling_rates_to_test = np.linspace(1, 2048, 10)
     num_channels_to_test = np.linspace(1, 128, 10)
     metrics = 'update buffer time', 'plot data time', 'viz fps'
@@ -62,11 +62,11 @@ def test_stream_visualization_single_stream_performance(app_main_window, qtbot) 
 
 
 def test_replay_data_throughput(app_main_window, qtbot) -> None:
-    results_path = "replay_benchmark.p"
-    test_time_second_per_stream = 60
-    num_streams_to_test = [1, 3, 5, 7, 9]
-    sampling_rates_to_test = np.linspace(1, 2048, 10)
-    num_channels_to_test = np.linspace(1, 128, 10)
+    results_path = "replay_benchmark_pairwise.p"
+    test_time_second_per_stream = 30
+    num_streams_to_test = [9]
+    sampling_rates_to_test = np.linspace(1024, 2048, 2)
+    num_channels_to_test = np.linspace(100, 128, 2)
 
     # test_time_second_per_stream = 10
     # num_streams_to_test = [1]
