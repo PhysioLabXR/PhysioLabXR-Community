@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import os
 import pytest
@@ -10,6 +12,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from rena.config import stream_availability_wait_time
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import DataType
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.tests.TestStream import CSVTestStream
@@ -84,6 +87,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    AppConfigs.eviction_interval = (recording_time_second + 1) * 1e3
 
     # app_main_window.ui.tabWidget.setCurrentWidget(
     #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
@@ -117,6 +121,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     # t = threading.Timer(1, handle_custom_dialog_ok)
     # t.start()
     print("Stopping recording")
+    buffer_copy = copy.deepcopy(app_main_window.recording_tab.recording_buffer)
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
     print("recording stopped")
     def conversion_complete():
@@ -134,7 +139,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '')
     load_csv = CsvStoreLoad()
-    csv_data = load_csv.reload_csv(saved_file_path)
+    csv_data = load_csv.load_csv(saved_file_path)
 
     def compare_column_vec(vec1, vec2, persentage):
         percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
@@ -163,8 +168,8 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
 
 
     for ts_name in ts_names:
-        is_passing = compare(samples[ts_name], csv_data[ts_name][0], persentage=1)
+        is_passing = compare(buffer_copy[ts_name][0], csv_data[ts_name][0], persentage=0.0001)
         assert is_passing
 
-    # assert compare(samples['monitor 0'], csv_data[ts_name][0], persentage=1)
+    assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
 

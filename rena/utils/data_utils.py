@@ -834,7 +834,7 @@ class CsvStoreLoad:
     #         data[key] = value
     #     return data
 
-    def reload_csv(self, dir_path):
+    def load_csv(self, dir_path):
         # Open the CSV file for reading
         file_list = os.listdir(dir_path)
         data = {}
@@ -846,11 +846,12 @@ class CsvStoreLoad:
                 reader = csv.reader(file)
                 contents = list(reader)
             if key == 'monitor 0':
-                converted = [[float(element) for element in row] for row in contents[:-2]]
+                converted = [[int(element) for element in row] for row in contents[:-2]]
                 value.append(np.array(converted))
                 value.append(np.array([float(element) for element in contents[-2]]))
                 dim = [int(element) for element in contents[-1]]
-                np.reshape(value[0], tuple(dim))
+                value[0] = value[0].reshape(tuple(dim))
+                value[0] = value[0].astype(np.uint8)
             else:
                 converted = [[float(element) for element in row] for row in contents[:-1]]
                 value.append(np.array(converted))

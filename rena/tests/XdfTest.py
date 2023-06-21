@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import os
 import pytest
@@ -12,6 +14,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMessageBox
 from rena.config import stream_availability_wait_time
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import DataType
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.tests.TestStream import CSVTestStream
@@ -87,6 +90,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    AppConfigs.eviction_interval = (recording_time_second + 1) * 1e3
 
     # app_main_window.ui.tabWidget.setCurrentWidget(
     #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
@@ -120,6 +124,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     # t = threading.Timer(1, handle_custom_dialog_ok)
     # t.start()
     print("Stopping recording")
+    buffer_copy = copy.deepcopy(app_main_window.recording_tab.recording_buffer)
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
     print("recording stopped")
     def conversion_complete():
@@ -162,8 +167,8 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
             return False
 
     for idx, ts_name in enumerate(ts_names):
-        is_passing = compare(samples[ts_name], xdf_data[ts_name][0])
+        is_passing = np.all(buffer_copy[ts_name][0] == xdf_data[ts_name][0])
         assert is_passing
 
-    # assert compare(samples['monitor 0'], xdf_data[ts_name][0], persentage=1)
+    assert np.all(buffer_copy['monitor 0'][0] == xdf_data['monitor 0'][0])
 
