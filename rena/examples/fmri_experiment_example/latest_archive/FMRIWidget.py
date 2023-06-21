@@ -28,11 +28,11 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         """
         super().__init__(window_title, parent_widget, parent_layout, self.remove_function)
 
-        self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidgetNew.ui", self)
+        self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
         self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
+        self.RemoveVideoBtn.setIcon(remove_stream_icon)
 
         self.fmri_timestamp_slider_value = 0
 
@@ -191,24 +191,3 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
     def remove_function(self):
         pass
 
-# def get_volume_item():
-#     _, volume_data = load_nii_gz_file(file_path='C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/structural_brain.nii.gz')
-#
-#     volume_data = (volume_data - np.min(volume_data)) / (np.max(volume_data) - np.min(volume_data))
-#     alpha_channel = np.interp(volume_data, (0, 1), (0, 255))
-#
-#     # Add an alpha channel to the volume data
-#     volume_data_rgba = np.zeros(volume_data.shape + (4,), dtype=np.ubyte)
-#     volume_data_rgba[..., 0] = volume_data * 255  # R channel
-#     volume_data_rgba[..., 1] = volume_data * 255  # G channel
-#     volume_data_rgba[..., 2] = volume_data * 255  # B channel
-#     volume_data_rgba[..., 3] = alpha_channel  # Alpha channel
-#
-#     # Get the volume dimensions
-#     x_size, y_size, z_size = volume_data.shape
-#
-#     v = gl.GLVolumeItem(volume_data_rgba)
-#
-#     # Shift the center of the volume to (0, 0, 0)
-#     v.translate(-x_size / 2, -y_size / 2, -z_size / 2)
-#     return v
