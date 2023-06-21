@@ -784,3 +784,10 @@ def convert_dict_keys_to_snake_case(d: dict) -> dict:
     @return:
     """
     return {camel_to_snake_case(k): v for k, v in d.items()}
+
+
+def reject_outliers(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else np.zeros(len(d))
+    return data[s<m]

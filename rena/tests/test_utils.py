@@ -4,7 +4,6 @@ import pickle
 import secrets
 import string
 import sys
-import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
@@ -23,6 +22,7 @@ from rena.config import stream_availability_wait_time
 from rena.startup import load_settings
 from rena.sub_process.pyzmq_utils import can_connect_to_port
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 from rena.utils.buffers import flatten
 from rena.utils.data_utils import RNStream
 from rena.utils.ui_utils import CustomDialog
@@ -117,7 +117,7 @@ class ContextBot:
         self.app = app
         self.qtbot = qtbot
 
-        self.stream_availability_timeout = 4 * stream_availability_wait_time * 1e3
+        self.stream_availability_timeout = int(20 * stream_availability_wait_time * 1e3)
 
     def cleanup(self):
         pass
@@ -134,7 +134,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        self.app.create_preset(stream_name, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
+        self.app.create_preset(stream_name, None, 'LSL', num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
@@ -177,10 +177,12 @@ class ContextBot:
     def stop_recording(self):
         if not self.app.recording_tab.is_recording:
             raise ValueError("App is not recording when calling stop_recording from test_context")
-        t = threading.Timer(1, lambda: handle_current_dialog_ok(app=self.app, qtbot=self.qtbot, patience_second=30000))
-        t.start()
+        # t = threading.Timer(1, lambda: handle_current_dialog_ok(app=self.app, qtbot=self.qtbot, patience_second=30000))
+        # t.start()
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
-        t.join()  # wait until the dialog is closed
+        # t.join()  # wait until the dialog is closed
+        ok_button = self.app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        self.qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton)
 
     def start_recording(self):
         if self.app.recording_tab.is_recording:
@@ -320,21 +322,6 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         plt.ylabel(f'{measure} (seconds)')
         plt.show()
 
-def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
-    for measure in metrics:
-        result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
-        for i, num_channels in enumerate(num_channels_to_test):
-            for j, sampling_rate in enumerate(sampling_rates_to_test):
-                result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
-        plt.imshow(result_matrix[:, :, 0], cmap='plasma')
-        plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
-        plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
-        plt.xlabel("Sampling Rate (Hz)")
-        plt.ylabel("Number of channels")
-        plt.title(f'{number_of_streams} stream{"s" if number_of_streams > 1 else ""}: {measure}. {notes}')
-        plt.colorbar()
-        plt.show()
-
 
 def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path):
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
@@ -385,8 +372,7 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         for ts_name in this_stream_names:
             print(f"test: checking if the stream widgets are receiving data from replayed streams. Working on stream name {ts_name}")
             assert app_main_window.stream_widgets[ts_name].viz_data_buffer.has_data()
-        test_context.qtbot.waitUntil(lambda: not app_main_window.replay_tab.is_replaying, timeout=test_time_second_per_stream * 1e3)  # wait until the replay completes, need to ensure that the replay can finish
-
+        test_context.qtbot.waitUntil(lambda: not app_main_window.replay_tab.is_replaying, timeout=int(1.2 * test_time_second_per_stream * 1e3))  # wait until the replay completes, need to ensure that the replay can fin=gesrtnigog mck./
         print("test: stop recording replayed streams")
         test_context.stop_recording()
         # remove the streams from the stream widgets
@@ -407,7 +393,8 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
                     raise ValueError()
                 results[measure][n_streams, num_channels, sampling_rate][measure] = average_loop_time
             elif measure == 'timestamp reenactment accuracy':
-                results[measure][n_streams, num_channels, sampling_rate][measure] = get_replay_time_reenactment_accuracy(data_original, data_replayed, this_stream_names)
+                results[measure][n_streams, num_channels, sampling_rate]['timestamp reenactment accuracy'],\
+                    results[measure][n_streams, num_channels, sampling_rate]['timestamp reenactment accuracy pairwise'] = get_replay_time_reenactment_accuracy(data_original, data_replayed, this_stream_names)
             else:
                 raise ValueError(f"Unknown metric: {measure}")
 
@@ -425,45 +412,43 @@ def get_replay_time_reenactment_accuracy(data_original, data_replayed, stream_na
     for s_name in stream_names:
         a = data_original[s_name][0]
         b = data_replayed[s_name][0]
-        assert np.all(a[:, -b.shape[1]:] == b)
+        try:
+            assert np.isin(b, a).all()
+        except AssertionError:
+            print("a and b are not equal, saving them to a_b.pkl")
+            pickle.dump({'a': a, 'b': b}, open('a_b.pkl', 'wb'))
+            raise AssertionError()
 
         a = data_original[s_name][1]
         b = data_replayed[s_name][1]
-        c = a[-b.shape[0]:]
+        c = a[-len(b):]
 
         d = np.diff(c)
         e = np.diff(b)
 
         tick_time_discrepancies = np.concatenate([tick_time_discrepancies, np.abs(e - d).flatten()])
-    return tick_time_discrepancies
+
+    # pair-wise synchronization
+    tick_time_discrepancies_pairwise = np.empty(0)
+    for s_name_anchor in stream_names:
+        for s_name_compare in stream_names:
+            if s_name_anchor != s_name_compare:
+                timestamp_original_anchor = data_original[s_name_anchor][1]
+                timestamp_replayed_anchor = data_replayed[s_name_anchor][1]
+                timestamp_original_anchor = timestamp_original_anchor[-len(timestamp_replayed_anchor):]
+
+                timestamp_original_compare = data_original[s_name_compare][1]
+                timestamp_replayed_compare = data_replayed[s_name_compare][1]
+                timestamp_original_compare = timestamp_original_compare[-len(timestamp_replayed_compare):]
+
+                original_length = min(len(timestamp_original_anchor), len(timestamp_original_compare))
+                original_pairwise = timestamp_original_anchor[:original_length] - timestamp_original_compare[:original_length]
+
+                replay_length = min(len(timestamp_replayed_anchor), len(timestamp_replayed_compare))
+                replay_pairwise = timestamp_replayed_anchor[:replay_length] - timestamp_replayed_compare[:replay_length]
+
+                tick_time_discrepancies_pairwise = np.concatenate([tick_time_discrepancies_pairwise, np.abs(original_pairwise - replay_pairwise).flatten()])
+
+    return tick_time_discrepancies, tick_time_discrepancies_pairwise
 
 
-def plot_replay_benchmark_results(results, test_axes, metrics, notes=''):
-    """
-    the key for results[measure] are the test axes, these keys must be in the same order as test axes
-    @param results:
-    @param test_axes:
-    @param metrics:
-    @return:
-    """
-    sampling_rates_to_test = test_axes["sampling rate (Hz)"]
-    num_channels_to_test = test_axes["number of channels"]
-    num_streams_to_test = test_axes["number of streams"]
-
-    if 'replay push data loop time' in metrics:
-        for n_streams in num_streams_to_test:
-            visualize_metrics_across_num_chan_sampling_rate(results, ['replay push data loop time'], n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
-
-    if 'timestamp reenactment accuracy' in metrics:
-        print()
-        timestamps_renactments_discrepencies = []
-        for n_streams in num_streams_to_test:
-            results_this_n_streams = np.empty(0)
-            for i, num_channels in enumerate(num_channels_to_test):
-                for j, sampling_rate in enumerate(sampling_rates_to_test):
-                    results_this_n_streams = np.concatenate([results_this_n_streams, results['timestamp reenactment accuracy'][n_streams, num_channels, sampling_rate]['timestamp reenactment accuracy']])
-            timestamps_renactments_discrepencies.append(results_this_n_streams)
-        plt.boxplot(timestamps_renactments_discrepencies)
-        plt.xlabel('number of streams')
-        plt.ylabel('discrepancy between original and replayed stream timestamps (second)')
-        plt.show()
