@@ -148,15 +148,35 @@ class XDF:
                             elif stream_data_type == 'float32':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<f', k)
+                            elif stream_data_type == 'float16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<e', k)
                             elif stream_data_type == 'int64':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<q', k)
                             elif stream_data_type == 'int32':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<i', k)
+                            elif stream_data_type == 'int16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<h', k)
+                            elif stream_data_type == 'int8':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<b', k)
+                            elif stream_data_type == 'uint64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<Q', k)
+                            elif stream_data_type == 'uint32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<I', k)
+                            elif stream_data_type == 'uint16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<H', k)
                             elif stream_data_type == 'uint8':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<B', k)
+                            else:
+                                raise Exception('unknown stream type')
                             out_file.write(timestampbytes + timestamp + values)
                         samples_stored += sample_chunk_max_size
                     else:
@@ -183,15 +203,35 @@ class XDF:
                             elif stream_data_type == 'float32':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<f', k)
+                            elif stream_data_type == 'float16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<e', k)
                             elif stream_data_type == 'int64':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<q', k)
                             elif stream_data_type == 'int32':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<i', k)
+                            elif stream_data_type == 'int16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<h', k)
+                            elif stream_data_type == 'int8':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<b', k)
+                            elif stream_data_type == 'uint64':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<Q', k)
+                            elif stream_data_type == 'uint32':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<I', k)
+                            elif stream_data_type == 'uint16':
+                                for k in data_array[:, i * sample_chunk_max_size + j]:
+                                    values += struct.pack('<H', k)
                             elif stream_data_type == 'uint8':
                                 for k in data_array[:, i * sample_chunk_max_size + j]:
                                     values += struct.pack('<B', k)
+                            else:
+                                raise Exception('unknown stream type')
                             out_file.write(timestampbytes + timestamp + values)
 
         # write stream footers
