@@ -211,9 +211,8 @@ class FMRIPreset(metaclass=SubPreset):
     stream_name: str
     preset_type: PresetType
     data_type: DataType
-    x_shape: int
-    y_shape: int
-    z_shape: int
+    num_channels: int
+    data_shape: tuple[int, int, int]
     normalize: bool
     alignment: bool
     threshold: float

@@ -138,6 +138,13 @@ def create_default_preset(stream_name, port, preset_type_str, num_channels, nomi
     Presets().add_stream_preset(stream_preset_dict)
     return preset_dict
 
+def set_stream_num_channels(stream_name, num_channels):
+    Presets().stream_presets[stream_name].num_channels = num_channels
+
+
+def get_stream_num_channels(stream_name):
+    return Presets().stream_presets[stream_name].num_channels
+
 def pop_group_from_stream_preset(stream_name, group_name) -> GroupEntry:
     return Presets().stream_presets[stream_name].group_info.pop(group_name)
 
@@ -265,3 +272,6 @@ def add_data_processor_to_group_entry(stream_name, group_name, data_processor:Da
 
 def remove_data_processor_to_group_entry(stream_name, group_name, data_processor: DataProcessor) ->None:
     Presets().stream_presets[stream_name].group_info[group_name].data_processors.remove(data_processor)
+
+def get_fmri_data_shape(stream_name) ->tuple[int, int, int]:
+    return Presets().stream_presets[stream_name].data_shape

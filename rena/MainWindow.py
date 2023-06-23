@@ -132,12 +132,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # fmri widget
         # TODO: FMRI WIDGET
-        fmri_preset = FMRIPreset(stream_name='FMRI', preset_type=PresetType.FMRI, data_type=DataType.float64,
-                                 x_shape=100, y_shape=100, z_shape=100,
+        fmri_preset = FMRIPreset(stream_name='FMRI', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=8126464,
+                                 data_shape=(256,256,124),
                                  normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
         Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
         self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
-                                      stream_name=fmri_preset.stream_name, data_type=DataType, worker=None,
+                                      stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
                                       insert_position=None)
 
         self.fmri_widget.setObjectName("FMRIWidget")
