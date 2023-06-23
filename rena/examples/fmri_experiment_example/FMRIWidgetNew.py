@@ -28,9 +28,24 @@ from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
+# This Python file uses the following encoding: utf-8
 
+import pyqtgraph as pg
+import pyqtgraph.opengl as gl
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QTimer, QThread
 
-class StreamWidget(Poppable, QtWidgets.QWidget):
+from rena.examples.fmri_experiment_example.mri_utils import *
+# get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
+#     get_mri_axial_view_dimension
+from rena.presets.Presets import DataType
+from rena.threadings.workers import ZMQWorker
+from rena.ui.PoppableWidget import Poppable
+from rena.ui.SliderWithValueLabel import SliderWithValueLabel
+from rena.ui_shared import remove_stream_icon, \
+    options_icon
+
+class FMRIWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
     channel_mismatch_buttons = buttons = QDialogButtonBox.Yes | QDialogButtonBox.No
 
@@ -45,13 +60,14 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # GUI elements
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
-        self.ui = uic.loadUi("ui/StreamContainer.ui", self)
+        self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidgetNew.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
-        if type(insert_position) == int:
-            parent_layout.insertWidget(insert_position, self)
-        else:
-            parent_layout.addWidget(self)
+        # if type(insert_position) == int:
+        #     parent_layout.insertWidget(insert_position, self)
+        # else:
+        #     parent_layout.addWidget(self)
+
         self.parent = parent_layout
         self.main_parent = parent_widget
 
@@ -96,52 +112,20 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # visualization component
         # This variable stores all the visualization components we initialize it in the init_stream_visualization()
-        self.viz_components = None
-        self.num_points_to_plot = None
+
+        #self.viz_components = None
+        #self.num_points_to_plot = None
 
         # data elements
         self.viz_data_buffer = None
         self.create_buffer()
 
-        # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
-        #     print('The stream {0} found in LAN has sampling rate of {1}, '
-        #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
-        #     config.settings.setValue('NominalSamplingRate', stream_srate)
-
-        # load default settings from settings
-
         self.worker_thread = QThread(self)
-        if self.networking_interface == 'LSL':
-            channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type,
-                                                 RenaTCPInterface=None)
-        elif self.networking_interface == 'ZMQ':
-            self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
-        elif self.networking_interface == 'Device':
-            assert worker
-            self.worker = worker
+        self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
         self.worker.signal_data.connect(self.process_stream_data)
         self.worker.signal_stream_availability.connect(self.update_stream_availability)
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
-
-        # create option window
-        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name,
-                                                         plot_format_changed_signal=self.plot_format_changed_signal)
-        self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.stream_options_window.hide()
-
-        # create visualization component, must be after the option window ##################
-        self.channel_index_plot_widget_dict = {}
-        self.group_name_plot_widget_dict = {}
-        # add splitter to the layout
-        self.splitter = QSplitter(Qt.Vertical)
-        self.viz_group_scroll_layout.addWidget(self.splitter)
-
-        self.create_visualization_component()
-
-        self._has_new_viz_data = False
-        self.viz_data_head = 0
 
         # FPS counter``
         self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
@@ -161,6 +145,147 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.update_buffer_times = []
         self.plot_data_times = []
         ########################################################################
+
+        self.init_mri_graphic_components()
+        self.init_fmri_graphic_component()
+
+        self.load_mri_volume()
+        # self.load_fmri_volume()
+
+    def __post_init__(self):
+        self.sagittal_view_slider_value = 0
+        self.coronal_view_slider_value = 0
+        self.axial_view_slider_value = 0
+        # self.fmri_timestamp_slider_value = 0
+
+    def init_mri_graphic_components(self):
+        ######################################################
+        self.volume_view_plot = gl.GLViewWidget()
+        self.VolumnViewPlotWidget.layout().addWidget(self.volume_view_plot)
+
+        ######################################################
+        self.sagittal_view_plot = pg.PlotWidget()
+        self.SagittalViewPlotWidget.layout().addWidget(self.sagittal_view_plot)
+        self.sagittal_view_mri_image_item = pg.ImageItem()
+        self.sagittal_view_fmri_image_item = pg.ImageItem()
+        self.sagittal_view_plot.addItem(self.sagittal_view_mri_image_item)
+        self.sagittal_view_plot.addItem(self.sagittal_view_fmri_image_item)
+
+        self.sagittal_view_slider = SliderWithValueLabel()
+        self.sagittal_view_slider.valueChanged.connect(self.sagittal_view_slider_on_change)
+        self.SagittalViewSliderWidget.layout().addWidget(self.sagittal_view_slider)
+
+        ######################################################
+        self.coronal_view_plot = pg.PlotWidget()
+        self.CoronalViewPlotWidget.layout().addWidget(self.coronal_view_plot)
+        self.coronal_view_mri_image_item = pg.ImageItem()
+        self.coronal_view_fmri_image_item = pg.ImageItem()
+        self.coronal_view_plot.addItem(self.coronal_view_mri_image_item)
+        self.coronal_view_plot.addItem(self.coronal_view_fmri_image_item)
+
+        self.coronal_view_slider = SliderWithValueLabel()
+        self.coronal_view_slider.valueChanged.connect(self.coronal_view_slider_on_change)
+        self.CoronalViewSliderWidget.layout().addWidget(self.coronal_view_slider)
+
+        ######################################################
+        self.axial_view_plot = pg.PlotWidget()
+        self.AxiaViewPlotWidget.layout().addWidget(self.axial_view_plot)
+        self.axial_view_mri_image_item = pg.ImageItem()
+        self.axial_view_fmri_image_item = pg.ImageItem()
+        self.axial_view_plot.addItem(self.axial_view_mri_image_item)
+        self.axial_view_plot.addItem(self.axial_view_fmri_image_item)
+
+        self.axial_view_slider = SliderWithValueLabel()
+        self.axial_view_slider.valueChanged.connect(self.axial_view_slider_on_change)
+        self.AxiaViewSliderWidget.layout().addWidget(self.axial_view_slider)
+
+    def init_fmri_graphic_component(self):
+        self.fmri_timestamp_slider = SliderWithValueLabel()
+        # self.fmri_timestamp_slider.valueChanged.connect(self.fmri_timestamp_slider_on_change)
+        self.FMRITimestampSliderWidget.layout().addWidget(self.fmri_timestamp_slider)
+
+    def load_mri_volume(self):
+        # g = gl.GLGridItem()
+        # g.scale(100, 100, 100)
+        # self.volume_view_plot.addItem(g)
+
+        _, self.mri_volume_data = load_nii_gz_file(
+            'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/structural.nii.gz')
+        self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data)
+        self.volume_view_plot.addItem(self.gl_volume_item)
+        self.set_mri_view_slider_range()
+
+    # def load_fmri_volume(self):
+    #     _, self.fmri_volume_data = load_nii_gz_file(
+    #         'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/resampled_fmri.nii.gz')
+    #     self.set_fmri_view_slider_range()
+
+    def set_mri_view_slider_range(self):
+        # # coronal view, sagittal view, axial view
+        # x_size, y_size, z_size = self.volume_data.shape
+        self.coronal_view_slider.setRange(minValue=0, maxValue=get_mri_coronal_view_dimension(self.mri_volume_data) - 1)
+        self.sagittal_view_slider.setRange(minValue=0,
+                                           maxValue=get_mri_sagittal_view_dimension(self.mri_volume_data) - 1)
+        self.axial_view_slider.setRange(minValue=0, maxValue=get_mri_axial_view_dimension(self.mri_volume_data) - 1)
+
+        self.coronal_view_slider.setValue(0)
+        self.sagittal_view_slider.setValue(0)
+        self.axial_view_slider.setValue(0)
+
+    def set_fmri_view_slider_range(self):
+        self.fmri_timestamp_slider.setRange(minValue=0,
+                                            maxValue=self.fmri_volume_data.shape[-1] - 1)
+
+        self.fmri_timestamp_slider.setValue(0)
+
+    def coronal_view_slider_on_change(self):
+        self.coronal_view_slider_value = self.coronal_view_slider.value()
+        self.coronal_view_mri_image_item.setImage(
+            get_mri_coronal_view_slice(self.mri_volume_data, index=self.coronal_view_slider_value))
+
+        self.set_coronal_view_fmri()
+
+    def sagittal_view_slider_on_change(self):
+        self.sagittal_view_slider_value = self.sagittal_view_slider.value()
+        self.sagittal_view_mri_image_item.setImage(
+            get_mri_sagittal_view_slice(self.mri_volume_data, index=self.sagittal_view_slider_value))
+
+        self.set_sagittal_view_fmri()
+
+    def axial_view_slider_on_change(self):
+        self.axial_view_slider_value = self.axial_view_slider.value()
+        self.axial_view_mri_image_item.setImage(
+            get_mri_axial_view_slice(self.mri_volume_data, index=self.axial_view_slider_value))
+
+        self.set_axial_view_fmri()
+
+    def set_coronal_view_fmri(self):
+        pass
+        # fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value,
+        #                                          self.fmri_timestamp_slider_value)
+        # self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+
+    def set_sagittal_view_fmri(self):
+        pass
+        # fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.sagittal_view_slider_value,
+        #                                          self.fmri_timestamp_slider_value)
+        # self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+
+    def set_axial_view_fmri(self):
+        pass
+        # fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.axial_view_slider_value,
+        #                                        self.fmri_timestamp_slider_value)
+        # self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+
+
+
+
+
+
+
+
+
+
 
     def reset_performance_measures(self):
         self.update_buffer_times = []
@@ -213,13 +338,14 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             self.PopWindowBtn.setIcon(dock_window_icon)
 
     def options_btn_clicked(self):
-        print("Option window button clicked")
-        self.stream_options_window.show()
-        self.stream_options_window.activateWindow()
+        pass
+        # print("Option window button clicked")
+        # self.stream_options_window.show()
+        # self.stream_options_window.activateWindow()
 
-    def group_plot_widget_edit_option_clicked(self, group_name: str):
-        self.options_btn_clicked()
-        self.stream_options_window.set_selected_group(group_name)
+    # def group_plot_widget_edit_option_clicked(self, group_name: str):
+    #     self.options_btn_clicked()
+    #     self.stream_options_window.set_selected_group(group_name)
 
     def is_streaming(self):
         return self.worker.is_streaming
@@ -278,15 +404,15 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 
-        self.stream_options_window.reload_preset_to_UI()
-        self.reset_viz()
+        # self.stream_options_window.reload_preset_to_UI()
+        # self.reset_viz()
 
-    def reset_viz(self):
-        """
-        caller to this function must ensure self.group_info is modified and up to date with user changes
-        """
-        self.clear_stream_visualizations()
-        self.create_visualization_component()
+    # def reset_viz(self):
+    #     """
+    #     caller to this function must ensure self.group_info is modified and up to date with user changes
+    #     """
+    #     self.clear_stream_visualizations()
+    #     self.create_visualization_component()
 
     def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
@@ -316,108 +442,66 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.stream_options_window.close()
         return True
 
-    def update_channel_shown(self, channel_index, is_shown, group_name):
-        channel_plot_widget = self.channel_index_plot_widget_dict[channel_index]
-        channel_plot_widget.show() if is_shown else channel_plot_widget.hide()
-        self.update_groups_shown(group_name)
-
-    def update_groups_shown(self, group_name):
-        # assuming group info is update to date with in the persist settings
-        # check if there's active channels in this group
-        if get_is_group_shown(self.stream_name, group_name):
-            self.group_name_plot_widget_dict[group_name].show()
-        else:
-            self.group_name_plot_widget_dict[group_name].hide()
-
-    def clear_stream_visualizations(self):
-        self.channel_index_plot_widget_dict = {}
-        self.group_name_plot_widget_dict = {}
-        clear_widget(self.splitter)
-
-    def init_stream_visualization(self):
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-
-        group_plot_widget_dict = {}
-        group_info = get_stream_group_info(self.stream_name)
-        for group_name in group_info.keys():
-            # if group_info[group_name].is_only_image_enabled:
-            #     update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
-            #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
-
-            group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
-            group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name,
-                                                                 group_channel_names,
-                                                                 get_stream_preset_info(self.stream_name,
-                                                                                        'nominal_sampling_rate'),
-                                                                 self.plot_format_changed_signal)
-            self.splitter.addWidget(group_plot_widget_dict[group_name])
-            self.num_points_to_plot = self.get_num_points_to_plot()
-
-        return group_plot_widget_dict
-
-    def create_visualization_component(self):
-        group_plot_dict = self.init_stream_visualization()
-        self.viz_components = VizComponents(self.fs_label, self.ts_label, group_plot_dict)
-
     def process_stream_data(self, data_dict):
-        '''
-        update the visualization buffer, recording buffer, and scripting buffer
-        '''
-        if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
-            try:
-                self.run_data_processor(data_dict)
-                self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
-                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
-                                                    1])  # NOTE performance test scripts, don't include in production code
-                self._has_new_viz_data = True
-                # self.viz_data_buffer.update_buffer(data_dict)
-            except ChannelMismatchError as e:
-                self.in_error_state = True
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
-                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
-                                     buttons=self.channel_mismatch_buttons)
+        pass
+    #     '''
+    #     update the visualization buffer, recording buffer, and scripting buffer
+    #     '''
+    #     if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
+    #         try:
+    #             self.run_data_processor(data_dict)
+    #             self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+    #             self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
+    #                                                 1])  # NOTE performance test scripts, don't include in production code
+    #             self._has_new_viz_data = True
+    #             # self.viz_data_buffer.update_buffer(data_dict)
+    #         except ChannelMismatchError as e:
+    #             self.in_error_state = True
+    #             preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
+    #             message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+    #             reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
+    #                                  buttons=self.channel_mismatch_buttons)
+    #
+    #             if reply.result():
+    #                 self.reset_preset_by_num_channels(e.message)
+    #                 self.in_error_state = False
+    #                 return
+    #             else:
+    #                 self.start_stop_stream_btn_clicked()  # stop the stream
+    #                 self.in_error_state = False
+    #                 return
+    #         self.actualSamplingRate = data_dict['sampling_rate']
+    #         self.current_timestamp = data_dict['timestamps'][-1]
+    #         # notify the internal buffer in recordings tab
+    #
+    #         # reshape data_dict based on sensor interface
+    #         self.main_parent.recording_tab.update_recording_buffer(data_dict)
+    #         self.main_parent.scripting_tab.forward_data(data_dict)
+    #         # scripting tab
+    #
+    # '''
+    # settings on change:
+    # visualization can be changed while recording with mutex
+    # 1. lock settings on change
+    # 2. update visualization
+    # 3. save changes to RENA_Settings
+    # 4. release mutex
+    #
+    # data processing cannot be changed while recording
+    #
+    # # cannot add channels while streaming/recording
+    #
+    #
+    # '''
 
-                if reply.result():
-                    self.reset_preset_by_num_channels(e.message)
-                    self.in_error_state = False
-                    return
-                else:
-                    self.start_stop_stream_btn_clicked()  # stop the stream
-                    self.in_error_state = False
-                    return
-            self.actualSamplingRate = data_dict['sampling_rate']
-            self.current_timestamp = data_dict['timestamps'][-1]
-            # notify the internal buffer in recordings tab
-
-            # reshape data_dict based on sensor interface
-            self.main_parent.recording_tab.update_recording_buffer(data_dict)
-            self.main_parent.scripting_tab.forward_data(data_dict)
-            # scripting tab
-
-    '''
-    settings on change:
-    visualization can be changed while recording with mutex
-    1. lock settings on change
-    2. update visualization
-    3. save changes to RENA_Settings
-    4. release mutex
-
-    data processing cannot be changed while recording
-
-    # cannot add channels while streaming/recording
-
-
-    '''
-
-    def stream_settings_changed(self, change):
-        self.setting_update_viz_mutex.lock()
-        # resolve the
-        if change[0] == "nominal_sampling_rate":
-            pass  # TODO
-        # TODO add other changes such as plot format, plot order, etc...
-
-        self.setting_update_viz_mutex.unlock()
+    # def stream_settings_changed(self, change):
+    #     self.setting_update_viz_mutex.lock()
+    #     # resolve the
+    #     if change[0] == "nominal_sampling_rate":
+    #         pass  # TODO
+    #     # TODO add other changes such as plot format, plot order, etc...
+    #
+    #     self.setting_update_viz_mutex.unlock()
 
     def visualize(self):
         '''
@@ -425,82 +509,41 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         It plot the data from the data visualization buffer based on the configuration
         The data to plot is in the parameter self.viz_data_buffer
         '''
+        pass
 
-        self.tick_times.append(time.time())
-        # print("Viz FPS {0}".format(self.get_fps()), end='\r')
-        self.worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
-        # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
-        actual_sampling_rate = self.actualSamplingRate
-        # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
-
-        # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-
-        # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-        #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-        #     # start = time.time()
-        #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-        #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-        #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-        #                             axis=1)  # resample to 100 hz with retain history of 10 sec
-        #     # print(time.time()-start)
-        #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-        # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-        #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        # self.tick_times.append(time.time())
+        # # print("Viz FPS {0}".format(self.get_fps()), end='\r')
+        # self.worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
+        # # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
+        # actual_sampling_rate = self.actualSamplingRate
         #
-        # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-        #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-        # change to loop with type condition plot time_series and image
-        # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-        # plot_channel_num_offset = 0
-        if not self._has_new_viz_data:
-            return
-        self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
-
-        if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
-            data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
-        elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
-            data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
-        for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
-            self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot,))[
-                                            1])  # NOTE performance test scripts, don't include in production code
-            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
-
-        # show the label
-        self.viz_components.fs_label.setText(
-            'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
-
-        self._has_new_viz_data = False
-        if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(
-                self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
-            self.viz_data_head = 0
+        # if not self._has_new_viz_data:
+        #     return
+        # self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
+        #
+        # if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
+        #     data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
+        # elif AppConfigs().linechart_viz_mode == LinechartVizMode.CONTINUOUS:
+        #     data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
+        # for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
+        #     self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot,))[
+        #                                     1])  # NOTE performance test scripts, don't include in production code
+        #     # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
+        #
+        # # show the label
+        # self.viz_components.fs_label.setText(
+        #     'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        # self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
+        #
+        # self._has_new_viz_data = False
+        # if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(
+        #         self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
+        #     self.viz_data_head = 0
 
     def ticks(self):
         self.worker.signal_data_tick.emit()
-        #     self.recent_tick_refresh_timestamps.append(time.time())
-        #     if len(self.recent_tick_refresh_timestamps) > 2:
-        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-        #                     len(self.recent_tick_refresh_timestamps) - 1))
-        #
-        #     self.tickFrequencyLabel.setText(
-        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
-    def init_server_client(self):
-        print('John')
 
-        # dummy preset for now:
-        stream_name = 'OpenBCI'
-        port_id = int(time.time())
-        identity = 'server'
-        processor_dic = {}
-        rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
-        self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
-        rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
-        print('DSP worker created')
-        self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
-
-        # send to server
 
     def get_fps(self):
         try:
@@ -511,147 +554,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
     def is_widget_streaming(self):
         return self.worker.is_streaming
 
-    def on_num_points_to_display_change(self):
-        '''
-        this function is called by StreamOptionWindow when user change number of points to plot by changing
-        the sampling rate or the display duration.
-        Changing the num points to plot here will cause, in the next plot cycle, GroupPlotWidget will have a mismatch between
-        the data received from here and its time vector. This will cause the GroupPlotWidget to update its time vector
-        :param new_sampling_rate:
-        :param new_display_duration:
-        :return:
-        '''
-        self.num_points_to_plot = self.get_num_points_to_plot()
-        if self.viz_components is not None:
-            self.viz_components.update_nominal_sampling_rate()
-
-    # def reload_visualization_elements(self, info_dict):
-    #     self.group_info = collect_stream_all_groups_info(self.stream_name)
-    #     clear_layout(self.MetaInfoVerticalLayout)
-    #     clear_layout(self.TimeSeriesPlotsLayout)
-    #     clear_layout(self.ImageWidgetLayout)
-    #     clear_layout(self.BarPlotWidgetLayout)
-    #     self.create_visualization_component()
-
-    # @QtCore.pyqtSlot(dict)
-    # def plot_format_on_change(self, info_dict):
-    # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-    # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
-
-    # self.preset_on_change()  # update the group info
-
-    # self.viz_components.group_plots[plot_format_index_dict[old_format]][
-    #     info_dict['group_name']].hide()
-    # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
-    #     info_dict['group_name']].show()
-
-    # update the plot hide display
-
-    # @QtCore.pyqtSlot(dict)
-    # def image_changed(self, change: dict):
-    #     if change['group_name'] in self.group_name_plot_widget_dict.keys():
-    #         self.group_name_plot_widget_dict[change['group_name']].update_image_info(change['this_group_info_image'])
-
-    # def preset_on_change(self):
-    #     self.group_info = get_stream_group_info(self.stream_name)  # reload the group info
-
-    # def get_image_format_and_shape(self, group_name):
-    #     width = self.group_info[group_name]['plot_format']['image']['width']
-    #     height = self.group_info[group_name]['plot_format']['image']['height']
-    #     image_format = self.group_info[group_name]['plot_format']['image']['image_format']
-    #     depth = image_depth_dict[image_format]
-    #     channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
-    #     scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
-    #
-    #     return width, height, depth, image_format, channel_format, scaling_factor
-
-    #############################################
-
-    def bar_chart_range_on_change(self, group_name):
-        self.viz_components.group_plots[group_name].update_bar_chart_range()
-
-    #############################################
-
-    def channel_group_changed(self, change_dict):
-        """
-        Called when one or more channel's parent group is changed
-        @param change_dict:
-        """
-        # update the group info
-        for group_name, child_channels in change_dict.items():
-            if len(child_channels) == 0:
-                pop_group_from_stream_preset(self.stream_name, group_name)
-            else:  # cover the cases for both changed groups and new group
-                channel_indices = [x.lsl_index for x in child_channels]
-                is_channels_shown = [x.is_shown for x in child_channels]
-                if group_name not in get_stream_group_info(self.stream_name).keys():  # if this is a new group
-                    add_group_entry_to_stream(self.stream_name,
-                                              create_default_group_entry(len(child_channels), group_name,
-                                                                         channel_indices=channel_indices,
-                                                                         is_channels_shown=is_channels_shown))
-                else:
-                    change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
-
-        # reset data processor
-        # TODO: optimize for changed group reset. Reset visualization buffer after regrouped ?
-        reset_all_group_data_processors(self.stream_name)
-
-        # save_preset()
-        self.reset_viz()
-
-    def group_order_changed(self, group_order):
-        """
-        Called when the group order is changed
-        @param group_order:
-        """
-        change_stream_group_order(self.stream_name, group_order)
-        # save_preset()
-        self.reset_viz()
-
-    def change_group_name(self, new_group_name, old_group_name):
-        try:
-            change_stream_group_name(self.stream_name, new_group_name, old_group_name)
-        except ValueError as e:
-            dialog_popup(str(e), mode='modeless')
-        self.viz_components.group_plots[new_group_name] = self.viz_components.group_plots.pop(old_group_name)
-        self.viz_components.group_plots[new_group_name].change_group_name(new_group_name)
-
-    def change_channel_name(self, group_name, new_ch_name, old_ch_name, lsl_index):
-        # change channel name in the settings
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        changing_channel_index = channel_names.index(old_ch_name)
-        channel_names[changing_channel_index] = new_ch_name
-        set_stream_preset_info(self.stream_name, 'channel_names', channel_names)
-
-        # change the name in the plots
-        self.viz_components.group_plots[group_name].change_channel_name(new_ch_name, old_ch_name, lsl_index)
-
-    def get_num_points_to_plot(self):
-        display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
-        return int(display_duration * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'))
-
-    def get_pull_data_delay(self):
-        return self.worker.get_pull_data_delay()
-
-    def set_spectrogram_cmap(self, group_name):
-        self.viz_components.set_spectrogram_cmap(group_name)
-
-    def run_data_processor(self, data_dict):
-        data = data_dict['frames']
-        group_info = get_stream_group_info(self.stream_name)
-
-        for this_group_info in group_info.values():  # TODO: potentially optimize using pool
-            if len(this_group_info.data_processors) != 0:
-                processed_data = run_data_processors(data[this_group_info.channel_indices],
-                                                     this_group_info.data_processors)
-                data[this_group_info.channel_indices] = processed_data
-        # for this_group_info in group_info.values():
-        #     data
-        # print(info.channel_indices)
-        # for group_ in my_dict.values():
-        #     print(value)
-
-        # get_group_channel_indices
 
     def try_close(self):
         return self.remove_stream()
+
+
+

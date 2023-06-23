@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMessageBox
 from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.examples.fmri_experiment_example.FMRIWidget import FMRIWidget
+from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from rena.presets.Presets import Presets, PresetType, DataType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
@@ -133,8 +133,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # fmri widget
         # TODO: FMRI WIDGET
         self.fmri_widget = FMRIWidget(parent_widget=self,
-                                   parent_layout=self.camHorizontalLayout,
-                                   window_title="FMRI")
+                                        parent_layout=self.streamsHorizontalLayout,
+                                        stream_name="FMRI",
+                                        data_type=DataType.float64,
+                                        worker=None,
+                                        networking_interface="ZMQ",
+                                        port_number="5559",
+                                        insert_position=self.streamsHorizontalLayout.count() - 1)
         self.fmri_widget.setObjectName("FMRIWidget")
         self.fmri_widget.show()
 
@@ -154,7 +159,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),
+                             title='Warning')
                 return
             try:
                 is_new_preset = False
@@ -165,7 +171,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if is_new_preset:
                 self.create_preset(selected_text, port, networking_interface, data_type)
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
+                self.init_network_streaming(selected_text, data_type=data_type,
+                                            port_number=port)  # TODO this can also be a device or experiment preset
             else:
                 if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
                     self.init_video_device(selected_text)
@@ -183,8 +190,10 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, port, networking_interface, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, port, networking_interface, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+    def create_preset(self, stream_name, port, networking_interface, data_type=DataType.float32, num_channels=1,
+                      nominal_sample_rate=None):
+        create_default_preset(stream_name, port, networking_interface, num_channels, nominal_sample_rate,
+                              data_type=data_type)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
@@ -203,10 +212,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_all_btn.setEnabled(streaming_widget_count > 0)
 
     def on_start_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available and not x.is_widget_streaming()]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if
+         x.is_stream_available and not x.is_widget_streaming()]
 
     def on_stop_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
+        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if
+         x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name):
         widget_name = video_device_name + '_widget'
@@ -237,7 +248,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
         #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
+    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None,
+                               port_number=None, worker=None):
         error_initialization = False
 
         # set up UI elements
@@ -259,8 +271,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_meta_data(self):
         # get the stream viz fps
-        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
-        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in
+                                                                                    self.video_device_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [
+            v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
         if len(fps_list) == 0:
             return
         if np.all(fps_list == 0):
@@ -381,5 +395,6 @@ class MainWindow(QtWidgets.QMainWindow):
         @return: return True if any network streams or video device is streaming, False otherwise
         """
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
-        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
+        is_video_device_widgets_streaming = np.any(
+            [x.is_widget_streaming() for x in self.video_device_widgets.values()])
         return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])
