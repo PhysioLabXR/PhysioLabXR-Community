@@ -132,14 +132,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # fmri widget
         # TODO: FMRI WIDGET
-        self.fmri_widget = FMRIWidget(parent_widget=self,
-                                        parent_layout=self.streamsHorizontalLayout,
-                                        stream_name="FMRI",
-                                        data_type=DataType.float64,
-                                        worker=None,
-                                        networking_interface="ZMQ",
-                                        port_number="5559",
-                                        insert_position=self.streamsHorizontalLayout.count() - 1)
+        self.fmri_widget = FMRIWidget(window_title='FMRI', parent_widget=self, parent_layout=self.streamsHorizontalLayout,insert_position=None)
+        # self.fmri_widget = FMRIWidget(parent_widget=self,
+        #                                 parent_layout=self.streamsHorizontalLayout,
+        #                                 stream_name="FMRI",
+        #                                 data_type=DataType.float64,
+        #                                 worker=None,
+        #                                 networking_interface="ZMQ",
+        #                                 port_number="5559",
+        #                                 insert_position=self.streamsHorizontalLayout.count() - 1)
         self.fmri_widget.setObjectName("FMRIWidget")
         self.fmri_widget.show()
 
