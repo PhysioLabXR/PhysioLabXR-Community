@@ -70,6 +70,7 @@ class DataType(Enum):
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
+    FMRI = 'FMRI'
     LSL = 'LSL'
     ZMQ = 'ZMQ'
     DEVICE = 'DEVICE'
@@ -204,6 +205,32 @@ class VideoPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class FMRIPreset(metaclass=SubPreset):
+
+    stream_name: str
+    preset_type: PresetType
+    data_type: DataType
+    x_shape: int
+    y_shape: int
+    z_shape: int
+    normalize: bool
+    alignment: bool
+    threshold: float
+    nominal_sampling_rate: int = 2
+    mri_file_path: str = None
+
+    def __post_init__(self):
+        """
+        VideoPreset's post init function.
+        @return:
+        """
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
+
+
+
+
 
 def _load_stream_presets(presets, dirty_presets):
     for category, dirty_preset_paths in dirty_presets.items():
@@ -256,7 +283,7 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset, FMRIPreset]] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = AppConfigs().app_data_path

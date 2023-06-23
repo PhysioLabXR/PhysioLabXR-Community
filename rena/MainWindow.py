@@ -11,7 +11,7 @@ from exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
-from rena.presets.Presets import Presets, PresetType, DataType
+from rena.presets.Presets import Presets, PresetType, DataType, FMRIPreset
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -132,15 +132,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # fmri widget
         # TODO: FMRI WIDGET
-        self.fmri_widget = FMRIWidget(window_title='FMRI', parent_widget=self, parent_layout=self.streamsHorizontalLayout,insert_position=None)
-        # self.fmri_widget = FMRIWidget(parent_widget=self,
-        #                                 parent_layout=self.streamsHorizontalLayout,
-        #                                 stream_name="FMRI",
-        #                                 data_type=DataType.float64,
-        #                                 worker=None,
-        #                                 networking_interface="ZMQ",
-        #                                 port_number="5559",
-        #                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        fmri_preset = FMRIPreset(stream_name='FMRI', preset_type=PresetType.FMRI, data_type=DataType.float64,
+                                 x_shape=100, y_shape=100, z_shape=100,
+                                 normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
+        Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
+        self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
+                                      stream_name=fmri_preset.stream_name, data_type=DataType, worker=None,
+                                      insert_position=None)
+
         self.fmri_widget.setObjectName("FMRIWidget")
         self.fmri_widget.show()
 

@@ -17,7 +17,7 @@ from rena.ui_shared import remove_stream_icon, \
 
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
-    def __init__(self, parent_widget, parent_layout, window_title,
+    def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker,
                  insert_position=None):
         """
 
@@ -26,7 +26,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         @param video_device_name:
         @param insert_position:
         """
-        super().__init__(window_title, parent_widget, parent_layout, self.remove_function)
+        super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
 
         self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidgetNew.ui", self)
         self.set_pop_button(self.PopWindowBtn)
@@ -34,19 +34,20 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.OptionsBtn.setIcon(options_icon)
         self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
-        self.fmri_timestamp_slider_value = 0
+        # self.fmri_timestamp_slider_value = 0
 
         self.init_mri_graphic_components()
-        self.init_fmri_graphic_component()
+        # self.init_fmri_graphic_component()
 
         self.load_mri_volume()
-        self.load_fmri_volume()
+        # self.load_fmri_volume()
 
-        self.timer = QTimer()
-        self.worker_thread = QThread(self)
-        self.worker = ZMQWorker(port_number=5559, subtopic='fMRI', data_type=DataType.float64)
-        self.worker.moveToThread(self.worker_thread)
-        self.worker_thread.start()
+        # # init worker thread
+        # self.timer = QTimer()
+        # self.worker_thread = QThread(self)
+        # self.worker = ZMQWorker(port_number=5559, subtopic='fMRI', data_type=DataType.float64)
+        # self.worker.moveToThread(self.worker_thread)
+        # self.worker_thread.start()
 
         self.__post_init__()
 
@@ -54,7 +55,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.sagittal_view_slider_value = 0
         self.coronal_view_slider_value = 0
         self.axial_view_slider_value = 0 ,
-        self.fmri_timestamp_slider_value = 0
+        # self.fmri_timestamp_slider_value = 0
 
     def init_mri_graphic_components(self):
         ######################################################
@@ -97,10 +98,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.axial_view_slider.valueChanged.connect(self.axial_view_slider_on_change)
         self.AxiaViewSliderWidget.layout().addWidget(self.axial_view_slider)
 
-    def init_fmri_graphic_component(self):
-        self.fmri_timestamp_slider = SliderWithValueLabel()
-        self.fmri_timestamp_slider.valueChanged.connect(self.fmri_timestamp_slider_on_change)
-        self.FMRITimestampSliderWidget.layout().addWidget(self.fmri_timestamp_slider)
+    # def init_fmri_graphic_component(self):
+    #     self.fmri_timestamp_slider = SliderWithValueLabel()
+    #     self.fmri_timestamp_slider.valueChanged.connect(self.fmri_timestamp_slider_on_change)
+    #     self.FMRITimestampSliderWidget.layout().addWidget(self.fmri_timestamp_slider)
 
     def load_mri_volume(self):
         # g = gl.GLGridItem()
@@ -113,10 +114,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()
 
-    def load_fmri_volume(self):
-        _, self.fmri_volume_data = load_nii_gz_file(
-            'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/resampled_fmri.nii.gz')
-        self.set_fmri_view_slider_range()
+    # def load_fmri_volume(self):
+    #     _, self.fmri_volume_data = load_nii_gz_file(
+    #         'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/resampled_fmri.nii.gz')
+    #     self.set_fmri_view_slider_range()
         # self.volume_view_plot.setCameraPosition(distance=200)
         # g = gl.GLGridItem()
         # g.scale(100, 100, 100)
@@ -134,11 +135,11 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.sagittal_view_slider.setValue(0)
         self.axial_view_slider.setValue(0)
 
-    def set_fmri_view_slider_range(self):
-        self.fmri_timestamp_slider.setRange(minValue=0,
-                                            maxValue=self.fmri_volume_data.shape[-1] - 1)
-
-        self.fmri_timestamp_slider.setValue(0)
+    # def set_fmri_view_slider_range(self):
+    #     self.fmri_timestamp_slider.setRange(minValue=0,
+    #                                         maxValue=self.fmri_volume_data.shape[-1] - 1)
+    #
+    #     self.fmri_timestamp_slider.setValue(0)
 
     def coronal_view_slider_on_change(self):
         self.coronal_view_slider_value = self.coronal_view_slider.value()
@@ -162,32 +163,35 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.set_axial_view_fmri()
 
     def set_coronal_view_fmri(self):
-        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value,
-                                                 self.fmri_timestamp_slider_value)
-        self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+        pass
+        # fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.coronal_view_slider_value,
+        #                                          self.fmri_timestamp_slider_value)
+        # self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
 
     def set_sagittal_view_fmri(self):
-        fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.sagittal_view_slider_value,
-                                                 self.fmri_timestamp_slider_value)
-        self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+        pass
+        # fmri_slice = get_fmri_coronal_view_slice(self.fmri_volume_data, self.sagittal_view_slider_value,
+        #                                          self.fmri_timestamp_slider_value)
+        # self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
 
     def set_axial_view_fmri(self):
-        fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.axial_view_slider_value,
-                                               self.fmri_timestamp_slider_value)
-        self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+        pass
+        # fmri_slice = get_fmri_axial_view_slice(self.fmri_volume_data, self.axial_view_slider_value,
+        #                                        self.fmri_timestamp_slider_value)
+        # self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
 
-    def fmri_timestamp_slider_on_change(self):
-        self.fmri_timestamp_slider_value = self.fmri_timestamp_slider.value()
-
-        self.set_coronal_view_fmri()
-        self.set_sagittal_view_fmri()
-        self.set_axial_view_fmri()
+    # def fmri_timestamp_slider_on_change(self):
+    #     self.fmri_timestamp_slider_value = self.fmri_timestamp_slider.value()
+    #
+    #     self.set_coronal_view_fmri()
+    #     self.set_sagittal_view_fmri()
+    #     self.set_axial_view_fmri()
 
     def process_stream_data(self, data_dict):
         pass
         # if data_dict['frames'].shape[-1] > 0:
         #     self.fmri_volume_data = data_dict
 
-    def remove_function(self):
+    def remove_stream(self):
         pass
 
