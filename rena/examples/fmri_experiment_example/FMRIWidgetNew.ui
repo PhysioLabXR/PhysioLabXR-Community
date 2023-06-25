@@ -240,6 +240,12 @@
                 </item>
                 <item>
                  <widget class="QWidget" name="AxiaViewSliderWidget" native="true">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>55</height>
+                   </size>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_13"/>
                  </widget>
                 </item>
@@ -258,6 +264,12 @@
                 </item>
                 <item>
                  <widget class="QWidget" name="CoronalViewSliderWidget" native="true">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>55</height>
+                   </size>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_12"/>
                  </widget>
                 </item>
@@ -289,6 +301,12 @@
                 </item>
                 <item>
                  <widget class="QWidget" name="SagittalViewSliderWidget" native="true">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>55</height>
+                   </size>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_8"/>
                  </widget>
                 </item>
