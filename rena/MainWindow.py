@@ -132,7 +132,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # # fmri widget
         # # TODO: FMRI WIDGET
-        fmri_preset = FMRIPreset(stream_name='FMRI', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=8126464,
+        fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=8126464,
                                  data_shape=(256,256,124),
                                  normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
         Presets().stream_presets[fmri_preset.stream_name] = fmri_preset

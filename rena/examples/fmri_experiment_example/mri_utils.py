@@ -66,6 +66,10 @@ def load_nii_gz_file(file_path: str, normalized=True):
 
 def volume_to_gl_volume_item(volume_data, alpha_interpolate=True, centralized=True):
     volume_data = (volume_data - np.min(volume_data)) / (np.max(volume_data) - np.min(volume_data))
+    x_size, y_size, z_size = volume_data.shape
+
+    # cut off the top half data
+    volume_data = volume_data[:, :, : 76]
 
     if alpha_interpolate:
         alpha_channel = np.interp(volume_data, (0, 1), (0, 255))
@@ -85,7 +89,6 @@ def volume_to_gl_volume_item(volume_data, alpha_interpolate=True, centralized=Tr
 
     # Shift the center of the volume to (0, 0, 0)
     if centralized:
-        x_size, y_size, z_size = volume_data.shape
         v.translate(-x_size / 2, -y_size / 2, -z_size / 2)
     return v
 
