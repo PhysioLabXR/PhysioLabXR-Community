@@ -186,7 +186,7 @@ class DataBuffer():
         return self.buffer.keys()
 
 class DataBufferSingleStream():
-    def __init__(self, num_channels=None, buffer_sizes: int = None, append_zeros=False):
+    def __init__(self, num_channels: int, buffer_sizes: int, append_zeros=False):
         self.buffer_size = buffer_sizes
         self.buffer = []
         self.append_zeros = append_zeros
@@ -201,29 +201,31 @@ class DataBufferSingleStream():
         where the keys are the lsl stream names
         :return:
         '''
+        frames = data_dict['frames']
+        timestamps = data_dict['timestamps']
         if len(self.buffer) == 0:  # init the data buffer
-            self.init_buffer(data_dict['frames'].shape[0])
-        try:
-            # pass
-            self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
-        except ValueError:
-            raise ChannelMismatchError(data_dict['frames'].shape[0])
-        self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
+            self.init_buffer(frames.shape[0])
+        if frames.shape[0] != self.num_channels:
+            raise ChannelMismatchError(frames.shape[0])
 
-        buffer_time_points = self.buffer[0].shape[-1]
-        cut_to = -np.min([buffer_time_points, self.buffer_size])
-        self.buffer[0] = self.buffer[0][:, cut_to:]
-        self.buffer[1] = self.buffer[1][cut_to:]
+        self.buffer[0] = np.roll(self.buffer[0], -frames.shape[-1], axis=-1)
+        self.buffer[1] = np.roll(self.buffer[1], -frames.shape[-1])
 
-        self.samples_received += data_dict['frames'].shape[1]
+        # self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
+        # self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
+        self.buffer[0][:, -frames.shape[-1]:] = frames
+        self.buffer[1][-frames.shape[-1]:] = timestamps
+
+        # buffer_time_points = self.buffer[0].shape[-1]
+        # cut_to = -np.min([buffer_time_points, self.buffer_size])
+        # self.buffer[0] = self.buffer[0][:, cut_to:]
+        # self.buffer[1] = self.buffer[1][cut_to:]
+
+        self.samples_received += frames.shape[1]
 
     def init_buffer(self, num_channels):
-        time_dim = self.buffer_size if self.append_zeros else 0
-
-        self.buffer.append(np.zeros(shape=(num_channels, time_dim)))
-        # self.buffer.append(np.random.random(size=(num_channels, time_dim)))
-
-        self.buffer.append(np.zeros(shape=(time_dim,)))  # data first, timestamps second
+        self.buffer.append(np.zeros(shape=(num_channels, self.buffer_size)))
+        self.buffer.append(np.zeros(shape=(self.buffer_size,)))  # data first, timestamps second
         self.samples_received = 0
 
     def reset_buffer(self):
