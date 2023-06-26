@@ -762,28 +762,30 @@ class ZMQWorker(QObject, RenaWorker):
     def __del__(self):
         self.socket.close()
         self.context.term()
-        print('In ZMQWorker.__dell__(): Socket closed and context terminated')
+        print('In ZMQWorker.__del__(): Socket closed and context terminated')
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
-            try:
-                pull_data_start_time = time.perf_counter()
-                _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                np.frombuffer(timestamp)
-            except zmq.error.Again:
-                return None
-            timestamp = np.frombuffer(timestamp, dtype=np.float64)
-            self.timestamp_queue.append(timestamp)
-            if len(self.timestamp_queue) > 1:
-                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-            else:
-                sampling_rate = np.nan
-            data = bytearray(data) # make the array mutable TODO：Optimize this line
-            data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
-            data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
-            self.signal_data.emit(data_dict)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+            pull_data_start_time = time.perf_counter()
+            _, timestamp, data = None, None, None
+            while True:
+                try:
+                    _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                    np.frombuffer(timestamp)
+                except zmq.error.Again:
+                    break
+            if timestamp is not None:
+                timestamp = np.frombuffer(timestamp, dtype=np.float64)
+                self.timestamp_queue.append(timestamp)
+                if len(self.timestamp_queue) > 1:
+                    sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+                else:
+                    sampling_rate = np.nan
+                data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
+                data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
+                self.signal_data.emit(data_dict)
+                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
