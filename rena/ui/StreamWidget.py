@@ -439,7 +439,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
-        self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
+        # self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
 
         if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
