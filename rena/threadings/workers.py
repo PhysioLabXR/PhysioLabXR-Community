@@ -7,7 +7,7 @@ import psutil as psutil
 import pyqtgraph as pg
 import zmq
 from PyQt5 import QtCore
-from PyQt5.QtCore import QMutex
+from PyQt5.QtCore import QMutex, QThread
 from PyQt5.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
@@ -242,6 +242,8 @@ class LSLInletWorker(QObject, RenaWorker):
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
@@ -287,6 +289,8 @@ class LSLInletWorker(QObject, RenaWorker):
         """
         only emit when the stream is not available
         """
+        if QThread.currentThread().isInterruptionRequested():
+            return
         is_stream_availability = self._lslInlet_interface.is_stream_available()
         if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
@@ -766,6 +770,8 @@ class ZMQWorker(QObject, RenaWorker):
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
             _, timestamp, data = None, None, None
@@ -789,6 +795,8 @@ class ZMQWorker(QObject, RenaWorker):
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         is_stream_availability = self.is_stream_available()
         if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
@@ -807,6 +815,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def is_stream_available(self):
         poll_results = dict(self.poller.poll(timeout=1000))
+        print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
         return len(poll_results) > 0
 
     def reset_interface(self, stream_name, channel_names):
