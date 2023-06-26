@@ -34,8 +34,8 @@ def psi(i, j, k, offset=(50,50,100)):
 
 
 # data = np.fromfunction(psi, (100,100,200))
-_, volume_data = load_nii_gz_file(file_path='../resampled_fmri.nii.gz')
-volume_data = volume_data[:, :, :, 100]
+_, volume_data = load_nii_gz_file(file_path='structural_brain.nii.gz')
+# volume_data = volume_data[:, :, :, 100]
 # with np.errstate(divide = 'ignore'):
 #     positive = np.log(fn.clip_array(data, 0, data.max())**2)
 #     negative = np.log(fn.clip_array(-data, 0, -data.min())**2)
@@ -101,14 +101,14 @@ v.translate(-x_size/2, -y_size/2, -z_size/2)
 
 # v.translate(-50,-50,-100)
 w.addItem(v)
-fmri_slice = get_mri_axial_view_slice(volume_data, 50)
+fmri_slice = get_mri_axial_view_slice(volume_data, 25)
 image_data = (gray_to_heatmap(fmri_slice, threshold=0) * 255).astype(np.uint8)
 # image_data = np.transpose(image_data, (1, 0, 2))
 fmri_axial_view_image_item = gl.GLImageItem(image_data, smooth=False, glOptions='translucent')
 #
 # fmri_axial_view_image_item = gl.GLImageItem(image_data)  # np.zeros((256, 256, 4), dtype=np.uint8)
 # apply the xz plane transform
-fmri_axial_view_image_item.translate(-256 / 2, -256 / 2, 100)
+fmri_axial_view_image_item.translate(-x_size / 2, -y_size / 2, 100)
 w.addItem(fmri_axial_view_image_item)
 
 
