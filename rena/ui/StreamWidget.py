@@ -295,6 +295,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.v_timer.stop()
         if self.worker.is_streaming:
             self.worker.stop_stream()
+        self.worker_thread.requestInterruption()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
 
