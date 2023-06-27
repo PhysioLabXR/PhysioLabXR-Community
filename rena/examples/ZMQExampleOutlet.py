@@ -21,7 +21,7 @@ def main():
     port = "5557"
 
     c_channels = 3
-    width = 64
+    width = 66
     height = 64
     n_channels = c_channels * width * height
 

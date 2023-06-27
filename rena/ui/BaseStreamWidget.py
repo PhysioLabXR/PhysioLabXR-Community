@@ -134,6 +134,16 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def connect_start_stop_btn(self, start_stop_callback: Callable):
         self.StartStopStreamBtn.clicked.connect(start_stop_callback)
 
+    def start_stop_stream_btn_clicked(self):
+        if self.data_worker.is_streaming:
+            self.data_worker.stop_stream()
+            if not self.data_worker.is_streaming:
+                self.update_stream_availability(self.data_worker.is_stream_available)
+        else:
+            self.data_worker.start_stream()
+        self.set_button_icons()
+        self.main_parent.update_active_streams()
+
     def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
@@ -201,9 +211,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def is_streaming(self):
         return self.data_worker.is_streaming
 
-    def reset_preset_by_num_channels(self, num_channels):
+    def reset_preset_by_num_channels(self, num_channels, data_type, **kwargs):
         pop_stream_preset_from_settings(self.stream_name)
-        self.main_parent.create_preset(self.stream_name, None, 'LSL', data_type=self.data_type, num_channels=num_channels)  # update preset in settings
+        self.main_parent.create_preset(self.stream_name, self.preset_type, data_type=data_type, num_channels=num_channels, **kwargs)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
         self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 

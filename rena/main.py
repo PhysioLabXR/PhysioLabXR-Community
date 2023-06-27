@@ -16,7 +16,7 @@ app = None
 
 if __name__ == '__main__':
     # load default settings
-    load_settings(revert_to_default=False, reload_presets=False)
+    load_settings(revert_to_default=False, reload_presets=True)
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)

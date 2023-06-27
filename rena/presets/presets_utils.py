@@ -120,7 +120,20 @@ def save_preset(is_async=True):
     Presets().save(is_async=is_async)
 
 
-def create_default_preset(stream_name, port, preset_type_str, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
+def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
+    if check_preset_exists(stream_name):
+        raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
+    preset_dict = {'StreamName': stream_name,
+                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'DataType': data_type}
+    if nominal_sample_rate:
+        preset_dict['NominalSamplingRate'] = nominal_sample_rate
+
+    stream_preset_dict = preprocess_stream_preset(preset_dict, PresetType.LSL)
+    Presets().add_stream_preset(stream_preset_dict)
+    return preset_dict
+
+def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
@@ -130,7 +143,7 @@ def create_default_preset(stream_name, port, preset_type_str, num_channels, nomi
     if nominal_sample_rate:
         preset_dict['NominalSamplingRate'] = nominal_sample_rate
 
-    stream_preset_dict = preprocess_stream_preset(preset_dict, preset_type_str)
+    stream_preset_dict = preprocess_stream_preset(preset_dict, PresetType.ZMQ)
     Presets().add_stream_preset(stream_preset_dict)
     return preset_dict
 

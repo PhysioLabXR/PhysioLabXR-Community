@@ -20,7 +20,8 @@ from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset
+from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
+    create_default_zmq_preset
 from rena.utils.test_utils import some_test
 
 try:
@@ -193,8 +194,19 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, port, preset_type_str, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, port, preset_type_str, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+    def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
+        if preset_type == PresetType.LSL:
+            create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+        elif preset_type == PresetType.ZMQ:
+            try:
+                assert 'port' in kwargs.keys()
+            except AssertionError:
+                raise ValueError("Port number must be specified for ZMQ preset")
+            create_default_zmq_preset(stream_name, kwargs['port'], num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+        elif preset_type == PresetType.DEVICE:
+            raise NotImplementedError
+        else:
+            raise ValueError(f"Unknown preset type {preset_type}")
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):

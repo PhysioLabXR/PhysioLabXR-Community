@@ -220,7 +220,13 @@ def preprocess_stream_preset(stream_preset_dict, category):
 
     """
     stream_preset_dict = validate_preset_json_preset(stream_preset_dict)
-    stream_preset_dict['preset_type'] = PresetType[category.upper()]
+    if type(category) == str:
+        preset_type = PresetType[category.upper()]
+    elif type(category) == PresetType:
+        preset_type = category
+    else:
+        raise ValueError(f'unknown category {category} for preset {stream_preset_dict} with type {type(category)}')
+    stream_preset_dict['preset_type'] = preset_type
     stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
     return stream_preset_dict
 

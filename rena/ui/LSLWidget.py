@@ -34,31 +34,25 @@ class LSLWidget(BaseStreamWidget):
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):
-        if self.data_worker.is_streaming:
-            self.data_worker.stop_stream()
-            if not self.data_worker.is_streaming:
-                self.update_stream_availability(self.data_worker.is_stream_available)
-        else:
-            try:
-                self.data_worker.start_stream()
-            except LSLStreamNotFoundError as e:
-                self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-                return
-            except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
-                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
+        try:
+            super().start_stop_stream_btn_clicked()
+        except LSLStreamNotFoundError as e:
+            self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
+            return
+        except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
+            preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
+            message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
+            reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
+                                 buttons=self.channel_mismatch_buttons)
 
-                if reply.result():
-                    self.reset_preset_by_num_channels(e.message)
-                    try:
-                        self.data_worker.start_stream()  # start the stream again with updated preset
-                    except LSLStreamNotFoundError as e:
-                        self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-                        return
-                else:
+            if reply.result():
+                self.reset_preset_by_num_channels(e.message, self.data_type)
+                try:
+                    self.data_worker.start_stream()  # start the stream again with updated preset
+                except LSLStreamNotFoundError as e:
+                    self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                     return
-            except Exception as e:
-                raise UnsupportedErrorTypeError(str(e))
-        self.set_button_icons()
-        self.main_parent.update_active_streams()
+            else:
+                return
+        except Exception as e:
+            raise UnsupportedErrorTypeError(str(e))

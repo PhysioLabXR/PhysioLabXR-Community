@@ -35,6 +35,7 @@ class ZMQWidget(BaseStreamWidget):
         super().__init__(parent_widget, parent_layout, PresetType.ZMQ, topic_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True, insert_position=insert_position)
         self.data_type = data_type
+        self.port = port_number
 
         zmq_worker = workers.ZMQWorker(port_number=port_number, subtopic=topic_name, data_type=data_type)
         self.connect_worker(zmq_worker, True)
@@ -42,18 +43,19 @@ class ZMQWidget(BaseStreamWidget):
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):
-        # check if it is streaming
-        if self.data_worker.is_streaming:
-            self.data_worker.stop_stream()
-            if not self.data_worker.is_streaming:
-                self.update_stream_availability(self.data_worker.is_stream_available)
-        else:
-            try:
-                self.data_worker.start_stream()
-            except Exception as e:
-                raise UnsupportedErrorTypeError(str(e))
-        self.set_button_icons()
-        self.main_parent.update_active_streams()
+        try:
+            # check if it is streaming
+            if self.data_worker.is_streaming:
+                self.data_worker.stop_stream()
+                if not self.data_worker.is_streaming:
+                    self.update_stream_availability(self.data_worker.is_stream_available)
+            else:
+                    self.data_worker.start_stream()
+
+            self.set_button_icons()
+            self.main_parent.update_active_streams()
+        except Exception as e:
+            raise UnsupportedErrorTypeError(str(e))
 
     def process_stream_data(self, data_dict):
         try:
@@ -65,7 +67,7 @@ class ZMQWidget(BaseStreamWidget):
             reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
                                  buttons=self.channel_mismatch_buttons)
             if reply.result():
-                self.reset_preset_by_num_channels(e.message)
+                self.reset_preset_by_num_channels(e.message, self.data_type, port=self.port)
                 self.in_error_state = False
                 return
             else:
