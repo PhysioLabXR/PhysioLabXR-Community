@@ -18,6 +18,7 @@ from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui.VideoWidget import VideoWidget
+from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset
 from rena.utils.test_utils import some_test
@@ -181,7 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 elif selected_type == PresetType.LSL:
                     self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
                 elif selected_type == PresetType.ZMQ:
-                    self.init_ZMQ_streaming(selected_text, data_type, port)  # add lsl stream
+                    self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
                 elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
                     streams_for_experiment = get_experiment_preset_streams(selected_text)
                     self.add_streams_to_visualize(streams_for_experiment)
@@ -267,7 +268,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #     config.settings.endGroup()
 
     def init_LSL_streaming(self, stream_name, data_type=None):
-        error_initialization = False
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
@@ -277,8 +277,16 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
 
-        if error_initialization:
-            stream_widget.RemoveStreamBtn.click()
+    def init_ZMQ_streaming(self, topic_name, port_number, data_type):
+        widget_name = topic_name + '_widget'
+        stream_widget = ZMQWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 topic_name=topic_name,
+                                  port_number=port_number,
+                                 data_type=data_type,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[topic_name] = stream_widget
 
     def update_meta_data(self):
         # get the stream viz fps

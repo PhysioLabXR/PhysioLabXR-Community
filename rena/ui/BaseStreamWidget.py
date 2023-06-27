@@ -285,25 +285,10 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         update the visualization buffer, recording buffer, and scripting buffer
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
-            try:
-                self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
-                self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
-                self._has_new_viz_data = True
-                # self.viz_data_buffer.update_buffer(data_dict)
-            except ChannelMismatchError as e:
-                self.in_error_state = True
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
-                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
+            self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+            self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
+            self._has_new_viz_data = True
 
-                if reply.result():
-                    self.reset_preset_by_num_channels(e.message)
-                    self.in_error_state = False
-                    return
-                else:
-                    self.StartStopStreamBtn.click()  # stop the stream
-                    self.in_error_state = False
-                    return
             self.actualSamplingRate = data_dict['sampling_rate']
             self.current_timestamp = data_dict['timestamps'][-1]
             # notify the internal buffer in recordings tab

@@ -22,7 +22,8 @@ class LSLWidget(BaseStreamWidget):
         """
 
         # GUI elements
-        super().__init__(parent_widget, parent_layout, PresetType.LSL, stream_name, data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True, insert_position=insert_position)
+        super().__init__(parent_widget, parent_layout, PresetType.LSL, stream_name,
+                         data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True, insert_position=insert_position)
         self.data_type = data_type
 
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
@@ -30,7 +31,6 @@ class LSLWidget(BaseStreamWidget):
         lsl_worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
         self.connect_worker(lsl_worker, True)
         self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
-
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):
