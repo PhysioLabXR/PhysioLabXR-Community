@@ -213,8 +213,8 @@ class DataBufferSingleStream():
 
         # self.buffer[0] = np.concatenate([self.buffer[0], data_dict['frames']], axis=-1)
         # self.buffer[1] = np.concatenate([self.buffer[1], data_dict['timestamps']])
-        self.buffer[0][:, -frames.shape[-1]:] = frames
-        self.buffer[1][-frames.shape[-1]:] = timestamps
+        self.buffer[0][:, -frames.shape[-1]:] = frames[:, -self.buffer_size:]
+        self.buffer[1][-frames.shape[-1]:] = timestamps[-self.buffer_size:]
 
         # buffer_time_points = self.buffer[0].shape[-1]
         # cut_to = -np.min([buffer_time_points, self.buffer_size])

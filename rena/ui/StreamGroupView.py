@@ -6,6 +6,7 @@ from PyQt5.QtGui import *
 from rena import config
 from rena.config import default_group_name
 from rena.config_ui import *
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.presets.presets_utils import get_stream_preset_info, get_stream_group_info, get_is_group_shown
 from rena.utils.ui_utils import dialog_popup
@@ -192,7 +193,7 @@ class StreamGroupView(QTreeWidget):
                                                  group_name=group_name,
                                                  plot_format=group_entry.selected_plot_format,
                                                  is_shown=group_entry.is_group_shown)
-            if len(group_entry.channel_indices) > config.settings.value("max_timeseries_num_channels"):
+            if len(group_entry.channel_indices) > AppConfigs().max_timeseries_num_channels_per_group:
                 dialog_popup(f'Warning: Number of Channels for stream {self.stream_name}\' group {group_name} Exceeds Maximum Number of Channels Allowed. Additional Channels Will Not Be Displayed.', mode='modeless')
                 continue  # skip adding channel items if exceeding maximum time series number of channels
             for channel_index_in_group, channel_index in enumerate(group_entry.channel_indices):

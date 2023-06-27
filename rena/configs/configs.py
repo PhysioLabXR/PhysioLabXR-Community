@@ -68,6 +68,9 @@ class AppConfigs(metaclass=Singleton):
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000
 
+    max_timeseries_num_channels_per_group = int(2 ** 10)
+    viz_buffer_max_size = int(2 ** 18)
+
     def __post_init__(self):
         self._app_config_path: str = os.path.join(self.app_data_path, self._file_name)
 
