@@ -152,7 +152,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # Attributes purely for performance checks x############################
         """
-        These attributes should be kept only on this perforamnce branch
+        These attributes should be kept only on this performance branch
         """
         self.update_buffer_times = []
         self.plot_data_times = []

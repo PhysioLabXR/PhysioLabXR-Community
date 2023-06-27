@@ -4,7 +4,7 @@ import webbrowser
 from typing import Dict
 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
 
 from exceptions.exceptions import RenaError
@@ -12,6 +12,7 @@ from rena import config
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets, PresetType, DataType
 from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.threadings.LongTasks import LongTaskThread, LoadingDialog
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
@@ -46,7 +47,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -131,9 +131,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_btn_clicked(self):
         """
-        This should be the only entry point to adding a stream widget
+        This is the only entry point to adding a stream widget
         :return:
         """
+        # self.addStreamWidget.add_btn.setEnabled(False)
+        # self.loading_dialog = LoadingDialog(self, message=f"Adding stream {self.addStreamWidget.get_selected_stream_name()}")
+        # self.loading_dialog.show()
+        # task_thread = LongTaskThread(self, "process_add")
+        # task_thread.completed.connect(self.add_completed)
+        # task_thread.start()
+        self.process_add()
+
+    def add_completed(self):
+        self.addStreamWidget.add_btn.setEnabled(True)
+        self.loading_dialog.close()
+
+    def process_add(self):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
@@ -374,3 +387,4 @@ class MainWindow(QtWidgets.QMainWindow):
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
         is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
         return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])
+
