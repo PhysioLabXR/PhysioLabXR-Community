@@ -64,8 +64,8 @@ def load_nii_gz_file(file_path: str, normalized=True):
     return image_header, image_data
 
 
-def volume_to_gl_volume_item(volume_data, alpha_interpolate=True, centralized=True):
-    volume_data = (volume_data - np.min(volume_data)) / (np.max(volume_data) - np.min(volume_data))
+def volume_to_gl_volume_item(volume_data, alpha_interpolate=True, centralized=True, non_linear_interpolation_factor=1):
+    volume_data = (volume_data - np.min(volume_data)) / (np.max(volume_data) - np.min(volume_data)) * non_linear_interpolation_factor # TODO: change the interpolation range
     x_size, y_size, z_size = volume_data.shape
 
     # cut off the top half data

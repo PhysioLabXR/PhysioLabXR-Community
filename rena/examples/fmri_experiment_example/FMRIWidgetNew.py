@@ -3,6 +3,7 @@
 from PyQt5.QtCore import QTimer, QThread, QMutex
 
 from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
+from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
@@ -177,7 +178,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         _, self.mri_volume_data = load_nii_gz_file(
             'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/structural.nii.gz')
-        self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data)
+        self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data, non_linear_interpolation_factor=2)
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()
 
@@ -293,9 +294,11 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def create_buffer(self):
         channel_num = get_stream_num_channels(self.stream_name)
-        buffer_size = 1 if channel_num > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
+        # buffer_size = 1 if channel_num > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
+        # self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
+
         self.viz_data_buffer = DataBufferSingleStream(num_channels=channel_num,
-                                                      buffer_sizes=buffer_size, append_zeros=True)
+                                                      buffer_sizes=1, append_zeros=True)
 
     def visualize(self):
         self.tick_times.append(time.time())
@@ -378,7 +381,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.fmri_axial_view_image_item.scale(1, -1, 1)
 
         # apply the xz plane transform
-        self.fmri_axial_view_image_item.translate(-256 / 2, 256 / 2 , (124-76)/2+0.1)
+        self.fmri_axial_view_image_item.translate(-256 / 2, 256 / 2 , -124/2+76+0.1) #
 
         self.volume_view_plot.addItem(self.fmri_axial_view_image_item)
 
