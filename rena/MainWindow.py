@@ -14,6 +14,7 @@ from rena.presets.Presets import Presets, PresetType, DataType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.LongTasks import LongTaskThread, LoadingDialog
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui_shared import num_active_streams_label_text
@@ -176,7 +177,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
                 elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
-                    self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
+                    self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
+                elif selected_type == PresetType.ZMQ:
+                    self.init_ZMQ_streaming(selected_text, data_type, port)  # add lsl stream
                 elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
                     streams_for_experiment = get_experiment_preset_streams(selected_text)
                     self.add_streams_to_visualize(streams_for_experiment)
@@ -187,8 +190,8 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, port, networking_interface, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, port, networking_interface, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+    def create_preset(self, stream_name, port, preset_type_str, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None):
+        create_default_preset(stream_name, port, preset_type_str, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
@@ -241,25 +244,38 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
         #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
-        error_initialization = False
+    # def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
+    #     error_initialization = False
+    #     # set up UI elements
+    #     widget_name = networking_stream_name + '_widget'
+    #     stream_widget = StreamWidget(parent_widget=self,
+    #                                  parent_layout=self.streamsHorizontalLayout,
+    #                                  stream_name=networking_stream_name,
+    #                                  data_type=data_type,
+    #                                  worker=worker,
+    #                                  networking_interface=networking_interface,
+    #                                  port_number=port_number,
+    #                                  insert_position=self.streamsHorizontalLayout.count() - 1)
+    #     stream_widget.setObjectName(widget_name)
+    #     self.stream_widgets[networking_stream_name] = stream_widget
+    #
+    #     if error_initialization:
+    #         stream_widget.RemoveStreamBtn.click()
+    #     config.settings.endGroup()
 
-        # set up UI elements
-        widget_name = networking_stream_name + '_widget'
-        stream_widget = StreamWidget(parent_widget=self,
-                                     parent_layout=self.streamsHorizontalLayout,
-                                     stream_name=networking_stream_name,
-                                     data_type=data_type,
-                                     worker=worker,
-                                     networking_interface=networking_interface,
-                                     port_number=port_number,
-                                     insert_position=self.streamsHorizontalLayout.count() - 1)
+    def init_LSL_streaming(self, stream_name, data_type=None):
+        error_initialization = False
+        widget_name = stream_name + '_widget'
+        stream_widget = LSLWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 data_type=data_type,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
-        self.stream_widgets[networking_stream_name] = stream_widget
+        self.stream_widgets[stream_name] = stream_widget
 
         if error_initialization:
             stream_widget.RemoveStreamBtn.click()
-        config.settings.endGroup()
 
     def update_meta_data(self):
         # get the stream viz fps

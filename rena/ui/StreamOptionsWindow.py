@@ -48,6 +48,9 @@ class StreamOptionsWindow(QWidget):
         self.plot_format_widget.hide()
         self.actionsWidgetLayout.addWidget(self.plot_format_widget)
 
+        # barplot
+        self.bar_chart_range_on_change_signal.connect(self.parent.bar_chart_range_on_change)
+
         # stream group tree view
         self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name)
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)

@@ -13,8 +13,6 @@ from rena.utils.image_utils import process_image
 
 
 class ScreenCaptureWorker(QObject, RenaWorker):
-    tick_signal = pyqtSignal()  # note that the screen capture follows visualization refresh rate
-    change_pixmap_signal = pyqtSignal(tuple)
 
     def __init__(self, screen_label, video_scale: float, channel_order: VideoDeviceChannelOrder):
         super().__init__()
@@ -38,4 +36,4 @@ class ScreenCaptureWorker(QObject, RenaWorker):
             frame = process_image(frame, self.channel_order, self.video_scale)
             frame = np.flip(frame, axis=0)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-            self.change_pixmap_signal.emit((self.screen_label, frame, local_clock()))  # uses lsl local clock for syncing
+            self.signal_data.emit({"frame": frame, "timestamp": local_clock()})  # uses lsl local clock for syncing

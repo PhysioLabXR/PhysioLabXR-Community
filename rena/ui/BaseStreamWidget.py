@@ -1,16 +1,18 @@
 # This Python file uses the following encoding: utf-8
 import time
 from collections import deque
+from typing import Callable
 
 import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt5.QtWidgets import QDialogButtonBox, QSplitter, QWidget
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
 from rena.configs.configs import AppConfigs, LinechartVizMode
+from rena.presets.Presets import PresetType
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
@@ -28,23 +30,29 @@ from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
 
 
-class StreamWidget(Poppable, QtWidgets.QWidget):
+class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
 
-    def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
-                 insert_position=None, ):
+    def __init__(self, parent_widget, parent_layout, preset_type, stream_name, data_timer_interval, use_viz_buffer, insert_position=None, option_widget: QWidget=None):
         """
-        StreamWidget is the main interface with plots and a single stream of data.
-        The stream can be either LSL or ZMQ.
-        @param parent_widget: the MainWindow
-        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
-        """
+        This is the base stream widget class. It contains the main interface for a single stream.
 
-        # GUI elements
+        pull_data_timer and viz v_timer are initialized and started here. Class extending this class will be responsible
+        for starting the timers.
+
+        @param parent_widget: the MainWindow class
+        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
+        @param stream_name: the name of the stream
+        @param use_viz_buffer: whether to use a buffer for visualization. If set to false, the child class must override
+        the visualize function. Video stream including webcam and screen capture does not use viz buffer
+        """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
         self.ui = uic.loadUi("ui/StreamContainer.ui", self)
         self.set_pop_button(self.PopWindowBtn)
+        self.StreamNameLabel.setText(stream_name)
+        self.OptionsBtn.setIcon(options_icon)
+        self.RemoveStreamBtn.setIcon(remove_stream_icon)
 
         if type(insert_position) == int:
             parent_layout.insertWidget(insert_position, self)
@@ -52,38 +60,26 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             parent_layout.addWidget(self)
         self.parent = parent_layout
         self.main_parent = parent_widget
+        # add splitter to the layout
+        self.splitter = QSplitter(Qt.Vertical)
+        self.viz_group_scroll_layout.addWidget(self.splitter)
 
-        ##
+        self.preset_type = preset_type
         self.stream_name = stream_name  # this also keeps the subtopic name if using ZMQ
-        self.networking_interface = networking_interface
-        self.port_number = port_number
-        self.data_type = data_type
-        # self.preset = get_complete_stream_preset_info(self.stream_name)
-
         self.actualSamplingRate = 0
-
-        self.StreamNameLabel.setText(stream_name)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
-
+        self.current_timestamp = 0
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
 
-        # visualization data buffer
-        self.current_timestamp = 0
-
-        # timer
-        self.timer = QTimer()
-        self.timer.setInterval(AppConfigs().pull_data_interval)
-        self.timer.timeout.connect(self.ticks)
-
         # visualization timer
+        self.data_timer = QTimer()
+        self.data_timer.setInterval(int(float(data_timer_interval)))
+        self.data_timer.timeout.connect(self.pull_data_tick)
         self.v_timer = QTimer()
         self.v_timer.setInterval(int(float(AppConfigs().visualization_refresh_interval)))
         self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
-        self.StartStopStreamBtn.clicked.connect(self.start_stop_stream_btn_clicked)
         self.OptionsBtn.clicked.connect(self.options_btn_clicked)
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
@@ -92,76 +88,60 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
         self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
 
-        # visualization component
-        # This variable stores all the visualization components we initialize it in the init_stream_visualization()
-        self.viz_components = None
+        # visualization components
+        self.viz_components = None  # stores all the visualization components we initialize it in the init_stream_visualization()
         self.num_points_to_plot = None
 
         # data elements
-        self.viz_data_buffer = None
-        self.create_buffer()
-
-        # if (stream_srate := interface.get_nominal_srate()) != nominal_sampling_rate and stream_srate != 0:
-        #     print('The stream {0} found in LAN has sampling rate of {1}, '
-        #           'overriding in settings: {2}'.format(lsl_name, stream_srate, nominal_sampling_rate))
-        #     config.settings.setValue('NominalSamplingRate', stream_srate)
-
-        # load default settings from settings
-
-        self.worker_thread = QThread(self)
-        if self.networking_interface == 'LSL':
-            channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-            self.worker = workers.LSLInletWorker(self.stream_name, channel_names, data_type=data_type, RenaTCPInterface=None)
-        elif self.networking_interface == 'ZMQ':
-            self.worker = workers.ZMQWorker(port_number=port_number, subtopic=stream_name, data_type=data_type)
-        elif self.networking_interface == 'Device':
-            assert worker
-            self.worker = worker
-        self.worker.signal_data.connect(self.process_stream_data)
-        self.worker.signal_stream_availability.connect(self.update_stream_availability)
-        self.worker.moveToThread(self.worker_thread)
-        self.worker_thread.start()
+        if use_viz_buffer:
+            self.viz_data_buffer = None
+            self.create_buffer()
 
         # create option window
-        self.stream_options_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
-        self.stream_options_window.bar_chart_range_on_change_signal.connect(self.bar_chart_range_on_change)
-        self.stream_options_window.hide()
+        if option_widget is None:
+            self.option_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
+        else:
+            self.option_window = option_widget
+        self.option_window.hide()
 
         # create visualization component, must be after the option window ##################
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
-        # add splitter to the layout
-        self.splitter = QSplitter(Qt.Vertical)
-        self.viz_group_scroll_layout.addWidget(self.splitter)
-
         self.create_visualization_component()
 
         self._has_new_viz_data = False
         self.viz_data_head = 0
 
         # FPS counter``
-        self.tick_times = deque(maxlen=10 * int(float(AppConfigs().visualization_refresh_interval)))
+        self.viz_times = None
+        self.update_buffer_times = None
+        self.plot_data_times = None
+        self.reset_performance_measures()
 
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()
+        self.set_pop_button_icons()
 
-        self.set_button_icons()
-        # start the timers
-        self.timer.start()
+    def start_timers(self):
         self.v_timer.start()
+        self.data_timer.start()
 
-        # Attributes purely for performance checks x############################
-        """
-        These attributes should be kept only on this performance branch
-        """
-        self.update_buffer_times = []
-        self.plot_data_times = []
-        ########################################################################
+    def connect_worker(self, worker):
+        self.worker_thread = QThread(self)
+        self.data_worker = worker
+        self.data_worker.signal_data.connect(self.process_stream_data)
+        self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        self.data_worker.moveToThread(self.worker_thread)
+        self.worker_thread.start()
+        self.set_start_stop_button_icon()
+
+    def connect_start_stop_btn(self, start_stop_callback: Callable):
+        self.StartStopStreamBtn.clicked.connect(start_stop_callback)
 
     def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
-        self.tick_times = deque(maxlen=10 * int(float(AppConfigs().visualization_refresh_interval)))
+        self.viz_times = deque(maxlen=10 * int(AppConfigs().visualization_refresh_interval))
 
     def update_stream_availability(self, is_stream_available):
         '''
@@ -169,7 +149,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         '''
         print('Stream {0} availability is {1}'.format(self.stream_name, is_stream_available), end='\r')
         self.is_stream_available = is_stream_available
-        if self.worker.is_streaming:
+        if self.data_worker.is_streaming:
             if is_stream_available:
                 if not self.StartStopStreamBtn.isEnabled(): self.StartStopStreamBtn.setEnabled(True)
                 self.StreamAvailablilityLabel.setPixmap(self.stream_active_pixmap)
@@ -197,80 +177,41 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
     def set_button_icons(self):
-        if not self.is_streaming():
-            self.StartStopStreamBtn.setIcon(start_stream_icon)
-        else:
-            self.StartStopStreamBtn.setIcon(stop_stream_icon)
+        self.set_pop_button_icons()
+        self.set_start_stop_button_icon()
+
+    def set_pop_button_icons(self):
 
         if not self.is_popped:
             self.PopWindowBtn.setIcon(pop_window_icon)
         else:
             self.PopWindowBtn.setIcon(dock_window_icon)
 
+    def set_start_stop_button_icon(self):
+        if not self.is_streaming():
+            self.StartStopStreamBtn.setIcon(start_stream_icon)
+        else:
+            self.StartStopStreamBtn.setIcon(stop_stream_icon)
+
     def options_btn_clicked(self):
         print("Option window button clicked")
-        self.stream_options_window.show()
-        self.stream_options_window.activateWindow()
+        self.option_window.show()
+        self.option_window.activateWindow()
 
     def group_plot_widget_edit_option_clicked(self, group_name: str):
         self.options_btn_clicked()
-        self.stream_options_window.set_selected_group(group_name)
+        self.option_window.set_selected_group(group_name)
 
     def is_streaming(self):
-        return self.worker.is_streaming
-
-    def start_stop_stream_btn_clicked(self):
-        # check if is streaming
-        if self.worker.is_streaming:
-            self.worker.stop_stream()
-            if not self.worker.is_streaming:
-                # started
-                # print("sensor stopped")
-                # self.StartStopStreamBtn.setText("Start Stream")  # toggle the icon
-                self.update_stream_availability(self.worker.is_stream_available)
-        else:
-            # self.reset_performance_measures()
-            try:
-                self.worker.start_stream()
-            except LSLStreamNotFoundError as e:
-                self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-                return
-            except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-                # self.main_parent.current_dialog = reply = QMessageBox.question(self, 'Channel Mismatch',
-                #                              'The stream with name {0} found on the network has {1}.\n'
-                #                              'The preset has {2} channels. \n '
-                #                              'Do you want to reset your preset to a default and start stream.\n'
-                #                              'You can edit your stream channels in Options if you choose No'.format(
-                #                                  self.stream_name, e.message,
-                #                                  len(get_stream_preset_info(self.stream_name, 'ChannelNames'))),
-                #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
-                message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-                reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
-
-                if reply.result():
-                    self.reset_preset_by_num_channels(e.message)
-                    try:
-                        self.worker.start_stream()  # start the stream again with updated preset
-                    except LSLStreamNotFoundError as e:
-                        self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
-                        return
-                else:
-                    return
-            except Exception as e:
-                raise UnsupportedErrorTypeError(str(e))
-            # if self.worker.is_streaming:
-            #     self.StartStopStreamBtn.setText("Stop Stream")
-        self.set_button_icons()
-        self.main_parent.update_active_streams()
+        return self.data_worker.is_streaming
 
     def reset_preset_by_num_channels(self, num_channels):
         pop_stream_preset_from_settings(self.stream_name)
-        self.main_parent.create_preset(self.stream_name, self.port_number, self.networking_interface, data_type=self.data_type, num_channels=num_channels)  # update preset in settings
+        self.main_parent.create_preset(self.stream_name, None, 'LSL', data_type=self.data_type, num_channels=num_channels)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
-        self.worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
+        self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
 
-        self.stream_options_window.reload_preset_to_UI()
+        self.option_window.reload_preset_to_UI()
         self.reset_viz()
 
     def reset_viz(self):
@@ -292,10 +233,10 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         if self.main_parent.recording_tab.is_recording:
             self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
-        self.timer.stop()
+        self.data_timer.stop()
         self.v_timer.stop()
-        if self.worker.is_streaming:
-            self.worker.stop_stream()
+        if self.data_worker.is_streaming:
+            self.data_worker.stop_stream()
         self.worker_thread.requestInterruption()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
@@ -306,7 +247,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         if self.is_popped:
             self.delete_window()
         self.deleteLater()
-        self.stream_options_window.close()
+        self.option_window.close()
         return True
 
     def update_channel_shown(self, channel_index, is_shown, group_name):
@@ -328,15 +269,10 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         clear_widget(self.splitter)
 
     def init_stream_visualization(self):
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-
         group_plot_widget_dict = {}
+        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         group_info = get_stream_group_info(self.stream_name)
         for group_name in group_info.keys():
-            # if group_info[group_name].is_only_image_enabled:
-            #     update_selected_plot_format(self.stream_name, group_name, 1)  # change the plot format to image now
-            #     group_info = get_stream_group_info(self.stream_name)  # reload the group info from settings
-
             group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
             group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
             self.splitter.addWidget(group_plot_widget_dict[group_name])
@@ -369,7 +305,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                     self.in_error_state = False
                     return
                 else:
-                    self.start_stop_stream_btn_clicked()  # stop the stream
+                    self.StartStopStreamBtn.click()  # stop the stream
                     self.in_error_state = False
                     return
             self.actualSamplingRate = data_dict['sampling_rate']
@@ -380,21 +316,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             self.main_parent.recording_tab.update_recording_buffer(data_dict)
             self.main_parent.scripting_tab.forward_data(data_dict)
             # scripting tab
-
-    '''
-    settings on change:
-    visualization can be changed while recording with mutex
-    1. lock settings on change
-    2. update visualization
-    3. save changes to RENA_Settings
-    4. release mutex
-        
-    data processing cannot be changed while recording
-    
-    # cannot add channels while streaming/recording
-    
-    
-    '''
 
     def stream_settings_changed(self, change):
         self.setting_update_viz_mutex.lock()
@@ -412,36 +333,11 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         The data to plot is in the parameter self.viz_data_buffer
         '''
 
-        self.tick_times.append(time.time())
-        # print("Viz FPS {0}".format(self.get_fps()), end='\r')
-        self.worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
-        # for lsl_stream_name, data_to_plot in self.LSL_data_buffer_dicts.items():
+        self.viz_times.append(time.time())
+        self.data_worker.signal_stream_availability_tick.emit()  # signal updating the stream availability
         actual_sampling_rate = self.actualSamplingRate
-        # max_display_datapoint_num = self.stream_widget_visualization_component.plot_widgets[0].size().width()
-
-        # reduce the number of points to plot to the number of pixels in the corresponding plot widget
-
-        # if data_to_plot.shape[-1] > config.DOWNSAMPLE_MULTIPLY_THRESHOLD * max_display_datapoint_num:
-        #     data_to_plot = np.nan_to_num(data_to_plot, nan=0)
-        #     # start = time.time()
-        #     # data_to_plot = data_to_plot[:, ::int(data_to_plot.shape[-1] / max_display_datapoint_num)]
-        #     # data_to_plot = signal.resample(data_to_plot, int(data_to_plot.shape[-1] / max_display_datapoint_num), axis=1)
-        #     data_to_plot = decimate(data_to_plot, q=int(data_to_plot.shape[-1] / max_display_datapoint_num),
-        #                             axis=1)  # resample to 100 hz with retain history of 10 sec
-        #     # print(time.time()-start)
-        #     time_vector = np.linspace(0., config.PLOT_RETAIN_HISTORY, num=data_to_plot.shape[-1])
-
-        # self.LSL_plots_fs_label_dict[lsl_stream_name][2].setText(
-        #     'Sampling rate = {0}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        #
-        # [plot.setData(time_vector, data_to_plot[i, :]) for i, plot in
-        #  enumerate(self.LSL_plots_fs_label_dict[lsl_stream_name][0])]
-        # change to loop with type condition plot time_series and image
-        # if self.LSL_plots_fs_label_dict[lsl_stream_name][3]:
-        # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
-        # self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
 
         if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
@@ -449,9 +345,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.num_points_to_plot:]
         for plot_group_index, (group_name) in enumerate(get_stream_group_info(self.stream_name).keys()):
             self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
-            # self.viz_components.group_plots[group_name].plot_data(data_to_plot)
 
-        # show the label
         self.viz_components.fs_label.setText(
             'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
         self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
@@ -460,40 +354,17 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
             self.viz_data_head = 0
 
-    def ticks(self):
-        self.worker.signal_data_tick.emit()
-        #     self.recent_tick_refresh_timestamps.append(time.time())
-        #     if len(self.recent_tick_refresh_timestamps) > 2:
-        #         self.tick_rate = 1 / ((self.recent_tick_refresh_timestamps[-1] - self.recent_tick_refresh_timestamps[0]) / (
-        #                     len(self.recent_tick_refresh_timestamps) - 1))
-        #
-        #     self.tickFrequencyLabel.setText(
-        #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
-
-    def init_server_client(self):
-        print('John')
-
-        # dummy preset for now:
-        stream_name = 'OpenBCI'
-        port_id = int(time.time())
-        identity = 'server'
-        processor_dic = {}
-        rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
-        self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
-        rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
-        print('DSP worker created')
-        self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
-
-        # send to server
+    def pull_data_tick(self):
+        self.data_worker.signal_data_tick.emit()
 
     def get_fps(self):
         try:
-            return len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])
+            return len(self.viz_times) / (self.viz_times[-1] - self.viz_times[0])
         except (ZeroDivisionError, IndexError) as e:
             return 0
 
     def is_widget_streaming(self):
-        return self.worker.is_streaming
+        return self.data_worker.is_streaming
 
     def on_num_points_to_display_change(self):
         '''
@@ -510,52 +381,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         if self.viz_components is not None:
             self.viz_components.update_nominal_sampling_rate()
 
-    # def reload_visualization_elements(self, info_dict):
-    #     self.group_info = collect_stream_all_groups_info(self.stream_name)
-    #     clear_layout(self.MetaInfoVerticalLayout)
-    #     clear_layout(self.TimeSeriesPlotsLayout)
-    #     clear_layout(self.ImageWidgetLayout)
-    #     clear_layout(self.BarPlotWidgetLayout)
-    #     self.create_visualization_component()
-
-    # @QtCore.pyqtSlot(dict)
-    # def plot_format_on_change(self, info_dict):
-        # old_format = self.group_info[info_dict['group_name']]['selected_plot_format']
-        # self.group_info[info_dict['group_name']]['selected_plot_format'] = info_dict['new_format']
-
-        # self.preset_on_change()  # update the group info
-
-        # self.viz_components.group_plots[plot_format_index_dict[old_format]][
-        #     info_dict['group_name']].hide()
-        # self.viz_components.group_plots[plot_format_index_dict[info_dict['new_format']]][
-        #     info_dict['group_name']].show()
-
-        # update the plot hide display
-
-    # @QtCore.pyqtSlot(dict)
-    # def image_changed(self, change: dict):
-    #     if change['group_name'] in self.group_name_plot_widget_dict.keys():
-    #         self.group_name_plot_widget_dict[change['group_name']].update_image_info(change['this_group_info_image'])
-
-    # def preset_on_change(self):
-    #     self.group_info = get_stream_group_info(self.stream_name)  # reload the group info
-
-    # def get_image_format_and_shape(self, group_name):
-    #     width = self.group_info[group_name]['plot_format']['image']['width']
-    #     height = self.group_info[group_name]['plot_format']['image']['height']
-    #     image_format = self.group_info[group_name]['plot_format']['image']['image_format']
-    #     depth = image_depth_dict[image_format]
-    #     channel_format = self.group_info[group_name]['plot_format']['image']['channel_format']
-    #     scaling_factor = self.group_info[group_name]['plot_format']['image']['scaling_factor']
-    #
-    #     return width, height, depth, image_format, channel_format, scaling_factor
-
-    #############################################
-
     def bar_chart_range_on_change(self, group_name):
         self.viz_components.group_plots[group_name].update_bar_chart_range()
 
-    #############################################
 
     def channel_group_changed(self, change_dict):
         """
@@ -608,7 +436,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         return int(display_duration * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'))
 
     def get_pull_data_delay(self):
-        return self.worker.get_pull_data_delay()
+        return self.data_worker.get_pull_data_delay()
 
     def set_spectrogram_cmap(self, group_name):
         self.viz_components.set_spectrogram_cmap(group_name)

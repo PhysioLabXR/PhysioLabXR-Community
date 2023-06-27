@@ -14,6 +14,7 @@ from pylsl import local_clock
 from exceptions.exceptions import DataPortNotOpenError
 from rena import config_signal, shared, config
 from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
+from rena.configs.configs import AppConfigs
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
@@ -29,7 +30,7 @@ class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
 class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
-    pull_data_times = deque(maxlen=100 * config.pull_data_interval)
+    pull_data_times = deque(maxlen=100 * AppConfigs().pull_data_interval)
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
