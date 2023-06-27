@@ -222,7 +222,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             if image_format == ImageFormat.pixelmap:
                 # pixel map return value
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                image_plot_data = image_plot_data.T  # transpose to (width, height)
+                image_plot_data = np.rot90(image_plot_data, k=-1)  # transpose to (width, height)
                 # image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
             self.image_item.setImage(image_plot_data)
             # self.image_label.setPixmap(image_plot_data)
