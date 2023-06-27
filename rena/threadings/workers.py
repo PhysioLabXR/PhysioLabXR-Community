@@ -815,7 +815,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def is_stream_available(self):
         poll_results = dict(self.poller.poll(timeout=1000))
-        print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
+        # print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
         return len(poll_results) > 0
 
     def reset_interface(self, stream_name, channel_names):
