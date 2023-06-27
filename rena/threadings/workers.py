@@ -779,12 +779,12 @@ class ZMQWorker(QObject, RenaWorker):
             while True:
                 try:
                     _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                    self.timestamp_queue.append(timestamp)
                     np.frombuffer(timestamp)
                 except zmq.error.Again:
                     break
             if timestamp is not None:
                 timestamp = np.frombuffer(timestamp, dtype=np.float64)
-                self.timestamp_queue.append(timestamp)
                 if len(self.timestamp_queue) > 1:
                     sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
                 else:

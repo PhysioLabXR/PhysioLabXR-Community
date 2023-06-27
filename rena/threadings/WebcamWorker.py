@@ -39,4 +39,4 @@ class WebcamWorker(QObject, RenaWorker):
                 cv_img = process_image(cv_img, self.channel_order, self.video_scale)
                 cv_img = np.flip(cv_img, axis=0)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-                self.signal_data.emit({"camera id": self.cam_id, "frames": cv_img, "timestamp": local_clock()})  # uses lsl local clock for syncing
+                self.signal_data.emit({"camera id": self.cam_id, "frame": cv_img, "timestamp": local_clock()})  # uses lsl local clock for syncing

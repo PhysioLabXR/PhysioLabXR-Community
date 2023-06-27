@@ -3,22 +3,18 @@ import time
 from collections import deque
 from typing import Callable
 
-import numpy as np
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter, QWidget
+from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
 
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config, config_ui
+from exceptions.exceptions import ChannelMismatchError
+from rena import config_ui
 from rena.configs.configs import AppConfigs, LinechartVizMode
-from rena.presets.Presets import PresetType
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
     change_stream_group_name, pop_stream_preset_from_settings, change_group_channels
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
-from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
@@ -34,7 +30,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
     channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
 
-    def __init__(self, parent_widget, parent_layout, preset_type, stream_name, data_timer_interval, use_viz_buffer, insert_position=None, option_widget: QWidget=None):
+    def __init__(self, parent_widget, parent_layout, preset_type, stream_name, data_timer_interval, use_viz_buffer, insert_position=None, option_widget_call: callable=None):
         """
         This is the base stream widget class. It contains the main interface for a single stream.
 
@@ -98,10 +94,10 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.create_buffer()
 
         # create option window
-        if option_widget is None:
+        if option_widget_call is None:
             self.option_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
         else:
-            self.option_window = option_widget
+            self.option_window = option_widget_call()
         self.option_window.hide()
 
         # create visualization component, must be after the option window ##################
@@ -126,11 +122,11 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.v_timer.start()
         self.data_timer.start()
 
-    def connect_worker(self, worker):
+    def connect_worker(self, worker, add_stream_availibility: bool):
         self.worker_thread = QThread(self)
         self.data_worker = worker
         self.data_worker.signal_data.connect(self.process_stream_data)
-        self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        if add_stream_availibility: self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
         self.data_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
         self.set_start_stop_button_icon()

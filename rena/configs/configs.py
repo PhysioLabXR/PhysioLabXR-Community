@@ -71,7 +71,7 @@ class AppConfigs(metaclass=Singleton):
     max_timeseries_num_channels_per_group = int(2 ** 10)
     viz_buffer_max_size = int(2 ** 18)
 
-    visualization_refresh_interval: int = 33  # in milliseconds, how often does the visualization refreshes
+    visualization_refresh_interval: int = 20  # in milliseconds, how often does the visualization refreshes
     pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
     video_device_refresh_interval: int = 33
 

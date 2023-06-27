@@ -17,6 +17,7 @@ from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
+from rena.ui.VideoWidget import VideoWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_preset
 from rena.utils.test_utils import some_test
@@ -68,7 +69,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ############
         self.stream_widgets: Dict[str, StreamWidget] = {}
-        self.video_device_widgets: Dict[str, VideoDeviceWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors
@@ -172,11 +172,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
                 self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
-                if selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:  # add video device
-                    self.init_video_device(selected_text)
+                if selected_type == PresetType.WEBCAM:  # add video device
+                    self.init_video_device(selected_text, video_preset_type=selected_type)
+                elif selected_type == PresetType.MONITOR:
+                    self.init_video_device(selected_text, video_preset_type=selected_type)
                 elif selected_type == PresetType.DEVICE:  # if this is a device preset
                     self.init_device(selected_text)  # add device stream
-                elif selected_type == PresetType.LSL or selected_type == PresetType.ZMQ:
+                elif selected_type == PresetType.LSL:
                     self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
                 elif selected_type == PresetType.ZMQ:
                     self.init_ZMQ_streaming(selected_text, data_type, port)  # add lsl stream
@@ -215,14 +217,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_stop_all_btn_clicked(self):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
-    def init_video_device(self, video_device_name):
+    def init_video_device(self, video_device_name, video_preset_type):
         widget_name = video_device_name + '_widget'
-        widget = VideoDeviceWidget(parent_widget=self,
-                                   parent_layout=self.camHorizontalLayout,
-                                   video_device_name=video_device_name,
-                                   insert_position=self.camHorizontalLayout.count() - 1)
+        widget = VideoWidget(parent_widget=self,
+                           parent_layout=self.camHorizontalLayout,
+                             video_preset_type=video_preset_type,
+                           video_device_name=video_device_name,
+                           insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
-        self.video_device_widgets[video_device_name] = widget
+        self.stream_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
         for stream_name in stream_names:
@@ -279,8 +282,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_meta_data(self):
         # get the stream viz fps
-        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
-        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()]])
         if len(fps_list) == 0:
             return
         if np.all(fps_list == 0):
@@ -358,9 +361,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # close other tabs
             stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
-            video_close_calls = [v_widgets.try_close for v_widgets in self.video_device_widgets.values()]
             [c() for c in stream_close_calls]
-            [v() for v in video_close_calls]
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
 
@@ -393,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings_widget.switch_to_tab(tab_name)
 
     def get_added_stream_names(self):
-        return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
+        return list(self.stream_widgets.keys())
 
     def is_any_streaming(self):
         """
@@ -401,6 +402,5 @@ class MainWindow(QtWidgets.QMainWindow):
         @return: return True if any network streams or video device is streaming, False otherwise
         """
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
-        is_video_device_widgets_streaming = np.any([x.is_widget_streaming() for x in self.video_device_widgets.values()])
-        return np.any([is_stream_widgets_streaming, is_video_device_widgets_streaming])
+        return np.any(is_stream_widgets_streaming)
 

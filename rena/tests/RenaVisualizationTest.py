@@ -15,7 +15,7 @@ from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.tests.TestStream import LSLTestStream
 from rena.tests.test_utils import app_fixture, \
-    ContextBot
+    ContextBot, get_random_test_stream_names
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qt
 
     assert test_stream_name in app_main_window.get_added_stream_names()
 
-def test_add_active_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
+def test_add_active_unknown_stream_widgets(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -79,7 +79,7 @@ def test_add_active_unknown_stream_in_added_stream_widgets(app_main_window, qtbo
 #     qtbot.mouseClick(app.button, QtCore.Qt.LeftButton)
 #     assert app.text_label.text() == "Changed!"
 
-def test_add_active_unknown_stream_stream_widgets_and_close(app_main_window, qtbot) -> None:
+def test_add_active_unknown_stream_and_close(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -100,3 +100,9 @@ def test_add_active_unknown_stream_stream_widgets_and_close(app_main_window, qtb
     qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].RemoveStreamBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
     p.kill()  # stop the dummy LSL process
+
+def test_add_active_known_stream_and_close(app_main_window, qtbot, context_bot) -> None:
+    test_stream_name = get_random_test_stream_names(1)[0]
+    context_bot.start_stream(test_stream_name, 8, 128)
+    context_bot.close_stream(test_stream_name)
+    context_bot.remove_stream(test_stream_name)

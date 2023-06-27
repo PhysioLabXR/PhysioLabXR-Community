@@ -16,7 +16,7 @@ class ScreenCaptureWorker(QObject, RenaWorker):
 
     def __init__(self, screen_label, video_scale: float, channel_order: VideoDeviceChannelOrder):
         super().__init__()
-        self.tick_signal.connect(self.process_on_tick)
+        self.signal_data_tick.connect(self.process_on_tick)
         self.screen_label = screen_label
         self.is_streaming = True
 
