@@ -27,7 +27,7 @@ class ImageConfig(metaclass=SubPreset):
     """
     image_format: ImageFormat = ImageFormat.pixelmap
     channel_format: ChannelFormat = ChannelFormat.channel_last
-
+    cmap: Cmap = Cmap.VIRIDIS
     width: int = 0
     height: int = 0
     scaling: int = 1

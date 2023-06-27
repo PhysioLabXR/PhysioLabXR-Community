@@ -102,6 +102,11 @@ def set_group_image_channel_format(stream_name, group_name, channel_format):
 def get_group_image_valid(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].is_image_valid()
 
+def get_group_image_cmap_lut(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.cmap.get_lookup_table()
+
+def set_group_image_cmap(stream_name: str, group_name: str, cmap: Cmap):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.cmap = cmap
 
 def get_selected_plot_format(stream_name, group_name) -> PlotFormat:
     return Presets().stream_presets[stream_name].group_info[group_name].selected_plot_format
