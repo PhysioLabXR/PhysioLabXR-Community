@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QLabel
 from scipy import signal
 
 from rena import config
+from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import PlotFormat
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_preset_info, get_is_group_shown, \
@@ -116,6 +117,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_layout.addWidget(self.plot_widget)
         self.plot_widget.enableAutoRange(enable=False)
         self.image_item = pg.ImageItem()
+        self.image_item.setLookupTable(Cmap.VIRIDIS.get_lookup_table())
         self.plot_widget.addItem(self.image_item)
 
         # self.image_label = QLabel('Image_Label')
@@ -220,6 +222,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             if image_format == ImageFormat.pixelmap:
                 # pixel map return value
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
+                image_plot_data = image_plot_data.T  # transpose to (width, height)
                 # image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
             self.image_item.setImage(image_plot_data)
             # self.image_label.setPixmap(image_plot_data)
