@@ -78,7 +78,7 @@ class RNStream:
             try:
                 assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
             except AssertionError:
-                warnings.warn('timestamps must be in increasing order.', UserWarning)
+                warnings.warn(f'RNStream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
             stream_label_bytes = \
                 bytes(stream_label[:max_label_len] + "".join(
                     " " for x in range(max_label_len - len(stream_label))), encoding)
@@ -183,7 +183,7 @@ class RNStream:
                     print("Ignore jitter remove for stream {0}, because it has fewer than two samples".format(stream_name))
                     continue
                 if np.std(ts_array) > 0.1:
-                    warnings.warn("Stream {0} may have a irregular sampling rate with std {0}. Jitter removal should not be applied to irregularly sampled streams.".format(stream_name, np.std(ts_array)), RuntimeWarning)
+                    warnings.warn(f"Stream {stream_name} may have a irregular sampling rate with its timestamp's std {np.std(ts_array)}. Jitter removal should not be applied to irregularly sampled streams.", RuntimeWarning)
                 print('Removing jitter for streams {0}/{1}'.format(i, len(buffer)), sep=' ',
                       end='\r', flush=True)
                 coefs = np.polyfit(list(range(len(ts_array))), ts_array, 1)
@@ -763,3 +763,31 @@ def mode_by_column(array: np.ndarray, ignore=None):
         else:
             rtn.append(mode[0])
     return rtn
+
+def camel_to_snake_case(camel_case_string):
+    """
+    Converts a string from camel case to snake case.
+
+    Args:
+        camel_string (str): The input string in camel case.
+
+    Returns:
+        str: The input string in snake case.
+    """
+    return ''.join(['_' + char.lower() if char.isupper() and i > 0 else char.lower() for i, char in enumerate(camel_case_string)])
+
+
+def convert_dict_keys_to_snake_case(d: dict) -> dict:
+    """
+    Converts the keys of a dictionary from camel case to snake case.
+    @param d:
+    @return:
+    """
+    return {camel_to_snake_case(k): v for k, v in d.items()}
+
+
+def reject_outliers(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else np.zeros(len(d))
+    return data[s<m]

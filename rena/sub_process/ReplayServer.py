@@ -39,9 +39,11 @@ class ReplayServer(threading.Thread):
 
         self.running = True
         self.main_program_routing_id = None
+        self.replay_finished = False
 
         # fps counter
-        self.tick_times = deque(maxlen=50)
+        self.tick_times = deque(maxlen=2 ** 16)
+        self.push_data_times = deque(maxlen=2 ** 16)
 
         self.c = 0  # use for counting in the pause session
         self.pause_time_offset_total = 0  # use for tracking the total paused time for this replay
@@ -53,7 +55,7 @@ class ReplayServer(threading.Thread):
     def run(self):
         while self.running:
             if not self.is_replaying:
-                print('ReplayClient: pending on start replay command')
+                print('ReplayServer: pending on start replay command')
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.START_COMMAND):
                     file_loc = command.split("!")[1]
@@ -70,21 +72,37 @@ class ReplayServer(threading.Thread):
                                 # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
                             else:
                                 self.send_string(shared.FAIL_INFO + 'Unsupported file type')
-                                return
+                                self.reset_replay()
+                                continue
                         except FileNotFoundError:
                             self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
-                            return
+                            self.reset_replay()
+                            continue
                     self.previous_file_loc = file_loc
                     self.previous_stream_data = self.stream_data
                     self.is_replaying = True
                     self.setup_stream()
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
-                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))
-                    self.send_string('|'.join(self.stream_data.keys()))
+                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
+                    self.send_string('|'.join(self.stream_data.keys()))  # send the stream names
+
+                    command = self.recv_string(is_block=True)
+                    if command == shared.GO_AHEAD_COMMAND:
+                        pass
+                    elif command == shared.DUPLICATE_STREAM_STOP_COMMAND:
+                        self.reset_replay()
+                        continue
+                elif command == shared.PERFORMANCE_REQUEST_COMMAND:
+                    self.send(self.get_average_loop_time())
+
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
+                    break
             else:
-                while len(self.remaining_stream_names) > 0:
+                while True:  # the replay loop
+                    if len(self.remaining_stream_names) == 0:
+                        self.replay_finished = True
+                        break
                     if not self.is_paused:
                         self.tick_times.append(time.time())
                         # print("Replay FPS {0}".format(self.get_fps()), end='\r')
@@ -114,8 +132,7 @@ class ReplayServer(threading.Thread):
                         self.slider_offset_time += slider_offset_time
                         self.set_to_time(set_to_time)
                         self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
-                    elif command == shared.STOP_COMMAND:
-                        # process stop command
+                    elif command == shared.STOP_COMMAND:  # process stop command
                         self.reset_replay()
                         self.is_replaying = False
                         self.is_paused = False  # reset is_paused in case is_paused had been set to True
@@ -125,11 +142,10 @@ class ReplayServer(threading.Thread):
                         self.running = False
                         break
 
-                print('replay finished')
-                if self.is_replaying:  # the case of a finished replay
-                    self.reset_replay()
-                    self.is_paused = False
-                    self.is_replaying = False
+                print('Replay Server: exited replay loop')
+                self.reset_replay()
+                if self.replay_finished:  # the case of a finished replay
+                    self.replay_finished = False
                     command = self.recv_string(is_block=True)
                     if command == shared.VIRTUAL_CLOCK_REQUEST:
                         self.send(np.array(-1.))
@@ -140,7 +156,6 @@ class ReplayServer(threading.Thread):
         # return here
 
     def reset_replay(self):
-        self.tick_times = deque(maxlen=50)
         self.outlets = {}
         self.next_sample_index_of_stream = {}
         self.chunk_sizes = {}  # chunk sizes are initialized to 1 in setup stream
@@ -154,8 +169,13 @@ class ReplayServer(threading.Thread):
         self.stream_names = None
         self.remaining_stream_names = None
 
+        self.is_paused = False
+        self.is_replaying = False
+
         # close all outlets if there's any
-        del self.outlets
+        for stream_name in self.outlets.keys():
+            del self.outlets[stream_name]
+        print("Replay Server: Reset replay: removed all outlets")
 
     def replay(self):
         this_stream_name = None
@@ -207,6 +227,7 @@ class ReplayServer(threading.Thread):
 
         outlet = self.outlets[this_stream_name]
         # print("outlet for this replay is: ", outlet)
+        push_call_start_time = time.perf_counter()
         if this_chunk_size == 1:
             # the data sample's timestamp is equal to (this sample's timestamp minus the first timestamp of the original data) + time since replay start
             outlet.push_sample(this_chunk_data[0], this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time)
@@ -218,6 +239,7 @@ class ReplayServer(threading.Thread):
             # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable
+        self.push_data_times.append(time.perf_counter() - push_call_start_time)
 
         # remove this stream from the list if there are no remaining samples
         if self.next_sample_index_of_stream[this_stream_name] >= stream_total_num_samples:
@@ -235,6 +257,8 @@ class ReplayServer(threading.Thread):
         self.end_time = - math.inf
         self.outlets = {}
         self.slider_offset_time = 0
+        self.tick_times = deque(maxlen=2 ** 16)
+        self.push_data_times = deque(maxlen=2 ** 16)
 
         # flatten any high dim data
         video_keys = []
@@ -365,8 +389,15 @@ class ReplayServer(threading.Thread):
         except ZeroDivisionError:
             return 0
 
+    def get_average_loop_time(self):
+        try:
+            return np.mean(self.push_data_times)
+        except ZeroDivisionError:
+            return 0
+
+
 def start_replay_server():
-    print("Replay Client Started")
+    print("Replay Server Started")
     # TODO connect to a different port if this port is already in use
     try:
         command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -377,8 +408,8 @@ def start_replay_server():
         print("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
         print("Replay Server exiting...No replay will be available for this session")
         return
-    replay_client_thread = ReplayServer(command_info_interface)
-    replay_client_thread.start()
+    replay_server_thread = ReplayServer(command_info_interface)
+    replay_server_thread.start()
 
 
 if __name__ == '__main__':

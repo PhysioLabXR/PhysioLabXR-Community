@@ -2,10 +2,10 @@ import pyqtgraph as pg
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtGui import QIntValidator
 
-from rena.config import valid_networking_interfaces, valid_preset_categories
+from rena.presets.Presets import PresetType, DataType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.utils.settings_utils import check_preset_exists, get_stream_preset_info, get_video_device_names, \
-    get_preset_category, get_stream_preset_custom_info
+from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
+from rena.ui_shared import add_icon
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -18,7 +18,13 @@ class AddStreamWidget(QtWidgets.QWidget):
         super().__init__()
         self.parent = parent
         self.ui = uic.loadUi("ui/AddWidget.ui", self)
+        self.add_btn.setIcon(add_icon)
+
         add_presets_to_combobox(self.stream_name_combo_box)
+
+        for data_type in DataType:
+            self.data_type_combo_box.addItem(data_type.value)
+
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
@@ -48,7 +54,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         return self.PortLineEdit.text()
 
     def get_data_type(self):
-        return self.DataTypeComboBox.currentText()
+        return self.data_type_combo_box.currentText()
 
     def set_selection_text(self, stream_name):
         self.stream_name_combo_box.lineEdit().setText(stream_name)
@@ -85,43 +91,34 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def get_current_selected_type(self):
         stream_name = self.get_selected_stream_name()
-        preset_category = get_preset_category(stream_name)
-        if preset_category == 'stream':
-            networking_interface = get_stream_preset_info(stream_name, "NetworkingInterface")
-            if networking_interface in valid_networking_interfaces:
-                return networking_interface
-            else:
-                raise Exception("Unknown networking interface {}".format(networking_interface))
-        elif preset_category in valid_preset_categories:
-            return preset_category
-        else:
-            raise Exception('Unknown preset category {}'.format(preset_category))
+        preset_type = get_preset_category(stream_name)
+        return preset_type
 
     def on_streamName_combobox_text_changed(self):
         if len(self.device_property_fields) > 0:
             self.clear_custom_device_property_uis()
 
         stream_name = self.get_selected_stream_name()
-        selected_type = self.get_current_selected_type()
 
-        self.get_current_selected_type()
-        if selected_type == 'LSL':
+        try:
+            selected_type = self.get_current_selected_type()
+        except KeyError:
+            return
+        if selected_type == PresetType.LSL:
             self.LSL_preset_selected(stream_name)
-        elif selected_type == 'ZMQ':
-            port_number = get_stream_preset_info(stream_name, "PortNumber")
+        elif selected_type == PresetType.ZMQ:
+            port_number = get_stream_preset_info(stream_name, "port_number")
             self.ZMQ_preset_selected(stream_name, port_number)
-        elif selected_type == 'Device':
+        elif selected_type == PresetType.DEVICE:
             self.device_preset_selected(stream_name)
-        elif selected_type == 'other':
-            self.LSL_preset_selected(stream_name)
-        elif selected_type == 'video':
+        elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
-        elif selected_type == 'exp':
+        elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         else: raise Exception("Unknow preset type {}".format(selected_type))
 
     def set_data_type_to_default(self):
-        self.DataTypeComboBox.setCurrentIndex(1)
+        self.data_type_combo_box.setCurrentIndex(1)
 
     def LSL_preset_selected(self, stream_name):
         self.NetworkingInterfaceComboBox.setCurrentIndex(0)
@@ -131,7 +128,7 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def ZMQ_preset_selected(self, stream_name, port_number):
         self.NetworkingInterfaceComboBox.show()
-        self.DataTypeComboBox.show()
+        self.data_type_combo_box.show()
         self.NetworkingInterfaceComboBox.setCurrentIndex(1)
         self.PortLineEdit.setText(str(port_number))
         self.PortLineEdit.show()
@@ -152,16 +149,17 @@ class AddStreamWidget(QtWidgets.QWidget):
         for property_name, property_widget in self.device_property_fields.items():
             property_widget.deleteLater()
         self.device_property_fields = dict()
+
     def hide_stream_uis(self):
-        self.DataTypeComboBox.setHidden(True)
+        self.data_type_combo_box.setHidden(True)
         self.NetworkingInterfaceComboBox.setHidden(True)
         self.PortLineEdit.setHidden(True)
 
     def verify_data_type(self, stream_name):
-        data_type = get_stream_preset_info(stream_name, "DataType")
-        index = self.DataTypeComboBox.findText(data_type, QtCore.Qt.MatchFixedString)
+        data_type_str = get_stream_preset_info(stream_name, "data_type").value
+        index = self.data_type_combo_box.findText(data_type_str, QtCore.Qt.MatchFixedString)
         if index >= 0:
-            self.DataTypeComboBox.setCurrentIndex(index)
+            self.data_type_combo_box.setCurrentIndex(index)
         else:
             self.set_data_type_to_default()
-            print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
+            # print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))

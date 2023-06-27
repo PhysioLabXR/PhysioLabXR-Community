@@ -26,8 +26,8 @@ sampling_rate_decimal_places = 2
 visualization_fps_decimal_places = 2
 tick_frequency_decimal_places = 2
 
-cam_display_width = 640
-cam_display_height = 480
+# cam_display_width = 640
+# cam_display_height = 480
 
 capture_display_width = 2560
 capture_display_height = 1440
@@ -40,18 +40,6 @@ groups_selected = 4
 mix_selected = 5
 
 stream_widget_icon_size = [72, 72]
-
-plot_format_index_dict = {
-    0: 'time_series',
-    1: 'image',
-    2: 'bar_chart'
-}
-
-image_depth_dict = {
-    'RGB': 3,
-    # 'Gray': 1,
-    'PixelMap': 1
-}
 
 image_min_width = 512
 image_min_height = 512

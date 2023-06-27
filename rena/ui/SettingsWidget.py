@@ -9,15 +9,17 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QFileDialog
 
 from rena import config_ui, config
+from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
 from rena.startup import load_settings
+from rena.utils.string_utils import remove_space_all_caps
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 import pyqtgraph as pg
 
-class SettingsTab(QtWidgets.QWidget):
+class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
-        self.ui = uic.loadUi("ui/SettingsTab.ui", self)
+        self.ui = uic.loadUi("ui/SettingsWidget.ui", self)
         self.parent = parent
         self.set_theme(config.settings.value('theme'))
 
@@ -29,9 +31,7 @@ class SettingsTab(QtWidgets.QWidget):
         self.set_recording_file_location(config.settings.value('recording_file_location'))
 
         # resolve recording file format
-        for file_format in config.FILE_FORMATS:
-            self.saveFormatComboBox.addItem(file_format)
-        self.set_recording_file_format()
+        self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
         self.resetDefaultBtn.clicked.connect(self.reset_default)
@@ -41,6 +41,27 @@ class SettingsTab(QtWidgets.QWidget):
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(config.settings.value('visualization_refresh_interval'))))))
+
+        self.linechart_viz_mode_combobox.addItems([member.value for member in LinechartVizMode.__members__.values()])
+        self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
+
+        self.load_settings_to_ui()
+
+    def load_settings_to_ui(self):
+        self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)
+        self.saveFormatComboBox.setCurrentText(AppConfigs().recording_file_format.value)
+
+    def switch_to_tab(self, tab_name: str):
+        if 'appearance' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_appearance_tab)
+        elif 'recording' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_recordings_tab)
+        elif 'video device' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_video_device_tab)
+        elif 'streams' in tab_name.lower():
+            self.settings_tabs.setCurrentWidget(self.settings_streams_tab)
+        else:
+            raise ValueError(f'SettingsWidget: unknown tab name: {tab_name}')
 
     def toggle_theme_btn_pressed(self):
         print("toggling theme")
@@ -69,24 +90,25 @@ class SettingsTab(QtWidgets.QWidget):
         self.set_recording_file_location(selected_data_dir)
 
     def recording_file_format_change(self):
-        # recording_file_formats = ["Rena Native (.dats)", "MATLAB (.m)", "Pickel (.p)", "Comma separate values (.CSV)"]
-        if self.saveFormatComboBox.currentText() != "Rena Native (.dats)":
+        if self.saveFormatComboBox.currentText() != RecordingFileFormat.dats.value:
             dialog_popup('Using data format other than Rena Native will result in a conversion time after finishing a '
-                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True)
-        config.settings.setValue('file_format', self.saveFormatComboBox.currentText())
+                         'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True, mode='modeless')
+        AppConfigs().recording_file_format = RecordingFileFormat(self.saveFormatComboBox.currentText())
+        print(f"recording_file_format_change: {AppConfigs().recording_file_format}")
 
     def reset_default(self):
+        # marked for refactor
         config.settings.clear()
         load_settings()
 
         self.set_theme(config.settings.value('theme'))
-        self.set_recording_file_format()
         self.set_recording_file_location(config.DEFAULT_DATA_DIR)
 
-    def set_recording_file_format(self):
-        self.saveFormatComboBox.setCurrentIndex(config.FILE_FORMATS.index(config.settings.value('file_format')))
+        AppConfigs().revert_to_default()
 
-    def set_recording_file_location(self, selected_data_dir):
+        self.load_settings_to_ui()
+
+    def set_recording_file_location(self, selected_data_dir: str):
         if selected_data_dir != '':
             config.settings.setValue('recording_file_location', selected_data_dir)
             print("Selected data dir: ", config.settings.value('recording_file_location'))
@@ -104,3 +126,7 @@ class SettingsTab(QtWidgets.QWidget):
                 print(f'Set viz refresh interval to {new_refresh_interval}')
             else:
                 dialog_popup(f"Plot FPS range is {config.plot_fps_range}. Please input a number within this range.", enable_dont_show=True, dialog_name='PlotFPSOutOfRangePopup')
+
+    def on_linechart_viz_mode_changed(self):
+        AppConfigs().linechart_viz_mode = LinechartVizMode(self.linechart_viz_mode_combobox.currentText())
+        print(f'Linechart viz mode changed to {AppConfigs().linechart_viz_mode}')

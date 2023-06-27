@@ -1,45 +1,42 @@
 # This Python file uses the following encoding: utf-8
-import json
-import os
-import shutil
 import uuid
 
 import numpy as np
-from PyQt5 import QtWidgets, uic, QtGui
-from PyQt5.QtCore import QSettings, pyqtSignal, QThread, QTimer
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog, QLabel, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
-from rena import config_ui, config
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
-from rena.startup import load_settings
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
+from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ScriptingParamWidget import ScriptingParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
-from rena.utils.general import DataBuffer, click_on_file
-from rena.utils.networking_utils import recv_string_router, send_data_dict
-from rena.utils.script_utils import *
-from rena.utils.settings_utils import get_stream_preset_info, get_stream_preset_names, check_preset_exists, \
-    get_experiment_preset_names, get_experiment_preset_streams
+from rena.utils.buffers import DataBuffer, click_on_file
+from rena.utils.networking_utils import send_data_dict
+from rena.scripting.script_utils import *
+from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
+    get_experiment_preset_names, get_stream_preset_info, check_preset_exists
 
-from rena.utils.ui_utils import stream_stylesheet, dialog_popup, add_presets_to_combobox, \
-    add_stream_presets_to_combobox, another_window, update_presets_to_combobox
-import pyqtgraph as pg
+from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
+    another_window, update_presets_to_combobox
 
 
-class ScriptingWidget(QtWidgets.QWidget):
+class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent, port, args):
-        super().__init__()
+    def __init__(self, parent_widget: QtWidgets, port, args):
+        super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
-        self.parent = parent
+        self.set_pop_button(self.PopWindowBtn)
+
+        self.parent = parent_widget
         self.port = port
         self.script = None
         self.input_widgets = []
@@ -50,6 +47,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         add_presets_to_combobox(self.inputComboBox)
 
         # set up the add buttons
+        self.removeBtn.clicked.connect(self.remove_script_clicked)
         self.addInputBtn.setIcon(add_icon)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
         self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
@@ -118,6 +116,8 @@ class ScriptingWidget(QtWidgets.QWidget):
             self.export_script_args_to_settings()
 
         self.internal_data_buffer = None
+
+
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -493,14 +493,14 @@ class ScriptingWidget(QtWidgets.QWidget):
     def get_preset_input_info_text(self, preset_name):
         if not check_preset_exists(preset_name):
             raise MissingPresetError(preset_name)
-        sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
-        num_channel = get_stream_preset_info(preset_name, 'NumChannels')
+        sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
+        num_channel = get_stream_preset_info(preset_name, 'num_channels')
         _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
         return '[{0}, {1}]'.format(num_channel, _timewindow * sampling_rate)
 
     def get_preset_expected_shape(self, preset_name):
-        sampling_rate = get_stream_preset_info(preset_name, 'NominalSamplingRate')
-        num_channel = get_stream_preset_info(preset_name, 'NumChannels')
+        sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
+        num_channel = get_stream_preset_info(preset_name, 'num_channels')
         return num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate
 
     def on_settings_changed(self):
@@ -525,8 +525,13 @@ class ScriptingWidget(QtWidgets.QWidget):
         print('Script widget closed')
         return True
 
-    def set_remove_btn_callback(self, callback):
-        self.removeBtn.clicked.connect(callback)
+    def remove_script_clicked(self):
+        # self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
+        if self.is_popped:
+            self.delete_window()
+        self.deleteLater()
+        remove_script_from_settings(self.id)
+        self.script_console_log_window.close()
 
     def on_input_combobox_changed(self):
         self.check_can_add_input()
@@ -535,7 +540,7 @@ class ScriptingWidget(QtWidgets.QWidget):
         self.check_can_add_output()
 
     def send_input(self, data_dict):
-        if np.any(np.array(data_dict["timestamps"] )< 100):
+        if np.any(np.array(data_dict["timestamps"])< 100):
             print('Hoi')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)

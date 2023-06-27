@@ -1,22 +1,23 @@
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
+import importlib
 import os
 import sys
-from multiprocessing import Process
 
 import pytest
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QWidget
+from rena.configs.configs import AppConfigs
 
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.MainWindow import MainWindow
-from rena.interfaces import InferenceInterface
 from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream
-import importlib
+from rena.tests.test_utils import update_test_cwd
 
 
 @pytest.fixture
 def app(qtbot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
@@ -28,12 +29,12 @@ def app(qtbot):
     return test_renalabapp
 
 
-def test_create_script(app, qtbot):
-    app.ui.tabWidget.setCurrentWidget(app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+def test_create_script(app_main_window, qtbot):
+    app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
+    qtbot.mouseClick(app_main_window.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
 
     class_name = 'ScriptTest'
-    this_scripting_widget = app.scripting_tab.script_widgets[-1]
+    this_scripting_widget = app_main_window.scripting_tab.script_widgets[-1]
     script_path = os.path.join(os.getcwd(), class_name + '.py')  # TODO also need to test without .py
     this_scripting_widget.create_script(script_path, is_open_file=False)
 

@@ -9,13 +9,15 @@ from collections import deque
 import numpy as np
 import time
 from random import random as rand
+
+import pylsl
 import zmq
 from pylsl import local_clock
 
 
 def main():
     topic = "CamCapture"
-    srate = 30
+    srate = 120
     port = "5557"
 
     c_channels = 3
@@ -48,6 +50,7 @@ def main():
         if len(send_times) > 0:
             fps = len(send_times) / (np.max(send_times) - np.min(send_times))
             print("Send FPS is {0}".format(fps), end='\r')
+        print(f'current timestamp is {pylsl.local_clock()}', end='\r', flush=True)
 
 if __name__ == '__main__':
     main()

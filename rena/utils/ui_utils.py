@@ -1,13 +1,10 @@
-import time
-import cv2
 import qimage2ndarray
-# from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
+    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
 from qimage2ndarray.dynqt import QtGui
@@ -15,8 +12,7 @@ from qimage2ndarray.dynqt import QtGui
 from rena import config_ui, config
 import matplotlib.pyplot as plt
 
-from rena.utils.settings_utils import get_all_preset_names, get_stream_preset_names
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
@@ -271,13 +267,13 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 
 class CustomDialog(QDialog):
-    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None):
+    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)
         self.dialog_name = dialog_name
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        QBtn = buttons
 
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -307,7 +303,7 @@ class CustomDialog(QDialog):
             print('will show ' + self.dialog_name)
 
 
-def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False):
+def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
     if enable_dont_show:
         try:
             assert dialog_name is not None
@@ -318,12 +314,15 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
         if config.settings.contains('show_' + dialog_name) and config.settings.value('show_' + dialog_name) == 'false':
             print('Skipping showing dialog ' + dialog_name)
             return
-    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
+    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show, buttons=buttons)  # If you pass self, the dialog will be centered over the main window as before.
+    if main_parent:
+        main_parent.current_dialog = dlg
     if mode=='modal':
+        dlg.activateWindow()
         if dlg.exec_():
             print("Dialog popup")
         else:
-            print("Cancel!")
+            print("Dialog closed")
     elif mode=='modeless':
         dlg.show()
         dlg.activateWindow()
@@ -401,7 +400,7 @@ class AnotherWindow(QWidget):
     will appear as a free-floating window as we want.
     """
 
-    def __init__(self, widget_to_add: QWidget, close_function):
+    def __init__(self, widget_to_add: QWidget, close_function: callable):
         super().__init__()
         layout = QVBoxLayout()
         layout.addWidget(widget_to_add)
@@ -409,7 +408,6 @@ class AnotherWindow(QWidget):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        # do stuff
         print('Window closed')
         if self.close_function():
             event.accept()  # let the window close
@@ -471,6 +469,11 @@ def clear_layout(layout):
         child = layout.takeAt(0)
         if child.widget():
             child.widget().deleteLater()
+
+def clear_widget(target_widget):
+    for i in reversed(range(target_widget.count())):
+        widget = target_widget.widget(i)
+        widget.deleteLater()
 
 # def change_plot_label(plot, plotItem, name):
 #     # change the label of given PlotDataItem in the plot's legend

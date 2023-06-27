@@ -1,4 +1,5 @@
 # replay
+import os
 from enum import Enum
 
 FAIL_INFO = 'fail!'
@@ -15,8 +16,13 @@ SLIDER_MOVED_SUCCESS_INFO = 'sm'
 STOP_COMMAND = 'stop!'
 STOP_SUCCESS_INFO = 'stop'
 
+GO_AHEAD_COMMAND = 'go'
+DUPLICATE_STREAM_STOP_COMMAND = 'ds!'
+
 TERMINATE_COMMAND = 't!'
 TERMINATE_SUCCESS_COMMAND = 't'
+
+PERFORMANCE_REQUEST_COMMAND = 'p!'
 
 # scripting
 SCRIPT_STDOUT_MSG_PREFIX = 'S!'
@@ -29,7 +35,10 @@ SCRIPT_PARAM_CHANGE = 'p'
 try:
     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
 except FileNotFoundError:
-    rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    try:
+        rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+    except FileNotFoundError:
+        rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
 
 class ParamChange(Enum):
     ADD = 'a'

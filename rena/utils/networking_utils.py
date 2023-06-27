@@ -2,7 +2,7 @@ import numpy as np
 import zmq
 
 from rena.shared import DATA_BUFFER_PREFIX
-from rena.utils.general import flatten
+from rena.utils.buffers import flatten
 
 
 def send_string_router(message, routing_id, socket_interface):

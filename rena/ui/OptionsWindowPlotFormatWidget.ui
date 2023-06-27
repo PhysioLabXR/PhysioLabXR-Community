@@ -20,7 +20,7 @@
    <item alignment="Qt::AlignTop">
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <property name="iconSize">
       <size>
@@ -35,34 +35,7 @@
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QWidget" name="NominalSamplingRateWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Plot Time Duration</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="plotTimeDurationLineEdit"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QWidget" name="PlotTimeDurationWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Nominal Sampling Rate</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="nominalSamplingRateLineEdit"/>
-          </item>
-         </layout>
+         <layout class="QHBoxLayout" name="horizontalLayout_2"/>
         </widget>
        </item>
       </layout>
@@ -134,18 +107,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="imageFormatComboBox">
-               <item>
-                <property name="text">
-                 <string>RGB</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>PixelMap</string>
-                </property>
-               </item>
-              </widget>
+              <widget class="QComboBox" name="imageFormatComboBox"/>
              </item>
             </layout>
            </widget>
@@ -161,18 +123,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="channelFormatCombobox">
-               <item>
-                <property name="text">
-                 <string>Channel First</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Channel Last</string>
-                </property>
-               </item>
-              </widget>
+              <widget class="QComboBox" name="channelFormatCombobox"/>
              </item>
             </layout>
            </widget>
@@ -243,6 +194,69 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Spectrogram</string>
+      </attribute>
+      <layout class="QGridLayout" name="spectrogram_gridLayout">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Overlap between segments (seconds)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="line_edit_time_per_segments"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Time per segment (seconds)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_13">
+         <property name="text">
+          <string>Color map</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QComboBox" name="comboBox_spectrogram_cmap"/>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="line_edit_overlap_between_segments"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_invalid_spectrogram_param">
+         <property name="font">
+          <font>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Invalid parameters: Time per segment must be greater than overlap between segments!</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Spectragrom Display Min Percentile (%)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Spectrogram Display Max Percentile (%)</string>
+         </property>
         </widget>
        </item>
       </layout>

@@ -5,28 +5,25 @@ Otherwise, you will get either import error or file not found error
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 import os
-import random
 import sys
-import threading
-import unittest
 from multiprocessing import Process
 
 import pytest
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QMessageBox
+from PyQt5 import QtWidgets
 from pytestqt.qtbot import QtBot
+from rena.configs.configs import AppConfigs
 
+AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.MainWindow import MainWindow
-from rena.config import lsl_stream_availability_wait_time
 from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream, ZMQTestStream
-from rena.utils.settings_utils import create_default_preset
+from rena.tests.TestStream import LSLTestStream
+from rena.tests.test_utils import update_test_cwd
 
 
 @pytest.fixture
 def app(qtbot: QtBot):
     print('Initializing test fixture for ' + 'Visualization Features')
+    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
@@ -43,7 +40,7 @@ def teardown_function(function):
     """
     pass
 
-def test_change_channel_name(app, qtbot) -> None:
+def test_change_channel_name(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -59,7 +56,7 @@ def test_change_channel_name(app, qtbot) -> None:
     p.kill()  # stop the dummy LSL process
 
 
-def test_change_group_name(app, qtbot) -> None:
+def test_change_group_name(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -74,7 +71,7 @@ def test_change_group_name(app, qtbot) -> None:
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
-def test_change_channel_name_multiple_times(app, qtbot) -> None:
+def test_change_channel_name_multiple_times(app_main_window, qtbot) -> None:
     '''
     Adding active stream
     :param app:
@@ -90,7 +87,7 @@ def test_change_channel_name_multiple_times(app, qtbot) -> None:
     p.kill()  # stop the dummy LSL process
 
 
-def test_change_channel_name_in_changed_group(app, qtbot) -> None:
+def test_change_channel_name_in_changed_group(app_main_window, qtbot) -> None:
     test_stream_name = 'TestStreamName'
     p = Process(target=LSLTestStream, args=(test_stream_name,))
     p.start()
@@ -99,7 +96,7 @@ def test_change_channel_name_in_changed_group(app, qtbot) -> None:
     print("Test complete, killing sending-data process")
     p.kill()  # stop the dummy LSL process
 
-def test_change_channel_name_after_create_new_group(app, qtbot) -> None:
+def test_change_channel_name_after_create_new_group(app_main_window, qtbot) -> None:
     # add new preset
     # create group
     # rearrange channels between groups

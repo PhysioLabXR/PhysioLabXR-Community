@@ -58,8 +58,10 @@ def validate_script_path(script_path: str):
 def get_target_class(script_path):
     spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
     script_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(script_module)
-
+    try:
+        spec.loader.exec_module(script_module)
+    except ImportError as e:
+        raise ScriptMissingModuleError(script_path, e)
     classes = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
     classes = [script_module.__getattribute__(x) for x in classes if x != 'RenaScript']  # exclude RenaScript itself
@@ -106,3 +108,19 @@ if __name__ == '__main__':
     # script_path = '../scripting/IndexPen.py'
     script_path, script_args = pickle.load(open('start_script_args.p', 'rb'))
     start_script_server(script_path, script_args)
+
+
+def get_script_widgets_args():
+    rtn = dict()
+    config.settings.beginGroup('scripts')
+    for script_id in config.settings.childGroups():
+        config.settings.beginGroup(script_id)
+        rtn[script_id] = dict([(k, config.settings.value(k)) for k in config.settings.childKeys()])
+        rtn[script_id]['id'] = script_id
+        config.settings.endGroup()
+    config.settings.endGroup()
+    return rtn
+
+
+def remove_script_from_settings(script_id):
+    config.settings.remove('scripts/{0}'.format(script_id))
