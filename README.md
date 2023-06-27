@@ -31,13 +31,13 @@
 <br />
 <div align="center">
   <a href="https://github.com/apocalyvec/renalabapp">
-    <img src="media/logo/RN.png" alt="Logo" width="180" height="89">
+    <img src="media/readme/RenaLabApp Overview.png" alt="Logo">
   </a>
 
 <h3 align="center">RenaLabApp</h3>
 
   <p align="center">
-    *A Software Platform In Python For Multi-modal Brain-computer Interface And Real-time Experiment Pipelines*
+    A Python Software Platform for Multi-Modal Brain-Computer Interface and Real-Time Experiment Pipelines
     <br />
     <a href="https://realitynavigationdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
@@ -112,32 +112,24 @@ running experiments. It works best with multi-modal (e.g., combining EEG and eye
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+Download the latest release from [here](https://github.com/ApocalyVec/RenaLabApp/releases).
 
-### Prerequisites
+### Run from Source
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
+Alternatively, you can clone the repo and run from source.
+
   ```sh
-  npm install npm@latest -g
+    git clone https://github.com/ApocalyVec/RenaLabApp.git
+    cd RenaLabApp
+    pip install -r requirements.txt
   ```
 
-### Installation
+The entry point to RenaLabApp is `main.py`, located in the root folder. You can run it by:
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/github_username/repo_name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
+  ```sh
+    python main.py
+  ```
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
