@@ -16,28 +16,22 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
         load_default_recording_file_location()
-        config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
         config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
         config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
         config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
         config.settings.setValue('pull_data_interval', config.pull_data_interval)
         config.settings.setValue('visualization_refresh_interval', config.VISUALIZATION_REFRESH_INTERVAL)
-        config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
         config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
         if not config.settings.contains('recording_file_location') or config.settings.value('recording_file_location') is None:
             load_default_recording_file_location()
-        if not config.settings.contains('viz_data_buffer_max_size') or config.settings.value('viz_data_buffer_max_size') is None:
-            config.settings.setValue('viz_data_buffer_max_size', config.VIZ_DATA_BUFFER_MAX_SIZE)
         if not config.settings.contains('viz_display_duration') or config.settings.value('viz_display_duration') is None:
             config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
         if not config.settings.contains('video_device_refresh_interval') or config.settings.value('video_device_refresh_interval') is None:
             config.settings.setValue('video_device_refresh_interval', config.VIDEO_DEVICE_REFRESH_INTERVAL)
-        if not config.settings.contains('max_timeseries_num_channels') or config.settings.value('max_timeseries_num_channels') is None:
-            config.settings.setValue('max_timeseries_num_channels', config.MAX_TIMESERIES_NUM_CHANNELS_PER_GROUP)
         if not config.settings.contains('downsample_method_mean_sr_threshold') or config.settings.value('downsample_method_mean_sr_threshold') is None:
             config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
         if not config.settings.contains('main_window_meta_data_refresh_interval') or config.settings.value('main_window_meta_data_refresh_interval') is None:

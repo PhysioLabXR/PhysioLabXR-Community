@@ -154,7 +154,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # Attributes purely for performance checks x############################
         """
-        These attributes should be kept only on this perforamnce branch
+        These attributes should be kept only on this performance branch
         """
         self.update_buffer_times = []
         self.plot_data_times = []
@@ -285,7 +285,9 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
+        sr = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+        display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
+        buffer_size = 1 if len(channel_names) > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
         self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
@@ -443,7 +445,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
-        self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
+        # self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
 
         if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
@@ -507,6 +509,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         :param new_display_duration:
         :return:
         '''
+        self.create_buffer()
         self.num_points_to_plot = self.get_num_points_to_plot()
         if self.viz_components is not None:
             self.viz_components.update_nominal_sampling_rate()

@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List
 
 from rena import config
+from rena.configs.configs import AppConfigs
 from rena.presets.PlotConfig import PlotConfigs
 from rena.presets.preset_class_helpers import SubPreset
 from rena.utils.ConfigPresetUtils import reload_enums, target_to_enum
@@ -49,7 +50,7 @@ class GroupEntry(metaclass=SubPreset):
                 is_channels_shown = [True] * max_channel_shown_per_group
                 is_channels_shown += [False] * (num_channels - max_channel_shown_per_group)
 
-        self._is_image_only = num_channels > config.settings.value('max_timeseries_num_channels')
+        self._is_image_only = num_channels > AppConfigs().max_timeseries_num_channels_per_group
         if self._is_image_only:
             self.selected_plot_format = PlotFormat.IMAGE
         if self.selected_plot_format is None:

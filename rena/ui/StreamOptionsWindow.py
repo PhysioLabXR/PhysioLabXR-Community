@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QPushButton, QWidget
 from rena import config
 from rena.config import app_logo_path
 from rena.config_ui import *
+from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import PlotFormat
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, is_group_image_only
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
@@ -94,10 +95,10 @@ class StreamOptionsWindow(QWidget):
         num_points_to_plot, new_sampling_rate, new_display_duration = self.get_num_points_to_plot_info()
         self.numPointsShownLabel.setText(num_points_shown_text.format(int(num_points_to_plot)))
 
-        if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE or num_points_to_plot == 0:
+        if num_points_to_plot > AppConfigs().viz_buffer_max_size or num_points_to_plot == 0:
             if not self.has_reported_invalid_num_points:  # will only report once
                 self.show_valid_num_points_to_plot(False)
-                dialog_popup(f'The number of points to display is too large. Max number of points to point is {config.VIZ_DATA_BUFFER_MAX_SIZE}' if num_points_to_plot > config.VIZ_DATA_BUFFER_MAX_SIZE else 'The number of points to display must be greater than 0.'
+                dialog_popup(f'The number of points to display is too large. Max number of points to point is {AppConfigs().viz_buffer_max_size}' if num_points_to_plot > AppConfigs().viz_buffer_max_size else 'The number of points to display must be greater than 0.'
                              'Please change the sampling rate or display duration.', mode='modal')
                 self.has_reported_invalid_num_points = True
             return
@@ -107,7 +108,7 @@ class StreamOptionsWindow(QWidget):
                 self.has_reported_invalid_num_points = False
 
         num_points_to_plot = int(num_points_to_plot)
-        assert num_points_to_plot <= config.VIZ_DATA_BUFFER_MAX_SIZE
+        assert num_points_to_plot <= AppConfigs().viz_buffer_max_size
         self.update_sr_and_display_duration_in_settings(new_sampling_rate, new_display_duration)
         self.parent.on_num_points_to_display_change()
 
