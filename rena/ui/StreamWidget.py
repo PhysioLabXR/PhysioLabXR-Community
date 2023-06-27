@@ -357,7 +357,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
-                # self.run_data_processor(data_dict)
+                self.run_data_processor(data_dict)
                 self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
                 self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
                 self._has_new_viz_data = True
@@ -630,13 +630,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
             if len(this_group_info.data_processors) != 0:
                 processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
                 data[this_group_info.channel_indices] = processed_data
-        # for this_group_info in group_info.values():
-        #     data
-        # print(info.channel_indices)
-        # for group_ in my_dict.values():
-        #     print(value)
-
-        # get_group_channel_indices
 
     def try_close(self):
         return self.remove_stream()
