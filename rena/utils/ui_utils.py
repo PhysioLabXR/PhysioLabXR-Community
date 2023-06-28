@@ -23,27 +23,27 @@ def init_view(label, container, label_bold=True, position="centertop", vertical=
 
         # positions
         if position == "centertop":
-            ql.setAlignment(QtCore.Qt.AlignTop)
-            ql.setAlignment(QtCore.Qt.AlignCenter)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         elif position == "center":
-            ql.setAlignment(QtCore.Qt.AlignCenter)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         elif position == "rightbottom":
-            ql.setAlignment(QtCore.Qt.AlignRight)
-            ql.setAlignment(QtCore.Qt.AlignBottom)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom)
 
         elif position == "righttop":
-            ql.setAlignment(QtCore.Qt.AlignRight)
-            ql.setAlignment(QtCore.Qt.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         elif position == "lefttop":
-            ql.setAlignment(QtCore.Qt.AlignLeft)
-            ql.setAlignment(QtCore.Qt.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         elif position == "leftbottom":
-            ql.setAlignment(QtCore.Qt.AlignLeft)
-            ql.setAlignment(QtCore.Qt.AlignBottom)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom)
 
         ql.setText(label)
         vl.addWidget(ql)
@@ -143,8 +143,8 @@ def init_camera_widget(parent, label_string, insert_position):
 def init_spec_view(parent, label, graph=None):
     if label:
         ql = QLabel()
-        ql.setAlignment(QtCore.Qt.AlignTop)
-        ql.setAlignment(QtCore.Qt.AlignCenter)
+        ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         ql.setText(label)
         parent.addWidget(ql)
 
@@ -153,7 +153,7 @@ def init_spec_view(parent, label, graph=None):
 
     scene = QGraphicsScene()
     spc_gv.setScene(scene)
-    spc_gv.setAlignment(QtCore.Qt.AlignCenter)
+    spc_gv.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
     if graph:
         scene.addItem(graph)
     # spc_gv.setFixedSize(config.WINDOW_WIDTH/4, config.WINDOW_HEIGHT/4)
@@ -279,8 +279,8 @@ class CustomDialog(QDialog):
         message = QLabel(str(msg))
 
         # center message and button
-        self.layout.addWidget(message, alignment=Qt.AlignCenter)
-        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignCenter)
+        self.layout.addWidget(message, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
 
         if enable_dont_show:
             # self.dont_show_button = QPushButton()
@@ -315,7 +315,7 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
         main_parent.current_dialog = dlg
     if mode=='modal':
         dlg.activateWindow()
-        if dlg.exec_():
+        if dlg.exec():
             print("Dialog popup")
         else:
             print("Dialog closed")
@@ -447,7 +447,7 @@ class ScrollLabel(QScrollArea):
         self.label = QLabel(content)
 
         # setting alignment to the text
-        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
         # making label multi-line
         self.label.setWordWrap(True)

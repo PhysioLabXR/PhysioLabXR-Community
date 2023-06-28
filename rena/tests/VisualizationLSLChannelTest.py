@@ -54,11 +54,11 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
     app_main_window.create_preset(test_stream_name, PresetType.LSL, num_channels=preset_num_chan)  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
 
-    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.wait(int(stream_availability_wait_time * 1e3))
     def stream_is_available():
         assert app_main_window.stream_widgets[test_stream_name].is_stream_available
@@ -72,7 +72,7 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
 
     t = threading.Timer(1, lambda: handle_current_dialog_button(QDialogButtonBox.StandardButton.Yes, app_main_window, qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
     t.start()
-    qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+    qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
     t.join()
 
     qtbot.wait(int(streaming_time_second * 1e3))

@@ -41,10 +41,10 @@ def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qt
     test_stream_name = 'TestStreamName'
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.MouseButton.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     assert test_stream_name in app_main_window.get_added_stream_names()
 
@@ -60,10 +60,10 @@ def test_add_active_unknown_stream_widgets(app_main_window, qtbot) -> None:
     p.start()
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.MouseButton.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     assert test_stream_name in app_main_window.get_added_stream_names()
     p.kill()  # stop the dummy LSL process
@@ -91,13 +91,13 @@ def test_add_active_unknown_stream_and_close(app_main_window, qtbot) -> None:
     p.start()
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     assert test_stream_name in app_main_window.get_added_stream_names()
 
-    qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].RemoveStreamBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].RemoveStreamBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     p.kill()  # stop the dummy LSL process
 

@@ -116,10 +116,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_item = pg.ImageItem()
         self.plot_widget.addItem(self.image_item)
 
-        # self.image_label = QLabel('Image_Label')
-        # self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-        # self.image_layout.addWidget(self.image_label)
-
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
         self.spectrogram_layout.addWidget(self.spectrogram_widget)
@@ -128,7 +124,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.setXRange(0, 1)
         self.spectrogram_widget.setLabel('left', 'Frequency', units='Hz')
         self.spectrogram_widget.setLabel('bottom', 'Time', units='s')
-        # self.spectrogram_widget.setLogMode(False, True)
         self.spectrogram_widget.showGrid(x=True, y=True, alpha=0.5)
         self.spectrogram_widget.enableAutoRange(enable=False)
 

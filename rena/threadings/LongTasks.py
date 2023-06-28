@@ -22,7 +22,7 @@ class LoadingDialog(QDialog):
         self.setWindowTitle(message)
         layout = QVBoxLayout()
         self.label = QLabel(message)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
         self.setLayout(layout)
 

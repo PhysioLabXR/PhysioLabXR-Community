@@ -60,7 +60,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
             yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
+            qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=int(click_delay_second * 1e3))
     else:
         time_started = time.time()
         while not isinstance(w := QtWidgets.QApplication.activeWindow(), CustomDialog):
@@ -71,7 +71,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
             print(f"Waiting for the activate window to be a CustomDialog: {w}")
         print(f": {w} is a CustomDialog, trying to click ok button")
         yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
+        qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=int(click_delay_second * 1e3))
 def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
     """
     This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
@@ -93,7 +93,7 @@ def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience
     if patience_second == 0:
         if isinstance(app.current_dialog, CustomDialog):
             yes_button = app.current_dialog.buttonBox.button(button)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))  # delay 1 second for the data to come in
+            qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=int(click_delay_second * 1e3))  # delay 1 second for the data to come in
         else:
             raise ValueError(f"current dialog in main window is not CustomDialog. It is {type(app.current_dialog)}")
     else:
@@ -106,7 +106,7 @@ def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience
             print(f"Waiting for the current dialogue to be a CustomDialog: {app.current_dialog}")
         print(f": {app.current_dialog} is a CustomDialog, trying to click ok button")
         yes_button = app.current_dialog.buttonBox.button(button)
-        qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
+        qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=int(click_delay_second * 1e3))
 
 class ContextBot:
     """
@@ -138,13 +138,13 @@ class ContextBot:
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-        self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+        self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
-        self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+        self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
-        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
         using_port = None
@@ -164,13 +164,13 @@ class ContextBot:
     def close_stream(self, stream_name: str):
         if stream_name not in self.send_data_processes.keys():
             raise ValueError(f"Founding repeating test_stream_name : {stream_name}")
-        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
         self.send_data_processes[stream_name].kill()
 
         self.qtbot.waitUntil(lambda: stream_is_unavailable(self.app, stream_name), timeout=self.stream_availability_timeout)  # wait until the stream becomes unavailable
 
     def remove_stream(self, stream_name: str):
-        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.LeftButton)
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     def clean_up(self):
         [p.kill() for _, p in self.send_data_processes.items()]
@@ -180,17 +180,17 @@ class ContextBot:
             raise ValueError("App is not recording when calling stop_recording from test_context")
         # t = threading.Timer(1, lambda: handle_current_dialog_ok(app=self.app, qtbot=self.qtbot, patience_second=30000))
         # t.start()
-        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
         # t.join()  # wait until the dialog is closed
         ok_button = self.app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-        self.qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton)
+        self.qtbot.mouseClick(ok_button, QtCore.Qt.MouseButton.LeftButton)
 
     def start_recording(self):
         if self.app.recording_tab.is_recording:
             raise ValueError("App is already recording when calling stop_recording from test_context")
         self.app.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
         # self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
-        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+        self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     def start_streams_and_recording(self, num_stream_to_test: int, num_channels: Union[int, Iterable[int]]=1, sampling_rate: Union[int, Iterable[int]]=1, stream_availability_timeout=2 * stream_availability_wait_time * 1e3):
         """
@@ -252,7 +252,7 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
             test_context.start_stream(s_name, num_channels, sampling_rate)
         if is_reocrding:
             app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
-            test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+            test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
         for s_name in stream_names:
@@ -359,12 +359,12 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         app_main_window.replay_tab.select_file(recording_file_name)
 
         print(f"test: selected file at {recording_file_name} for replaying. starting replay")
-        test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)
+        test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
         test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
         # start the streams from replay and record them ################################################
         print("test: replayed streams is now available, start the streams in their StreamWidget")
         for ts_name in this_stream_names:
-            test_context.qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+            test_context.qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
         print("test: start recording replayed streams")
         test_context.start_recording()
         test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))

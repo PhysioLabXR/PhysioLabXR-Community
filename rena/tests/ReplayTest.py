@@ -77,10 +77,10 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-        qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+        qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
         qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, ts_name)
-        qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+        qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
 
@@ -94,10 +94,10 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the LSL stream becomes available
 
     for ts_name in test_stream_names:
-        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     qtbot.wait(int(recording_time_second * 1e3))
     # time.sleep(recording_time_second)
@@ -109,7 +109,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         if patience == 0:
             if isinstance(w, CustomDialog):
                 yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-                qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
+                qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=1000)  # delay 1 second for the data to come in
         else:
             time_started = time.time()
             while not isinstance(w, CustomDialog):
@@ -118,14 +118,14 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
                     raise TimeoutError
                 time.sleep(0.5)
             yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-            qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)
+            qtbot.mouseClick(yes_button, QtCore.Qt.MouseButton.LeftButton, delay=1000)
 
     t = threading.Timer(1, handle_custom_dialog_ok)
     t.start()
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
     t.join()  # wait until the dialog is closed
     #
-    qtbot.mouseClick(app_main_window.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams, so we don't need to handle stream lost
+    qtbot.mouseClick(app_main_window.stop_all_btn, QtCore.Qt.MouseButton.LeftButton)  # stop all the streams, so we don't need to handle stream lost
     #
     print("Waiting for test stream processes to close")
     [p.kill() for p in test_stream_processes]
@@ -137,22 +137,22 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     data_original = RNStream(recording_file_name).stream_in()  # this original data will be compared with replayed data later
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'replay_tab'))  # switch to the replay widget
     app_main_window.replay_tab.select_file(recording_file_name)
-    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.LeftButton)  # stop the recording
+    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
 
     print("Waiting for replay streams to become available")
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay
 
     # start the streams from replay and record them ################################################
     for ts_name in test_stream_names:
-        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     # change the recording file name
-    qtbot.mouseClick(app_main_window.recording_tab.sessionTagTextEdit, QtCore.Qt.LeftButton)
-    qtbot.keyPress(app_main_window.recording_tab.sessionTagTextEdit, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.recording_tab.sessionTagTextEdit, QtCore.Qt.MouseButton.LeftButton)
+    qtbot.keyPress(app_main_window.recording_tab.sessionTagTextEdit, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.recording_tab.sessionTagTextEdit, replay_file_session_name)
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     wait_for_replay_finishes_time = (recording_time_second * 2) * 1e3
 
@@ -166,7 +166,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
     t = threading.Timer(1, handle_custom_dialog_ok)
     t.start()
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
 
     # qtbot.mouseClick(app.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams
 

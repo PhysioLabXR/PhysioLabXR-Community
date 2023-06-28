@@ -104,7 +104,7 @@ class ChannelItem(QTreeWidgetItem):
             item_check_state_after = self.checkState(column)
             parent_check_state_after = self.parent().checkState(column)
 
-        if role == Qt.CheckState.CheckStateRole and item_check_state_before != item_check_state_after:
+        if role == Qt.ItemDataRole.CheckStateRole and item_check_state_before != item_check_state_after:
             # set text to green
             if item_check_state_after == Qt.CheckState.Checked or item_check_state_after == Qt.CheckState.PartiallyChecked:
                 self.display = True
@@ -441,25 +441,7 @@ class StreamGroupView(QTreeWidget):
         self.selection_changed_signal.emit("Selection Changed")
         print("Selection Changed")
 
-    # @QtCore.pyqtSlot()
     def item_changed(self, item, column):  # check box on change
-        # print(item.data(0, 0))
-        # if hasattr(item, 'attribute')::
-        # print(item.data(0,0))
-        # if hasattr(item, 'item_type') and item.item_type == 'group':
-        #     self.item_changed_signal.emit('Item changed')
-        # print(item.data(0,0))
-        # if item.checkState(column) == Qt.Checked or item.checkState(column) == Qt.PartiallyChecked:
-        #     item.setForeground(0, QBrush(QColor(color_green)))
-        #     item.display = 1
-        # else:
-        #     item.setForeground(0, QBrush(QColor(color_white)))
-        #     item.display = 0
-        # if hasattr(item, 'item_type') and item.item_type == 'group':
-        # print('John')
-        # print(item.data(0,0))
-        ## the color change due to the checkbox also induce a item_change signal
-
         if type(item) == GroupItem:
             self.update_info_box_signal.emit('Item changed')
         if type(item) == ChannelItem:

@@ -31,7 +31,7 @@ def app(qtbot):
 
 def test_create_script(app_main_window, qtbot):
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
-    qtbot.mouseClick(app_main_window.scripting_tab.AddScriptBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.scripting_tab.AddScriptBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     class_name = 'ScriptTest'
     this_scripting_widget = app_main_window.scripting_tab.script_widgets[-1]
@@ -45,7 +45,7 @@ def test_create_script(app_main_window, qtbot):
         raise AssertionError
 
     # delete the file and remove the script from rena as clean up steps
-    qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     os.remove(script_path)
 
 # def test_script_input_output(app, qtbot):

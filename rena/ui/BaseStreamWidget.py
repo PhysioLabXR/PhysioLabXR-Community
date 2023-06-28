@@ -137,7 +137,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
             self.data_worker.stop_stream()
-            if not self.data_worker.is_streaming:
+            if not self.data_worker.is_streaming and hasattr(self.data_worker, 'is_stream_available'):
                 self.update_stream_availability(self.data_worker.is_stream_available)
         else:
             self.data_worker.start_stream()
