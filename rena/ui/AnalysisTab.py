@@ -2,12 +2,12 @@
 import os
 import time
 
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer
+from PyQt6.QtCore import QTimer
 
 from rena import config
 from rena.utils.data_utils import RNStream

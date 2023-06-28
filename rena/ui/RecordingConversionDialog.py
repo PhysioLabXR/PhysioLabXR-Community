@@ -1,8 +1,7 @@
 import pickle
 
-import pyxdf
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
 import pyqtgraph as pg
 from scipy.io import savemat
 import numpy as np
@@ -57,7 +56,6 @@ class RecordingConversionDialog(QtWidgets.QWidget):
     def on_finish_button_clicked(self):
         self.close()
         self.thread.quit()
-
 
 
 class RecordingConversionWorker(QObject):

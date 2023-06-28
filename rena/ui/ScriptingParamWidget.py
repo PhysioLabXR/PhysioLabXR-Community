@@ -1,7 +1,7 @@
 from pydoc import locate
 
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QCheckBox, QLineEdit
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
 from rena.shared import ParamChange

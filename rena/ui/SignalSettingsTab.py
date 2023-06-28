@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import uic
-from PyQt5.QtWidgets import QDialog
+from PyQt6 import uic
+from PyQt6.QtWidgets import QDialog
 
 from rena import config_signal
 from rena.utils.ui_utils import init_container, init_inputBox

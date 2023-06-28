@@ -1,6 +1,6 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QLayout, QPushButton
+from PyQt6 import QtWidgets
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QLayout, QPushButton
 
 from rena.config import app_logo_path
 from rena.ui_shared import pop_window_icon, dock_window_icon

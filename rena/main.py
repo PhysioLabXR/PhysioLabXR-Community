@@ -1,9 +1,9 @@
 import sys
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
+from PyQt6 import QtWidgets
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QIcon
+from PyQt6.QtWidgets import QLabel, QSystemTrayIcon, QMenu
 
 from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
@@ -15,8 +15,6 @@ from rena.startup import load_settings
 app = None
 
 if __name__ == '__main__':
-    # load default settings
-    load_settings(revert_to_default=False, reload_presets=False)
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
@@ -29,8 +27,11 @@ if __name__ == '__main__':
     splash = QLabel()
     pixmap = QPixmap('../media/logo/RenaLabAppDeprecated.png')
     splash.setPixmap(pixmap)
-    splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
+    splash.setWindowFlags(Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
     splash.show()
+
+    # load default settings
+    load_settings(revert_to_default=False, reload_presets=True)
 
     # main window init
     window = MainWindow(app=app)
@@ -46,9 +47,9 @@ if __name__ == '__main__':
     window.show()
 
     try:
-        app.exec_()
+        app.exec()
         print('App closed by user')
         sys.exit()
     except KeyboardInterrupt:
-        print('App terminate by KeybaordInterrupt')
+        print('App terminate by KeyboardInterrupt')
         sys.exit()

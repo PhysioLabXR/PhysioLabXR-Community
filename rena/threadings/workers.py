@@ -6,14 +6,15 @@ import numpy as np
 import psutil as psutil
 import pyqtgraph as pg
 import zmq
-from PyQt5 import QtCore
-from PyQt5.QtCore import QMutex
-from PyQt5.QtCore import (QObject, pyqtSignal)
+from PyQt6 import QtCore
+from PyQt6.QtCore import QMutex, QThread
+from PyQt6.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
 from exceptions.exceptions import DataPortNotOpenError
 from rena import config_signal, shared, config
 from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
+from rena.configs.configs import AppConfigs
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
@@ -29,7 +30,7 @@ class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
 class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data = pyqtSignal(dict)
     signal_data_tick = pyqtSignal()
-    pull_data_times = deque(maxlen=100 * config.pull_data_interval)
+    pull_data_times = deque(maxlen=100 * AppConfigs().pull_data_interval)
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
@@ -41,184 +42,15 @@ class RenaWorker(metaclass=RenaWorkerMeta):
     def stop_stream(self):
         pass
 
-    # def init_client(self, rena_tcp_request_object:RenaTCPRequestObject):
-    #     print('creating client')
-    #     self.rena_tcp_client_interface = RenaTCPInterface(stream_name=rena_tcp_request_object.stream_name,
-    #                                                  port_id=rena_tcp_request_object.port_id,
-    #                                                  identity='client')
-
-
-        # self.rena_tcp_client_interface = RenaTCPInterface(stream_name=, port_id=, identity=)
-
-    # def init_dsp_client_server(self, stream_name):
-    #
-    #     self.dsp_server_process = Process(target=dsp_processor,
-    #                                       args=(stream_name,))
-    #     # mp.set_start_method(method='spawn')
-    #     self.dsp_server_process.start()
-    #     print('dsp_server_process pid: ', str(self.dsp_server_process.pid))
-    #
-    #     dsp_client_interface = RenaTCPInterface(stream_name=stream_name,
-    #                                             port_id=self.dsp_server_process.pid,
-    #                                             identity='client')
-    #     self.dsp_client = RenaTCPClient(RENATCPInterface=dsp_client_interface)
-        # create a server and get it's pid
-        # server_interface = RENATCPInterface()
-        # clint_interface = RENATCPInterface()
-        # tcp_client = RENATCP
     def get_pull_data_delay(self):
         if len(self.pull_data_times) == 0:
             return 0
         return np.mean(self.pull_data_times)
-"""
-Deprecated software/device specific workers
-class EEGWorker(QObject):
-    # for passing data to the gesture tab
-    signal_data = pyqtSignal(dict)
-    tick_signal = pyqtSignal()
-
-    def __init__(self, eeg_interface=None, *args, **kwargs):
-        super(EEGWorker, self).__init__()
-        self.tick_signal.connect(self.eeg_process_on_tick)
-        if not eeg_interface:
-            print('None type eeg_interface, starting in simulation mode')
-
-        self._eeg_interface = eeg_interface
-        self._is_streaming = False
-
-        self.start_time = time.time()
-        self.end_time = time.time()
-
-    @pg.QtCore.pyqtSlot()
-    def eeg_process_on_tick(self):
-        if self._is_streaming:
-            if self._eeg_interface:
-                data = self._eeg_interface.process_frames()  # get all data and remove it from internal buffer
-            else:  # this is in simulation mode
-                # assume we only working with OpenBCI eeg
-                data = sim_openBCI_eeg()
-
-            # notify the eeg data for the radar tab
-            data_dict = {'data': data}
-            self.signal_data.emit(data_dict)
-
-    def start_stream(self):
-        if self._eeg_interface:  # if the sensor interfaces is established
-            self._eeg_interface.start_sensor()
-        else:
-            print('EEGWorker: Start Simulating EEG data')
-        self._is_streaming = True
-        self.start_time = time.time()
-
-    def stop_stream(self):
-        if self._eeg_interface:
-            self._eeg_interface.stop_sensor()
-        else:
-            print('EEGWorker: Stop Simulating eeg data')
-            print('EEGWorker: frame rate calculation is not enabled in simulation mode')
-        self._is_streaming = False
-        self.end_time = time.time()
-
-    def is_streaming(self):
-        return self._is_streaming
-
-
-class UnityLSLWorker(QObject):
-    # for passing data to the gesture tab
-    signal_data = pyqtSignal(dict)
-    tick_signal = pyqtSignal()
-
-    def __init__(self, unityLSL_interface=None, *args, **kwargs):
-        super(UnityLSLWorker, self).__init__()
-        self.tick_signal.connect(self.unityLSL_process_on_tick)
-        if not unityLSL_interface:
-            print('None type unityLSL_interface, starting in simulation mode')
-
-        self._unityLSL_interface = unityLSL_interface
-        self.is_streaming = False
-
-        self.start_time = time.time()
-        self.end_time = time.time()
-
-    @pg.QtCore.pyqtSlot()
-    def unityLSL_process_on_tick(self):
-        if self.is_streaming:
-            if self._unityLSL_interface:
-                data, _ = self._unityLSL_interface.process_frames()  # get all data and remove it from internal buffer
-            else:  # this is in simulation mode
-                data = sim_unityLSL()
-
-            data_dict = {'data': data}
-            self.signal_data.emit(data_dict)
-
-    def start_stream(self):
-        if self._unityLSL_interface:  # if the sensor interfaces is established
-            self._unityLSL_interface.start_sensor()
-        else:
-            print('UnityLSLWorker: Start Simulating Unity LSL data')
-        self.is_streaming = True
-        self.start_time = time.time()
-
-    def stop_stream(self):
-        if self._unityLSL_interface:
-            self._unityLSL_interface.stop_sensor()
-        else:
-            print('UnityLSLWorker: Stop Simulating Unity LSL data')
-            print('UnityLSLWorker: frame rate calculation is not enabled in simulation mode')
-        self.is_streaming = False
-        self.end_time = time.time()
-        
-class InferenceWorker(QObject):
-    # for passing data to the gesture tab
-    # signal_inference_results = pyqtSignal(np.ndarray)
-    signal_inference_results = pyqtSignal(list)
-    tick_signal = pyqtSignal(dict)
-
-    def __init__(self, inference_interface: InferenceInterface=None, *args, **kwargs):
-        super(InferenceWorker, self).__init__()
-        self.tick_signal.connect(self.inference_process_on_tick)
-        if not inference_interface:
-            print('None type unityLSL_interface, starting in simulation mode')
-
-        self.inference_interface = inference_interface
-        self._is_streaming = True
-        self.is_connected = False
-
-        self.start_time = time.time()
-        self.end_time = time.time()
-
-    def connect(self):
-        if self.inference_interface:
-            self.inference_interface.connect_inference_result_stream()
-            self.is_connected = True
-
-    def disconnect(self):
-        if self.inference_interface:
-            self.inference_interface.disconnect_inference_result_stream()
-            self.is_connected = False
-
-    def inference_process_on_tick(self, samples_dict):
-        if self._is_streaming:
-            if self.inference_interface:
-                inference_results = self.inference_interface.send_samples_receive_inference(samples_dict)  # get all data and remove it from internal buffer
-            else:  # this is in simulation mode
-                inference_results = sim_inference()  # TODO implement simulation mode
-            if len(inference_results) > 0:
-                self.signal_inference_results.emit(inference_results)
-"""
-
 
 
 class LSLInletWorker(QObject, RenaWorker):
-
-    # for passing data to the gesture tab
-    signal_data = pyqtSignal(dict)
-    signal_data_tick = pyqtSignal()
-
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
-
-    # signal_stream_num_channels = pyqtSignal(int)
 
     def __init__(self, stream_name, channel_names, data_type, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
@@ -242,6 +74,8 @@ class LSLInletWorker(QObject, RenaWorker):
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
@@ -258,25 +92,6 @@ class LSLInletWorker(QObject, RenaWorker):
                 return
 
             self.num_samples += len(timestamps)
-            # if self.dsp_on:
-            #     current_time = time.time()
-            #     self._rena_tcp_interface.send_array(frames)
-            #     # self._rena_tcp_interface.send_obj(RenaTCPObject(data=frames))
-            #     # send the data
-            #     frames = self._rena_tcp_interface.recv_array()
-            #     print('time: ', time.time()-current_time)
-
-                # receive the data
-                # frames = rena_tcp_object.data
-                # print(frames)
-
-            # if self.dsp_on:
-            #     receive_obj = self.dsp_client.process_data(data=RenaTCPObject(data=frames))
-            #     print(receive_obj.data)
-            # insert professor
-            # insert dsp processor
-            # if self.dsp_on:
-            #     self
 
             data_dict = {'stream_name': self._lslInlet_interface.lsl_stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
@@ -287,6 +102,8 @@ class LSLInletWorker(QObject, RenaWorker):
         """
         only emit when the stream is not available
         """
+        if QThread.currentThread().isInterruptionRequested():
+            return
         is_stream_availability = self._lslInlet_interface.is_stream_available()
         if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
@@ -302,7 +119,7 @@ class LSLInletWorker(QObject, RenaWorker):
         self.interface_mutex.unlock()
 
     def start_stream(self):
-        self._lslInlet_interface.start_sensor()
+        self._lslInlet_interface.start_stream()
         self.is_streaming = True
 
         self.num_samples = 0
@@ -310,24 +127,11 @@ class LSLInletWorker(QObject, RenaWorker):
         self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
-        self._lslInlet_interface.stop_sensor()
+        self._lslInlet_interface.stop_stream()
         self.is_streaming = False
 
     def is_stream_available(self):
         return self._lslInlet_interface.is_stream_available()
-
-
-    # def remove_stream(self):
-    #     # self.stop_stream()
-    #     # kill server
-    #     if self.dsp_server_process:
-    #         self.dsp_client.tcp_interface.send_obj(RenaTCPObject(data=None, exit_process=True))
-    #         self.dsp_server_process.join()
-            # self.dsp_server_process.terminate()
-            # while self.dsp_server_process.exitcode is None:
-            #     self.dsp_server_process.close()
-            #     break
-            # self.dsp_server_process.close()
 
 
 class OpenBCIDeviceWorker(QObject):
@@ -729,8 +533,6 @@ class ZMQWorker(QObject, RenaWorker):
 
     The supported socket patterns is SUB/PUB
     """
-    signal_data = pyqtSignal(dict)
-    signal_data_tick = pyqtSignal()
 
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
@@ -762,30 +564,36 @@ class ZMQWorker(QObject, RenaWorker):
     def __del__(self):
         self.socket.close()
         self.context.term()
-        print('In ZMQWorker.__dell__(): Socket closed and context terminated')
+        print('In ZMQWorker.__del__(): Socket closed and context terminated')
 
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         if self.is_streaming:
-            try:
-                pull_data_start_time = time.perf_counter()
-                _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                np.frombuffer(timestamp)
-            except zmq.error.Again:
-                return None
-            timestamp = np.frombuffer(timestamp, dtype=np.float64)
-            self.timestamp_queue.append(timestamp)
-            if len(self.timestamp_queue) > 1:
-                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-            else:
-                sampling_rate = np.nan
-            data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
-            data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
-            self.signal_data.emit(data_dict)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+            pull_data_start_time = time.perf_counter()
+            _, timestamp, data = None, None, None
+            while True:
+                try:
+                    _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                    timestamp = np.frombuffer(timestamp, dtype=np.float64)
+                    self.timestamp_queue.append(timestamp)
+                except zmq.error.Again:
+                    break
+            if timestamp is not None:
+                if len(self.timestamp_queue) > 1:
+                    sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+                else:
+                    sampling_rate = np.nan
+                data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
+                data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
+                self.signal_data.emit(data_dict)
+                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
     @pg.QtCore.pyqtSlot()
     def process_stream_availability(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         is_stream_availability = self.is_stream_available()
         if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
@@ -804,6 +612,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def is_stream_available(self):
         poll_results = dict(self.poller.poll(timeout=1000))
+        # print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
         return len(poll_results) > 0
 
     def reset_interface(self, stream_name, channel_names):

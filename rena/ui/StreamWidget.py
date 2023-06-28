@@ -3,10 +3,10 @@ import time
 from collections import deque
 
 import numpy as np
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -30,7 +30,7 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-    channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
+    channel_mismatch_buttons = buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
 
     def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
@@ -74,12 +74,12 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # timer
         self.timer = QTimer()
-        self.timer.setInterval(config.settings.value('pull_data_interval'))
+        self.timer.setInterval(AppConfigs().pull_data_interval)
         self.timer.timeout.connect(self.ticks)
 
         # visualization timer
         self.v_timer = QTimer()
-        self.v_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
+        self.v_timer.setInterval(int(float(AppConfigs().visualization_refresh_interval)))
         self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
@@ -140,7 +140,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_data_head = 0
 
         # FPS counter``
-        self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
+        self.tick_times = deque(maxlen=10 * int(float(AppConfigs().visualization_refresh_interval)))
 
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()
@@ -152,7 +152,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
         # Attributes purely for performance checks x############################
         """
-        These attributes should be kept only on this perforamnce branch
+        These attributes should be kept only on this performance branch
         """
         self.update_buffer_times = []
         self.plot_data_times = []
@@ -161,7 +161,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
     def reset_performance_measures(self):
         self.update_buffer_times = []
         self.plot_data_times = []
-        self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
+        self.tick_times = deque(maxlen=10 * int(float(AppConfigs().visualization_refresh_interval)))
 
     def update_stream_availability(self, is_stream_available):
         '''
@@ -282,9 +282,10 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def create_buffer(self):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-        buffer_size = 1 if len(channel_names) > config.MAX_TIMESERIES_NUM_CHANNELS_PER_STREAM else config.VIZ_DATA_BUFFER_MAX_SIZE
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names),
-                                                      buffer_sizes=buffer_size, append_zeros=True)
+        sr = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
+        display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
+        buffer_size = 1 if len(channel_names) > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
 
@@ -295,6 +296,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         self.v_timer.stop()
         if self.worker.is_streaming:
             self.worker.stop_stream()
+        self.worker_thread.requestInterruption()
         self.worker_thread.exit()
         self.worker_thread.wait()  # wait for the thread to exit
 
@@ -439,7 +441,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         # plot_channel_num_offset = 0
         if not self._has_new_viz_data:
             return
-        self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
+        # self.viz_data_buffer.buffer[0][np.isnan(self.viz_data_buffer.buffer[0])] = 0  # zero out nan
 
         if AppConfigs().linechart_viz_mode == LinechartVizMode.INPLACE:
             data_to_plot = self.viz_data_buffer.buffer[0][:, -self.viz_data_head:]
@@ -503,6 +505,7 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         :param new_display_duration:
         :return:
         '''
+        self.create_buffer()
         self.num_points_to_plot = self.get_num_points_to_plot()
         if self.viz_components is not None:
             self.viz_components.update_nominal_sampling_rate()

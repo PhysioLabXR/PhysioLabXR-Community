@@ -1,6 +1,7 @@
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIntValidator
 
 from rena.presets.Presets import PresetType, DataType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
@@ -30,11 +31,11 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
 
         self.PortLineEdit.setValidator(QIntValidator())
-        self.NetworkingInterfaceComboBox.currentIndexChanged.connect(self.networking_interface_selection_changed)
+        self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
 
         self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
 
-        self.networking_interface_selection_changed()
+        self.preset_type_selection_changed()
         self.set_data_type_to_default()
 
         self.device_property_fields = {}
@@ -80,36 +81,42 @@ class AddStreamWidget(QtWidgets.QWidget):
     def update_combobox_presets(self):
         update_presets_to_combobox(self.stream_name_combo_box)
 
-    def networking_interface_selection_changed(self):
-        if self.NetworkingInterfaceComboBox.currentText() == "LSL":
+    def preset_type_selection_changed(self):
+        if self.preset_type_combobox.currentText() == "LSL":
             self.PortLineEdit.setHidden(True)
-        elif self.NetworkingInterfaceComboBox.currentText() == "ZMQ":
+        elif self.preset_type_combobox.currentText() == "ZMQ":
             self.PortLineEdit.show()
+        elif self.preset_type_combobox.currentText() == "Custom":
+            self.PortLineEdit.setHidden(True)
 
-    def get_networking_interface(self):
-        return self.NetworkingInterfaceComboBox.currentText()
+    def get_selected_preset_type_str(self):
+        return self.preset_type_combobox.currentText()
 
     def get_current_selected_type(self):
         stream_name = self.get_selected_stream_name()
-        preset_type = get_preset_category(stream_name)
-        return preset_type
+        is_new_preset = False
+        try:
+            preset_type = get_preset_category(stream_name)
+        except KeyError:
+            is_new_preset = True
+            preset_type = PresetType[self.get_selected_preset_type_str().upper()]
+        return preset_type, is_new_preset
 
     def on_streamName_combobox_text_changed(self):
         if len(self.device_property_fields) > 0:
             self.clear_custom_device_property_uis()
 
         stream_name = self.get_selected_stream_name()
-
-        try:
-            selected_type = self.get_current_selected_type()
-        except KeyError:
+        selected_type, is_new_preset = self.get_current_selected_type()
+        if is_new_preset:
             return
+
         if selected_type == PresetType.LSL:
             self.LSL_preset_selected(stream_name)
         elif selected_type == PresetType.ZMQ:
             port_number = get_stream_preset_info(stream_name, "port_number")
             self.ZMQ_preset_selected(stream_name, port_number)
-        elif selected_type == PresetType.DEVICE:
+        elif selected_type == PresetType.CUSTOM:
             self.device_preset_selected(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
@@ -121,15 +128,15 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.data_type_combo_box.setCurrentIndex(1)
 
     def LSL_preset_selected(self, stream_name):
-        self.NetworkingInterfaceComboBox.setCurrentIndex(0)
+        self.preset_type_combobox.setCurrentIndex(0)
         self.PortLineEdit.setText("")
         self.PortLineEdit.setHidden(True)
         self.verify_data_type(stream_name)
 
     def ZMQ_preset_selected(self, stream_name, port_number):
-        self.NetworkingInterfaceComboBox.show()
+        self.preset_type_combobox.show()
         self.data_type_combo_box.show()
-        self.NetworkingInterfaceComboBox.setCurrentIndex(1)
+        self.preset_type_combobox.setCurrentIndex(1)
         self.PortLineEdit.setText(str(port_number))
         self.PortLineEdit.show()
         self.verify_data_type(stream_name)
@@ -152,12 +159,12 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def hide_stream_uis(self):
         self.data_type_combo_box.setHidden(True)
-        self.NetworkingInterfaceComboBox.setHidden(True)
+        self.preset_type_combobox.setHidden(True)
         self.PortLineEdit.setHidden(True)
 
     def verify_data_type(self, stream_name):
         data_type_str = get_stream_preset_info(stream_name, "data_type").value
-        index = self.data_type_combo_box.findText(data_type_str, QtCore.Qt.MatchFixedString)
+        index = self.data_type_combo_box.findText(data_type_str, Qt.MatchFlag.MatchFixedString)
         if index >= 0:
             self.data_type_combo_box.setCurrentIndex(index)
         else:

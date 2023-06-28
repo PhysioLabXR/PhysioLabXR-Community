@@ -1,7 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic, QtCore
 from scipy import signal
 
 from rena import config
@@ -13,8 +12,7 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
     get_spectrogram_percentile_level_min
-from rena.utils.ui_utils import get_distinct_colors, \
-    convert_rgb_to_qt_image, convert_array_to_qt_heatmap
+from rena.utils.ui_utils import get_distinct_colors
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
@@ -118,10 +116,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_item = pg.ImageItem()
         self.plot_widget.addItem(self.image_item)
 
-        # self.image_label = QLabel('Image_Label')
-        # self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-        # self.image_layout.addWidget(self.image_label)
-
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
         self.spectrogram_layout.addWidget(self.spectrogram_widget)
@@ -130,7 +124,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.setXRange(0, 1)
         self.spectrogram_widget.setLabel('left', 'Frequency', units='Hz')
         self.spectrogram_widget.setLabel('bottom', 'Time', units='s')
-        # self.spectrogram_widget.setLogMode(False, True)
         self.spectrogram_widget.showGrid(x=True, y=True, alpha=0.5)
         self.spectrogram_widget.enableAutoRange(enable=False)
 
@@ -141,7 +134,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def update_nominal_sampling_rate(self):
         fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
-        self.spectrogram_widget.setYRange(0, fs / 2)
+        if self.spectrogram_widget is not None:
+            self.spectrogram_widget.setYRange(0, fs / 2)
 
     def init_bar_chart(self):
         self.barchart_widget = pg.PlotWidget()
@@ -184,10 +178,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
     def plot_data(self, data):
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
         duration = data.shape[1] / get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
-
+        selected_plot_format = self.get_selected_format()
         if data.shape[1] != len(self.viz_time_vector):  # num_points_to_plot has been updated
             self.viz_time_vector = self.get_viz_time_vector()
-        if self.get_selected_format() == 0:  # linechart
+        if selected_plot_format == 0:  # linechart
 
             # for index_in_group, channel_index in enumerate(channel_indices):
             #     plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
@@ -200,7 +194,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 if plot_data_item.isVisible():
                     plot_data_item.setData(time_vector, data[channel_index, :])
 
-        elif self.get_selected_format() == 1 and get_group_image_valid(self.stream_name, self.group_name):
+        elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
             width, height, image_format, channel_format, scaling = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling
             depth = image_format.depth_dim()
@@ -222,10 +216,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 # image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
             self.image_item.setImage(image_plot_data)
             # self.image_label.setPixmap(image_plot_data)
-        elif self.get_selected_format() == 2:
+        elif selected_plot_format == 2:
             bar_chart_plot_data = data[channel_indices, -1]  # only visualize the last frame
             self.barchart_widget.plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1, brush='r')
-        elif self.get_selected_format() == 3:
+        elif selected_plot_format == 3:
             spectrogram_plot_data = data[channel_indices, :]
             # self.spectrogram_widget.setImage(spectrogram_plot_data, autoLevels=True, autoRange=True, autoHistogramRange=True)
             fs = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
