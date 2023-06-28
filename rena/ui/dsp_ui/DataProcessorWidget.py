@@ -1,9 +1,9 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets
-from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
-from PyQt5.QtGui import QPixmap
+from PyQt6 import QtWidgets
+from PyQt6 import uic
+from PyQt6.QtGui import QIntValidator, QDoubleValidator
+from PyQt6.QtGui import QPixmap
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
     get_group_channel_num, get_group_data_processors, get_stream_nominal_sampling_rate
 # from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget

@@ -1,19 +1,11 @@
 """Example program to demonstrate how to send a multi-channel time series to
 LSL."""
-import random
-import sys
-import getopt
-import string
+import time
 from collections import deque
 
 import numpy as np
-import time
-from random import random as rand
 import zmq
 from pylsl import local_clock
-import imageio
-import cv2
-import nibabel
 
 from rena.examples.fmri_experiment_example.mri_utils import load_nii_gz_file
 

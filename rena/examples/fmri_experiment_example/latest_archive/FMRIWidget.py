@@ -2,8 +2,8 @@
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer, QThread
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer, QThread
 
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \

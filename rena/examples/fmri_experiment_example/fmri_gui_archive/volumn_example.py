@@ -78,9 +78,9 @@ if __name__ == '__main__':
 
 
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
-from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
+from PyQt6.QtGui import QPainter
+from PyQt6.QtCore import Qt
 from OpenGL.GL import *
 
 
@@ -130,9 +130,9 @@ if __name__ == '__main__':
 # import sys
 # import numpy as np
 # from OpenGL.raw.GLU import gluPerspective, gluLookAt
-# from PyQt5.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
-# from PyQt5.QtGui import QPainter
-# from PyQt5.QtCore import Qt
+# from PyQt6.QtWidgets import QApplication, QMainWindow, QOpenGLWidget
+# from PyQt6.QtGui import QPainter
+# from PyQt6.QtCore import Qt
 # from OpenGL.GL import *
 #
 #

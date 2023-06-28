@@ -34,7 +34,7 @@ if __name__ == '__main__':
 # #
 # #
 # # import numpy as np
-# # from PyQt5 import QtWidgets
+# # from PyQt6 import QtWidgets
 # #
 # # from vispy.scene import SceneCanvas, visuals
 # # from vispy.app import use_app
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 # #
 # #
 # # if __name__ == "__main__":
-# #     app = use_app("pyqt5")
+# #     app = use_app("PyQt6")
 # #     app.createuse_app()
 # #     win = MyMainWindow()
 # #     win.show()
@@ -144,8 +144,8 @@ if __name__ == '__main__':
 #
 #
 # import sys
-# from PyQt5.QtWidgets import QApplication, QVBoxLayout, QWidget
-# from PyQt5.QtCore import QTimer
+# from PyQt6.QtWidgets import QApplication, QVBoxLayout, QWidget
+# from PyQt6.QtCore import QTimer
 # from vispy import app, scene
 #
 # # Create a custom QWidget class for embedding the Vispy canvas

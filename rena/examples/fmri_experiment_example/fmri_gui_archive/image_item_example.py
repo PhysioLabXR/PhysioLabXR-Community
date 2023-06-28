@@ -1,7 +1,7 @@
 import sys
 
 import numpy as np
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 from pyqtgraph.opengl import GLViewWidget, GLImageItem
 
 # This Python file uses the following encoding: utf-8

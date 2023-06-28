@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5.QtCore import QTimer, QThread, QMutex
+from PyQt6.QtCore import QTimer, QThread, QMutex
 
 from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena.configs.configs import AppConfigs
@@ -17,9 +17,9 @@ import time
 from collections import deque
 
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QPixmap
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtGui import QPixmap
 import nibabel as nib
 from nilearn import image
 

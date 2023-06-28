@@ -16,3 +16,5 @@ setuptools
 psutil
 pytest-qt
 numba
+nilearn
+PyOpenGL

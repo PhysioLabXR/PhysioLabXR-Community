@@ -3,10 +3,10 @@ import time
 from collections import deque
 
 import numpy as np
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -32,8 +32,8 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer, QThread
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer, QThread
 
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \

@@ -11,7 +11,6 @@ import time
 from random import random as rand
 import zmq
 from pylsl import local_clock
-import imageio
 import cv2
 
 def main():

@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
@@ -9,9 +9,9 @@ from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 from rena.ui_shared import remove_stream_icon, \
     options_icon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 
