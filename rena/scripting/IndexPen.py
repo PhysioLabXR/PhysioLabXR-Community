@@ -28,7 +28,7 @@ class IndexPen(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        for frame in self.inputs['TImmWave_6843AOP'].transpose():
+        for frame in self.inputs['TImmWave_6843AOP'][0].transpose():
             current_rd = np.array(frame[0:128]).reshape((8, 16))
             current_ra = np.array(frame[128:640]).reshape((8, 64))
             rd_cr, ra_cr = self.IndexPenRealTimePreprocessor.data_preprocessing(current_rd=current_rd,
@@ -50,7 +50,7 @@ class IndexPen(RenaScript):
 
             output = self._interpreter.tensor(self.output_index)
             soft_max_out = np.array(output()[0])
-            self.outputs['indexpen'] = soft_max_out
+            self.outputs['IndexPen'] = soft_max_out
 
     def cleanup(self):
         print('Cleanup function is called')

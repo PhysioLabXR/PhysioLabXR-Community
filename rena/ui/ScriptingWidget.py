@@ -318,7 +318,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.widget_output.setEnabled(not is_run)
         self.frequencyLineEdit.setEnabled(not is_run)
         self.timeWindowLineEdit.setEnabled(not is_run)
-        self.widget_script_info.setEnabled(not is_run)
+        self.widget_script_basic_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
 
