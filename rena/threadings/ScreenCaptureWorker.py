@@ -26,6 +26,9 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def stop_stream(self):
         self.is_streaming = False
 
+    def start_stream(self):
+        self.is_streaming = True
+
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:

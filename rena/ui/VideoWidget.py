@@ -29,6 +29,7 @@ class VideoWidget(BaseStreamWidget):
                          use_viz_buffer=False, insert_position=insert_position, option_widget_call=lambda: VideoDeviceOptions(parent_stream_widget=self, video_device_name=video_device_name))
         self.StartStopStreamBtn.hide()  # video widget does not have start/stop button
         self.video_preset_type = video_preset_type
+        self.is_stream_available = True  # a video device is always available
 
         # check if the video device is a camera or screen capture ####################################
         self.video_device_long_name = ('Webcam ' if self.video_preset_type == PresetType.WEBCAM else 'Screen Capture ') + str(video_device_name)

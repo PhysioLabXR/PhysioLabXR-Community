@@ -248,31 +248,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to stream
-        # self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
         self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
         self.add_streams_to_visualize(stream_names)
-        # for stream_name in stream_names:
-        #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
-        #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
-
-    # def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
-    #     error_initialization = False
-    #     # set up UI elements
-    #     widget_name = networking_stream_name + '_widget'
-    #     stream_widget = StreamWidget(parent_widget=self,
-    #                                  parent_layout=self.streamsHorizontalLayout,
-    #                                  stream_name=networking_stream_name,
-    #                                  data_type=data_type,
-    #                                  worker=worker,
-    #                                  networking_interface=networking_interface,
-    #                                  port_number=port_number,
-    #                                  insert_position=self.streamsHorizontalLayout.count() - 1)
-    #     stream_widget.setObjectName(widget_name)
-    #     self.stream_widgets[networking_stream_name] = stream_widget
-    #
-    #     if error_initialization:
-    #         stream_widget.RemoveStreamBtn.click()
-    #     config.settings.endGroup()
 
     def init_LSL_streaming(self, stream_name, data_type=None):
         widget_name = stream_name + '_widget'
@@ -324,29 +301,6 @@ class MainWindow(QtWidgets.QMainWindow):
             worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
             config.settings.endGroup()
             self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
-        # TI mmWave connection
-
-        # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
-        #     print('mmWave test')
-        #     try:
-        #         # mmWave connect, send config, start sensor
-        #         num_range_bin = config.settings.value('NumRangeBin')
-        #         Dport = config.settings.value['Dport(Standard)']
-        #         Uport = config.settings.value['Uport(Enhanced)']
-        #         config_path = config.settings.value['ConfigPath']
-        #
-        #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
-        #             num_range_bin, Dport, Uport, config_path)
-        #     except AssertionError as e:
-        #         dialog_popup(str(e))
-        #         config.settings.endGroup()
-        #         return None
-        #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
-        #     worker_thread = pg.QtCore.QThread(self)
-        #     self.worker_threads[device_name] = worker_thread
-        #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-        #     worker_thread.start()
-        #     self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()

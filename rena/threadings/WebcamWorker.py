@@ -29,6 +29,10 @@ class WebcamWorker(QObject, RenaWorker):
         if self.cap is not None:
             self.cap.release()
 
+    def start_stream(self):
+        self.is_streaming = True
+        self.cap = cv2.VideoCapture(self.cam_id)
+
     @pg.QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
