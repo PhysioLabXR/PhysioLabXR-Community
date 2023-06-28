@@ -31,7 +31,7 @@ if __name__ == '__main__':
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=False, reload_presets=True)
+    load_settings(revert_to_default=False, reload_presets=False)
 
     # main window init
     window = MainWindow(app=app)
@@ -48,7 +48,6 @@ if __name__ == '__main__':
 
     try:
         app.exec()
-        print('App closed by user')
         sys.exit()
     except KeyboardInterrupt:
         print('App terminate by KeyboardInterrupt')

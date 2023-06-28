@@ -47,7 +47,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.check_can_add_input()
 
     def select_by_stream_name(self, stream_name):
-        index = self.stream_name_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+        index = self.stream_name_combo_box.findText(stream_name, Qt.MatchFlag.MatchFixedString)
         self.stream_name_combo_box.setCurrentIndex(index)
 
     def get_selected_stream_name(self):

@@ -320,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         if self.ask_to_close:
-            reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
+            reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit?',
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         else:
             reply = QMessageBox.StandardButton.Yes
@@ -337,7 +337,7 @@ class MainWindow(QtWidgets.QMainWindow):
             Presets().__del__()
             AppConfigs().__del__()
             event.accept()
-            self.app.quit()
+            super().closeEvent(event)
         else:
             event.ignore()
 

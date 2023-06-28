@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Union
+from uuid import UUID
 
 import numpy as np
 from PyQt6.QtCore import QStandardPaths
@@ -110,6 +111,19 @@ class PresetsEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class ScriptPreset(metaclass=SubPreset):
+    id: str
+    inputs: List[str]
+    outputs: List[str]
+    output_num_channels: List[int]
+    params: List[str]
+    params_type_strs: List[str]
+    params_value_strs: List[str]
+    run_frequency: int
+    time_window: int
+    script_path: str
+    is_simulate: bool
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -260,6 +274,7 @@ class Presets(metaclass=Singleton):
     _experiment_preset_root: str = 'ExperimentPresets'
 
     stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
+    script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = AppConfigs().app_data_path
@@ -300,9 +315,9 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                # for key, value in preset_dict['video_presets'].items():
-                #     preset = VideoPreset(**value)
-                #     preset_dict['video_presets'][key] = preset
+                for key, value in preset_dict['script_presets'].items():
+                    preset = ScriptPreset(**value)
+                    preset_dict['script_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
