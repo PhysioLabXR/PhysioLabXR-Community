@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass, fields
 from enum import Enum
 
-from PyQt5.QtCore import QStandardPaths
+from PyQt6.QtCore import QStandardPaths
 
 from rena.utils.ConfigPresetUtils import reload_enums, save_local
 from rena.utils.Singleton import Singleton
@@ -62,7 +62,7 @@ class AppConfigs(metaclass=Singleton):
     _reset: bool = False
     _file_name = 'AppConfigs.json'
     _app_data_name: str = 'RenaLabApp'
-    app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), _app_data_name)
+    app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), _app_data_name)
 
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
@@ -70,6 +70,10 @@ class AppConfigs(metaclass=Singleton):
 
     max_timeseries_num_channels_per_group = int(2 ** 10)
     viz_buffer_max_size = int(2 ** 18)
+
+    visualization_refresh_interval: int = 20  # in milliseconds, how often does the visualization refreshes
+    pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+    video_device_refresh_interval: int = 33
 
     def __post_init__(self):
         self._app_config_path: str = os.path.join(self.app_data_path, self._file_name)

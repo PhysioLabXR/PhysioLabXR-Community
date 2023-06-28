@@ -2,11 +2,11 @@
 import uuid
 
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QThread, QTimer
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QThread, QTimer
+from PyQt6.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
@@ -318,7 +318,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.widget_output.setEnabled(not is_run)
         self.frequencyLineEdit.setEnabled(not is_run)
         self.timeWindowLineEdit.setEnabled(not is_run)
-        self.widget_script_info.setEnabled(not is_run)
+        self.widget_script_basic_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
 

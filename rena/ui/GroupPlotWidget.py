@@ -1,7 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic, QtCore
 from scipy import signal
 
 from rena import config
@@ -13,8 +12,7 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
     get_spectrogram_percentile_level_min
-from rena.utils.ui_utils import get_distinct_colors, \
-    convert_rgb_to_qt_image, convert_array_to_qt_heatmap
+from rena.utils.ui_utils import get_distinct_colors
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
@@ -118,10 +116,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_item = pg.ImageItem()
         self.plot_widget.addItem(self.image_item)
 
-        # self.image_label = QLabel('Image_Label')
-        # self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-        # self.image_layout.addWidget(self.image_label)
-
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
         self.spectrogram_layout.addWidget(self.spectrogram_widget)
@@ -130,7 +124,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.setXRange(0, 1)
         self.spectrogram_widget.setLabel('left', 'Frequency', units='Hz')
         self.spectrogram_widget.setLabel('bottom', 'Time', units='s')
-        # self.spectrogram_widget.setLogMode(False, True)
         self.spectrogram_widget.showGrid(x=True, y=True, alpha=0.5)
         self.spectrogram_widget.enableAutoRange(enable=False)
 

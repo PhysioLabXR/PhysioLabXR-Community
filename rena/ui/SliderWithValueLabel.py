@@ -1,9 +1,9 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QSlider, QHBoxLayout, QLabel, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QSlider, QHBoxLayout, QLabel, QWidget
 
 
 class SliderWithValueLabel(QWidget):
-    def __init__(self, minimum=0, maximum=100, value=0,  orientation=Qt.Horizontal, label_position='right', *args, **kwargs):
+    def __init__(self, minimum=0, maximum=100, value=0,  orientation=Qt.Orientation.Horizontal, label_position='right', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.slider = QSlider(orientation)

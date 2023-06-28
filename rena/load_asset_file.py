@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtGui import QIcon
+from PyQt6.QtGui import QIcon
 
 
 def load_media_icon(file_name):

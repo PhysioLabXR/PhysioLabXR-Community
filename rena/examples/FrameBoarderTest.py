@@ -1,9 +1,9 @@
 import sys
 import os
 
-from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QFrame, QLabel
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt6.QtCore import QFile, QTextStream
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QFrame, QLabel
+from PyQt6 import QtWidgets, QtCore, uic
 
 
 class Example(QWidget):
@@ -42,4 +42,4 @@ class Example(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Example()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

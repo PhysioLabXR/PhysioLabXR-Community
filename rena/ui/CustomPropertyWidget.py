@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 from rena.presets.presets_utils import set_stream_preset_info
 

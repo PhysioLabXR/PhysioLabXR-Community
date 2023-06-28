@@ -4,12 +4,13 @@ from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
 
 import rena.threadings.ScreenCaptureWorker
 import rena.threadings.WebcamWorker
 from rena.config import settings
+from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.VideoDeviceOptions import VideoDeviceOptions
@@ -49,7 +50,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.RemoveVideoBtn.setIcon(remove_stream_icon)
 
         # FPS counter``
-        self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
+        self.tick_times = deque(maxlen=10 * AppConfigs().video_device_refresh_interval)
 
         # image label
         self.plot_widget = pg.PlotWidget()
@@ -76,7 +77,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
 
         # define timer ##########################################
         self.timer = QTimer()
-        self.timer.setInterval(settings.value('video_device_refresh_interval'))
+        self.timer.setInterval(AppConfigs().video_device_refresh_interval)
         self.timer.timeout.connect(self.ticks)
 
         self.worker_thread.start()
