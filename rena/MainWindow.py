@@ -153,42 +153,37 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text, data_type, port, networking_interface = self.addStreamWidget.get_selected_stream_name(), \
+        selected_text, data_type, port  = self.addStreamWidget.get_selected_stream_name(), \
                                                                self.addStreamWidget.get_data_type(), \
-                                                               self.addStreamWidget.get_port_number(), \
-                                                               self.addStreamWidget.get_networking_interface()
+                                                               self.addStreamWidget.get_port_number()
         if len(selected_text) == 0:
             return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            try:
-                is_new_preset = False
-                selected_type = self.addStreamWidget.get_current_selected_type()
-            except KeyError:
-                is_new_preset = True
 
+            selected_type, is_new_preset = self.addStreamWidget.get_current_selected_type()
             if is_new_preset:
-                self.create_preset(selected_text, port, networking_interface, data_type)
-                self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
+                self.create_preset(selected_text, selected_type, data_type=data_type, port=port)
+                self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
+
+            if selected_type == PresetType.WEBCAM:  # add video device
+                self.init_video_device(selected_text, video_preset_type=selected_type)
+            elif selected_type == PresetType.MONITOR:
+                self.init_video_device(selected_text, video_preset_type=selected_type)
+            elif selected_type == PresetType.CUSTOM:  # if this is a device preset
+                raise NotImplementedError
+                self.init_device(selected_text)  # add device stream
+            elif selected_type == PresetType.LSL:
+                self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
+            elif selected_type == PresetType.ZMQ:
+                self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
+            elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(selected_text)
+                self.add_streams_to_visualize(streams_for_experiment)
             else:
-                if selected_type == PresetType.WEBCAM:  # add video device
-                    self.init_video_device(selected_text, video_preset_type=selected_type)
-                elif selected_type == PresetType.MONITOR:
-                    self.init_video_device(selected_text, video_preset_type=selected_type)
-                elif selected_type == PresetType.DEVICE:  # if this is a device preset
-                    self.init_device(selected_text)  # add device stream
-                elif selected_type == PresetType.LSL:
-                    self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
-                elif selected_type == PresetType.ZMQ:
-                    self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
-                elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
-                    streams_for_experiment = get_experiment_preset_streams(selected_text)
-                    self.add_streams_to_visualize(streams_for_experiment)
-                else:
-                    raise Exception("Unknow preset type {}".format(selected_type))
+                raise Exception("Unknow preset type {}".format(selected_type))
             self.update_active_streams()
         except RenaError as error:
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
@@ -203,7 +198,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except AssertionError:
                 raise ValueError("Port number must be specified for ZMQ preset")
             create_default_zmq_preset(stream_name, kwargs['port'], num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
-        elif preset_type == PresetType.DEVICE:
+        elif preset_type == PresetType.CUSTOM:
             raise NotImplementedError
         else:
             raise ValueError(f"Unknown preset type {preset_type}")

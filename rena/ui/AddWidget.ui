@@ -129,7 +129,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="NetworkingInterfaceComboBox">
+       <widget class="QComboBox" name="preset_type_combobox">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
           <horstretch>0</horstretch>
@@ -145,6 +145,11 @@
         <item>
          <property name="text">
           <string>LSL</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Custom</string>
          </property>
         </item>
         <item>

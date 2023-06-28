@@ -13,7 +13,7 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 def main(argv):
     srate = 128
-    name = 'Dummy-8Chan'
+    name = 'Dummy-8ChanA'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 16
