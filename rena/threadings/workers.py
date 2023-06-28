@@ -572,21 +572,21 @@ class ZMQWorker(QObject, RenaWorker):
             return
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
-            _, timestamp, data = None, None, None
+            timestamp_list, data_list = [], []
             while True:
                 try:
                     _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                    timestamp = np.frombuffer(timestamp, dtype=np.float64)
+                    timestamp_list.append(timestamp:=np.frombuffer(timestamp, dtype=np.float64))
+                    data_list.append(np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1))
                     self.timestamp_queue.append(timestamp)
                 except zmq.error.Again:
                     break
-            if timestamp is not None:
+            if len(timestamp_list) > 0:
                 if len(self.timestamp_queue) > 1:
                     sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
                 else:
                     sampling_rate = np.nan
-                data = np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1)
-                data_dict = {'stream_name': self.subtopic, 'frames': data, 'timestamps': timestamp, 'sampling_rate': sampling_rate}
+                data_dict = {'stream_name': self.subtopic, 'frames': np.concatenate(data_list, axis=1), 'timestamps': np.concatenate(timestamp_list), 'sampling_rate': sampling_rate}
                 self.signal_data.emit(data_dict)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
