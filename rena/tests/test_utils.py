@@ -120,6 +120,8 @@ class ContextBot:
 
         self.stream_availability_timeout = int(20 * stream_availability_wait_time * 1e3)
 
+        self.monitor_stream_name = "monitor 0"
+
     def cleanup(self):
         pass
 
@@ -139,7 +141,7 @@ class ContextBot:
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
@@ -216,6 +218,11 @@ class ContextBot:
     def get_active_send_data_stream_names(self):
         return [stream_name for stream_name, process in self.send_data_processes.items() if process.is_alive()]
 
+    def connect_to_monitor_0(self):
+        self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, self.monitor_stream_name)
+        self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     def __del__(self):
         self.clean_up()

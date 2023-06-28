@@ -78,7 +78,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
+        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
         qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, ts_name)
         qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
@@ -148,7 +148,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
     # change the recording file name
     qtbot.mouseClick(app_main_window.recording_tab.sessionTagTextEdit, QtCore.Qt.MouseButton.LeftButton)
-    qtbot.keyPress(app_main_window.recording_tab.sessionTagTextEdit, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
+    qtbot.keyPress(app_main_window.recording_tab.sessionTagTextEdit, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.recording_tab.sessionTagTextEdit, replay_file_session_name)
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
