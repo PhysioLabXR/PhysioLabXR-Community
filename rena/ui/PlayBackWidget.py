@@ -1,13 +1,11 @@
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSignal, QTimer
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
 
-from rena import config
 from rena.configs.configs import AppConfigs
 from rena.threadings.workers import PlaybackWorker
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon, terminate_icon
+from rena.ui_shared import start_stream_icon, pause_icon, terminate_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):

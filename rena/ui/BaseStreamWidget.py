@@ -3,10 +3,10 @@ import time
 from collections import deque
 from typing import Callable
 
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError
 from rena import config_ui
@@ -28,7 +28,7 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-    channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
+    channel_mismatch_buttons = buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
 
     def __init__(self, parent_widget, parent_layout, preset_type, stream_name, data_timer_interval, use_viz_buffer, insert_position=None, option_widget_call: callable=None):
         """
@@ -57,7 +57,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.parent = parent_layout
         self.main_parent = parent_widget
         # add splitter to the layout
-        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter = QSplitter(Qt.Orientation.Vertical)
         self.viz_group_scroll_layout.addWidget(self.splitter)
 
         self.preset_type = preset_type

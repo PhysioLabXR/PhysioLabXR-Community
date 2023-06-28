@@ -1,8 +1,8 @@
 import os.path
 
 import pyqtgraph
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QLabel
 
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets

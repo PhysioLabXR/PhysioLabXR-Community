@@ -1,6 +1,6 @@
 brainflow
 numpy
-PyQt5
+PyQt6
 pyserial~=3.5
 pylsl~=1.14.0
 scikit-learn
@@ -11,9 +11,9 @@ opencv-python
 pyautogui~=0.9.52
 qimage2ndarray~=1.8.3
 matplotlib
-ipython~=8.1.1
+ipython
 pyzmq
-setuptools~=57.1.0
+setuptools
 psutil
 pytest-qt
 numba

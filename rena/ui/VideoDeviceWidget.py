@@ -4,8 +4,8 @@ from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
 
 import rena.threadings.ScreenCaptureWorker
 import rena.threadings.WebcamWorker

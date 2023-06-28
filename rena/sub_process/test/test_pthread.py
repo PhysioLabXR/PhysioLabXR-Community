@@ -1,7 +1,7 @@
 import time
 
-from PyQt5.QtCore import pyqtSlot, QTimer
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import pyqtSlot, QTimer
+from PyQt6.QtWidgets import (
     QLabel,
     QWidget,
     QMainWindow,

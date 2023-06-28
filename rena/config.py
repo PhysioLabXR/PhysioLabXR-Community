@@ -1,10 +1,6 @@
-import json
 import os
 import numpy as np
-from PyQt5.QtCore import QSettings
-from sys import platform
-
-from PyQt5.QtGui import QIcon
+from PyQt6.QtCore import QSettings
 
 '''
 ########################################################################################################################

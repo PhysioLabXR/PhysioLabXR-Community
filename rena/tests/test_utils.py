@@ -10,10 +10,10 @@ from multiprocessing import Process
 from typing import Union, Iterable, List
 
 import numpy as np
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import Qt
 
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget
 from matplotlib import pyplot as plt
 from pytestqt.qtbot import QtBot
 
@@ -59,7 +59,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
     if patience_second == 0:
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
-            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
     else:
         time_started = time.time()
@@ -70,7 +70,7 @@ def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
             qtbot.wait(100)  # wait for 100 ms between tries
             print(f"Waiting for the activate window to be a CustomDialog: {w}")
         print(f": {w} is a CustomDialog, trying to click ok button")
-        yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=int(click_delay_second * 1e3))
 def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
     """
@@ -80,7 +80,7 @@ def handle_current_dialog_ok(app: MainWindow, qtbot: QtBot, patience_second=0, c
     @param patience_second: how long to wait for the current dialog to be a CustomDialog
     @param delay: how long to wait before clicking the button
     """
-    handle_current_dialog_button(QtWidgets.QDialogButtonBox.Ok, app, qtbot, patience_second, click_delay_second)
+    handle_current_dialog_button(QtWidgets.QDialogButtonBox.StandardButton.Ok, app, qtbot, patience_second, click_delay_second)
 
 def handle_current_dialog_button(button, app: MainWindow, qtbot: QtBot, patience_second=0, click_delay_second=0):
     """
@@ -182,7 +182,7 @@ class ContextBot:
         # t.start()
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
         # t.join()  # wait until the dialog is closed
-        ok_button = self.app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        ok_button = self.app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.qtbot.mouseClick(ok_button, QtCore.Qt.LeftButton)
 
     def start_recording(self):

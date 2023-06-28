@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
+from PyQt6 import QtCore, QtWidgets
+from PyQt6 import uic
+from PyQt6.QtGui import QIntValidator, QDoubleValidator
 
 from rena.presets.Cmap import Cmap
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat

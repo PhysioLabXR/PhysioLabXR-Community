@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pyautogui
 import pyqtgraph as pg
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 from pylsl import local_clock
 
 from rena.presets.Presets import VideoDeviceChannelOrder

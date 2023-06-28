@@ -2,11 +2,11 @@
 import json
 import os
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QSettings
+from PyQt6.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 
 from rena import config_ui, config
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat

@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Dict, Any, List, Union
 
 import numpy as np
-from PyQt5.QtCore import QStandardPaths
+from PyQt6.QtCore import QStandardPaths
 
 from rena import config
 from rena.config import app_data_name, default_group_name

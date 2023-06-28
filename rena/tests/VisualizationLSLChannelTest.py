@@ -10,9 +10,9 @@ import uuid
 from multiprocessing import Process
 
 import pytest
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox
+from PyQt6 import QtCore
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
 
@@ -70,7 +70,7 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
     #         yes_button = w.button(QtWidgets.QMessageBox.Yes)
     #         qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
 
-    t = threading.Timer(1, lambda: handle_current_dialog_button(QDialogButtonBox.Yes, app_main_window, qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
+    t = threading.Timer(1, lambda: handle_current_dialog_button(QDialogButtonBox.StandardButton.Yes, app_main_window, qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
     t.start()
     qtbot.mouseClick(app_main_window.stream_widgets[test_stream_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
     t.join()

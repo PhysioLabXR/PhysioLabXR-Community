@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass, fields
 from enum import Enum
 
-from PyQt5.QtCore import QStandardPaths
+from PyQt6.QtCore import QStandardPaths
 
 from rena.utils.ConfigPresetUtils import reload_enums, save_local
 from rena.utils.Singleton import Singleton
@@ -62,7 +62,7 @@ class AppConfigs(metaclass=Singleton):
     _reset: bool = False
     _file_name = 'AppConfigs.json'
     _app_data_name: str = 'RenaLabApp'
-    app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation), _app_data_name)
+    app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), _app_data_name)
 
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats

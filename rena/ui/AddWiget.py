@@ -1,6 +1,7 @@
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIntValidator
 
 from rena.presets.Presets import PresetType, DataType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
@@ -163,7 +164,7 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def verify_data_type(self, stream_name):
         data_type_str = get_stream_preset_info(stream_name, "data_type").value
-        index = self.data_type_combo_box.findText(data_type_str, QtCore.Qt.MatchFixedString)
+        index = self.data_type_combo_box.findText(data_type_str, Qt.MatchFlag.MatchFixedString)
         if index >= 0:
             self.data_type_combo_box.setCurrentIndex(index)
         else:

@@ -1,5 +1,4 @@
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt6.QtGui import QIcon, QPixmap
 
 from rena.config_ui import stream_widget_icon_size
 from rena.load_asset_file import load_media_icon

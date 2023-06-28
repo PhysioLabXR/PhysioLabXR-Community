@@ -1,17 +1,13 @@
-import qimage2ndarray
-from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtCore import QFile, QTextStream
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
+    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea, QApplication
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 import pyqtgraph as pg
-from qimage2ndarray.dynqt import QtGui
 
 from rena import config_ui, config
-import matplotlib.pyplot as plt
-
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 
 
@@ -267,7 +263,7 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 
 class CustomDialog(QDialog):
-    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
+    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None, buttons=QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)
@@ -303,7 +299,7 @@ class CustomDialog(QDialog):
             print('will show ' + self.dialog_name)
 
 
-def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None, buttons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel):
+def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None, buttons=QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel):
     if enable_dont_show:
         try:
             assert dialog_name is not None
@@ -349,37 +345,37 @@ def convert_numpy_to_uint8(array):
     return array.astype(np.uint8)
 
 
-def convert_rgb_to_qt_image(rgb_image, scaling_factor=1):
-    """Convert from an opencv image to QPixmap"""
-    h, w, ch = rgb_image.shape
-    bytes_per_line = ch * w
-    rgb_image = rgb_image.copy()
-    q_image = QtGui.QImage(rgb_image, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    q_pixelmap = QPixmap.fromImage(q_image)
-    q_pixelmap = q_pixelmap.scaled(
-                                scaling_factor*w,
-                                scaling_factor*h,
-                                pg.QtCore.Qt.KeepAspectRatio) # rescale it
-    return q_pixelmap
+# def convert_rgb_to_qt_image(rgb_image, scaling_factor=1):
+#     """Convert from an opencv image to QPixmap"""
+#     h, w, ch = rgb_image.shape
+#     bytes_per_line = ch * w
+#     rgb_image = rgb_image.copy()
+#     q_image = QtGui.QImage(rgb_image, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+#     q_pixelmap = QPixmap.fromImage(q_image)
+#     q_pixelmap = q_pixelmap.scaled(
+#                                 scaling_factor*w,
+#                                 scaling_factor*h,
+#                                 pg.QtCore.Qt.KeepAspectRatio) # rescale it
+#     return q_pixelmap
 
-def convert_array_to_qt_heatmap(spec_array, scaling_factor):
-    h, w = spec_array.shape
-    heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
-    qpixmap = QPixmap(heatmap_qim)
-    qpixmap = qpixmap.scaled(scaling_factor*w, scaling_factor*h, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
-    return qpixmap
+# def convert_array_to_qt_heatmap(spec_array, scaling_factor):
+#     h, w = spec_array.shape
+#     heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
+#     qpixmap = QPixmap(heatmap_qim)
+#     qpixmap = qpixmap.scaled(scaling_factor*w, scaling_factor*h, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
+#     return qpixmap
 
-def array_to_colormap_qim(a, normalize=True):
-    im = plt.imshow(a)
-    color_matrix = im.cmap(im.norm(im.get_array()))
-    qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
-    return qim
+# def array_to_colormap_qim(a, normalize=True):
+#     im = plt.imshow(a)
+#     color_matrix = im.cmap(im.norm(im.get_array()))
+#     qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
+#     return qim
 
 def stream_stylesheet(stylesheet_url):
     stylesheet = QFile(stylesheet_url)
-    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stylesheet.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
     stream = QTextStream(stylesheet)
-    QtWidgets.qApp.setStyleSheet(stream.readAll())
+    QApplication.instance().setStyleSheet(stream.readAll())
 
 def add_presets_to_combobox(combobox: QComboBox):
     for i in get_all_preset_names():

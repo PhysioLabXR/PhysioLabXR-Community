@@ -4,8 +4,8 @@ import os
 import sys
 
 import pytest
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QWidget
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtWidgets import QWidget
 from rena.configs.configs import AppConfigs
 
 AppConfigs(_reset=True)  # create the singleton app configs object

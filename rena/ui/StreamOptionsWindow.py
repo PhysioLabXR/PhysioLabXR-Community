@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
-from PyQt5 import QtCore
-from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator, QIcon
-from PyQt5.QtWidgets import QPushButton, QWidget
+from PyQt6 import QtCore
+from PyQt6 import uic
+from PyQt6.QtGui import QIntValidator, QIcon
+from PyQt6.QtWidgets import QPushButton, QWidget
 
 from rena import config
 from rena.config import app_logo_path

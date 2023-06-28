@@ -1,7 +1,7 @@
 import threading
 
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QMessageBox
+from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtWidgets import QMessageBox
 
 
 def click_message_box_ok(qtbot, delay=1000):

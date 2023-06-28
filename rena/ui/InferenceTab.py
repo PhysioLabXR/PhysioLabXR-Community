@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QFileDialog
 
 import numpy as np
 

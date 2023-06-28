@@ -3,10 +3,10 @@ import time
 from collections import deque
 
 import numpy as np
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialogButtonBox, QSplitter
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena import config, config_ui
@@ -30,7 +30,7 @@ from rena.utils.ui_utils import dialog_popup, clear_widget
 
 class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-    channel_mismatch_buttons = buttons=QDialogButtonBox.Yes | QDialogButtonBox.No
+    channel_mismatch_buttons = buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
 
     def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):

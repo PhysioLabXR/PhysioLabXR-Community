@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtCore import QTimer, QThread
+from PyQt6.QtCore import QTimer, QThread
 
 import rena.threadings.WebcamWorker
 from rena.configs.configs import AppConfigs

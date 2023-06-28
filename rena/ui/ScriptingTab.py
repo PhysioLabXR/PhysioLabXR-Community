@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 from rena import config
 from rena.ui.ScriptingWidget import ScriptingWidget

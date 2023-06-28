@@ -3,14 +3,13 @@ import os
 import sys
 import time
 
-from PyQt5 import QtWidgets, uic
-import pyqtgraph as pg
+from PyQt6 import QtWidgets, uic
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
-from PyQt5.QtWidgets import QDialogButtonBox
+from PyQt6.QtCore import QTimer, QSettings, QObject, pyqtSignal
+from PyQt6.QtWidgets import QDialogButtonBox
 
 from rena import config, ui_shared
 from rena.configs.configs import AppConfigs, RecordingFileFormat
@@ -62,7 +61,7 @@ class RecordingsTab(QtWidgets.QWidget):
     def start_recording_btn_pressed(self):
         if not self.parent.is_any_streaming():
             self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
-                                                      title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.Ok)
+                                                      title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
@@ -94,7 +93,7 @@ class RecordingsTab(QtWidgets.QWidget):
         if AppConfigs().recording_file_format != RecordingFileFormat.dats:
             self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
         else:
-            dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.Ok, main_parent=self.parent)
+            dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok, main_parent=self.parent)
 
         self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)

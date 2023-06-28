@@ -6,9 +6,9 @@ import numpy as np
 import psutil as psutil
 import pyqtgraph as pg
 import zmq
-from PyQt5 import QtCore
-from PyQt5.QtCore import QMutex, QThread
-from PyQt5.QtCore import (QObject, pyqtSignal)
+from PyQt6 import QtCore
+from PyQt6.QtCore import QMutex, QThread
+from PyQt6.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
 from exceptions.exceptions import DataPortNotOpenError
@@ -49,15 +49,8 @@ class RenaWorker(metaclass=RenaWorkerMeta):
 
 
 class LSLInletWorker(QObject, RenaWorker):
-
-    # for passing data to the gesture tab
-    signal_data = pyqtSignal(dict)
-    signal_data_tick = pyqtSignal()
-
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
-
-    # signal_stream_num_channels = pyqtSignal(int)
 
     def __init__(self, stream_name, channel_names, data_type, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
@@ -540,8 +533,6 @@ class ZMQWorker(QObject, RenaWorker):
 
     The supported socket patterns is SUB/PUB
     """
-    signal_data = pyqtSignal(dict)
-    signal_data_tick = pyqtSignal()
 
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()

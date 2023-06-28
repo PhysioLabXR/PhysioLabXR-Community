@@ -2,11 +2,11 @@
 import uuid
 
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QThread, QTimer
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QThread, QTimer
+from PyQt6.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT

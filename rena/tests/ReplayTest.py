@@ -11,9 +11,9 @@ from multiprocessing import Process
 
 import numpy as np
 import pytest
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget
 
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
@@ -108,7 +108,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         w = QtWidgets.QApplication.activeWindow()
         if patience == 0:
             if isinstance(w, CustomDialog):
-                yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+                yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
                 qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)  # delay 1 second for the data to come in
         else:
             time_started = time.time()
@@ -117,7 +117,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
                 if time_waited > patience:
                     raise TimeoutError
                 time.sleep(0.5)
-            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+            yes_button = w.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
             qtbot.mouseClick(yes_button, QtCore.Qt.LeftButton, delay=1000)
 
     t = threading.Timer(1, handle_custom_dialog_ok)

@@ -1,7 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic, QtCore
 from scipy import signal
 
 from rena import config
@@ -13,8 +12,7 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
     get_spectrogram_percentile_level_min
-from rena.utils.ui_utils import get_distinct_colors, \
-    convert_rgb_to_qt_image, convert_array_to_qt_heatmap
+from rena.utils.ui_utils import get_distinct_colors
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
