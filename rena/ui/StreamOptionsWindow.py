@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
-from PyQt5 import QtCore
-from PyQt5 import uic
-from PyQt5.QtGui import QIntValidator, QIcon
-from PyQt5.QtWidgets import QPushButton, QWidget
+from PyQt6 import QtCore
+from PyQt6 import uic
+from PyQt6.QtGui import QIntValidator, QIcon
+from PyQt6.QtWidgets import QPushButton, QWidget
 
 from rena import config
 from rena.config import app_logo_path
@@ -53,6 +53,9 @@ class StreamOptionsWindow(QWidget):
         self.data_processing_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
         self.data_processing_widget.hide()
         self.signalActionsSplitter.addWidget(self.data_processing_widget)
+
+        # barplot
+        self.bar_chart_range_on_change_signal.connect(self.parent.bar_chart_range_on_change)
 
         # stream group tree view
         self.stream_group_view = StreamGroupView(parent_stream_options=self,
@@ -145,10 +148,6 @@ class StreamOptionsWindow(QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
 
-        # if new_sampling_rate == 0:
-        #     new_sampling_rate = self.last_sampling_rate
-        # else:
-        #     self.last_sampling_rate = new_sampling_rate
         return new_sampling_rate
 
     def get_num_points_to_plot_info(self):
@@ -229,59 +228,6 @@ class StreamOptionsWindow(QWidget):
         self.stream_group_view.clear_tree_view()
         self.stream_group_view.create_tree_view()
 
-    # def merge_groups_btn_clicked(self):
-    #     selection_state, selected_groups, selected_channels = \
-    #         self.stream_group_view.selection_state, self.stream_group_view.selected_groups, self.stream_group_view.selected_channels
-    #
-    #     root_group = selected_groups[0]
-    #     other_groups = selected_groups[1:]
-    #     for other_group in other_groups:
-    #         # other_group_children = [child for child in other_group.get in range(0,)]
-    #         other_group_children = self.stream_group_view.get_all_child(other_group)
-    #         for other_group_child in other_group_children:
-    #             self.stream_group_view.change_parent(other_group_child, root_group)
-    #     self.stream_group_view.remove_empty_groups()
-
-    # def init_create_new_group_widget(self):
-    #     container_add_group, layout_add_group = init_container(parent=self.actionsWidgetLayout,
-    #                                                            label='New Group from Selected Channels',
-    #                                                            vertical=False,
-    #                                                            label_position='centertop')
-    #     _, self.newGroupNameTextbox = init_inputBox(parent=layout_add_group,
-    #                                                 default_input='')
-    #     add_group_btn = init_button(parent=layout_add_group, label='Create')
-    #     add_group_btn.clicked.connect(self.create_new_group_btn_clicked)
-    #
-    # def create_new_group_btn_clicked(self):
-    #     # group_names = self.signalTreeView.get_group_names()
-    #     # selected_items = self.signalTreeView.selectedItems()
-    #     new_group_name = self.newGroupNameTextbox.text()
-    #
-    #     self.stream_group_view.create_new_group(new_group_name=new_group_name)
-
-        #
-        # if new_group_name:
-        #     if len(selected_items) == 0:
-        #         dialog_popup('please select at least one channel to create a group')
-        #     elif new_group_name in group_names:
-        #         dialog_popup('Cannot Have duplicated Group Names')
-        #         return
-        #     else:
-        #
-        #         for selected_item in selected_items:
-        #             if selected_item.item_type == 'group':
-        #                 dialog_popup('group item cannot be selected while creating new group')
-        #                 return
-        #         new_group = self.signalTreeView.add_group(new_group_name)
-        #         for selected_item in selected_items:
-        #             self.signalTreeView.change_parent(item=selected_item, new_parent=new_group)
-        #             selected_item.setCheckState(0, Qt.Checked)
-        #     self.signalTreeView.remove_empty_groups()
-        #     self.signalTreeView.expandAll()
-        # else:
-        #     dialog_popup('please enter your group name first')
-        #     return
-
     def init_plot_format_widget(self, selected_group_name):
         pass
         # self.OptionsWindowPlotFormatWidget = OptionsWindowPlotFormatWidget(self.stream_name, selected_group_name)
@@ -291,27 +237,6 @@ class StreamOptionsWindow(QWidget):
         self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')))
         self.last_sampling_rate = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'display_duration')))
-
-    # def set_nominal_sampling_rate_btn(self):
-    #     new_nominal_sampling_rate = self.nominalSamplingRateIineEdit.text()
-    #     if new_nominal_sampling_rate.isnumeric():
-    #         new_nominal_sampling_rate = float(new_nominal_sampling_rate)
-    #         if new_nominal_sampling_rate > 0:
-    #             print(new_nominal_sampling_rate)  # TODO: update in preset and GUI
-    #         else:
-    #             dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
-    #     else:
-    #         dialog_popup('Please enter a valid positive number as Nominal Sampling Rate')
-
-    # def clearLayout(self, layout):
-    #     if layout is not None:
-    #         while layout.count():
-    #             item = layout.takeAt(0)
-    #             widget = item.widget()
-    #             if widget is not None:
-    #                 widget.deleteLater()
-    #             else:
-    #                 self.clearLayout(item.layout())
 
     @QtCore.pyqtSlot(tuple)
     def channel_is_display_changed(self, change: tuple):

@@ -1,7 +1,7 @@
 from pydoc import locate
 
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QCheckBox, QLineEdit
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
 from rena.shared import ParamChange
@@ -56,7 +56,7 @@ class ScriptingParamWidget(QtWidgets.QWidget):
 
     def set_type_and_value_from_text(self, type_text: str, value_text: str):
         # first process the type change
-        index = self.type_comboBox.findText(type_text, QtCore.Qt.MatchFixedString)
+        index = self.type_comboBox.findText(type_text, QtCore.Qt.MatchFlag.MatchFixedString)
         if index >= 0:
             self.type_comboBox.setCurrentIndex(index)
         else: raise NotImplementedError

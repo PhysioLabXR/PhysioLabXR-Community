@@ -1,23 +1,16 @@
-import json
 import os
 import numpy as np
-from PyQt5.QtCore import QSettings
-from sys import platform
-
-from PyQt5.QtGui import QIcon
+from PyQt6.QtCore import QSettings
 
 '''
 ########################################################################################################################
 User parameters:
 Use these parameters to set the RN App to your preference
 '''
-pull_data_interval = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 REFRESH_FREQUENCY_RETAIN_FRAMES = 50
 
-VISUALIZATION_REFRESH_INTERVAL = 20  # in milliseconds, how often does the plots refresh. If your app is laggy, you will want a larger value here
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
-VIDEO_DEVICE_REFRESH_INTERVAL = 33
 MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
 VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 

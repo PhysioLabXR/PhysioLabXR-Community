@@ -3,6 +3,7 @@ import os
 import cv2
 
 from rena import config
+from rena.configs.configs import AppConfigs
 from rena.utils.data_utils import RNStream
 
 data_root = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/'
@@ -17,7 +18,7 @@ video_frame_stream = data[video_stream_label][0]
 frame_count = video_frame_stream.shape[-1]
 frame_size = (data[video_stream_label][0].shape[1], data[video_stream_label][0].shape[0])
 out_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0], video_stream_label))
-out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'DIVX'), 1 / config.VIDEO_DEVICE_REFRESH_INTERVAL, frame_size)
+out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'DIVX'), 1 / AppConfigs().video_device_refresh_interval, frame_size)
 
 for i in range(frame_count):
     print('Creating video progress {}%'.format(str(round(100 * i / frame_count, 2))), sep=' ', end='\r',

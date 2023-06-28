@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Dict, Any, List, Union
 
 import numpy as np
-from PyQt5.QtCore import QStandardPaths
 
 from rena import config
 from rena.config import app_data_name, default_group_name
@@ -73,7 +72,7 @@ class PresetType(Enum):
     FMRI = 'FMRI'
     LSL = 'LSL'
     ZMQ = 'ZMQ'
-    DEVICE = 'DEVICE'
+    CUSTOM = 'CUSTOM'
     EXPERIMENT = 'EXPERIMENT'
 
 
@@ -114,6 +113,19 @@ class PresetsEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class ScriptPreset(metaclass=SubPreset):
+    id: str
+    inputs: List[str]
+    outputs: List[str]
+    output_num_channels: List[int]
+    params: List[str]
+    params_type_strs: List[str]
+    params_value_strs: List[str]
+    run_frequency: int
+    time_window: int
+    script_path: str
+    is_simulate: bool
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -236,10 +248,10 @@ def _load_stream_presets(presets, dirty_presets):
         for dirty_preset_path in dirty_preset_paths:
             loaded_preset_dict = json.load(open(dirty_preset_path))
 
-            if category == 'LSL' or category == 'ZMQ' or category == 'Device':
+            if category == PresetType.LSL.value or category == PresetType.ZMQ.value or category == PresetType.CUSTOM.value:
                 stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
                 presets.add_stream_preset(stream_preset_dict)
-            elif category == 'Experiment':
+            elif category == PresetType.EXPERIMENT.value:
                 presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
             else:
                 raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
@@ -249,7 +261,13 @@ def preprocess_stream_preset(stream_preset_dict, category):
 
     """
     stream_preset_dict = validate_preset_json_preset(stream_preset_dict)
-    stream_preset_dict['preset_type'] = PresetType[category.upper()]
+    if type(category) == str:
+        preset_type = PresetType[category.upper()]
+    elif type(category) == PresetType:
+        preset_type = category
+    else:
+        raise ValueError(f'unknown category {category} for preset {stream_preset_dict} with type {type(category)}')
+    stream_preset_dict['preset_type'] = preset_type
     stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
     return stream_preset_dict
 
@@ -283,6 +301,7 @@ class Presets(metaclass=Singleton):
     _experiment_preset_root: str = 'ExperimentPresets'
 
     stream_presets: Dict[str, Union[StreamPreset, VideoPreset, FMRIPreset]] = field(default_factory=dict)
+    script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = AppConfigs().app_data_path
@@ -323,9 +342,9 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                # for key, value in preset_dict['video_presets'].items():
-                #     preset = VideoPreset(**value)
-                #     preset_dict['video_presets'][key] = preset
+                for key, value in preset_dict['script_presets'].items():
+                    preset = ScriptPreset(**value)
+                    preset_dict['script_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
@@ -353,8 +372,8 @@ class Presets(metaclass=Singleton):
         else:  # if the last_mod_times.json doesn't exist, then all the presets are dirty
             last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
 
-        dirty_presets = {'LSL': None, 'ZMQ': None, 'Device': None, 'Experiment': None}
-        (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'], dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
+        dirty_presets = {PresetType.LSL.value: None, PresetType.ZMQ.value: None, PresetType.CUSTOM.value: None, PresetType.EXPERIMENT.value: None}
+        (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[PresetType.CUSTOM.value], dirty_presets[PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
         with open(self._last_mod_time_path, 'w') as f:
@@ -410,7 +429,6 @@ class Presets(metaclass=Singleton):
             p.start()
         else:
             save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
-        # pass
 
     def __getitem__(self, key):
         return self._get_all_presets()[key]

@@ -1,6 +1,6 @@
-from PyQt5.QtCore import QThread, pyqtSignal, QMetaObject, Q_ARG
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QDialog, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtCore import QThread, pyqtSignal, QMetaObject, Q_ARG
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QDialog, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 
 class LongTaskThread(QThread):
     completed = pyqtSignal()
@@ -22,7 +22,7 @@ class LoadingDialog(QDialog):
         self.setWindowTitle(message)
         layout = QVBoxLayout()
         self.label = QLabel(message)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
         self.setLayout(layout)
 

@@ -2,11 +2,11 @@
 import json
 import os
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QSettings
+from PyQt6.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 
 from rena import config_ui, config
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
@@ -40,7 +40,7 @@ class SettingsWidget(QtWidgets.QWidget):
         onlyInt = QIntValidator()
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
-        self.plot_fps_lineedit.setText(str(int(1e3 / int(float(config.settings.value('visualization_refresh_interval'))))))
+        self.plot_fps_lineedit.setText(str(int(1e3 / int(float(AppConfigs().visualization_refresh_interval)))))
 
         self.linechart_viz_mode_combobox.addItems([member.value for member in LinechartVizMode.__members__.values()])
         self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
@@ -121,7 +121,7 @@ class SettingsWidget(QtWidgets.QWidget):
         if self.plot_fps_lineedit.text() != '':
             new_value = int(self.plot_fps_lineedit.text())
             if new_value in range(config.plot_fps_range[0], config.plot_fps_range[1]+1):
-                config.settings.setValue('visualization_refresh_interval', 1e3 / new_value)
+                AppConfigs().visualization_refresh_interval = int(1e3 / new_value)
                 new_refresh_interval = 1e3 / new_value
                 print(f'Set viz refresh interval to {new_refresh_interval}')
             else:

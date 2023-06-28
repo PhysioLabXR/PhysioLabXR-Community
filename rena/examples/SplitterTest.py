@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QSplitter, QSlider
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSplitter, QSlider
 from pyqtgraph import PlotWidget, mkPen
 import numpy as np
 
@@ -55,4 +55,4 @@ if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
     window.show()
-    app.exec_()
+    app.exec()

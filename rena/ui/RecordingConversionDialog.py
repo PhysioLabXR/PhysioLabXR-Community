@@ -1,7 +1,7 @@
 import pickle
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
 import pyqtgraph as pg
 from scipy.io import savemat
 

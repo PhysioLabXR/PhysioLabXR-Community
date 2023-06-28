@@ -9,7 +9,7 @@ import sys
 from multiprocessing import Process
 
 import pytest
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 from pytestqt.qtbot import QtBot
 from rena.configs.configs import AppConfigs
 

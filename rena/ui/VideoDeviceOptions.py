@@ -1,6 +1,6 @@
-from PyQt5 import uic
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget
+from PyQt6 import uic
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget
 
 from rena.config import app_logo_path
 from rena.presets.Presets import VideoDeviceChannelOrder
