@@ -1,11 +1,9 @@
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QFile, QTextStream
-from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea, QApplication
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
-import pyqtgraph as pg
 
 from rena import config_ui, config
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
