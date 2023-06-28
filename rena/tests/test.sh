@@ -16,13 +16,13 @@
 
 # Get the name of the Python unittest module from the first argument
 test_modules=(
-  XdfTest
-  CsvTest
   RenaVisualizationTest
   VisualizationLSLChannelTest
   VisualizationZMQChannelTest
   RecordingTest
   ReplayTest
+  XdfTest
+  CsvTest
 )
 
 # Detect the operating system

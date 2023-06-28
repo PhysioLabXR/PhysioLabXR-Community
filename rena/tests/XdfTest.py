@@ -10,12 +10,12 @@ from multiprocessing import Process
 from random import random as rand
 
 import pyxdf
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QMessageBox
+from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QMessageBox
 from rena.config import stream_availability_wait_time
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import DataType
+from rena.presets.Presets import DataType, PresetType
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.tests.TestStream import CSVTestStream
 from rena.utils.xdf_utils import load_xdf
@@ -60,19 +60,19 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
-        app_main_window.create_preset(stream_name=ts_name, port=None, networking_interface='LSL', data_type=DataType.float64, num_channels=81, nominal_sample_rate=2048)#stream_name=ts_name, port=)  # add a default preset
+        app_main_window.create_preset(stream_name=ts_name, preset_type=PresetType.LSL, data_type=DataType.float64, num_channels=81, nominal_sample_rate=2048)#stream_name=ts_name, port=)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-        qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+        qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
         qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, ts_name)
-        qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton) # click the add widget combo box
+        qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton) # click the add widget combo box
 
-    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.LeftButton)  # click the add widget combo box
-    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.ControlModifier)
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, 'a', modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, 'monitor 0')
-    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     app_main_window.settings_widget.set_recording_file_location(record_path)
     app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(4) # set recording file format to xdf
@@ -89,12 +89,12 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)
     # time.sleep(0.5)
     for ts_name in test_stream_names:
-        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.LeftButton)
+        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
     AppConfigs.eviction_interval = (recording_time_second + 1) * 1e3
 
     # app_main_window.ui.tabWidget.setCurrentWidget(
     #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # start the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     qtbot.wait(int(recording_time_second * 1e3))
 
@@ -125,7 +125,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     # t.start()
     print("Stopping recording")
     buffer_copy = copy.deepcopy(app_main_window.recording_tab.recording_buffer)
-    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.LeftButton)  # stop the recording
+    qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
     print("recording stopped")
     def conversion_complete():
         assert app_main_window.recording_tab.conversion_dialog.is_conversion_complete
@@ -133,7 +133,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.waitUntil(conversion_complete, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
     # t.join()  # wait until the dialog is closed
-    qtbot.mouseClick(app_main_window.stop_all_btn, QtCore.Qt.LeftButton)  # stop all the streams, so we don't need to handle stream lost
+    qtbot.mouseClick(app_main_window.stop_all_btn, QtCore.Qt.MouseButton.LeftButton)  # stop all the streams, so we don't need to handle stream lost
     #
     print("Waiting for test stream processes to close")
     [p.kill() for p in test_stream_processes]
