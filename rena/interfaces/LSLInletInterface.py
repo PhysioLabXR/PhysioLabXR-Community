@@ -65,9 +65,10 @@ class LSLInletInterface:
         try:
             return np.transpose(frames), timestamps
         except:
-            print("error occured in transposing frames")
+            print("error occurred in transposing frames")
             return frames, timestamps
-    def stop_sensor(self):
+
+    def stop_stream(self):
         if self.inlet:
             self.inlet.close_stream()
         print('LSLInletInterface: inlet stream closed.')
@@ -75,11 +76,11 @@ class LSLInletInterface:
     def info(self):
         return self.inlet.info()
 
-    def get_num_chan(self):
-        return self.lsl_num_chan
-
-    def get_nominal_srate(self):
-        return self.streams[0].nominal_srate()
+    # def get_num_chan(self):
+    #     return self.lsl_num_chan
+    #
+    # def get_nominal_srate(self):
+    #     return self.streams[0].nominal_srate()
 
 
 def run_test():
@@ -103,4 +104,4 @@ if __name__ == "__main__":
     unityLSL_inferface = LSLInletInterface()
     unityLSL_inferface.start_stream()
     data = run_test()
-    unityLSL_inferface.stop_sensor()
+    unityLSL_inferface.stop_stream()

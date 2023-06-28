@@ -134,7 +134,7 @@ class LSLInletWorker(QObject, RenaWorker):
         self.signal_stream_availability.emit(self._lslInlet_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
-        self._lslInlet_interface.stop_sensor()
+        self._lslInlet_interface.stop_stream()
         self.is_streaming = False
 
     def is_stream_available(self):
