@@ -3,8 +3,9 @@ from typing import Union, List
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder
-from rena.utils.realtime_DSP import DataProcessor
+
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
+from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 
 def get_preset_category(preset_name):

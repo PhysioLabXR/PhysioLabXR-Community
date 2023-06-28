@@ -257,7 +257,7 @@ class RootMeanSquare(DataProcessor):
 class ClutterRemoval(DataProcessor):
 
     def __init__(self, signal_clutter_ratio=0):  # interval in ms
-        super().__init__(data_processor_type=DataProcessorType.RootMeanSquare)
+        super().__init__(data_processor_type=DataProcessorType.ClutterRemoval)
         self.signal_clutter_ratio = signal_clutter_ratio
         self._clutter = None
 
