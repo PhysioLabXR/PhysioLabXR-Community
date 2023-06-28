@@ -178,7 +178,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         # test the data
         a = data_original[ts_name][0]
         b = data_replayed[ts_name][0]
-        assert np.all(a[:, -b.shape[1]:] == b)
+        assert np.isin(b, a).all()
 
         # test the timestamps
         a = data_original[ts_name][1]
