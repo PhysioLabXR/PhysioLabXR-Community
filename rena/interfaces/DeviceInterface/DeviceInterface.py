@@ -1,16 +1,4 @@
-import time
-import numpy as np
-import pyaudio
-from pylsl import local_clock
-import soundfile as sf
-from pylsl import StreamInlet, LostError, resolve_byprop
-import pylsl
-
-from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
-from rena import config
-from rena.config import stream_availability_wait_time
 from rena.utils.ConfigPresetUtils import DeviceType
-from stream_shared import lsl_continuous_resolver
 
 
 class DeviceInterface:

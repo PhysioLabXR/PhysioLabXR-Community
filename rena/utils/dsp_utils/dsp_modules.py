@@ -1,11 +1,6 @@
-from multiprocessing import Pool
-
 import numpy as np
-from scipy import sparse
-from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
-from scipy.sparse.linalg import spsolve
+from scipy.signal import butter, freqz, iirnotch, filtfilt
 from enum import Enum
-# from PyQt5.QtCore import (QObject, pyqtSignal)
 
 from exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError
 
