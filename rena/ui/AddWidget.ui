@@ -149,12 +149,12 @@
         </item>
         <item>
          <property name="text">
-          <string>Custom</string>
+          <string>ZMQ</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>ZMQ</string>
+          <string>Custom</string>
          </property>
         </item>
        </widget>
