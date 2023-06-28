@@ -23,10 +23,6 @@ class LSLInletInterface:
         it finds that the number of channels in the opened streams is different from this number, which is from the
         preset
         """
-        # self.streams = resolve_byprop('name', lsl_stream_name, timeout=0.1)
-        # if len(self.streams) < 1:
-        #     raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_stream_name))
-        # self.inlet = StreamInlet(self.streams[0])
 
         self.lsl_stream_name = lsl_stream_name
         self.lsl_num_chan = num_chan
@@ -34,7 +30,7 @@ class LSLInletInterface:
         self.inlet = None
         pass
 
-    def start_sensor(self):
+    def start_stream(self):
         # connect to the sensor
         self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=stream_availability_wait_time)
         if len(self.streams) < 1:
@@ -105,6 +101,6 @@ def run_test():
 
 if __name__ == "__main__":
     unityLSL_inferface = LSLInletInterface()
-    unityLSL_inferface.start_sensor()
+    unityLSL_inferface.start_stream()
     data = run_test()
     unityLSL_inferface.stop_sensor()

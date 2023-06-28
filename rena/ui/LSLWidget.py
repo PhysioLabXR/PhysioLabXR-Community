@@ -47,6 +47,8 @@ class LSLWidget(BaseStreamWidget):
                 self.reset_preset_by_num_channels(e.message, self.data_type)
                 try:
                     self.data_worker.start_stream()  # start the stream again with updated preset
+                    self.set_button_icons()
+                    self.main_parent.update_active_streams()
                 except LSLStreamNotFoundError as e:
                     self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
                     return
