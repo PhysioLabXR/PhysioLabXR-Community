@@ -16,12 +16,12 @@ from pylsl import local_clock
 
 
 def main():
-    topic = "CamCaptureA"
+    topic = "CamCapture"
     srate = 120
     port = "5557"
 
     c_channels = 3
-    width = 66
+    width = 64
     height = 64
     n_channels = c_channels * width * height
 
