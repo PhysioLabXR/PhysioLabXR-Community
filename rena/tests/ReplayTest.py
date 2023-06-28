@@ -16,6 +16,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 
 from rena.configs.configs import AppConfigs
+from rena.presets.Presets import PresetType
 
 AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.config import stream_availability_wait_time
@@ -72,7 +73,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         p = Process(target=LSLTestStream, args=(ts_name,))
         test_stream_processes.append(p)
         p.start()
-        app_main_window.create_preset(ts_name, None, 'LSL', num_channels=81)  # add a default preset
+        app_main_window.create_preset(ts_name, PresetType.LSL, num_channels=81)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
