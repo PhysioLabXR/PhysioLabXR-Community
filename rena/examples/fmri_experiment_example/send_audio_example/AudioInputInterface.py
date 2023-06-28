@@ -23,8 +23,8 @@ class AudioInputInterface(DeviceInterface):
                  _device_type,
                  audio_device_data_format=pyaudio.paInt16,
                  audio_device_frames_per_buffer=128,
-                 audio_device_sampling_rate=8000,
-                 device_nominal_sampling_rate=8000):
+                 audio_device_sampling_rate=6000,
+                 device_nominal_sampling_rate=6000):
         super(AudioInputInterface, self).__init__(_device_name=_device_name,
                                                   _device_type=_device_type,
                                                   device_nominal_sampling_rate=device_nominal_sampling_rate)
@@ -160,7 +160,7 @@ class AudioInputInterface(DeviceInterface):
 if __name__ == '__main__':
     print()
     # LSL example
-    info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 8000, pylsl.cf_int16, "myuniqueid")
+    info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 6000, pylsl.cf_int16, "myuniqueid")
     outlet = pylsl.StreamOutlet(info)
 
     audio_interface = AudioInputInterface(_device_name='Participant Microphone',
