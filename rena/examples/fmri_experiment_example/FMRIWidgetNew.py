@@ -50,6 +50,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
 
         self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidgetNew.ui", self)
+        self.setWindowTitle('fMRI Viewer')
 
         self.create_visualization_component()
         self.load_mri_volume()
