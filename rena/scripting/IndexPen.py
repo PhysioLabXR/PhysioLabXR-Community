@@ -82,9 +82,10 @@ class IndexPenRealTimePreprocessor:
             self.ra_buffer = data_padding(self.ra_buffer, threshold=self.ra_threshold)
 
             # return index 0 data with clutter removal
-            rd_cr_frame, self.rd_clutter = clutter_removal(self.rd_buffer[0], self.rd_clutter, self.rd_cr_ratio)
-            ra_cr_frame, self.ra_clutter = clutter_removal(self.ra_buffer[0], self.ra_clutter, self.ra_cr_ratio)
-
+            # rd_cr_frame, self.rd_clutter = clutter_removal(self.rd_buffer[0], self.rd_clutter, self.rd_cr_ratio)
+            # ra_cr_frame, self.ra_clutter = clutter_removal(self.ra_buffer[0], self.ra_clutter, self.ra_cr_ratio)
+            rd_cr_frame = self.rd_buffer[0]
+            ra_cr_frame = self.ra_buffer[0]
             return rd_cr_frame, ra_cr_frame
         else:
             return None, None
