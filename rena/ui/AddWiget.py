@@ -98,7 +98,7 @@ class AddStreamWidget(QtWidgets.QWidget):
             preset_type = get_preset_category(stream_name)
         except KeyError:
             is_new_preset = True
-            preset_type = PresetType[self.get_selected_preset_type_str()]
+            preset_type = PresetType[self.get_selected_preset_type_str().upper()]
         return preset_type, is_new_preset
 
     def on_streamName_combobox_text_changed(self):

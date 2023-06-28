@@ -16,7 +16,7 @@ from pylsl import local_clock
 
 
 def main():
-    topic = "CamCapture"
+    topic = "CamCaptureA"
     srate = 120
     port = "5557"
 

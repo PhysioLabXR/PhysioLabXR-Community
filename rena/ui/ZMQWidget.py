@@ -44,16 +44,7 @@ class ZMQWidget(BaseStreamWidget):
 
     def start_stop_stream_btn_clicked(self):
         try:
-            # check if it is streaming
-            if self.data_worker.is_streaming:
-                self.data_worker.stop_stream()
-                if not self.data_worker.is_streaming:
-                    self.update_stream_availability(self.data_worker.is_stream_available)
-            else:
-                    self.data_worker.start_stream()
-
-            self.set_button_icons()
-            self.main_parent.update_active_streams()
+            super().start_stop_stream_btn_clicked()
         except Exception as e:
             raise UnsupportedErrorTypeError(str(e))
 
