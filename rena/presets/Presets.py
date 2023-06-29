@@ -14,7 +14,7 @@ from rena.config import app_data_name, default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset
-from rena.ui.SplashScreen import LoadingTextNotifier
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
@@ -306,7 +306,7 @@ class Presets(metaclass=Singleton):
         self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
 
         if os.path.exists(self._preset_path):
-            print(f'Reloading presets from {self._app_data_path}')
+            SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 for key, value in preset_dict['stream_presets'].items():
@@ -323,11 +323,11 @@ class Presets(metaclass=Singleton):
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
-        LoadingTextNotifier().setLoadingText('Loading video devices...You may notice webcam flashing.')
+        SplashLoadingTextNotifier().set_loading_text('Loading video devices...You may notice webcam flashing.')
         _load_video_device_presets(self)
 
         self.save(is_async=True)
-        print("Presets instance successfully initialized")
+        SplashLoadingTextNotifier().set_loading_text("Presets instance successfully initialized")
 
     def _get_all_presets(self):
         """

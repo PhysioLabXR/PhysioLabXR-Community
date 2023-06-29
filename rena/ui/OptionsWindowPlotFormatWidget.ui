@@ -111,13 +111,19 @@
        </item>
        <item>
         <widget class="QLabel" name="imageFormatInfoLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
-          <string>Shape Info</string>
+          <string>shape valid</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="widget_7" native="true">
+        <widget class="QWidget" name="display_options" native="true">
          <layout class="QVBoxLayout" name="verticalLayout_12">
           <property name="leftMargin">
            <number>0</number>
@@ -132,17 +138,105 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QWidget" name="widget_8" native="true">
+           <widget class="QWidget" name="display_scaling_widget" native="true">
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
               <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>Display Scaling</string>
+                <string>Display scaling</string>
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QLineEdit" name="imageScalingFactorLineEdit"/>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="rgb_display_options" native="true">
+            <layout class="QFormLayout" name="formLayout_2">
+             <property name="horizontalSpacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_17">
+               <property name="text">
+                <string>Red display value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="image_level_rmin_line_edit"/>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="image_level_gmin_line_edit"/>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="image_level_rmax_line_edit"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_18">
+               <property name="text">
+                <string>Red display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_19">
+               <property name="text">
+                <string>Green display value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_20">
+               <property name="text">
+                <string>Green display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="image_level_gmax_line_edit"/>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_21">
+               <property name="text">
+                <string>Blue display value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QLineEdit" name="image_level_bmin_line_edit"/>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_22">
+               <property name="text">
+                <string>Blue display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QLineEdit" name="image_level_bmax_line_edit"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Channel format</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="channelFormatCombobox"/>
              </item>
             </layout>
            </widget>
@@ -150,6 +244,18 @@
           <item>
            <widget class="QWidget" name="pixelmap_display_options" native="true">
             <layout class="QFormLayout" name="formLayout">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
              <item row="1" column="0">
               <widget class="QLabel" name="label_16">
                <property name="text">
@@ -193,94 +299,10 @@
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="rgb_display_options" native="true">
-         <layout class="QFormLayout" name="formLayout_2">
-          <property name="horizontalSpacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_17">
-            <property name="text">
-             <string>Red display value min</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="image_level_rmin_line_edit"/>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="image_level_gmin_line_edit"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="image_level_rmax_line_edit"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_18">
-            <property name="text">
-             <string>Red display value max</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_19">
-            <property name="text">
-             <string>Green display value min</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_20">
-            <property name="text">
-             <string>Green display value max</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="image_level_gmax_line_edit"/>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_21">
-            <property name="text">
-             <string>Blue display value min</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QLineEdit" name="image_level_bmin_line_edit"/>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="label_22">
-            <property name="text">
-             <string>Blue display value max</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="image_level_bmax_line_edit"/>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>Channel format</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="channelFormatCombobox"/>
-          </item>
-         </layout>
+        <widget class="QLabel" name="display_options_valid_label">
+         <property name="text">
+          <string>display options valid</string>
+         </property>
         </widget>
        </item>
       </layout>

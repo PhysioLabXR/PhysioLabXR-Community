@@ -12,8 +12,9 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
-    get_spectrogram_percentile_level_min, get_image_cmap_lut, get_image_levels, set_image_levels_min, \
+    get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, set_image_levels_min, \
     set_image_levels_max, get_image_format
+from rena.utils.image_utils import process_image
 from rena.utils.ui_utils import get_distinct_colors, dialog_popup
 from rena.utils.user_input_utils import float_validator
 
@@ -198,7 +199,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            width, height, image_format, channel_format, scaling = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling
+            width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentile
             depth = image_format.depth_dim()
             image_plot_data = data[channel_indices, -1]  # only visualize the last frame
             if image_format == ImageFormat.rgb:
@@ -211,7 +212,9 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
 
             if not self.is_auto_level_image:
-                self.image_item.setLevels(get_image_levels(self.stream_name, self.group_name))
+                self.image_item.setLevels(get_valid_image_levels(self.stream_name, self.group_name))
+            if scaling_percentile != 100:
+                image_plot_data = process_image(image_plot_data, scale=scaling_percentile/100)
             self.image_item.setImage(image_plot_data, autoLevels=self.is_auto_level_image)
 
         elif selected_plot_format == 2:
@@ -273,7 +276,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         if levels is gotten from outside of this function, it can be passed in
         """
         if levels is None:
-            levels = get_image_levels(self.stream_name, self.group_name)
+            levels = get_valid_image_levels(self.stream_name, self.group_name)
 
         if levels is None:
             self.is_auto_level_image = True

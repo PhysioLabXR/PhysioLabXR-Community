@@ -1,13 +1,12 @@
 import sys
 
 from PyQt6 import QtWidgets
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtWidgets import QLabel, QSystemTrayIcon, QMenu
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 
 from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
-from rena.ui.SplashScreen import SplashScreen, LoadingTextNotifier
+from rena.ui.SplashScreen import SplashScreen
 
 AppConfigs(_reset=False)  # create the singleton app configs object
 from MainWindow import MainWindow

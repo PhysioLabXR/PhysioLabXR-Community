@@ -3,22 +3,19 @@
 from PyQt6 import QtCore, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
-from PyQt6.QtWidgets import QDialogButtonBox
 
 from rena.presets.Cmap import Cmap
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
-from rena.presets.presets_utils import get_stream_group_info, get_stream_a_group_info, \
-    set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_config, \
+from rena.presets.presets_utils import get_stream_a_group_info, \
+    set_stream_a_group_selected_plot_format, set_stream_a_group_selected_img_h_w, \
     set_bar_chart_max_min_range, set_group_image_format, set_group_image_channel_format, \
     get_group_image_config, set_spectrogram_time_per_segment, set_spectrogram_time_overlap, \
     get_spectrogram_time_per_segment, get_spectrogram_time_overlap, set_spectrogram_cmap, \
     set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max, set_image_levels_max, \
-    set_image_levels_min, get_image_levels, get_group_image_format, get_group_channel_format, set_image_cmap, \
+    set_image_levels_min, get_valid_image_levels, set_image_cmap, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
-    set_image_levels_rmax
+    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
-from rena.utils.ui_utils import dialog_popup
-from rena.utils.user_input_utils import float_validator
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -44,14 +41,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(QIntValidator())
         self.imageHeightLineEdit.setValidator(QIntValidator())
-        self.imageScalingFactorLineEdit.setValidator(QIntValidator())
         self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
         self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
 
-        self.image_level_min_line_edit.setValidator(float_validator)
-        self.image_level_max_line_edit.setValidator(float_validator)
+        self.image_level_min_line_edit.setValidator(QDoubleValidator())
+        self.image_level_max_line_edit.setValidator(QDoubleValidator())
         self.combobox_image_cmap.addItems([name for name, member in Cmap.__members__.items()])
         self.image_levels_invalid = False
+        self.image_display_scaling_percentile_slider = SliderWithValueLabel(minimum=1, maximum=100, value=100)
+        self.display_scaling_widget.layout().addWidget(self.image_display_scaling_percentile_slider)
 
         # barplot ###############################################################
         self.barPlotYMaxLineEdit.setValidator(QDoubleValidator())
@@ -92,7 +90,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             # image ###############################################################
             self.imageWidthLineEdit.textChanged.disconnect()
             self.imageHeightLineEdit.textChanged.disconnect()
-            self.imageScalingFactorLineEdit.textChanged.disconnect()
+            self.image_display_scaling_percentile_slider.valueChanged.disconnect()
             self.imageFormatComboBox.currentTextChanged.disconnect()
             self.channelFormatCombobox.currentTextChanged.disconnect()
             self.combobox_image_cmap.currentTextChanged.disconnect()
@@ -117,11 +115,13 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image ###############################################################
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
         self.imageHeightLineEdit.setText(str(this_group_entry.plot_configs.image_config.height))
-        self.imageScalingFactorLineEdit.setText(str(this_group_entry.plot_configs.image_config.scaling))
+        self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentile)
+
         self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
         self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)
 
-        levels = get_image_levels(self.stream_name, group_name)
+        valid_levels = get_valid_image_levels(self.stream_name, group_name)
+        self.update_image_level_valid(valid_levels)
         image_format = this_group_entry.plot_configs.image_config.image_format
         if image_format == ImageFormat.rgb:
             self.pixelmap_display_options.setVisible(False)
@@ -129,17 +129,18 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         elif image_format == ImageFormat.pixelmap:
             self.rgb_display_options.setVisible(False)
             self.pixelmap_display_options.setVisible(True)
-        if levels is not None:
-            if image_format == ImageFormat.rgb:
-                self.image_level_rmin_line_edit.setText(str(levels[0][0]))
-                self.image_level_rmax_line_edit.setText(str(levels[0][1]))
-                self.image_level_gmin_line_edit.setText(str(levels[1][0]))
-                self.image_level_gmax_line_edit.setText(str(levels[1][1]))
-                self.image_level_bmin_line_edit.setText(str(levels[2][0]))
-                self.image_level_bmax_line_edit.setText(str(levels[2][1]))
-            elif image_format == ImageFormat.pixelmap:
-                self.image_level_min_line_edit.setText(str(levels[0]))
-                self.image_level_max_line_edit.setText(str(levels[1]))
+
+        levels_for_update = get_image_levels(self.stream_name, group_name)
+        if image_format == ImageFormat.rgb:
+            self.image_level_rmin_line_edit.setText(str(levels_for_update[0][0]))
+            self.image_level_rmax_line_edit.setText(str(levels_for_update[0][1]))
+            self.image_level_gmin_line_edit.setText(str(levels_for_update[1][0]))
+            self.image_level_gmax_line_edit.setText(str(levels_for_update[1][1]))
+            self.image_level_bmin_line_edit.setText(str(levels_for_update[2][0]))
+            self.image_level_bmax_line_edit.setText(str(levels_for_update[2][1]))
+        elif image_format == ImageFormat.pixelmap:
+            self.image_level_min_line_edit.setText(str(levels_for_update[0]))
+            self.image_level_max_line_edit.setText(str(levels_for_update[1]))
 
         self.combobox_image_cmap.setCurrentIndex(this_group_entry.plot_configs.image_config.cmap.value)
 
@@ -154,11 +155,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.combobox_image_cmap.currentTextChanged.connect(self.image_cmap_changed)
 
-        self.imageWidthLineEdit.textChanged.connect(self.image_W_H_on_change)
-        self.imageHeightLineEdit.textChanged.connect(self.image_W_H_on_change)
-
-
-        self.imageScalingFactorLineEdit.textChanged.connect(self.image_W_H_on_change)
+        self.imageWidthLineEdit.textChanged.connect(self.image_w_h_scaling_percentile_on_change)
+        self.imageHeightLineEdit.textChanged.connect(self.image_w_h_scaling_percentile_on_change)
+        self.image_display_scaling_percentile_slider.valueChanged.connect(self.image_scaling_percentile_on_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
         self.channelFormatCombobox.currentTextChanged.connect(self.image_channel_format_change)
 
@@ -185,7 +184,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.slider_spectrogram_percentile_max.valueChanged.connect(self.spectrogram_percentile_max_changed)
 
         self.label_invalid_spectrogram_param.setVisible(False)
-
         self.comboBox_spectrogram_cmap.setCurrentIndex(this_group_entry.plot_configs.spectrogram_config.cmap.value)
         self.parent.set_spectrogram_cmap(group_name)  # Call stack: StreamOptionsWindow -> StreamWindow -> VizComponents -> GroupPlotWidget
         self.comboBox_spectrogram_cmap.currentTextChanged.connect(self.spectrogram_cmap_changed)
@@ -222,15 +220,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
             self._set_to_group(self.group_name)
 
-    def image_W_H_on_change(self):
-        # check if W * H * D = Channel Num
-        # W * H * D
-        # update the value to settings
+    def image_w_h_scaling_percentile_on_change(self):
         width = self.get_image_width()
         height = self.get_image_height()
-        scaling_factor = self.get_image_scaling_factor()
-        set_stream_a_group_selected_img_config(self.stream_name, self.group_name, height=height, width=width, scaling=scaling_factor)
+        set_stream_a_group_selected_img_h_w(self.stream_name, self.group_name, height=height, width=width)
+        self.image_changed()
 
+    def image_scaling_percentile_on_change(self):
+        scaling_percentile = self.image_display_scaling_percentile_slider.value()
+        set_image_scaling_percentile(self.stream_name, self.group_name, scaling_percentile=scaling_percentile)
         self.image_changed()
 
     def image_format_change(self):
@@ -268,10 +266,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
             if get_stream_a_group_info(self.stream_name, self.group_name).is_image_valid():
                 self.imageFormatInfoLabel.setStyleSheet('color: green')
-                print('Valid Image Format')
+                # print('Valid Image Format')
             else:
                 self.imageFormatInfoLabel.setStyleSheet('color: red')
-                print('Invalid Image Format')
+                # print('Invalid Image Format')
 
     def spectrogram_valid_update(self, is_valid):
         self.label_invalid_spectrogram_param.setVisible(not is_valid)
@@ -289,13 +287,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         except ValueError:  # in case the string cannot be convert to a float
             return 0
         return new_image_height
-
-    def get_image_scaling_factor(self):
-        try:
-            new_image_scaling_factor = abs(int(self.imageScalingFactorLineEdit.text()))
-        except ValueError:  # in case the string cannot be convert to a float
-            return 0
-        return new_image_scaling_factor
 
     def get_bar_chart_max_range(self):
         try:
@@ -455,10 +446,16 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.image_level_changed()
 
     def image_level_changed(self):
-        levels = get_image_levels(self.stream_name, self.group_name)
+        levels = get_valid_image_levels(self.stream_name, self.group_name)
+        self.update_image_level_valid(levels)
+        self.parent.get_viz_components().group_plots[self.group_name].set_image_levels(levels)
+
+    def update_image_level_valid(self, levels):
         if levels is None and not self.image_levels_invalid:
             self.image_levels_invalid = True
-            dialog_popup('Image levels are invalid. Auto levels are used instead.', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True, dialog_name='image_levels_invalid')
+            self.display_options_valid_label.setStyleSheet("color: red")
+            self.display_options_valid_label.setVisible(True)
+            self.display_options_valid_label.setText("Invalid image levels: min levels must be less than max levels")
         else:
+            self.display_options_valid_label.setVisible(False)
             self.image_levels_invalid = False
-        self.parent.get_viz_components().group_plots[self.group_name].set_image_levels(levels)

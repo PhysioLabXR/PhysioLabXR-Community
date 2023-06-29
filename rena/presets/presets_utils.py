@@ -75,10 +75,12 @@ def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format
     return plot_format
 
 
-def set_stream_a_group_selected_img_config(stream_name, group_name, height, width, scaling):
+def set_stream_a_group_selected_img_h_w(stream_name, group_name, height, width):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.height = height
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.width = width
-    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling = scaling
+
+def set_image_scaling_percentile(stream_name, group_name, scaling_percentile):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling_percentile = scaling_percentile
 
 
 def set_bar_chart_max_min_range(stream_name, group_name, max_range, min_range):
@@ -207,6 +209,9 @@ def get_image_cmap_lut(stream_name, group_name):
 
 def get_image_format(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format
+
+def get_valid_image_levels(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.get_valid_image_levels()
 
 def get_image_levels(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.get_image_levels()

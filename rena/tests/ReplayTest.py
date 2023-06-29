@@ -190,5 +190,6 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
         assert np.mean(np.abs(e - d)) < 1e-9
         assert np.max(np.abs(e - d)) < 1e-9
         assert np.std(np.abs(e - d)) < 1e-9
-    os.remove(app_main_window.recording_tab.save_path)
+    os.remove(recording_file_name)
+    os.remove(replayed_file_name)
     print("Replay completed")

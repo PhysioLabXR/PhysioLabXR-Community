@@ -30,7 +30,7 @@ class ImageConfig(metaclass=SubPreset):
 
     width: int = 0
     height: int = 0
-    scaling: int = 1
+    scaling_percentile: float = 100
 
     cmap: Cmap = Cmap.VIRIDIS
 
@@ -47,7 +47,10 @@ class ImageConfig(metaclass=SubPreset):
     def __post_init__(self):
         reload_enums(self)
 
-    def get_image_levels(self):
+    def get_valid_image_levels(self):
+        """
+        this function will return None if the image levels are not valid
+        """
         if self.image_format == ImageFormat.pixelmap:
             if self.vmin is None or self.vmax is None:
                 return None
@@ -66,6 +69,16 @@ class ImageConfig(metaclass=SubPreset):
                 return None
             else:
                 return ((self.vminR, self.vmaxR), (self.vminG, self.vmaxG), (self.vminB, self.vmaxB))
+
+    def get_image_levels(self):
+        """
+        this function will return the image levels, even if they are invalid
+        """
+        if self.image_format == ImageFormat.pixelmap:
+            return (self.vmin, self.vmax)
+        elif self.image_format == ImageFormat.rgb:
+            return ((self.vminR, self.vmaxR), (self.vminG, self.vmaxG), (self.vminB, self.vmaxB))
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class BarChartConfig(metaclass=SubPreset):
@@ -127,10 +140,5 @@ class PlotConfigs(metaclass=SubPreset):
                 setattr(self, attr, cls(**getattr(self, attr)))
             else:
                 raise TypeError(f"Unexpected type for {attr}: {type(getattr(self, attr))}")
-
-
-    # def to_dict(self):
-    #     return {k: asdict(v) for k, v in self.__dict__.items() if not k.startswith("__")}
-
 
 

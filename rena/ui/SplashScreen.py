@@ -1,6 +1,11 @@
-from PyQt6.QtGui import QPixmap
+import inspect
+import warnings
+
+from PyQt6.QtGui import QPixmap, QPainter, QFont
 from PyQt6.QtWidgets import QApplication, QSplashScreen, QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QObject, pyqtSignal, QCoreApplication
+
+from rena.version.version import VERSION
 
 
 class SplashScreenSingleton:
@@ -17,7 +22,7 @@ class SplashScreenSingleton:
         return wrapper
 
 @SplashScreenSingleton()
-class LoadingTextNotifier(QObject):
+class SplashLoadingTextNotifier(QObject):
     """
     Anywhere before the MainWindow is shown, and while the splash screen is still visible, you may call
         LoadingTextNotifier().setLoadingText(<loading information>)
@@ -25,12 +30,20 @@ class LoadingTextNotifier(QObject):
     """
 
     loading_text_changed = pyqtSignal(str)
+    splash_active = True
 
     def __init__(self):
         super().__init__()
 
-    def setLoadingText(self, text):
-        self.loading_text_changed.emit(text)
+    def set_loading_text(self, text, also_print=True):
+        if self.splash_active:
+            if also_print:
+                print(text)
+            self.loading_text_changed.emit(text)
+        else:
+            warnings.warn(f"{self.__class__.__name__}.{inspect.stack()[0].function}: Splash screen is not active. Loading text will not be updated.")
+            print("Loading text given is: \n {text}")
+
 
 class SplashScreen(QSplashScreen):
     """
@@ -39,18 +52,26 @@ class SplashScreen(QSplashScreen):
     """
     def __init__(self):
         super().__init__()
-        self.setPixmap(QPixmap('../media/logo/RenaLabAppDeprecated.png'))
+        self.setPixmap(QPixmap('../media/logo/RenaLabApp Splash.png'))
 
         layout = QVBoxLayout()
         self.loading_label = QLabel("Loading...")
         self.loading_label .setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.loading_label)
 
+        version_label = QLabel(f"<i>Reality Navigation Laboratory App v{VERSION}</i>", self)
+        version_label .setAlignment(Qt.AlignmentFlag.AlignRight)
+        version_label.setGeometry(345, 140, 250, 20)  # Set the x, y, width, and height values as desired
+
         self.setLayout(layout)
         self.setWindowTitle("Splash Screen")
 
-        LoadingTextNotifier().loading_text_changed.connect(self.updateLoadingText)
+        SplashLoadingTextNotifier().loading_text_changed.connect(self.updateLoadingText)
 
     def updateLoadingText(self, text):
         self.loading_label.setText(text)
         QCoreApplication.processEvents()
+
+    def closeEvent(self, event):
+        SplashLoadingTextNotifier().splash_active = False
+        event.accept()
