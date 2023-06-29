@@ -30,7 +30,7 @@ class ImageConfig(metaclass=SubPreset):
 
     width: int = 0
     height: int = 0
-    scaling_percentile: float = 100
+    scaling_percentage: float = 100
 
     cmap: Cmap = Cmap.VIRIDIS
 
@@ -137,7 +137,13 @@ class PlotConfigs(metaclass=SubPreset):
             elif getattr(self, attr) is None:
                 setattr(self, attr, cls())
             elif isinstance(getattr(self, attr), dict):
-                setattr(self, attr, cls(**getattr(self, attr)))
+                attribute_dict = {}
+                for key, value in getattr(self, attr).items():  # remove any keys that are not in the PlotConfigs class
+                    if key in cls.__dict__:
+                        attribute_dict[key] = value
+                    else:
+                        print(f'Dev Info: {key} with value {value} is not in an attribute of {attr} anymore. Possibly due to a new version of rena. Ignoring this key. Its value will be reset to default.')
+                setattr(self, attr, cls(**attribute_dict))
             else:
                 raise TypeError(f"Unexpected type for {attr}: {type(getattr(self, attr))}")
 

@@ -81,18 +81,6 @@ class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
 
-# class VideoDeviceTypeEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, Enum):
-#             return obj.value
-#         return json.JSONEncoder.default(self, obj)
-
-
-# class PresetsEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, StreamPreset) or isinstance(obj, PlotConfigs) or isinstance(obj, VideoPreset):
-#             return obj.to_dict()
-#         return super().default(obj)
 
 class PresetsEncoder(json.JSONEncoder):
     """

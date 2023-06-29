@@ -115,7 +115,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image ###############################################################
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
         self.imageHeightLineEdit.setText(str(this_group_entry.plot_configs.image_config.height))
-        self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentile)
+        self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentage)
 
         self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
         self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)

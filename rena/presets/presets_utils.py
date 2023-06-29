@@ -80,7 +80,7 @@ def set_stream_a_group_selected_img_h_w(stream_name, group_name, height, width):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.width = width
 
 def set_image_scaling_percentile(stream_name, group_name, scaling_percentile):
-    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling_percentile = scaling_percentile
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling_percentage = scaling_percentile
 
 
 def set_bar_chart_max_min_range(stream_name, group_name, max_range, min_range):

@@ -199,7 +199,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentile
+            width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentage
             depth = image_format.depth_dim()
             image_plot_data = data[channel_indices, -1]  # only visualize the last frame
             if image_format == ImageFormat.rgb:
