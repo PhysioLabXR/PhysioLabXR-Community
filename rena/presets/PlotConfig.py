@@ -32,8 +32,40 @@ class ImageConfig(metaclass=SubPreset):
     height: int = 0
     scaling: int = 1
 
+    cmap: Cmap = Cmap.VIRIDIS
+
+    vmin: float = None
+    vmax: float = None
+
+    vminR: float = None
+    vmaxR: float = None
+    vminG: float = None
+    vmaxG: float = None
+    vminB: float = None
+    vmaxB: float = None
+
     def __post_init__(self):
         reload_enums(self)
+
+    def get_image_levels(self):
+        if self.image_format == ImageFormat.pixelmap:
+            if self.vmin is None or self.vmax is None:
+                return None
+            elif self.vmin == self.vmax:
+                return None
+            elif self.vmin > self.vmax:
+                return None
+            else:
+                return (self.vmin, self.vmax)
+        elif self.image_format == ImageFormat.rgb:
+            if self.vminR is None or self.vmaxR is None or self.vminG is None or self.vmaxG is None or self.vminB is None or self.vmaxB is None:
+                return None
+            elif self.vminR == self.vmaxR or self.vminG == self.vmaxG or self.vminB == self.vmaxB:
+                return None
+            elif self.vminR > self.vmaxR or self.vminG > self.vmaxG or self.vminB > self.vmaxB:
+                return None
+            else:
+                return ((self.vminR, self.vmaxR), (self.vminG, self.vmaxG), (self.vminB, self.vmaxB))
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class BarChartConfig(metaclass=SubPreset):
