@@ -14,6 +14,7 @@ from rena.config import app_data_name, default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset
+from rena.ui.SplashScreen import LoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
@@ -322,6 +323,7 @@ class Presets(metaclass=Singleton):
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
+        LoadingTextNotifier().setLoadingText('Loading video devices...You may notice webcam flashing.')
         _load_video_device_presets(self)
 
         self.save(is_async=True)
