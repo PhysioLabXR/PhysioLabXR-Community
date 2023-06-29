@@ -6,12 +6,14 @@ from PyQt6.QtWidgets import QLabel
 
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.ui_shared import *
 from rena import config, config_ui
 from rena.utils.ui_utils import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
+    SplashLoadingTextNotifier().set_loading_text('Loading presets...')
     print("Settings are stored at {0}".format(config.settings.fileName()))
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)

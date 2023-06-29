@@ -18,7 +18,7 @@ from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
-from rena.ui.ScriptingParamWidget import ScriptingParamWidget
+from rena.ui.ParamWidget import ParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
@@ -385,7 +385,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.export_script_args_to_settings()
 
     def process_add_param(self, param_name, type_text=None, value_text=None):
-        param_widget = ScriptingParamWidget(self, param_name, type_text, value_text)
+        param_widget = ParamWidget(self, param_name, type_text, value_text)
         self.paramsLayout.addWidget(param_widget)
 
         def remove_btn_clicked():
@@ -396,7 +396,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.export_script_args_to_settings()
             self.param_change(ParamChange.REMOVE, param_name)
 
-        param_widget.set_button_callback(remove_btn_clicked)
+        param_widget.set_remove_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
         self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())

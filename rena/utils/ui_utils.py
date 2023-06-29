@@ -474,3 +474,4 @@ def clear_widget(target_widget):
 #     plot.legend.removeItem(plotItem)
 #     plot.legend.addItem(plotItem, name)
 #     plotItem.setData(name='New Name')
+

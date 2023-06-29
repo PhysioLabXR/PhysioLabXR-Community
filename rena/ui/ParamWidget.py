@@ -8,10 +8,10 @@ from rena.shared import ParamChange
 from rena.ui_shared import minus_icon
 
 
-class ScriptingParamWidget(QtWidgets.QWidget):
+class ParamWidget(QtWidgets.QWidget):
     def __init__(self, parent, param_name, type_text, value_text):
         super().__init__()
-        self.ui = uic.loadUi("ui/ScriptingParamWidget.ui", self)
+        self.ui = uic.loadUi("ui/ParamWidget.ui", self)
         self.parent = parent
 
         self.label_param_name.setText(param_name)
@@ -38,7 +38,7 @@ class ScriptingParamWidget(QtWidgets.QWidget):
             self.value_widget.textChanged.connect(self.on_param_changed)
         self.top_layout.insertWidget(1, self.value_widget)
 
-    def set_button_callback(self, callback):
+    def set_remove_button_callback(self, callback: callable):
         self.remove_btn.clicked.connect(callback)
 
     def get_value(self):

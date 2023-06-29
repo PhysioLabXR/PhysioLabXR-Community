@@ -17,6 +17,7 @@ from rena.threadings.LongTasks import LongTaskThread, LoadingDialog
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
@@ -65,6 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
         :param kwargs:
         """
         super().__init__(*args, **kwargs)
+        SplashLoadingTextNotifier().set_loading_text('Creating main window...')
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
         self.setWindowTitle('RenaLabApp')
         self.app = app
@@ -80,9 +82,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ######### init server
         print('Creating Rena Client')
-        self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
-                                                port_id=config.rena_server_port,
-                                                identity='client')
+        # self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
+        #                                         port_id=config.rena_server_port,
+        #                                         identity='client')
 
         #########
         # meta data update timer
@@ -351,7 +353,6 @@ class MainWindow(QtWidgets.QMainWindow):
             Presets().__del__()
             AppConfigs().__del__()
             event.accept()
-            super().closeEvent(event)
         else:
             event.ignore()
 

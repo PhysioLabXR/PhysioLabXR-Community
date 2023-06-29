@@ -474,20 +474,19 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         #     self.tickFrequencyLabel.setText(
         #         'Pull Data Frequency: {0}'.format(round(self.tick_rate, config_ui.tick_frequency_decimal_places)))
 
-    def init_server_client(self):
-        print('John')
-
-        # dummy preset for now:
-        stream_name = 'OpenBCI'
-        port_id = int(time.time())
-        identity = 'server'
-        processor_dic = {}
-        rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
-        self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
-        rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
-        print('DSP worker created')
-        self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
-
+    # def init_server_client(self):
+    #     print('John')
+    #
+    #     # dummy preset for now:
+    #     stream_name = 'OpenBCI'
+    #     port_id = int(time.time())
+    #     identity = 'server'
+    #     processor_dic = {}
+    #     rena_tcp_request_object = RenaTCPAddDSPWorkerRequestObject(stream_name, port_id, identity, processor_dic)
+    #     self.main_parent.rena_dsp_client.send_obj(rena_tcp_request_object)
+    #     rena_tcp_request_object = self.main_parent.rena_dsp_client.recv_obj()
+    #     print('DSP worker created')
+    #     self.dsp_client_interface = RenaTCPInterface(stream_name=stream_name, port_id=port_id, identity='client')
         # send to server
 
     def get_fps(self):

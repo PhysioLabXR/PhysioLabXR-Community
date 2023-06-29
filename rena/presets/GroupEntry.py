@@ -60,7 +60,13 @@ class GroupEntry(metaclass=SubPreset):
         if self.plot_configs is None:
             self.plot_configs = PlotConfigs()
         elif isinstance(self.plot_configs, dict):
-            self.plot_configs = PlotConfigs(**self.plot_configs)
+            filtered_plot_configs = {}
+            for key, value in self.plot_configs.items():  # remove any keys that are not in the PlotConfigs class
+                if key in PlotConfigs.__dict__:
+                    filtered_plot_configs[key] = value
+                else:
+                    print(f'Dev Info: {key} with value {value} is not in an attribute of PlotConfigs anymore. Possibly due to a new version of rena. Ignoring this key. Its value will be reset to default.')
+            self.plot_configs = PlotConfigs(**filtered_plot_configs)
         else:
             raise ValueError(f'plot_configs must be a dict or None: {type(self.plot_configs)}')
         reload_enums(self)

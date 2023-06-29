@@ -273,3 +273,6 @@ class StreamOptionsWindow(QWidget):
 
     def set_selected_group(self, group_name: str):
         self.stream_group_view.select_group_item(group_name)
+
+    def get_viz_components(self):
+        return self.parent.get_viz_components()
