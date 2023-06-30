@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QLabel
 
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
+from rena.presets.presets_utils import get_presets_path
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.ui_shared import *
 from rena import config, config_ui
@@ -37,7 +38,8 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
             config.settings.setValue('default_channel_display_num', config.DEFAULT_CHANNEL_DISPLAY_NUM)
     config.settings.sync()
     # load the presets, reload from local directory the default LSL, device and experiment presets
-    Presets(_preset_root='../Presets', _reset=reload_presets)  # create the singleton presets object
+    preset_root = get_presets_path()
+    Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
     pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)
 
 def load_ui_shared():
