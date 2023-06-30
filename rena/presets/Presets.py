@@ -304,10 +304,11 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                for key, value in preset_dict['script_presets'].items():
-                    preset = ScriptPreset(**value)
-                    preset_dict['script_presets'][key] = preset
-                self.__dict__.update(preset_dict)
+                if 'script_presets' not in preset_dict:
+                    for key, value in preset_dict['script_presets'].items():
+                        preset = ScriptPreset(**value)
+                        preset_dict['script_presets'][key] = preset
+                    self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)

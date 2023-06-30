@@ -44,7 +44,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
-        self.ui = uic.loadUi("ui/StreamContainer.ui", self)
+        self.ui = uic.loadUi("ui/StreamWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
         self.StreamNameLabel.setText(stream_name)
         self.OptionsBtn.setIcon(options_icon)
