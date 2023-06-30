@@ -1,6 +1,9 @@
 import os.path
+import platform
 
+import PIL
 import pyqtgraph
+import pyscreeze
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel
 
@@ -68,3 +71,13 @@ def load_default_recording_file_location():
                              'start recording.'.format(config.settings.value('recording_file_location')),
                          title='Warning')
     print("Using default recording location {0}".format(config.settings.value('recording_file_location')))
+
+
+def apply_patches():
+    """
+    apply patches to fix bugs in dependencies, if any
+    """
+    if platform.system() == 'Darwin' and pyscreeze.__version__ == '0.1.29':
+        __PIL_TUPLE_VERSION = tuple(int(x) for x in PIL.__version__.split("."))
+        pyscreeze.PIL__version__ = __PIL_TUPLE_VERSION
+

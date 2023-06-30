@@ -10,7 +10,7 @@ from rena.ui.SplashScreen import SplashScreen
 
 AppConfigs(_reset=False)  # create the singleton app configs object
 from MainWindow import MainWindow
-from rena.startup import load_settings
+from rena.startup import load_settings, apply_patches
 
 app = None
 
@@ -28,8 +28,8 @@ if __name__ == '__main__':
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=False, reload_presets=False)
-
+    load_settings(revert_to_default=False, reload_presets=True)
+    apply_patches()
     # main window init
     window = MainWindow(app=app)
 
