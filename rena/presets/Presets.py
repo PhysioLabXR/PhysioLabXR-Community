@@ -281,6 +281,8 @@ class Presets(metaclass=Singleton):
         """
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing Presets')
+        else:
+            print(f"Preset root is set to {self._preset_root}, is exists {os.path.exists(self._preset_root)}")
         if self._reset:
             if os.path.exists(self._last_mod_time_path):
                 os.remove(self._last_mod_time_path)
