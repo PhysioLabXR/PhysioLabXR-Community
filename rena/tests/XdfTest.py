@@ -1,5 +1,5 @@
 import copy
-
+import sys
 import numpy as np
 import os
 import pytest
@@ -43,7 +43,6 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     srate = 2048
     stream_availability_timeout = 2 * stream_availability_wait_time * 1e3
     n_channels = 81
-    record_path = 'E:\\Data\\RenaRecording'
 
     test_stream_names = []
     test_stream_processes = []
@@ -74,10 +73,10 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, 'monitor 0')
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
-    app_main_window.settings_widget.set_recording_file_location(record_path)
+    # app_main_window.settings_widget.set_recording_file_location(record_path)
     app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(4) # set recording file format to xdf
     app_main_window.settings_widget.saveFormatComboBox.activated.emit(app_main_window.settings_widget.saveFormatComboBox.currentIndex())
-    print('set format to csv')
+    print('set format to xdf')
 
     def stream_is_available():
         for ts_name in test_stream_names:
