@@ -304,7 +304,7 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                if 'script_presets' not in preset_dict:
+                if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
                         preset = ScriptPreset(**value)
                         preset_dict['script_presets'][key] = preset
