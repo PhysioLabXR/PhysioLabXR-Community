@@ -93,13 +93,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.viz_data_buffer = None
             self.create_buffer()
 
-        # create option window
-        if option_widget_call is None:
-            self.option_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
-        else:
-            self.option_window = option_widget_call()
-        self.option_window.hide()
-
         # create visualization component, must be after the option window ##################
         self.channel_index_plot_widget_dict = {}
         self.group_name_plot_widget_dict = {}
@@ -107,6 +100,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
         self._has_new_viz_data = False
         self.viz_data_head = 0
+
+        # create option window
+        if option_widget_call is None:
+            self.option_window = StreamOptionsWindow(parent_stream_widget=self, stream_name=self.stream_name, plot_format_changed_signal=self.plot_format_changed_signal)
+        else:
+            self.option_window = option_widget_call()
+        self.option_window.hide()
 
         # FPS counter``
         self.viz_times = None
@@ -434,3 +434,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
     def try_close(self):
         return self.remove_stream()
+
+    def get_viz_components(self):
+        return self.viz_components

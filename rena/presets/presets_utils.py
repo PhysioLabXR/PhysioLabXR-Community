@@ -75,10 +75,12 @@ def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format
     return plot_format
 
 
-def set_stream_a_group_selected_img_config(stream_name, group_name, height, width, scaling):
+def set_stream_a_group_selected_img_h_w(stream_name, group_name, height, width):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.height = height
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.width = width
-    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling = scaling
+
+def set_image_scaling_percentile(stream_name, group_name, scaling_percentile):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.scaling_percentage = scaling_percentile
 
 
 def set_bar_chart_max_min_range(stream_name, group_name, max_range, min_range):
@@ -94,6 +96,11 @@ def get_bar_chart_max_min_range(stream_name, group_name) -> tuple[float, float]:
 def set_group_image_format(stream_name, group_name, image_format):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format = image_format
 
+def get_group_image_format(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format
+
+def get_group_channel_format(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.channel_format
 
 def set_group_image_channel_format(stream_name, group_name, channel_format):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.channel_format = channel_format
@@ -196,6 +203,45 @@ def spectrogram_time_second_overlap(stream_name, group_name):
 
 def get_spectrogram_cmap_lut(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.cmap.get_lookup_table()
+
+def get_image_cmap_lut(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.cmap.get_lookup_table()
+
+def get_image_format(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format
+
+def get_valid_image_levels(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.get_valid_image_levels()
+
+def get_image_levels(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.get_image_levels()
+
+def set_image_levels_min(stream_name, group_name, min_level):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vmin = min_level
+
+def set_image_levels_rmin(stream_name, group_name, rmin):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vminR = rmin
+
+def set_image_levels_rmax(stream_name, group_name, rmax):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vmaxR = rmax
+
+def set_image_levels_gmax(stream_name, group_name, gmax):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vmaxG = gmax
+
+def set_image_levels_gmin(stream_name, group_name, gmin):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vminG = gmin
+
+def set_image_levels_bmin(stream_name, group_name, bmin):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vminB = bmin
+
+def set_image_levels_bmax(stream_name, group_name, bmax):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vmaxB = bmax
+
+def set_image_levels_max(stream_name, group_name, max_level):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.vmax = max_level
+
+def set_image_cmap(stream_name, group_name, cmap):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.cmap = cmap
 
 def set_spectrogram_time_per_segment(stream_name, group_name, time_per_segment_second):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.spectrogram_config.time_per_segment_second = time_per_segment_second

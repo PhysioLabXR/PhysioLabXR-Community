@@ -2,6 +2,7 @@ import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
+from PyQt6.QtWidgets import QCompleter
 
 from rena.presets.Presets import PresetType, DataType
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
@@ -29,6 +30,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
+        self.stream_name_combo_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseSensitive)
 
         self.PortLineEdit.setValidator(QIntValidator())
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
@@ -45,7 +47,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.check_can_add_input()
 
     def select_by_stream_name(self, stream_name):
-        index = self.stream_name_combo_box.findText(stream_name, pg.QtCore.Qt.MatchFixedString)
+        index = self.stream_name_combo_box.findText(stream_name, Qt.MatchFlag.MatchFixedString)
         self.stream_name_combo_box.setCurrentIndex(index)
 
     def get_selected_stream_name(self):

@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT
+from rena.presets.Presets import Presets, ScriptPreset
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -17,7 +18,7 @@ from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
-from rena.ui.ScriptingParamWidget import ScriptingParamWidget
+from rena.ui.ParamWidget import ParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
@@ -31,7 +32,7 @@ from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent_widget: QtWidgets, port, args):
+    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset):
         super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
@@ -108,15 +109,14 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.forward_input_socket_interface = None
 
         # loading from script preset from the persistent sittings ######################################################
-        if args is not None:
-            self.id = args['id']
-            self.import_script_args(args)
+        if script_preset is not None:
+            self.id = script_preset.id
+            self.import_script_args(script_preset)
         else:
-            self.id = uuid.uuid4()
+            self.id = str(uuid.uuid4())
             self.export_script_args_to_settings()
 
         self.internal_data_buffer = None
-
 
 
     def setup_info_worker(self, script_pid):
@@ -385,7 +385,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.export_script_args_to_settings()
 
     def process_add_param(self, param_name, type_text=None, value_text=None):
-        param_widget = ScriptingParamWidget(self, param_name, type_text, value_text)
+        param_widget = ParamWidget(self, param_name, type_text, value_text)
         self.paramsLayout.addWidget(param_widget)
 
         def remove_btn_clicked():
@@ -396,7 +396,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.export_script_args_to_settings()
             self.param_change(ParamChange.REMOVE, param_name)
 
-        param_widget.set_button_callback(remove_btn_clicked)
+        param_widget.set_remove_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
         self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
@@ -584,34 +584,25 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'is_simulate': self.simulateCheckbox.isChecked()}
 
     def export_script_args_to_settings(self):
-        config.settings.beginGroup('scripts/{0}/'.format(self.id))
-        config.settings.setValue('inputs', self.get_inputs())
-        config.settings.setValue('outputs', self.get_outputs())
-        config.settings.setValue('output_num_channels', self.get_outputs_num_channels())
-        config.settings.setValue('params', self.get_params())
-        config.settings.setValue('params_type_texts', self.get_param_type_texts())
-        config.settings.setValue('params_value_texts', self.get_param_value_texts())
+        script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
+                     params=self.get_params(), params_type_strs=self.get_param_type_texts(), params_value_strs=self.get_param_value_texts(),
+                     run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
+                     script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
+        Presets().script_presets[self.id] = script_preset
 
-        config.settings.setValue('run_frequency', self.frequencyLineEdit.text())
-        config.settings.setValue('time_window', self.timeWindowLineEdit.text())
-        config.settings.setValue('script_path', self.scriptPathLineEdit.text())
-        config.settings.setValue('is_simulate', self.simulateCheckbox.isChecked())
-        config.settings.endGroup()
+    def import_script_args(self, script_preset: ScriptPreset):
+        self.process_locate_script(script_preset.script_path)
 
-    def import_script_args(self, args):
-        self.process_locate_script(args['script_path'])
+        self.frequencyLineEdit.setText(script_preset.run_frequency)
+        self.timeWindowLineEdit.setText(script_preset.time_window)
+        self.simulateCheckbox.setChecked(script_preset.is_simulate)  # is checked?
 
-        self.frequencyLineEdit.setText(args['run_frequency'])
-        self.timeWindowLineEdit.setText(args['time_window'])
-        self.simulateCheckbox.setChecked(args['is_simulate'] == 'true')  # is checked?
-
-        for input_preset_name in args['inputs']:
+        for input_preset_name in script_preset.inputs:
             self.process_add_input(input_preset_name)
-        for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
+        for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_name, type_text, value_text in zip(args['params'], args['params_type_texts'],
-                                                     args['params_value_texts']):
+        for param_name, type_text, value_text in zip(script_preset.params, script_preset.params_type_strs, script_preset.params_value_strs):
             self.process_add_param(param_name, type_text=type_text, value_text=value_text)
 
     def update_input_combobox(self):

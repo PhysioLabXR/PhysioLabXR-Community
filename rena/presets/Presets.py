@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Union
+from uuid import UUID
 
 import numpy as np
 from PyQt6.QtCore import QStandardPaths
@@ -13,6 +14,7 @@ from rena.config import app_data_name, default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
 from rena.utils.fs_utils import get_file_changes_multiple_dir
@@ -79,18 +81,6 @@ class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
 
-# class VideoDeviceTypeEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, Enum):
-#             return obj.value
-#         return json.JSONEncoder.default(self, obj)
-
-
-# class PresetsEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, StreamPreset) or isinstance(obj, PlotConfigs) or isinstance(obj, VideoPreset):
-#             return obj.to_dict()
-#         return super().default(obj)
 
 class PresetsEncoder(json.JSONEncoder):
     """
@@ -110,6 +100,19 @@ class PresetsEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class ScriptPreset(metaclass=SubPreset):
+    id: str
+    inputs: List[str]
+    outputs: List[str]
+    output_num_channels: List[int]
+    params: List[str]
+    params_type_strs: List[str]
+    params_value_strs: List[str]
+    run_frequency: int
+    time_window: int
+    script_path: str
+    is_simulate: bool
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -260,6 +263,7 @@ class Presets(metaclass=Singleton):
     _experiment_preset_root: str = 'ExperimentPresets'
 
     stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
+    script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = AppConfigs().app_data_path
@@ -290,7 +294,7 @@ class Presets(metaclass=Singleton):
         self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
 
         if os.path.exists(self._preset_path):
-            print(f'Reloading presets from {self._app_data_path}')
+            SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 for key, value in preset_dict['stream_presets'].items():
@@ -300,17 +304,18 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                # for key, value in preset_dict['video_presets'].items():
-                #     preset = VideoPreset(**value)
-                #     preset_dict['video_presets'][key] = preset
+                for key, value in preset_dict['script_presets'].items():
+                    preset = ScriptPreset(**value)
+                    preset_dict['script_presets'][key] = preset
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
+        SplashLoadingTextNotifier().set_loading_text('Loading video devices...You may notice webcam flashing.')
         _load_video_device_presets(self)
 
         self.save(is_async=True)
-        print("Presets instance successfully initialized")
+        SplashLoadingTextNotifier().set_loading_text("Presets instance successfully initialized")
 
     def _get_all_presets(self):
         """

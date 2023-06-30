@@ -257,7 +257,8 @@ class StreamGroupView(QTreeWidget):
         @param event: the qt event of the drop action
         @return: Given by the overridden function
         """
-        drop_target = self.itemAt(event.pos())
+        pos = event.position()
+        drop_target = self.itemAt(int(pos.x()), int(pos.y()))
         if drop_target == None:
             self.reenable_dropdrag_for_root_and_group_items()
             return

@@ -111,7 +111,7 @@ class SettingsWidget(QtWidgets.QWidget):
     def set_recording_file_location(self, selected_data_dir: str):
         if selected_data_dir != '':
             config.settings.setValue('recording_file_location', selected_data_dir)
-            print("Selected data dir: ", config.settings.value('recording_file_location'))
+            print("Selected recording file location: ", config.settings.value('recording_file_location'))
             self.saveRootTextEdit.setText(config.settings.value('recording_file_location'))
             self.parent.recording_tab.update_ui_save_file()
 

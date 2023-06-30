@@ -3,6 +3,7 @@
 from PyQt6 import QtWidgets, uic
 
 from rena import config
+from rena.presets.Presets import Presets
 from rena.ui.ScriptingWidget import ScriptingWidget
 from rena.ui_shared import add_icon, pop_window_icon, dock_window_icon
 from rena.scripting.script_utils import get_script_widgets_args, remove_script_from_settings
@@ -33,8 +34,8 @@ class ScriptingTab(QtWidgets.QWidget):
     def add_script_clicked(self):
         self.add_script_widget()
 
-    def add_script_widget(self, args=None):
-        script_widget = ScriptingWidget(self, port=config.scripting_port + 4 * len(self.script_widgets), args=args)  # reverse three ports for each scripting widget
+    def add_script_widget(self, script_preset=None):
+        script_widget = ScriptingWidget(self, port=config.scripting_port + 4 * len(self.script_widgets), script_preset=script_preset)  # reverse three ports for each scripting widget
         self.script_widgets.append(script_widget)
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
@@ -49,9 +50,8 @@ class ScriptingTab(QtWidgets.QWidget):
         return True
 
     def add_script_widgets_from_settings(self):
-        script_widgets_args = get_script_widgets_args()
-        for _, args in script_widgets_args.items():
-            self.add_script_widget(args)
+        for script_preset in Presets().script_presets.values():
+            self.add_script_widget(script_preset)
 
     def update_script_widget_input_combobox(self):
         for script_widget in self.script_widgets:

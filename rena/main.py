@@ -1,12 +1,12 @@
 import sys
 
 from PyQt6 import QtWidgets
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtWidgets import QLabel, QSystemTrayIcon, QMenu
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 
 from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
+from rena.ui.SplashScreen import SplashScreen
 
 AppConfigs(_reset=False)  # create the singleton app configs object
 from MainWindow import MainWindow
@@ -23,15 +23,12 @@ if __name__ == '__main__':
     tray_icon.setToolTip('RenaLabApp')
     tray_icon.show()
 
-    # splash screen
-    splash = QLabel()
-    pixmap = QPixmap('../media/logo/RenaLabAppDeprecated.png')
-    splash.setPixmap(pixmap)
-    splash.setWindowFlags(Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint)
+    # create the splash screen
+    splash = SplashScreen()
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=False, reload_presets=True)
+    load_settings(revert_to_default=False, reload_presets=False)
 
     # main window init
     window = MainWindow(app=app)
@@ -43,12 +40,11 @@ if __name__ == '__main__':
     exit_action.triggered.connect(window.close)
 
     # splash screen destroy
-    splash.destroy()
+    splash.close()
     window.show()
 
     try:
         app.exec()
-        print('App closed by user')
         sys.exit()
     except KeyboardInterrupt:
         print('App terminate by KeyboardInterrupt')
