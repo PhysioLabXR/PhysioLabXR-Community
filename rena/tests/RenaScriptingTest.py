@@ -7,8 +7,8 @@ import pytest
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QWidget
 from rena.configs.configs import AppConfigs
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
 from rena.MainWindow import MainWindow
 from rena.startup import load_settings
 from rena.tests.test_utils import update_test_cwd

@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import os
 import uuid
 
 import numpy as np
@@ -9,9 +10,12 @@ from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
-from rena.config import STOP_PROCESS_KILL_TIMEOUT
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.Presets import Presets, ScriptPreset
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
+from rena.scripting.RenaScript import RenaScript
+from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
+    remove_script_from_settings
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
@@ -22,12 +26,11 @@ from rena.ui.ParamWidget import ParamWidget
 from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
-from rena.scripting.script_utils import *
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
     get_experiment_preset_names, get_stream_preset_info, check_preset_exists
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
-    another_window, update_presets_to_combobox
+    another_window, update_presets_to_combobox, validate_script_path
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
@@ -135,7 +138,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_thread.start()
 
         self.info_timer = QTimer()
-        self.info_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.info_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
 
@@ -178,7 +181,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stdout_worker.moveToThread(self.stdout_worker_thread)
         self.stdout_worker_thread.start()
         self.stdout_timer = QTimer()
-        self.stdout_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.stdout_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
         self.stdout_timer.timeout.connect(self.stdout_worker.tick_signal.emit)
         self.stdout_timer.start()
 
@@ -200,19 +203,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         if stdout_line != '\n':
             self.script_console_log.print_msg(stdout_line)
 
-    def _validate_script_path(self, script_path):
-        try:
-            validate_script_path(script_path)
-        except RenaError as error:
-            dialog_popup(str(error), title='Error')
-            return False
-        else:
-            return True
-
     def on_run_btn_clicked(self):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
-            if not self._validate_script_path(script_path): return
+            if not validate_script_path(script_path, RenaScript): return
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
 
             self.script_console_log_window.show()
@@ -220,7 +214,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'Go')  # send an empty message, this is for setting up the routing id
 
             script_args = self.get_script_args()
-            self.script_process = start_script(script_path, script_args)
+            self.script_process = start_rena_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
             self.setup_info_worker(self.script_pid)
@@ -274,7 +268,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def process_locate_script(self, script_path):
         if script_path != '':
-            if not self._validate_script_path(script_path): return
+            if not validate_script_path(script_path, RenaScript):
+                self.runBtn.setEnabled(False)
+                return
             self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
         else:
@@ -311,7 +307,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
-        self.scriptNameLabel.setText(get_target_class_name(script_path))
+        self.scriptNameLabel.setText(get_target_class_name(script_path, RenaScript))
 
     def change_ui_on_run_stop(self, is_run):
         self.widget_input.setEnabled(not is_run)

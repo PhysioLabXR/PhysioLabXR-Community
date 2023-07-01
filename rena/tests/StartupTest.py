@@ -7,8 +7,8 @@ Otherwise, you will get either import error or file not found error
 
 import pytest
 from rena.configs.configs import AppConfigs
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
 from rena.tests.test_utils import app_fixture, ContextBot
 
 

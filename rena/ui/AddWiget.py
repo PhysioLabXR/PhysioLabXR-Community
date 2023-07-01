@@ -5,6 +5,7 @@ from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QCompleter
 
 from rena.presets.Presets import PresetType, DataType
+from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.ui_shared import add_icon
@@ -21,11 +22,14 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.parent = parent
         self.ui = uic.loadUi("ui/AddWidget.ui", self)
         self.add_btn.setIcon(add_icon)
-
         add_presets_to_combobox(self.stream_name_combo_box)
 
         for data_type in DataType:
             self.data_type_combo_box.addItem(data_type.value)
+
+        self.add_custom_data_stream_widget = AddCustomDataStreamWidget(self, parent)
+        self.layout().addWidget(self.add_custom_data_stream_widget)
+        self.add_custom_data_stream_widget.setVisible(False)
 
         self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
@@ -86,10 +90,13 @@ class AddStreamWidget(QtWidgets.QWidget):
     def preset_type_selection_changed(self):
         if self.preset_type_combobox.currentText() == "LSL":
             self.PortLineEdit.setHidden(True)
+            self.add_custom_data_stream_widget.setVisible(False)
         elif self.preset_type_combobox.currentText() == "ZMQ":
             self.PortLineEdit.show()
+            self.add_custom_data_stream_widget.setVisible(False)
         elif self.preset_type_combobox.currentText() == "Custom":
             self.PortLineEdit.setHidden(True)
+            self.add_custom_data_stream_widget.setVisible(True)
 
     def get_selected_preset_type_str(self):
         return self.preset_type_combobox.currentText()

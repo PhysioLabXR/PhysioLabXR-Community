@@ -11,8 +11,8 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 from rena.configs.configs import AppConfigs
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
 from rena.tests.TestStream import LSLTestStream
 from rena.tests.test_utils import app_fixture, \
     ContextBot, get_random_test_stream_names

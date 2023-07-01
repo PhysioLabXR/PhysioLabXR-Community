@@ -12,8 +12,8 @@ import pytest
 from PyQt6 import QtWidgets
 from pytestqt.qtbot import QtBot
 from rena.configs.configs import AppConfigs
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
 from rena.MainWindow import MainWindow
 from rena.startup import load_settings
 from rena.tests.TestStream import LSLTestStream

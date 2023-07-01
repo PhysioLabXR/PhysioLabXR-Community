@@ -14,9 +14,9 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
+from rena.presets.Presets import PresetType
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_utils import handle_current_dialog_ok, app_fixture, \
