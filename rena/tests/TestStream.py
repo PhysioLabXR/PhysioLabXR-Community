@@ -46,7 +46,6 @@ def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
     # next make an outlet
     outlet = StreamOutlet(info)
 
-
     print("now sending data...")
     start_time = local_clock()
     # print("Example")
@@ -58,6 +57,8 @@ def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
     # time.sleep(2)
 
     while True:
+        if sent_samples > sample.shape[-1]:
+            break
         elapsed_time = local_clock() - start_time
         required_samples = int(srate * elapsed_time) - sent_samples
         for sample_ix in range(required_samples):
@@ -70,6 +71,7 @@ def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
         sent_samples += required_samples
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
+    del outlet
 
 def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
     topic = stream_name

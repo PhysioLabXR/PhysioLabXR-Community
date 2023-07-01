@@ -41,7 +41,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048
-    stream_availability_timeout = 2 * stream_availability_wait_time * 1e3
+    stream_availability_timeout = 10 * stream_availability_wait_time * 1e3
     n_channels = 81
 
     test_stream_names = []
@@ -89,7 +89,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
-    AppConfigs.eviction_interval = (recording_time_second + 1) * 1e3
+    AppConfigs.eviction_interval = (recording_time_second + 5) * 1e3
 
     # app_main_window.ui.tabWidget.setCurrentWidget(
     #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
