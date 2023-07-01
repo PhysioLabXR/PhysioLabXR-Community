@@ -10,7 +10,6 @@ pyxdf
 opencv-python
 pyautogui
 matplotlib
-ipython
 pyzmq
 setuptools
 psutil
