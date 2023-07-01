@@ -1,6 +1,7 @@
+import threading
 from abc import ABC, abstractmethod
 
-class DataStreamInterface(ABC):
+class DataStreamInterface(ABC, threading.Thread):
     """
     This is the base class for custom data stream APIs.
     """
@@ -9,6 +10,9 @@ class DataStreamInterface(ABC):
     define variable here 
     """
     nominal_sampling_rate: float
+
+    def __init__(self):
+        super().__init__()
 
 
     @abstractmethod
@@ -28,4 +32,7 @@ class DataStreamInterface(ABC):
 
     @abstractmethod
     def stop_stream(self):
+        pass
+
+    def run(self) -> None:
         pass

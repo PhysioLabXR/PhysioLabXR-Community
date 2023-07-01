@@ -1,3 +1,5 @@
+from typing import Type
+
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QFile, QTextStream
@@ -5,8 +7,11 @@ from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea, QApplication
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from rena import config_ui, config
+from exceptions.exceptions import RenaError
+from rena.config import settings
+from rena.config_ui import button_style_classic
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
+from rena.scripting.script_utils import validate_python_script_class
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
@@ -83,7 +88,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     return layout, textbox
 
 
-def init_button(parent, label=None, function=None, style=config_ui.button_style_classic):
+def init_button(parent, label=None, function=None, style=button_style_classic):
     btn = QtWidgets.QPushButton(text=label)
     if function:
         btn.clicked.connect(function)
@@ -123,19 +128,19 @@ def init_scroll_label(parent, text, max_width=None, max_hight=None, size=None):
 
 
 
-def init_camera_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
-    container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
-
-    camera_img_label = QLabel()
-    _, label_btn_layout = init_container(parent=layout, vertical=False)
-    cam_id_label = QLabel(label_string)
-    cam_id_label.setStyleSheet("font: bold 14px;")
-    label_btn_layout.addWidget(cam_id_label)
-    remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Capture')
-    layout.addWidget(camera_img_label)
-
-    return container_widget, layout, remove_cam_btn, camera_img_label
+# def init_camera_widget(parent, label_string, insert_position):
+#     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+#     container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
+#
+#     camera_img_label = QLabel()
+#     _, label_btn_layout = init_container(parent=layout, vertical=False)
+#     cam_id_label = QLabel(label_string)
+#     cam_id_label.setStyleSheet("font: bold 14px;")
+#     label_btn_layout.addWidget(cam_id_label)
+#     remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Capture')
+#     layout.addWidget(camera_img_label)
+#
+#     return container_widget, layout, remove_cam_btn, camera_img_label
 
 
 def init_spec_view(parent, label, graph=None):
@@ -158,31 +163,31 @@ def init_spec_view(parent, label, graph=None):
     return scene
 
 
-def init_sensor_or_lsl_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
-
-    _, top_layout = init_container(parent=layout, vertical=False)
-    ql = QLabel(config_ui.sensors_type_ui_name_dict[
-                    label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
-    ql.setStyleSheet("font: bold 14px;")
-    top_layout.addWidget(ql)
-
-    pop_window_btn = init_button(parent=top_layout, label=None)
-    remove_stream_btn = init_button(parent=layout, label=None)
-    signal_settings_btn = init_button(parent=layout, label=None)
-    start_stop_stream_btn = init_button(parent=layout, label=None)
-
-    # signal_settings_btn.setFixedWidth(200)
-    # pop_window_btn.setFixedWidth(200)
-    # remove_stream_btn.setFixedWidth(200)
-    # start_stop_stream_btn.setFixedWidth(200)
-    # start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
-    start_stop_stream_btn.setText("Start Stream")
-    remove_stream_btn.setText("Remove Stream")
-    pop_window_btn.setText("Pop Window")
-    signal_settings_btn.setText("Signal")
-
-    return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
+# def init_sensor_or_lsl_widget(parent, label_string, insert_position):
+#     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+#
+#     _, top_layout = init_container(parent=layout, vertical=False)
+#     ql = QLabel(config_ui.sensors_type_ui_name_dict[
+#                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+#     ql.setStyleSheet("font: bold 14px;")
+#     top_layout.addWidget(ql)
+#
+#     pop_window_btn = init_button(parent=top_layout, label=None)
+#     remove_stream_btn = init_button(parent=layout, label=None)
+#     signal_settings_btn = init_button(parent=layout, label=None)
+#     start_stop_stream_btn = init_button(parent=layout, label=None)
+#
+#     # signal_settings_btn.setFixedWidth(200)
+#     # pop_window_btn.setFixedWidth(200)
+#     # remove_stream_btn.setFixedWidth(200)
+#     # start_stop_stream_btn.setFixedWidth(200)
+#     # start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
+#     start_stop_stream_btn.setText("Start Stream")
+#     remove_stream_btn.setText("Remove Stream")
+#     pop_window_btn.setText("Pop Window")
+#     signal_settings_btn.setText("Signal")
+#
+#     return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
 
 # def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 #     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
@@ -290,10 +295,10 @@ class CustomDialog(QDialog):
 
     def toggle_dont_show(self):
         if self.dont_show_button.isChecked():
-            config.settings.setValue('show_' + self.dialog_name, False)
+            settings.setValue('show_' + self.dialog_name, False)
             print('will NOT show ' + self.dialog_name)
         else:
-            config.settings.setValue('show_' + self.dialog_name, True)
+            settings.setValue('show_' + self.dialog_name, True)
             print('will show ' + self.dialog_name)
 
 
@@ -469,9 +474,11 @@ def clear_widget(target_widget):
         widget = target_widget.widget(i)
         widget.deleteLater()
 
-# def change_plot_label(plot, plotItem, name):
-#     # change the label of given PlotDataItem in the plot's legend
-#     plot.legend.removeItem(plotItem)
-#     plot.legend.addItem(plotItem, name)
-#     plotItem.setData(name='New Name')
-
+def validate_script_path(script_path, desired_class: Type) -> bool:
+    try:
+        validate_python_script_class(script_path, desired_class)
+    except RenaError as error:
+        dialog_popup(str(error), title='Error')
+        return False
+    else:
+        return True

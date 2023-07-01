@@ -2,24 +2,57 @@ import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QCompleter
+from PyQt6.QtWidgets import QCompleter, QFileDialog
 
+from exceptions.exceptions import RenaError
+from rena.interfaces.DataStreamInterface import DataStreamInterface
 from rena.presets.Presets import PresetType, DataType
+from rena.scripting.script_utils import validate_python_script_class, get_target_class_name
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.ui_shared import add_icon
-from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
+from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox, validate_script_path
 
 
-class AddStreamWidget(QtWidgets.QWidget):
-    def __init__(self, parent):
+class AddCustomDataStreamWidget(QtWidgets.QWidget):
+    def __init__(self, parent, main_window):
         """
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
         :rtype: object
         """
         super().__init__()
         self.parent = parent
+        self.main_window = main_window
         self.ui = uic.loadUi("ui/AddCustomDataStreamWidget.ui", self)
+        self.edit_variable_button.setVisible(False)
 
-        self.locateBtn.clicked.connect(self.on_locate_btn_clicked)
-        self.createBtn.clicked.connect(self.on_create_btn_clicked)
+        self.locate_button.clicked.connect(self.on_locate_btn_clicked)
+        self.create_button.clicked.connect(self.on_create_btn_clicked)
+
+    def on_locate_btn_clicked(self):
+        data_stream_interface_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        self.process_locate_script(data_stream_interface_path)
+
+        self.main_window
+
+    def on_create_btn_clicked(self):
+        # TODO
+        pass
+
+    def process_locate_script(self, data_stream_interface_path):
+        if data_stream_interface_path != '':
+            if not validate_script_path(data_stream_interface_path, DataStreamInterface):
+                self.edit_variable_button.setVisible(False)
+                return
+            self.load_data_stream_interface_name(data_stream_interface_path)
+            self.edit_variable_button.setVisible(True)
+        else:
+            self.edit_variable_button.setVisible(False)
+
+    def load_data_stream_interface_name(self, data_stream_interface_path):
+        self.path_line_edit.setText()
+        self.info_label.setText(get_target_class_name(data_stream_interface_path, DataStreamInterface))
+
+
+    def on_create_btn_clicked(self):
+        pass

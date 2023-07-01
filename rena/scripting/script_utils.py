@@ -4,11 +4,14 @@ import os
 import pickle
 import sys
 from inspect import isclass
+from typing import Type
+
 from exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, ScriptMissingModuleError
 
 from multiprocessing import Process
 
 from rena import config
+from rena.interfaces.DataStreamInterface import DataStreamInterface
 from rena.scripting.RenaScript import RenaScript
 from rena.shared import SCRIPT_STOP_REQUEST
 
@@ -22,7 +25,14 @@ def start_script_server(script_path, script_args):
     replay_client_thread = target_class(**script_args)
     replay_client_thread.start()
 
-def validate_script_path(script_path: str):
+def validate_python_script_class(script_path: str, desired_class: Type):
+    target_class, target_class_name = validate_python_script(script_path, desired_class)
+    try:
+        assert issubclass(target_class, desired_class)
+    except AssertionError:
+        raise InvalidScriptPathError(script_path, f'The first class ({target_class_name}) in the script does not inherit {desired_class.__name__}.')
+
+def validate_python_script(script_path: str, desired_class: Type):
     """
     Validate if the script at <script_path> can be loaded without any import
     or module not found error.
@@ -42,18 +52,14 @@ def validate_script_path(script_path: str):
         raise InvalidScriptPathError(script_path, 'File name must end with .py')
     try:
         target_class = get_target_class(script_path)
-        target_class_name = get_target_class_name(script_path)
+        target_class_name = get_target_class_name(script_path, desired_class)
     except IndexError:
         raise InvalidScriptPathError(script_path, 'Script does not have class defined')
     except ModuleNotFoundError as e:
         raise ScriptMissingModuleError(script_path, e)
     except SyntaxError as e:
         raise ScriptSyntaxError(e)
-    try:
-        assert issubclass(target_class, RenaScript)
-    except AssertionError:
-        raise InvalidScriptPathError(script_path, 'The first class ({0}) in the script does not inherit RenaScript. '.format(target_class_name))
-
+    return target_class, target_class_name
 
 def get_target_class(script_path):
     spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
@@ -73,21 +79,19 @@ def get_target_class(script_path):
     return classes[0]
 
 
-def get_target_class_name(script_path):
+def get_target_class_name(script_path, desired_class: Type):
     spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
     script_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(script_module)
     classes = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
-    # script_args = {'inputs': None, 'input_shapes': None,
-    #                'outputs': None, 'output_num_channels': None,
-    #                'params': None, 'port': None, 'run_frequency': None,
-    #                'time_window': None}
-    classes = [x for x in classes if x != 'RenaScript' ]
+    classes = [x for x in classes if x != desired_class.__name__]  # exclude RenaScript itself
+    if len(classes) == 0:
+        raise InvalidScriptPathError(script_path, f'Script does not have desired class with name {desired_class.__name__} defined')
     return classes[0]
 
 
-def start_script(script_path, script_args):
+def start_rena_script(script_path, script_args):
     print('Script started')
     if not debugging:
         script_process = Process(target=start_script_server, args=(script_path, script_args))
