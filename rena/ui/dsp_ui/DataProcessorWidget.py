@@ -2,6 +2,7 @@
 
 from PyQt6 import QtWidgets
 from PyQt6 import uic
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
 from PyQt6.QtGui import QPixmap
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
@@ -58,7 +59,8 @@ class DataProcessorWidget(QtWidgets.QWidget):
         self.parent.remove_data_processor_widget(self)
 
     def set_data_processor_input_field_value(self):
-        self.ActivateDataProcessorCheckbox.setCheckState(self.data_processor.data_processor_activated)
+        state = Qt.CheckState.Checked if self.data_processor.data_processor_activated else Qt.CheckState.Unchecked
+        self.ActivateDataProcessorCheckbox.setCheckState(state)
 
     def set_data_processor_input_field_constrain(self):
         pass
@@ -68,7 +70,9 @@ class DataProcessorWidget(QtWidgets.QWidget):
         self.ActivateDataProcessorCheckbox.stateChanged.connect(self.activate_data_processor_checkbox_on_changed)
 
     def activate_data_processor_checkbox_on_changed(self):
-        if self.ActivateDataProcessorCheckbox.isChecked():
+        check_state = self.ActivateDataProcessorCheckbox.checkState()
+
+        if check_state == Qt.CheckState.Checked and not self.data_processor.data_processor_activated:
             self.data_processor.set_data_processor_activated(True)
         else:
             self.data_processor.set_data_processor_activated(False)

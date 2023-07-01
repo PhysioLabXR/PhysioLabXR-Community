@@ -22,6 +22,7 @@ from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
 
@@ -295,6 +296,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         update the visualization buffer, recording buffer, and scripting buffer
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
+            self.run_data_processor(data_dict)
             self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
             self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
             self._has_new_viz_data = True
@@ -434,6 +436,16 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
     def try_close(self):
         return self.remove_stream()
+
+    def run_data_processor(self, data_dict):
+        data = data_dict['frames']
+        group_info = get_stream_group_info(self.stream_name)
+
+        for this_group_info in group_info.values():  # TODO: potentially optimize using pool
+            if len(this_group_info.data_processors) != 0:
+                processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
+                data[this_group_info.channel_indices] = processed_data
+
 
     def get_viz_components(self):
         return self.viz_components
