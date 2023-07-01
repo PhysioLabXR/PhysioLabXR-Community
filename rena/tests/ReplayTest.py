@@ -16,9 +16,9 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
+from rena.presets.Presets import PresetType
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream
 from rena.tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
