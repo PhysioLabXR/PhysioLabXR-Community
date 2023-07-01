@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from exceptions.exceptions import RenaError
+from rena import config
 from rena.config import settings
 from rena.config_ui import button_style_classic
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names

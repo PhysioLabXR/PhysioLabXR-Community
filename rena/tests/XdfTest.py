@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import QWidget, QMessageBox
 from rena.config import stream_availability_wait_time
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import DataType, PresetType
+from rena.startup import apply_patches
 from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
 from rena.tests.TestStream import CSVTestStream
 from rena.utils.xdf_utils import load_xdf
@@ -38,6 +39,7 @@ def context_bot(app_main_window, qtbot):
 
 
 def test_xdf_store_load(app_main_window, qtbot) -> None:
+    apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048
@@ -89,7 +91,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
-    AppConfigs.eviction_interval = (recording_time_second + 5) * 1e3
+    AppConfigs.eviction_interval = 5 * (recording_time_second) * 1e3
 
     # app_main_window.ui.tabWidget.setCurrentWidget(
     #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
