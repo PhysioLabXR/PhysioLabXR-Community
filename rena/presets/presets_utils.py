@@ -1,9 +1,16 @@
+import os.path
 from typing import Union, List
 
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
 
+
+def get_presets_path():
+    if os.path.exists('../Presets'):
+        return '../Presets'
+    elif os.path.exists('Presets'):
+        return 'Presets'
 
 def get_preset_category(preset_name):
     preset = Presets()

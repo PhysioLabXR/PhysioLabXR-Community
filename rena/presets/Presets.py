@@ -281,6 +281,8 @@ class Presets(metaclass=Singleton):
         """
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing Presets')
+        else:
+            print(f"Preset root is set to {self._preset_root}, is exists {os.path.exists(self._preset_root)}")
         if self._reset:
             if os.path.exists(self._last_mod_time_path):
                 os.remove(self._last_mod_time_path)
@@ -304,7 +306,7 @@ class Presets(metaclass=Singleton):
                         preset = VideoPreset(**value)
                     preset_dict['stream_presets'][key] = preset
 
-                if 'script_presets' not in preset_dict:
+                if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
                         preset = ScriptPreset(**value)
                         preset_dict['script_presets'][key] = preset
