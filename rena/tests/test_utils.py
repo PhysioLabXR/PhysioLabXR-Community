@@ -19,7 +19,6 @@ from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
-from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
 from rena.startup import load_settings
 from rena.sub_process.pyzmq_utils import can_connect_to_port
@@ -35,7 +34,6 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
-    AppConfigs(_reset=revert_to_default)  # create the singleton app configs object
     app = QtWidgets.QApplication(sys.argv)
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
