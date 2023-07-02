@@ -20,10 +20,8 @@ from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
 from rena.config import stream_availability_wait_time
-from rena.presets.Presets import DataType
-from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
-from rena.startup import load_settings
+from rena.startup import load_settings, apply_patches
 from rena.sub_process.pyzmq_utils import can_connect_to_port
 from rena.tests.TestStream import LSLTestStream, ZMQTestStream
 from rena.tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
@@ -39,6 +37,7 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
+    apply_patches()
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     if show_window:
         test_renalabapp_main_window.show()
