@@ -210,7 +210,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
             elif image_format == ImageFormat.pixelmap:
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                #image_plot_data = np.rot90(image_plot_data, k=-1) # rotate 90 degree counter-clockwise IndexPen TODO: delete this line when the indexpen is fixed
+                image_plot_data = np.rot90(image_plot_data, k=-1) # rotate 90 degree counter-clockwise IndexPen TODO: delete this line when the indexpen is fixed
 
             if not self.is_auto_level_image:
                 self.image_item.setLevels(get_valid_image_levels(self.stream_name, self.group_name))
