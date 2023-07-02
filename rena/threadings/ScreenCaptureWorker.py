@@ -1,10 +1,9 @@
 import time
 
-import cv2
+import pyscreeze
 import numpy as np
-import pyautogui
 import pyqtgraph as pg
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject
 from pylsl import local_clock
 
 from rena.presets.Presets import VideoDeviceChannelOrder
@@ -33,7 +32,7 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
-            img = pyautogui.screenshot()
+            img = pyscreeze.screenshot()
             frame = np.array(img)
             frame = frame.astype(np.uint8)
             frame = process_image(frame, self.channel_order, self.video_scale)
