@@ -299,6 +299,7 @@ class Presets(metaclass=Singleton):
             SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
+                preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
                 for key, value in preset_dict['stream_presets'].items():
                     if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
                         preset = StreamPreset(**value)
@@ -310,7 +311,7 @@ class Presets(metaclass=Singleton):
                     for key, value in preset_dict['script_presets'].items():
                         preset = ScriptPreset(**value)
                         preset_dict['script_presets'][key] = preset
-                    self.__dict__.update(preset_dict)
+                self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
@@ -339,6 +340,7 @@ class Presets(metaclass=Singleton):
             last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
 
         dirty_presets = {PresetType.LSL.value: None, PresetType.ZMQ.value: None, PresetType.CUSTOM.value: None, PresetType.EXPERIMENT.value: None}
+
         (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[PresetType.CUSTOM.value], dirty_presets[PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
