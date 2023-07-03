@@ -135,31 +135,32 @@ class OpenBCIToLSLInterface:
 
 
 def run_test():
-    # data = np.empty(shape=(24, 0))
-    print('Started streaming')
-    start_time = time.time()
-    notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
-    butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=24)
-    vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
+    # # data = np.empty(shape=(24, 0))
+    # print('Started streaming')
+    # start_time = time.time()
+    # notch = RealtimeNotch(w0=60, Q=25, fs=250, channel_num=8)
+    # butter_bandpass = RealtimeButterBandpass(lowcut=5, highcut=50, fs=250, order=5, channel_num=24)
+    # vrms_converter = RealtimeVrms(fs=250, channel_num=8, interval_ms=500, offset_ms=0)
 
     # starting time
-    start_time = time.time()
+    # start_time = time.time()
     while 1:
         try:
             new_data = openBCI_interface.process_frames()
             # data = np.concatenate((data, new_data), axis=-1)  # get all data and remove it from internal buffer
             for data in new_data.T:
-                eeg_data = data[1:9]
-                aux_data = data[9:12]
-                # ######### notch and butter
-                eeg_data = notch.process_sample(eeg_data)
-                eeg_data = butter_bandpass.process_sample(eeg_data)
-                eeg_data = vrms_converter.process_sample(eeg_data)
-                # push sample to lsl with interval
-                # if time.time() - start_time > 0.35:
-                openBCI_interface.push_frame(samples=eeg_data)
-                # print(eeg_data)
-                # start_time = time.time()
+                # eeg_data = data[1:9]
+                # aux_data = data[9:12]
+                # # ######### notch and butter
+                # eeg_data = notch.process_sample(eeg_data)
+                # eeg_data = butter_bandpass.process_sample(eeg_data)
+                # eeg_data = vrms_converter.process_sample(eeg_data)
+                # # push sample to lsl with interval
+                # # if time.time() - start_time > 0.35:
+                # openBCI_interface.push_frame(samples=eeg_data)
+                # # print(eeg_data)
+                # # start_time = time.time()
+                openBCI_interface.push_frame(samples=data)
         except KeyboardInterrupt:
             # f_sample = data.shape[-1] / (time.time() - start_time)
             print('Stopped streaming, sampling rate = ' + str())
@@ -179,7 +180,7 @@ def run_test_lsl():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCILSLInterface()
+    openBCI_interface = OpenBCIToLSLInterface(stream_name='OpenBCI_Cyton_8_Channels', serial_port='COM9')
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test_lsl()
