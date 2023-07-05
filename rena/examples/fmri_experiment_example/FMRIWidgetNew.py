@@ -74,7 +74,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.in_error_state = False  # an error state to prevent ticking when is set to true
         # visualization data buffer
         self.current_timestamp = 0
-        self.fmri_viz_volume = None
+        self.fmri_viz_volume = np.zeros((256, 256, 124))
         self._has_new_viz_data = False
 
         self.viz_data_buffer = None
