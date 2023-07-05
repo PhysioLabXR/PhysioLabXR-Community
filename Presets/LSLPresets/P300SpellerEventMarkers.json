@@ -8,6 +8,5 @@
     "P300SpellerFlashingRowColumIndexMarker",
     "P300SpellerTargetNonTargetMarker"
   ],
-  "GroupInfo":  [1, 2, 3, 4, 5],
   "NominalSamplingRate": 5
 }
