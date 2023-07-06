@@ -4,8 +4,9 @@ from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
-from rena.shared import ParamChange
+from rena.scripting.scripting_enums import ParamChange, ParamTypes
 from rena.ui_shared import minus_icon
+from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
 class ParamWidget(QtWidgets.QWidget):
@@ -20,6 +21,8 @@ class ParamWidget(QtWidgets.QWidget):
 
         self.value_widget = None
         self.on_type_combobox_changed()
+
+        add_enum_values_to_combobox(self.type_comboBox, ParamTypes)
         self.type_comboBox.currentIndexChanged.connect(self.on_type_combobox_changed)
         self.type_comboBox.currentIndexChanged.connect(self.on_param_changed)
 

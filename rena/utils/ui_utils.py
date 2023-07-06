@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Type
 
 from PyQt6.QtCore import Qt
@@ -310,7 +311,7 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
             print("dev: to use enable_dont_show, the dialog must have a unique identifier. Add the identifier by giving"
                   "the dialog_name parameter")
             raise AttributeError
-        if config.settings.contains('show_' + dialog_name) and config.settings.value('show_' + dialog_name) == 'false':
+        if settings.contains('show_' + dialog_name) and settings.value('show_' + dialog_name) == 'false':
             print('Skipping showing dialog ' + dialog_name)
             return
     dlg = CustomDialog(title, msg, dialog_name, enable_dont_show, buttons=buttons)  # If you pass self, the dialog will be centered over the main window as before.
@@ -482,3 +483,6 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
         return False
     else:
         return True
+
+def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum]):
+    combobox.addItems([name for name, member in enum.__members__.items()])

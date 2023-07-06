@@ -15,7 +15,8 @@ from rena.presets.Presets import Presets, ScriptPreset
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
     remove_script_from_settings
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
+from rena.scripting.scripting_enums import ParamChange
+from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable

@@ -2,7 +2,6 @@ import importlib.util
 import os.path
 import os
 import pickle
-import sys
 from inspect import isclass
 from typing import Type
 
@@ -11,11 +10,10 @@ from exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, Scr
 from multiprocessing import Process
 
 from rena import config
-from rena.interfaces.DataStreamInterface import DataStreamInterface
 from rena.scripting.RenaScript import RenaScript
-from rena.shared import SCRIPT_STOP_REQUEST
 
 debugging = False
+
 
 def start_script_server(script_path, script_args):
     print("script process, starting script thread")
@@ -128,3 +126,5 @@ def get_script_widgets_args():
 
 def remove_script_from_settings(script_id):
     config.settings.remove('scripts/{0}'.format(script_id))
+
+
