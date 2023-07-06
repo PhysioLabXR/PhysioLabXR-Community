@@ -3,7 +3,7 @@ import os
 import uuid
 
 import numpy as np
-from PyQt6 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QThread, QTimer
 from PyQt6.QtGui import QIntValidator
 
@@ -341,6 +341,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             print(str(e))
             return
         self.inputLayout.addWidget(input_widget)
+        self.inputLayout.setAlignment(input_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.inputLayout.removeWidget(input_widget)
@@ -362,6 +363,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_output(self, output_name, num_channels=1):
         output_widget = ScriptingOutputWidget(self, output_name, num_channels)
         self.outputLayout.addWidget(output_widget)
+        self.outputLayout.setAlignment(output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.outputLayout.removeWidget(output_widget)
@@ -383,6 +385,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_param(self, param_name, type_text=None, value_text=None):
         param_widget = ParamWidget(self, param_name, type_text, value_text)
         self.paramsLayout.addWidget(param_widget)
+        self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.paramsLayout.removeWidget(param_widget)
