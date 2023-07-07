@@ -1,12 +1,12 @@
 from enum import Enum
 
 
-class ParamTypes(Enum):
-    bool = 'Bool'
-    int = 'Int'
-    float = 'Float'
-    str = 'Str'
-    list = 'List'
+class ParamType(Enum):
+    bool = bool
+    int = int
+    float = float
+    str = str
+    list = list
 
 
 class ParamChange(Enum):

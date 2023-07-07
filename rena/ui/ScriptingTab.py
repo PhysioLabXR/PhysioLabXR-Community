@@ -3,6 +3,7 @@
 from PyQt6 import QtWidgets, uic
 
 from rena import config
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.presets.Presets import Presets
 from rena.ui.ScriptingWidget import ScriptingWidget
 from rena.ui_shared import add_icon, pop_window_icon, dock_window_icon
@@ -27,6 +28,8 @@ class ScriptingTab(QtWidgets.QWidget):
 
         self.AddScriptBtn.setIcon(add_icon)
         self.AddScriptBtn.clicked.connect(self.add_script_clicked)
+
+        GlobalSignals().stream_presets_entry_changed_signal.connect(self.update_script_widget_input_combobox)
 
         # load scripting widget from settings
         self.add_script_widgets_from_settings()

@@ -96,33 +96,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="type_comboBox">
-        <item>
-         <property name="text">
-          <string>bool</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>str</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>int</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>float</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>complex</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="type_comboBox"/>
       </item>
       <item>
        <widget class="QPushButton" name="remove_btn">

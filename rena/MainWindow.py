@@ -355,16 +355,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()
 
     def fire_action_settings(self):
-        self.settings_window.show()
-        self.settings_window.activateWindow()
+        self.open_settings_tab()
 
-    def open_settings_tab(self, tab_name: str):
+    def open_settings_tab(self, tab_name: str='Streams'):
         self.settings_window.show()
         self.settings_window.activateWindow()
-        self.settings_widget.switch_to_tab(tab_name)
+        if tab_name is not None:
+            self.settings_widget.switch_to_tab(tab_name)
 
     def get_added_stream_names(self):
         return list(self.stream_widgets.keys())
+
+    def is_any_stream_widget_added(self):
+        return len(self.stream_widgets) > 0
 
     def is_any_streaming(self):
         """

@@ -15,7 +15,7 @@ from rena.presets.Presets import Presets, ScriptPreset
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
     remove_script_from_settings
-from rena.scripting.scripting_enums import ParamChange
+from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
@@ -383,8 +383,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.process_add_param(param_name)
         self.export_script_args_to_settings()
 
-    def process_add_param(self, param_name, type_text=None, value_text=None):
-        param_widget = ParamWidget(self, param_name, type_text, value_text)
+    def process_add_param(self, param_name, param_type=ParamType.bool, value_text=''):
+        param_widget = ParamWidget(self, param_name, param_type, value_text)
         self.paramsLayout.addWidget(param_widget)
         self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
@@ -438,8 +438,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_param_value_texts(self):
         return [w.get_value_text() for w in self.param_widgets]
 
-    def get_param_type_texts(self):
-        return [w.get_type_text() for w in self.param_widgets]
+    def get_param_types(self):
+        return [w.get_param_type() for w in self.param_widgets]
 
     def get_param_dict(self):
         return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
@@ -541,7 +541,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def send_input(self, data_dict):
         if np.any(np.array(data_dict["timestamps"])< 100):
-            print('Hoi')
+            print('skipping input with timestamp < 100')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)
 
@@ -585,9 +585,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
-                     params=self.get_params(), params_type_strs=self.get_param_type_texts(), params_value_strs=self.get_param_value_texts(),
-                     run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
-                     script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
+                                     params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
+                                     run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
+                                     script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
         Presets().script_presets[self.id] = script_preset
 
     def import_script_args(self, script_preset: ScriptPreset):
@@ -602,8 +602,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_name, type_text, value_text in zip(script_preset.params, script_preset.params_type_strs, script_preset.params_value_strs):
-            self.process_add_param(param_name, type_text=type_text, value_text=value_text)
+        for param_name, param_type, value_text in zip(script_preset.params, script_preset.params_types, script_preset.params_value_strs):
+            self.process_add_param(param_name, param_type=param_type, value_text=value_text)
 
     def update_input_combobox(self):
         update_presets_to_combobox(self.inputComboBox)

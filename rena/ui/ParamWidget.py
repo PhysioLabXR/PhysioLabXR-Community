@@ -4,30 +4,28 @@ from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
-from rena.scripting.scripting_enums import ParamChange, ParamTypes
+from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.ui_shared import minus_icon
 from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
 class ParamWidget(QtWidgets.QWidget):
-    def __init__(self, parent, param_name, type_text, value_text):
+    def __init__(self, parent, param_name, param_type, value_text):
         super().__init__()
         self.ui = uic.loadUi("ui/ParamWidget.ui", self)
         self.parent = parent
 
         self.label_param_name.setText(param_name)
-
         self.remove_btn.setIcon(minus_icon)
 
         self.value_widget = None
         self.on_type_combobox_changed()
 
-        add_enum_values_to_combobox(self.type_comboBox, ParamTypes)
+        add_enum_values_to_combobox(self.type_comboBox, ParamType)
         self.type_comboBox.currentIndexChanged.connect(self.on_type_combobox_changed)
         self.type_comboBox.currentIndexChanged.connect(self.on_param_changed)
 
-        if type_text is not None and value_text is not None:
-            self.set_type_and_value_from_text(type_text, value_text)
+        self.set_type_and_value_from_text(param_type, value_text)
 
     def on_type_combobox_changed(self):
         if self.value_widget is not None:  # will be none on startup
@@ -57,20 +55,20 @@ class ParamWidget(QtWidgets.QWidget):
             except ValueError:  # if failed to convert from string
                 return selected_type(0)
 
-    def set_type_and_value_from_text(self, type_text: str, value_text: str):
+    def set_type_and_value_from_text(self, param_type: ParamType, value_text: str):
         # first process the type change
-        index = self.type_comboBox.findText(type_text, QtCore.Qt.MatchFlag.MatchFixedString)
+        index = self.type_comboBox.findText(param_type.name, QtCore.Qt.MatchFlag.MatchFixedString)
         if index >= 0:
             self.type_comboBox.setCurrentIndex(index)
         else: raise NotImplementedError
 
-        if type_text == 'bool':  # the value widget should have long been changed by this time
+        if param_type == 'bool':  # the value widget should have long been changed by this time
             self.value_widget.setChecked(value_text == 'True')
         else:
             self.value_widget.setText(value_text)
 
-    def get_type_text(self):
-        return self.type_comboBox.currentText()
+    def get_param_type(self):
+        return ParamType[self.type_comboBox.currentText()]
 
     def get_value_text(self):
         selected_type_text = self.type_comboBox.currentText()

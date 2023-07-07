@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 from PyQt6.QtWidgets import QCompleter
 
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.presets.Presets import PresetType, DataType
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
@@ -22,33 +23,45 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.parent = parent
         self.ui = uic.loadUi("ui/AddWidget.ui", self)
         self.add_btn.setIcon(add_icon)
-        add_presets_to_combobox(self.stream_name_combo_box)
-
-        for data_type in DataType:
-            self.data_type_combo_box.addItem(data_type.value)
 
         self.add_custom_data_stream_widget = AddCustomDataStreamWidget(self, parent)
         self.layout().addWidget(self.add_custom_data_stream_widget)
         self.add_custom_data_stream_widget.setVisible(False)
 
-        self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
-        self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
-        self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
+        # add combobox
+        GlobalSignals().stream_presets_entry_changed_signal.connect(self.on_stream_presets_entry_changed)
+        add_presets_to_combobox(self.stream_name_combo_box)
         self.stream_name_combo_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseSensitive)
+        self.connect_stream_name_combo_box_signals()
 
         self.PortLineEdit.setValidator(QIntValidator())
-        self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
 
-        self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
+        # data type combobox
+        for data_type in DataType:
+            self.data_type_combo_box.addItem(data_type.value)
+        self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
+        self.set_data_type_to_default()
+
 
         self.preset_type_selection_changed()
-        self.set_data_type_to_default()
 
         self.device_property_fields = {}
 
         self.current_selected_type = None
 
         self.check_can_add_input()
+
+    def connect_stream_name_combo_box_signals(self):
+        self.stream_name_combo_box.lineEdit().returnPressed.connect(self.on_streamName_comboBox_returnPressed)
+        self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
+        self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
+        self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
+
+    def disconnect_stream_name_combo_box_signals(self):
+        self.stream_name_combo_box.lineEdit().returnPressed.disconnect(self.on_streamName_comboBox_returnPressed)
+        self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.check_can_add_input)
+        self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.on_streamName_combobox_text_changed)
+        self.stream_name_combo_box.currentIndexChanged.disconnect(self.on_streamName_combobox_text_changed)
 
     def select_by_stream_name(self, stream_name):
         index = self.stream_name_combo_box.findText(stream_name, Qt.MatchFlag.MatchFixedString)
@@ -179,3 +192,9 @@ class AddStreamWidget(QtWidgets.QWidget):
         else:
             self.set_data_type_to_default()
             # print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
+
+    def on_stream_presets_entry_changed(self):
+        self.disconnect_stream_name_combo_box_signals()
+        self.stream_name_combo_box.clear()
+        add_presets_to_combobox(self.stream_name_combo_box)
+        self.connect_stream_name_combo_box_signals()
