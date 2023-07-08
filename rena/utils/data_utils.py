@@ -4,7 +4,6 @@ from pathlib import Path
 from datetime import datetime
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
 from scipy.stats import stats

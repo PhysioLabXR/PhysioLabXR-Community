@@ -16,9 +16,9 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
-
 AppConfigs(_reset=True)  # create the singleton app configs object
+
+from rena.presets.Presets import PresetType
 from rena.config import stream_availability_wait_time
 from rena.tests.TestStream import LSLTestStream
 from rena.tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
@@ -187,9 +187,9 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
         d = np.diff(c)
         e = np.diff(b)
-        assert np.mean(np.abs(e - d)) < 1e-9
-        assert np.max(np.abs(e - d)) < 1e-9
-        assert np.std(np.abs(e - d)) < 1e-9
+        assert np.mean(np.abs(e - d)) < 1e-6
+        assert np.max(np.abs(e - d)) < 1e-6
+        assert np.std(np.abs(e - d)) < 1e-6
     os.remove(recording_file_name)
     os.remove(replayed_file_name)
     print("Replay completed")

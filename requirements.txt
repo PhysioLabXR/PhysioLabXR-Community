@@ -7,10 +7,8 @@ scikit-learn
 scipy~=1.9.1
 pyqtgraph
 pyxdf
+pyscreeze
 opencv-python
-pyautogui
-matplotlib
-ipython
 pyzmq
 setuptools
 psutil
@@ -18,3 +16,5 @@ pytest-qt
 numba
 nilearn
 PyOpenGL
+PyOpenGL
+PyOpenGL_accelerate
