@@ -4,17 +4,15 @@ import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Union
-from uuid import UUID
 
 import numpy as np
-from PyQt6.QtCore import QStandardPaths
 
 from rena import config
-from rena.config import app_data_name, default_group_name
+from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
+from rena.presets.ScriptPresets import ScriptPreset
 from rena.presets.preset_class_helpers import SubPreset
-from rena.scripting.scripting_enums import ParamType
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
@@ -100,23 +98,6 @@ class PresetsEncoder(json.JSONEncoder):
             return o.__dict__
         return super().default(o)
 
-
-@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class ScriptPreset(metaclass=SubPreset):
-    id: str
-    inputs: List[str]
-    outputs: List[str]
-    output_num_channels: List[int]
-    params: List[str]
-    params_types: List[ParamType]
-    params_value_strs: List[str]
-    run_frequency: int
-    time_window: int
-    script_path: str
-    is_simulate: bool
-
-    def __post_init__(self):
-        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class StreamPreset(metaclass=SubPreset):

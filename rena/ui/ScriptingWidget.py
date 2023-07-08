@@ -11,7 +11,8 @@ from PyQt6.QtWidgets import QFileDialog
 
 from exceptions.exceptions import RenaError, MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
-from rena.presets.Presets import Presets, ScriptPreset
+from rena.presets.Presets import Presets
+from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
     remove_script_from_settings

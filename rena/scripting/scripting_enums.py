@@ -8,6 +8,10 @@ class ParamType(Enum):
     str = str
     list = list
 
+    @classmethod
+    def get_supported_types(cls):
+        return [member.value for member in list(cls)]
+
 
 class ParamChange(Enum):
     ADD = 'a'

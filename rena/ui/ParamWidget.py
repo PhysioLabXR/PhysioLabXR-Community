@@ -1,6 +1,7 @@
 from pydoc import locate
 
 from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena import ui_shared
@@ -19,23 +20,31 @@ class ParamWidget(QtWidgets.QWidget):
         self.remove_btn.setIcon(minus_icon)
 
         self.value_widget = None
-        self.on_type_combobox_changed()
 
         add_enum_values_to_combobox(self.type_comboBox, ParamType)
         self.type_comboBox.currentIndexChanged.connect(self.on_type_combobox_changed)
         self.type_comboBox.currentIndexChanged.connect(self.on_param_changed)
+        self.type_comboBox.setCurrentIndex(self.type_comboBox.findText(param_type.name, QtCore.Qt.MatchFlag.MatchFixedString))# set to default type: bool
+        self.on_type_combobox_changed()  # call on type changed to create the value widget
 
-        self.set_type_and_value_from_text(param_type, value_text)
+        # self.set_type_and_value_from_text(param_type, value_text)
 
     def on_type_combobox_changed(self):
         if self.value_widget is not None:  # will be none on startup
             self.top_layout.removeWidget(self.value_widget)
-        selected_type_text = self.type_comboBox.currentText()
-        if selected_type_text == 'bool':
+        selected_type = ParamType[self.type_comboBox.currentText()]
+        if selected_type is ParamType.bool:
             self.value_widget = QCheckBox()
             self.value_widget.stateChanged.connect(self.on_param_changed)
+        elif selected_type is ParamType.list:
+            pass
         else:
             self.value_widget = QLineEdit()
+            if selected_type is ParamType.float:
+                self.value_widget.setValidator(QDoubleValidator())
+            elif selected_type is ParamType.int:
+                self.value_widget.setValidator(QIntValidator())
+
             self.value_widget.textChanged.connect(self.on_param_changed)
         self.top_layout.insertWidget(1, self.value_widget)
 
@@ -55,17 +64,17 @@ class ParamWidget(QtWidgets.QWidget):
             except ValueError:  # if failed to convert from string
                 return selected_type(0)
 
-    def set_type_and_value_from_text(self, param_type: ParamType, value_text: str):
-        # first process the type change
-        index = self.type_comboBox.findText(param_type.name, QtCore.Qt.MatchFlag.MatchFixedString)
-        if index >= 0:
-            self.type_comboBox.setCurrentIndex(index)
-        else: raise NotImplementedError
-
-        if param_type == 'bool':  # the value widget should have long been changed by this time
-            self.value_widget.setChecked(value_text == 'True')
-        else:
-            self.value_widget.setText(value_text)
+    # def set_type_and_value_from_text(self, param_type: ParamType, value_text: str):
+    #     # first process the type change
+    #     index = self.type_comboBox.findText(param_type.name, QtCore.Qt.MatchFlag.MatchFixedString)
+    #     if index >= 0:
+    #         self.type_comboBox.setCurrentIndex(index)
+    #     else: raise NotImplementedError
+    #
+    #     if param_type == 'bool':  # the value widget should have long been changed by this time
+    #         self.value_widget.setChecked(value_text == 'True')
+    #     else:
+    #         self.value_widget.setText(value_text)
 
     def get_param_type(self):
         return ParamType[self.type_comboBox.currentText()]
