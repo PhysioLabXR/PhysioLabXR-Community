@@ -52,7 +52,6 @@ class ParamWidget(QtWidgets.QWidget):
         if new_type is ParamType.bool:
             self.value_widget = QCheckBox()
             self.value_widget.stateChanged.connect(self.on_param_changed)
-            self.top_layout.insertWidget(1, self.value_widget)
 
         elif new_type is ParamType.list:
             self.make_list_param()
@@ -63,10 +62,10 @@ class ParamWidget(QtWidgets.QWidget):
             elif new_type is ParamType.int:
                 self.value_widget.setValidator(QIntValidator())
             self.value_widget.textChanged.connect(self.on_param_changed)
-            self.top_layout.insertWidget(1, self.value_widget)
 
         if new_type is not ParamType.list:
             self.list_widget.setVisible(False)
+            self.top_layout.insertWidget(1, self.value_widget, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
 
     def make_list_param(self):
         self.list_widget.setVisible(True)
