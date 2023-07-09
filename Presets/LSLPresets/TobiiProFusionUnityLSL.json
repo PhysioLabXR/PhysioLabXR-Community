@@ -1,4 +1,4 @@
-{ "StreamName":"TobiiProFusionUnityLSL",
+{ "StreamName":"TobiiProFusionUnityLSLOutlet",
   "ChannelNames":
   [
     "CombinedGazeRayScreenDirectionX",
