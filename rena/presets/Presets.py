@@ -75,6 +75,17 @@ class PresetType(Enum):
     CUSTOM = 'CUSTOM'
     EXPERIMENT = 'EXPERIMENT'
 
+    @classmethod
+    def is_video_preset(cls, preset_type):
+        if isinstance(preset_type, str):
+            preset_type = PresetType(preset_type)
+        return preset_type in [cls.WEBCAM, cls.MONITOR]
+
+    @classmethod
+    def is_stream_preset(cls, preset_type):
+        if isinstance(preset_type, str):
+            preset_type = PresetType(preset_type)
+        return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
@@ -284,13 +295,15 @@ class Presets(metaclass=Singleton):
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
-                for key, value in preset_dict['stream_presets'].items():
-                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
-                        preset = StreamPreset(**value)
-                    elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
-                        preset = VideoPreset(**value)
-                    preset_dict['stream_presets'][key] = preset
-
+                if 'stream_presets' in preset_dict.keys():
+                    for key, value in preset_dict['stream_presets'].items():
+                        if PresetType.is_stream_preset(value['preset_type']):
+                            preset = StreamPreset(**value)
+                            preset_dict['stream_presets'][key] = preset
+                        elif PresetType.is_video_preset(value['preset_type']):
+                            preset = VideoPreset(**value)
+                            preset_dict['stream_presets'][key] = preset
+                    preset_dict['stream_presets'] = {k: v for k, v in preset_dict['stream_presets'].items() if isinstance(v, (StreamPreset, VideoPreset))}
                 if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
                         try:
@@ -298,6 +311,7 @@ class Presets(metaclass=Singleton):
                             preset_dict['script_presets'][key] = preset
                         except TypeError:
                             print(f'Script with key {key} will not be loaded, because the script preset attributes was changed during the last update')
+                    preset_dict['script_presets'] = {k: v for k, v in preset_dict['script_presets'].items() if isinstance(v, ScriptPreset)}
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 

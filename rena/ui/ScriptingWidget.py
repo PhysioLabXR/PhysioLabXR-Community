@@ -384,8 +384,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.process_add_param(param_name)
         self.export_script_args_to_settings()
 
-    def process_add_param(self, param_name, param_type=ParamType.bool, value_text=''):
-        param_widget = ParamWidget(self, param_name, param_type, value_text)
+    def process_add_param(self, param_name, param_type=ParamType.bool, value=''):
+        param_widget = ParamWidget(self, param_name, param_type, value)
         self.paramsLayout.addWidget(param_widget)
         self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
@@ -436,11 +436,15 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_params(self):
         return [w.get_param_name() for w in self.param_widgets]
 
-    def get_param_value_texts(self):
-        return [w.get_value_text() for w in self.param_widgets]
+    # def get_param_value_texts(self):
+    #     return [w.get_value_text() for w in self.param_widgets]
 
     def get_param_types(self):
         return [w.get_param_type() for w in self.param_widgets]
+
+    def get_params_presets_recursive(self):
+        params_presets = [x.get_param_preset_recursive() for x in self.param_widgets]
+        return params_presets
 
     def get_param_dict(self):
         return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
@@ -586,7 +590,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
-                                     params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
+                                     # params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
+                                     param_presets = self.get_params_presets_recursive(),
                                      run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
                                      script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
         Presets().script_presets[self.id] = script_preset
@@ -603,8 +608,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_name, param_type, value_text in zip(script_preset.params, script_preset.params_types, script_preset.params_value_strs):
-            self.process_add_param(param_name, param_type=param_type, value_text=value_text)
+        for param_preset in zip(script_preset.param_presets):
+            self.process_add_param(param_preset.name, param_type=param_preset.type, value=param_preset.value)
 
     def update_input_combobox(self):
         update_presets_to_combobox(self.inputComboBox)
