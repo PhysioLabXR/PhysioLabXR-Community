@@ -6,9 +6,7 @@ from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.presets.Presets import Presets
 from rena.ui.ScriptingWidget import ScriptingWidget
-from rena.ui_shared import add_icon, pop_window_icon, dock_window_icon
-from rena.scripting.script_utils import get_script_widgets_args, remove_script_from_settings
-from rena.utils.ui_utils import AnotherWindow
+from rena.ui_shared import add_icon
 
 
 class ScriptingTab(QtWidgets.QWidget):

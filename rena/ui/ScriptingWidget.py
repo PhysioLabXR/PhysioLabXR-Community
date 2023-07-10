@@ -14,8 +14,7 @@ from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTE
 from rena.presets.Presets import Presets
 from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
-from rena.scripting.script_utils import start_rena_script, get_target_class_name, \
-    remove_script_from_settings
+from rena.scripting.script_utils import start_rena_script, get_target_class_name
 from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
@@ -29,7 +28,7 @@ from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
-    get_experiment_preset_names, get_stream_preset_info, check_preset_exists
+    get_experiment_preset_names, get_stream_preset_info, check_preset_exists, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path
