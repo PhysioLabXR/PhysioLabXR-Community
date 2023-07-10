@@ -395,16 +395,16 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             param_widget.deleteLater()
             self.check_can_add_param()
             self.export_script_args_to_settings()
-            self.param_change(ParamChange.REMOVE, param_name)
+            self.notify_script_process_param_change(ParamChange.REMOVE, param_name)
 
         param_widget.set_remove_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
+        self.notify_script_process_param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
 
-    def param_change(self, change: ParamChange, name, value=None):
+    def notify_script_process_param_change(self, change: ParamChange, name, value=None):
         '''
-        send params to the script process
+        send changed params to the script process
         @return:
         '''
         print('Param {} changed: {}, {}'.format(name, change, value))

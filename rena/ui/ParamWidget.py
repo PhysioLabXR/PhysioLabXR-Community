@@ -103,15 +103,23 @@ class ParamWidget(QtWidgets.QWidget):
         return self.label_param_name.text()
 
     def on_param_changed(self):
-        self.scripting_widget.param_change(ParamChange.CHANGE, self.get_param_name(), value=self.get_value())
+        self.scripting_widget.notify_script_process_param_change(ParamChange.CHANGE, self.get_param_name(), value=self.get_value())
 
     def get_param_preset_recursive(self):
         if self.get_param_type() == ParamType.list:
-            return [child.get_param_preset_recursive() for child in self.value_widget.layout().children()]
+            rtn = ParamPreset(name=self.get_param_name(), type=self.get_param_type(), value=[])
+            for i in range(self.value_widget.layout().count()):
+                item = self.value_widget.layout().itemAt(i)
+                if item.widget() is not None and item.widget().isWidgetType() and isinstance(item.widget(), ParamWidget):
+                    widget = item.widget()
+                    print(f"Widget found: {widget}")
+                    rtn.value.append(item.widget().get_param_preset_recursive())
+            return rtn
         else:
             return ParamPreset(name=self.get_param_name(), type=self.get_param_type(), value=self.get_value())
 
     def add_to_list_button_pressed(self):
+        assert self.value_widget == self.list_content_frame_widget, "add_to_list_button_pressed should only be called when the param type is list"
         param_name = self.get_param_name()
         param_widget = ParamWidget(self.scripting_widget, param_name, is_top_level=False, top_param_widget=self.top_param_widget)
         self.value_widget.layout().insertWidget(0, param_widget)
@@ -120,6 +128,7 @@ class ParamWidget(QtWidgets.QWidget):
             self.value_widget.layout().removeWidget(param_widget)
             param_widget.deleteLater()
             self.scripting_widget.export_script_args_to_settings()
-            self.scripting_widget.param_change(ParamChange.CHANGE, param_name, value=self.top_param_widget.get_value())
+            self.scripting_widget.notify_script_process_param_change(ParamChange.CHANGE, param_name, value=self.top_param_widget.get_value())
         param_widget.set_remove_button_callback(remove_btn_clicked)
-        self.scripting_widget.param_change(ParamChange.CHANGE, param_name, value=self.top_param_widget.get_value())
+        self.scripting_widget.notify_script_process_param_change(ParamChange.CHANGE, param_name, value=self.top_param_widget.get_value())
+        self.scripting_widget.export_script_args_to_settings()
