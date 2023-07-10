@@ -82,12 +82,12 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         # timer
         self.timer = QTimer()
-        self.timer.setInterval(config.settings.value('pull_data_interval'))
+        self.timer.setInterval(AppConfigs().pull_data_interval)
         self.timer.timeout.connect(self.ticks)
 
         # visualization timer
         self.v_timer = QTimer()
-        self.v_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
+        self.v_timer.setInterval(AppConfigs().visualization_refresh_interval)
         self.v_timer.timeout.connect(self.visualize)
 
         # connect btn
@@ -108,7 +108,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
-        self.tick_times = deque(maxlen=10 * int(float(config.settings.value('visualization_refresh_interval'))))
+        self.tick_times = deque(maxlen=10 * AppConfigs().visualization_refresh_interval)
         self.setting_update_viz_mutex = QMutex()
 
         # start the timers
@@ -178,7 +178,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # self.volume_view_plot.addItem(g)
 
         _, self.mri_volume_data = load_nii_gz_file(
-            'C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/structural.nii.gz')
+            'D:/HaowenWei/Rena/RenaLabApp/rena/examples/fmri_experiment_example/structural.nii.gz')
         self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data, non_linear_interpolation_factor=2)
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()

@@ -15,7 +15,7 @@ def main():
     # read image to numpy
     # fmri_data = nibabel.load('fmri.nii.gz')
     # image_data = (fmri_data - np.min(fmri_data)) / (np.max(image_data) - np.min(image_data))
-    _, fmri_data = load_nii_gz_file('C:/Users/Haowe/OneDrive/Desktop/Columbia/RENA/RealityNavigation/rena/examples/fmri_experiment_example/resampled_fmri.nii.gz')
+    _, fmri_data = load_nii_gz_file('resampled_fmri.nii.gz')
     # image = fmri_data[:,:,:, 100]
     # # image = cv2.imread('Image.png')
     # # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
