@@ -1,24 +1,12 @@
 # This Python file uses the following encoding: utf-8
-import time
 
-from PyQt6.QtCore import QTimer
-
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config_ui
-from rena.configs.configs import AppConfigs, LinechartVizMode
+from rena.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
-from rena.presets.load_user_preset import create_default_group_entry
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
-    get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
+from rena.presets.presets_utils import get_stream_preset_info
 from rena.threadings import workers
 from rena.ui.BaseStreamWidget import BaseStreamWidget
-from rena.ui.GroupPlotWidget import GroupPlotWidget
-from rena.ui.VizComponents import VizComponents
-from rena.utils.buffers import DataBufferSingleStream
-from rena.utils.performance_utils import timeit
-from rena.utils.ui_utils import dialog_popup, clear_widget
+from rena.utils.ui_utils import dialog_popup
 
 
 class ZMQWidget(BaseStreamWidget):

@@ -1,11 +1,10 @@
-import os.path
 import time
 
 import numpy as np
 import serial
 from pylsl import StreamInfo, StreamOutlet
 
-from exceptions.exceptions import BufferOverFlowError, DataPortNotOpenError, GeneralMmWError, PortsNotSetUpError
+from rena.exceptions.exceptions import BufferOverFlowError, DataPortNotOpenError, GeneralMmWError, PortsNotSetUpError
 from rena import config_signal
 from rena.utils.data_utils import clutter_removal
 from rena.utils.mmWave_utils import serial_iwr6843

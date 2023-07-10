@@ -9,12 +9,12 @@ from PyQt6.QtGui import QIntValidator
 
 from PyQt6.QtWidgets import QFileDialog
 
-from exceptions.exceptions import RenaError, MissingPresetError
+from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.Presets import Presets
 from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
-from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
+from rena.scripting.script_utils import start_rena_script, get_target_class_name, \
     remove_script_from_settings
 from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST

@@ -4,26 +4,22 @@ import webbrowser
 from typing import Dict
 
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QTimer, QThread, pyqtSignal
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
-from exceptions.exceptions import RenaError
+from rena.exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets, PresetType, DataType
-from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.threadings.LongTasks import LongTaskThread, LoadingDialog
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
-from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
     create_default_zmq_preset
-from rena.utils.test_utils import some_test
 
 try:
     import rena.config
