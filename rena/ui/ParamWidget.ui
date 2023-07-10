@@ -127,6 +127,13 @@
        </widget>
       </item>
       <item alignment="Qt::AlignRight">
+       <widget class="QPushButton" name="expand_collapse_button">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
        <widget class="QPushButton" name="remove_btn">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">

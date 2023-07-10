@@ -11,7 +11,7 @@ from rena import config
 from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.ScriptPresets import ScriptPreset
+from rena.presets.ScriptPresets import ScriptPreset, ParamPreset
 from rena.presets.preset_class_helpers import SubPreset
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
@@ -238,6 +238,19 @@ def _load_video_device_presets(presets):
         presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 
+def _load_param_presets_recursive(param_preset_dict):
+    rtn = []
+    if isinstance(param_preset_dict, list):
+        for param_preset in param_preset_dict:
+            rtn.append(_load_param_presets_recursive(param_preset))
+    elif isinstance(param_preset_dict, dict):
+        if isinstance(param_preset_dict['value'], list):
+            param_preset_dict['value'] = _load_param_presets_recursive(param_preset_dict['value'])
+            return ParamPreset(**param_preset_dict)
+        else:
+            return ParamPreset(**param_preset_dict)
+    return rtn
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
     """
@@ -307,6 +320,7 @@ class Presets(metaclass=Singleton):
                 if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
                         try:
+                            value['param_presets'] = [_load_param_presets_recursive(param_preset) for param_preset in value['param_presets']]
                             preset = ScriptPreset(**value)
                             preset_dict['script_presets'][key] = preset
                         except TypeError:

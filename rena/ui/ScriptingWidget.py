@@ -384,8 +384,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.process_add_param(param_name)
         self.export_script_args_to_settings()
 
-    def process_add_param(self, param_name, param_type=ParamType.bool, value=''):
-        param_widget = ParamWidget(self, param_name, param_type, value)
+    def process_add_param(self, param_name, param_type=ParamType.bool, value=None):
+        param_widget = ParamWidget(self, param_name, param_type=param_type, value=value)
         self.paramsLayout.addWidget(param_widget)
         self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
@@ -608,7 +608,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_preset in zip(script_preset.param_presets):
+        for param_preset in script_preset.param_presets:
             self.process_add_param(param_preset.name, param_type=param_preset.type, value=param_preset.value)
 
     def update_input_combobox(self):

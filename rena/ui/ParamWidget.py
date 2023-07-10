@@ -7,17 +7,16 @@ from PyQt6.QtWidgets import QCheckBox, QLineEdit, QScrollArea, QWidget
 from rena import ui_shared
 from rena.presets.ScriptPresets import ParamPreset
 from rena.scripting.scripting_enums import ParamChange, ParamType
-from rena.ui_shared import minus_icon, add_icon
+from rena.ui_shared import minus_icon, add_icon, collapse_icon, expand_icon
 from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
 class ParamWidget(QtWidgets.QWidget):
-    def __init__(self, scripting_widget, param_name, param_type=ParamType.bool, value_text='', is_top_level=True, top_param_widget=None):
+    def __init__(self, scripting_widget, param_name, param_type=ParamType.bool, value=None, is_top_level=True, top_param_widget=None):
         super().__init__()
         self.ui = uic.loadUi("ui/ParamWidget.ui", self)
         self.scripting_widget = scripting_widget
         self.scroll_area.setWidgetResizable(True)
-
 
         if not is_top_level:  # only top level param has name
             self.label_param_name.setVisible(False)
@@ -29,13 +28,16 @@ class ParamWidget(QtWidgets.QWidget):
         self.remove_btn.setIcon(minus_icon)
         self.add_to_list_button.setIcon(add_icon)
         self.add_to_list_button.clicked.connect(self.add_to_list_button_pressed)
+        self.expand_collapse_button.clicked.connect(self.expand_collapse_button_pressed)
 
         self.value_widget = None
-
         add_enum_values_to_combobox(self.type_comboBox, ParamType)
         self.type_comboBox.currentIndexChanged.connect(self.on_type_combobox_changed)
         self.type_comboBox.setCurrentIndex(self.type_comboBox.findText(param_type.name, QtCore.Qt.MatchFlag.MatchFixedString))# set to default type: bool
         self.process_param_type_change(param_type)  # call on type changed to create the value widget
+
+        if value is not None:
+            self.set_value_recursive(value)
 
     def on_type_combobox_changed(self):
         selected_type = ParamType[self.type_comboBox.currentText()]
@@ -66,28 +68,50 @@ class ParamWidget(QtWidgets.QWidget):
         if new_type is not ParamType.list:
             self.list_widget.setVisible(False)
             self.top_layout.insertWidget(1, self.value_widget, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+            self.expand_collapse_button.setVisible(False)
 
     def make_list_param(self):
         self.list_widget.setVisible(True)
         self.value_widget = self.list_content_frame_widget
+        self.expand_collapse_button.setVisible(True)
+        self.expand_collapse_button.setIcon(collapse_icon)
+
+    def expand_collapse_button_pressed(self):
+        if self.list_widget.isVisible():
+            self.expand_collapse_button.setIcon(expand_icon)
+            self.list_widget.setVisible(False)
+        else:
+            self.expand_collapse_button.setIcon(collapse_icon)
+            self.list_widget.setVisible(True)
 
     def set_remove_button_callback(self, callback: callable):
         self.remove_btn.clicked.connect(callback)
 
     def get_value(self):
-        selected_type_text = ParamType[self.type_comboBox.currentText()]
-        if selected_type_text == ParamType.bool:
+        selected_type = self.get_param_type()
+        if selected_type == ParamType.bool:
             return self.value_widget.isChecked()
-        elif selected_type_text == ParamType.str:
+        elif selected_type == ParamType.str:
             return self.value_widget.text()
-        elif selected_type_text == ParamType.list:
+        elif selected_type == ParamType.list:
             return [child.get_value() for child in self.value_widget.children() if isinstance(child, ParamWidget)]
         else:  # numeric types: int, float, complex
-            selected_type = selected_type_text.value
+            selected_type = selected_type.value
             try:
                 return selected_type(self.value_widget.text())
             except ValueError:  # if failed to convert from string
                 return selected_type(0)
+
+    def set_value_recursive(self, value):
+        selected_type = self.get_param_type()
+        if selected_type == ParamType.bool:
+            self.value_widget.setChecked(value)
+        elif selected_type == ParamType.str:
+            self.value_widget.setText(value)
+        elif selected_type == ParamType.list:
+            self.add_to_list_recursive(value=value)
+        else:
+            self.value_widget.setText(str(value))
 
     def get_param_type(self):
         return ParamType[self.type_comboBox.currentText()]
@@ -112,7 +136,7 @@ class ParamWidget(QtWidgets.QWidget):
                 item = self.value_widget.layout().itemAt(i)
                 if item.widget() is not None and item.widget().isWidgetType() and isinstance(item.widget(), ParamWidget):
                     widget = item.widget()
-                    print(f"Widget found: {widget}")
+                    # print(f"Widget found: {widget}")
                     rtn.value.append(item.widget().get_param_preset_recursive())
             return rtn
         else:
@@ -120,9 +144,20 @@ class ParamWidget(QtWidgets.QWidget):
 
     def add_to_list_button_pressed(self):
         assert self.value_widget == self.list_content_frame_widget, "add_to_list_button_pressed should only be called when the param type is list"
+        self.add_to_list_recursive()
+
+    def add_to_list_recursive(self, value=None, param_type=ParamType.bool):
         param_name = self.get_param_name()
-        param_widget = ParamWidget(self.scripting_widget, param_name, is_top_level=False, top_param_widget=self.top_param_widget)
-        self.value_widget.layout().insertWidget(0, param_widget)
+        if isinstance(value, list):
+            for val in value:
+                assert isinstance(val, ParamPreset), f"add_to_list_recursive should only be called with ParamPreset or list of ParamPreset, got {type(val)}"
+                self.add_param_to_list(param_name, param_type=val.type, value=val.value)
+        else:
+            self.add_param_to_list(param_name, param_type, value)
+
+    def add_param_to_list(self, param_name, param_type, value):
+        param_widget = ParamWidget(self.scripting_widget, param_name, param_type=param_type, value=value, is_top_level=False, top_param_widget=self.top_param_widget)
+        self.value_widget.layout().insertWidget(self.value_widget.layout().count()-2, param_widget)
         self.value_widget.layout().setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
         def remove_btn_clicked():
             self.value_widget.layout().removeWidget(param_widget)
