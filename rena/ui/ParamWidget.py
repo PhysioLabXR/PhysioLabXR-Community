@@ -88,13 +88,22 @@ class ParamWidget(QtWidgets.QWidget):
         self.remove_btn.clicked.connect(callback)
 
     def get_value(self):
+        """
+        removing a param widget will call this function as it will send the param change to the Rena Script.
+
+        """
         selected_type = self.get_param_type()
         if selected_type == ParamType.bool:
             return self.value_widget.isChecked()
         elif selected_type == ParamType.str:
             return self.value_widget.text()
         elif selected_type == ParamType.list:
-            return [child.get_value() for child in self.value_widget.children() if isinstance(child, ParamWidget)]
+            rtn = []
+            for i in range(self.value_widget.layout().count()):
+                item = self.value_widget.layout().itemAt(i)
+                if item.widget() is not None and item.widget().isWidgetType() and isinstance(item.widget(), ParamWidget):
+                    rtn.append(item.widget().get_value())
+            return rtn
         else:  # numeric types: int, float, complex
             selected_type = selected_type.value
             try:
@@ -127,7 +136,7 @@ class ParamWidget(QtWidgets.QWidget):
         return self.label_param_name.text()
 
     def on_param_changed(self):
-        self.scripting_widget.notify_script_process_param_change(ParamChange.CHANGE, self.get_param_name(), value=self.get_value())
+        self.scripting_widget.notify_script_process_param_change(ParamChange.CHANGE, self.top_param_widget.get_param_name(), value=self.top_param_widget.get_value())
 
     def get_param_preset_recursive(self):
         if self.get_param_type() == ParamType.list:

@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import json
 import os
 import uuid
 
@@ -616,7 +617,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def forward_param_change(self, change: ParamChange, name, value):
         self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
         self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
-        self.command_socket_interface.socket.send(np.array(value))
+        self.command_socket_interface.socket.send_string(json.dumps(value))
 
     def onSimulationCheckboxChanged(self):
         print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))
