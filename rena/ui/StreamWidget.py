@@ -2,20 +2,18 @@
 import time
 from collections import deque
 
-import numpy as np
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config, config_ui
+from rena.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from rena import config_ui
 from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
     change_stream_group_name, pop_stream_preset_from_settings, change_group_channels
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable

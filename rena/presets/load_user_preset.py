@@ -1,4 +1,4 @@
-from exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
+from rena.exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from rena import config
 from rena.config import DEFAULT_CHANNEL_DISPLAY_NUM, default_group_name
 from rena.presets.GroupEntry import GroupEntry

@@ -3,7 +3,7 @@ import numpy as np
 
 from pylsl import StreamInlet, LostError, resolve_byprop
 
-from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
+from rena.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
 from rena.config import stream_availability_wait_time
 from stream_shared import lsl_continuous_resolver

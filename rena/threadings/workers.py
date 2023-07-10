@@ -11,8 +11,8 @@ from PyQt6.QtCore import QMutex, QThread
 from PyQt6.QtCore import (QObject, pyqtSignal)
 from pylsl import local_clock
 
-from exceptions.exceptions import DataPortNotOpenError
-from rena import config_signal, shared, config
+from rena.exceptions.exceptions import DataPortNotOpenError
+from rena import config_signal, shared
 from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
 from rena.configs.configs import AppConfigs
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
