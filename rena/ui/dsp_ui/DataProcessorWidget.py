@@ -32,7 +32,8 @@ class DataProcessorWidget(QtWidgets.QWidget):
         self.set_data_processor_input_field_value()
         self.set_data_processor_input_field_constrain()
         self.connect_data_processor_input_field_signal()
-        self.set_data_processor_state_label()
+        self.data_processor_settings_on_changed() # try to evoke data processor at the first place
+        # self.set_data_processor_state_label()
 
         # self.data_processor.data_processor_valid_signal.connect(self.set_data_processor_state_label)
         # self.data_processor.data_processor_activated_signal.connect(self.set_data_processor_state_label)
@@ -87,9 +88,11 @@ class DataProcessorWidget(QtWidgets.QWidget):
         try:
             self.data_processor.evoke_data_processor()
             # set message box text
-            self.DataProcessorEvokeMessageLabel.setText('Data Processor Valid')
+            self.DataProcessorEvokeMessageLabel.hide()
+            self.DataProcessorEvokeMessageLabel.setText('')
             self.DataProcessorEvokeMessageLabel.setStyleSheet('color: green')
         except DataProcessorEvokeFailedError as e:
+            self.DataProcessorEvokeMessageLabel.show()
             self.DataProcessorEvokeMessageLabel.setText(str(e))
             self.DataProcessorEvokeMessageLabel.setStyleSheet('color: red')
             print(str(e))

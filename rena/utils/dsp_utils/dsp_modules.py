@@ -120,7 +120,7 @@ class IIRFilter(DataProcessor):
 
 
 class NotchFilter(IIRFilter):
-    def __init__(self, w0: float = 20, Q: float = 60, fs: float = 0):
+    def __init__(self, w0: float = 10, Q: float = 20, fs: float = 0):
         super().__init__(data_processor_type=DataProcessorType.NotchFilter)
         self.w0 = w0
         self.Q = Q
