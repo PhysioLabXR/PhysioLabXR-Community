@@ -14,3 +14,6 @@ fmri_resampled = resample_to_img(fmri_img, mri_img, interpolation='linear')
 
 # Save the resampled fMRI data
 nib.save(fmri_resampled, 'resampled_fmri.nii.gz')
+
+
+
