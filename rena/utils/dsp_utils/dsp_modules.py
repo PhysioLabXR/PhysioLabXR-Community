@@ -2,7 +2,7 @@ import numpy as np
 from scipy.signal import butter, freqz, iirnotch, filtfilt
 from enum import Enum
 
-from exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError
+from rena.exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError
 
 
 class DataProcessorType(Enum):
@@ -120,7 +120,7 @@ class IIRFilter(DataProcessor):
 
 
 class NotchFilter(IIRFilter):
-    def __init__(self, w0: float = 0, Q: float = 0, fs: float = 0):
+    def __init__(self, w0: float = 20, Q: float = 60, fs: float = 0):
         super().__init__(data_processor_type=DataProcessorType.NotchFilter)
         self.w0 = w0
         self.Q = Q
@@ -138,7 +138,7 @@ class NotchFilter(IIRFilter):
 
 
 class ButterworthBandpassFilter(IIRFilter):
-    def __init__(self, lowcut: float = 0, highcut: float = 0, fs: float = 0, order: int = 0):
+    def __init__(self, lowcut: float = 5, highcut: float = 10, fs: float = 0, order: int = 1):
         super().__init__(data_processor_type=DataProcessorType.ButterworthBandpassFilter)
         self.lowcut = lowcut
         self.highcut = highcut
@@ -170,7 +170,7 @@ class ButterworthBandpassFilter(IIRFilter):
 
 
 class ButterworthLowpassFilter(IIRFilter):
-    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 0):
+    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 1):
         super().__init__(data_processor_type=DataProcessorType.ButterworthLowpassFilter)
         self.cutoff = cutoff
         self.fs = fs
@@ -194,7 +194,7 @@ class ButterworthLowpassFilter(IIRFilter):
 
 
 class ButterworthHighpassFilter(IIRFilter):
-    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 0):
+    def __init__(self, cutoff: float = 0, fs: float = 0, order: int = 1):
         super().__init__(data_processor_type=DataProcessorType.ButterworthHighpassFilter)
         self.cutoff = cutoff
         self.fs = fs
@@ -230,7 +230,7 @@ class RootMeanSquare(DataProcessor):
     def evoke_function(self):
         self._data_buffer_size = round(self.fs * self.window * 0.001)
         if self._data_buffer_size<=0:
-            raise DataProcessorEvokeFailedError('self._data_buffer_size = round(self.fs * self.window * 0.001) returns zero.')
+            raise DataProcessorEvokeFailedError('Data buffer size cannot be zero')
         self._data_buffer = np.zeros((self.channel_num, self._data_buffer_size))
 
     def set_data_processor_params(self, fs, window):
