@@ -16,8 +16,8 @@ AppConfigs(_reset=True)  # create the singleton app configs object
 
 from rena.MainWindow import MainWindow
 from rena.startup import load_settings
-from rena.tests.TestStream import LSLTestStream
-from rena.tests.test_utils import update_test_cwd
+from tests.TestStream import LSLTestStream
+from tests.test_utils import update_test_cwd
 
 
 @pytest.fixture

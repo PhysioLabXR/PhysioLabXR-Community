@@ -325,3 +325,7 @@ def get_video_device_id(video_device_name) -> int:
 
 def remove_script_from_settings(script_id):
     Presets().script_presets.pop(script_id)
+
+
+def get_stream_data_type(stream_name) -> DataType:
+    return Presets().stream_presets[stream_name].data_type

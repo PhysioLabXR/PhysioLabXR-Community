@@ -38,6 +38,41 @@ def LSLTestStream(stream_name, n_channels=81, srate=2048):
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
 
+def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
+    print('Test stream name is ' + stream_name)
+    type = 'EEG'
+    info = StreamInfo(stream_name, type, n_channels, srate, 'double64', 'someuuid1234')
+
+    # next make an outlet
+    outlet = StreamOutlet(info)
+
+    print("now sending data...")
+    start_time = local_clock()
+    # print("Example")
+    # print(sample.dtype)
+    sent_samples = 0
+    sent_id = 0
+    sent_data = []
+    print(f'dim:{sample.shape}')
+    # time.sleep(2)
+
+    while True:
+        if sent_samples > sample.shape[-1]:
+            break
+        elapsed_time = local_clock() - start_time
+        required_samples = int(srate * elapsed_time) - sent_samples
+        for sample_ix in range(required_samples):
+            outlet.push_sample(sample[:, sent_id])
+            sent_id += 1
+            if sent_id == sample.shape[1]:
+                break
+        if sent_id == sample.shape[1]:
+            break
+        sent_samples += required_samples
+        # now send it and wait for a bit before trying again.
+        time.sleep(1e-3)
+    del outlet
+
 def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
     topic = stream_name
 

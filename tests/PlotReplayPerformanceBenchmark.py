@@ -2,9 +2,8 @@ import math
 import pickle
 
 import numpy as np
-from matplotlib import pyplot as plt
 
-from rena.tests.test_utils import update_test_cwd, plot_viz_benchmark_results
+from tests.test_utils import update_test_cwd, plot_viz_benchmark_results
 
 metrics = ['viz fps']
 num_streams_to_test = [1, 3, 7]

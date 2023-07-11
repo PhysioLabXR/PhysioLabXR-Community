@@ -4,7 +4,7 @@ import cv2
 
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 
 data_root = 'C:/Users/S-Vec/Dropbox/research/RealityNavigation/Data/Pilot/'
 data_fn = '03_22_2021_17_03_52-Exp_realitynavigation-Sbj_0-Ssn_2.dats'

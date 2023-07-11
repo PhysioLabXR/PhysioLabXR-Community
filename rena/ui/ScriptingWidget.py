@@ -145,7 +145,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_timer.start()
 
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
-        self.run_signal_timer.setInterval(forward_interval)
+        self.run_signal_timer.setInterval(int(forward_interval))
         self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,
