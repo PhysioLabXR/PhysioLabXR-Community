@@ -10,7 +10,7 @@ from datetime import datetime
 from PyQt6.QtCore import QTimer
 
 from rena import config
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 from rena.utils.ui_utils import dialog_popup
 
 

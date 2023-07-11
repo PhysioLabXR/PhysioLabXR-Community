@@ -1,7 +1,7 @@
 import os
 import pickle
 
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 
 directory = f'C:/Users/LLINC-Lab/Documents/Recordings'
 

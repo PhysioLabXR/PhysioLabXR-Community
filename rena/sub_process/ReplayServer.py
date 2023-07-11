@@ -11,7 +11,7 @@ from pylsl import pylsl
 
 from rena import config, shared
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 
 
 class ReplayServer(threading.Thread):

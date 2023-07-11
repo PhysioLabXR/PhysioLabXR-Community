@@ -16,10 +16,17 @@ class LinechartVizMode(Enum):
 
 class RecordingFileFormat(Enum):
     dats = "data arrays and timestamps (.dats)"
-    pickle = "pickle (.pkl)"
-    matlab = "matlab (.mat)"
+    pickle = "pickle (.p)"
+    matlab = "matlab (.m)"
     csv = "comma separated values (.csv)"
     xdf = "extended data format (.xdf)"
+
+    def get_file_extension(self):
+        return self.value.split('(')[1].strip(')')
+
+    @classmethod
+    def get_default_file_extension(cls):
+        return cls.dats.get_file_extension()
 
 
 class AppConfigsEncoder(json.JSONEncoder):
