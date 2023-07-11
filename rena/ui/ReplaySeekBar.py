@@ -1,24 +1,7 @@
 # This Python file uses the following encoding: utf-8
-import os
-import pickle
-import time
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import QtWidgets, uic, sip
+from PyQt6 import QtWidgets, uic
 
-import numpy as np
-from datetime import datetime
-
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QFileDialog
-
-import rena.config
-from rena.utils.data_utils import RNStream
-from rena.utils.ui_utils import dialog_popup
-import pylsl
-from rena.threadings.workers import PlaybackWorker
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
 
 class ReplaySeekBar(QtWidgets.QWidget):
     def __init__(self, parent, endTime):

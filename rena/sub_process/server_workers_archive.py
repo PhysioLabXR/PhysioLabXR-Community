@@ -1,5 +1,5 @@
 import pyqtgraph as pg
-from PyQt5.QtCore import (QObject, pyqtSignal)
+from PyQt6.QtCore import (QObject, pyqtSignal)
 
 from rena.sub_process.TCPInterface import RenaTCPInterface, RenaTCPAddDSPWorkerRequestObject
 

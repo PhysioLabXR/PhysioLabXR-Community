@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 from rena import ui_shared
 from rena.ui_shared import minus_icon

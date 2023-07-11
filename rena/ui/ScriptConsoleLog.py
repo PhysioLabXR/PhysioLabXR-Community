@@ -1,9 +1,9 @@
 import copy
 from datetime import datetime
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QMutex
-from PyQt5.QtWidgets import QLabel, QHBoxLayout
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QMutex
+from PyQt6.QtWidgets import QLabel, QHBoxLayout
 
 from rena.config import CONSOLE_LOG_MAX_NUM_ROWS
 

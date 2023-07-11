@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>779</height>
+    <width>600</width>
+    <height>100</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,43 +18,17 @@
     <widget class="QWidget" name="widget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QWidget" name="widget_4" native="true">
-        <property name="layoutDirection">
-         <enum>Qt::LeftToRight</enum>
+       <widget class="QLabel" name="progress_label">
+        <property name="text">
+         <string>TextLabel</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QWidget" name="widget_6" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <item>
-             <widget class="QLabel" name="progress_label">
-              <property name="text">
-               <string>TextLabel</string>
-              </property>
-             </widget>
-            </item>
-            <item alignment="Qt::AlignHCenter">
-             <widget class="QPushButton" name="finish_button">
-              <property name="maximumSize">
-               <size>
-                <width>256</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>OK</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QWidget" name="widget_7" native="true">
-           <layout class="QVBoxLayout" name="verticalLayout"/>
-          </widget>
-         </item>
-        </layout>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter">
+       <widget class="QPushButton" name="finish_button">
+        <property name="text">
+         <string>OK</string>
+        </property>
        </widget>
       </item>
      </layout>

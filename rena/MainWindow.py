@@ -1,24 +1,25 @@
 import os
-import random
 import sys
-import time
 import webbrowser
+from typing import Dict
 
-import pyqtgraph as pg
-from PyQt5 import QtWidgets, sip, uic
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtWidgets import QWidget
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QMessageBox
 
-from exceptions.exceptions import RenaError
+from rena.exceptions.exceptions import RenaError
 from rena import config
-from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.configs.configs import AppConfigs
+from rena.presets.Presets import Presets, PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
-from rena.ui.VideoDeviceWidget import VideoDeviceWidget
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
+from rena.ui.VideoWidget import VideoWidget
+from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.utils.settings_utils import get_presets_by_category, get_childKeys_for_group, create_default_preset, \
-    check_preset_exists, get_experiment_preset_streams
+from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
+    create_default_zmq_preset
 
 try:
     import rena.config
@@ -28,16 +29,13 @@ except ModuleNotFoundError as e:
 import rena.threadings.workers as workers
 from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
-from rena.ui.SettingsTab import SettingsTab
+from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
-from rena.utils.data_utils import window_slice
-from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, \
-    process_preset_create_TImmWave_interface_startsensor, DataBuffer
+from rena.utils.buffers import DataBuffer
 from rena.utils.ui_utils import dialog_popup, \
-    init_camera_widget, convert_rgb_to_qt_image, another_window
+    another_window
 
 import numpy as np
-import collections
 
 
 # Define function to import external files when using PyInstaller.
@@ -51,7 +49,6 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, app, ask_to_close=True, *args, **kwargs):
@@ -64,14 +61,14 @@ class MainWindow(QtWidgets.QMainWindow):
         :param kwargs:
         """
         super().__init__(*args, **kwargs)
+        SplashLoadingTextNotifier().set_loading_text('Creating main window...')
         self.ui = uic.loadUi("ui/mainwindow.ui", self)
-        self.setWindowTitle('Reality Navigation')
+        self.setWindowTitle('RenaLabApp')
         self.app = app
         self.ask_to_close = ask_to_close
 
         ############
-        self.stream_widgets = {}  # key: stream -> value: stream_widget
-        self.video_device_widgets = {}  # key: stream -> value: stream_widget
+        self.stream_widgets: Dict[str, StreamWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors
@@ -80,12 +77,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ######### init server
         print('Creating Rena Client')
-        self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
-                                                port_id=config.rena_server_port,
-                                                identity='client')
+        # self.rena_dsp_client = RenaTCPInterface(stream_name=config.rena_server_name,
+        #                                         port_id=config.rena_server_port,
+        #                                         identity='client')
 
         #########
-        # meta data udpate timer
+        # meta data update timer
         self.meta_data_update_timer = QTimer()
         self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
         self.meta_data_update_timer.timeout.connect(self.update_meta_data)
@@ -125,9 +122,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionSettings.triggered.connect(self.fire_action_settings)
 
         # create the settings window
-        self.settings_tab = SettingsTab(self)
+        self.settings_widget = SettingsWidget(self)
         self.settings_window = another_window('Settings')
-        self.settings_window.get_layout().addWidget(self.settings_tab)
+        self.settings_window.get_layout().addWidget(self.settings_widget)
         self.settings_window.hide()
 
         # global buffer object for visualization, recording, and scripting
@@ -135,36 +132,54 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def add_btn_clicked(self):
         """
-        This should be the only entry point to adding a stream widget
+        This is the only entry point to adding a stream widget
         :return:
         """
+        # self.addStreamWidget.add_btn.setEnabled(False)
+        # self.loading_dialog = LoadingDialog(self, message=f"Adding stream {self.addStreamWidget.get_selected_stream_name()}")
+        # self.loading_dialog.show()
+        # task_thread = LongTaskThread(self, "process_add")
+        # task_thread.completed.connect(self.add_completed)
+        # task_thread.start()
+        self.process_add()
+
+    def add_completed(self):
+        self.addStreamWidget.add_btn.setEnabled(True)
+        self.loading_dialog.close()
+
+    def process_add(self):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text, data_type, port, networking_interface = self.addStreamWidget.get_selected_stream_name(), \
+        selected_text, data_type, port  = self.addStreamWidget.get_selected_stream_name(), \
                                                                self.addStreamWidget.get_data_type(), \
-                                                               self.addStreamWidget.get_port_number(), \
-                                                               self.addStreamWidget.get_networking_interface()
+                                                               self.addStreamWidget.get_port_number()
         if len(selected_text) == 0:
             return
         try:
             if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
-            selected_type = self.addStreamWidget.get_current_selected_type()
-            if selected_type == 'video':  # add video device
-                self.init_video_device(selected_text)
-            elif selected_type == 'Device':  # if this is a device preset
+
+            selected_type, is_new_preset = self.addStreamWidget.get_current_selected_type()
+            if is_new_preset:
+                self.create_preset(selected_text, selected_type, data_type=data_type, port=port)
+                self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
+
+            if selected_type == PresetType.WEBCAM:  # add video device
+                self.init_video_device(selected_text, video_preset_type=selected_type)
+            elif selected_type == PresetType.MONITOR:
+                self.init_video_device(selected_text, video_preset_type=selected_type)
+            elif selected_type == PresetType.CUSTOM:  # if this is a device preset
+                raise NotImplementedError
                 self.init_device(selected_text)  # add device stream
-            elif selected_type == 'LSL' or selected_type == 'ZMQ':
-                self.init_network_streaming(selected_text, networking_interface, data_type, port)  # add lsl stream
-            elif selected_type == 'exp':  # add multiple streams from an experiment preset
+            elif selected_type == PresetType.LSL:
+                self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
+            elif selected_type == PresetType.ZMQ:
+                self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
+            elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
                 streams_for_experiment = get_experiment_preset_streams(selected_text)
                 self.add_streams_to_visualize(streams_for_experiment)
-            elif selected_type == 'other':  # add a previous unknown lsl stream
-                self.create_preset(selected_text, data_type, port, networking_interface)
-                self.scripting_tab.update_script_widget_input_combobox()  # add thew new preset to the combo box
-                self.init_network_streaming(selected_text, data_type=data_type, port_number=port)  # TODO this can also be a device or experiment preset
             else:
                 raise Exception("Unknow preset type {}".format(selected_type))
             self.update_active_streams()
@@ -172,12 +187,23 @@ class MainWindow(QtWidgets.QMainWindow):
             dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
         self.addStreamWidget.check_can_add_input()
 
-    def create_preset(self, stream_name, data_type, port, networking_interface, num_channels=1, nominal_sample_rate=None):
-        create_default_preset(stream_name, data_type, port, networking_interface, num_channels, nominal_sample_rate)  # create the preset
+    def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
+        if preset_type == PresetType.LSL:
+            create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+        elif preset_type == PresetType.ZMQ:
+            try:
+                assert 'port' in kwargs.keys()
+            except AssertionError:
+                raise ValueError("Port number must be specified for ZMQ preset")
+            create_default_zmq_preset(stream_name, kwargs['port'], num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+        elif preset_type == PresetType.CUSTOM:
+            raise NotImplementedError
+        else:
+            raise ValueError(f"Unknown preset type {preset_type}")
         self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
-        self.sensorTabSensorsHorizontalLayout.removeWidget(target)
+        self.streamsHorizontalLayout.removeWidget(target)
         self.update_active_streams()
         self.addStreamWidget.check_can_add_input()  # check if the current selected preset has already been added
 
@@ -197,14 +223,15 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_stop_all_btn_clicked(self):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
-    def init_video_device(self, video_device_name):
+    def init_video_device(self, video_device_name, video_preset_type):
         widget_name = video_device_name + '_widget'
-        widget = VideoDeviceWidget(main_parent=self,
-                                   parent_layout=self.sensorTabSensorsHorizontalLayout,
-                                   video_device_name=video_device_name,
-                                   insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
+        widget = VideoWidget(parent_widget=self,
+                           parent_layout=self.camHorizontalLayout,
+                             video_preset_type=video_preset_type,
+                           video_device_name=video_device_name,
+                           insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
-        self.video_device_widgets[video_device_name] = widget
+        self.stream_widgets[video_device_name] = widget
 
     def add_streams_to_visualize(self, stream_names):
         for stream_name in stream_names:
@@ -218,39 +245,35 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
-        # switch tab to visulalization
-        self.ui.tabWidget.setCurrentWidget(self.ui.tabWidget.findChild(QWidget, 'visualization_tab'))
+        # switch tab to stream
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
         self.add_streams_to_visualize(stream_names)
-        # for stream_name in stream_names:
-        #     if self.stream_widgets[stream_name].is_streaming():  # if not running click start stream
-        #         self.stream_widgets[stream_name].StartStopStreamBtn.click()
 
-    def init_network_streaming(self, networking_stream_name, networking_interface='LSL', data_type=None, port_number=None, worker=None):
-        error_initialization = False
-
-        # set up UI elements
-        widget_name = networking_stream_name + '_widget'
-        stream_widget = StreamWidget(main_parent=self,
-                                     parent=self.sensorTabSensorsHorizontalLayout,
-                                     stream_name=networking_stream_name,
-                                     data_type=data_type,
-                                     worker = worker,
-                                     networking_interface=networking_interface,
-                                     port_number=port_number,
-                                     insert_position=self.sensorTabSensorsHorizontalLayout.count() - 1)
-        start_stop_stream_btn, remove_stream_btn, pop_window_btn = stream_widget.StartStopStreamBtn, stream_widget.RemoveStreamBtn, stream_widget.PopWindowBtn
+    def init_LSL_streaming(self, stream_name, data_type=None):
+        widget_name = stream_name + '_widget'
+        stream_widget = LSLWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 data_type=data_type,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
 
-        self.stream_widgets[networking_stream_name] = stream_widget
-
-        if error_initialization:
-            remove_stream_btn.click()
-        config.settings.endGroup()
+    def init_ZMQ_streaming(self, topic_name, port_number, data_type):
+        widget_name = topic_name + '_widget'
+        stream_widget = ZMQWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 topic_name=topic_name,
+                                  port_number=port_number,
+                                 data_type=data_type,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[topic_name] = stream_widget
 
     def update_meta_data(self):
         # get the stream viz fps
-        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()] + [v.get_fps() for v in self.video_device_widgets.values()]])
-        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()] + [v.get_pull_data_delay() for v in self.video_device_widgets.values()]])
+        fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()]])
+        pull_data_delay_list = np.array([[s.get_pull_data_delay() for s in self.stream_widgets.values()]])
         if len(fps_list) == 0:
             return
         if np.all(fps_list == 0):
@@ -276,29 +299,6 @@ class MainWindow(QtWidgets.QMainWindow):
             worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
             config.settings.endGroup()
             self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
-        # TI mmWave connection
-
-        # elif device_name not in self.device_workers.keys() and device_type == 'TImmWave_6843AOP':
-        #     print('mmWave test')
-        #     try:
-        #         # mmWave connect, send config, start sensor
-        #         num_range_bin = config.settings.value('NumRangeBin')
-        #         Dport = config.settings.value['Dport(Standard)']
-        #         Uport = config.settings.value['Uport(Enhanced)']
-        #         config_path = config.settings.value['ConfigPath']
-        #
-        #         MmWaveSensorLSLInterface = process_preset_create_TImmWave_interface_startsensor(
-        #             num_range_bin, Dport, Uport, config_path)
-        #     except AssertionError as e:
-        #         dialog_popup(str(e))
-        #         config.settings.endGroup()
-        #         return None
-        #     self.device_workers[device_name] = workers.MmwWorker(mmw_interface=MmWaveSensorLSLInterface)
-        #     worker_thread = pg.QtCore.QThread(self)
-        #     self.worker_threads[device_name] = worker_thread
-        #     self.device_workers[device_name].moveToThread(self.worker_threads[device_name])
-        #     worker_thread.start()
-        #     self.init_network_streaming(device_name)  # TODO test needed
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
@@ -318,22 +318,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         if self.ask_to_close:
-            reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit?',
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
         else:
-            reply = QMessageBox.Yes
-        if reply == QMessageBox.Yes:
+            reply = QMessageBox.StandardButton.Yes
+        if reply == QMessageBox.StandardButton.Yes:
             if self.settings_window is not None:
                 self.settings_window.close()
-            remove_btns = [x.RemoveStreamBtn for x in self.stream_widgets.values()]
-            [x.click() for x in remove_btns]
 
             # close other tabs
+            stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
+            [c() for c in stream_close_calls]
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
 
+            Presets().__del__()
+            AppConfigs().__del__()
             event.accept()
-            self.app.quit()
         else:
             event.ignore()
 
@@ -350,8 +351,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()
 
     def fire_action_settings(self):
+        self.open_settings_tab()
+
+    def open_settings_tab(self, tab_name: str='Streams'):
         self.settings_window.show()
         self.settings_window.activateWindow()
+        if tab_name is not None:
+            self.settings_widget.switch_to_tab(tab_name)
 
     def get_added_stream_names(self):
-        return list(self.stream_widgets.keys()) + list(self.video_device_widgets.keys())
+        return list(self.stream_widgets.keys())
+
+    def is_any_stream_widget_added(self):
+        return len(self.stream_widgets) > 0
+
+    def is_any_streaming(self):
+        """
+        Check if any stream is streaming. Checks if any stream widget or video device widget is streaming.
+        @return: return True if any network streams or video device is streaming, False otherwise
+        """
+        is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
+        return np.any(is_stream_widgets_streaming)
+

@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from rena.interfaces.OpenBCIInterface import OpenBCIInterface
-from rena.interfaces.UnityLSLInterface import UnityLSLInterface
 
 
 

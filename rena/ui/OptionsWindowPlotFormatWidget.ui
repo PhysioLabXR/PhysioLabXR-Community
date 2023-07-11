@@ -17,10 +17,10 @@
    <set>Qt::ImhNone</set>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item alignment="Qt::AlignTop">
+   <item>
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
@@ -35,34 +35,7 @@
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QWidget" name="NominalSamplingRateWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Plot Time Duration</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="plotTimeDurationLineEdit"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QWidget" name="PlotTimeDurationWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Nominal Sampling Rate</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="nominalSamplingRateLineEdit"/>
-          </item>
-         </layout>
+         <layout class="QHBoxLayout" name="horizontalLayout_2"/>
         </widget>
        </item>
       </layout>
@@ -109,18 +82,7 @@
           </item>
           <item>
            <widget class="QWidget" name="widget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_8">
-             <item>
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>Scaling Factor</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="imageScalingFactorLineEdit"/>
-             </item>
-            </layout>
+            <layout class="QVBoxLayout" name="verticalLayout_8"/>
            </widget>
           </item>
           <item>
@@ -129,50 +91,206 @@
              <item>
               <widget class="QLabel" name="label_6">
                <property name="text">
-                <string>Image Format</string>
+                <string>Image format</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="imageFormatComboBox">
-               <item>
-                <property name="text">
-                 <string>RGB</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>PixelMap</string>
-                </property>
-               </item>
-              </widget>
+              <widget class="QComboBox" name="imageFormatComboBox"/>
              </item>
             </layout>
            </widget>
           </item>
           <item>
            <widget class="QWidget" name="ChannelFormatWidget" native="true">
-            <layout class="QVBoxLayout" name="verticalLayout_7">
+            <layout class="QVBoxLayout" name="verticalLayout_7"/>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="imageFormatInfoLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>shape valid</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="display_options" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_12">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QWidget" name="display_scaling_widget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
-              <widget class="QLabel" name="label_7">
+              <widget class="QLabel" name="label_4">
                <property name="text">
-                <string>Channel Format</string>
+                <string>Display scaling</string>
                </property>
               </widget>
              </item>
-             <item>
-              <widget class="QComboBox" name="channelFormatCombobox">
-               <item>
-                <property name="text">
-                 <string>Channel First</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Channel Last</string>
-                </property>
-               </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="rgb_display_options" native="true">
+            <layout class="QFormLayout" name="formLayout_2">
+             <property name="horizontalSpacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_17">
+               <property name="text">
+                <string>Red display value min</string>
+               </property>
               </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="image_level_rmin_line_edit"/>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="image_level_gmin_line_edit"/>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="image_level_rmax_line_edit"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_18">
+               <property name="text">
+                <string>Red display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_19">
+               <property name="text">
+                <string>Green display value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_20">
+               <property name="text">
+                <string>Green display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="image_level_gmax_line_edit"/>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_21">
+               <property name="text">
+                <string>Blue display value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QLineEdit" name="image_level_bmin_line_edit"/>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_22">
+               <property name="text">
+                <string>Blue display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QLineEdit" name="image_level_bmax_line_edit"/>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Channel format</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="channelFormatCombobox"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="pixelmap_display_options" native="true">
+            <layout class="QFormLayout" name="formLayout">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_16">
+               <property name="text">
+                <string>Display value max</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Diaply value min</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="image_level_min_line_edit"/>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="image_level_max_line_edit"/>
+             </item>
+             <item row="2" column="0">
+              <widget class="QWidget" name="ColormapWidget" native="true">
+               <layout class="QHBoxLayout" name="horizontalLayout_3">
+                <item>
+                 <widget class="QLabel" name="label">
+                  <property name="text">
+                   <string>Color map</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QComboBox" name="combobox_image_cmap"/>
              </item>
             </layout>
            </widget>
@@ -181,9 +299,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="imageFormatInfoLabel">
+        <widget class="QLabel" name="display_options_valid_label">
          <property name="text">
-          <string>TextLabel</string>
+          <string>display options valid</string>
          </property>
         </widget>
        </item>
@@ -243,6 +361,69 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Spectrogram</string>
+      </attribute>
+      <layout class="QGridLayout" name="spectrogram_gridLayout">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Overlap between segments (seconds)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="line_edit_time_per_segments"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="text">
+          <string>Time per segment (seconds)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_13">
+         <property name="text">
+          <string>Color map</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QComboBox" name="comboBox_spectrogram_cmap"/>
+       </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="line_edit_overlap_between_segments"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_invalid_spectrogram_param">
+         <property name="font">
+          <font>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Invalid parameters: Time per segment must be greater than overlap between segments!</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Spectragrom Display Min Percentile (%)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_15">
+         <property name="text">
+          <string>Spectrogram Display Max Percentile (%)</string>
+         </property>
         </widget>
        </item>
       </layout>

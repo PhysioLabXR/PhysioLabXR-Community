@@ -3,18 +3,20 @@ import os
 import sys
 import time
 
-from PyQt5 import QtWidgets, uic
-import pyqtgraph as pg
+from PyQt6 import QtWidgets, uic
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer, QSettings, QObject, pyqtSignal
+from PyQt6.QtCore import QTimer, QSettings, QObject, pyqtSignal
+from PyQt6.QtWidgets import QDialogButtonBox
 
-from rena import config, ui_shared
+from rena import ui_shared
+from rena.config import settings
+from rena.configs.configs import AppConfigs, RecordingFileFormat
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
-from rena.ui_shared import start_stream_icon, stop_stream_icon
-from rena.utils.data_utils import RNStream
+from rena.ui_shared import start_stream_icon, stop_stream_icon, stop_recording_text, start_recording_text
+from rena.utils.RNStream import RNStream
 from rena.utils.ui_utils import dialog_popup
 import subprocess
 
@@ -41,10 +43,6 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.save_path = ''
 
-        self.timer = QTimer()
-        self.timer.setInterval(config.EVICTION_INTERVAL)
-        self.timer.timeout.connect(self.evict_buffer)
-
         self.recording_byte_count = 0
 
         self.experimentNameTextEdit.textChanged.connect(self.update_ui_save_file)
@@ -53,6 +51,8 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.update_ui_save_file()
 
+        self.timer = QTimer()
+
     def start_stop_recording_pressed(self):
         if self.is_recording:
             self.stop_recording_btn_pressed()
@@ -60,17 +60,25 @@ class RecordingsTab(QtWidgets.QWidget):
             self.start_recording_btn_pressed()
 
     def start_recording_btn_pressed(self):
-        if not (len(self.parent.stream_widgets) >= 1 or len(self.parent.cam_workers) >= 1):
-            self.parent.current_dialog = dialog_popup('You need at least one LSL Stream or Capture opened to start recording!')
+        if not self.parent.is_any_streaming():
+            self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
+                                                      title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
         self.recording_buffer = {}  # clear buffer
         self.is_recording = True
         self.recording_byte_count = 0
-        self.StartStopRecordingBtn.setText(ui_shared.stop_recording_text)
+        self.StartStopRecordingBtn.setText(stop_recording_text)
         self.StartStopRecordingBtn.setIcon(stop_stream_icon)
 
+        # disable the text edit fields
+        self.experimentNameTextEdit.setEnabled(False)
+        self.subjectTagTextEdit.setEnabled(False)
+        self.sessionTagTextEdit.setEnabled(False)
+
+        self.timer.setInterval(AppConfigs.eviction_interval)
+        self.timer.timeout.connect(self.evict_buffer)
         self.timer.start()
 
     def stop_recording_btn_pressed(self):
@@ -83,14 +91,18 @@ class RecordingsTab(QtWidgets.QWidget):
         self.update_file_size_label()
 
         # convert file format
-        if config.settings.value('file_format') != config.FILE_FORMATS[0]:
-            self.convert_file_format(self.save_path, config.settings.value('file_format'))
+        if AppConfigs().recording_file_format != RecordingFileFormat.dats:
+            self.conversion_dialog = self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
         else:
-            self.parent.current_dialog = dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless')
+            dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok, main_parent=self.parent)
 
-        self.StartStopRecordingBtn.setText(ui_shared.start_recording_text)
+        self.StartStopRecordingBtn.setText(start_recording_text)
         self.StartStopRecordingBtn.setIcon(start_stream_icon)
 
+        # reenable the text edit fields
+        self.experimentNameTextEdit.setEnabled(True)
+        self.subjectTagTextEdit.setEnabled(True)
+        self.sessionTagTextEdit.setEnabled(True)
 
     def update_recording_buffer(self, data_dict: dict):
         if self.is_recording:
@@ -124,20 +136,24 @@ class RecordingsTab(QtWidgets.QWidget):
             pass
 
     def update_ui_save_file(self):
-        self.FileSaveLabel.setText(ui_shared.recording_tab_file_save_label_prefix + self.generate_save_path())
+        if AppConfigs().recording_file_format == RecordingFileFormat.csv:
+            self.FileSaveLabel.setText(f'{ui_shared.recording_tab_file_save_label_prefix_csv} {self.generate_save_path().strip(RecordingFileFormat.get_default_file_extension())}')
+        else:
+            self.FileSaveLabel.setText(ui_shared.recording_tab_file_save_label_prefix + self.generate_save_path().replace(RecordingFileFormat.get_default_file_extension(), AppConfigs().recording_file_format.get_file_extension()))
 
     def on_option_button_clicked(self):
-        self.parent.fire_action_settings()
+        self.parent.open_settings_tab('recording')
 
     def generate_save_path(self):
         # datetime object containing current date and time
         now = datetime.now()
         dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
-        return os.path.join(config.settings.value('recording_file_location'),
-                            '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}.dats'.format(dt_string,
+        return os.path.join(settings.value('recording_file_location'),
+                            '{0}-Exp_{1}-Sbj_{2}-Ssn_{3}{4}'.format(dt_string,
                                                                       self.experimentNameTextEdit.toPlainText(),
                                                                       self.subjectTagTextEdit.toPlainText(),
-                                                                      self.sessionTagTextEdit.toPlainText()))
+                                                                      self.sessionTagTextEdit.toPlainText(),
+                                                                    RecordingFileFormat.get_default_file_extension()))
 
     def evict_buffer(self):
         # print(self.recording_buffer)
@@ -152,18 +168,19 @@ class RecordingsTab(QtWidgets.QWidget):
     def open_recording_directory(self):
         try:
             if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'msys':
-                os.startfile(config.settings.value('recording_file_location'))
+                os.startfile(settings.value('recording_file_location'))
             else:
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
-                subprocess.call([opener, "-R", config.settings.value('recording_file_location')])
+                subprocess.call([opener, "-R", settings.value('recording_file_location')])
         except FileNotFoundError:
             self.parent.current_dialog = dialog_popup(msg="Recording directory does not exist. "
                              "Please use a valid directory in the Recording Tab.", title="Error")
 
-    def convert_file_format(self, file_path, file_format):
+    def convert_file_format(self, file_path, file_format: RecordingFileFormat):
         #first load the .dats back
         recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
         recordingConversionDialog.show()
+        return recordingConversionDialog
 
 
 

@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtGui import QIntValidator
 
 from rena.ui_shared import minus_icon
 

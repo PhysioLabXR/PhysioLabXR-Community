@@ -1,12 +1,11 @@
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSignal, QTimer
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
 
-from rena import config
+from rena.configs.configs import AppConfigs
 from rena.threadings.workers import PlaybackWorker
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon, terminate_icon
+from rena.ui_shared import start_stream_icon, pause_icon, terminate_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):
@@ -31,7 +30,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         # create worker listening the playback position from the server
         # Initialize playback worker
         self.playback_command_interface_timer = QTimer()
-        self.playback_command_interface_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
+        self.playback_command_interface_timer.setInterval(int(float(AppConfigs().visualization_refresh_interval)))
         self.playback_command_interface_timer.timeout.connect(self.ticks)
 
         self.playback_thread = pg.QtCore.QThread(self.parent)
@@ -134,7 +133,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         # relay the signal to the parent (replay tab) and then use that information in a method in replay tab
         if play_pause_command == 'pause':
             self.pause_replay()
-        else: # play_pause_command is 'resume':
+        else:  # play_pause_command is 'resume':
             self.resume_replay()
 
     def replay_stopped_signal_callback(self):

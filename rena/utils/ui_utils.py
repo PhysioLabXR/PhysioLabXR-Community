@@ -1,22 +1,17 @@
-import time
-import cv2
-import qimage2ndarray
-# from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QFile, QTextStream
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
-    QGraphicsView, QGraphicsScene, QCheckBox, QPushButton, QScrollArea
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QWidget
-import pyqtgraph as pg
-from qimage2ndarray.dynqt import QtGui
+from enum import Enum
+from typing import Type
 
-from rena import config_ui, config
-import matplotlib.pyplot as plt
+from PyQt6.QtCore import Qt
+from PyQt6 import QtWidgets, QtCore
+from PyQt6.QtCore import QFile, QTextStream
+from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
+    QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea, QApplication
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from rena.utils.settings_utils import get_all_preset_names, get_stream_preset_names
-from rena.utils.video_capture_utils import get_working_camera_ports
+from rena.config import settings
+from rena.config_ui import button_style_classic
+from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
+from rena.scripting.script_utils import validate_python_script_class
 
 
 def init_view(label, container, label_bold=True, position="centertop", vertical=True):
@@ -31,27 +26,27 @@ def init_view(label, container, label_bold=True, position="centertop", vertical=
 
         # positions
         if position == "centertop":
-            ql.setAlignment(QtCore.Qt.AlignTop)
-            ql.setAlignment(QtCore.Qt.AlignCenter)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         elif position == "center":
-            ql.setAlignment(QtCore.Qt.AlignCenter)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         elif position == "rightbottom":
-            ql.setAlignment(QtCore.Qt.AlignRight)
-            ql.setAlignment(QtCore.Qt.AlignBottom)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom)
 
         elif position == "righttop":
-            ql.setAlignment(QtCore.Qt.AlignRight)
-            ql.setAlignment(QtCore.Qt.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         elif position == "lefttop":
-            ql.setAlignment(QtCore.Qt.AlignLeft)
-            ql.setAlignment(QtCore.Qt.AlignTop)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         elif position == "leftbottom":
-            ql.setAlignment(QtCore.Qt.AlignLeft)
-            ql.setAlignment(QtCore.Qt.AlignBottom)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+            ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom)
 
         ql.setText(label)
         vl.addWidget(ql)
@@ -93,7 +88,7 @@ def init_inputBox(parent, label=None, label_bold=False, default_input=None):
     return layout, textbox
 
 
-def init_button(parent, label=None, function=None, style=config_ui.button_style_classic):
+def init_button(parent, label=None, function=None, style=button_style_classic):
     btn = QtWidgets.QPushButton(text=label)
     if function:
         btn.clicked.connect(function)
@@ -133,26 +128,26 @@ def init_scroll_label(parent, text, max_width=None, max_hight=None, size=None):
 
 
 
-def init_camera_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
-    container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
-
-    camera_img_label = QLabel()
-    _, label_btn_layout = init_container(parent=layout, vertical=False)
-    cam_id_label = QLabel(label_string)
-    cam_id_label.setStyleSheet("font: bold 14px;")
-    label_btn_layout.addWidget(cam_id_label)
-    remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Capture')
-    layout.addWidget(camera_img_label)
-
-    return container_widget, layout, remove_cam_btn, camera_img_label
+# def init_camera_widget(parent, label_string, insert_position):
+#     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+#     container_widget.setFixedWidth(120 + max(config_ui.cam_display_width, config_ui.capture_display_width))
+#
+#     camera_img_label = QLabel()
+#     _, label_btn_layout = init_container(parent=layout, vertical=False)
+#     cam_id_label = QLabel(label_string)
+#     cam_id_label.setStyleSheet("font: bold 14px;")
+#     label_btn_layout.addWidget(cam_id_label)
+#     remove_cam_btn = init_button(parent=label_btn_layout, label='Remove Capture')
+#     layout.addWidget(camera_img_label)
+#
+#     return container_widget, layout, remove_cam_btn, camera_img_label
 
 
 def init_spec_view(parent, label, graph=None):
     if label:
         ql = QLabel()
-        ql.setAlignment(QtCore.Qt.AlignTop)
-        ql.setAlignment(QtCore.Qt.AlignCenter)
+        ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        ql.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         ql.setText(label)
         parent.addWidget(ql)
 
@@ -161,38 +156,38 @@ def init_spec_view(parent, label, graph=None):
 
     scene = QGraphicsScene()
     spc_gv.setScene(scene)
-    spc_gv.setAlignment(QtCore.Qt.AlignCenter)
+    spc_gv.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
     if graph:
         scene.addItem(graph)
     # spc_gv.setFixedSize(config.WINDOW_WIDTH/4, config.WINDOW_HEIGHT/4)
     return scene
 
 
-def init_sensor_or_lsl_widget(parent, label_string, insert_position):
-    container_widget, layout = init_container(parent=parent, insert_position=insert_position)
-
-    _, top_layout = init_container(parent=layout, vertical=False)
-    ql = QLabel(config_ui.sensors_type_ui_name_dict[
-                    label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
-    ql.setStyleSheet("font: bold 14px;")
-    top_layout.addWidget(ql)
-
-    pop_window_btn = init_button(parent=top_layout, label=None)
-    remove_stream_btn = init_button(parent=layout, label=None)
-    signal_settings_btn = init_button(parent=layout, label=None)
-    start_stop_stream_btn = init_button(parent=layout, label=None)
-
-    # signal_settings_btn.setFixedWidth(200)
-    # pop_window_btn.setFixedWidth(200)
-    # remove_stream_btn.setFixedWidth(200)
-    # start_stop_stream_btn.setFixedWidth(200)
-    # start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
-    start_stop_stream_btn.setText("Start Stream")
-    remove_stream_btn.setText("Remove Stream")
-    pop_window_btn.setText("Pop Window")
-    signal_settings_btn.setText("Signal")
-
-    return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
+# def init_sensor_or_lsl_widget(parent, label_string, insert_position):
+#     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
+#
+#     _, top_layout = init_container(parent=layout, vertical=False)
+#     ql = QLabel(config_ui.sensors_type_ui_name_dict[
+#                     label_string] if label_string in config_ui.sensors_type_ui_name_dict.keys() else label_string)
+#     ql.setStyleSheet("font: bold 14px;")
+#     top_layout.addWidget(ql)
+#
+#     pop_window_btn = init_button(parent=top_layout, label=None)
+#     remove_stream_btn = init_button(parent=layout, label=None)
+#     signal_settings_btn = init_button(parent=layout, label=None)
+#     start_stop_stream_btn = init_button(parent=layout, label=None)
+#
+#     # signal_settings_btn.setFixedWidth(200)
+#     # pop_window_btn.setFixedWidth(200)
+#     # remove_stream_btn.setFixedWidth(200)
+#     # start_stop_stream_btn.setFixedWidth(200)
+#     # start_stop_stream_btn.setIcon(QIcon('../media/icons/stop.svg'))
+#     start_stop_stream_btn.setText("Start Stream")
+#     remove_stream_btn.setText("Remove Stream")
+#     pop_window_btn.setText("Pop Window")
+#     signal_settings_btn.setText("Signal")
+#
+#     return container_widget, layout, start_stop_stream_btn, pop_window_btn, signal_settings_btn, remove_stream_btn
 
 # def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 #     container_widget, layout = init_container(parent=parent, insert_position=insert_position)
@@ -271,13 +266,13 @@ def init_sensor_or_lsl_widget(parent, label_string, insert_position):
 
 
 class CustomDialog(QDialog):
-    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None):
+    def __init__(self, title, msg, dialog_name, enable_dont_show, parent=None, buttons=QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel):
         super().__init__(parent=parent)
 
         self.setWindowTitle(title)
         self.dialog_name = dialog_name
 
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        QBtn = buttons
 
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
@@ -287,8 +282,8 @@ class CustomDialog(QDialog):
         message = QLabel(str(msg))
 
         # center message and button
-        self.layout.addWidget(message, alignment=Qt.AlignCenter)
-        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignCenter)
+        self.layout.addWidget(message, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.buttonBox, alignment=Qt.AlignmentFlag.AlignCenter)
 
         if enable_dont_show:
             # self.dont_show_button = QPushButton()
@@ -300,14 +295,14 @@ class CustomDialog(QDialog):
 
     def toggle_dont_show(self):
         if self.dont_show_button.isChecked():
-            config.settings.setValue('show_' + self.dialog_name, False)
+            settings.setValue('show_' + self.dialog_name, False)
             print('will NOT show ' + self.dialog_name)
         else:
-            config.settings.setValue('show_' + self.dialog_name, True)
+            settings.setValue('show_' + self.dialog_name, True)
             print('will show ' + self.dialog_name)
 
 
-def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None):
+def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_dont_show=False, main_parent=None, buttons=QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel):
     if enable_dont_show:
         try:
             assert dialog_name is not None
@@ -315,19 +310,20 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
             print("dev: to use enable_dont_show, the dialog must have a unique identifier. Add the identifier by giving"
                   "the dialog_name parameter")
             raise AttributeError
-        if config.settings.contains('show_' + dialog_name) and config.settings.value('show_' + dialog_name) == 'false':
+        if settings.contains('show_' + dialog_name) and settings.value('show_' + dialog_name) == 'false':
             print('Skipping showing dialog ' + dialog_name)
             return
-    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show)  # If you pass self, the dialog will be centered over the main window as before.
+    dlg = CustomDialog(title, msg, dialog_name, enable_dont_show, buttons=buttons)  # If you pass self, the dialog will be centered over the main window as before.
     if main_parent:
         main_parent.current_dialog = dlg
     if mode=='modal':
         dlg.activateWindow()
-        if dlg.exec_():
+        if dlg.exec():
             print("Dialog popup")
         else:
             print("Dialog closed")
     elif mode=='modeless':
+        print("Showing modeless dialog")
         dlg.show()
         dlg.activateWindow()
     else:
@@ -353,37 +349,37 @@ def convert_numpy_to_uint8(array):
     return array.astype(np.uint8)
 
 
-def convert_rgb_to_qt_image(rgb_image, scaling_factor=1):
-    """Convert from an opencv image to QPixmap"""
-    h, w, ch = rgb_image.shape
-    bytes_per_line = ch * w
-    rgb_image = rgb_image.copy()
-    q_image = QtGui.QImage(rgb_image, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-    q_pixelmap = QPixmap.fromImage(q_image)
-    q_pixelmap = q_pixelmap.scaled(
-                                scaling_factor*w,
-                                scaling_factor*h,
-                                pg.QtCore.Qt.KeepAspectRatio) # rescale it
-    return q_pixelmap
+# def convert_rgb_to_qt_image(rgb_image, scaling_factor=1):
+#     """Convert from an opencv image to QPixmap"""
+#     h, w, ch = rgb_image.shape
+#     bytes_per_line = ch * w
+#     rgb_image = rgb_image.copy()
+#     q_image = QtGui.QImage(rgb_image, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+#     q_pixelmap = QPixmap.fromImage(q_image)
+#     q_pixelmap = q_pixelmap.scaled(
+#                                 scaling_factor*w,
+#                                 scaling_factor*h,
+#                                 pg.QtCore.Qt.KeepAspectRatio) # rescale it
+#     return q_pixelmap
 
-def convert_array_to_qt_heatmap(spec_array, scaling_factor):
-    h, w = spec_array.shape
-    heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
-    qpixmap = QPixmap(heatmap_qim)
-    qpixmap = qpixmap.scaled(scaling_factor*w, scaling_factor*h, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
-    return qpixmap
+# def convert_array_to_qt_heatmap(spec_array, scaling_factor):
+#     h, w = spec_array.shape
+#     heatmap_qim = array_to_colormap_qim(spec_array, normalize=True)
+#     qpixmap = QPixmap(heatmap_qim)
+#     qpixmap = qpixmap.scaled(scaling_factor*w, scaling_factor*h, pg.QtCore.Qt.KeepAspectRatio)  # resize spectrogram
+#     return qpixmap
 
-def array_to_colormap_qim(a, normalize=True):
-    im = plt.imshow(a)
-    color_matrix = im.cmap(im.norm(im.get_array()))
-    qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
-    return qim
+# def array_to_colormap_qim(a, normalize=True):
+#     im = plt.imshow(a)
+#     color_matrix = im.cmap(im.norm(im.get_array()))
+#     qim = qimage2ndarray.array2qimage(color_matrix, normalize=normalize)
+#     return qim
 
 def stream_stylesheet(stylesheet_url):
     stylesheet = QFile(stylesheet_url)
-    stylesheet.open(QFile.ReadOnly | QFile.Text)
+    stylesheet.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
     stream = QTextStream(stylesheet)
-    QtWidgets.qApp.setStyleSheet(stream.readAll())
+    QApplication.instance().setStyleSheet(stream.readAll())
 
 def add_presets_to_combobox(combobox: QComboBox):
     for i in get_all_preset_names():
@@ -404,7 +400,7 @@ class AnotherWindow(QWidget):
     will appear as a free-floating window as we want.
     """
 
-    def __init__(self, widget_to_add: QWidget, close_function):
+    def __init__(self, widget_to_add: QWidget, close_function: callable):
         super().__init__()
         layout = QVBoxLayout()
         layout.addWidget(widget_to_add)
@@ -412,7 +408,6 @@ class AnotherWindow(QWidget):
         self.setLayout(layout)
 
     def closeEvent(self, event):
-        # do stuff
         print('Window closed')
         if self.close_function():
             event.accept()  # let the window close
@@ -456,7 +451,7 @@ class ScrollLabel(QScrollArea):
         self.label = QLabel(content)
 
         # setting alignment to the text
-        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
         # making label multi-line
         self.label.setWordWrap(True)
@@ -475,8 +470,19 @@ def clear_layout(layout):
         if child.widget():
             child.widget().deleteLater()
 
-# def change_plot_label(plot, plotItem, name):
-#     # change the label of given PlotDataItem in the plot's legend
-#     plot.legend.removeItem(plotItem)
-#     plot.legend.addItem(plotItem, name)
-#     plotItem.setData(name='New Name')
+def clear_widget(target_widget):
+    for i in reversed(range(target_widget.count())):
+        widget = target_widget.widget(i)
+        widget.deleteLater()
+
+def validate_script_path(script_path, desired_class: Type) -> bool:
+    try:
+        validate_python_script_class(script_path, desired_class)
+    except RenaError as error:
+        dialog_popup(str(error), title='Error')
+        return False
+    else:
+        return True
+
+def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum]):
+    combobox.addItems([name for name, member in enum.__members__.items()])

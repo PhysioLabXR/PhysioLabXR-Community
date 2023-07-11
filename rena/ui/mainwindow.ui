@@ -29,11 +29,81 @@
        </attribute>
        <layout class="QVBoxLayout" name="MainTabVerticalLayout">
         <item>
-         <widget class="QWidget" name="sensorWidget" native="true">
-          <layout class="QHBoxLayout" name="sensorTabSensorsHorizontalLayout">
+         <widget class="QFrame" name="frame">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <property name="leftMargin">
+            <number>1</number>
+           </property>
+           <property name="topMargin">
+            <number>1</number>
+           </property>
+           <property name="rightMargin">
+            <number>1</number>
+           </property>
+           <property name="bottomMargin">
+            <number>1</number>
+           </property>
            <item>
-            <widget class="QWidget" name="camWidget" native="true">
-             <layout class="QVBoxLayout" name="camWidgetVerticalLayout"/>
+            <widget class="QScrollArea" name="scrollArea">
+             <property name="widgetResizable">
+              <bool>true</bool>
+             </property>
+             <widget class="QWidget" name="scrollAreaWidgetContents_3">
+              <property name="geometry">
+               <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1554</width>
+                <height>848</height>
+               </rect>
+              </property>
+              <layout class="QHBoxLayout" name="scrollAreaWidgetContents_3_layout">
+               <property name="leftMargin">
+                <number>1</number>
+               </property>
+               <property name="topMargin">
+                <number>1</number>
+               </property>
+               <property name="rightMargin">
+                <number>1</number>
+               </property>
+               <property name="bottomMargin">
+                <number>1</number>
+               </property>
+               <item>
+                <widget class="QWidget" name="StreamWidget" native="true">
+                 <layout class="QHBoxLayout" name="streamsHorizontalLayout">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>1</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>1</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>1</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>1</number>
+                  </property>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QWidget" name="camWidget" native="true">
+                 <layout class="QHBoxLayout" name="camHorizontalLayout"/>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </widget>
            </item>
           </layout>
@@ -63,6 +133,12 @@
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
       <item>
        <widget class="QPushButton" name="start_all_btn">
         <property name="maximumSize">
@@ -89,11 +165,11 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="numActiveStreamsLabel">
         <property name="minimumSize">
          <size>
-          <width>300</width>
+          <width>0</width>
           <height>0</height>
          </size>
         </property>
@@ -118,7 +194,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="visualizationFPSTextLabel">
         <property name="maximumSize">
          <size>
@@ -131,7 +207,7 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="visualizationFPSLabel">
         <property name="maximumSize">
          <size>
@@ -160,7 +236,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="tickFrequencyLabel">
         <property name="maximumSize">
          <size>
@@ -173,7 +249,7 @@
         </property>
        </widget>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="pull_data_delay_label">
         <property name="maximumSize">
          <size>
@@ -202,7 +278,7 @@
         </property>
        </spacer>
       </item>
-      <item>
+      <item alignment="Qt::AlignRight">
        <widget class="QLabel" name="recordingFileSizeLabel">
         <property name="text">
          <string>    Recording file size: </string>

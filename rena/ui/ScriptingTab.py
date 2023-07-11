@@ -1,12 +1,14 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 from rena import config
+from rena.configs.GlobalSignals import GlobalSignals
+from rena.presets.Presets import Presets
 from rena.ui.ScriptingWidget import ScriptingWidget
-from rena.ui_shared import add_icon
-from rena.utils.settings_utils import get_script_widgets_args, remove_script_from_settings
-from rena.utils.ui_utils import update_presets_to_combobox
+from rena.ui_shared import add_icon, pop_window_icon, dock_window_icon
+from rena.scripting.script_utils import get_script_widgets_args, remove_script_from_settings
+from rena.utils.ui_utils import AnotherWindow
 
 
 class ScriptingTab(QtWidgets.QWidget):
@@ -27,23 +29,16 @@ class ScriptingTab(QtWidgets.QWidget):
         self.AddScriptBtn.setIcon(add_icon)
         self.AddScriptBtn.clicked.connect(self.add_script_clicked)
 
+        GlobalSignals().stream_presets_entry_changed_signal.connect(self.update_script_widget_input_combobox)
+
         # load scripting widget from settings
         self.add_script_widgets_from_settings()
 
     def add_script_clicked(self):
         self.add_script_widget()
 
-    def add_script_widget(self, args=None):
-        script_widget = ScriptingWidget(self, port=config.scripting_port + 4 * len(
-            self.script_widgets), args=args)  # reverse three ports for each scripting widget
-        def remove_script_clicked():
-            # if script_widget.try_close():
-            self.script_widgets.remove(script_widget)
-            self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
-            remove_script_from_settings(script_widget.id)
-            script_widget.deleteLater()
-
-        script_widget.set_remove_btn_callback(remove_script_clicked)
+    def add_script_widget(self, script_preset=None):
+        script_widget = ScriptingWidget(self, port=config.scripting_port + 4 * len(self.script_widgets), script_preset=script_preset)  # reverse three ports for each scripting widget
         self.script_widgets.append(script_widget)
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
@@ -58,10 +53,14 @@ class ScriptingTab(QtWidgets.QWidget):
         return True
 
     def add_script_widgets_from_settings(self):
-        script_widgets_args = get_script_widgets_args()
-        for _, args in script_widgets_args.items():
-            self.add_script_widget(args)
+        for script_preset in Presets().script_presets.values():
+            self.add_script_widget(script_preset)
 
     def update_script_widget_input_combobox(self):
         for script_widget in self.script_widgets:
             script_widget.update_input_combobox()
+
+    def remove_script_widget(self, script_widget):
+        self.script_widgets.remove(script_widget)
+
+

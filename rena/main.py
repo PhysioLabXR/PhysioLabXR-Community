@@ -1,53 +1,51 @@
 import sys
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
-# Press the green button in the gutter to run the script.
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QLabel, QSystemTrayIcon, QMenu
+from PyQt6 import QtWidgets
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 
+from rena.config import app_logo_path
+from rena.configs.configs import AppConfigs
+from rena.ui.SplashScreen import SplashScreen
+
+AppConfigs(_reset=False)  # create the singleton app configs object
 from MainWindow import MainWindow
-from rena.startup import load_settings
-
-# import and init shared global variables
+from rena.startup import load_settings, apply_patches
 
 app = None
 
 if __name__ == '__main__':
-    # load default settings
-    load_settings(revert_to_default=True)
 
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
-    tray_icon = QSystemTrayIcon(QIcon('icon.PNG'), parent=app)
-    tray_icon.setToolTip('RNApp')
+    app.setStyle("fusion")
+    tray_icon = QSystemTrayIcon(QIcon(app_logo_path), parent=app)
+    tray_icon.setToolTip('RenaLabApp')
     tray_icon.show()
 
-    # splash screen
-    splash = QLabel()
-    pixmap = QPixmap('../media/logo/RN.png')
-    splash.setPixmap(pixmap)
-    splash.setWindowFlags(Qt.SplashScreen | Qt.FramelessWindowHint)
+    # create the splash screen
+    splash = SplashScreen()
     splash.show()
 
+    # load default settings
+    load_settings(revert_to_default=False, reload_presets=False)
+    apply_patches()
     # main window init
-    # inference_interface = InferenceInterface.InferenceInterface()
     window = MainWindow(app=app)
 
-    window.setWindowIcon(QIcon('../media/logo/RN.png'))
+    window.setWindowIcon(QIcon(app_logo_path))
     # make tray menu
     menu = QMenu()
     exit_action = menu.addAction('Exit')
     exit_action.triggered.connect(window.close)
 
     # splash screen destroy
-    splash.destroy()
+    splash.close()
     window.show()
 
     try:
-        app.exec_()
-        print('App closed by user')
+        app.exec()
         sys.exit()
     except KeyboardInterrupt:
-        print('App terminate by KeybaordInterrupt')
+        print('App terminate by KeyboardInterrupt')
         sys.exit()
