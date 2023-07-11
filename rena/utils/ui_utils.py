@@ -323,6 +323,7 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
         else:
             print("Dialog closed")
     elif mode=='modeless':
+        print("Showing modeless dialog")
         dlg.show()
         dlg.activateWindow()
     else:
