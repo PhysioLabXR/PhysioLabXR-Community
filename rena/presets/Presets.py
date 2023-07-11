@@ -14,6 +14,7 @@ from rena.config import app_data_name, default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.preset_class_helpers import SubPreset
+from rena.scripting.scripting_enums import ParamType
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
@@ -107,13 +108,15 @@ class ScriptPreset(metaclass=SubPreset):
     outputs: List[str]
     output_num_channels: List[int]
     params: List[str]
-    params_type_strs: List[str]
+    params_types: List[ParamType]
     params_value_strs: List[str]
     run_frequency: int
     time_window: int
     script_path: str
     is_simulate: bool
 
+    def __post_init__(self):
+        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class StreamPreset(metaclass=SubPreset):
@@ -299,6 +302,7 @@ class Presets(metaclass=Singleton):
             SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
+                preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
                 for key, value in preset_dict['stream_presets'].items():
                     if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
                         preset = StreamPreset(**value)
@@ -308,9 +312,12 @@ class Presets(metaclass=Singleton):
 
                 if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
-                        preset = ScriptPreset(**value)
-                        preset_dict['script_presets'][key] = preset
-                    self.__dict__.update(preset_dict)
+                        try:
+                            preset = ScriptPreset(**value)
+                            preset_dict['script_presets'][key] = preset
+                        except TypeError:
+                            print(f'Script with key {key} will not be loaded, because the script preset attributes was changed during the last update')
+                self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
@@ -339,6 +346,7 @@ class Presets(metaclass=Singleton):
             last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
 
         dirty_presets = {PresetType.LSL.value: None, PresetType.ZMQ.value: None, PresetType.CUSTOM.value: None, PresetType.EXPERIMENT.value: None}
+
         (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[PresetType.CUSTOM.value], dirty_presets[PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
@@ -401,5 +409,17 @@ class Presets(metaclass=Singleton):
 
     def keys(self):
         return self._get_all_presets().keys()
+
+    def reload_stream_presets(self):
+        """
+        This function will remove the json file in AppData containing the last modified times of the presets located
+        in the preset_roots. It then calls _load_stream_presets to reload the stream presets, and without the last modified
+        times, all the stream presets will be reloaded.
+        """
+        if os.path.exists(self._last_mod_time_path):
+            os.remove(self._last_mod_time_path)
+        dirty_presets = self._record_presets_last_modified_times()
+        _load_stream_presets(self, dirty_presets)
+        self.save(is_async=True)
 
 

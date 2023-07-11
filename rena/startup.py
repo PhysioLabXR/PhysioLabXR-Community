@@ -7,6 +7,7 @@ import pyscreeze
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel
 
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.presets.presets_utils import get_presets_path
@@ -43,6 +44,9 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     # load the presets, reload from local directory the default LSL, device and experiment presets
     preset_root = get_presets_path()
     Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
+
+    # instantiate the GlabalSignals singleton object
+    GlobalSignals()
     pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)
 
 def load_ui_shared():

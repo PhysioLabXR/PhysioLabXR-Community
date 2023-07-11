@@ -7,6 +7,7 @@ from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, 
 
 
 def get_presets_path():
+    print(f'Current cwd is {os.getcwd()}')
     if os.path.exists('../Presets'):
         return '../Presets'
     elif os.path.exists('Presets'):

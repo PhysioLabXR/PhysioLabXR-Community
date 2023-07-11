@@ -1,17 +1,9 @@
-import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QCompleter, QFileDialog
+from PyQt6.QtWidgets import QFileDialog
 
-from exceptions.exceptions import RenaError
 from rena.interfaces.DataStreamInterface import DataStreamInterface
-from rena.presets.Presets import PresetType, DataType
-from rena.scripting.script_utils import validate_python_script_class, get_target_class_name
-from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
-from rena.ui_shared import add_icon
-from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox, validate_script_path
+from rena.scripting.script_utils import get_target_class_name
+from rena.utils.ui_utils import validate_script_path
 
 
 class AddCustomDataStreamWidget(QtWidgets.QWidget):

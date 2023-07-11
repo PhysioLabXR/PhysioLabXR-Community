@@ -6,10 +6,12 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QSettings
 from PyQt6.QtGui import QIntValidator
 
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 
 from rena import config_ui, config
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
+from rena.presets.Presets import Presets
 from rena.startup import load_settings
 from rena.utils.string_utils import remove_space_all_caps
 
@@ -34,7 +36,8 @@ class SettingsWidget(QtWidgets.QWidget):
         self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
-        self.resetDefaultBtn.clicked.connect(self.reset_default)
+        self.reset_default_button.clicked.connect(self.reset_default)
+        self.reload_stream_preset_button.clicked.connect(self.reload_stream_presets)
 
         self.plot_fps_lineedit.textChanged.connect(self.on_plot_fps_changed)
         onlyInt = QIntValidator()
@@ -52,16 +55,12 @@ class SettingsWidget(QtWidgets.QWidget):
         self.saveFormatComboBox.setCurrentText(AppConfigs().recording_file_format.value)
 
     def switch_to_tab(self, tab_name: str):
-        if 'appearance' in tab_name.lower():
-            self.settings_tabs.setCurrentWidget(self.settings_appearance_tab)
-        elif 'recording' in tab_name.lower():
-            self.settings_tabs.setCurrentWidget(self.settings_recordings_tab)
-        elif 'video device' in tab_name.lower():
-            self.settings_tabs.setCurrentWidget(self.settings_video_device_tab)
-        elif 'streams' in tab_name.lower():
-            self.settings_tabs.setCurrentWidget(self.settings_streams_tab)
-        else:
-            raise ValueError(f'SettingsWidget: unknown tab name: {tab_name}')
+        for index in range(self.settings_tabs.count()):
+            tab_widget = self.settings_tabs.widget(index)
+            if tab_name.lower() in tab_widget.objectName():
+                self.settings_tabs.setCurrentIndex(index)
+                return  # Exit the function once the tab is found
+        raise ValueError(f'SettingsWidget: unknown tab name: {tab_name}')
 
     def toggle_theme_btn_pressed(self):
         print("toggling theme")
@@ -130,3 +129,11 @@ class SettingsWidget(QtWidgets.QWidget):
     def on_linechart_viz_mode_changed(self):
         AppConfigs().linechart_viz_mode = LinechartVizMode(self.linechart_viz_mode_combobox.currentText())
         print(f'Linechart viz mode changed to {AppConfigs().linechart_viz_mode}')
+
+    def reload_stream_presets(self):
+        if self.parent.is_any_stream_widget_added():
+            dialog_popup('Please remove all stream widgets before reloading stream presets', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
+            return
+        Presets().reload_stream_presets()
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        dialog_popup('Stream presets reloaded!', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)

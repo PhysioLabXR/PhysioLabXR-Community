@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from exceptions.exceptions import ChannelMismatchError
+from rena.exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface

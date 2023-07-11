@@ -8,13 +8,13 @@ from pydoc import locate
 
 import numpy as np
 
-from exceptions.exceptions import RenaError, BadOutputError
-from rena.config import script_fps_counter_buffer_size
+from rena.exceptions.exceptions import BadOutputError
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    SCRIPT_PARAM_CHANGE, ParamChange
+    SCRIPT_PARAM_CHANGE
+from rena.scripting.scripting_enums import ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.buffers import get_fps, DataBuffer, check_buffer_timestamps_monotonic
+from rena.utils.buffers import get_fps, DataBuffer
 from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 

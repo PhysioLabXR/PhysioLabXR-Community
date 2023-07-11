@@ -1,6 +1,4 @@
 # replay
-import os
-from enum import Enum
 
 FAIL_INFO = 'fail!'
 START_COMMAND = 'start!'
@@ -39,12 +37,6 @@ except FileNotFoundError:
         rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
     except FileNotFoundError:
         rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
-
-class ParamChange(Enum):
-    ADD = 'a'
-    REMOVE = 'r'
-    CHANGE = 'c'
-
 
 default_plot_format = {
         'time_series': {'is_valid': 1, 'display':1},

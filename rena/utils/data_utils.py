@@ -5,12 +5,11 @@ from datetime import datetime
 import csv
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import resample
 from scipy.stats import stats
 
-from exceptions.exceptions import BadOutputError
+from rena.exceptions.exceptions import BadOutputError
 from rena.utils.sig_proc_utils import baseline_correction, notch_filter
 
 
