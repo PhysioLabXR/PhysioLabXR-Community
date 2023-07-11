@@ -8,7 +8,6 @@ from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
-from exceptions.exceptions import ChannelMismatchError
 from rena import config_ui
 from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry

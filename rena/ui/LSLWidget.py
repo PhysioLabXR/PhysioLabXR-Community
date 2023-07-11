@@ -1,8 +1,6 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt6.QtCore import QTimer
-
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from rena.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType
 from rena.presets.presets_utils import get_stream_preset_info

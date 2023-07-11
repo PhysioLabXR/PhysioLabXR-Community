@@ -5,7 +5,7 @@ import pickle
 from inspect import isclass
 from typing import Type
 
-from exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, ScriptMissingModuleError
+from rena.exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, ScriptMissingModuleError
 
 from multiprocessing import Process
 

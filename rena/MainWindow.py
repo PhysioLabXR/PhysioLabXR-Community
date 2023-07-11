@@ -4,27 +4,22 @@ import webbrowser
 from typing import Dict
 
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QTimer, QThread, pyqtSignal
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
-from exceptions.exceptions import RenaError
+from rena.exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from rena.presets.Presets import Presets, PresetType, DataType, FMRIPreset
-from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.threadings.LongTasks import LongTaskThread, LoadingDialog
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
-from rena.ui.VideoDeviceWidget import VideoDeviceWidget
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
     create_default_zmq_preset
-from rena.utils.test_utils import some_test
 
 try:
     import rena.config
@@ -135,18 +130,18 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
-        # fmri widget
-        # TODO: FMRI WIDGET
-        fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=8126464,
-                                 data_shape=(256,256,124),
-                                 normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
-        Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
-        self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
-                                      stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
-                                      insert_position=None)
-
-        self.fmri_widget.setObjectName("FMRIWidget")
-        self.fmri_widget.show()
+        # # fmri widget
+        # # TODO: FMRI WIDGET
+        # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=8126464,
+        #                          data_shape=(256,256,124),
+        #                          normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
+        # Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
+        # self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
+        #                               stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
+        #                               insert_position=None)
+        #
+        # self.fmri_widget.setObjectName("FMRIWidget")
+        # self.fmri_widget.show()
 
     def add_btn_clicked(self):
         """

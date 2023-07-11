@@ -9,11 +9,11 @@ from PyQt6.QtGui import QIntValidator
 
 from PyQt6.QtWidgets import QFileDialog
 
-from exceptions.exceptions import RenaError, MissingPresetError
+from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.Presets import Presets, ScriptPreset
 from rena.scripting.RenaScript import RenaScript
-from rena.scripting.script_utils import validate_python_script_class, start_rena_script, get_target_class_name, \
+from rena.scripting.script_utils import start_rena_script, get_target_class_name, \
     remove_script_from_settings
 from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
@@ -144,7 +144,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_timer.start()
 
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
-        self.run_signal_timer.setInterval(forward_interval)
+        self.run_signal_timer.setInterval(int(forward_interval))
         self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,

@@ -24,6 +24,13 @@
     <widget class="QWidget" name="widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
+       <widget class="QPushButton" name="ClearLogBtn">
+        <property name="text">
+         <string>Clear Log</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="SaveLogBtn">
         <property name="text">
          <string>Save Log</string>
@@ -31,9 +38,9 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="ClearLogBtn">
+       <widget class="QPushButton" name="scrollToBottomBtn">
         <property name="text">
-         <string>Clear Log</string>
+         <string>Stop Autoscroll</string>
         </property>
        </widget>
       </item>
@@ -51,7 +58,7 @@
         <x>0</x>
         <y>0</y>
         <width>620</width>
-        <height>413</height>
+        <height>412</height>
        </rect>
       </property>
       <layout class="QFormLayout" name="LogContentLayout"/>

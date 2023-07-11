@@ -8,7 +8,6 @@ from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QDialog, QDialogButtonBox, \
     QGraphicsView, QGraphicsScene, QCheckBox, QScrollArea, QApplication
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from exceptions.exceptions import RenaError
 from rena.config import settings
 from rena.config_ui import button_style_classic
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
@@ -324,6 +323,7 @@ def dialog_popup(msg, mode='modal', title='Warning', dialog_name=None, enable_do
         else:
             print("Dialog closed")
     elif mode=='modeless':
+        print("Showing modeless dialog")
         dlg.show()
         dlg.activateWindow()
     else:

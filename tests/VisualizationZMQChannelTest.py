@@ -18,7 +18,7 @@ AppConfigs(_reset=True)  # create the singleton app configs object
 
 from rena.presets.Presets import DataType, PresetType
 from rena.config import stream_availability_wait_time
-from rena.tests.test_utils import app_fixture, \
+from tests.test_utils import app_fixture, \
     ContextBot, handle_current_dialog_button
 
 

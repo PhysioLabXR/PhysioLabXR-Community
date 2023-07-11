@@ -18,13 +18,9 @@ from PyQt6.QtWidgets import QWidget
 from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.presets.Presets import PresetType
-from rena.config import stream_availability_wait_time
-from rena.tests.TestStream import LSLTestStream
-from rena.tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
-from rena.utils.data_utils import RNStream
-from rena.utils.ui_utils import CustomDialog
 
+from tests.TestStream import LSLTestStream
+from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
 
 @pytest.fixture
 def app_main_window(qtbot):
@@ -60,6 +56,12 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     :param qtbot:
     :return:
     '''
+    from rena.utils.RNStream import RNStream
+    from rena.utils.ui_utils import CustomDialog
+    from rena.presets.Presets import PresetType
+    from rena.config import stream_availability_wait_time
+
+
     num_stream_to_test = 3
     recording_time_second = 6
     replay_file_session_name = 'replayed'

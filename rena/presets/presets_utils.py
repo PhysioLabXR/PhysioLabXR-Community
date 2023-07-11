@@ -355,3 +355,6 @@ def remove_data_processor_to_group_entry(stream_name, group_name, data_processor
 
 def get_fmri_data_shape(stream_name) ->tuple[int, int, int]:
     return Presets().stream_presets[stream_name].data_shape
+
+def get_stream_data_type(stream_name) -> str:
+    return Presets().stream_presets[stream_name].data_type

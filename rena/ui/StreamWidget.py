@@ -2,21 +2,18 @@
 import time
 from collections import deque
 
-import numpy as np
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config, config_ui
+from rena.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from rena import config_ui
 from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, get_group_channel_indices, \
-    reset_all_group_data_processors
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
+    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, reset_all_group_data_processors
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
@@ -233,7 +230,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         else:
             # self.reset_performance_measures()
             try:
-                reset_all_group_data_processors(self.stream_name)
                 self.worker.start_stream()
             except LSLStreamNotFoundError as e:
                 self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
@@ -357,7 +353,6 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             try:
-                self.run_data_processor(data_dict)
                 self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
                 self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
                 self._has_new_viz_data = True
