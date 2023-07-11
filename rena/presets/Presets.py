@@ -323,7 +323,7 @@ class Presets(metaclass=Singleton):
                             value['param_presets'] = [_load_param_presets_recursive(param_preset) for param_preset in value['param_presets']]
                             preset = ScriptPreset(**value)
                             preset_dict['script_presets'][key] = preset
-                        except TypeError:
+                        except (TypeError, KeyError):
                             print(f'Script with key {key} will not be loaded, because the script preset attributes was changed during the last update')
                     preset_dict['script_presets'] = {k: v for k, v in preset_dict['script_presets'].items() if isinstance(v, ScriptPreset)}
                 self.__dict__.update(preset_dict)
