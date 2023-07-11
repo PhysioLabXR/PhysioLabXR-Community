@@ -19,7 +19,7 @@ class RecordingConversionDialog(QtWidgets.QWidget):
     def __init__(self,  file_path, file_format: RecordingFileFormat):
         super().__init__()
         self.ui = uic.loadUi("ui/RecordingConversionDialog.ui", self)
-        self.setWindowTitle('Please wait for file conversion')
+        self.setWindowTitle(f'Please wait for converting to {file_format.value}')
 
         self.file_format = file_format
         self.file_path = file_path
@@ -41,9 +41,11 @@ class RecordingConversionDialog(QtWidgets.QWidget):
 
     def conversion_finished(self, newfile_path):
         print('Conversion finished, showing the finish button')
+        self.setWindowTitle('Conversion completed')
         self.progress_label.setText('Complete saving file to {}'.format(newfile_path))
         self.finish_button.show()
         self.is_conversion_complete = True
+        self.activateWindow()
 
     def conversion_progress(self, progresses):
         read_bytes, total_bytes = progresses
@@ -82,16 +84,16 @@ class RecordingConversionWorker(QObject):
 
         newfile_path = self.file_path
         if self.file_format == RecordingFileFormat.matlab:
-            newfile_path = self.file_path.replace('.dats', '.m')
+            newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
             savemat(newfile_path, buffer, oned_as='row')
         elif self.file_format == RecordingFileFormat.pickle:
-            newfile_path = self.file_path.replace('.dats', '.p')
+            newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
             pickle.dump(buffer, open(newfile_path, 'wb'))
         elif self.file_format == RecordingFileFormat.csv:
             csv_store = CsvStoreLoad()
             csv_store.store_csv(buffer, self.file_path)
         elif self.file_format == RecordingFileFormat.xdf:
-            newfile_path = self.file_path.replace('.dats', '.xdf')
+            newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
             file_header_info = {'name': 'Test', 'user': 'ixi'}
             file_header_xml = create_xml_string(file_header_info)
             stream_headers = {}

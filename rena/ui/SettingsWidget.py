@@ -94,6 +94,7 @@ class SettingsWidget(QtWidgets.QWidget):
                          'recording', title='Info', dialog_name='file_format_info', enable_dont_show=True, mode='modeless')
         AppConfigs().recording_file_format = RecordingFileFormat(self.saveFormatComboBox.currentText())
         print(f"recording_file_format_change: {AppConfigs().recording_file_format}")
+        self.parent.recording_tab.update_ui_save_file()
 
     def reset_default(self):
         # marked for refactor

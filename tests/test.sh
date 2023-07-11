@@ -50,7 +50,7 @@ export PYTHONPATH="$(pwd)" # add content root to PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:$(pwd)/rena  # add source root to PYTHONPATH
 echo "Here is the PYTHONPATH: $PYTHONPATH"
 
-cd rena/tests
+cd tests
 # Loop through each test function in the module and run it
 for module in "${test_modules[@]}"
 do

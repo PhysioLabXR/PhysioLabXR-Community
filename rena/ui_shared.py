@@ -37,6 +37,7 @@ num_active_streams_label_text = 'Streams: {0} added, {1} available, {2} streamin
 
 # Recording tab
 recording_tab_file_save_label_prefix = 'File will be saved as: '
+recording_tab_file_save_label_prefix_csv = 'File will be saved as csv files in directory:'
 start_recording_text = 'Start Recording'
 stop_recording_text = 'Stop Recording'
 
