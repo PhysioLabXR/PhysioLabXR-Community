@@ -1,23 +1,13 @@
-import os
 import struct
 import warnings
-from pathlib import Path
-from datetime import datetime
-import csv
-
-import cv2
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.signal import resample
-from scipy.stats import stats
 import xml.etree.ElementTree as ET
 from enum import Enum
+
+import numpy as np
 import pyxdf
 
-from exceptions.exceptions import BadOutputError
 from rena.presets.presets_utils import get_stream_data_type
-from rena.utils.Singleton import Singleton
-from rena.utils.sig_proc_utils import baseline_correction, notch_filter
+
 
 def create_xml_string(child_dict: dict):
     root = ET.Element("info")

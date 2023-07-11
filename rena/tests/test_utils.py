@@ -4,7 +4,6 @@ import pickle
 import secrets
 import string
 import sys
-import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
@@ -15,7 +14,6 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 
 from PyQt6.QtWidgets import QWidget
-from matplotlib import pyplot as plt
 from pytestqt.qtbot import QtBot
 
 from rena.MainWindow import MainWindow
@@ -325,6 +323,8 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         for j, test_variable_value in enumerate(test_variables):
             this_test_variable_measure_means = [value[measure] for key, value in results[measure].items() if key[axis_index] == test_variable_value]
             means[j] = np.mean(this_test_variable_measure_means)
+
+        from matplotlib import pyplot as plt
         plt.scatter(test_variables, means)
         plt.plot(test_variables, means)
         plt.title(f"Rena Benchmark: single stream {measure} across number of channels. {notes}")
