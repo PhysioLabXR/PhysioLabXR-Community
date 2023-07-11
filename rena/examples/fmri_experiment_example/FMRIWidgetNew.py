@@ -379,10 +379,10 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # image_data = np.random.randint(0, 256, (256, 256, 4), dtype=np.uint8)
         image_data = np.zeros((256, 256, 4), dtype=np.uint8)
         self.fmri_axial_view_image_item = gl.GLImageItem(image_data) #np.zeros((256, 256, 4), dtype=np.uint8)
-        self.fmri_axial_view_image_item.scale(1, -1, 1)
+        self.fmri_axial_view_image_item.scale(1, 1, 1)
 
         # apply the xz plane transform
-        self.fmri_axial_view_image_item.translate(-256 / 2, 256 / 2 , -124/2+76+0.1) #
+        self.fmri_axial_view_image_item.translate(-256 / 2, -256 / 2 , -124/2+76+0.1) #
 
         self.volume_view_plot.addItem(self.fmri_axial_view_image_item)
 

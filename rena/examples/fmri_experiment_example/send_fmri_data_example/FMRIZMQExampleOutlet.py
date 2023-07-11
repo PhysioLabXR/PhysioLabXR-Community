@@ -15,7 +15,7 @@ def main():
     # read image to numpy
     # fmri_data = nibabel.load('fmri.nii.gz')
     # image_data = (fmri_data - np.min(fmri_data)) / (np.max(image_data) - np.min(image_data))
-    _, fmri_data = load_nii_gz_file('resampled_fmri.nii.gz')
+    _, fmri_data = load_nii_gz_file('resampled_fmri.nii.gz',  normalized=False)
     # image = fmri_data[:,:,:, 100]
     # # image = cv2.imread('Image.png')
     # # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -40,6 +40,20 @@ def main():
     send_times = deque(maxlen=srate * 10)
     start_time = time.time()
     sent_samples = 0
+
+    image = fmri_data[:, :, :, 100]
+    del fmri_data
+    # do the image down
+    new_matrix = image[:, :, 17:]
+
+    # Pad 5 zero layers to the top
+    padding = np.zeros((256, 256, 17))
+    image = np.concatenate((new_matrix, padding), axis=-1)
+    image = (image - np.min(image)) / (np.max(image) - np.min(image))
+
+    #
+    # image_array = image.flatten()
+
     while True:
         elapsed_time = time.time() - start_time
         required_samples = int(srate * elapsed_time) - sent_samples
@@ -48,8 +62,17 @@ def main():
             # samples = (samples * 255).astype(np.uint8)
             for sample_ix in range(required_samples):
                 # mysample = samples[sample_ix]
-                random_index = np.random.randint(0, 100)
-                image = fmri_data[:, :, :, random_index]
+                # random_index = np.random.randint(0, 100)
+
+
+                # image = fmri_data[:, :, :, random_index]
+                # # do the image down
+                # new_matrix = image[:,:,:-5]
+                #
+                # # Pad 5 zero layers to the top
+                # padding = np.zeros((256, 256, 5))
+                # image = np.concatenate((padding, new_matrix), axis=-1)
+
                 image_array = image.flatten()
 
                 mysample = image_array
