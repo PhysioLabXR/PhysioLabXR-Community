@@ -15,7 +15,7 @@ from rena import config, ui_shared
 from rena.configs.configs import AppConfigs, RecordingFileFormat
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
 from rena.ui_shared import start_stream_icon, stop_stream_icon
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 from rena.utils.ui_utils import dialog_popup
 import subprocess
 

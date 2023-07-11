@@ -1,25 +1,16 @@
 import copy
-import sys
 import numpy as np
-import os
 import pytest
-import threading
-import time
 
 from multiprocessing import Process
-from random import random as rand
-from PyQt6 import QtCore, QtWidgets
+
+from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QMessageBox
-from rena.config import stream_availability_wait_time
-from rena.configs.configs import AppConfigs
-from rena.presets.Presets import DataType, PresetType
-from rena.startup import apply_patches
-from rena.tests.test_utils import get_random_test_stream_names, update_test_cwd, app_fixture, ContextBot
-from rena.tests.TestStream import CSVTestStream
-from rena.utils.data_utils import CsvStoreLoad, RNStream
-from pytestqt.qtbot import QtBot
-from rena.utils.ui_utils import CustomDialog
+from PyQt6.QtWidgets import QWidget
+
+from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
+from tests.TestStream import CSVTestStream
+
 
 @pytest.fixture
 def app_main_window(qtbot):
@@ -35,7 +26,13 @@ def context_bot(app_main_window, qtbot):
     test_context.clean_up()
 
 
-def test_csv_store_load(app_main_window, qtbot) -> None:
+def test_xdf_store_load(app_main_window, qtbot) -> None:
+    from rena.config import stream_availability_wait_time
+    from rena.configs.configs import AppConfigs
+    from rena.presets.Presets import DataType, PresetType
+    from rena.startup import apply_patches
+    from rena.utils.xdf_utils import load_xdf
+
     apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
@@ -52,13 +49,13 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
 
     for ts_name in ts_names:
         test_stream_names.append(ts_name)
-        sample = np.random.random((n_channels, 2 * recording_time_second * srate))
+        sample = np.random.random((n_channels, 10 * recording_time_second * srate))
         samples[ts_name] = np.array(sample)
         p = Process(target=CSVTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
-        app_main_window.create_preset(stream_name=ts_name, preset_type=PresetType.LSL, data_type=DataType.float64, num_channels=81, nominal_sample_rate=2048)  # add a default preset
+        app_main_window.create_preset(stream_name=ts_name, preset_type=PresetType.LSL, data_type=DataType.float64, num_channels=81, nominal_sample_rate=2048)#stream_name=ts_name, port=)  # add a default preset
 
     for ts_name in test_stream_names:
         app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
@@ -73,16 +70,16 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     # app_main_window.settings_widget.set_recording_file_location(record_path)
-    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(3) # set recording file format as .csv
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(4) # set recording file format to xdf
     app_main_window.settings_widget.saveFormatComboBox.activated.emit(app_main_window.settings_widget.saveFormatComboBox.currentIndex())
-    print('set format to csv')
+    print('set format to xdf')
 
     def stream_is_available():
         for ts_name in test_stream_names:
             assert app_main_window.stream_widgets[ts_name].is_stream_available
     def stream_is_unavailable():
         for ts_name in test_stream_names:
-            assert not app_main_window.stream_widgets[ts_name].is_stream_available()
+            assert not app_main_window.stream_widgets[ts_name].is_stream_available
 
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)
     # time.sleep(0.5)
@@ -138,21 +135,19 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
     # reload recorded file
-    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '')
-    load_csv = CsvStoreLoad()
-    csv_data = load_csv.load_csv(saved_file_path)
+    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
+    xdf_data = load_xdf(saved_file_path)
 
-    def compare_column_vec(vec1, vec2, persentage):
-        percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
-        result = np.all(percentage_diff < persentage)
+    def compare_column_vec(vec1, vec2):
+        result = np.all(vec1 == vec2)
         return result
 
-    def compare(sent_sample_array, loaded_array, persentage=1):
+    def compare(sent_sample_array, loaded_array):
         check = []
         sent_sample_array_trans = sent_sample_array.T
         loaded_array_trans = loaded_array.T
         for row in sent_sample_array_trans:
-            check.append(compare_column_vec(row, loaded_array_trans[0], persentage))
+            check.append(compare_column_vec(row, loaded_array_trans[0]))
         if np.any(check):
             start = np.where(check)[0]
             if len(start) > 1:
@@ -160,17 +155,15 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
             else:
                 start_idx = int(start)
                 for i in range(loaded_array.shape[1]):
-                    if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i], persentage):
+                    if not compare_column_vec(sent_sample_array_trans[start_idx + i], loaded_array_trans[i]):
                         return False
             return True
         else:
             return False
 
-
-
-    for ts_name in ts_names:
-        is_passing = compare(buffer_copy[ts_name][0], csv_data[ts_name][0], persentage=0.0001)
+    for idx, ts_name in enumerate(ts_names):
+        is_passing = np.all(buffer_copy[ts_name][0] == xdf_data[ts_name][0])
         assert is_passing
 
-    assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
+    assert np.all(buffer_copy['monitor 0'][0] == xdf_data['monitor 0'][0])
 

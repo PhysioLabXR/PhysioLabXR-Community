@@ -11,9 +11,9 @@ import pytest
 from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
+from tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
     run_replay_benchmark, plot_viz_benchmark_results
-from rena.tests.test_viz import plot_replay_benchmark_results
+from tests.test_viz import plot_replay_benchmark_results
 
 
 @pytest.fixture

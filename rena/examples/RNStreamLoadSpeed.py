@@ -1,5 +1,5 @@
 import time
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 
 # recording_buffer = pickle.load(open('C:/Recordings/03_21_2021_22_48_25-Exp_Unity.RealityNavigationHotel.EventMarkers-Sbj_someone-Ssn_0.p', 'rb'))
 

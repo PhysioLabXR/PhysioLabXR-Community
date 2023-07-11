@@ -5,7 +5,7 @@ import pytest
 from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.tests.test_utils import ContextBot, app_fixture
+from tests.test_utils import ContextBot, app_fixture
 
 
 @pytest.fixture

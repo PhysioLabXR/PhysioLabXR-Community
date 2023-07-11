@@ -10,7 +10,8 @@ import csv
 
 from rena.configs.configs import RecordingFileFormat
 from rena.presets.Presets import Presets
-from rena.utils.data_utils import RNStream, CsvStoreLoad
+from rena.utils.data_utils import CsvStoreLoad
+from rena.utils.RNStream import RNStream
 from rena.utils.xdf_utils import create_xml_string, XDF
 
 

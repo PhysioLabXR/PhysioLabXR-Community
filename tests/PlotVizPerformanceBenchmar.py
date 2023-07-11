@@ -3,8 +3,8 @@ import pickle
 
 import numpy as np
 
-from rena.tests.test_utils import update_test_cwd
-from rena.tests.test_viz import plot_replay_benchmark_results
+from tests.test_utils import update_test_cwd
+from tests.test_viz import plot_replay_benchmark_results
 
 metrics = 'replay push data loop time', 'timestamp reenactment accuracy'
 # test_time_second_per_stream = 60

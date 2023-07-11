@@ -1,4 +1,4 @@
-from rena.utils.data_utils import RNStream
+from rena.utils.RNStream import RNStream
 
 test_rns = RNStream('C:/Users/Amadeus/Documents/Recordings/05_26_2023_16_13_38-Exp_myexperiment-Sbj_someone-Ssn_0.dats')
 test_reloaded_data = test_rns.stream_in_stepwise(None, {}, None, jitter_removal=False)

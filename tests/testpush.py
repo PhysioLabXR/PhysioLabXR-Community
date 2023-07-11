@@ -1,4 +1,4 @@
-from rena.tests.TestStream import CSVTestStream
+from tests.TestStream import CSVTestStream
 
 sample = [1,2,3,4]
 
