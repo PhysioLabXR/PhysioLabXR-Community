@@ -2,7 +2,8 @@ import numpy as np
 from scipy.signal import butter, freqz, iirnotch, filtfilt
 from enum import Enum
 
-from rena.exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError
+from rena.exceptions.exceptions import UnsupportedErrorTypeError, DataProcessorEvokeFailedError, \
+    DataProcessorInvalidBufferSizeError, DataProcessorInvalidFrequencyError, DaProcessorNotchFilterInvalidQError
 
 
 class DataProcessorType(Enum):
@@ -49,8 +50,15 @@ class DataProcessor:  # (QObject):
     def deactivate_data_processor(self):
         self.data_processor_activated = False
 
+    def param_check(self):
+        pass  # catch the known exception raised by the data processor manually
+
+    def evoke_function(self):
+        pass
+
     def evoke_data_processor(self):
         try:
+            self.param_check()
             self.evoke_function()
             self.set_data_processor_valid(True)
             self.reset_data_processor()
@@ -101,15 +109,15 @@ class IIRFilter(DataProcessor):
         data = self._y_tap[:, 0]
         return data
 
-    def evoke_data_processor(self):
-        try:
-            self.evoke_function()
-            self.set_data_processor_valid(True)
-            self.reset_data_processor()
-        except Exception as e:
-            self.set_data_processor_valid(False)
-            print('Data Processor Evoke Failed Error: ' + str(e))
-            raise DataProcessorEvokeFailedError(str(e))
+    # def evoke_data_processor(self):
+    #     try:
+    #         self.evoke_function()
+    #         self.set_data_processor_valid(True)
+    #         self.reset_data_processor()
+    #     except Exception as e:
+    #         self.set_data_processor_valid(False)
+    #         print('Data Processor Evoke Failed Error: ' + str(e))
+    #         raise DataProcessorEvokeFailedError(str(e))
 
     def evoke_function(self):
         pass
@@ -125,6 +133,12 @@ class NotchFilter(IIRFilter):
         self.w0 = w0
         self.Q = Q
         self.fs = fs
+
+    def param_check(self):
+        if self.Q <= 0:
+            raise DaProcessorNotchFilterInvalidQError('Q must be greater than 0')
+        if self.w0 <= 0 or self.w0 >= self.fs / 2:
+            raise DataProcessorInvalidFrequencyError('w0 must be greater than 0 and less than fs/2 (Niquest Frequency)')
 
     def evoke_function(self):
         self._b, self._a = iirnotch(w0=self.w0, Q=self.Q, fs=self.fs)
@@ -144,6 +158,20 @@ class ButterworthBandpassFilter(IIRFilter):
         self.highcut = highcut
         self.fs = fs
         self.order = order
+
+    def param_check(self):
+        if self.lowcut < 0 or self.highcut < 0:
+            raise DataProcessorInvalidFrequencyError('lowcut and highcut must be greater than 0')
+        if self.lowcut >= self.highcut:
+            raise DataProcessorInvalidFrequencyError('lowcut must be less than highcut')
+        if self.fs <= 0:
+            raise DataProcessorInvalidFrequencyError('fs must be greater than 0')
+        if self.order <= 0:
+            raise DataProcessorInvalidFrequencyError('order must be greater than 0')
+        if self.order > 10:
+            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason)')
+        if self.highcut >= self.fs / 2:
+            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency)')
 
     def evoke_function(self):
         self._b, self._a = self.butter_bandpass(lowcut=self.lowcut,
@@ -176,6 +204,18 @@ class ButterworthLowpassFilter(IIRFilter):
         self.fs = fs
         self.order = order
 
+    def param_check(self):
+        if self.fs <= 0:
+            raise DataProcessorInvalidFrequencyError('fs must be greater than 0')
+        if self.order <= 0:
+            raise DataProcessorInvalidFrequencyError('order must be greater than 0')
+        if self.order > 10:
+            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason)')
+        if self.cutoff <= 0:
+            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0')
+        if self.cutoff >= self.fs / 2:
+            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency)')
+
     def evoke_function(self):
         self._b, self._a = self.butter_lowpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
         self._x_tap = np.zeros((self.channel_num, len(self._b)))
@@ -199,6 +239,18 @@ class ButterworthHighpassFilter(IIRFilter):
         self.cutoff = cutoff
         self.fs = fs
         self.order = order
+
+    def param_check(self):
+        if self.fs <= 0:
+            raise DataProcessorInvalidFrequencyError('fs must be greater than 0')
+        if self.order <= 0:
+            raise DataProcessorInvalidFrequencyError('order must be greater than 0')
+        if self.order > 10:
+            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason)')
+        if self.cutoff <= 0:
+            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0')
+        if self.cutoff >= self.fs / 2:
+            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency)')
 
     def evoke_function(self):
         self._b, self._a = self.butter_highpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
@@ -227,10 +279,14 @@ class RootMeanSquare(DataProcessor):
         self._data_buffer_size = 0
         self._data_buffer = np.empty(0)
 
+    def param_check(self):
+        data_buffer_size = round(self.fs * self.window * 0.001)
+
+        if data_buffer_size <= 0:
+            raise DataProcessorInvalidBufferSizeError('data_buffer_size must be greater than 0')
+
     def evoke_function(self):
         self._data_buffer_size = round(self.fs * self.window * 0.001)
-        if self._data_buffer_size<=0:
-            raise DataProcessorEvokeFailedError('Data buffer size cannot be zero')
         self._data_buffer = np.zeros((self.channel_num, self._data_buffer_size))
 
     def set_data_processor_params(self, fs, window):
