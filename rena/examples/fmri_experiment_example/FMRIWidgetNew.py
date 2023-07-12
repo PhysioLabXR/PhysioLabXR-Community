@@ -2,7 +2,7 @@
 
 from PyQt6.QtCore import QTimer, QThread, QMutex
 
-from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
+from rena.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
@@ -19,7 +19,7 @@ from collections import deque
 import numpy as np
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QTransform
 import nibabel as nib
 from nilearn import image
 
@@ -74,7 +74,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.in_error_state = False  # an error state to prevent ticking when is set to true
         # visualization data buffer
         self.current_timestamp = 0
-        self.fmri_viz_volume = np.zeros((256, 256, 124))
+        self.fmri_viz_volume = np.zeros((240, 240, 186))
         self._has_new_viz_data = False
 
         self.viz_data_buffer = None
@@ -115,6 +115,19 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         self.timer.start()
         self.v_timer.start()
+        # self.scaling_factor = (0.9375, 0.9375, 1.5)
+        #
+        #
+        # self.sagittal_view_transformation = QTransform()
+        # self.sagittal_view_transformation.scale(0.9375, 1.5)
+        #
+        # self.coronal_view_transformation = QTransform()
+        # self.coronal_view_transformation.scale(0.9375, 1.5)
+        #
+        # self.axial_view_transformation = QTransform()
+        # self.axial_view_transformation.scale(0.9375, 0.9375)
+        #
+
 
         self.__post_init__()
 
@@ -178,7 +191,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # self.volume_view_plot.addItem(g)
 
         _, self.mri_volume_data = load_nii_gz_file(
-            'D:/HaowenWei/Rena/RenaLabApp/rena/examples/fmri_experiment_example/structural.nii.gz')
+            'D:/HaowenWei/Rena/RenaLabApp/rena/examples/fmri_experiment_example/structural.nii.gz', zoomed=True)
         self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data, non_linear_interpolation_factor=2)
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()
@@ -377,12 +390,12 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def init_fmri_gl_axial_view_image_item(self):
         # image_data = np.random.randint(0, 256, (256, 256, 4), dtype=np.uint8)
-        image_data = np.zeros((256, 256, 4), dtype=np.uint8)
+        image_data = np.zeros((240, 240, 4), dtype=np.uint8)
         self.fmri_axial_view_image_item = gl.GLImageItem(image_data) #np.zeros((256, 256, 4), dtype=np.uint8)
         self.fmri_axial_view_image_item.scale(1, 1, 1)
 
         # apply the xz plane transform
-        self.fmri_axial_view_image_item.translate(-256 / 2, -256 / 2 , -124/2+76+0.1) #
+        self.fmri_axial_view_image_item.translate(-240 / 2, -240 / 2 , -186/2+76+0.1) #
 
         self.volume_view_plot.addItem(self.fmri_axial_view_image_item)
 

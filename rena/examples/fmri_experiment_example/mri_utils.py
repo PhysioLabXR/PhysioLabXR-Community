@@ -10,6 +10,7 @@ import nibabel as nib
 from nilearn.image import resample_img
 from nilearn import plotting
 import matplotlib.pyplot as plt
+from scipy.ndimage import zoom
 
 
 def get_mri_coronal_view_dimension(volume_data: np.ndarray):
@@ -48,7 +49,7 @@ def get_fmri_axial_view_slice(volume_data, index, timestamp):
     return volume_data[:, :, index, timestamp]
 
 
-def load_nii_gz_file(file_path: str, normalized=True):
+def load_nii_gz_file(file_path: str, normalized=True, zoomed=False):
     nifti_image = nib.load(file_path)
 
     # Access the image data and header
@@ -60,6 +61,12 @@ def load_nii_gz_file(file_path: str, normalized=True):
 
     if normalized:
         image_data = (image_data - np.min(image_data)) / (np.max(image_data) - np.min(image_data))
+
+    if zoomed:
+        scale_factor = nifti_image.header.get_zooms()
+
+        # Rescale the matrix using zoom
+        image_data = zoom(image_data, scale_factor)
 
     return image_header, image_data
 

@@ -8,7 +8,7 @@ import zmq
 from pylsl import local_clock
 
 from rena.examples.fmri_experiment_example.mri_utils import load_nii_gz_file
-
+from scipy.ndimage import zoom
 
 def main():
 
@@ -50,6 +50,11 @@ def main():
     padding = np.zeros((256, 256, 17))
     image = np.concatenate((new_matrix, padding), axis=-1)
     image = (image - np.min(image)) / (np.max(image) - np.min(image))
+    # zoom image to
+    scale_factor = (0.9375, 0.9375, 1.5)
+
+    # Rescale the matrix using zoom
+    image = zoom(image, scale_factor)
 
     #
     # image_array = image.flatten()
