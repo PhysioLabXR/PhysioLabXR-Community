@@ -88,11 +88,11 @@ class DataProcessorWidget(QtWidgets.QWidget):
         try:
             self.data_processor.evoke_data_processor()
             # set message box text
-            self.DataProcessorEvokeMessageLabel.hide()
+            self.DataProcessorEvokeMessageWidget.hide()
             self.DataProcessorEvokeMessageLabel.setText('')
             self.DataProcessorEvokeMessageLabel.setStyleSheet('color: green')
         except DataProcessorEvokeFailedError as e:
-            self.DataProcessorEvokeMessageLabel.show()
+            self.DataProcessorEvokeMessageWidget.show()
             self.DataProcessorEvokeMessageLabel.setText(str(e))
             self.DataProcessorEvokeMessageLabel.setStyleSheet('color: red')
             print(str(e))
