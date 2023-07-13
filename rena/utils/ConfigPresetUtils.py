@@ -1,6 +1,9 @@
 import enum
 import json
 import os
+import typing
+from typing import Iterable
+
 
 from rena.utils.dsp_utils.dsp_modules import DataProcessorType
 
@@ -29,6 +32,11 @@ def save_local(app_data_path, preset_dict, file_name, encoder=None) -> None:
 
     with open(path, 'w') as f:
         f.write(json_data)
+
+
+def is_iterable_type(t):
+    origin = typing.get_origin(t)
+    return origin is not None and issubclass(origin, Iterable)
 
 
 def reload_enums(target):

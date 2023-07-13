@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import json
 import os
 import uuid
 
@@ -7,14 +8,14 @@ from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QThread, QTimer
 from PyQt6.QtGui import QIntValidator
 
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
-from rena.presets.Presets import Presets, ScriptPreset
+from rena.presets.Presets import Presets
+from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
-from rena.scripting.script_utils import start_rena_script, get_target_class_name, \
-    remove_script_from_settings
+from rena.scripting.script_utils import start_rena_script, get_target_class_name
 from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
@@ -28,7 +29,7 @@ from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
-    get_experiment_preset_names, get_stream_preset_info, check_preset_exists
+    get_experiment_preset_names, get_stream_preset_info, check_preset_exists, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path
@@ -36,8 +37,8 @@ from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset):
-        super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
+    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset, layout: QLayout):
+        super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
@@ -383,8 +384,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.process_add_param(param_name)
         self.export_script_args_to_settings()
 
-    def process_add_param(self, param_name, param_type=ParamType.bool, value_text=''):
-        param_widget = ParamWidget(self, param_name, param_type, value_text)
+    def process_add_param(self, param_name, param_type=ParamType.bool, value=None):
+        param_widget = ParamWidget(self, param_name, param_type=param_type, value=value)
         self.paramsLayout.addWidget(param_widget)
         self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
@@ -394,16 +395,16 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             param_widget.deleteLater()
             self.check_can_add_param()
             self.export_script_args_to_settings()
-            self.param_change(ParamChange.REMOVE, param_name)
+            self.notify_script_process_param_change(ParamChange.REMOVE, param_name)
 
         param_widget.set_remove_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
+        self.notify_script_process_param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
 
-    def param_change(self, change: ParamChange, name, value=None):
+    def notify_script_process_param_change(self, change: ParamChange, name, value=None):
         '''
-        send params to the script process
+        send changed params to the script process
         @return:
         '''
         print('Param {} changed: {}, {}'.format(name, change, value))
@@ -435,11 +436,15 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_params(self):
         return [w.get_param_name() for w in self.param_widgets]
 
-    def get_param_value_texts(self):
-        return [w.get_value_text() for w in self.param_widgets]
+    # def get_param_value_texts(self):
+    #     return [w.get_value_text() for w in self.param_widgets]
 
     def get_param_types(self):
         return [w.get_param_type() for w in self.param_widgets]
+
+    def get_params_presets_recursive(self):
+        params_presets = [x.get_param_preset_recursive() for x in self.param_widgets]
+        return params_presets
 
     def get_param_dict(self):
         return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
@@ -585,7 +590,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
-                                     params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
+                                     # params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
+                                     param_presets = self.get_params_presets_recursive(),
                                      run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
                                      script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
         Presets().script_presets[self.id] = script_preset
@@ -602,8 +608,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
             self.process_add_output(output_name, num_channels=output_num_channel)
 
-        for param_name, param_type, value_text in zip(script_preset.params, script_preset.params_types, script_preset.params_value_strs):
-            self.process_add_param(param_name, param_type=param_type, value_text=value_text)
+        for param_preset in script_preset.param_presets:
+            self.process_add_param(param_preset.name, param_type=param_preset.type, value=param_preset.value)
 
     def update_input_combobox(self):
         update_presets_to_combobox(self.inputComboBox)
@@ -611,7 +617,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def forward_param_change(self, change: ParamChange, name, value):
         self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
         self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
-        self.command_socket_interface.socket.send(np.array(value))
+        self.command_socket_interface.socket.send_string(json.dumps(value))
 
     def onSimulationCheckboxChanged(self):
         print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))

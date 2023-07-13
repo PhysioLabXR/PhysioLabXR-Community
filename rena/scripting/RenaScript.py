@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import threading
@@ -148,10 +149,10 @@ class RenaScript(ABC, threading.Thread):
                     change_info, _ = recv_string_router(self.command_socket_interface, is_block=True)
                     _, value = self.command_socket_interface.socket.recv_multipart()  # first element is routing ID
                     change_str, param_name, param_type = change_info.split('|')
-                    param_type = locate(param_type)
                     change = ParamChange(change_str)
                     if change == ParamChange.ADD or change == ParamChange.CHANGE:
-                        self.params[param_name] = np.frombuffer(np.array(value).tobytes(), dtype=param_type)[0]
+                        # self.params[param_name] = np.frombuffer(np.array(value).tobytes(), dtype=param_type)[0]
+                        self.params[param_name] = json.loads(value.decode('utf-8'))
                     else:
                         self.params.pop(param_name)
                     print('RenaScript: param changed')

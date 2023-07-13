@@ -16,6 +16,8 @@ minus_icon = load_media_icon('minus.svg')
 
 pause_icon = load_media_icon('pause.svg')
 
+collapse_icon = load_media_icon('collapse.svg')
+expand_icon = load_media_icon('expand.svg')
 
 # Stream widget icon in the visualization tab
 stream_unavailable_icon = load_media_icon('streamwidget_stream_unavailable.svg')

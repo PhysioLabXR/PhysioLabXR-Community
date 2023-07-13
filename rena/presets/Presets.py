@@ -8,11 +8,11 @@ from typing import Dict, Any, List, Union
 import numpy as np
 
 from rena import config
-from rena.config import app_data_name, default_group_name
+from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
+from rena.presets.ScriptPresets import ScriptPreset, ParamPreset
 from rena.presets.preset_class_helpers import SubPreset
-from rena.scripting.scripting_enums import ParamType
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
@@ -77,6 +77,17 @@ class PresetType(Enum):
     CUSTOM = 'CUSTOM'
     EXPERIMENT = 'EXPERIMENT'
 
+    @classmethod
+    def is_video_preset(cls, preset_type):
+        if isinstance(preset_type, str):
+            preset_type = PresetType(preset_type)
+        return preset_type in [cls.WEBCAM, cls.MONITOR]
+
+    @classmethod
+    def is_stream_preset(cls, preset_type):
+        if isinstance(preset_type, str):
+            preset_type = PresetType(preset_type)
+        return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
@@ -102,23 +113,6 @@ class PresetsEncoder(json.JSONEncoder):
             return o.__dict__
         return super().default(o)
 
-
-@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
-class ScriptPreset(metaclass=SubPreset):
-    id: str
-    inputs: List[str]
-    outputs: List[str]
-    output_num_channels: List[int]
-    params: List[str]
-    params_types: List[ParamType]
-    params_value_strs: List[str]
-    run_frequency: int
-    time_window: int
-    script_path: str
-    is_simulate: bool
-
-    def __post_init__(self):
-        reload_enums(self)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class StreamPreset(metaclass=SubPreset):
@@ -273,6 +267,19 @@ def _load_video_device_presets(presets):
         presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
     presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
 
+def _load_param_presets_recursive(param_preset_dict):
+    rtn = []
+    if isinstance(param_preset_dict, list):
+        for param_preset in param_preset_dict:
+            rtn.append(_load_param_presets_recursive(param_preset))
+    elif isinstance(param_preset_dict, dict):
+        if isinstance(param_preset_dict['value'], list):
+            param_preset_dict['value'] = _load_param_presets_recursive(param_preset_dict['value'])
+            return ParamPreset(**param_preset_dict)
+        else:
+            return ParamPreset(**param_preset_dict)
+    return rtn
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
     """
@@ -330,20 +337,24 @@ class Presets(metaclass=Singleton):
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
-                for key, value in preset_dict['stream_presets'].items():
-                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
-                        preset = StreamPreset(**value)
-                    elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
-                        preset = VideoPreset(**value)
-                    preset_dict['stream_presets'][key] = preset
-
+                if 'stream_presets' in preset_dict.keys():
+                    for key, value in preset_dict['stream_presets'].items():
+                        if PresetType.is_stream_preset(value['preset_type']):
+                            preset = StreamPreset(**value)
+                            preset_dict['stream_presets'][key] = preset
+                        elif PresetType.is_video_preset(value['preset_type']):
+                            preset = VideoPreset(**value)
+                            preset_dict['stream_presets'][key] = preset
+                    preset_dict['stream_presets'] = {k: v for k, v in preset_dict['stream_presets'].items() if isinstance(v, (StreamPreset, VideoPreset))}
                 if 'script_presets' in preset_dict.keys():
                     for key, value in preset_dict['script_presets'].items():
                         try:
+                            value['param_presets'] = [_load_param_presets_recursive(param_preset) for param_preset in value['param_presets']]
                             preset = ScriptPreset(**value)
                             preset_dict['script_presets'][key] = preset
-                        except TypeError:
+                        except (TypeError, KeyError):
                             print(f'Script with key {key} will not be loaded, because the script preset attributes was changed during the last update')
+                    preset_dict['script_presets'] = {k: v for k, v in preset_dict['script_presets'].items() if isinstance(v, ScriptPreset)}
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 

@@ -124,7 +124,3 @@ def get_script_widgets_args():
     return rtn
 
 
-def remove_script_from_settings(script_id):
-    config.settings.remove('scripts/{0}'.format(script_id))
-
-
