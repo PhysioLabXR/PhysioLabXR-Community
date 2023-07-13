@@ -6,7 +6,7 @@ from collections import deque
 import numpy as np
 import zmq
 from pylsl import local_clock
-
+import pickle
 from rena.examples.fmri_experiment_example.mri_utils import load_nii_gz_file
 from scipy.ndimage import zoom
 
@@ -15,7 +15,11 @@ def main():
     # read image to numpy
     # fmri_data = nibabel.load('fmri.nii.gz')
     # image_data = (fmri_data - np.min(fmri_data)) / (np.max(image_data) - np.min(image_data))
-    _, fmri_data = load_nii_gz_file('resampled_fmri.nii.gz',  normalized=False)
+
+    #######_, fmri_data = load_nii_gz_file('resampled_fmri.nii.gz',  normalized=False)
+    with open('small_fmri.pickle', 'rb') as handle:
+        fmri_data = pickle.load(handle)
+
     # image = fmri_data[:,:,:, 100]
     # # image = cv2.imread('Image.png')
     # # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -41,7 +45,7 @@ def main():
     start_time = time.time()
     sent_samples = 0
 
-    image = fmri_data[:, :, :, 100]
+    image = fmri_data[:, :, :, 10]
     del fmri_data
     # do the image down
     new_matrix = image[:, :, 17:]
@@ -49,6 +53,7 @@ def main():
     # Pad 5 zero layers to the top
     padding = np.zeros((256, 256, 17))
     image = np.concatenate((new_matrix, padding), axis=-1)
+    del new_matrix
     image = (image - np.min(image)) / (np.max(image) - np.min(image))
     # zoom image to
     scale_factor = (0.9375, 0.9375, 1.5)

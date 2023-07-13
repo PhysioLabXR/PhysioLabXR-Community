@@ -144,6 +144,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.sagittal_view_plot = pg.PlotWidget()
         self.sagittal_view_plot.setTitle("Sagittal View")
+        self.sagittal_view_plot.setLabel(axis='left', text='millimeters')
+        self.sagittal_view_plot.setLabel(axis='bottom', text='millimeters')
         self.SagittalViewPlotWidget.layout().addWidget(self.sagittal_view_plot)
         self.sagittal_view_mri_image_item = pg.ImageItem()
         self.sagittal_view_fmri_image_item = pg.ImageItem()
@@ -157,6 +159,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.coronal_view_plot = pg.PlotWidget()
         self.coronal_view_plot.setTitle("Coronal View")
+        self.coronal_view_plot.setLabel(axis='left', text='millimeters')
+        self.coronal_view_plot.setLabel(axis='bottom', text='millimeters')
         self.CoronalViewPlotWidget.layout().addWidget(self.coronal_view_plot)
         self.coronal_view_mri_image_item = pg.ImageItem()
         self.coronal_view_fmri_image_item = pg.ImageItem()
@@ -170,6 +174,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         ######################################################
         self.axial_view_plot = pg.PlotWidget()
         self.axial_view_plot.setTitle("Axial View")
+        self.axial_view_plot.setLabel(axis='left', text='millimeters')
+        self.axial_view_plot.setLabel(axis='bottom', text='millimeters')
         self.AxiaViewPlotWidget.layout().addWidget(self.axial_view_plot)
         self.axial_view_mri_image_item = pg.ImageItem()
         self.axial_view_fmri_image_item = pg.ImageItem()
@@ -231,16 +237,16 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def set_coronal_view_fmri(self):
         fmri_slice = get_mri_coronal_view_slice(self.fmri_viz_volume, self.coronal_view_slider_value)
-        self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+        self.coronal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.55))
 
     def set_sagittal_view_fmri(self):
         fmri_slice = get_mri_sagittal_view_slice(self.fmri_viz_volume, self.sagittal_view_slider_value)
-        self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
+        self.sagittal_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.55))
 
     def set_axial_view_fmri(self):
         fmri_slice = get_mri_axial_view_slice(self.fmri_viz_volume, self.axial_view_slider_value)
-        self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.5))
-        image_data = (gray_to_heatmap(fmri_slice, threshold=0.5)*255).astype(np.uint8)
+        self.axial_view_fmri_image_item.setImage(gray_to_heatmap(fmri_slice, threshold=0.55))
+        image_data = (gray_to_heatmap(fmri_slice, threshold=0.55)*255).astype(np.uint8)
         # image_data = np.transpose(image_data, (1, 0, 2))
         self.fmri_axial_view_image_item.setData(image_data)
 
@@ -395,7 +401,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.fmri_axial_view_image_item.scale(1, 1, 1)
 
         # apply the xz plane transform
-        self.fmri_axial_view_image_item.translate(-240 / 2, -240 / 2 , -186/2+76+0.1) #
+        self.fmri_axial_view_image_item.translate(-240 / 2, -240 / 2 , -186/2+105+0.1) #
 
         self.volume_view_plot.addItem(self.fmri_axial_view_image_item)
 

@@ -76,7 +76,7 @@ def volume_to_gl_volume_item(volume_data, alpha_interpolate=True, centralized=Tr
     x_size, y_size, z_size = volume_data.shape
 
     # cut off the top half data
-    volume_data = volume_data[:, :, : 76]
+    volume_data = volume_data[:, :, : 105]
 
     if alpha_interpolate:
         alpha_channel = np.interp(volume_data, (0, 1), (0, 255))

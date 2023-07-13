@@ -9,7 +9,7 @@ import numpy as np
 # set parameters for recording
 chunk = 1024  # number of samples per frame
 sample_format = pyaudio.paInt16  # 16 bits per sample
-channels = 1  # stereo
+channels = 2  # stereo
 fs = 44100  # sampling rate
 seconds = 5  # duration of recording
 
@@ -24,7 +24,7 @@ stream = p.open(format=sample_format,
                 rate=fs,
                 frames_per_buffer=chunk,
                 input=True,
-                input_device_index=2)
+                input_device_index=0)
 
 frames = []  # list to store audio frames
 
