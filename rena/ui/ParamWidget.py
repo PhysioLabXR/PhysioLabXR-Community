@@ -67,7 +67,7 @@ class ParamWidget(QtWidgets.QWidget):
 
         if new_type is not ParamType.list:
             self.list_widget.setVisible(False)
-            self.top_layout.insertWidget(1, self.value_widget, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+            self.top_layout.insertWidget(2, self.value_widget, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
             self.expand_collapse_button.setVisible(False)
 
     def make_list_param(self):
