@@ -1,6 +1,7 @@
 import os.path
 from typing import Union, List
 
+from rena import config
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
@@ -321,5 +322,10 @@ def is_video_webcam(video_device_name) -> bool:
 def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
 
-def get_stream_data_type(stream_name) -> str:
+
+def remove_script_from_settings(script_id):
+    Presets().script_presets.pop(script_id)
+
+
+def get_stream_data_type(stream_name) -> DataType:
     return Presets().stream_presets[stream_name].data_type
