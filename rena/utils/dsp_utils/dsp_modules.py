@@ -206,15 +206,15 @@ class ButterworthLowpassFilter(IIRFilter):
 
     def param_check(self):
         if self.fs <= 0:
-            raise DataProcessorInvalidFrequencyError('fs must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('fs must be greater than 0 ')
         if self.order <= 0:
-            raise DataProcessorInvalidFrequencyError('order must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('order must be greater than 0 ')
         if self.order > 10:
-            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason)')
+            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason) ')
         if self.cutoff <= 0:
-            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0 ')
         if self.cutoff >= self.fs / 2:
-            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency)')
+            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency) ')
 
     def evoke_function(self):
         self._b, self._a = self.butter_lowpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
@@ -242,15 +242,15 @@ class ButterworthHighpassFilter(IIRFilter):
 
     def param_check(self):
         if self.fs <= 0:
-            raise DataProcessorInvalidFrequencyError('fs must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('fs must be greater than 0 ')
         if self.order <= 0:
-            raise DataProcessorInvalidFrequencyError('order must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('order must be greater than 0 ')
         if self.order > 10:
-            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason)')
+            raise DataProcessorInvalidFrequencyError('order must be <=10 (for stability reason) ')
         if self.cutoff <= 0:
-            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0')
+            raise DataProcessorInvalidFrequencyError('cutoff must be greater than 0 ')
         if self.cutoff >= self.fs / 2:
-            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency)')
+            raise DataProcessorInvalidFrequencyError('cutoff must be less than fs/2 (Niquest Frequency) ')
 
     def evoke_function(self):
         self._b, self._a = self.butter_highpass(cutoff=self.cutoff, fs=self.fs, order=self.order)
@@ -283,7 +283,7 @@ class RootMeanSquare(DataProcessor):
         data_buffer_size = round(self.fs * self.window * 0.001)
 
         if data_buffer_size <= 0:
-            raise DataProcessorInvalidBufferSizeError('data_buffer_size must be greater than 0')
+            raise DataProcessorInvalidBufferSizeError('data_buffer_size must be greater than 0 ')
 
     def evoke_function(self):
         self._data_buffer_size = round(self.fs * self.window * 0.001)

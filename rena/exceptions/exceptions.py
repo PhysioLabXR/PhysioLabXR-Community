@@ -168,7 +168,7 @@ class DaProcessorNotchFilterInvalidQError(DataProcessorEvokeFailedError):
         self.error = error
 
     def __str__(self):
-        return self.error + 'DaProcessorNotchFilterInvalidQError'
+        return self.error #+ 'DaProcessorNotchFilterInvalidQError'
 
 class DataProcessorInvalidFrequencyError(DataProcessorEvokeFailedError):
     def __init__(self, error):
@@ -176,7 +176,7 @@ class DataProcessorInvalidFrequencyError(DataProcessorEvokeFailedError):
         self.error = error
 
     def __str__(self):
-        return self.error + 'DataProcessorInvalidFrequencyError'
+        return self.error #+ 'DataProcessorInvalidFrequencyError'
 
 class DataProcessorInvalidBufferSizeError(DataProcessorEvokeFailedError):
     def __init__(self, error):
@@ -184,7 +184,7 @@ class DataProcessorInvalidBufferSizeError(DataProcessorEvokeFailedError):
         self.error = error
 
     def __str__(self):
-        return self.error + 'DataProcessorInvalidBufferSizeError'
+        return self.error #+ 'DataProcessorInvalidBufferSizeError'
 
 
 
