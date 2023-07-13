@@ -8,7 +8,7 @@ from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QThread, QTimer
 from PyQt6.QtGui import QIntValidator
 
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
@@ -37,8 +37,8 @@ from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset):
-        super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
+    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset, layout: QLayout):
+        super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
         self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
