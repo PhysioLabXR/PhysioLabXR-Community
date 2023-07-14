@@ -168,13 +168,13 @@
                   <property name="bottomMargin">
                    <number>1</number>
                   </property>
-                  <item>
+                  <item alignment="Qt::AlignHCenter">
                    <widget class="QCheckBox" name="ActivateDataProcessorCheckbox">
                     <property name="layoutDirection">
                      <enum>Qt::RightToLeft</enum>
                     </property>
                     <property name="text">
-                     <string>Activate</string>
+                     <string/>
                     </property>
                    </widget>
                   </item>

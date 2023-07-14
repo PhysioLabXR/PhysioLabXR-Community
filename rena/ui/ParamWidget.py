@@ -1,10 +1,7 @@
-from pydoc import locate
-
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
-from PyQt6.QtWidgets import QCheckBox, QLineEdit, QScrollArea, QWidget
+from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
-from rena import ui_shared
 from rena.presets.ScriptPresets import ParamPreset
 from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.ui_shared import minus_icon, add_icon, collapse_icon, expand_icon

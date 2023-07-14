@@ -1,5 +1,4 @@
 import numpy as np
-import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer, QThread
 
@@ -172,3 +171,13 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def issue_slider_moved_command(self, command):
         self.playback_worker.queue_slider_moved_command(command)
+
+    def try_close(self):
+        # Initialize playback worker
+        self.playback_command_interface_timer.stop()
+        self.playback_thread.requestInterruption()
+        self.playback_thread.exit()
+        self.playback_thread.wait()
+
+        self.deleteLater()
+        print("PlaybackWidget closed")

@@ -94,6 +94,10 @@ class VideoDeviceChannelOrder(Enum):
     BGR = 1
 
 
+def is_monotonically_increasing(lst):
+    differences = np.diff(np.array(lst))
+    return np.all(differences >= 0)
+
 class PresetsEncoder(json.JSONEncoder):
     """
     JSON encoder that can handle enums and objects whose metaclass is SubPreset.
@@ -110,6 +114,15 @@ class PresetsEncoder(json.JSONEncoder):
         if isinstance(o, DataProcessor):
             return o.serialize_data_processor_params()
         if o.__class__.__class__ is SubPreset:
+            if isinstance(o, StreamPreset):
+                if not o.can_edit_channel_names:  # will not serialize channel names if it is not editable
+                    o.channel_names = None
+            if isinstance(o, GroupEntry):
+                if o._is_image_only:
+                    assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
+                    o.channel_indices_start_end = min(o.channel_indices), max(o.channel_indices) + 1
+                    o.channel_indices = None
+                    o.is_channels_shown = None
             return o.__dict__
         return super().default(o)
 
@@ -138,7 +151,6 @@ class StreamPreset(metaclass=SubPreset):
         is obtained by which folder the preset file is in (i.e., LSLPresets, ZMQPresets, or DevicePresets under the Presets folder)
     """
     stream_name: str
-    channel_names: List[str]
 
     num_channels: int
 
@@ -146,10 +158,13 @@ class StreamPreset(metaclass=SubPreset):
     device_info: dict
     preset_type: PresetType
 
+    channel_names: List[str] = None
     data_type: DataType = DataType.float32
     port_number: int = None
     display_duration: float = None
     nominal_sampling_rate: int = 10
+
+    can_edit_channel_names: bool = True
 
     def __post_init__(self):
         """
@@ -157,6 +172,13 @@ class StreamPreset(metaclass=SubPreset):
         Note any attributes loaded from the config will need to be loaded into the class's attribute here
         @return:
         """
+        if self.channel_names is None:  # channel names can be none when the number of channels is too big
+            self.channel_names = ['c {0}'.format(i) for i in range(self.num_channels)]
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
+        if self.num_channels > config.MAX_TS_CHANNEL_NUM:
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
         if self.display_duration is None:
             self.display_duration = float(config.settings.value('viz_display_duration'))
         for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
@@ -203,6 +225,7 @@ class VideoPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class FMRIPreset(metaclass=SubPreset):
 
@@ -224,9 +247,6 @@ class FMRIPreset(metaclass=SubPreset):
         """
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
-
-
-
 
 
 def _load_stream_presets(presets, dirty_presets):

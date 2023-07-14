@@ -469,3 +469,4 @@ def reject_outliers(data, m = 2.):
     mdev = np.median(d)
     s = d/mdev if mdev else np.zeros(len(d))
     return data[s<m]
+

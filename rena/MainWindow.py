@@ -7,11 +7,10 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
-from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from rena.exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType, DataType, FMRIPreset
+from rena.presets.Presets import Presets, PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -337,6 +336,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             reply = QMessageBox.StandardButton.Yes
         if reply == QMessageBox.StandardButton.Yes:
+            self.meta_data_update_timer.stop()
+            self.meta_data_update_timer.timeout.disconnect()
             if self.settings_window is not None:
                 self.settings_window.close()
 

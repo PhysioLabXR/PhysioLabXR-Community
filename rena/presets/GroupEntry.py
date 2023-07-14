@@ -25,12 +25,13 @@ class GroupEntry(metaclass=SubPreset):
     Group entry is contained in the group_info dictionary of StreamPreset.
     """
     group_name: str
-    channel_indices: List[int]
     is_channels_shown: List[bool] = None
     is_group_shown: bool = True
     plot_configs: PlotConfigs = None
     selected_plot_format: PlotFormat = None
 
+    channel_indices: List[int] = None
+    channel_indices_start_end: List[int] = None # this attribute is only used to create channel indices, for if the channel indices are too many, they won't be serialized to json
     # read-only attributes
     _is_image_only: bool = None  # this attribute is not serialized to json
 
@@ -41,6 +42,8 @@ class GroupEntry(metaclass=SubPreset):
         GroupEntry;s post init function. It will set the is_image_only attribute based on the number of channels in the group.
         Note any attributes loaded from the config will need to be loaded into the class's attribute here
         """
+        if self.channel_indices is None:
+            self.channel_indices = list(range(self.channel_indices_start_end[0], self.channel_indices_start_end[1]))
         num_channels = len(self.channel_indices)
         if self.is_channels_shown is None:  # will only modify the channel indices if it is not set. It could be set from loading a preset json file
             max_channel_shown_per_group = config.settings.value('default_channel_display_num')

@@ -143,7 +143,7 @@ def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: in
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
                    'DataType': data_type}
     if nominal_sample_rate:
         preset_dict['NominalSamplingRate'] = nominal_sample_rate
@@ -156,7 +156,7 @@ def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_ra
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
                    'DataType': data_type,
                    'PortNumber': port}
     if nominal_sample_rate:
