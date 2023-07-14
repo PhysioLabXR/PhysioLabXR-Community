@@ -4,14 +4,19 @@ import numpy as np
 from scipy import sparse
 from scipy.signal import butter, lfilter, freqz, iirnotch, filtfilt
 from scipy.sparse.linalg import spsolve
+from enum import Enum
 
+class DataProcessorType(Enum):
+    RealtimeNotch = 'RealtimeNotch'
+    RealtimeButterBandpass = 'RealtimeButterBandpass'
+    RealtimeVrms = 'RealtimeVrms'
 
 class DataProcessor:
-    def __init__(self):
-        pass
+    def __init__(self, data_processor_type: DataProcessorType):
+        self.data_processor_type = data_processor_type
+        self.data_processor_activated = False
 
     def process_sample(self, data):
-
         return data
 
     def process_buffer(self, data):
@@ -23,38 +28,40 @@ class DataProcessor:
     def reset_tap(self):
         pass
 
+    def activate_data_processor(self):
+        pass
 
-class IIRFilter(DataProcessor):
-
-    def __init__(self):
-        super().__init__()
-        self.a = None
-        self.b = None
-        self.x_tap = None
-        self.y_tap = None
-
-    def process_sample(self, data):
-        # perform realtime filter with tap
-
-        # push x
-        self.x_tap[:, 1:] = self.x_tap[:, : -1]
-        self.x_tap[:, 0] = data
-        # push y
-        self.y_tap[:, 1:] = self.y_tap[:, : -1]
-        # calculate new y
-        self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
-                           np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
-
-        data = self.y_tap[:, 0]
-        return data
-
-    def reset_tap(self):
-        self.x_tap.fill(0)
-        self.y_tap.fill(0)
+# class IIRFilter(DataProcessor):
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.a = None
+#         self.b = None
+#         self.x_tap = None
+#         self.y_tap = None
+#
+#     def process_sample(self, data):
+#         # perform realtime filter with tap
+#
+#         # push x
+#         self.x_tap[:, 1:] = self.x_tap[:, : -1]
+#         self.x_tap[:, 0] = data
+#         # push y
+#         self.y_tap[:, 1:] = self.y_tap[:, : -1]
+#         # calculate new y
+#         self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
+#                            np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
+#
+#         data = self.y_tap[:, 0]
+#         return data
+#
+#     def reset_tap(self):
+#         self.x_tap.fill(0)
+#         self.y_tap.fill(0)
 
 class RealtimeNotch(DataProcessor):
     def __init__(self, w0=60, Q=20, fs=250, channel_num=8):
-        super().__init__()
+        super().__init__(DataProcessorType.RealtimeNotch)
         self.w0 = w0
         self.Q = Q
         self.fs = fs
@@ -85,7 +92,7 @@ class RealtimeNotch(DataProcessor):
 
 class RealtimeButterBandpass(DataProcessor):
     def __init__(self, lowcut=5, highcut=50, fs=250, order=5, channel_num=8):
-        super().__init__()
+        super().__init__(DataProcessorType.RealtimeButterBandpass)
         self.lowcut = lowcut
         self.highcut = highcut
         self.fs = fs
@@ -124,7 +131,7 @@ class RealtimeButterBandpass(DataProcessor):
 
 class RealtimeVrms(DataProcessor):
     def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
-        super().__init__()
+        super().__init__(data_processor_type=DataProcessorType.RealtimeVrms)
         self.fs = fs
         self.channel_num = channel_num
         self.interval_ms = interval_ms
@@ -147,3 +154,18 @@ class RealtimeVrms(DataProcessor):
     def reset_tap(self):
         self.data_buffer.fill(0)
 
+
+
+
+def get_processor_class(data_processor_type):
+    if data_processor_type == DataProcessorType.RealtimeNotch:
+        return RealtimeNotch
+    elif data_processor_type == DataProcessorType.RealtimeButterBandpass:
+        return RealtimeButterBandpass
+    elif data_processor_type == DataProcessorType.RealtimeVrms:
+        return RealtimeVrms
+
+
+if __name__ == '__main__':
+    a = RealtimeButterBandpass()
+    print(type)

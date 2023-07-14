@@ -1,7 +1,6 @@
 import numpy as np
-import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QThread
 
 from rena.configs.configs import AppConfigs
 from rena.threadings.workers import PlaybackWorker
@@ -33,7 +32,7 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_command_interface_timer.setInterval(int(float(AppConfigs().visualization_refresh_interval)))
         self.playback_command_interface_timer.timeout.connect(self.ticks)
 
-        self.playback_thread = pg.QtCore.QThread(self.parent)
+        self.playback_thread = QThread(self.parent)
         self.playback_worker = PlaybackWorker(self.command_info_interface)
         self.playback_worker.moveToThread(self.playback_thread)
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
@@ -172,3 +171,13 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def issue_slider_moved_command(self, command):
         self.playback_worker.queue_slider_moved_command(command)
+
+    def try_close(self):
+        # Initialize playback worker
+        self.playback_command_interface_timer.stop()
+        self.playback_thread.requestInterruption()
+        self.playback_thread.exit()
+        self.playback_thread.wait()
+
+        self.deleteLater()
+        print("PlaybackWidget closed")

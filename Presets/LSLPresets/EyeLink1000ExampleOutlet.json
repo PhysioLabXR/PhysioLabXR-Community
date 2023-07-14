@@ -1,0 +1,10 @@
+{ "StreamName":"EyeLink 1000",
+  "ChannelNames":[
+    "Gaze Position X",
+    "Gaze Position Y",
+    "Left Pupil Size",
+    "Right Pupil Size"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [2],
+  "DataType": "float32"}

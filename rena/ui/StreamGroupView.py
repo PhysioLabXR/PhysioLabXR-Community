@@ -128,11 +128,12 @@ class StreamGroupView(QTreeWidget):
 
     channel_is_display_changed_signal = QtCore.pyqtSignal(tuple)
 
-    def __init__(self, parent_stream_options, stream_widget, format_widget, stream_name):
+    def __init__(self, parent_stream_options, stream_widget, format_widget, data_processing_widget, stream_name):
         super().__init__()
         self.parent = parent_stream_options
         self.stream_widget = stream_widget
         self.format_widget = format_widget
+        self.data_processing_widget = data_processing_widget
         self.stream_name = stream_name
 
         self.setHeaderLabels(["Group/Channel", "Data Frame Index"])
@@ -520,6 +521,7 @@ class StreamGroupView(QTreeWidget):
         self.group_widgets[new_group_name] = self.group_widgets.pop(old_group_name)
         self.stream_widget.change_group_name(new_group_name, old_group_name)
         self.format_widget.change_group_name(new_group_name)
+        self.data_processing_widget.change_group_name(new_group_name)
 
     def change_channel_name(self, group_name, new_channel_name, old_channel_name, lsl_index):
         self.stream_widget.change_channel_name(group_name, new_channel_name, old_channel_name, lsl_index)

@@ -12,6 +12,7 @@ from rena.presets.GroupEntry import PlotFormat
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, is_group_image_only
 from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
+from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import num_points_shown_text
 from rena.utils.ui_utils import dialog_popup
 
@@ -46,13 +47,23 @@ class StreamOptionsWindow(QWidget):
         plot_format_changed_signal.connect(self.plot_format_changed)
         self.image_change_signal = self.plot_format_widget.image_change_signal
         self.plot_format_widget.hide()
-        self.actionsWidgetLayout.addWidget(self.plot_format_widget)
+        self.signalActionsSplitter.addWidget(self.plot_format_widget)
+        # signalActionsSplitter
+        # data processor
+        self.data_processing_widget = OptionsWindowDataProcessingWidget(self, self.parent, stream_name)
+        self.data_processing_widget.hide()
+        self.signalActionsSplitter.addWidget(self.data_processing_widget)
 
         # barplot
         self.bar_chart_range_on_change_signal.connect(self.parent.bar_chart_range_on_change)
 
         # stream group tree view
-        self.stream_group_view = StreamGroupView(parent_stream_options=self, stream_widget=parent_stream_widget, format_widget=self.plot_format_widget, stream_name=stream_name)
+        self.stream_group_view = StreamGroupView(parent_stream_options=self,
+                                                 stream_widget=parent_stream_widget,
+                                                 format_widget=self.plot_format_widget,
+                                                 data_processing_widget=self.data_processing_widget,
+                                                 stream_name=stream_name)
+
         self.SignalTreeViewLayout.addWidget(self.stream_group_view)
         self.stream_group_view.selection_changed_signal.connect(self.update_info_box)
         self.stream_group_view.update_info_box_signal.connect(self.update_info_box)
@@ -65,11 +76,11 @@ class StreamOptionsWindow(QWidget):
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
-        self.add_group_btn = QPushButton()
-        self.add_group_btn.setText('Create New Group')
+        # self.add_group_btn = QPushButton()
+        # self.add_group_btn.setText('Create New Group')
         self.add_group_btn.hide()
         self.add_group_btn.clicked.connect(self.add_group_clicked)
-        self.actionsWidgetLayout.addWidget(self.add_group_btn)
+        # self.actionsWidgetLayout.addWidget(self.add_group_btn)
 
         self.update_num_points_to_display()
 
@@ -154,10 +165,14 @@ class StreamOptionsWindow(QWidget):
         # self.clearLayout(self.actionsWidgetLayout)
         if selection_state != group_selected:
             self.plot_format_widget.hide()
+            self.data_processing_widget.hide()
         else:
             group_name = selected_groups[0].data(0, 0)
             self.plot_format_widget.show()
+            self.data_processing_widget.show()
+
             self.plot_format_widget.set_plot_format_widget_info(group_name=group_name)
+            self.data_processing_widget.set_data_processing_widget_info(group_name=group_name)
 
         if selection_state == channels_selected or selection_state == channel_selected:
             self.add_group_btn.show()

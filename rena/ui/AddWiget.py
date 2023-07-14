@@ -144,6 +144,8 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
+        elif selected_type == PresetType.FMRI:
+            self.hide_stream_uis()
         else: raise Exception("Unknow preset type {}".format(selected_type))
 
     def set_data_type_to_default(self):

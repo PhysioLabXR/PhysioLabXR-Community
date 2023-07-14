@@ -5,6 +5,7 @@ from rena import config
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
+from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 
 def get_presets_path():
@@ -53,6 +54,8 @@ def set_stream_preset_info(stream_name, key, value):
 def check_preset_exists(stream_name):
     return stream_name in Presets().stream_presets.keys()
 
+def get_stream_nominal_sampling_rate(stream_name):# ->float:
+    return Presets().stream_presets[stream_name].nominal_sampling_rate
 
 def get_stream_group_info(stream_name) -> dict[str, GroupEntry]:
     return Presets().stream_presets[stream_name].group_info
@@ -140,7 +143,7 @@ def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: in
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
                    'DataType': data_type}
     if nominal_sample_rate:
         preset_dict['NominalSamplingRate'] = nominal_sample_rate
@@ -153,7 +156,7 @@ def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_ra
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
-                   'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
+                   'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
                    'DataType': data_type,
                    'PortNumber': port}
     if nominal_sample_rate:
@@ -162,6 +165,13 @@ def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_ra
     stream_preset_dict = preprocess_stream_preset(preset_dict, PresetType.ZMQ)
     Presets().add_stream_preset(stream_preset_dict)
     return preset_dict
+
+def set_stream_num_channels(stream_name, num_channels):
+    Presets().stream_presets[stream_name].num_channels = num_channels
+
+
+def get_stream_num_channels(stream_name):
+    return Presets().stream_presets[stream_name].num_channels
 
 def create_custom_data_stream_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
     if check_preset_exists(stream_name):
@@ -188,6 +198,18 @@ def add_group_entry_to_stream(stream_name, group_entry):
 def change_group_channels(stream_name, group_name, channel_indices, is_channels_shown):
     Presets().stream_presets[stream_name].group_info[group_name].channel_indices = channel_indices
     Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown = is_channels_shown
+
+
+def reset_group_data_processors(stream_name, group_name)-> None:
+    Presets().stream_presets[stream_name].group_info[group_name].reset_data_processors()
+
+def reset_all_group_data_processors(stream_name)-> None:
+    for group_name in Presets().stream_presets[stream_name].group_info:
+        reset_group_data_processors(stream_name, group_name)
+
+
+def get_group_channel_num(stream_name, group_name)-> int:
+    return len(Presets().stream_presets[stream_name].group_info[group_name].channel_indices)
 
 
 def set_group_channel_indices(stream_name, group_name, channel_indices):
@@ -323,9 +345,20 @@ def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
 
 
-def remove_script_from_settings(script_id):
-    Presets().script_presets.pop(script_id)
+def get_group_data_processors(stream_name, group_name) ->list[DataProcessor]:
+    return Presets().stream_presets[stream_name].group_info[group_name].data_processors
 
+def add_data_processor_to_group_entry(stream_name, group_name, data_processor:DataProcessor) ->None:
+    Presets().stream_presets[stream_name].group_info[group_name].data_processors.append(data_processor)
+
+def remove_data_processor_to_group_entry(stream_name, group_name, data_processor: DataProcessor) ->None:
+    Presets().stream_presets[stream_name].group_info[group_name].data_processors.remove(data_processor)
+
+def get_fmri_data_shape(stream_name) ->tuple[int, int, int]:
+    return Presets().stream_presets[stream_name].data_shape
 
 def get_stream_data_type(stream_name) -> DataType:
     return Presets().stream_presets[stream_name].data_type
+
+def remove_script_from_settings(script_id):
+    Presets().script_presets.pop(script_id)

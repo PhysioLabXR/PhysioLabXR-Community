@@ -13,7 +13,7 @@ from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels
+    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, reset_all_group_data_processors
 from rena.threadings import workers
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
@@ -22,13 +22,14 @@ from rena.ui.VizComponents import VizComponents
 from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
     options_icon
 from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.performance_utils import timeit
 from rena.utils.ui_utils import dialog_popup, clear_widget
 
 
 class StreamWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
-    channel_mismatch_buttons = buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
+    channel_mismatch_buttons = buttons = QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No
 
     def __init__(self, parent_widget, parent_layout, stream_name, data_type, worker, networking_interface, port_number,
                  insert_position=None, ):
@@ -570,6 +571,11 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
                     add_group_entry_to_stream(self.stream_name, create_default_group_entry(len(child_channels), group_name, channel_indices=channel_indices, is_channels_shown=is_channels_shown))
                 else:
                     change_group_channels(self.stream_name, group_name, channel_indices, is_channels_shown)
+
+        # reset data processor
+        # TODO: optimize for changed group reset. Reset visualization buffer after regrouped ?
+        reset_all_group_data_processors(self.stream_name)
+
         # save_preset()
         self.reset_viz()
 
@@ -609,6 +615,15 @@ class StreamWidget(Poppable, QtWidgets.QWidget):
 
     def set_spectrogram_cmap(self, group_name):
         self.viz_components.set_spectrogram_cmap(group_name)
+
+    def run_data_processor(self, data_dict):
+        data = data_dict['frames']
+        group_info = get_stream_group_info(self.stream_name)
+
+        for this_group_info in group_info.values():  # TODO: potentially optimize using pool
+            if len(this_group_info.data_processors) != 0:
+                processed_data = run_data_processors(data[this_group_info.channel_indices], this_group_info.data_processors)
+                data[this_group_info.channel_indices] = processed_data
 
     def try_close(self):
         return self.remove_stream()

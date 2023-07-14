@@ -16,6 +16,7 @@ from rena.presets.preset_class_helpers import SubPreset
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import save_local, reload_enums
 from rena.utils.Singleton import Singleton
+from rena.utils.dsp_utils.dsp_modules import DataProcessor, NotchFilter, IIRFilter
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
@@ -70,6 +71,7 @@ class DataType(Enum):
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
+    FMRI = 'FMRI'
     LSL = 'LSL'
     ZMQ = 'ZMQ'
     CUSTOM = 'CUSTOM'
@@ -92,6 +94,10 @@ class VideoDeviceChannelOrder(Enum):
     BGR = 1
 
 
+def is_monotonically_increasing(lst):
+    differences = np.diff(np.array(lst))
+    return np.all(differences >= 0)
+
 class PresetsEncoder(json.JSONEncoder):
     """
     JSON encoder that can handle enums and objects whose metaclass is SubPreset.
@@ -105,7 +111,18 @@ class PresetsEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Enum):
             return o.name
+        if isinstance(o, DataProcessor):
+            return o.serialize_data_processor_params()
         if o.__class__.__class__ is SubPreset:
+            if isinstance(o, StreamPreset):
+                if not o.can_edit_channel_names:  # will not serialize channel names if it is not editable
+                    o.channel_names = None
+            if isinstance(o, GroupEntry):
+                if o._is_image_only:
+                    assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
+                    o.channel_indices_start_end = min(o.channel_indices), max(o.channel_indices) + 1
+                    o.channel_indices = None
+                    o.is_channels_shown = None
             return o.__dict__
         return super().default(o)
 
@@ -134,7 +151,6 @@ class StreamPreset(metaclass=SubPreset):
         is obtained by which folder the preset file is in (i.e., LSLPresets, ZMQPresets, or DevicePresets under the Presets folder)
     """
     stream_name: str
-    channel_names: List[str]
 
     num_channels: int
 
@@ -142,10 +158,13 @@ class StreamPreset(metaclass=SubPreset):
     device_info: dict
     preset_type: PresetType
 
+    channel_names: List[str] = None
     data_type: DataType = DataType.float32
     port_number: int = None
     display_duration: float = None
     nominal_sampling_rate: int = 10
+
+    can_edit_channel_names: bool = True
 
     def __post_init__(self):
         """
@@ -153,6 +172,13 @@ class StreamPreset(metaclass=SubPreset):
         Note any attributes loaded from the config will need to be loaded into the class's attribute here
         @return:
         """
+        if self.channel_names is None:  # channel names can be none when the number of channels is too big
+            self.channel_names = ['c {0}'.format(i) for i in range(self.num_channels)]
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
+        if self.num_channels > config.MAX_TS_CHANNEL_NUM:
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
         if self.display_duration is None:
             self.display_duration = float(config.settings.value('viz_display_duration'))
         for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
@@ -190,6 +216,29 @@ class VideoPreset(metaclass=SubPreset):
 
     video_scale: float = 1.0
     channel_order: VideoDeviceChannelOrder = VideoDeviceChannelOrder.RGB
+
+    def __post_init__(self):
+        """
+        VideoPreset's post init function.
+        @return:
+        """
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
+
+
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class FMRIPreset(metaclass=SubPreset):
+
+    stream_name: str
+    preset_type: PresetType
+    data_type: DataType
+    num_channels: int
+    data_shape: tuple[int, int, int]
+    normalize: bool
+    alignment: bool
+    threshold: float
+    nominal_sampling_rate: int = 2
+    mri_file_path: str = None
 
     def __post_init__(self):
         """
@@ -270,7 +319,7 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset, FMRIPreset]] = field(default_factory=dict)
     script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 

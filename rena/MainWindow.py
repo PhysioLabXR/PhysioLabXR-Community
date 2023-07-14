@@ -130,6 +130,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
+        # # fmri widget
+        # # TODO: FMRI WIDGET
+        # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
+        #                          data_shape=(240,240,186),
+        #                          normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
+        # Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
+        # self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
+        #                               stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
+        #                               insert_position=None)
+        #
+        # self.fmri_widget.setObjectName("FMRIWidget")
+        # self.fmri_widget.show()
+
     def add_btn_clicked(self):
         """
         This is the only entry point to adding a stream widget
@@ -323,6 +336,8 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             reply = QMessageBox.StandardButton.Yes
         if reply == QMessageBox.StandardButton.Yes:
+            self.meta_data_update_timer.stop()
+            self.meta_data_update_timer.timeout.disconnect()
             if self.settings_window is not None:
                 self.settings_window.close()
 

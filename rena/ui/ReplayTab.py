@@ -151,6 +151,7 @@ class ReplayTab(QtWidgets.QWidget):
 
     def try_close(self):
         self.playback_widget.issue_terminate_command()
+        self.playback_widget.try_close()
         self.replay_server_process.join(timeout=1)
         if self.replay_server_process.is_alive():
             self.replay_server_process.kill()

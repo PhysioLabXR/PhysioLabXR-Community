@@ -1,0 +1,21 @@
+{ "StreamName":"OpenBCI_Cyton_8_Channels",
+  "StreamType": "EEG",
+  "_Board_id": 0,
+  "ChannelNames":[
+    "PackageNum",
+    "Fz",
+    "Cz",
+    "Pz",
+    "C3",
+    "C4",
+    "P3",
+    "P4",
+    "O1",
+    "X","Y","Z",
+    "Other1","Other2","Other3","Other4","Other5","Other6","Other7",
+    "Analog1","Analog2","Analog3",
+    "TimeStamp",
+    "Marker"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [1, 9]}

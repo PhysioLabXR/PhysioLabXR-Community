@@ -10,15 +10,19 @@ class MainWindow(QWidget):
         # Create the two plot widgets
         self.plot1 = PlotWidget()
         self.plot2 = PlotWidget()
+        self.plot3 = PlotWidget()
 
         # Set the pen colors for the plots
         self.plot1.plot(np.sin(np.linspace(0, 2*np.pi, 100)), pen=mkPen('r', width=2))
         self.plot2.plot(np.cos(np.linspace(0, 2*np.pi, 100)), pen=mkPen('b', width=2))
+        self.plot3.plot(np.cos(np.linspace(0, 2*np.pi, 100)), pen=mkPen('b', width=2))
 
         # Create the splitter
         self.splitter = QSplitter(Qt.Vertical)
         self.splitter.addWidget(self.plot1)
         self.splitter.addWidget(self.plot2)
+        self.splitter.addWidget(self.plot3)
+
 
         # # Create the slider
         # self.slider = QSlider(Qt.Vertical)

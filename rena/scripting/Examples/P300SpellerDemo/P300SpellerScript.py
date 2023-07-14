@@ -5,7 +5,8 @@ from sklearn.linear_model import LogisticRegression
 from rena.scripting.Examples.P300SpellerDemo.Cyton8ChannelsConfig import *
 from rena.scripting.Examples.P300SpellerDemo.P300Speller_utils import *
 from rena.scripting.RenaScript import RenaScript
-from rena.utils.general import DataBuffer
+# from rena.utils.general import DataBuffer
+from rena.utils.buffers import DataBuffer
 
 
 class P300Speller(RenaScript):
