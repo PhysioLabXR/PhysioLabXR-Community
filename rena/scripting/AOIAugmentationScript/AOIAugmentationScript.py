@@ -27,6 +27,8 @@ class AOIAugmentationScript(RenaScript):
         # detected_fixation_on_display_area = [1000, 1000]
 
         # state machine
+        detected_fixation_on_display_area = [1000, 1000]
+
 
 
 
