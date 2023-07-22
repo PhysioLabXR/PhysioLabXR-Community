@@ -13,6 +13,7 @@ class AOIAugmentationScript(RenaScript):
         default_attention_matrix = generate_random_attention_matrix(grid_shape=(25, 50))
 
 
+
     # Start will be called once when the run button is hit.
     def init(self):
 
