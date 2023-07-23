@@ -383,6 +383,7 @@ class Presets(metaclass=Singleton):
         _load_video_device_presets(self)
 
         self.save(is_async=True)
+
         SplashLoadingTextNotifier().set_loading_text("Presets instance successfully initialized")
 
     def _get_all_presets(self):

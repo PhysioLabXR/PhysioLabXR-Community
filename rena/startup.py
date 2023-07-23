@@ -43,6 +43,7 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     config.settings.sync()
     # load the presets, reload from local directory the default LSL, device and experiment presets
     preset_root = get_presets_path()
+
     Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
 
     # instantiate the GlabalSignals singleton object
