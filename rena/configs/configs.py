@@ -5,7 +5,7 @@ from enum import Enum
 
 from PyQt6.QtCore import QStandardPaths
 
-from rena.utils.ConfigPresetUtils import reload_enums, save_local
+from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
 
 

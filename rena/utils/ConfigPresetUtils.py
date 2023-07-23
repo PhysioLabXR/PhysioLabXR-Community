@@ -16,22 +16,6 @@ class DeviceType(enum.Enum):
 
 
 
-def save_local(app_data_path, preset_dict, file_name, encoder=None) -> None:
-    """
-    sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.
-    applies file lock while the json is being dumped. This will block another other process from accessing the file without
-    raising an exception.
-    """
-    if not os.path.exists(app_data_path):
-        os.makedirs(app_data_path)
-    path = os.path.join(app_data_path, file_name)
-    if encoder is None:
-        json_data = json.dumps(preset_dict, indent=4)
-    else:
-        json_data = json.dumps(preset_dict, indent=4, cls=encoder)
-
-    with open(path, 'w') as f:
-        f.write(json_data)
 
 
 def is_iterable_type(t):
