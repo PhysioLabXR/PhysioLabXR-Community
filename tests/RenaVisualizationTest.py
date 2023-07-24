@@ -20,6 +20,8 @@ from tests.test_utils import app_fixture, \
 
 @pytest.fixture
 def app_main_window(qtbot):
+    print("here")
+
     app, test_renalabapp_main_window = app_fixture(qtbot)
     yield test_renalabapp_main_window
     app.quit()

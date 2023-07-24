@@ -11,8 +11,9 @@ from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 from rena import config_ui, config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
-from rena.presets.Presets import Presets
+from rena.presets.Presets import Presets, PresetType, _load_video_device_presets
 from rena.startup import load_settings
+from rena.threadings.WaitThreads import WaitProcessThread, ProcessWithQueue
 from rena.utils.string_utils import remove_space_all_caps
 
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
@@ -49,6 +50,36 @@ class SettingsWidget(QtWidgets.QWidget):
         self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
 
         self.load_settings_to_ui()
+
+        # start a thread to listen to video preset reloading
+        self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
+        self.reload_video_device_presets()
+
+    def reload_video_device_presets(self):
+        """
+        this function will start a separate process look for video devices.
+        an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
+        rtn is the return of the process Presets()._load_video_device_process.
+
+
+        """
+        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+        _load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
+        _load_video_device_process.start()
+        self._reload_video_device_presets(_load_video_device_process)
+
+    def _reload_video_device_presets(self, process):
+        # thread = WaitProcessThread(process)
+        # thread.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.reload_video_device_button.setEnabled(False)
+        self.reload_video_device_button.setText("Reloading...")
+        # thread.start()
+
+    def on_video_device_preset_reloaded(self, video_presets):
+        Presets().add_video_presets(video_presets)
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        self.reload_video_device_button.setEnabled(True)
+        self.reload_video_device_button.setText("Reload Video Devices")
 
     def load_settings_to_ui(self):
         self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)

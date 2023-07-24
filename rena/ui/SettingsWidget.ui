@@ -20,7 +20,7 @@
       <item>
        <widget class="QTabWidget" name="settings_tabs">
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="settings_appearance_tab">
          <attribute name="title">
@@ -138,9 +138,9 @@
            <widget class="QWidget" name="widget_11" native="true">
             <layout class="QVBoxLayout" name="verticalLayout_5">
              <item>
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="reload_video_device_button">
                <property name="text">
-                <string>Reload Video Device</string>
+                <string>Reload Video Devices</string>
                </property>
               </widget>
              </item>

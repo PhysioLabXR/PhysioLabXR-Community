@@ -16,6 +16,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.ScriptPresets import ScriptPreset, ParamPreset
 from rena.presets.preset_class_helpers import SubPreset
+from rena.threadings.WaitThreads import ProcessWithQueue
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
@@ -129,8 +130,9 @@ class PresetsEncoder(json.JSONEncoder):
                     o.channel_names = None
             if isinstance(o, GroupEntry):
                 if o._is_image_only:
-                    assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
-                    o.channel_indices_start_end = min(o.channel_indices), max(o.channel_indices) + 1
+                    if o.channel_indices is not None:
+                        assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
+                        o.channel_indices_start_end = min(o.channel_indices), max(o.channel_indices) + 1
                     o.channel_indices = None
                     o.is_channels_shown = None
             return o.__dict__
@@ -297,7 +299,7 @@ def _load_video_device_presets():
 
         for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
             rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
-        # presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
+        print("finished loading available cameras")
         return rtn
     except KeyboardInterrupt:
         print('KeyboardInterrupt: exiting')
@@ -340,6 +342,8 @@ class Presets(metaclass=Singleton):
         experiment_presets: dictionary containing all the experiment presets. The key is the experiment name and the value is a list of stream names
 
         _reset: if true, reload the presets. This is done in post_init by removing files at _last_mod_time_path and _preset_path.
+
+    Note: presets must not have multiprocessing.Process in the dataclass attributes. This will cause the program to crash.
     """
     _preset_root: str = None
     _reset: bool = False
@@ -357,8 +361,6 @@ class Presets(metaclass=Singleton):
     _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
     _preset_path: str = os.path.join(_app_data_path, 'Presets.json')
 
-    _load_video_device_process: Process = None
-
     def __post_init__(self):
         """
         The post init of presets does the following:
@@ -368,6 +370,7 @@ class Presets(metaclass=Singleton):
         4. check if any presets are dirty and load them
         5. save the presets to the local disk
         """
+        pass
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing Presets')
         else:
@@ -412,7 +415,6 @@ class Presets(metaclass=Singleton):
 
         _load_stream_presets(self, dirty_presets)
         SplashLoadingTextNotifier().set_loading_text('Loading video devices...You may notice webcam flashing.')
-        self.reload_video_presets()
         self.save(is_async=False)
         SplashLoadingTextNotifier().set_loading_text("Presets instance successfully initialized")
 
@@ -448,8 +450,10 @@ class Presets(metaclass=Singleton):
         """
         save the presets to the local disk when the application is closed
         """
-        save_presets_locally(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
+        save_presets_locally(self._app_data_path, self.__dict__, 'Presets.json')
         print(f"Presets instance successfully deleted with its contents saved to {self._app_data_path}")
+        # if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
+        #     self._load_video_device_process.terminate()
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
         """
@@ -522,16 +526,16 @@ class Presets(metaclass=Singleton):
         _load_stream_presets(self, dirty_presets)
         self.save(is_async=True)
 
-    def reload_video_presets(self):
-        """
-        this function will start a separate process look for video devices.
-        an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
-        rtn is the return of the process Presets()._load_video_device_process.
-
-
-        """
-        if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
-            self._load_video_device_process.terminate()
-        self._load_video_device_process = multiprocessing.Process(target=_load_video_device_presets)
-        self._load_video_device_process.start()
+    # def reload_video_presets(self):
+    #     """
+    #     this function will start a separate process look for video devices.
+    #     an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
+    #     rtn is the return of the process Presets()._load_video_device_process.
+    #
+    #
+    #     """
+    #     self.add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+    #     _load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
+    #     _load_video_device_process.start()
+    #     return _load_video_device_process
 

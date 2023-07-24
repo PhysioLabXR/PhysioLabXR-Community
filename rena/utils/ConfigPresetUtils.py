@@ -60,3 +60,10 @@ def target_to_enum(target: str, enum_class: enum.Enum) -> enum.Enum:
 #     # Convert string to enum
 #     enum_value = DataProcessorType.__members__[enum_string]
 #     print(enum_value)
+
+def save_local(path, data, file_name, encoder=None):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    with open(os.path.join(path, file_name), 'w') as f:
+        json.dump(data, f, cls=encoder, indent=4)
+
