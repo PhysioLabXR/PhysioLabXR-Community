@@ -50,6 +50,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         # start a thread to listen to video preset reloading
         # self.zmq_endpoint = "tcp://127.0.0.1:5550"
+        self._load_video_device_process = None
+        self.wait_process_thread = None
+        self.wait_process_worker = None
         self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
         self.reload_video_device_presets()
 
@@ -61,23 +64,21 @@ class SettingsWidget(QtWidgets.QWidget):
 
 
         """
+        Presets().remove_video_presets()
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
         Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
-        _load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
-        _load_video_device_process.start()
-        self._reload_video_device_presets(_load_video_device_process)
-
-    def _reload_video_device_presets(self, process):
-        self.thread = QThread()
-        self.wait_worker = WaitForProcessWorker(process)
-        self.wait_worker.process_finished.connect(self.on_video_device_preset_reloaded)
-        self.wait_worker.moveToThread(self.thread)
+        self._load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
+        self._load_video_device_process.start()
+        self.wait_process_thread = QThread()
+        self.wait_process_worker = WaitForProcessWorker(self._load_video_device_process)
+        self.wait_process_worker.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.wait_process_worker.moveToThread(self.wait_process_thread)
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
-        self.thread.started.connect(self.wait_worker.run)
-        self.thread.start()
+        self.wait_process_thread.started.connect(self.wait_process_worker.run)
+        self.wait_process_thread.start()
 
     def on_video_device_preset_reloaded(self, video_presets):
-        Presets().remove_video_presets()
         Presets().add_video_presets(video_presets)
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         self.reload_video_device_button.setEnabled(True)
@@ -172,6 +173,7 @@ class SettingsWidget(QtWidgets.QWidget):
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         dialog_popup('Stream presets reloaded!', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
 
-    # def try_close(self):
-        # if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
-        #     self._load_video_device_process.terminate()
+    def try_close(self):
+        if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
+            self._load_video_device_process.terminate()
+        self.wait_process_thread.quit()

@@ -346,6 +346,7 @@ class MainWindow(QtWidgets.QMainWindow):
             [c() for c in stream_close_calls]
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
+            self.settings_widget.try_close()
 
             Presets().__del__()
             AppConfigs().__del__()
