@@ -1,23 +1,20 @@
 # This Python file uses the following encoding: utf-8
-import json
-import os
+import multiprocessing
 
+import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QSettings
+from PyQt6.QtCore import QThread
 from PyQt6.QtGui import QIntValidator
-
 from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 
-from rena import config_ui, config
+from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
 from rena.presets.Presets import Presets, PresetType, _load_video_device_presets
 from rena.startup import load_settings
-from rena.threadings.WaitThreads import WaitProcessThread, ProcessWithQueue
-from rena.utils.string_utils import remove_space_all_caps
-
+from rena.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
-import pyqtgraph as pg
+
 
 class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -52,6 +49,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.load_settings_to_ui()
 
         # start a thread to listen to video preset reloading
+        # self.zmq_endpoint = "tcp://127.0.0.1:5550"
         self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
         self.reload_video_device_presets()
 
@@ -69,13 +67,17 @@ class SettingsWidget(QtWidgets.QWidget):
         self._reload_video_device_presets(_load_video_device_process)
 
     def _reload_video_device_presets(self, process):
-        # thread = WaitProcessThread(process)
-        # thread.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.thread = QThread()
+        self.wait_worker = WaitForProcessWorker(process)
+        self.wait_worker.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.wait_worker.moveToThread(self.thread)
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
-        # thread.start()
+        self.thread.started.connect(self.wait_worker.run)
+        self.thread.start()
 
     def on_video_device_preset_reloaded(self, video_presets):
+        Presets().remove_video_presets()
         Presets().add_video_presets(video_presets)
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         self.reload_video_device_button.setEnabled(True)
@@ -169,3 +171,7 @@ class SettingsWidget(QtWidgets.QWidget):
         Presets().reload_stream_presets()
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         dialog_popup('Stream presets reloaded!', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
+
+    # def try_close(self):
+        # if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
+        #     self._load_video_device_process.terminate()

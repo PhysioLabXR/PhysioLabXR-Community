@@ -16,7 +16,6 @@ from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
 from rena.presets.ScriptPresets import ScriptPreset, ParamPreset
 from rena.presets.preset_class_helpers import SubPreset
-from rena.threadings.WaitThreads import ProcessWithQueue
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
@@ -92,6 +91,9 @@ class PresetType(Enum):
         if isinstance(preset_type, str):
             preset_type = PresetType(preset_type)
         return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
+
+    def is_self_video_preset(self):
+        return self in [self.WEBCAM, self.MONITOR]
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
@@ -539,3 +541,9 @@ class Presets(metaclass=Singleton):
     #     _load_video_device_process.start()
     #     return _load_video_device_process
 
+    def remove_video_presets(self):
+        """
+        remove all the video presets
+        :return: None
+        """
+        self.stream_presets = {stream_name: stream_preset for stream_name, stream_preset in self.stream_presets.items() if not stream_preset.preset_type.is_self_video_preset()}
