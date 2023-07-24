@@ -54,7 +54,7 @@ class AppConfigsEncoder(json.JSONEncoder):
 class AppConfigs(metaclass=Singleton):
     """
     Global configuration for RenaLabApp. This is a singleton class. It will be created when the application is started.
-    Note that AppConfigs must be created before Presets. So in main.py, any imports that involves Presets must be placed
+    Note that AppConfigs must be created before Presets. So in PhysioLabXR.py, any imports that involves Presets must be placed
     after AppConfigs is created.
 
     To add a new config, simply add a new field to this class. Type can be any atomic type and enums. However, the current
