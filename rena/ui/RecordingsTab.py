@@ -15,7 +15,7 @@ from rena import ui_shared
 from rena.config import settings
 from rena.configs.configs import AppConfigs, RecordingFileFormat
 from rena.ui.RecordingConversionDialog import RecordingConversionDialog
-from rena.ui_shared import start_stream_icon, stop_stream_icon, stop_recording_text, start_recording_text
+from rena.ui_shared import stop_recording_text, start_recording_text
 from rena.utils.RNStream import RNStream
 from rena.utils.ui_utils import dialog_popup
 import subprocess
@@ -27,7 +27,7 @@ class RecordingsTab(QtWidgets.QWidget):
         :rtype: object
         """
         super().__init__()
-        self.ui = uic.loadUi("ui/RecordingsTab.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_RecordingsTab, self)
         self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
         self.recording_buffer = {}
@@ -70,7 +70,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.is_recording = True
         self.recording_byte_count = 0
         self.StartStopRecordingBtn.setText(stop_recording_text)
-        self.StartStopRecordingBtn.setIcon(stop_stream_icon)
+        self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_stop)
 
         # disable the text edit fields
         self.experimentNameTextEdit.setEnabled(False)
@@ -97,7 +97,7 @@ class RecordingsTab(QtWidgets.QWidget):
             dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok, main_parent=self.parent)
 
         self.StartStopRecordingBtn.setText(start_recording_text)
-        self.StartStopRecordingBtn.setIcon(start_stream_icon)
+        self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
 
         # reenable the text edit fields
         self.experimentNameTextEdit.setEnabled(True)

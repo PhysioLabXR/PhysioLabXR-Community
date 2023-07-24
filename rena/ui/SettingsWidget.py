@@ -19,7 +19,7 @@ from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
-        self.ui = uic.loadUi("ui/SettingsWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_SettingsWidget, self)
         self.parent = parent
         self.set_theme(config.settings.value('theme'))
 

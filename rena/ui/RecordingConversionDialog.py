@@ -8,7 +8,7 @@ import numpy as np
 import os
 import csv
 
-from rena.configs.configs import RecordingFileFormat
+from rena.configs.configs import RecordingFileFormat, AppConfigs
 from rena.presets.Presets import Presets
 from rena.utils.data_utils import CsvStoreLoad
 from rena.utils.RNStream import RNStream
@@ -18,7 +18,7 @@ from rena.utils.xdf_utils import create_xml_string, XDF
 class RecordingConversionDialog(QtWidgets.QWidget):
     def __init__(self,  file_path, file_format: RecordingFileFormat):
         super().__init__()
-        self.ui = uic.loadUi("ui/RecordingConversionDialog.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_RecordingConversionDialog, self)
         self.setWindowTitle(f'Please wait for converting to {file_format.value}')
 
         self.file_format = file_format

@@ -30,13 +30,13 @@ SCRIPT_INFO_REQUEST = 'i'
 DATA_BUFFER_PREFIX = 'd'.encode('utf-8')
 SCRIPT_PARAM_CHANGE = 'p'
 
-try:
-    rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
-except FileNotFoundError:
-    try:
-        rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
-    except FileNotFoundError:
-        rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
+# try:
+#     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
+# except FileNotFoundError:
+#     try:
+#         rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+#     except FileNotFoundError:
+#         rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
 
 default_plot_format = {
         'time_series': {'is_valid': 1, 'display':1},

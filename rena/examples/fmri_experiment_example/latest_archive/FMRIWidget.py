@@ -1,10 +1,9 @@
 # This Python file uses the following encoding: utf-8
 
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer, QThread
 
+from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
@@ -12,8 +11,6 @@ from rena.presets.Presets import DataType
 from rena.threadings.workers import ZMQWorker
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
-from rena.ui_shared import remove_stream_icon, \
-    options_icon
 
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
@@ -31,8 +28,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveVideoBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveVideoBtn.setIcon(AppConfigs()._icon_remove_stream)
 
         self.fmri_timestamp_slider_value = 0
 

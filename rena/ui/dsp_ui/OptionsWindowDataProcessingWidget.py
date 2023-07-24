@@ -3,9 +3,9 @@
 from PyQt6 import QtWidgets
 from PyQt6 import uic
 
+from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import get_group_data_processors
 from rena.ui.dsp_ui.DataProcessorWidget import DataProcessorWidgetType
-from rena.ui_shared import add_icon
 from rena.utils.dsp_utils.dsp_modules import *
 # class data_processor_widget_type:
 #     def __init__(self, stream_name):
@@ -17,7 +17,7 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, stream_widget, stream_name):
         super().__init__()
-        self.ui = uic.loadUi("ui/dsp_ui/OptionsWindowDataProcessingWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_OptionsWindowDataProcessingWidget, self)
         self.parent = parent
         self.stream_widget = stream_widget
         self.stream_name = stream_name
@@ -25,7 +25,7 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
 
         self.AddDataProcessorBtn.clicked.connect(self.add_processor_btn_clicked)
         # add add button icon
-        self.AddDataProcessorBtn.setIcon(add_icon)
+        self.AddDataProcessorBtn.setIcon(AppConfigs()._icon_add)
 
         self.init_data_processor_combobox()
 

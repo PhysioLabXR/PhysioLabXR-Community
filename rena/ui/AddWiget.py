@@ -1,15 +1,13 @@
-import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QCompleter
 
 from rena.configs.GlobalSignals import GlobalSignals
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType, DataType
+from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
-from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
-from rena.ui_shared import add_icon
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -21,8 +19,8 @@ class AddStreamWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.parent = parent
-        self.ui = uic.loadUi("ui/AddWidget.ui", self)
-        self.add_btn.setIcon(add_icon)
+        self.ui = uic.loadUi(AppConfigs()._ui_AddWidget, self)
+        self.add_btn.setIcon(AppConfigs()._icon_add)
 
         self.add_custom_data_stream_widget = AddCustomDataStreamWidget(self, parent)
         self.layout().addWidget(self.add_custom_data_stream_widget)

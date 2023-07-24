@@ -30,8 +30,7 @@ from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.VizComponents import VizComponents
-from rena.ui_shared import stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
-    options_icon, start_stream_icon
+
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.ui_utils import dialog_popup
@@ -66,9 +65,9 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
-        self.StartStopStreamBtn.setIcon(start_stream_icon)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
+        self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
+        self.OptionsBtn.setIcon(AppConfigs._icon_options)
+        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove_stream)
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
@@ -96,9 +95,9 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
         # inefficient loading of assets TODO need to confirm creating Pixmap in ui_shared result in crash
-        self.stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
-        self.stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
-        self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+        self.stream_unavailable_pixmap = QPixmap(AppConfigs()._stream_unavailable)
+        self.stream_available_pixmap = QPixmap(AppConfigs()._stream_available)
+        self.stream_active_pixmap = QPixmap(AppConfigs()._stream_viz_active)
 
         # init worker thread
         self.worker_thread = QThread(self)
@@ -288,14 +287,14 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def set_button_icons(self):
         if not self.is_streaming():
-            self.StartStopStreamBtn.setIcon(start_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
         else:
-            self.StartStopStreamBtn.setIcon(stop_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
 
         if not self.is_popped:
-            self.PopWindowBtn.setIcon(pop_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_pop_window)
         else:
-            self.PopWindowBtn.setIcon(dock_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_dock_window)
 
     def options_btn_clicked(self):
         pass

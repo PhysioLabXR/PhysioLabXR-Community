@@ -2,14 +2,9 @@
 
 from PyQt6 import QtWidgets, uic
 
+from rena.configs.configs import AppConfigs
 from rena.ui.PoppableWidget import Poppable
-from rena.ui_shared import remove_stream_icon, \
-    options_icon
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
-from OpenGL.GL import *
-from OpenGL.GLUT import *
+
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
     def __init__(self, parent_widget, parent_layout, window_title,
@@ -39,8 +34,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
         # # Connect UIs ##########################################
         # self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveVideoBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveVideoBtn.setIcon(AppConfigs()._icon_remove)
 
         # # FPS counter``
         # self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))

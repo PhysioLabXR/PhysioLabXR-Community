@@ -8,12 +8,12 @@ from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, 
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 
-def get_presets_path():
-    print(f'Current cwd is {os.getcwd()}')
-    if os.path.exists('../Presets'):
-        return '../Presets'
-    elif os.path.exists('Presets'):
-        return 'Presets'
+# def get_presets_path():
+#     print(f'Current cwd is {os.getcwd()}')
+#     if os.path.exists('../Presets'):
+#         return '../Presets'
+#     elif os.path.exists('Presets'):
+#         return 'Presets'
 
 def get_preset_category(preset_name):
     preset = Presets()

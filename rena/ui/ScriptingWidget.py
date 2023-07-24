@@ -10,6 +10,7 @@ from PyQt6.QtGui import QIntValidator
 
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
+from rena.configs.configs import AppConfigs
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.Presets import Presets
@@ -17,7 +18,7 @@ from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import start_rena_script, get_target_class_name
 from rena.scripting.scripting_enums import ParamChange, ParamType
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
+from rena.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
@@ -25,7 +26,7 @@ from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ParamWidget import ParamWidget
-from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
+from rena.ui_shared import script_realtime_info_text
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
@@ -39,7 +40,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset, layout: QLayout):
         super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
-        self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ScriptingWidget, self)
         self.set_pop_button(self.PopWindowBtn)
 
         self.parent = parent_widget
@@ -54,17 +55,17 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # set up the add buttons
         self.removeBtn.clicked.connect(self.remove_script_clicked)
-        self.addInputBtn.setIcon(add_icon)
+        self.addInputBtn.setIcon(AppConfigs()._icon_add)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
         self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
         self.inputComboBox.lineEdit().returnPressed.connect(self.addInputBtn.click)
 
-        self.addOutput_btn.setIcon(add_icon)
+        self.addOutput_btn.setIcon(AppConfigs()._icon_add)
         self.addOutput_btn.clicked.connect(self.add_output_clicked)
         self.output_lineEdit.textChanged.connect(self.on_output_lineEdit_changed)
         self.output_lineEdit.returnPressed.connect(self.addOutput_btn.click)
 
-        self.addParam_btn.setIcon(add_icon)
+        self.addParam_btn.setIcon(AppConfigs()._icon_add)
         self.addParam_btn.clicked.connect(self.add_params_clicked)
         self.param_lineEdit.textChanged.connect(self.check_can_add_param)
         self.param_lineEdit.returnPressed.connect(self.addParam_btn.click)
@@ -78,7 +79,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")
 
-        self.removeBtn.setIcon(minus_icon)
+        self.removeBtn.setIcon(AppConfigs()._icon_minus)
 
         self.is_running = False
         self.is_simulating = False
@@ -286,7 +287,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def create_script(self, script_path, is_open_file=True):
         if script_path:
             base_script_name = os.path.basename(os.path.normpath(script_path))
-            this_script: str = rena_base_script[:]  # make a copy
+            this_script: str = AppConfigs()._rena_base_script[:]  # make a copy
             class_name = base_script_name if not base_script_name.endswith('.py') else base_script_name.strip('.py')
             this_script = this_script.replace('BaseRenaScript', class_name)
             if not script_path.endswith('.py'):

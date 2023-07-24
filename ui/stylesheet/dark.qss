@@ -91,7 +91,7 @@ QGroupBox::indicator
 QCheckBox::indicator:unchecked,
 QCheckBox::indicator:unchecked:focus
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
 }
 
 QCheckBox::indicator:unchecked:hover,
@@ -101,12 +101,12 @@ QGroupBox::indicator:unchecked:focus,
 QGroupBox::indicator:unchecked:pressed
 {
     border: none;
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_unchecked.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_unchecked.svg);
 }
 
 QCheckBox::indicator:checked
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_checked.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_checked.svg);
 }
 
 QCheckBox::indicator:checked:hover,
@@ -117,36 +117,36 @@ QGroupBox::indicator:checked:focus,
 QGroupBox::indicator:checked:pressed
 {
     border: none;
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_checked.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_checked.svg);
 }
 
 QCheckBox::indicator:indeterminate
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_indeterminate.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_indeterminate.svg);
 }
 
 QCheckBox::indicator:indeterminate:focus,
 QCheckBox::indicator:indeterminate:hover,
 QCheckBox::indicator:indeterminate:pressed
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_indeterminate.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_indeterminate.svg);
 }
 
 QCheckBox::indicator:indeterminate:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_indeterminate_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_indeterminate_disabled.svg);
 }
 
 QCheckBox::indicator:checked:disabled,
 QGroupBox::indicator:checked:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_checked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_checked_disabled.svg);
 }
 
 QCheckBox::indicator:unchecked:disabled,
 QGroupBox::indicator:unchecked:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
 }
 
 QRadioButton
@@ -165,7 +165,7 @@ QRadioButton:disabled
 QRadioButton::indicator:unchecked,
 QRadioButton::indicator:unchecked:focus
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/radio_unchecked_disabled.svg);
 }
 
 
@@ -174,7 +174,7 @@ QRadioButton::indicator:unchecked:pressed
 {
     border: none;
     outline: none;
-    border-image: url(../rena/ui/stylesheet/dark/radio_unchecked.svg);
+    border-image: url(ui/stylesheet/dark/radio_unchecked.svg);
 }
 
 
@@ -182,7 +182,7 @@ QRadioButton::indicator:checked
 {
     border: none;
     outline: none;
-    border-image: url(../rena/ui/stylesheet/dark/radio_checked.svg);
+    border-image: url(ui/stylesheet/dark/radio_checked.svg);
 }
 
 QRadioButton::indicator:checked:hover,
@@ -191,18 +191,18 @@ QRadioButton::indicator:checked:pressed
 {
     border: none;
     outline: none;
-    border-image: url(../rena/ui/stylesheet/dark/radio_checked.svg);
+    border-image: url(ui/stylesheet/dark/radio_checked.svg);
 }
 
 QRadioButton::indicator:checked:disabled
 {
     outline: none;
-    border-image: url(../rena/ui/stylesheet/dark/radio_checked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/radio_checked_disabled.svg);
 }
 
 QRadioButton::indicator:unchecked:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/radio_unchecked_disabled.svg);
 }
 
 QMenuBar
@@ -267,43 +267,43 @@ QMenu::separator
    (see QActionGroup::setExclusive) */
 QMenu::indicator:non-exclusive:unchecked
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
 }
 
 QMenu::indicator:non-exclusive:unchecked:selected
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_unchecked_disabled.svg);
 }
 
 QMenu::indicator:non-exclusive:checked
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_checked.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_checked.svg);
 }
 
 QMenu::indicator:non-exclusive:checked:selected
 {
-    border-image: url(../rena/ui/stylesheet/dark/checkbox_checked.svg);
+    border-image: url(ui/stylesheet/dark/checkbox_checked.svg);
 }
 
 /* exclusive indicator = radio button style indicator (see QActionGroup::setExclusive) */
 QMenu::indicator:exclusive:unchecked
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/radio_unchecked_disabled.svg);
 }
 
 QMenu::indicator:exclusive:unchecked:selected
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_unchecked_disabled.svg);
+    border-image: url(ui/stylesheet/dark/radio_unchecked_disabled.svg);
 }
 
 QMenu::indicator:exclusive:checked
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_checked.svg);
+    border-image: url(ui/stylesheet/dark/radio_checked.svg);
 }
 
 QMenu::indicator:exclusive:checked:selected
 {
-    border-image: url(../rena/ui/stylesheet/dark/radio_checked.svg);
+    border-image: url(ui/stylesheet/dark/radio_checked.svg);
 }
 
 QMenu::right-arrow
@@ -396,7 +396,7 @@ QScrollBar::handle:horizontal
 QScrollBar::add-line:horizontal
 {
     margin: 0px 0.3ex 0px 0.3ex;
-    border-image: url(../rena/ui/stylesheet/dark/right_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/right_arrow_disabled.svg);
     width: 1ex;
     height: 1ex;
     subcontrol-position: right;
@@ -406,7 +406,7 @@ QScrollBar::add-line:horizontal
 QScrollBar::sub-line:horizontal
 {
     margin: 0ex 0.3ex 0ex 0.3ex;
-    border-image: url(../rena/ui/stylesheet/dark/left_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/left_arrow_disabled.svg);
     width: 1ex;
     height: 1ex;
     subcontrol-position: left;
@@ -416,7 +416,7 @@ QScrollBar::sub-line:horizontal
 QScrollBar::add-line:horizontal:hover,
 QScrollBar::add-line:horizontal:on
 {
-    border-image: url(../rena/ui/stylesheet/dark/right_arrow.svg);
+    border-image: url(ui/stylesheet/dark/right_arrow.svg);
     width: 1ex;
     height: 1ex;
     subcontrol-position: right;
@@ -427,7 +427,7 @@ QScrollBar::add-line:horizontal:on
 QScrollBar::sub-line:horizontal:hover,
 QScrollBar::sub-line:horizontal:on
 {
-    border-image: url(../rena/ui/stylesheet/dark/left_arrow.svg);
+    border-image: url(ui/stylesheet/dark/left_arrow.svg);
     width: 1ex;
     height: 1ex;
     subcontrol-position: left;
@@ -466,7 +466,7 @@ QScrollBar::handle:vertical
 QScrollBar::sub-line:vertical
 {
     margin: 0.3ex 0ex 0.3ex 0ex;
-    border-image: url(../rena/ui/stylesheet/dark/up_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/up_arrow_disabled.svg);
     height: 1ex;
     width: 1ex;
     subcontrol-position: top;
@@ -476,7 +476,7 @@ QScrollBar::sub-line:vertical
 QScrollBar::add-line:vertical
 {
     margin: 0.3ex 0ex 0.3ex 0ex;
-    border-image: url(../rena/ui/stylesheet/dark/down_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/down_arrow_disabled.svg);
     height: 1ex;
     width: 1ex;
     subcontrol-position: bottom;
@@ -487,7 +487,7 @@ QScrollBar::sub-line:vertical:hover,
 QScrollBar::sub-line:vertical:on
 {
 
-    border-image: url(../rena/ui/stylesheet/dark/up_arrow.svg);
+    border-image: url(ui/stylesheet/dark/up_arrow.svg);
     height: 1ex;
     width: 1ex;
     subcontrol-position: top;
@@ -498,7 +498,7 @@ QScrollBar::sub-line:vertical:on
 QScrollBar::add-line:vertical:hover,
 QScrollBar::add-line:vertical:on
 {
-    border-image: url(../rena/ui/stylesheet/dark/down_arrow.svg);
+    border-image: url(ui/stylesheet/dark/down_arrow.svg);
     height: 1ex;
     width: 1ex;
     subcontrol-position: bottom;
@@ -541,7 +541,7 @@ QHeaderView::section
 
 QSizeGrip
 {
-    border-image: url(../rena/ui/stylesheet/dark/sizegrip.svg);
+    border-image: url(ui/stylesheet/dark/sizegrip.svg);
     width: 1.2ex;
     height: 1.2ex;
 }
@@ -603,28 +603,28 @@ QToolBar
 
 QToolBar::handle:horizontal
 {
-    border-image: url(../rena/ui/stylesheet/dark/hmovetoolbar.svg);
+    border-image: url(ui/stylesheet/dark/hmovetoolbar.svg);
     width = 1.6ex;
     height = 6.4ex;
 }
 
 QToolBar::handle:vertical
 {
-    border-image: url(../rena/ui/stylesheet/dark/vmovetoolbar.svg);
+    border-image: url(ui/stylesheet/dark/vmovetoolbar.svg);
     width = 5.4ex;
     height = 1ex;
 }
 
 QToolBar::separator:horizontal
 {
-    border-image: url(../rena/ui/stylesheet/dark/hsepartoolbar.svg);
+    border-image: url(ui/stylesheet/dark/hsepartoolbar.svg);
     width = 0.7ex;
     height = 6.3ex;
 }
 
 QToolBar::separator:vertical
 {
-    border-image: url(../rena/ui/stylesheet/dark/vsepartoolbars.svg);
+    border-image: url(ui/stylesheet/dark/vsepartoolbars.svg);
     width = 6.3ex;
     height = 0.7ex;
 }
@@ -826,14 +826,14 @@ QAbstractSpinBox::up-arrow,
 QAbstractSpinBox::up-arrow:disabled,
 QAbstractSpinBox::up-arrow:off
 {
-    border-image: url(../rena/ui/stylesheet/dark/up_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/up_arrow_disabled.svg);
     width: 0.9ex;
     height: 0.6ex;
 }
 
 QAbstractSpinBox::up-arrow:hover
 {
-    border-image: url(../rena/ui/stylesheet/dark/up_arrow.svg);
+    border-image: url(ui/stylesheet/dark/up_arrow.svg);
     width: 0.9ex;
     height: 0.6ex;
 }
@@ -842,14 +842,14 @@ QAbstractSpinBox::down-arrow,
 QAbstractSpinBox::down-arrow:disabled,
 QAbstractSpinBox::down-arrow:off
 {
-    border-image: url(../rena/ui/stylesheet/dark/down_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/down_arrow_disabled.svg);
     width: 0.9ex;
     height: 0.6ex;
 }
 
 QAbstractSpinBox::down-arrow:hover
 {
-    border-image: url(../rena/ui/stylesheet/dark/down_arrow.svg);
+    border-image: url(ui/stylesheet/dark/down_arrow.svg);
     width: 0.9ex;
     height: 0.6ex;
 }
@@ -906,13 +906,13 @@ QTabBar:focus
 
 QTabBar::close-button
 {
-    border-image: url(../rena/ui/stylesheet/dark/close.svg);
+    border-image: url(ui/stylesheet/dark/close.svg);
     background: transparent;
 }
 
 QTabBar::close-button:hover
 {
-    border-image: url(../rena/ui/stylesheet/dark/close-hover.svg);
+    border-image: url(ui/stylesheet/dark/close-hover.svg);
     width: 1.2ex;
     height: 1.2ex;
     background: transparent;
@@ -920,7 +920,7 @@ QTabBar::close-button:hover
 
 QTabBar::close-button:pressed
 {
-    border-image: url(../rena/ui/stylesheet/dark/close-pressed.svg);
+    border-image: url(ui/stylesheet/dark/close-pressed.svg);
     width: 1.2ex;
     height: 1.2ex;
     background: transparent;
@@ -1155,30 +1155,30 @@ QTabBar::tab:right:!selected:first:hover
 
 QTabBar QToolButton::right-arrow:enabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/right_arrow.svg);
+    border-image: url(ui/stylesheet/dark/right_arrow.svg);
 }
 
 QTabBar QToolButton::left-arrow:enabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/left_arrow.svg);
+    border-image: url(ui/stylesheet/dark/left_arrow.svg);
 }
 
 QTabBar QToolButton::right-arrow:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/right_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/right_arrow_disabled.svg);
 }
 
 QTabBar QToolButton::left-arrow:disabled
 {
-    border-image: url(../rena/ui/stylesheet/dark/left_arrow_disabled.svg);
+    border-image: url(ui/stylesheet/dark/left_arrow_disabled.svg);
 }
 
 QDockWidget
 {
     background: #31363b;
     border: 0.1ex solid #403F3F;
-    titlebar-close-icon: url(../rena/ui/stylesheet/dark/transparent.svg);
-    titlebar-normal-icon: url(../rena/ui/stylesheet/dark/transparent.svg);
+    titlebar-close-icon: url(ui/stylesheet/dark/transparent.svg);
+    titlebar-normal-icon: url(ui/stylesheet/dark/transparent.svg);
 }
 
 QDockWidget::close-button,
@@ -1191,27 +1191,27 @@ QDockWidget::float-button
 
 QDockWidget::float-button
 {
-    border-image: url(../rena/ui/stylesheet/dark/undock.svg);
+    border-image: url(ui/stylesheet/dark/undock.svg);
 }
 
 QDockWidget::float-button:hover
 {
-    border-image: url(../rena/ui/stylesheet/dark/undock-hover.svg) ;
+    border-image: url(ui/stylesheet/dark/undock-hover.svg) ;
 }
 
 QDockWidget::close-button
 {
-    border-image: url(../rena/ui/stylesheet/dark/close.svg) ;
+    border-image: url(ui/stylesheet/dark/close.svg) ;
 }
 
 QDockWidget::close-button:hover
 {
-    border-image: url(../rena/ui/stylesheet/dark/close-hover.svg) ;
+    border-image: url(ui/stylesheet/dark/close-hover.svg) ;
 }
 
 QDockWidget::close-button:pressed
 {
-    border-image: url(../rena/ui/stylesheet/dark/close-pressed.svg) ;
+    border-image: url(ui/stylesheet/dark/close-pressed.svg) ;
 }
 
 QTreeView,
@@ -1223,31 +1223,31 @@ QListView
 
 QTreeView::branch:has-siblings:!adjoins-item
 {
-    border-image: url(../rena/ui/stylesheet/dark/stylesheet-vline.svg) 0;
+    border-image: url(ui/stylesheet/dark/stylesheet-vline.svg) 0;
 }
 
 QTreeView::branch:has-siblings:adjoins-item
 {
-    border-image: url(../rena/ui/stylesheet/dark/stylesheet-branch-more.svg) 0;
+    border-image: url(ui/stylesheet/dark/stylesheet-branch-more.svg) 0;
 }
 
 QTreeView::branch:!has-children:!has-siblings:adjoins-item
 {
-    border-image: url(../rena/ui/stylesheet/dark/stylesheet-branch-end.svg) 0;
+    border-image: url(ui/stylesheet/dark/stylesheet-branch-end.svg) 0;
 }
 
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings
 {
-    border-image: url(../rena/ui/stylesheet/dark/stylesheet-branch-end-closed.svg) 0;
-    image: url(../rena/ui/stylesheet/dark/branch_closed.svg);
+    border-image: url(ui/stylesheet/dark/stylesheet-branch-end-closed.svg) 0;
+    image: url(ui/stylesheet/dark/branch_closed.svg);
 }
 
 QTreeView::branch:open:has-children:!has-siblings,
 QTreeView::branch:open:has-children:has-siblings
 {
-    border-image: url(../rena/ui/stylesheet/dark/stylesheet-branch-end-open.svg) 0;
-    image: url(../rena/ui/stylesheet/dark/branch_open.svg);
+    border-image: url(ui/stylesheet/dark/stylesheet-branch-end-open.svg) 0;
+    image: url(ui/stylesheet/dark/branch_open.svg);
 }
 
 /*

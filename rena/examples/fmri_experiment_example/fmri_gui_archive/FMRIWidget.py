@@ -2,28 +2,16 @@
 
 from PyQt6 import QtWidgets, uic
 
+from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
-from rena.ui_shared import remove_stream_icon, \
-    options_icon
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QOpenGLWidget
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-
-import numpy as np
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
-from pyqtgraph import functions as fn
-import nibabel as nib
 
 
 
-    # if alpha_interpolate:
+# if alpha_interpolate:
     #     alpha_channel = np.interp(volume_data, (0, 1), (0, 255))
     # else:
     #     alpha_channel = 225
@@ -72,8 +60,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidget.ui", self)
         self.set_pop_button(self.PopWindowBtn)
 
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveVideoBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveVideoBtn.setIcon(AppConfigs()._icon_remove)
 
         self.fmri_timestamp_slider_value = 0
 

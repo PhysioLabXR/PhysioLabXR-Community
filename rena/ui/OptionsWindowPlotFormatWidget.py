@@ -4,6 +4,7 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
 
+from rena.configs.configs import AppConfigs
 from rena.presets.Cmap import Cmap
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_a_group_info, \
@@ -28,7 +29,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         :rtype: object
         """
         # self.setWindowTitle('Options')
-        self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_OptionsWindowPlotFormatWidget, self)
         self.stream_name = stream_name
         self.group_name = None
         self.parent = parent

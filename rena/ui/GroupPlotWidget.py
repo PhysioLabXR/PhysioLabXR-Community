@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QDialogButtonBox
 from scipy import signal
 
 from rena import config
+from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import PlotFormat
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_preset_info, get_is_group_shown, \
@@ -27,7 +28,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.parent = parent
-        self.ui = uic.loadUi("ui/GroupPlotWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_GroupPlotWidget, self)
         self.update_group_name(group_name)
 
         self.stream_name = stream_name

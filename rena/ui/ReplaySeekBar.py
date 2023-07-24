@@ -2,11 +2,13 @@
 
 from PyQt6 import QtWidgets, uic
 
+from rena.configs.configs import AppConfigs
+
 
 class ReplaySeekBar(QtWidgets.QWidget):
     def __init__(self, parent, endTime):
         super().__init__()
-        self.ui = uic.loadUi("ui/ReplaySeekBar.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ReplaySeekBar, self)
         self.parent = parent
         self.startTime = '0:00'
         self.endTime = self.getTimeStr(endTime)

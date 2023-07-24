@@ -4,8 +4,6 @@ from PyQt6 import uic
 from PyQt6.QtGui import QIntValidator, QIcon
 from PyQt6.QtWidgets import QPushButton, QWidget
 
-from rena import config
-from rena.config import app_logo_path
 from rena.config_ui import *
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import PlotFormat
@@ -33,13 +31,13 @@ class StreamOptionsWindow(QWidget):
         """
         super().__init__()
 
-        self.ui = uic.loadUi("ui/StreamOptionsWindow.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_StreamOptionsWindow, self)
         self.parent = parent_stream_widget
         self.has_reported_invalid_num_points = False
 
         self.stream_name = stream_name
         self.setWindowTitle('Options for {}'.format(self.stream_name))
-        window_icon = QIcon(app_logo_path)
+        window_icon = QIcon(AppConfigs()._app_logo)
         self.setWindowIcon(window_icon)
 
         # plot format

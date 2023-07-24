@@ -12,6 +12,7 @@ from rena import config
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets, PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
@@ -24,10 +25,9 @@ from rena.presets.presets_utils import get_experiment_preset_streams, check_pres
 try:
     import rena.config
 except ModuleNotFoundError as e:
-    print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
+    print("Make sure you set the working directory to PhysioLabXR's root, cwd is " + os.getcwd())
     raise e
 import rena.threadings.workers as workers
-from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
@@ -62,13 +62,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         super().__init__(*args, **kwargs)
         SplashLoadingTextNotifier().set_loading_text('Creating main window...')
-        self.ui = uic.loadUi("ui/mainwindow.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_mainwindow, self)
         self.setWindowTitle('RenaLabApp')
         self.app = app
         self.ask_to_close = ask_to_close
 
         ############
-        self.stream_widgets: Dict[str, StreamWidget] = {}
+        self.stream_widgets: Dict[str, BaseStreamWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors

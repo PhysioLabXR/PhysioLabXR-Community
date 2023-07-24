@@ -7,6 +7,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 
 from rena import config, shared
+from rena.configs.configs import AppConfigs
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.ui.PlayBackWidget import PlayBackWidget
@@ -25,7 +26,7 @@ class ReplayTab(QtWidgets.QWidget):
         :rtype: object
         """
         super().__init__()
-        self.ui = uic.loadUi("ui/ReplayTab.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ReplayTab, self)
         self.is_replaying = False  # note this attribute will still be true even when the replay is paused
         self.replay_speed = 1
 

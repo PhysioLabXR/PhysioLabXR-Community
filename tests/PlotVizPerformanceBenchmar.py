@@ -3,7 +3,6 @@ import pickle
 
 import numpy as np
 
-from tests.test_utils import update_test_cwd
 from tests.test_viz import plot_replay_benchmark_results
 
 metrics = 'replay push data loop time', 'timestamp reenactment accuracy'
@@ -20,7 +19,7 @@ num_channels_to_test = np.linspace(1, 128, 2)
 num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
 sampling_rates_to_test = [math.ceil(x) for x in sampling_rates_to_test]
 
-update_test_cwd()
+# update_test_cwd()
 results = pickle.load(open("replay_benchmark.p", 'rb'))
 test_axes = results['test_axes']
 

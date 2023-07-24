@@ -22,7 +22,7 @@ from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
 def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=True):
     print('Initializing test fixture for ' + 'Visualization Features')
-    update_test_cwd()
+    # update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
@@ -244,12 +244,12 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
         names.append(rand_name)
     return names
 
-def update_test_cwd():
-    print('update_test_cwd: current working directory is', os.getcwd())
-    if os.getcwd().endswith('tests'):
-        os.chdir('../rena/')
-    elif 'rena' in os.listdir(os.getcwd()):
-        os.chdir('rena')
+# def update_test_cwd():
+#     print('update_test_cwd: current working directory is', os.getcwd())
+#     if os.getcwd().endswith('tests'):
+#         os.chdir('..')
+#     elif 'rena' in os.listdir(os.getcwd()):
+#         os.chdir('rena')
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 

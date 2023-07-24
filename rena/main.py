@@ -1,11 +1,11 @@
 import multiprocessing
+import os
 import sys
 
 from PyQt6 import QtWidgets
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 
-from rena.config import app_logo_path
 from rena.configs.configs import AppConfigs
 from rena.ui.SplashScreen import SplashScreen
 
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # load the qt application
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle("fusion")
-    tray_icon = QSystemTrayIcon(QIcon(app_logo_path), parent=app)
+    tray_icon = QSystemTrayIcon(QIcon(AppConfigs()._app_logo), parent=app)
     tray_icon.setToolTip('RenaLabApp')
     tray_icon.show()
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     print("Creating main window")
     window = MainWindow(app=app)
 
-    window.setWindowIcon(QIcon(app_logo_path))
+    window.setWindowIcon(QIcon(AppConfigs()._app_logo))
     # make tray menu
     menu = QMenu()
     exit_action = menu.addAction('Exit')

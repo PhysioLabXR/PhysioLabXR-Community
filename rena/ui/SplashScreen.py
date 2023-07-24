@@ -5,6 +5,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QFont
 from PyQt6.QtWidgets import QApplication, QSplashScreen, QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QObject, pyqtSignal, QCoreApplication
 
+from rena.configs.configs import AppConfigs
 from rena.version.version import VERSION
 
 
@@ -52,7 +53,7 @@ class SplashScreen(QSplashScreen):
     """
     def __init__(self):
         super().__init__()
-        self.setPixmap(QPixmap('../media/logo/RenaLabApp Splash.png'))
+        self.setPixmap(QPixmap(AppConfigs()._splash_screen))
 
         layout = QVBoxLayout()
         self.loading_label = QLabel("Loading...")

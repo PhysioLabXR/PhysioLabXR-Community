@@ -1,49 +1,29 @@
 # This Python file uses the following encoding: utf-8
-import time
 from collections import deque
 
-import numpy as np
-from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
-
-from exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
-from rena import config, config_ui
-from rena.configs.configs import AppConfigs, LinechartVizMode
-from rena.presets.load_user_preset import create_default_group_entry
-from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
-    get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, get_group_channel_indices, \
-    reset_all_group_data_processors
-from rena.sub_process.TCPInterface import RenaTCPAddDSPWorkerRequestObject, RenaTCPInterface
-from rena.threadings import workers
-from rena.ui.GroupPlotWidget import GroupPlotWidget
-from rena.ui.PoppableWidget import Poppable
-from rena.ui.StreamOptionsWindow import StreamOptionsWindow
-from rena.ui.VizComponents import VizComponents
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
-    options_icon
-from rena.utils.buffers import DataBufferSingleStream
-from rena.utils.dsp_utils.dsp_modules import run_data_processors
-from rena.utils.performance_utils import timeit
-from rena.utils.ui_utils import dialog_popup, clear_widget
-# This Python file uses the following encoding: utf-8
-
-import pyqtgraph as pg
-import pyqtgraph.opengl as gl
+from PyQt6 import QtCore
 from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QMutex
 from PyQt6.QtCore import QTimer, QThread
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialogButtonBox
 
+from rena import config
+from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
+from rena.exceptions.exceptions import ChannelMismatchError, LSLStreamNotFoundError, UnsupportedErrorTypeError
+from rena.presets.presets_utils import get_stream_preset_info, pop_stream_preset_from_settings, \
+    reset_all_group_data_processors
+from rena.threadings import workers
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
-from rena.presets.Presets import DataType
-from rena.threadings.workers import ZMQWorker
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
-from rena.ui_shared import remove_stream_icon, \
-    options_icon
+from rena.utils.buffers import DataBufferSingleStream
+from rena.utils.ui_utils import dialog_popup
+
+
+# This Python file uses the following encoding: utf-8
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):
     plot_format_changed_signal = QtCore.pyqtSignal(dict)
@@ -81,8 +61,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.actualSamplingRate = 0
 
         self.StreamNameLabel.setText(stream_name)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove_stream)
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
@@ -106,9 +86,9 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
         # inefficient loading of assets TODO need to confirm creating Pixmap in ui_shared result in crash
-        self.stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
-        self.stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
-        self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+        self.stream_unavailable_pixmap = QPixmap(AppConfigs()._stream_unavailable)
+        self.stream_available_pixmap = QPixmap(AppConfigs()._stream_available)
+        self.stream_active_pixmap = QPixmap(AppConfigs()._stream_viz_active)
 
         # visualization component
         # This variable stores all the visualization components we initialize it in the init_stream_visualization()
@@ -328,14 +308,14 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
     def set_button_icons(self):
         if not self.is_streaming():
-            self.StartStopStreamBtn.setIcon(start_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
         else:
-            self.StartStopStreamBtn.setIcon(stop_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
 
         if not self.is_popped:
-            self.PopWindowBtn.setIcon(pop_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_pop_window)
         else:
-            self.PopWindowBtn.setIcon(dock_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_dock_window)
 
     def options_btn_clicked(self):
         pass
