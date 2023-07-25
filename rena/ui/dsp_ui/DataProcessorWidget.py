@@ -262,7 +262,7 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthLowpassFilterWidget, self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthLowPassFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
@@ -323,7 +323,7 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthHighpassFilterWidget, self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthHighPassFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
