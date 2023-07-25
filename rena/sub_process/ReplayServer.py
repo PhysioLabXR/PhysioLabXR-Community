@@ -33,6 +33,7 @@ class ReplayServer(threading.Thread):
         self.stream_names = None
         self.remaining_stream_names = None
 
+        self.outlet_infos = []
         self.outlets = {}
         self.next_sample_index_of_stream = {}  # index of the next sample of each stream that will be sent, this list contains the same number of items as the number of streams in the replay
         self.chunk_sizes = {}  # how many samples should be published at once, this list contains the same number of items as the number of streams in the replay
@@ -80,7 +81,6 @@ class ReplayServer(threading.Thread):
                             continue
                     self.previous_file_loc = file_loc
                     self.previous_stream_data = self.stream_data
-                    self.is_replaying = True
                     self.setup_stream()
                     self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
@@ -88,8 +88,13 @@ class ReplayServer(threading.Thread):
 
                     command = self.recv_string(is_block=True)
                     if command == shared.GO_AHEAD_COMMAND:
-                        pass
-                    elif command == shared.DUPLICATE_STREAM_STOP_COMMAND:
+                        # go ahead and open the streams
+                        # outlets are not created in setup before receiving the go-ahead from the main process because the
+                        # main process need to check if there're duplicate stream names with the streams being replayed
+                        for outlet_info in self.outlet_infos:
+                            self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                        self.is_replaying = True
+                    elif command == shared.CANCEL_START_REPLAY_COMMAND:
                         self.reset_replay()
                         continue
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:
@@ -172,6 +177,7 @@ class ReplayServer(threading.Thread):
         self.is_paused = False
         self.is_replaying = False
 
+        self.outlet_infos = []
         # close all outlets if there's any
         for stream_name in self.outlets.keys():
             del self.outlets[stream_name]
@@ -289,10 +295,8 @@ class ReplayServer(threading.Thread):
             stream_channel_count = int(np.prod(self.stream_data[stream_name][0].shape[:-1]))
             stream_channel_format = 'double64'
             stream_source_id = 'Replay Stream - ' + stream_name
-            outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format,
-                                           stream_source_id)
-
-            self.outlets[stream_name]= pylsl.StreamOutlet(outlet_info)
+            outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format, stream_source_id)
+            self.outlet_infos.append(outlet_info)
             print("\t" + str(streamIndex) + "\t" + stream_name)
 
         self.virtual_clock_offset = 0

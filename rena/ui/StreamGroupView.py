@@ -1,17 +1,16 @@
 from collections import defaultdict
 
-from PyQt6.QtWidgets import *
+from PyQt6 import QtCore
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 
-from rena import config
-from rena.config import default_group_name
 from rena.config_ui import *
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
-from rena.presets.presets_utils import get_stream_preset_info, get_stream_group_info, get_is_group_shown
+from rena.presets.presets_utils import get_stream_preset_info, get_stream_group_info
 from rena.utils.ui_utils import dialog_popup
-from PyQt6 import QtCore
-from PyQt6.QtCore import Qt
+
 
 ## Reference:
 ## https://stackoverflow.com/questions/13662020/how-to-implement-itemchecked-and-itemunchecked-signals-for-qtreewidget-in-pyqt4
@@ -194,14 +193,18 @@ class StreamGroupView(QTreeWidget):
                                                  group_name=group_name,
                                                  plot_format=group_entry.selected_plot_format,
                                                  is_shown=group_entry.is_group_shown)
-            if len(group_entry.channel_indices) > AppConfigs().max_timeseries_num_channels_per_group:
-                dialog_popup(f'Warning: Number of Channels for stream {self.stream_name}\' group {group_name} Exceeds Maximum Number of Channels Allowed. Additional Channels Will Not Be Displayed.', mode='modeless')
-                continue  # skip adding channel items if exceeding maximum time series number of channels
-            for channel_index_in_group, channel_index in enumerate(group_entry.channel_indices):
-                channel = self.add_channel_item(parent_item=group,
-                                                channel_name= channel_names[int(channel_index)],
-                                                is_shown=group_entry.is_channels_shown[channel_index_in_group],
-                                                lsl_index=channel_index)
+
+            if group_entry.channel_indices is not None:  # only display channels if there are not too many of them
+
+                if len(group_entry.channel_indices) > AppConfigs().max_timeseries_num_channels_per_group:
+                    dialog_popup(f'Warning: Number of Channels for stream {self.stream_name}\' group {group_name} Exceeds Maximum Number of Channels Allowed. Additional Channels Will Not Be Displayed.', mode='modeless')
+                    continue  # skip adding channel items if exceeding maximum time series number of channels
+
+                for channel_index_in_group, channel_index in enumerate(group_entry.channel_indices):
+                    channel = self.add_channel_item(parent_item=group,
+                                                    channel_name= channel_names[int(channel_index)],
+                                                    is_shown=group_entry.is_channels_shown[channel_index_in_group],
+                                                    lsl_index=channel_index)
         self.expandAll()
         self.selectionModel().selectionChanged.connect(self.selection_changed)
         self.itemChanged[QTreeWidgetItem, int].connect(self.item_changed)

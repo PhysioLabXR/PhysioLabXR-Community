@@ -32,7 +32,7 @@ class RenaWorker(metaclass=RenaWorkerMeta):
     signal_data_tick = pyqtSignal()
     pull_data_times = deque(maxlen=100 * AppConfigs().pull_data_interval)
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         pass
 
@@ -72,7 +72,7 @@ class LSLInletWorker(QObject, RenaWorker):
         # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
         self.interface_mutex = QMutex()
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         if QThread.currentThread().isInterruptionRequested():
             return
@@ -97,7 +97,7 @@ class LSLInletWorker(QObject, RenaWorker):
             self.signal_data.emit(data_dict)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_stream_availability(self):
         """
         only emit when the stream is not available
@@ -152,7 +152,7 @@ class OpenBCIDeviceWorker(QObject):
 
         self.timestamps_queue = deque(maxlen=self.interface.get_sampling_rate() * 10)  # TODO move this number to settings
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             data = self.interface.process_frames()  # get all data and remove it from internal buffer
@@ -184,7 +184,7 @@ class OpenBCIDeviceWorker(QObject):
     def is_streaming(self):
         return self.is_streaming
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_stream_availability(self):
         return self.is_stream_available()
 
@@ -217,7 +217,7 @@ class MmwWorker(QObject):
         self._mmw_interface = mmw_interface
         self._is_streaming = True
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def mmw_process_on_tick(self):
         if self._is_streaming:
             if self._mmw_interface:
@@ -349,7 +349,7 @@ class PlaybackWorker(QObject):
         # initialize pause/resume status
         self.is_paused = False
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def run(self):
         if self.is_running:
             self.send_command_mutex.lock()
@@ -447,7 +447,7 @@ class ScriptingStdoutWorker(QObject):
         self.tick_signal.connect(self.process_stdout)
         self.stdout_socket_interface = stdout_socket_interface
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_stdout(self):
         msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
         if msg:
@@ -470,7 +470,7 @@ class ScriptInfoWorker(QObject):
         self.script_process_active = True
         self.send_info_request = False
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def check_pid(self):
         """
         check if the script process is still running
@@ -479,7 +479,7 @@ class ScriptInfoWorker(QObject):
             self.abnormal_termination_signal.emit()
             self.deactivate()
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def request_get_info(self):
         if self.script_process_active:
             if not self.send_info_request:  # should not duplicate a request if the last request hasn't been answered yet
@@ -505,7 +505,7 @@ class ScriptInfoWorker(QObject):
 #         super().__init__()
 #         self.command_signal.connect(self.process_command)
 #
-#     @pg.QtCore.pyqtSlot()
+#     @QtCore.pyqtSlot()
 #     def process_command(self, command):
 #         self.command_info_mutex.lock()
 #         if command == SCRIPT_STOP_REQUEST:
@@ -566,7 +566,7 @@ class ZMQWorker(QObject, RenaWorker):
         self.context.term()
         print('In ZMQWorker.__del__(): Socket closed and context terminated')
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         if QThread.currentThread().isInterruptionRequested():
             return
@@ -590,7 +590,7 @@ class ZMQWorker(QObject, RenaWorker):
                 self.signal_data.emit(data_dict)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_stream_availability(self):
         if QThread.currentThread().isInterruptionRequested():
             return

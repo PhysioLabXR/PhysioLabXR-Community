@@ -258,7 +258,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def image_valid_update(self):
         if self.group_name is not None:
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+            group_info = get_stream_a_group_info(self.stream_name, self.group_name)
+            channel_num = group_info.get_num_channels()
             width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
 
             self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n Group Channel Number = {1}'.format(

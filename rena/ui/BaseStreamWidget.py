@@ -226,11 +226,11 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.create_visualization_component()
 
     def create_buffer(self):
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
+        num_channels = get_stream_preset_info(self.stream_name, 'num_channels')
         sr = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
-        buffer_size = 1 if len(channel_names) > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
+        buffer_size = 1 if num_channels > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=num_channels, buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
 
@@ -277,7 +277,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         group_info = get_stream_group_info(self.stream_name)
         for group_name in group_info.keys():
-            group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
+            group_channel_names = None if channel_names is None else [channel_names[int(i)] for i in group_info[group_name].channel_indices]
             group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
             self.splitter.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()

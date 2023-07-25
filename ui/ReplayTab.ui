@@ -69,13 +69,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="PreloadBtn">
-        <property name="text">
-         <string>Preload</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="StartStopReplayBtn">
         <property name="maximumSize">
          <size>

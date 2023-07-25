@@ -3,6 +3,7 @@ import time
 import pyscreeze
 import numpy as np
 import pyqtgraph as pg
+from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from pylsl import local_clock
 
@@ -28,7 +29,7 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def start_stream(self):
         self.is_streaming = True
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()

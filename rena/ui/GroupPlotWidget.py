@@ -1,7 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtWidgets import QDialogButtonBox
 from scipy import signal
 
 from rena import config
@@ -13,11 +12,10 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
-    get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, set_image_levels_min, \
-    set_image_levels_max, get_image_format
+    get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, \
+    get_group_channel_indices_start_end, get_is_channels_show
 from rena.utils.image_utils import process_image
-from rena.utils.ui_utils import get_distinct_colors, dialog_popup
-from rena.utils.user_input_utils import float_validator
+from rena.utils.ui_utils import get_distinct_colors
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
@@ -97,7 +95,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.linechart_widget.setXRange(0, get_stream_preset_info(self.stream_name, 'display_duration'))
 
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
-        is_channels_shown = get_is_group_shown(self.stream_name, self.group_name)
+        is_channels_shown = get_is_channels_show(self.stream_name, self.group_name)
 
         distinct_colors = get_distinct_colors(len(channel_indices))
         self.legends = self.linechart_widget.addLegend()
@@ -202,7 +200,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             image_config = get_group_image_config(self.stream_name, self.group_name)
             width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentage
             depth = image_format.depth_dim()
-            image_plot_data = data[channel_indices, -1]  # only visualize the last frame
+            if channel_indices is None:
+                start_end = get_group_channel_indices_start_end(self.stream_name, self.group_name)
+                image_plot_data = data[start_end[0]:start_end[1], -1]
+            else:
+                image_plot_data = data[channel_indices, -1]  # only visualize the last frame
             if image_format == ImageFormat.rgb:
                 if channel_format == ChannelFormat.channel_last:
                     image_plot_data = np.reshape(image_plot_data, (depth, height, width))

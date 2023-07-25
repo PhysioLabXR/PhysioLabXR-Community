@@ -69,9 +69,11 @@ def get_group_image_config(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config
 
 
-def get_is_group_shown(stream_name, group_name) -> List[bool]:
-    return Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown
+def get_is_group_shown(stream_name, group_name) -> bool:
+    return Presets().stream_presets[stream_name].group_info[group_name].is_group_shown
 
+def get_is_channels_show(stream_name, group_name) -> List[bool]:
+    return Presets().stream_presets[stream_name].group_info[group_name].is_channels_shown
 
 def is_group_image_only(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].is_image_only()
@@ -133,6 +135,10 @@ def get_selected_plot_format_index(stream_name, group_name) -> int:
 
 def get_group_channel_indices(stream_name, group_name) -> list[int]:
     return Presets().stream_presets[stream_name].group_info[group_name].channel_indices
+
+
+def get_group_channel_indices_start_end(stream_name, group_name) -> List[int]:
+    return Presets().stream_presets[stream_name].group_info[group_name].channel_indices_start_end
 
 
 def save_preset(is_async=True):
