@@ -177,6 +177,5 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.playback_thread.requestInterruption()
         self.playback_thread.exit()
         self.playback_thread.wait()
-
         self.deleteLater()
         print("PlaybackWidget closed")

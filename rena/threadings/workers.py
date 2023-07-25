@@ -435,7 +435,7 @@ class PlaybackWorker(QObject):
             self.is_running = False
             self.replay_terminated_signal.emit()
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f'response for reply {reply} is not implemented')
         self.send_command_mutex.unlock()
 
 class ScriptingStdoutWorker(QObject):

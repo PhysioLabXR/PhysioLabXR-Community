@@ -61,9 +61,9 @@ class WaitForResponseWorker(QObject):
 
     @QtCore.pyqtSlot()
     def run(self):
-        print("Strat polling")
+        # print("Strat polling")
         socks = dict(self.poller.poll(timeout=self.poll_interval))
-        print("Polling result: ", socks)
+        # print("Polling result: ", socks)
         if self.socket in socks and socks[self.socket] == zmq.POLLIN:
             self.timer.stop()
             current_thread = QThread.currentThread()
@@ -90,4 +90,4 @@ def start_wait_for_response(socket: zmq.Socket, poll_interval: int=100):
 
     wait_response_thread.start()
     poll_timer.start()
-    return wait_for_response_worker
+    return wait_for_response_worker, wait_response_thread
