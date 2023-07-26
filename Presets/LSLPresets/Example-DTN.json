@@ -1,0 +1,7 @@
+{ "StreamName":"Example-DTN",
+  "ChannelNames":[
+    "DTN"
+  ],
+  "NominalSamplingRate":  75,
+  "DataType": "float32"
+}

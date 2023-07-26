@@ -102,6 +102,8 @@ class ReplayTab(QtWidgets.QWidget):
 
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
+            self.StartStopReplayBtn.setEnabled(True)
+            self.StartStopReplayBtn.setText('Start Replay')
         elif client_info.startswith(shared.START_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             start_time, end_time, total_time, virtual_clock_offset = np.frombuffer(time_info)

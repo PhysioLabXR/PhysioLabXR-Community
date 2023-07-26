@@ -1,0 +1,4 @@
+{ "StreamName":"Example-BioSemi-Midline",
+  "NominalSamplingRate":  2048,
+  "ChannelNames":  ["Fpz", "AFz", "Fz", "FCz", "Cz", "CPz", "Pz", "POz", "Oz"],
+  "DataType": "float32"}
