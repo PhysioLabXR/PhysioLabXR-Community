@@ -1,4 +1,4 @@
-{ "StreamName":"Example-DTN",
+{ "StreamName":"Example-EventMarker",
   "ChannelNames":[
     "DTN"
   ],

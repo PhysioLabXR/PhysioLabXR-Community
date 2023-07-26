@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from rena.config import settings
 from rena.config_ui import button_style_classic
+from rena.exceptions.exceptions import RenaError
 from rena.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 from rena.scripting.script_utils import validate_python_script_class
 

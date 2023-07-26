@@ -63,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__(*args, **kwargs)
         SplashLoadingTextNotifier().set_loading_text('Creating main window...')
         self.ui = uic.loadUi(AppConfigs()._ui_mainwindow, self)
-        self.setWindowTitle('RenaLabApp')
+        self.setWindowTitle('PhysioLabXR')
         self.app = app
         self.ask_to_close = ask_to_close
 

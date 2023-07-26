@@ -22,7 +22,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle("fusion")
     tray_icon = QSystemTrayIcon(QIcon(AppConfigs()._app_logo), parent=app)
-    tray_icon.setToolTip('RenaLabApp')
+    tray_icon.setToolTip('PhysioLabXR')
     tray_icon.show()
 
     # create the splash screen

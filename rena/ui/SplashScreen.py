@@ -60,9 +60,9 @@ class SplashScreen(QSplashScreen):
         self.loading_label .setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.loading_label)
 
-        version_label = QLabel(f"<i>Reality Navigation Laboratory App v{VERSION}</i>", self)
+        version_label = QLabel(f"<i>Physiological Laboratory for Mixed Reality v{VERSION}</i>", self)
         version_label .setAlignment(Qt.AlignmentFlag.AlignRight)
-        version_label.setGeometry(345, 140, 250, 20)  # Set the x, y, width, and height values as desired
+        version_label.setGeometry(180, 120, 320, 20)  # Set the x, y, width, and height values as desired
 
         self.setLayout(layout)
         self.setWindowTitle("Splash Screen")
