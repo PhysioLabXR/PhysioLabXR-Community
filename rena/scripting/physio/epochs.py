@@ -1,7 +1,9 @@
+import copy
+
 import numpy as np
 
 
-def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False):
+def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, verbose=None):
     """
     @param event_marker: tuple of event marker and its timestamps
     @param data: tuple of data and its timestamps
@@ -28,7 +30,35 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
                 latest_event_start_time = max(latest_event_start_time, e_time)
     # convert to numpy arrays
     rtn = {k: np.array(v) for k, v in rtn.items() if len(v) > 0}
+    if verbose:
+        [print(f"Found {len(v)} events for event marker {k}") for k, v in rtn.items()]
     if return_last_event_time:
         return rtn, latest_event_start_time
     else:
         return rtn
+
+
+def buffer_event_locked_data(event_locked_data, buffer: dict):
+    """
+    @param event_locked_data: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+    @param buffer: dictionary of event marker and its corresponding buffer. The keys are the event markers
+    @return: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+    """
+    rtn = copy.deepcopy(buffer)
+    for k, v in event_locked_data.items():
+        if k in buffer:
+            v = np.concatenate([buffer[k], v], axis=0)
+        else:
+            v = np.array(v)
+        rtn[k] = v
+    return rtn
+
+
+def get_baselined_event_locked_data(event_locked_data, pick: int, baseline_t, srate):
+    rtn = {}
+    pick = [pick] if isinstance(pick, int) else pick
+    for k, v in event_locked_data.items():
+        d = v[:, pick]
+        d = d - np.mean(d[:, :, :int(baseline_t * srate)], axis=2, keepdims=True)
+        rtn[k] = d
+    return rtn

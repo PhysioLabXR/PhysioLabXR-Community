@@ -266,6 +266,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        if script_path == '':
+            return
         self.process_locate_script(script_path)
         self.export_script_args_to_settings()
 
@@ -277,11 +279,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
         else:
-            self.runBtn.setEnabled(False)
+            raise ValueError('Script path cannot be empty in process_locate_script')
         print("Selected script path ", script_path)
 
     def on_create_btn_clicked(self):
         script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
+        if script_path == '':
+            return
         self.create_script(script_path)
 
     def create_script(self, script_path, is_open_file=True):
@@ -304,7 +308,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             if is_open_file:
                 click_on_file(script_path)
         else:
-            self.runBtn.setEnabled(False)
+            raise ValueError('Script path cannot be empty in process_locate_script')
         print("Selected script path ", script_path)
         self.export_script_args_to_settings()
 
