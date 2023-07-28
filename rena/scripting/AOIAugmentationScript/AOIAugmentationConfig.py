@@ -9,6 +9,13 @@ patch_grid_height = 25
 image_width = 2000
 image_height = 1000
 
+image_center_x = 0
+image_center_y = 0
+
+
+
+
+
 
 
 
