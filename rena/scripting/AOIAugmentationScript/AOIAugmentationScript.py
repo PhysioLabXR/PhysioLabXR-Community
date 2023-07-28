@@ -10,7 +10,7 @@ class AOIAugmentationScript(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
-        default_attention_matrix = generate_random_attention_matrix(grid_shape=(25, 50))
+        self.default_attention_matrix = generate_random_attention_matrix(grid_shape=(25, 50))
 
 
 
@@ -27,13 +27,7 @@ class AOIAugmentationScript(RenaScript):
         # detected_fixation_on_display_area = [1000, 1000]
 
         # state machine
-        detected_fixation_on_display_area = [1000, 1000]
-
-
-
-
-
-
+        gaze_on_screen_area = [0.12, 0.1]
 
 
         print('Loop function is called')

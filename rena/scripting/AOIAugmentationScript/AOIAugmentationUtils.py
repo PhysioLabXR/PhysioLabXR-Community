@@ -116,8 +116,43 @@ def extract_center_gaussian(filter_map, filter_map_center_location, image_shape,
     return filter_map[x_offset_min: x_offset_max, y_offset_min:y_offset_max]
 
 
+def tobii_to_screen_canvas_coordinate(tobii_gaze_on_display_x, tobii_gaze_on_display_y, screen_width, screen_height):
+    on_canvas_coordinate_x = screen_width * (tobii_gaze_on_display_x - 0.5)
+    on_canvas_coordinate_y = screen_height * (0.5 - tobii_gaze_on_display_y)
+
+    return on_canvas_coordinate_x, on_canvas_coordinate_y
+
+
+def tobii_to_image_pixel_index(tobii_gaze_on_display_x, tobii_gaze_on_display_y,
+                               screen_width, screen_height,
+                               image_center_x, image_center_y,
+                               image_width, image_height):
+    on_canvas_coordinate_x, on_canvas_coordinate_y = tobii_to_screen_canvas_coordinate(tobii_gaze_on_display_x,
+                                                                                       tobii_gaze_on_display_y,
+                                                                                       screen_width,
+                                                                                       screen_height)
+
+    image_top_left_conor_x = image_center_x - image_width / 2
+    image_top_left_conor_y = image_center_y + image_height / 2
+
+    image_pixel_index_x = on_canvas_coordinate_x - image_top_left_conor_x
+    image_pixe_index_y = -on_canvas_coordinate_y + image_top_left_conor_y
+
+    return image_pixel_index_x, image_pixe_index_y
+
+def screen_space_to_image_space(screen_space_location, image_shape, screen_shape):
+    screen_width, screen_height = screen_shape
+    image_width, image_height = image_shape
+
+    image_x = int(screen_space_location[0] * image_width / screen_width)
+    image_y = int(screen_space_location[1] * image_height / screen_height)
+
+    return image_x, image_y
+
+
 class AOIAttentionMatrix:
-    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_grid_shape=np.array([25, 50]), device=None):
+    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_grid_shape=np.array([25, 50]),
+                 device=None):
         self.attention_matrix = attention_matrix
         self.image_shape = image_shape
         self.attention_grid_shape = attention_grid_shape
@@ -153,10 +188,9 @@ class AOIAttentionMatrix:
         self._image_attention_buffer *= 0
 
 
-
-
 class AOIAttentionMatrixTensor:
-    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_grid_shape=np.array([25, 50]), device=None):
+    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_grid_shape=np.array([25, 50]),
+                 device=None):
         self.attention_matrix = attention_matrix
         self.image_shape = image_shape
         self.attention_grid_shape = attention_grid_shape
@@ -166,8 +200,10 @@ class AOIAttentionMatrixTensor:
 
         self._filter_size = self.image_shape * 2 - 1
         self._filter_map_center_location = image_shape - 1
-        self._filter_map = torch.tensor(gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=100,
-                                           normalized=True), device=device)
+        self._filter_map = torch.tensor(
+            gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=100,
+                            normalized=True), device=device)
+
     def add_attention(self, image_center_location):
         x_offset_min = self._filter_map_center_location[0] - image_center_location[0]
         x_offset_max = x_offset_min + self.image_shape[0]
@@ -183,7 +219,6 @@ class AOIAttentionMatrixTensor:
 
     def reset_image_attention_buffer(self):
         self._image_attention_buffer *= 0
-
 
 
 # class AOIAttentionMatrixTorch(nn.Module):
@@ -219,29 +254,27 @@ class AOIAttentionMatrixTensor:
 #         self._image_attention_buffer *= 0
 
 
-
 if __name__ == '__main__':
     device = torch.device('cuda:0')
 
     image_shape = np.array([1000, 2000])
     attention_grid_shape = np.array([25, 50])
-    a = AOIAttentionMatrixTensor(attention_matrix=None, image_shape=image_shape, attention_grid_shape=attention_grid_shape, device=device)
-    a.add_attention(image_center_location=[100,100])
+    a = AOIAttentionMatrixTensor(attention_matrix=None, image_shape=image_shape,
+                                 attention_grid_shape=attention_grid_shape, device=device)
+    a.add_attention(image_center_location=[100, 100])
     a.decay()
 
     while 1:
         attention_add_start = time.perf_counter_ns()
         a.add_attention(image_center_location=[100, 100])
-        attention_add_time = time.perf_counter_ns()-attention_add_start
+        attention_add_time = time.perf_counter_ns() - attention_add_start
 
         attention_decay_start = time.perf_counter_ns()
         a.decay()
-        attention_decay_time = time.perf_counter_ns()-attention_decay_start
+        attention_decay_time = time.perf_counter_ns() - attention_decay_start
 
         detach_start = time.perf_counter_ns()
         b = a._image_attention_buffer.cpu()
         detach_time = time.perf_counter_ns() - detach_start
 
-        print(attention_add_time*1e-6, attention_decay_time*1e-6, detach_time*1e-6)
-
-
+        print(attention_add_time * 1e-6, attention_decay_time * 1e-6, detach_time * 1e-6)
