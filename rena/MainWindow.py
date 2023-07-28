@@ -7,10 +7,11 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
+from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from rena.exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType, DataType
+from rena.presets.Presets import Presets, PresetType, DataType, FMRIPreset
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
@@ -130,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
-        # # fmri widget
+        # fmri widget
         # # TODO: FMRI WIDGET
         # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
         #                          data_shape=(240,240,186),
