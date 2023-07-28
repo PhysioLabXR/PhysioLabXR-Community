@@ -190,13 +190,18 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def close_stdout(self):
         self.stdout_timer.stop()
+        self.stdout_worker_thread.requestInterruption()
         self.stdout_worker_thread.exit()
+        self.stdout_worker_thread.wait()
+        del self.stdout_socket_interface
         # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
     def close_info_interface(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
+        self.info_thread.requestInterruption()
         self.info_thread.exit()
+        self.info_thread.wait()
 
     def on_script_abnormal_termination(self):
         self.stop_run(True)
@@ -524,24 +529,19 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def try_close(self):
         if self.is_running:
-            # reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-            #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            # if reply == QMessageBox.Yes:
-            #     self.on_run_btn_clicked()
-            # else:
-            #     return False
             self.on_run_btn_clicked()
         self.close_stdout()
+        if self.is_popped:
+            self.delete_window()
+        self.script_console_log_window.close()
+        self.deleteLater()
+        self.parent.remove_script_widget(self)
         print('Script widget closed')
         return True
 
     def remove_script_clicked(self):
-        # self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
-        if self.is_popped:
-            self.delete_window()
-        self.deleteLater()
+        self.try_close()
         remove_script_from_settings(self.id)
-        self.script_console_log_window.close()
 
     def on_input_combobox_changed(self):
         self.check_can_add_input()
@@ -591,7 +591,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),
-                'is_simulate': self.simulateCheckbox.isChecked()}
+                'is_simulate': self.simulateCheckbox.isChecked(),
+                'presets': Presets()}
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
