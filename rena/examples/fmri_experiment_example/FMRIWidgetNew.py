@@ -2,7 +2,7 @@
 
 from PyQt6.QtCore import QTimer, QThread, QMutex
 
-from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
+from rena.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
