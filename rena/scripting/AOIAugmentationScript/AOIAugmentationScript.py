@@ -1,6 +1,4 @@
-import numpy as np
-
-from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import generate_random_attention_matrix
+from rena.scripting.AOIAugmentationScript.archives.AOIAugmentationUtils import generate_random_attention_matrix
 from rena.scripting.RenaScript import RenaScript
 
 

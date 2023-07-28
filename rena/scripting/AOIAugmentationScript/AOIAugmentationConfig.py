@@ -1,3 +1,4 @@
+from enum import Enum
 import numpy as np
 
 screen_width = 1920
@@ -14,8 +15,21 @@ image_center_y = 0
 
 
 
+class ExperimentState(Enum):
+    CalibrationState = 1
+    StartState = 2
+    IntroductionInstructionState = 3
+    PracticeInstructionState = 4
+    NoAOIAugmentationInstructionState = 5
+    NoAOIAugmentationState = 6
+    StaticAOIAugmentationInstructionState = 7
+    StaticAOIAugmentationState = 8
+    InteractiveAOIAugmentationInstructionState = 9
+    InteractiveAOIAugmentationState = 10
+    FeedbackState = 11
+    EndState = 12
 
 
-
-
+class NetworkConfig(Enum):
+    ZMQPortNumber = 6667
 
