@@ -10,6 +10,7 @@ from pydoc import locate
 import numpy as np
 
 from rena.exceptions.exceptions import BadOutputError
+from rena.presets.presets_utils import get_stream_nominal_sampling_rate, get_stream_data_type, get_stream_num_channels
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
     SCRIPT_PARAM_CHANGE
 from rena.scripting.scripting_enums import ParamChange
@@ -26,7 +27,7 @@ class RenaScript(ABC, threading.Thread):
     """
 
     def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params: dict, port, run_frequency, time_window,
-                 script_path, is_simulate, *args, **kwargs):
+                 script_path, is_simulate, presets, *args, **kwargs):
         """
 
         :param inputs:
@@ -83,6 +84,9 @@ class RenaScript(ABC, threading.Thread):
         # other variables
         self.is_simulate = is_simulate
         self.input_shapes = input_shapes
+
+        # set up the presets
+        self.presets = presets
 
         print('RenaScript: Script init successfully')
 
@@ -201,6 +205,20 @@ class RenaScript(ABC, threading.Thread):
         #         self.inputs[key] = data_timestamps[0]
         #         self.inputs_timestamps[key] = data_timestamps[1]
 
+    def get_stream_info(self, stream_name, info):
+        """
+        info can be
+        @param stream_name:
+        @param info: str, can be one of the following  NominalSamplingRate, ChannelNames, DataType
+        @return:
+        """
+        assert info in ['NominalSamplingRate', 'ChannelNames', 'DataType'], f'Unknown info type {info}'
+        if info == 'NominalSamplingRate':
+            return self.presets.stream_presets[stream_name].nominal_sampling_rate
+        elif info == 'ChannelNames':
+            return self.presets.stream_presets[stream_name].channel_names
+        elif info == 'DataType':
+            return self.presets.stream_presets[stream_name].data_type
 
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):
