@@ -179,6 +179,7 @@ def set_stream_num_channels(stream_name, num_channels):
 def get_stream_num_channels(stream_name):
     return Presets().stream_presets[stream_name].num_channels
 
+
 def create_custom_data_stream_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
     if check_preset_exists(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
