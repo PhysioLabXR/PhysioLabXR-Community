@@ -129,3 +129,6 @@ if __name__ == '__main__':
 
         # plt.imshow(a._attention_grid_buffer.view(25, 50).cpu())
         # plt.show()
+
+        # plt.imshow(a._image_attention_buffer.view(500, 1000).cpu())
+        # plt.show()
