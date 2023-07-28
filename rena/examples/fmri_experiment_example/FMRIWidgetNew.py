@@ -66,8 +66,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         self.StreamNameLabel.setText(stream_name)
         self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
-        self.OptionsBtn.setIcon(AppConfigs._icon_options)
-        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove_stream)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
