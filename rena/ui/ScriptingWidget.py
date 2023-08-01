@@ -27,6 +27,7 @@ from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ParamWidget import ParamWidget
 from rena.ui_shared import script_realtime_info_text
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
@@ -73,8 +74,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
         self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 
-        self.timeWindowLineEdit.setValidator(QIntValidator())
-        self.frequencyLineEdit.setValidator(QIntValidator())
+        self.timeWindowLineEdit.setValidator(NoCommaIntValidator())
+        self.frequencyLineEdit.setValidator(NoCommaIntValidator())
 
         self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")

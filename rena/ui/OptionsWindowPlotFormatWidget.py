@@ -17,6 +17,7 @@ from rena.presets.presets_utils import get_stream_a_group_info, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
     set_image_levels_rmax, set_image_scaling_percentile, get_image_levels
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
+from rena.utils.Validators import NoCommaIntValidator
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -40,8 +41,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
 
         # image ###############################################################
-        self.imageWidthLineEdit.setValidator(QIntValidator())
-        self.imageHeightLineEdit.setValidator(QIntValidator())
+        self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
+        self.imageHeightLineEdit.setValidator(NoCommaIntValidator())
         self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
         self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
 

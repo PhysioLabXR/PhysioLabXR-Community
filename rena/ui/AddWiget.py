@@ -8,6 +8,7 @@ from rena.presets.Presets import PresetType, DataType
 from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import add_presets_to_combobox, update_presets_to_combobox
 
 
@@ -32,7 +33,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseSensitive)
         self.connect_stream_name_combo_box_signals()
 
-        self.PortLineEdit.setValidator(QIntValidator())
+        self.PortLineEdit.setValidator(NoCommaIntValidator())
 
         # data type combobox
         for data_type in DataType:

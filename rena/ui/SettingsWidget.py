@@ -13,6 +13,7 @@ from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileForm
 from rena.presets.Presets import Presets, PresetType, _load_video_device_presets
 from rena.startup import load_settings
 from rena.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
 
 
@@ -38,7 +39,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.reload_stream_preset_button.clicked.connect(self.reload_stream_presets)
 
         self.plot_fps_lineedit.textChanged.connect(self.on_plot_fps_changed)
-        onlyInt = QIntValidator()
+        onlyInt = NoCommaIntValidator()
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(AppConfigs().visualization_refresh_interval)))))
