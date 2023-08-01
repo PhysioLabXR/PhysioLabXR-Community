@@ -34,8 +34,9 @@ class ReplayTab(QtWidgets.QWidget):
         self.wait_thread = None
         self.loading_replay_dialog = None
         self.loading_canceled = False
+        self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
-        # self.PreloadBtn.clicked.connect(self.preload_btn_pressed)
+        self.ReplayFileLoc.setReadOnly(True)
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
@@ -44,7 +45,7 @@ class ReplayTab(QtWidgets.QWidget):
 
         self.file_loc = config.DEFAULT_DATA_DIR
         self.ReplayFileLoc.setText('')
-        self.stream_names = []
+        self.stream_info = {}
 
         # start replay client
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -53,8 +54,8 @@ class ReplayTab(QtWidgets.QWidget):
                                                        pattern='router-dealer')
         self._create_playback_widget()
 
-        self.replay_server_process = Process(target=start_replay_server)
-        self.replay_server_process.start()
+        # self.replay_server_process = Process(target=start_replay_server)
+        # self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -87,12 +88,16 @@ class ReplayTab(QtWidgets.QWidget):
 
         print("Selected file: ", self.file_loc)
         self.ReplayFileLoc.setText(self.file_loc + '/')
-        self.StartStopReplayBtn.setEnabled(True)
 
-    # def preload_btn_pressed(self):
-    #     pass
+        # start loading the replay file
+        self.StartStopReplayBtn.setText('Loading ...')
+        self.StartStopReplayBtn.setEnabled(False)
+        self.SelectDataDirBtn.setEnabled(False)
+        self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
+        self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
+        self.wait_worker.result_available.connect(self.process_reply_from_load_command)
 
-    def process_reply_from_start_replay_command(self):
+    def process_reply_from_load_command(self):
         # if self.loading_canceled:  # TODO implement canceling loading of replay file
         #     self.StartStopReplayBtn.setEnabled(True)
         #     self.StartStopReplayBtn.setText('Start Replay')
@@ -102,39 +107,21 @@ class ReplayTab(QtWidgets.QWidget):
 
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
-            self.StartStopReplayBtn.setEnabled(True)
-            self.StartStopReplayBtn.setText('Start Replay')
-        elif client_info.startswith(shared.START_SUCCESS_INFO):
+            self.StartStopReplayBtn.setEnabled(False)
+            self.StartStopReplayBtn.setText('Invalid File')
+            self.SelectDataDirBtn.setEnabled(True)
+        elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
-            start_time, end_time, total_time, virtual_clock_offset = np.frombuffer(time_info)
+            self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(time_info)
 
-            self.stream_names = self.command_info_interface.recv_string().split('|')
-            existing_streams_before_replay = get_available_lsl_streams()
-            if (overlapping_streams := set(existing_streams_before_replay).intersection(self.stream_names)):  # if there are streams that are already streaming on LSL
-                reply = dialog_popup(
-                    f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
-                    f'Are you sure you want to proceed with replaying this file? \n'
-                    f'Proceeding may result in unpredictable streaming behavior.\n'
-                    f'It is recommended to remove the other data stream with the same name.',
-                    title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
-                    buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
-                if not reply.result():
-                    self.command_info_interface.send_string(shared.CANCEL_START_REPLAY_COMMAND)
-                    self.StartStopReplayBtn.setEnabled(True)
-                    self.StartStopReplayBtn.setText('Start Replay')
-                    return
+            self.stream_info = {s_name: dict() for s_name in self.command_info_interface.recv_string().split('|')}
+            for s_name in self.stream_info.keys():
+                n_channels, n_timepoints, srate = np.frombuffer(self.command_info_interface.socket.recv())
+                self.stream_info[s_name]['n_channels'], self.stream_info[s_name]['n_timepoints'], self.stream_info[s_name]['srate'] = n_channels, n_timepoints, srate
 
-            self.playback_window.show()
-            self.playback_window.activateWindow()
-            self.playback_widget.start_replay(start_time, end_time, total_time, virtual_clock_offset)
-
-            self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
-            self.parent.add_streams_from_replay(self.stream_names)
-
-            print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
-            self.is_replaying = True
-            self.StartStopReplayBtn.setText('Stop Replay')
+            self.StartStopReplayBtn.setText('Start Replay')
             self.StartStopReplayBtn.setEnabled(True)
+            self.SelectDataDirBtn.setEnabled(True)
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
@@ -147,13 +134,33 @@ class ReplayTab(QtWidgets.QWidget):
         """
         callback function when start_stop button is pressed.
         """
+        print('Sending start command with file location to ReplayClient')
+
         if not self.is_replaying:
-            print('Sending start command with file location to ReplayClient')
-            self.StartStopReplayBtn.setText('Loading ...')
-            self.StartStopReplayBtn.setEnabled(False)
-            self.command_info_interface.send_string(shared.START_COMMAND + self.file_loc)
-            self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
-            self.wait_worker.result_available.connect(self.process_reply_from_start_replay_command)
+            existing_streams_before_replay = get_available_lsl_streams()
+            if (overlapping_streams := set(existing_streams_before_replay).intersection(list(self.stream_info.keys()))):  # if there are streams that are already streaming on LSL
+                reply = dialog_popup(
+                    f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
+                    f'Are you sure you want to proceed with replaying this file? \n'
+                    f'Proceeding may result in unpredictable streaming behavior.\n'
+                    f'It is recommended to remove the other data stream with the same name.',
+                    title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
+                    buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+                if not reply.result():
+                    self.command_info_interface.send_string(shared.CANCEL_START_REPLAY_COMMAND)
+                    self.StartStopReplayBtn.setEnabled(True)
+                    self.StartStopReplayBtn.setText('Start Replay')
+                    return
+            self.playback_window.show()
+            self.playback_window.activateWindow()
+            self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
+
+            self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
+            self.parent.add_streams_from_replay(list(self.stream_info.keys()))
+            print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+            self.is_replaying = True
+            self.StartStopReplayBtn.setText('Stop Replay')
+            self.StartStopReplayBtn.setEnabled(True)
 
             # self.loading_canceled = False  # TODO implement canceling loading of replay file
             # self.loading_replay_dialog = dialog_popup('Loading replay file...', title='Starting Replay', mode='modeless', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Cancel)
@@ -202,7 +209,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.playback_position_signal.emit(new_playback_position)
 
     def get_num_replay_channels(self):
-        return len(self.stream_names)
+        return len(self.stream_info)
 
     def _request_replay_performance(self):
         print('Sending performance request command ReplayClient')  # TODO change the send to a progress bar

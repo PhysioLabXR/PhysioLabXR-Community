@@ -1,5 +1,6 @@
 import copy
 import math
+import os.path
 import pickle
 import threading
 import time
@@ -12,6 +13,7 @@ from pylsl import pylsl
 from rena import config, shared
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.RNStream import RNStream
+from rena.utils.xdf_utils import load_xdf
 
 
 class ReplayServer(threading.Thread):
@@ -58,48 +60,60 @@ class ReplayServer(threading.Thread):
             if not self.is_replaying:
                 print('ReplayServer: pending on start replay command')
                 command = self.recv_string(is_block=True)
-                if command.startswith(shared.START_COMMAND):
-                    file_loc = command.split("!")[1]
-                    if file_loc == self.previous_file_loc:
+                if command.startswith(shared.LOAD_COMMAND):
+                    file_location = command.split("!")[1]
+                    if file_location == self.previous_file_loc:
                         self.stream_data = self.previous_stream_data
                     else:
-                        try:
-                            if file_loc.endswith('.dats'):
-                                rns_stream = RNStream(file_loc)
-                                self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
-                            elif file_loc.endswith('.p'):
-                                self.stream_data = pickle.load(open(file_loc, 'rb'))
-                                if '0' in self.stream_data.keys(): self.stream_data.pop('0')
-                                # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
-                            else:
-                                self.send_string(shared.FAIL_INFO + 'Unsupported file type')
-                                self.reset_replay()
-                                continue
-                        except FileNotFoundError:
-                            self.send_string(shared.FAIL_INFO + 'File not found at ' + file_loc)
+                        if not os.path.exists(file_location):
+                            self.send_string(shared.FAIL_INFO + 'File not found at ' + file_location)
                             self.reset_replay()
                             continue
-                    self.previous_file_loc = file_loc
+                        try:
+                            if file_location.endswith('.dats'):
+                                rns_stream = RNStream(file_location)
+                                # self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
+                                self.stream_data = rns_stream.stream_in()
+                            elif file_location.endswith('.p'):
+                                self.stream_data = pickle.load(open(file_location, 'rb'))
+                                # if '0' in self.stream_data.keys(): self.stream_data.pop('0')
+                                # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
+                            elif file_location.endswith('.xdf'):
+                                self.stream_data = load_xdf(file_location)
+                            else:
+                                raise ValueError('Unsupported file type')
+                        except Exception as e:
+                            self.send_string(shared.FAIL_INFO + f'Failed to load file {e}')
+                            self.reset_replay()
+                            continue
+
+                    self.previous_file_loc = file_location
                     self.previous_stream_data = self.stream_data
+                    self.send_string(shared.LOAD_SUCCESS_INFO + str(self.total_time))
+
                     self.setup_stream()
-                    self.send_string(shared.START_SUCCESS_INFO + str(self.total_time))
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
                     self.send_string('|'.join(self.stream_data.keys()))  # send the stream names
-
-                    command = self.recv_string(is_block=True)
-                    if command == shared.GO_AHEAD_COMMAND:
-                        # go ahead and open the streams
-                        # outlets are not created in setup before receiving the go-ahead from the main process because the
-                        # main process need to check if there're duplicate stream names with the streams being replayed
-                        for outlet_info in self.outlet_infos:
-                            self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
-                        self.is_replaying = True
-                    elif command == shared.CANCEL_START_REPLAY_COMMAND:
-                        self.reset_replay()
-                        continue
+                    # send the number of channels, average sampling rate, and number of time points
+                    for stream_name, (data, timestamps) in self.stream_data.items():
+                        n_chan = data.shape[0]
+                        n_time_points = len(timestamps)
+                        average_srate = n_time_points / (timestamps[-1] - timestamps[0])
+                        self.send(np.array([n_chan,n_time_points, average_srate]))
+                elif command == shared.GO_AHEAD_COMMAND:
+                    # go ahead and open the streams
+                    # outlets are not created in setup before receiving the go-ahead from the main process because the
+                    # main process need to check if there're duplicate stream names with the streams being replayed
+                    # check if the stream has been setup, becuase if we come back here from a finished replay, the stream would have been reset
+                    if self.virtual_clock_offset is None:
+                        self.stream_data = self.previous_stream_data
+                        self.setup_stream()
+                        print("Restarting the same replay")
+                    for outlet_info in self.outlet_infos:
+                        self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                    self.is_replaying = True  # this is the only entry point of the replay loop
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:
                     self.send(self.get_average_loop_time())
-
                 elif command == shared.TERMINATE_COMMAND:
                     self.running = False
                     break

@@ -1,8 +1,8 @@
 # replay
 
 FAIL_INFO = 'fail!'
-START_COMMAND = 'start!'
-START_SUCCESS_INFO = 'start'
+LOAD_COMMAND = 'load!'
+LOAD_SUCCESS_INFO = 'load'
 VIRTUAL_CLOCK_REQUEST = 'v'
 
 PLAY_PAUSE_COMMAND = 'pp!'
