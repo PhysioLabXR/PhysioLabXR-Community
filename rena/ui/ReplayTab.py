@@ -3,11 +3,12 @@ from multiprocessing import Process
 
 import numpy as np
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
+from PyQt6.QtCore import pyqtSignal, Qt, QSize
+from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QHBoxLayout, QLabel, QCheckBox, QListWidgetItem
 
 from rena import config, shared
 from rena.configs.configs import AppConfigs
+from rena.presets.Presets import PresetType
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
@@ -16,6 +17,31 @@ from rena.utils.lsl_utils import get_available_lsl_streams
 from rena.utils.ui_utils import another_window
 from rena.utils.ui_utils import dialog_popup
 
+class ReplayStreamHeader(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
+
+class ReplayStreamListItem(QWidget):
+    def __init__(self, stream_name, stream_shape, srate, enabled_in_replay=True, stream_interface=PresetType.LSL):
+        """
+
+        @param stream_name:
+        @param stream_shape: channel x number of timepoints
+        @param num_enabled_in_replay:
+        """
+        super().__init__()
+        self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamListItemWidget, self)
+        self.stream_name = stream_name
+        self.name_label.setText(f'name: {stream_name}')
+        self.shape_label.setText(f'channel, timepoints: {stream_shape}')
+        self.srate_label.setText(f'averaged srate: {srate:.3f} Hz')
+        self.include_in_replay_checkbox.setChecked(enabled_in_replay)
+
+        self.interface_combobox.addItem(PresetType.LSL.value)
+        self.interface_combobox.addItem(PresetType.ZMQ.value)
+        # select the current interface
+        self.interface_combobox.setCurrentText(stream_interface.value)
 
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
@@ -36,6 +62,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.loading_canceled = False
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
+        self.stream_list_widget.setVisible(False)
         self.ReplayFileLoc.setReadOnly(True)
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
@@ -46,6 +73,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.file_loc = config.DEFAULT_DATA_DIR
         self.ReplayFileLoc.setText('')
         self.stream_info = {}
+        self.stream_list_items = {}
 
         # start replay client
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
@@ -54,8 +82,8 @@ class ReplayTab(QtWidgets.QWidget):
                                                        pattern='router-dealer')
         self._create_playback_widget()
 
-        # self.replay_server_process = Process(target=start_replay_server)
-        # self.replay_server_process.start()
+        self.replay_server_process = Process(target=start_replay_server)
+        self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -77,7 +105,7 @@ class ReplayTab(QtWidgets.QWidget):
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
-        selected_file = QFileDialog.getOpenFileName(self.widget_3, "Select File")[0]
+        selected_file = QFileDialog.getOpenFileName(self.BottomWidget, "Select File")[0]
         self.select_file(selected_file)
 
     def select_file(self, selected_file):
@@ -110,18 +138,42 @@ class ReplayTab(QtWidgets.QWidget):
             self.StartStopReplayBtn.setEnabled(False)
             self.StartStopReplayBtn.setText('Invalid File')
             self.SelectDataDirBtn.setEnabled(True)
+            self.stream_list_widget.setVisible(False)
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(time_info)
 
             self.stream_info = {s_name: dict() for s_name in self.command_info_interface.recv_string().split('|')}
+
+            # set the replay list
+            self.stream_list_widget.setVisible(True)
+            self.stream_list_widget.clear()
+
+            # add header
+            header_item = ReplayStreamHeader()
+            item = QListWidgetItem()
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)  # Make the item non-selectable
+            self.stream_list_widget.addItem(item)
+            self.stream_list_widget.setItemWidget(item, header_item)
+
             for s_name in self.stream_info.keys():
                 n_channels, n_timepoints, srate = np.frombuffer(self.command_info_interface.socket.recv())
+                n_channels, n_timepoints = int(n_channels), int(n_timepoints)
                 self.stream_info[s_name]['n_channels'], self.stream_info[s_name]['n_timepoints'], self.stream_info[s_name]['srate'] = n_channels, n_timepoints, srate
+                stream_list_item = ReplayStreamListItem(s_name, (n_channels, n_timepoints), srate)
+                item = QListWidgetItem()
+                item.setSizeHint(QSize(item.sizeHint().width(), 60))
+                self.stream_list_widget.addItem(item)
+                self.stream_list_widget.setItemWidget(item, stream_list_item)
+                self.stream_list_items[s_name] = stream_list_item
 
             self.StartStopReplayBtn.setText('Start Replay')
             self.StartStopReplayBtn.setEnabled(True)
             self.SelectDataDirBtn.setEnabled(True)
+
+            self.stream_list_widget.setVisible(True)
+
+
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
