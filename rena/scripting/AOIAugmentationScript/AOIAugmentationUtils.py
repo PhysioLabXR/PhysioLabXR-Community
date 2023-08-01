@@ -45,7 +45,7 @@ def gaussian_filter(shape, center, sigma=1.0, normalized=True):
 
 
 
-class AOIAttentionMatrixTorch(nn.Module):
+class AOIAttentionMatrixTorch():
     def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_patch_shape = np.array([20,20]), #attention_grid_shape=np.array([25, 50]),
                  device=None):
 
