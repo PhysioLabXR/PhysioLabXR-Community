@@ -376,6 +376,10 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         app_main_window.replay_tab.select_file(recording_file_name)
 
         print(f"test: selected file at {recording_file_name} for replaying. starting replay")
+
+        def replay_reloaded():
+            assert app_main_window.replay_tab.StartStopReplayBtn.isVisible()
+        test_context.qtbot.waitUntil(replay_reloaded, timeout=test_context.stream_availability_timeout)
         test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
         test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
         # start the streams from replay and record them ################################################
