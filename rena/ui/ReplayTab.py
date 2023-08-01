@@ -112,8 +112,8 @@ class ReplayTab(QtWidgets.QWidget):
                                                        pattern='router-dealer')
         self._create_playback_widget()
 
-        # self.replay_server_process = Process(target=start_replay_server)
-        # self.replay_server_process.start()
+        self.replay_server_process = Process(target=start_replay_server)
+        self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()
