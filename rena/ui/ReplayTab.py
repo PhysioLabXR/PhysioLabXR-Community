@@ -219,7 +219,7 @@ class ReplayTab(QtWidgets.QWidget):
         if not self.is_replaying:
             existing_streams_before_replay = get_available_lsl_streams()
             try:
-                if (overlapping_streams := set(existing_streams_before_replay).intersection(list(self.stream_info.keys()))):  # if there are streams that are already streaming on LSL
+                if (overlapping_streams := set(existing_streams_before_replay).intersection(self.get_replay_lsl_stream_names())):  # if there are streams that are already streaming on LSL
                     reply = dialog_popup(
                         f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
                         f'Are you sure you want to proceed with replaying this file? \n'
@@ -324,3 +324,9 @@ class ReplayTab(QtWidgets.QWidget):
     def hide_loading(self):
         self.loading_label.hide()
         self.loading_movie.stop()
+
+    def get_replay_lsl_stream_names(self):
+        rtn = []
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            if list_item.get_info()[0] == PresetType.LSL.value: rtn.append(s_name)
+        return rtn

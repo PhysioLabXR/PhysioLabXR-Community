@@ -12,6 +12,7 @@ import zmq
 from pylsl import pylsl
 
 from rena import config, shared
+from rena.presets.Presets import PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.RNStream import RNStream
 from rena.utils.xdf_utils import load_xdf
@@ -114,7 +115,14 @@ class ReplayServer(threading.Thread):
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
 
                     for outlet_info in self.outlet_infos:
-                        self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                        if replay_stream_info[outlet_info.name()][0] == PresetType.ZMQ.value:
+                            port = replay_stream_info[outlet_info.name()][1]
+                            socket = self.command_info_interface.context.socket(zmq.PUB)
+                            socket.bind("tcp://*:%s" % port)
+                            self.outlets[outlet_info.name()] = socket
+                        else:
+                            self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                    print(f"replay started for streams: {list(self.stream_data)}")
                     self.is_replaying = True  # this is the only entry point of the replay loop
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:
                     self.send(self.get_average_loop_time())
@@ -254,12 +262,24 @@ class ReplayServer(threading.Thread):
         push_call_start_time = time.perf_counter()
         if this_chunk_size == 1:
             # the data sample's timestamp is equal to (this sample's timestamp minus the first timestamp of the original data) + time since replay start
-            outlet.push_sample(this_chunk_data[0], this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time)
+            timestamp = this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time
+            data = this_chunk_data[0]
+
+            if isinstance(outlet, pylsl.stream_outlet):
+                outlet.push_sample(data, timestamp)
+            else:  # zmq
+                outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamp), np.array(data)])
             # print("pushed, chunk size 1")
             # print(nextChunkValues)
         else:
             # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
-            outlet.push_chunk(this_chunk_data, this_chunk_timestamps[-1] + self.virtual_clock_offset + self.slider_offset_time)
+            timestamps = this_chunk_timestamps + self.virtual_clock_offset + self.slider_offset_time
+            data = this_chunk_data
+            if isinstance(outlet, pylsl.stream_outlet):
+                outlet.push_chunk(data, timestamps[-1])
+            else:  # zmq
+                for i in range(len(timestamps)):
+                    outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamps[i]), np.array(data[i])])
             # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable
@@ -280,6 +300,7 @@ class ReplayServer(threading.Thread):
         self.virtual_clock = math.inf
         self.end_time = - math.inf
         self.outlets = {}
+        self.outlet_infos = []
         self.slider_offset_time = 0
         self.tick_times = deque(maxlen=2 ** 16)
         self.push_data_times = deque(maxlen=2 ** 16)
