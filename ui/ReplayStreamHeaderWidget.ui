@@ -115,7 +115,7 @@
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignRight">
+      <item>
        <widget class="QLabel" name="label">
         <property name="text">
          <string>Stream interface</string>

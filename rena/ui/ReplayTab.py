@@ -23,7 +23,7 @@ class ReplayStreamHeader(QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
 
 class ReplayStreamListItem(QWidget):
-    def __init__(self, stream_name, stream_shape, srate, enabled_in_replay=True, stream_interface=PresetType.LSL):
+    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, enabled_in_replay=True, stream_interface=PresetType.LSL):
         """
 
         @param stream_name:
@@ -31,6 +31,7 @@ class ReplayStreamListItem(QWidget):
         @param num_enabled_in_replay:
         """
         super().__init__()
+        self.replay_tab_parent = replay_tab_parent
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamListItemWidget, self)
         self.stream_name = stream_name
         self.name_label.setText(f'name: {stream_name}')
@@ -42,6 +43,23 @@ class ReplayStreamListItem(QWidget):
         self.interface_combobox.addItem(PresetType.ZMQ.value)
         # select the current interface
         self.interface_combobox.setCurrentText(stream_interface.value)
+        # add on change listener
+        self.interface_combobox.currentTextChanged.connect(self.interface_combobox_changed)
+        self.set_zmq_port_line_edit()
+
+    def interface_combobox_changed(self):
+        self.set_zmq_port_line_edit()
+        self.replay_tab_parent.update_port_numbers()
+
+    def set_zmq_port_line_edit(self):
+        current_interface = self.interface_combobox.currentText()
+        if current_interface == PresetType.LSL.value:
+            self.zmq_port_line_edit.setVisible(False)
+        else:
+            self.zmq_port_line_edit.setVisible(True)
+
+    def change_port(self, port):
+        self.zmq_port_line_edit.setText(str(port))
 
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
@@ -63,7 +81,6 @@ class ReplayTab(QtWidgets.QWidget):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
         self.stream_list_widget.setVisible(False)
-        self.ReplayFileLoc.setReadOnly(True)
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
@@ -160,20 +177,18 @@ class ReplayTab(QtWidgets.QWidget):
                 n_channels, n_timepoints, srate = np.frombuffer(self.command_info_interface.socket.recv())
                 n_channels, n_timepoints = int(n_channels), int(n_timepoints)
                 self.stream_info[s_name]['n_channels'], self.stream_info[s_name]['n_timepoints'], self.stream_info[s_name]['srate'] = n_channels, n_timepoints, srate
-                stream_list_item = ReplayStreamListItem(s_name, (n_channels, n_timepoints), srate)
+                stream_list_item = ReplayStreamListItem(self, s_name, (n_channels, n_timepoints), srate)
                 item = QListWidgetItem()
                 item.setSizeHint(QSize(item.sizeHint().width(), 60))
                 self.stream_list_widget.addItem(item)
                 self.stream_list_widget.setItemWidget(item, stream_list_item)
                 self.stream_list_items[s_name] = stream_list_item
+            self.update_port_numbers()
 
             self.StartStopReplayBtn.setText('Start Replay')
             self.StartStopReplayBtn.setEnabled(True)
             self.SelectDataDirBtn.setEnabled(True)
-
             self.stream_list_widget.setVisible(True)
-
-
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
@@ -269,3 +284,7 @@ class ReplayTab(QtWidgets.QWidget):
         average_loop_time = self.command_info_interface.socket.recv()  # this is blocking, but replay should respond fast
         average_loop_time = np.frombuffer(average_loop_time)[0]
         return average_loop_time
+
+    def update_port_numbers(self):
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            list_item.change_port(AppConfigs().replay_stream_starting_port + i)

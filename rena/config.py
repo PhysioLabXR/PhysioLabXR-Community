@@ -106,9 +106,9 @@ DEFAULT_CHANNEL_DISPLAY_NUM = 40
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
-rena_server_port = 9999999
-rena_server_name = 'RENA_SERVER'
-rena_server_worker_ports = np.arange(1,100)
+# rena_server_port = 9999999
+# rena_server_name = 'RENA_SERVER'
+# rena_server_worker_ports = np.arange(1,100)
 
 replay_port = 9995
 

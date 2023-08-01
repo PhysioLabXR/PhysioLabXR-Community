@@ -87,6 +87,8 @@ class AppConfigs(metaclass=Singleton):
     pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
     video_device_refresh_interval: int = 33
 
+    replay_stream_starting_port = 10000
+
     # path_dict = {'splash_screen_path': 'media/logo/splash_screen.png',
     #              'stream_unavailable': 'media/logo/streamwidget_stream_unavailable.png',
     #              'stream_available': 'media/logo/streamwidget_stream_unavailable.png',
