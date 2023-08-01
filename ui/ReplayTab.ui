@@ -85,6 +85,13 @@ li.checked::marker { content: &quot;\2612&quot;; }
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="loading_label">
+        <property name="text">
+         <string>Loading</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="StartStopReplayBtn">
         <property name="maximumSize">
          <size>

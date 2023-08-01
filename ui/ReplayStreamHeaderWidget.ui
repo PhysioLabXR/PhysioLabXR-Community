@@ -104,7 +104,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Channel, Timepoint</string>
+         <string>Channels, Time points</string>
         </property>
        </widget>
       </item>

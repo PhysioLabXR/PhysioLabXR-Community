@@ -6,7 +6,7 @@ from dataclasses import dataclass, fields
 from enum import Enum
 
 from PyQt6.QtCore import QStandardPaths
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QMovie
 
 from rena.utils.ConfigPresetUtils import reload_enums, save_local
 from rena.utils.Singleton import Singleton
@@ -95,9 +95,8 @@ class AppConfigs(metaclass=Singleton):
     #              'stream_viz_active': 'media/logo/streamwidget_stream_viz_active.png',
     #              }
 
-    _icons_path = 'media/icons'
-    _logo_path = 'media/logo'
-
+    _media_paths = ['media/icons', 'media/logo', 'media/gifs']
+    _supported_media_formats = ['.svg', '.gif']
     _ui_path = 'ui'
     _ui_file_tree_depth = 3
     _preset_path = 'Presets'
@@ -115,15 +114,18 @@ class AppConfigs(metaclass=Singleton):
             except json.decoder.JSONDecodeError:
                 warnings.warn("AppConfigs: failed to load configs from file. Resetting AppConfigs to default values.")
 
-        icon_file_paths = {x: os.path.join(self._icons_path, x) for x in os.listdir(self._icons_path)}
-        logo_file_paths = {x: os.path.join(self._logo_path, x) for x in os.listdir(self._logo_path)}
-        for file_name, icon_logo_path in {**icon_file_paths, **logo_file_paths}.items():
+        _media_paths = [{x: os.path.join(path, x) for x in os.listdir(path)} for path in self._media_paths]
+        _media_paths = {k: v for d in _media_paths for k, v in d.items()}
+
+        for file_name, media_file_path in _media_paths.items():
             assert not hasattr(self, file_name), f"found duplicate file name {file_name} in AppConfigs's attributes"
             file_name, ext = os.path.splitext(file_name)
             name = f'_{file_name}'
-            setattr(self, name, icon_logo_path)
+            setattr(self, name, media_file_path)
             if ext == '.svg':
-                setattr(self, f'_icon_{file_name}', QIcon(icon_logo_path))
+                setattr(self, f'_icon_{file_name}', QIcon(media_file_path))
+            elif ext == '.gif':
+                setattr(self, f'_icon_{file_name}', media_file_path)
 
         ui_file_paths = self._load_ui_files_recursive(self._ui_path, self._ui_file_tree_depth)
         for file_name, ui_path in ui_file_paths.items():

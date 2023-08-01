@@ -1,4 +1,5 @@
 import copy
+import json
 import math
 import os.path
 import pickle
@@ -19,6 +20,7 @@ from rena.utils.xdf_utils import load_xdf
 class ReplayServer(threading.Thread):
     def __init__(self, command_info_interface):
         super().__init__()
+        self.original_stream_data = None
         self.command_info_interface = command_info_interface
         self.is_replaying = False
         self.is_paused = False
@@ -62,9 +64,7 @@ class ReplayServer(threading.Thread):
                 command = self.recv_string(is_block=True)
                 if command.startswith(shared.LOAD_COMMAND):
                     file_location = command.split("!")[1]
-                    if file_location == self.previous_file_loc:
-                        self.stream_data = self.previous_stream_data
-                    else:
+                    if file_location != self.previous_file_loc:
                         if not os.path.exists(file_location):
                             self.send_string(shared.FAIL_INFO + 'File not found at ' + file_location)
                             self.reset_replay()
@@ -73,13 +73,13 @@ class ReplayServer(threading.Thread):
                             if file_location.endswith('.dats'):
                                 rns_stream = RNStream(file_location)
                                 # self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
-                                self.stream_data = rns_stream.stream_in()
+                                self.original_stream_data = rns_stream.stream_in()
                             elif file_location.endswith('.p'):
-                                self.stream_data = pickle.load(open(file_location, 'rb'))
+                                self.original_stream_data = pickle.load(open(file_location, 'rb'))
                                 # if '0' in self.stream_data.keys(): self.stream_data.pop('0')
                                 # if 'monitor1' in self.stream_data.keys(): self.stream_data.pop('monitor1')
                             elif file_location.endswith('.xdf'):
-                                self.stream_data = load_xdf(file_location)
+                                self.original_stream_data = load_xdf(file_location)
                             else:
                                 raise ValueError('Unsupported file type')
                         except Exception as e:
@@ -88,14 +88,13 @@ class ReplayServer(threading.Thread):
                             continue
 
                     self.previous_file_loc = file_location
-                    self.previous_stream_data = self.stream_data
                     self.send_string(shared.LOAD_SUCCESS_INFO + str(self.total_time))
-
+                    self.stream_data = copy.deepcopy(self.original_stream_data)
                     self.setup_stream()
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
-                    self.send_string('|'.join(self.stream_data.keys()))  # send the stream names
+                    self.send_string('|'.join(self.original_stream_data.keys()))  # send the stream names
                     # send the number of channels, average sampling rate, and number of time points
-                    for stream_name, (data, timestamps) in self.stream_data.items():
+                    for stream_name, (data, timestamps) in self.original_stream_data.items():
                         n_chan = data.shape[0]
                         n_time_points = len(timestamps)
                         average_srate = n_time_points / (timestamps[-1] - timestamps[0])
@@ -105,10 +104,15 @@ class ReplayServer(threading.Thread):
                     # outlets are not created in setup before receiving the go-ahead from the main process because the
                     # main process need to check if there're duplicate stream names with the streams being replayed
                     # check if the stream has been setup, becuase if we come back here from a finished replay, the stream would have been reset
-                    if self.virtual_clock_offset is None:
-                        self.stream_data = self.previous_stream_data
-                        self.setup_stream()
-                        print("Restarting the same replay")
+                    replay_stream_info = json.loads(self.recv_string(is_block=True))
+                    self.stream_data = {k: v for k, v in self.original_stream_data.items() if k in replay_stream_info.keys()}
+
+                    # for stream_name, (interface, port) in replay_stream_info.items():
+                    #     self.stream_data
+
+                    self.setup_stream()  # set up streams again, because some streams may be disabled by user
+                    self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
+
                     for outlet_info in self.outlet_infos:
                         self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
                     self.is_replaying = True  # this is the only entry point of the replay loop
@@ -287,7 +291,7 @@ class ReplayServer(threading.Thread):
                 time_dim = data.shape[-1]
                 self.stream_data[stream_name][0] = data.reshape((-1, time_dim))
                 video_keys.append(stream_name)
-        # change the name of video (high dim) data
+        # change the name of video (high dim) data  TODO video data is ignored for now
         for k in video_keys:
             self.stream_data['video' + k] = self.stream_data.pop(k)
 

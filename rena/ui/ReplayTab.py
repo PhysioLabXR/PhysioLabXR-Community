@@ -1,9 +1,11 @@
 # This Python file uses the following encoding: utf-8
+import json
 from multiprocessing import Process
 
 import numpy as np
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import pyqtSignal, Qt, QSize
+from PyQt6.QtGui import QMovie
 from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QHBoxLayout, QLabel, QCheckBox, QListWidgetItem
 
 from rena import config, shared
@@ -34,9 +36,9 @@ class ReplayStreamListItem(QWidget):
         self.replay_tab_parent = replay_tab_parent
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamListItemWidget, self)
         self.stream_name = stream_name
-        self.name_label.setText(f'name: {stream_name}')
-        self.shape_label.setText(f'channel, timepoints: {stream_shape}')
-        self.srate_label.setText(f'averaged srate: {srate:.3f} Hz')
+        self.name_label.setText(f'{stream_name}')
+        self.shape_label.setText(f'{stream_shape}')
+        self.srate_label.setText(f'{srate:.3f} Hz')
         self.include_in_replay_checkbox.setChecked(enabled_in_replay)
 
         self.interface_combobox.addItem(PresetType.LSL.value)
@@ -61,6 +63,12 @@ class ReplayStreamListItem(QWidget):
     def change_port(self, port):
         self.zmq_port_line_edit.setText(str(port))
 
+    def is_enabled_in_replay(self):
+        return self.include_in_replay_checkbox.isChecked()
+
+    def get_info(self):
+        return self.interface_combobox.currentText(), int(self.zmq_port_line_edit.text())
+
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
     play_pause_signal = pyqtSignal(bool)
@@ -80,11 +88,16 @@ class ReplayTab(QtWidgets.QWidget):
         self.loading_canceled = False
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
+        self.loading_label.setVisible(False)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.loading_label.setMovie(self.loading_movie)
+
         self.stream_list_widget.setVisible(False)
         self.StartStopReplayBtn.clicked.connect(self.start_stop_replay_btn_pressed)
+        self.StartStopReplayBtn.setVisible(False)
+
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
 
-        self.StartStopReplayBtn.setEnabled(False)
         self.parent = parent
 
         self.file_loc = config.DEFAULT_DATA_DIR
@@ -99,8 +112,8 @@ class ReplayTab(QtWidgets.QWidget):
                                                        pattern='router-dealer')
         self._create_playback_widget()
 
-        self.replay_server_process = Process(target=start_replay_server)
-        self.replay_server_process.start()
+        # self.replay_server_process = Process(target=start_replay_server)
+        # self.replay_server_process.start()
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -135,9 +148,10 @@ class ReplayTab(QtWidgets.QWidget):
         self.ReplayFileLoc.setText(self.file_loc + '/')
 
         # start loading the replay file
-        self.StartStopReplayBtn.setText('Loading ...')
-        self.StartStopReplayBtn.setEnabled(False)
         self.SelectDataDirBtn.setEnabled(False)
+        self.show_loading()
+        self.StartStopReplayBtn.setVisible(False)
+
         self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
         self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
         self.wait_worker.result_available.connect(self.process_reply_from_load_command)
@@ -152,9 +166,8 @@ class ReplayTab(QtWidgets.QWidget):
 
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
-            self.StartStopReplayBtn.setEnabled(False)
-            self.StartStopReplayBtn.setText('Invalid File')
             self.SelectDataDirBtn.setEnabled(True)
+            self.hide_loading()
             self.stream_list_widget.setVisible(False)
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
@@ -185,10 +198,10 @@ class ReplayTab(QtWidgets.QWidget):
                 self.stream_list_items[s_name] = stream_list_item
             self.update_port_numbers()
 
-            self.StartStopReplayBtn.setText('Start Replay')
-            self.StartStopReplayBtn.setEnabled(True)
+            self.StartStopReplayBtn.setVisible(True)
             self.SelectDataDirBtn.setEnabled(True)
             self.stream_list_widget.setVisible(True)
+            self.hide_loading()
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
@@ -205,24 +218,32 @@ class ReplayTab(QtWidgets.QWidget):
 
         if not self.is_replaying:
             existing_streams_before_replay = get_available_lsl_streams()
-            if (overlapping_streams := set(existing_streams_before_replay).intersection(list(self.stream_info.keys()))):  # if there are streams that are already streaming on LSL
-                reply = dialog_popup(
-                    f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
-                    f'Are you sure you want to proceed with replaying this file? \n'
-                    f'Proceeding may result in unpredictable streaming behavior.\n'
-                    f'It is recommended to remove the other data stream with the same name.',
-                    title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
-                    buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
-                if not reply.result():
-                    self.command_info_interface.send_string(shared.CANCEL_START_REPLAY_COMMAND)
-                    self.StartStopReplayBtn.setEnabled(True)
-                    self.StartStopReplayBtn.setText('Start Replay')
-                    return
+            try:
+                if (overlapping_streams := set(existing_streams_before_replay).intersection(list(self.stream_info.keys()))):  # if there are streams that are already streaming on LSL
+                    reply = dialog_popup(
+                        f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
+                        f'Are you sure you want to proceed with replaying this file? \n'
+                        f'Proceeding may result in unpredictable streaming behavior.\n'
+                        f'It is recommended to remove the other data stream with the same name.',
+                        title='Duplicate Stream Name', mode='modal', main_parent=self.parent,
+                        buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+                    if not reply.result(): raise AssertionError
+                        # self.command_info_interface.send_string(shared.CANCEL_START_REPLAY_COMMAND)
+                        # return
+                self.stream_info = self.get_replay_stream_info()
+            except AssertionError:
+                self.StartStopReplayBtn.setEnabled(True)
+                self.StartStopReplayBtn.setText('Start Replay')
+                return
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
 
             self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
+            self.command_info_interface.send_string(json.dumps(self.stream_info))
+            # receive the new timing info
+            self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(self.command_info_interface.socket.recv())
+
             self.parent.add_streams_from_replay(list(self.stream_info.keys()))
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
             self.is_replaying = True
@@ -288,3 +309,21 @@ class ReplayTab(QtWidgets.QWidget):
     def update_port_numbers(self):
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
             list_item.change_port(AppConfigs().replay_stream_starting_port + i)
+
+    def get_replay_stream_info(self):
+        rtn = {}
+        zmq_ports = []
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            if list_item.is_enabled_in_replay():
+                rtn[s_name] = list_item.get_info()
+                if rtn[s_name][0] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name][1])
+        assert len(zmq_ports) == len(set(zmq_ports)), 'ZMQ ports cannot have duplicates'
+        return rtn
+
+    def show_loading(self):
+        self.loading_label.show()
+        self.loading_movie.start()
+
+    def hide_loading(self):
+        self.loading_label.hide()
+        self.loading_movie.stop()
