@@ -8,6 +8,7 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
+from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
 from tests.TestStream import CSVTestStream
 
@@ -136,7 +137,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
 
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
-    xdf_data = load_xdf(saved_file_path)
+    xdf_data = stream_in(saved_file_path)
 
     def compare_column_vec(vec1, vec2):
         result = np.all(vec1 == vec2)

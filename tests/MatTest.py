@@ -27,7 +27,7 @@ def context_bot(app_main_window, qtbot):
     test_context.clean_up()
 
 
-def test_xdf_store_load(app_main_window, qtbot) -> None:
+def test_mat_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
     from rena.presets.Presets import DataType, PresetType
