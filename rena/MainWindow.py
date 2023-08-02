@@ -174,7 +174,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
                 return
 
-            selected_type, is_new_preset = self.addStreamWidget.get_current_selected_type()
+            selected_type, is_new_preset = self.addStreamWidget.get_selected_stream_type_in_preset()
             if is_new_preset:
                 self.create_preset(selected_text, selected_type, data_type=data_type, port=port)
                 self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
@@ -252,10 +252,9 @@ class MainWindow(QtWidgets.QMainWindow):
             if stream_name not in self.stream_widgets.keys():
                 if check_preset_exists(stream_name):
                     self.addStreamWidget.select_by_stream_name(stream_name)
-                    self.addStreamWidget.add_btn.click()
                 else:  # add a new preset if the stream name is not defined
                     self.addStreamWidget.set_selection_text(stream_name)
-                    self.addStreamWidget.add_btn.click()
+                self.addStreamWidget.add_btn.click()
 
     def add_streams_from_replay(self, stream_names):
         # switch tab to stream

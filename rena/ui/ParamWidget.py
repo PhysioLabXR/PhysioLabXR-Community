@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QCheckBox, QLineEdit
 from rena.configs.configs import AppConfigs
 from rena.presets.ScriptPresets import ParamPreset
 from rena.scripting.scripting_enums import ParamChange, ParamType
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
@@ -59,7 +60,7 @@ class ParamWidget(QtWidgets.QWidget):
             if new_type is ParamType.float:
                 self.value_widget.setValidator(QDoubleValidator())
             elif new_type is ParamType.int:
-                self.value_widget.setValidator(QIntValidator())
+                self.value_widget.setValidator(NoCommaIntValidator())
             self.value_widget.textChanged.connect(self.on_param_changed)
 
         if new_type is not ParamType.list:

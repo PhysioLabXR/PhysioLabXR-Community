@@ -12,6 +12,7 @@ from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import num_points_shown_text
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -68,8 +69,8 @@ class StreamOptionsWindow(QWidget):
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
 
         # nominal sampling rate UI elements
-        self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
-        self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
+        self.nominalSamplingRateIineEdit.setValidator(NoCommaIntValidator())
+        self.dataDisplayDurationLineEdit.setValidator(NoCommaIntValidator())
         self.load_sr_and_display_duration_from_settings_to_ui()
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)

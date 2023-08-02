@@ -9,6 +9,7 @@ from PyQt6.QtGui import QPixmap
 from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
     get_group_channel_num, get_group_data_processors, get_stream_nominal_sampling_rate
+from rena.utils.Validators import NoCommaIntValidator
 # from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.utils.dsp_utils.dsp_modules import *
 
@@ -208,7 +209,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
         self.lowcutLineEdit.setValidator(QDoubleValidator())
         self.highcutLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthBandPassFilterWidget, self).connect_data_processor_input_field_signal()
@@ -278,7 +279,7 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
     def set_data_processor_input_field_constrain(self):
         self.cutoffLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthLowpassFilterWidget, self).connect_data_processor_input_field_signal()
@@ -339,7 +340,7 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
     def set_data_processor_input_field_constrain(self):
         self.cutoffLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthHighpassFilterWidget, self).connect_data_processor_input_field_signal()

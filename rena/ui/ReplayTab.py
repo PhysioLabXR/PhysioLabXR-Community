@@ -185,7 +185,7 @@ class ReplayTab(QtWidgets.QWidget):
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)  # Make the item non-selectable
             self.stream_list_widget.addItem(item)
             self.stream_list_widget.setItemWidget(item, header_item)
-
+            self.stream_list_items = {}
             for s_name in self.stream_info.keys():
                 n_channels, n_timepoints, srate = np.frombuffer(self.command_info_interface.socket.recv())
                 n_channels, n_timepoints = int(n_channels), int(n_timepoints)
@@ -219,7 +219,7 @@ class ReplayTab(QtWidgets.QWidget):
         if not self.is_replaying:
             existing_streams_before_replay = get_available_lsl_streams()
             try:
-                if (overlapping_streams := set(existing_streams_before_replay).intersection(list(self.stream_info.keys()))):  # if there are streams that are already streaming on LSL
+                if (overlapping_streams := set(existing_streams_before_replay).intersection(self.get_replay_lsl_stream_names())):  # if there are streams that are already streaming on LSL
                     reply = dialog_popup(
                         f'There\'s another stream source with the name {overlapping_streams} on the network.\n'
                         f'Are you sure you want to proceed with replaying this file? \n'
@@ -249,7 +249,7 @@ class ReplayTab(QtWidgets.QWidget):
             self.is_replaying = True
             self.StartStopReplayBtn.setText('Stop Replay')
             self.StartStopReplayBtn.setEnabled(True)
-
+            self.SelectDataDirBtn.setEnabled(False)
             # self.loading_canceled = False  # TODO implement canceling loading of replay file
             # self.loading_replay_dialog = dialog_popup('Loading replay file...', title='Starting Replay', mode='modeless', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Cancel)
             # self.loading_replay_dialog.buttonBox.rejected.connect(self.cancel_loading_replay)
@@ -266,12 +266,9 @@ class ReplayTab(QtWidgets.QWidget):
         # self.is_replaying = False
 
     def replay_successfully_stopped(self):
-        self.StartStopReplayBtn.setText('Start Replay')
         self.is_replaying = False
-
-    # def replay_successfully_resumed(self):
-        # self.StartStopReplayBtn.setText('Pause Replay')
-        # self.is_replaying = False
+        self.SelectDataDirBtn.setEnabled(True)
+        self.StartStopReplayBtn.setText('Start Replay')
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()
@@ -327,3 +324,9 @@ class ReplayTab(QtWidgets.QWidget):
     def hide_loading(self):
         self.loading_label.hide()
         self.loading_movie.stop()
+
+    def get_replay_lsl_stream_names(self):
+        rtn = []
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            if list_item.get_info()[0] == PresetType.LSL.value: rtn.append(s_name)
+        return rtn
