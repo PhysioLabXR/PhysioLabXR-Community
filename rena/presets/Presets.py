@@ -3,6 +3,7 @@ import dataclasses
 import json
 import multiprocessing
 import os
+import string
 from dataclasses import dataclass, field
 from enum import Enum
 from multiprocessing import Process
@@ -87,13 +88,14 @@ class PresetType(Enum):
         return preset_type in [cls.WEBCAM, cls.MONITOR]
 
     @classmethod
-    def is_stream_preset(cls, preset_type):
+    def is_lsl_zmq_custom_preset(cls, preset_type):
         if isinstance(preset_type, str):
             preset_type = PresetType(preset_type)
         return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
 
     def is_self_video_preset(self):
         return self in [self.WEBCAM, self.MONITOR]
+
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
@@ -396,7 +398,7 @@ class Presets(metaclass=Singleton):
                 preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
                 if 'stream_presets' in preset_dict.keys():
                     for key, value in preset_dict['stream_presets'].items():
-                        if PresetType.is_stream_preset(value['preset_type']):
+                        if PresetType.is_lsl_zmq_custom_preset(value['preset_type']):
                             preset = StreamPreset(**value)
                             preset_dict['stream_presets'][key] = preset
                         # elif PresetType.is_video_preset(value['preset_type']):  # video presets won't be loaded

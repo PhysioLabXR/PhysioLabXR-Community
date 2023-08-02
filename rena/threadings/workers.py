@@ -542,7 +542,7 @@ class ZMQWorker(QObject, RenaWorker):
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.data_type = data_type
+        self.data_type = data_type if isinstance(data_type, str) else data_type.value
         # networking parameters
         self.sub_address = "tcp://localhost:%s" % port_number
         self.subtopic = subtopic
