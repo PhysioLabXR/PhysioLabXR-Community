@@ -35,16 +35,5 @@ def stream_in(file_path):
             return pickle.load(open(file_path, 'rb'))
         elif file_extension == '.xdf':
             return load_xdf(file_path)
-
-if __name__ == '__main__':
-    file_name1 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.m'
-    file_name2 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.dats'
-    file_name3 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_11_51-Exp_myexperiment-Sbj_someone-Ssn_0.p'
-    file_name4 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_12_14-Exp_myexperiment-Sbj_someone-Ssn_0'
-    file_name5 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_13_01-Exp_myexperiment-Sbj_someone-Ssn_0.xdf'
-    mat = stream_in(file_name1)
-    dats = stream_in(file_name2)
-    pickle = stream_in(file_name3)
-    csv = stream_in(file_name4)
-    xdf = stream_in(file_name5)
-    print('1')
+        else:
+            raise Exception('Unknown file extension: {}'.format(file_extension))
