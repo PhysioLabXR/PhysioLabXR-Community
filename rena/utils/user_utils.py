@@ -30,12 +30,21 @@ def stream_in(file_path):
                 if stream_type_label.endswith(' timestamp'):
                     stream_type_label = stream_type_label.replace(' timestamp', '')
                     data[stream_type_label] = [buffer[stream_type_label], data_array.squeeze()]
-            return scipy.io.loadmat(file_path)
+            return data
         elif file_extension == '.pickle' or file_extension == '.pkl' or file_extension == '.p':
             return pickle.load(open(file_path, 'rb'))
         elif file_extension == '.xdf':
             return load_xdf(file_path)
 
 if __name__ == '__main__':
-    file_name = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.m'
-    m = stream_in(file_name)
+    file_name1 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.m'
+    file_name2 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.dats'
+    file_name3 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_11_51-Exp_myexperiment-Sbj_someone-Ssn_0.p'
+    file_name4 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_12_14-Exp_myexperiment-Sbj_someone-Ssn_0'
+    file_name5 = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_13_01-Exp_myexperiment-Sbj_someone-Ssn_0.xdf'
+    mat = stream_in(file_name1)
+    dats = stream_in(file_name2)
+    pickle = stream_in(file_name3)
+    csv = stream_in(file_name4)
+    xdf = stream_in(file_name5)
+    print('1')
