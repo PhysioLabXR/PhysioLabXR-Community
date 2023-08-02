@@ -7,6 +7,7 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
 from rena.configs.configs import AppConfigs
@@ -21,7 +22,8 @@ from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
 from rena.presets.presets_utils import get_experiment_preset_streams, is_stream_name_in_presets, \
     create_default_lsl_preset, \
-    create_default_zmq_preset, verify_stream_meta_info, get_stream_meta_info, is_name_in_preset
+    create_default_zmq_preset, verify_stream_meta_info, get_stream_meta_info, is_name_in_preset, \
+    change_stream_preset_type, change_stream_preset_data_type, change_stream_preset_port_number
 
 try:
     import rena.config
@@ -179,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             if not is_name_in_preset(stream_name):
                 self.create_preset(stream_name, preset_type=preset_type, data_type=data_type, port=port)
-                self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
+                GlobalSignals.stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
 
             if preset_type == PresetType.WEBCAM:  # add video device
                 self.init_video_device(stream_name, video_preset_type=preset_type)
@@ -208,6 +210,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 assert is_stream_name_in_presets(stream_name), InvalidStreamMetaInfoError(f"Adding multiple streams must use streams already defined in presets. Undefined stream: {stream_name}")
                 self.process_add(stream_name, *get_stream_meta_info(stream_name))
 
+    def add_streams_from_replay(self, stream_infos):
+        # switch tab to stream
+        is_new_preset_added = False
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
+        for stream_name, info in stream_infos.items():
+            if stream_name not in self.stream_widgets.keys():
+                if not is_stream_name_in_presets(stream_name):
+                    sampling_rate = max(0, int(info['sampling_rate']))
+                    self.create_preset(stream_name, preset_type=info['preset_type'], num_channels=info['n_channels'], data_type=info['data_type'], port=info['port'], nominal_sample_rate=sampling_rate)
+                    is_new_preset_added = True
+                else:
+                    stream_meta_info = get_stream_meta_info(stream_name)
+
+                    if stream_meta_info[0].value != info['preset_type']:
+                        print(f"Warning: stream {stream_name} has different preset type {stream_meta_info[0].value} from the one in the replay file {info['preset_type']}.")
+                        change_stream_preset_type(stream_name, info['preset_type'])
+                    if stream_meta_info[1].value != info['data_type']:
+                        print(f"Warning: stream {stream_name} has different data type {stream_meta_info[1].value} from the one in the replay file {info['data_type']}.")
+                        change_stream_preset_data_type(stream_name, info['data_type'])
+                    if info['preset_type'] == PresetType.ZMQ:
+                        change_stream_preset_port_number(stream_name, info['port_number'])
+                    # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
+                self.process_add(stream_name, *get_stream_meta_info(stream_name))
+
+        if is_new_preset_added:
+            GlobalSignals.stream_presets_entry_changed_signal.emit()
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
@@ -254,12 +282,6 @@ class MainWindow(QtWidgets.QMainWindow):
                            insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
-
-
-    def add_streams_from_replay(self, stream_names):
-        # switch tab to stream
-        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
-        self.add_streams_from_experiment_preset(stream_names)
 
     def init_LSL_streaming(self, stream_name, data_type=None):
         widget_name = stream_name + '_widget'
