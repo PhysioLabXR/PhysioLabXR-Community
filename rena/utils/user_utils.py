@@ -23,9 +23,19 @@ def stream_in(file_path):
         if file_extension == '.dats':
             stream = RNStream(file_path)
             return stream.stream_in()
-        elif file_extension == '.mat':
+        elif file_extension == '.mat' or file_extension == '.m':
+            buffer = scipy.io.loadmat(file_path)
+            data = {}
+            for stream_type_label, data_array in buffer.items():
+                if stream_type_label.endswith(' timestamp'):
+                    stream_type_label = stream_type_label.replace(' timestamp', '')
+                    data[stream_type_label] = [buffer[stream_type_label], data_array.squeeze()]
             return scipy.io.loadmat(file_path)
         elif file_extension == '.pickle' or file_extension == '.pkl' or file_extension == '.p':
             return pickle.load(open(file_path, 'rb'))
         elif file_extension == '.xdf':
             return load_xdf(file_path)
+
+if __name__ == '__main__':
+    file_name = 'C:/Users/ixiic/Desktop/YunxiangData/08_02_2023_12_01_33-Exp_myexperiment-Sbj_someone-Ssn_0.m'
+    m = stream_in(file_name)
