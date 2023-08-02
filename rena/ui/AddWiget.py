@@ -5,7 +5,9 @@ from PyQt6.QtGui import QIntValidator
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetType, DataType
-from rena.presets.presets_utils import get_preset_category, get_stream_preset_info, get_stream_preset_custom_info
+from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
+    change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
+    is_stream_name_in_presets
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.Validators import NoCommaIntValidator
@@ -34,20 +36,20 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.connect_stream_name_combo_box_signals()
 
         self.PortLineEdit.setValidator(NoCommaIntValidator())
+        self.PortLineEdit.textChanged.connect(self.on_port_number_changed)
+        self.PortLineEdit.textChanged.connect(self.check_can_add_input)
 
         # data type combobox
         for data_type in DataType:
             self.data_type_combo_box.addItem(data_type.value)
+        self.data_type_combo_box.currentIndexChanged.connect(self.on_data_type_changed)
+
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_data_type_to_default()
 
-
-        self.preset_type_selection_changed()
-
+        self.update_preset_type_uis()
         self.device_property_fields = {}
-
         self.current_selected_type = None
-
         self.check_can_add_input()
 
     def connect_stream_name_combo_box_signals(self):
@@ -69,8 +71,9 @@ class AddStreamWidget(QtWidgets.QWidget):
     def get_selected_stream_name(self):
         return self.stream_name_combo_box.currentText()
 
-    def get_port_number(self):
-        return self.PortLineEdit.text()
+    def get_selected_stream_name_is_new(self):
+        stream_name = self.stream_name_combo_box.currentText()
+        return stream_name, not is_stream_name_in_presets(stream_name)
 
     def get_data_type(self):
         return self.data_type_combo_box.currentText()
@@ -84,61 +87,89 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def check_can_add_input(self):
         """
+        Caller to this function must edit the meta info in the preset if needed.
         will disable the add button if duplicate input exists
         """
         stream_name = self.stream_name_combo_box.currentText()
+        stream_type = self.get_selected_preset_type()
         if stream_name == '':
             self.add_btn.setEnabled(False)
             return
         # check for duplicate inputs
-        if stream_name in self.parent.get_added_stream_names():
-            self.add_btn.setEnabled(False)
-        else:
-            self.add_btn.setEnabled(True)
+        can_add = True
+        can_add = can_add and (stream_name not in self.parent.get_added_stream_names())
+        if stream_type == PresetType.ZMQ: can_add = can_add and self.get_port_number() != -1
+
+        self.add_btn.setEnabled(can_add)
 
     def update_combobox_presets(self):
         update_presets_to_combobox(self.stream_name_combo_box)
 
     def preset_type_selection_changed(self):
-        if self.preset_type_combobox.currentText() == "LSL":
+        self.update_preset_type_uis()
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        current_type = PresetType(self.preset_type_combobox.currentText())
+        if not is_new: change_stream_preset_type(stream_name, current_type)
+        self.check_can_add_input()
+
+    def update_preset_type_uis(self):
+        current_type = PresetType(self.preset_type_combobox.currentText())
+        if current_type == PresetType.LSL:
             self.PortLineEdit.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
-        elif self.preset_type_combobox.currentText() == "ZMQ":
+        elif current_type == PresetType.ZMQ:
             self.PortLineEdit.show()
             self.add_custom_data_stream_widget.setVisible(False)
-        elif self.preset_type_combobox.currentText() == "Custom":
+        elif current_type == PresetType.CUSTOM:
             self.PortLineEdit.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(True)
 
     def get_selected_preset_type_str(self):
         return self.preset_type_combobox.currentText()
 
-    def get_current_selected_type(self):
+    def get_selected_preset_type(self):
+        return PresetType[self.get_selected_preset_type_str().upper()]
+
+    def get_selected_stream_type_in_preset(self):
         stream_name = self.get_selected_stream_name()
         is_new_preset = False
         try:
-            preset_type = get_preset_category(stream_name)
+            preset_type = get_preset_type(stream_name)
         except KeyError:
             is_new_preset = True
             preset_type = PresetType[self.get_selected_preset_type_str().upper()]
         return preset_type, is_new_preset
 
     def on_streamName_combobox_text_changed(self):
+        """
+        when stream name changes, check if the stream name is a new stream name
+
+        if it is new, it's preset type is what's current in the preset type combobox.
+
+        if it is not new and it is a stream preset, we need to populate the UI with its data type and port number.
+
+        We also need to change the preset type to what's in the preset if it is an existing preset,
+        otherwise we change the ui based on whatever type is currently in the preset type combobox.
+        @return:
+        """
         if len(self.device_property_fields) > 0:
             self.clear_custom_device_property_uis()
 
         stream_name = self.get_selected_stream_name()
-        selected_type, is_new_preset = self.get_current_selected_type()
-        if is_new_preset:
-            return
+        selected_type, is_new_preset = self.get_selected_stream_type_in_preset()
+
+        if PresetType.is_stream_preset(selected_type) and not is_new_preset:
+            self.load_port_num_into_ui(stream_name)
+            self.load_data_type_into_ui(stream_name)
 
         if selected_type == PresetType.LSL:
-            self.LSL_preset_selected(stream_name)
+            self.show_lsl_preset_ui()
         elif selected_type == PresetType.ZMQ:
-            port_number = get_stream_preset_info(stream_name, "port_number")
-            self.ZMQ_preset_selected(stream_name, port_number)
+            self.show_zmq_preset_ui()
         elif selected_type == PresetType.CUSTOM:
-            self.device_preset_selected(stream_name)
+            self.show_custom_preset_ui(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
@@ -150,23 +181,21 @@ class AddStreamWidget(QtWidgets.QWidget):
     def set_data_type_to_default(self):
         self.data_type_combo_box.setCurrentIndex(1)
 
-    def LSL_preset_selected(self, stream_name):
+    def show_lsl_preset_ui(self):
+        self.preset_type_combobox.show()
+        self.data_type_combo_box.show()
         self.preset_type_combobox.setCurrentIndex(0)
-        self.PortLineEdit.setText("")
         self.PortLineEdit.setHidden(True)
-        self.verify_data_type(stream_name)
 
-    def ZMQ_preset_selected(self, stream_name, port_number):
+    def show_zmq_preset_ui(self):
         self.preset_type_combobox.show()
         self.data_type_combo_box.show()
         self.preset_type_combobox.setCurrentIndex(1)
-        self.PortLineEdit.setText(str(port_number))
         self.PortLineEdit.show()
-        self.verify_data_type(stream_name)
 
-    def device_preset_selected(self, device_stream_name):
+    def show_custom_preset_ui(self, custom_stream_name):
         self.hide_stream_uis()
-        self.add_custom_device_property_uis(device_stream_name)
+        self.add_custom_device_property_uis(custom_stream_name)
 
     def add_custom_device_property_uis(self, device_stream_name):
         device_custom_properties = get_stream_preset_custom_info(device_stream_name)
@@ -185,7 +214,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.preset_type_combobox.setHidden(True)
         self.PortLineEdit.setHidden(True)
 
-    def verify_data_type(self, stream_name):
+    def load_data_type_into_ui(self, stream_name):
         data_type_str = get_stream_preset_info(stream_name, "data_type").value
         index = self.data_type_combo_box.findText(data_type_str, Qt.MatchFlag.MatchFixedString)
         if index >= 0:
@@ -194,8 +223,34 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.set_data_type_to_default()
             # print("Invalid data type for stream: {0} in its preset, setting data type to default".format(stream_name))
 
+    def load_port_num_into_ui(self, stream_name):
+        port_number = get_stream_preset_info(stream_name, "port_number")
+        if port_number is not None: self.PortLineEdit.setText(str(port_number))
+
     def on_stream_presets_entry_changed(self):
         self.disconnect_stream_name_combo_box_signals()
         self.stream_name_combo_box.clear()
         add_presets_to_combobox(self.stream_name_combo_box)
         self.connect_stream_name_combo_box_signals()
+
+    def on_port_number_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        port_number = self.get_port_number()
+        if port_number != -1 and not is_new:
+            change_stream_preset_port_number(self.get_selected_stream_name(), port_number)
+
+    def get_port_number(self):
+        try:
+            return int(self.PortLineEdit.text())
+        except ValueError:
+            return -1
+
+    def on_data_type_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            data_type = DataType(self.data_type_combo_box.currentText())
+            change_stream_preset_data_type(self.get_selected_stream_name(), data_type)

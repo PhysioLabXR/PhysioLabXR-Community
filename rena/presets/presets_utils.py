@@ -15,7 +15,7 @@ from rena.utils.dsp_utils.dsp_modules import DataProcessor
 #     elif os.path.exists('Presets'):
 #         return 'Presets'
 
-def get_preset_category(preset_name):
+def get_preset_type(preset_name):
     preset = Presets()
     if preset_name in preset.experiment_presets.keys():
         return PresetType.EXPERIMENT
@@ -345,8 +345,8 @@ def get_video_scale(video_device_name) -> float:
 def get_video_channel_order(video_device_name) -> VideoDeviceChannelOrder:
     return Presets().stream_presets[video_device_name].channel_order
 
-def is_video_webcam(video_device_name) -> bool:
-    return Presets().stream_presets[video_device_name].preset_type == PresetType.WEBCAM
+def is_video_webcam(stream_name) -> bool:
+    return Presets().stream_presets[stream_name].preset_type == PresetType.WEBCAM
 
 def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
@@ -369,3 +369,15 @@ def get_stream_data_type(stream_name) -> DataType:
 
 def remove_script_from_settings(script_id):
     Presets().script_presets.pop(script_id)
+
+def change_stream_preset_port_number(stream_name, port_number):
+    Presets().stream_presets[stream_name].port_number = port_number
+
+def change_stream_preset_type(stream_name, preset_type: PresetType):
+    Presets().stream_presets[stream_name].preset_type = preset_type
+
+def change_stream_preset_data_type(stream_name, data_type: DataType):
+    Presets().stream_presets[stream_name].data_type = data_type
+
+def is_stream_name_in_presets(stream_name):
+    return stream_name in Presets().stream_presets

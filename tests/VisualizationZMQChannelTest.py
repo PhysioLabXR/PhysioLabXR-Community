@@ -53,7 +53,7 @@ def test_zmq_channel_mistmatch(app_main_window, context_bot, qtbot) -> None:
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-
+    assert app_main_window.addStreamWidget.add_btn.isEnabled()
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.wait(int(stream_availability_wait_time * 1e3))
 
