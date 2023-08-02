@@ -31,7 +31,7 @@ from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
-    get_experiment_preset_names, get_stream_preset_info, check_preset_exists, remove_script_from_settings
+    get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path
@@ -507,7 +507,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             w.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
 
     def get_preset_input_info_text(self, preset_name):
-        if not check_preset_exists(preset_name):
+        if not is_stream_name_in_presets(preset_name):
             raise MissingPresetError(preset_name)
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')

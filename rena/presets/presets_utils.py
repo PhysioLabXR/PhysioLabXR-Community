@@ -2,6 +2,7 @@ import os.path
 from typing import Union, List
 
 from rena import config
+from rena.exceptions.exceptions import InvalidStreamMetaInfoError
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
@@ -51,7 +52,7 @@ def set_stream_preset_info(stream_name, key, value):
     setattr(Presets().stream_presets[stream_name], key, value)
 
 
-def check_preset_exists(stream_name):
+def is_stream_name_in_presets(stream_name):
     return stream_name in Presets().stream_presets.keys()
 
 def get_stream_nominal_sampling_rate(stream_name):# ->float:
@@ -146,7 +147,7 @@ def save_preset(is_async=True):
 
 
 def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
@@ -159,7 +160,7 @@ def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: in
     return preset_dict
 
 def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
@@ -181,7 +182,7 @@ def get_stream_num_channels(stream_name):
 
 
 def create_custom_data_stream_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     # preset_dict = {'StreamName': stream_name,
     #                'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
@@ -379,5 +380,18 @@ def change_stream_preset_type(stream_name, preset_type: PresetType):
 def change_stream_preset_data_type(stream_name, data_type: DataType):
     Presets().stream_presets[stream_name].data_type = data_type
 
-def is_stream_name_in_presets(stream_name):
-    return stream_name in Presets().stream_presets
+
+def verify_stream_meta_info(*args, **kwargs):
+    rtn = kwargs['preset_type'] in PresetType
+    rtn = (rtn and kwargs['data_type'] in DataType) if PresetType.is_lsl_zmq_custom_preset(kwargs['preset_type']) else rtn
+    rtn = (rtn and kwargs['port_number'] > 0) if kwargs['preset_type'] == PresetType.ZMQ else rtn
+    assert rtn, InvalidStreamMetaInfoError(kwargs)
+
+def get_stream_meta_info(stream_name):
+    preset_type = Presets().stream_presets[stream_name].preset_type
+    data_type = Presets().stream_presets[stream_name].data_type if PresetType.is_lsl_zmq_custom_preset(preset_type) else None
+    port_number = Presets().stream_presets[stream_name].port_number if preset_type == PresetType.ZMQ else None
+    return preset_type, data_type, port_number
+
+def is_name_in_preset(name):
+    return name in Presets().keys()

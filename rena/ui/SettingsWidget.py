@@ -68,8 +68,8 @@ class SettingsWidget(QtWidgets.QWidget):
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
         Presets().remove_video_presets()
-        GlobalSignals().stream_presets_entry_changed_signal.emit()
         Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
         self._load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
         self._load_video_device_process.start()
         self.wait_process_thread = QThread()
