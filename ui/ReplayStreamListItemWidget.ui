@@ -115,6 +115,13 @@
         </property>
        </widget>
       </item>
+      <item alignment="Qt::AlignLeft">
+       <widget class="QLabel" name="dtype_label">
+        <property name="text">
+         <string>Data type</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QWidget" name="widget_2" native="true">
         <property name="minimumSize">

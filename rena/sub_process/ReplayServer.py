@@ -5,7 +5,7 @@ import os.path
 import pickle
 import threading
 import time
-from collections import deque
+from collections import deque, defaultdict
 
 import numpy as np
 import zmq
@@ -95,11 +95,13 @@ class ReplayServer(threading.Thread):
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
                     self.send_string('|'.join(self.original_stream_data.keys()))  # send the stream names
                     # send the number of channels, average sampling rate, and number of time points
+                    stream_info = defaultdict(dict)
                     for stream_name, (data, timestamps) in self.original_stream_data.items():
-                        n_chan = data.shape[0]
-                        n_time_points = len(timestamps)
-                        average_srate = n_time_points / (timestamps[-1] - timestamps[0])
-                        self.send(np.array([n_chan,n_time_points, average_srate]))
+                        stream_info[stream_name]['n_channels'] = data.shape[0]
+                        stream_info[stream_name]['n_timepoints'] = len(timestamps)
+                        stream_info[stream_name]['srate'] = stream_info[stream_name]['n_timepoints'] / (timestamps[-1] - timestamps[0])
+                        stream_info[stream_name]['data_type'] = str(data.dtype)
+                    self.send_string(json.dumps(stream_info))
                 elif command == shared.GO_AHEAD_COMMAND:
                     # go ahead and open the streams
                     # outlets are not created in setup before receiving the go-ahead from the main process because the
@@ -115,8 +117,8 @@ class ReplayServer(threading.Thread):
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
 
                     for outlet_info in self.outlet_infos:
-                        if replay_stream_info[outlet_info.name()][0] == PresetType.ZMQ.value:
-                            port = replay_stream_info[outlet_info.name()][1]
+                        if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
+                            port = replay_stream_info[outlet_info.name()]['port_number']
                             socket = self.command_info_interface.context.socket(zmq.PUB)
                             socket.bind("tcp://*:%s" % port)
                             self.outlets[outlet_info.name()] = socket
