@@ -170,5 +170,5 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
 
     assert np.all(buffer_copy['monitor 0'][0] == mat_data['monitor 0'][0])
     os.remove(saved_file_path)
-    os.remove(saved_file_path.replace('.m', '.dat'))
+    os.remove(saved_file_path.replace('.m', '.dats'))
 
