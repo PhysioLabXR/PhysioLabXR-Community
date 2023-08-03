@@ -90,10 +90,9 @@ class RecordingConversionWorker(QObject):
             # for stream_label, data_ts_array in buffer.items():
             #     buffer_copy[stream_label + ' timestamp'] = data_ts_array[1]
             #     buffer_copy[stream_label] = data_ts_array[0]
-            buffer = [{f'{stream_name} timestamp': timestamps, s_name: data} s_name, (data, timestamps)for buffer.items()]
+            buffer = [{f'{s_name} timestamp': timestamps, s_name: data} for s_name, (data, timestamps) in buffer.items()]
             buffer = {k: v for d in buffer for k, v in d.items()}
-
-            savemat(newfile_path, buffer_copy, oned_as='row')
+            savemat(newfile_path, buffer, oned_as='row')
         elif self.file_format == RecordingFileFormat.pickle:
             newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
             pickle.dump(buffer, open(newfile_path, 'wb'))

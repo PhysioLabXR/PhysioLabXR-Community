@@ -1,4 +1,6 @@
 import copy
+import os
+
 import numpy as np
 import pytest
 
@@ -169,4 +171,6 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         assert is_passing
 
     assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
+    os.remove(saved_file_path)
+    os.remove(saved_file_path + '.dat')
 
