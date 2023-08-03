@@ -29,7 +29,7 @@ def context_bot(app_main_window, qtbot):
     test_context.clean_up()
 
 
-def test_xdf_store_load(app_main_window, qtbot) -> None:
+def test_mat_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
     from rena.presets.Presets import DataType, PresetType
@@ -73,9 +73,9 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     # app_main_window.settings_widget.set_recording_file_location(record_path)
-    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(4) # set recording file format to xdf
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(2) # set recording file format to mat
     app_main_window.settings_widget.saveFormatComboBox.activated.emit(app_main_window.settings_widget.saveFormatComboBox.currentIndex())
-    print('set format to xdf')
+    print('set format to mat')
 
     def stream_is_available():
         for ts_name in test_stream_names:
@@ -138,8 +138,8 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
     # reload recorded file
-    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
-    xdf_data = stream_in(saved_file_path)
+    saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.m')
+    mat_data = stream_in(saved_file_path)
 
     def compare_column_vec(vec1, vec2):
         result = np.all(vec1 == vec2)
@@ -165,10 +165,10 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
             return False
 
     for idx, ts_name in enumerate(ts_names):
-        is_passing = np.all(buffer_copy[ts_name][0] == xdf_data[ts_name][0])
+        is_passing = np.all(buffer_copy[ts_name][0] == mat_data[ts_name][0])
         assert is_passing
 
-    assert np.all(buffer_copy['monitor 0'][0] == xdf_data['monitor 0'][0])
+    assert np.all(buffer_copy['monitor 0'][0] == mat_data['monitor 0'][0])
     os.remove(saved_file_path)
-    os.remove(saved_file_path.replace('.xdf', '.dats'))
+    os.remove(saved_file_path.replace('.m', '.dats'))
 
