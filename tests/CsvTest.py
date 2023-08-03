@@ -172,5 +172,5 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
 
     assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
     os.remove(saved_file_path)
-    os.remove(saved_file_path + '.dat')
+    os.remove(saved_file_path + '.dats')
 
