@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QHBoxLayout,
 
 from rena import config, shared
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
+from rena.presets.Presets import PresetType, DataType, PresetsEncoder
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
@@ -25,7 +25,7 @@ class ReplayStreamHeader(QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
 
 class ReplayStreamListItem(QWidget):
-    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, enabled_in_replay=True, stream_interface=PresetType.LSL):
+    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True, stream_interface=PresetType.LSL):
         """
 
         @param stream_name:
@@ -39,6 +39,7 @@ class ReplayStreamListItem(QWidget):
         self.name_label.setText(f'{stream_name}')
         self.shape_label.setText(f'{stream_shape}')
         self.srate_label.setText(f'{srate:.3f} Hz')
+        self.dtype_label.setText(f'{data_type}')
         self.include_in_replay_checkbox.setChecked(enabled_in_replay)
 
         self.interface_combobox.addItem(PresetType.LSL.value)
@@ -67,7 +68,8 @@ class ReplayStreamListItem(QWidget):
         return self.include_in_replay_checkbox.isChecked()
 
     def get_info(self):
-        return self.interface_combobox.currentText(), int(self.zmq_port_line_edit.text())
+        return {'preset_type': PresetType(self.interface_combobox.currentText()),
+                'port_number': int(self.zmq_port_line_edit.text())}
 
 class ReplayTab(QtWidgets.QWidget):
     playback_position_signal = pyqtSignal(int)
@@ -186,11 +188,10 @@ class ReplayTab(QtWidgets.QWidget):
             self.stream_list_widget.addItem(item)
             self.stream_list_widget.setItemWidget(item, header_item)
             self.stream_list_items = {}
-            for s_name in self.stream_info.keys():
-                n_channels, n_timepoints, srate = np.frombuffer(self.command_info_interface.socket.recv())
-                n_channels, n_timepoints = int(n_channels), int(n_timepoints)
-                self.stream_info[s_name]['n_channels'], self.stream_info[s_name]['n_timepoints'], self.stream_info[s_name]['srate'] = n_channels, n_timepoints, srate
-                stream_list_item = ReplayStreamListItem(self, s_name, (n_channels, n_timepoints), srate)
+            self.stream_info = json.loads(self.command_info_interface.recv_string())
+            for s_name, info in self.stream_info.items():
+                self.stream_info[s_name]['data_type'] = DataType(info['data_type'])
+                stream_list_item = ReplayStreamListItem(self, s_name, (info['n_channels'], info['n_timepoints']), info['srate'], info['data_type'])
                 item = QListWidgetItem()
                 item.setSizeHint(QSize(item.sizeHint().width(), 60))
                 self.stream_list_widget.addItem(item)
@@ -240,11 +241,11 @@ class ReplayTab(QtWidgets.QWidget):
             self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
 
             self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
-            self.command_info_interface.send_string(json.dumps(self.stream_info))
+            self.command_info_interface.send_string(json.dumps(self.stream_info, cls=PresetsEncoder))  # use PresetsEncoder to encode enums
             # receive the new timing info
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(self.command_info_interface.socket.recv())
 
-            self.parent.add_streams_from_replay(list(self.stream_info.keys()))
+            self.parent.add_streams_from_replay(self.stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
             self.is_replaying = True
             self.StartStopReplayBtn.setText('Stop Replay')
@@ -312,8 +313,8 @@ class ReplayTab(QtWidgets.QWidget):
         zmq_ports = []
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
             if list_item.is_enabled_in_replay():
-                rtn[s_name] = list_item.get_info()
-                if rtn[s_name][0] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name][1])
+                rtn[s_name] = {**list_item.get_info(), **self.stream_info[s_name]}  # merge with existing info
+                if rtn[s_name]['preset_type'] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name]['port_number'])
         assert len(zmq_ports) == len(set(zmq_ports)), 'ZMQ ports cannot have duplicates'
         return rtn
 
@@ -328,5 +329,5 @@ class ReplayTab(QtWidgets.QWidget):
     def get_replay_lsl_stream_names(self):
         rtn = []
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
-            if list_item.get_info()[0] == PresetType.LSL.value: rtn.append(s_name)
+            if list_item.get_info()['preset_type'] == PresetType.LSL: rtn.append(s_name)
         return rtn
