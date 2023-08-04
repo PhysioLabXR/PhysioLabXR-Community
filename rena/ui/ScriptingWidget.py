@@ -517,7 +517,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_preset_expected_shape(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        return num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate
+        return num_channel, int(self.timeWindowLineEdit.text() * sampling_rate)
 
     def on_settings_changed(self):
         """
