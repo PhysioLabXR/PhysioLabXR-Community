@@ -43,7 +43,10 @@ class AOIAugmentationScript(RenaScript):
         # gaze_on_screen_area = [0.12, 0.1]
         print('Loop function is called')
 
-        if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        #     return
+
+        if EventMarkerLSLOutlet.StreamName not in self.inputs.keys(): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
 
         self.state_shift()
