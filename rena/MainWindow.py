@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
             if not is_name_in_preset(stream_name):
                 self.create_preset(stream_name, preset_type=preset_type, data_type=data_type, port=port)
-                GlobalSignals.stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
+                GlobalSignals().stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
 
             if preset_type == PresetType.WEBCAM:  # add video device
                 self.init_video_device(stream_name, video_preset_type=preset_type)

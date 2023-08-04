@@ -38,7 +38,7 @@ def LSLTestStream(stream_name, n_channels=81, srate=2048):
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
 
-def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
+def SampleDefinedTestStream(stream_name, sample, n_channels=81, srate=2048):
     print('Test stream name is ' + stream_name)
     type = 'EEG'
     info = StreamInfo(stream_name, type, n_channels, srate, 'double64', 'someuuid1234')

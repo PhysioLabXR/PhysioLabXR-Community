@@ -4,6 +4,7 @@ import pickle
 import secrets
 import string
 import sys
+import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
@@ -13,10 +14,10 @@ import numpy as np
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
-from tests.TestStream import LSLTestStream, ZMQTestStream
+from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedTestStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
 
@@ -150,6 +151,44 @@ class ContextBot:
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
+
+    def start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float):
+        sample = np.random.random((num_channels, stream_time * srate))
+        p = Process(target=SampleDefinedTestStream, args=(stream_name, sample), kwargs={'n_channels': num_channels, 'srate': srate})
+        p.start()
+        self.send_data_processes[stream_name] = p
+        self.add_stream(stream_name)
+        self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
+
+        def waitForCurrentDialog():
+            assert self.app.current_dialog
+        t = threading.Timer(4, lambda: handle_current_dialog_button(QDialogButtonBox.StandardButton.Yes, self.app, self.qtbot, click_delay_second=1))   # get the messagebox about channel mismatch
+        t.start()
+        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+        self.qtbot.waitUntil(waitForCurrentDialog)
+        t.join()
+
+        this_stream_widget = self.app.stream_widgets[stream_name]
+        # go to the stream option window and set the sampling rate
+        self.qtbot.mouseClick(this_stream_widget.OptionsBtn, QtCore.Qt.MouseButton.LeftButton)
+        # check if the option window is open
+        assert this_stream_widget.option_window.isVisible()
+        self.qtbot.mouseClick(this_stream_widget.option_window.nominalSamplingRateIineEdit, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(this_stream_widget.option_window.nominalSamplingRateIineEdit, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyClicks(this_stream_widget.option_window.nominalSamplingRateIineEdit, str(srate))
+
+        # check the sampling rate has been changed in preset
+        from rena.presets.Presets import Presets
+        assert Presets().stream_presets[stream_name].nominal_sampling_rate == srate
+
+    def add_stream(self, stream_name):
+        self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
+        self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
+        self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+
+
     def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
         from rena.sub_process.pyzmq_utils import can_connect_to_port
         using_port = None
@@ -178,7 +217,7 @@ class ContextBot:
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     def clean_up(self):
-        [p.kill() for _, p in self.send_data_processes.items()]
+        [p.kill() for _, p in self.send_data_processes.items() if p.is_alive()]
 
     def stop_recording(self):
         if not self.app.recording_tab.is_recording:

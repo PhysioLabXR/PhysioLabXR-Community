@@ -59,7 +59,7 @@ def test_zmq_channel_mistmatch(app_main_window, context_bot, qtbot) -> None:
 
     def stream_is_available():
         assert app_main_window.stream_widgets[test_stream_name].is_stream_available
-    qtbot.waitUntil(stream_is_available, timeout=int(2 * stream_availability_wait_time * 1e3))  # wait until the LSL stream becomes available
+    qtbot.waitUntil(stream_is_available, timeout=int(2 * stream_availability_wait_time * 1e3))  # wait until the ZMQ stream becomes available
 
     def waitForCurrentDialog():
         assert app_main_window.current_dialog

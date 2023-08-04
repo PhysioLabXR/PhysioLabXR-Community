@@ -10,6 +10,7 @@ from PyQt6.QtGui import QIntValidator
 
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
@@ -125,6 +126,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         self.internal_data_buffer = None
 
+        # global signals
+        GlobalSignals().stream_preset_nominal_srate_changed.connect(self.on_stream_nominal_sampling_rate_change)
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -284,9 +287,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 return
             self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
+            print("Selected script path ", script_path)
         else:
-            raise ValueError('Script path cannot be empty in process_locate_script')
-        print("Selected script path ", script_path)
+            self.runBtn.setEnabled(False)
 
     def on_create_btn_clicked(self):
         script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
@@ -428,15 +431,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
 
-    def get_input_shapes(self):
+    def get_input_shape_dict(self):
         rtn = dict()
         for w in self.input_widgets:
             input_preset_name = w.get_input_name_text()
             rtn[input_preset_name] = self.get_preset_expected_shape(input_preset_name)
         return rtn
-
-    def get_input_shape_dict(self):
-        return dict([(i, s) for i, s in zip(self.get_inputs(), self.get_input_shapes())])
 
     def get_outputs(self):
         return [w.get_label_text() for w in self.output_widgets]
@@ -509,24 +509,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_preset_input_info_text(self, preset_name):
         if not is_stream_name_in_presets(preset_name):
             raise MissingPresetError(preset_name)
-        sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
-        num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
-        return '[{0}, {1}]'.format(num_channel, _timewindow * sampling_rate)
+        return '[{0}, {1}]'.format(*self.get_preset_expected_shape(preset_name))
 
     def get_preset_expected_shape(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        return num_channel, int(self.timeWindowLineEdit.text() * sampling_rate)
-
-    def on_settings_changed(self):
-        """
-        TODO should be called after every setting change
-        """
-        self.update_input_info()
-
-    def on_time_window_chagned(self):
-        self.update_input_info()
+        return num_channel, int(int(self.timeWindowLineEdit.text()) * sampling_rate)
 
     def try_close(self):
         if self.is_running:
@@ -628,3 +616,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def onSimulationCheckboxChanged(self):
         print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))
+
+    def on_stream_nominal_sampling_rate_change(self, change):
+        """
+        change what's displayed in the input widgets
+        @return:
+        """
+        if change[0] in self.get_inputs():
+            self.update_input_info()
