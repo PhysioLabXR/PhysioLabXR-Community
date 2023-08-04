@@ -2,16 +2,17 @@ from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
+from rena.configs.configs import AppConfigs
 from rena.presets.ScriptPresets import ParamPreset
 from rena.scripting.scripting_enums import ParamChange, ParamType
-from rena.ui_shared import minus_icon, add_icon, collapse_icon, expand_icon
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
 class ParamWidget(QtWidgets.QWidget):
     def __init__(self, scripting_widget, param_name, param_type=ParamType.bool, value=None, is_top_level=True, top_param_widget=None):
         super().__init__()
-        self.ui = uic.loadUi("ui/ParamWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ParamWidget, self)
         self.scripting_widget = scripting_widget
         self.scroll_area.setWidgetResizable(True)
 
@@ -22,8 +23,8 @@ class ParamWidget(QtWidgets.QWidget):
         else:
             self.top_param_widget = self
             self.label_param_name.setText(param_name)
-        self.remove_btn.setIcon(minus_icon)
-        self.add_to_list_button.setIcon(add_icon)
+        self.remove_btn.setIcon(AppConfigs()._icon_minus)
+        self.add_to_list_button.setIcon(AppConfigs()._icon_add)
         self.add_to_list_button.clicked.connect(self.add_to_list_button_pressed)
         self.expand_collapse_button.clicked.connect(self.expand_collapse_button_pressed)
 
@@ -59,7 +60,7 @@ class ParamWidget(QtWidgets.QWidget):
             if new_type is ParamType.float:
                 self.value_widget.setValidator(QDoubleValidator())
             elif new_type is ParamType.int:
-                self.value_widget.setValidator(QIntValidator())
+                self.value_widget.setValidator(NoCommaIntValidator())
             self.value_widget.textChanged.connect(self.on_param_changed)
 
         if new_type is not ParamType.list:
@@ -71,14 +72,14 @@ class ParamWidget(QtWidgets.QWidget):
         self.list_widget.setVisible(True)
         self.value_widget = self.list_content_frame_widget
         self.expand_collapse_button.setVisible(True)
-        self.expand_collapse_button.setIcon(collapse_icon)
+        self.expand_collapse_button.setIcon(AppConfigs()._icon_collapse)
 
     def expand_collapse_button_pressed(self):
         if self.list_widget.isVisible():
-            self.expand_collapse_button.setIcon(expand_icon)
+            self.expand_collapse_button.setIcon(AppConfigs()._icon_expand)
             self.list_widget.setVisible(False)
         else:
-            self.expand_collapse_button.setIcon(collapse_icon)
+            self.expand_collapse_button.setIcon(AppConfigs()._icon_collapse)
             self.list_widget.setVisible(True)
 
     def set_remove_button_callback(self, callback: callable):

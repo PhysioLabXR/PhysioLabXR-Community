@@ -7,27 +7,30 @@ from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox
 
-from rena.exceptions.exceptions import RenaError
+from rena.configs.GlobalSignals import GlobalSignals
+from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets, PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
-    create_default_zmq_preset
+from rena.presets.presets_utils import get_experiment_preset_streams, is_stream_name_in_presets, \
+    create_default_lsl_preset, \
+    create_default_zmq_preset, verify_stream_meta_info, get_stream_meta_info, is_name_in_preset, \
+    change_stream_preset_type, change_stream_preset_data_type, change_stream_preset_port_number
 
 try:
     import rena.config
 except ModuleNotFoundError as e:
-    print('Make sure you set the working directory to ../RealityNavigation/rena, cwd is ' + os.getcwd())
+    print("Make sure you set the working directory to PhysioLabXR's root, cwd is " + os.getcwd())
     raise e
 import rena.threadings.workers as workers
-from rena.ui.StreamWidget import StreamWidget
 from rena.ui.RecordingsTab import RecordingsTab
 from rena.ui.SettingsWidget import SettingsWidget
 from rena.ui.ReplayTab import ReplayTab
@@ -62,13 +65,13 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         super().__init__(*args, **kwargs)
         SplashLoadingTextNotifier().set_loading_text('Creating main window...')
-        self.ui = uic.loadUi("ui/mainwindow.ui", self)
-        self.setWindowTitle('RenaLabApp')
+        self.ui = uic.loadUi(AppConfigs()._ui_mainwindow, self)
+        self.setWindowTitle('PhysioLabXR')
         self.app = app
         self.ask_to_close = ask_to_close
 
         ############
-        self.stream_widgets: Dict[str, StreamWidget] = {}
+        self.stream_widgets: Dict[str, BaseStreamWidget] = {}
         ############
 
         # create sensor threads, worker threads for different sensors
@@ -154,51 +157,85 @@ class MainWindow(QtWidgets.QMainWindow):
         # task_thread = LongTaskThread(self, "process_add")
         # task_thread.completed.connect(self.add_completed)
         # task_thread.start()
-        self.process_add()
+        selected_text, preset_type, data_type, port = self.addStreamWidget.get_selected_stream_name(), \
+                                                      self.addStreamWidget.get_selected_preset_type(), \
+                                                       self.addStreamWidget.get_data_type(), \
+                                                       self.addStreamWidget.get_port_number()
+        self.process_add(selected_text, preset_type, data_type, port)
 
-    def add_completed(self):
-        self.addStreamWidget.add_btn.setEnabled(True)
-        self.loading_dialog.close()
+    # def add_completed(self):
+    #     self.addStreamWidget.add_btn.setEnabled(True)
+    #     self.loading_dialog.close()
 
-    def process_add(self):
+    def process_add(self, stream_name, preset_type, data_type, port):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text, data_type, port  = self.addStreamWidget.get_selected_stream_name(), \
-                                                               self.addStreamWidget.get_data_type(), \
-                                                               self.addStreamWidget.get_port_number()
-        if len(selected_text) == 0:
+
+        if len(stream_name) == 0:
             return
         try:
-            if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
+            verify_stream_meta_info(preset_type=preset_type, data_type=data_type, port_number=port)
+            if stream_name in self.stream_widgets.keys():  # if this inlet hasn't been already added
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(stream_name),title='Warning')
                 return
+            if not is_name_in_preset(stream_name):
+                self.create_preset(stream_name, preset_type=preset_type, data_type=data_type, port=port)
+                GlobalSignals.stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
 
-            selected_type, is_new_preset = self.addStreamWidget.get_current_selected_type()
-            if is_new_preset:
-                self.create_preset(selected_text, selected_type, data_type=data_type, port=port)
-                self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
-
-            if selected_type == PresetType.WEBCAM:  # add video device
-                self.init_video_device(selected_text, video_preset_type=selected_type)
-            elif selected_type == PresetType.MONITOR:
-                self.init_video_device(selected_text, video_preset_type=selected_type)
-            elif selected_type == PresetType.CUSTOM:  # if this is a device preset
+            if preset_type == PresetType.WEBCAM:  # add video device
+                self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.MONITOR:
+                self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
                 raise NotImplementedError
                 self.init_device(selected_text)  # add device stream
-            elif selected_type == PresetType.LSL:
-                self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
-            elif selected_type == PresetType.ZMQ:
-                self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
-            elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
-                streams_for_experiment = get_experiment_preset_streams(selected_text)
-                self.add_streams_to_visualize(streams_for_experiment)
+            elif preset_type == PresetType.LSL:
+                self.init_LSL_streaming(stream_name, data_type)  # add lsl stream
+            elif preset_type == PresetType.ZMQ:
+                self.init_ZMQ_streaming(stream_name, port, data_type)  # add lsl stream
+            elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(stream_name)
+                self.add_streams_from_experiment_preset(streams_for_experiment)
             else:
-                raise Exception("Unknow preset type {}".format(selected_type))
+                raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
         except RenaError as error:
-            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
+            dialog_popup(f'Failed to add: {stream_name}. {error}', title='Error')
         self.addStreamWidget.check_can_add_input()
+
+    def add_streams_from_experiment_preset(self, stream_names):
+        for stream_name in stream_names:
+            if stream_name not in self.stream_widgets.keys():
+                assert is_stream_name_in_presets(stream_name), InvalidStreamMetaInfoError(f"Adding multiple streams must use streams already defined in presets. Undefined stream: {stream_name}")
+                self.process_add(stream_name, *get_stream_meta_info(stream_name))
+
+    def add_streams_from_replay(self, stream_infos):
+        # switch tab to stream
+        is_new_preset_added = False
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
+        for stream_name, info in stream_infos.items():
+            if stream_name not in self.stream_widgets.keys():
+                if not is_stream_name_in_presets(stream_name):
+                    sampling_rate = max(0, int(info['sampling_rate']))
+                    self.create_preset(stream_name, preset_type=info['preset_type'], num_channels=info['n_channels'], data_type=info['data_type'], port=info['port'], nominal_sample_rate=sampling_rate)
+                    is_new_preset_added = True
+                else:
+                    stream_meta_info = get_stream_meta_info(stream_name)
+
+                    if stream_meta_info[0].value != info['preset_type']:
+                        print(f"Warning: stream {stream_name} has different preset type {stream_meta_info[0].value} from the one in the replay file {info['preset_type']}.")
+                        change_stream_preset_type(stream_name, info['preset_type'])
+                    if stream_meta_info[1].value != info['data_type']:
+                        print(f"Warning: stream {stream_name} has different data type {stream_meta_info[1].value} from the one in the replay file {info['data_type']}.")
+                        change_stream_preset_data_type(stream_name, info['data_type'])
+                    if info['preset_type'] == PresetType.ZMQ:
+                        change_stream_preset_port_number(stream_name, info['port_number'])
+                    # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
+                self.process_add(stream_name, *get_stream_meta_info(stream_name))
+
+        if is_new_preset_added:
+            GlobalSignals.stream_presets_entry_changed_signal.emit()
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
@@ -245,22 +282,6 @@ class MainWindow(QtWidgets.QMainWindow):
                            insert_position=self.camHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
-
-    def add_streams_to_visualize(self, stream_names):
-        for stream_name in stream_names:
-            # check if the stream in setting's preset
-            if stream_name not in self.stream_widgets.keys():
-                if check_preset_exists(stream_name):
-                    self.addStreamWidget.select_by_stream_name(stream_name)
-                    self.addStreamWidget.add_btn.click()
-                else:  # add a new preset if the stream name is not defined
-                    self.addStreamWidget.set_selection_text(stream_name)
-                    self.addStreamWidget.add_btn.click()
-
-    def add_streams_from_replay(self, stream_names):
-        # switch tab to stream
-        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
-        self.add_streams_to_visualize(stream_names)
 
     def init_LSL_streaming(self, stream_name, data_type=None):
         widget_name = stream_name + '_widget'
@@ -346,6 +367,7 @@ class MainWindow(QtWidgets.QMainWindow):
             [c() for c in stream_close_calls]
             self.scripting_tab.try_close()
             self.replay_tab.try_close()
+            self.settings_widget.try_close()
 
             Presets().__del__()
             AppConfigs().__del__()

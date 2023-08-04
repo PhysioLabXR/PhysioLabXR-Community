@@ -114,7 +114,7 @@ class DataBuffer():
 
         if stream_name in self.stream_name_buffer_sizes.keys():  # keep only the latest data according to the buffer size
             buffer_time_points = self.buffer[stream_name][0].shape[-1]
-            cut_to = -np.min([buffer_time_points, self.stream_name_buffer_sizes[stream_name]])
+            cut_to = int(-np.min([buffer_time_points, self.stream_name_buffer_sizes[stream_name]]))
             self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to:]
             self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to:]
 

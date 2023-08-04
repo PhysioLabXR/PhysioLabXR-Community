@@ -84,7 +84,15 @@ class GroupEntry(metaclass=SubPreset):
     def is_image_valid(self):
         width, height, image_format = self.plot_configs.image_config.width, self.plot_configs.image_config.height, self.plot_configs.image_config.image_format
         depth = image_format.depth_dim()
-        return len(self.channel_indices) == width * height * depth
+
+        return self.get_num_channels() == width * height * depth
+
+    def get_num_channels(self):
+        if self.channel_indices is None:
+            channel_num = self.channel_indices_start_end[1] - self.channel_indices_start_end[0]
+        else:
+            channel_num = len(self.channel_indices)
+        return channel_num
 
     def load_data_processor(self):
         data_processors = []

@@ -1,6 +1,7 @@
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtWidgets import QFileDialog
 
+from rena.configs.configs import AppConfigs
 from rena.interfaces.DataStreamInterface import DataStreamInterface
 from rena.scripting.script_utils import get_target_class_name
 from rena.utils.ui_utils import validate_script_path
@@ -15,7 +16,7 @@ class AddCustomDataStreamWidget(QtWidgets.QWidget):
         super().__init__()
         self.parent = parent
         self.main_window = main_window
-        self.ui = uic.loadUi("ui/AddCustomDataStreamWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_AddCustomDataStreamWidget, self)
         self.edit_variable_button.setVisible(False)
 
         self.locate_button.clicked.connect(self.on_locate_btn_clicked)

@@ -6,6 +6,8 @@ class RenaError(Exception):
     pass
 
 
+
+
 class DataPortNotOpenError(RenaError):
     def __init__(self):
         super().__init__()
@@ -186,6 +188,13 @@ class DataProcessorInvalidBufferSizeError(DataProcessorEvokeFailedError):
     def __str__(self):
         return self.error #+ 'DataProcessorInvalidBufferSizeError'
 
+class InvalidStreamMetaInfoError(RenaError):
+    """Raised when the stream meta info is invalid"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
 
+    def __str__(self):
+        return f'Invalid Stream Meta Info: {self.error}'
 
-
+    pass

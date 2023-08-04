@@ -5,10 +5,12 @@ from PyQt6 import uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
 from PyQt6.QtGui import QPixmap
+
+from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import add_data_processor_to_group_entry, remove_data_processor_to_group_entry, \
     get_group_channel_num, get_group_data_processors, get_stream_nominal_sampling_rate
+from rena.utils.Validators import NoCommaIntValidator
 # from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
-from rena.ui_shared import minus_icon
 from rena.utils.dsp_utils.dsp_modules import *
 
 
@@ -17,9 +19,9 @@ class DataProcessorWidget(QtWidgets.QWidget):
     def __init__(self, parent, data_processor: DataProcessor, adding_data_processor=False):
         super().__init__()
         self.parent = parent
-        self.data_processor_invalid_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
-        self.data_processor_valid_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
-        self.data_processor_activated_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+        self.data_processor_invalid_pixmap = QPixmap(AppConfigs()._stream_unavailable)
+        self.data_processor_valid_pixmap = QPixmap(AppConfigs()._stream_available)
+        self.data_processor_activated_pixmap = QPixmap(AppConfigs()._stream_viz_active)
         self.data_processor = data_processor
 
         if adding_data_processor:
@@ -27,7 +29,7 @@ class DataProcessorWidget(QtWidgets.QWidget):
 
     def __post_init__(self):
         self.removeDataProcessorBtn.clicked.connect(self.remove_data_processor_btn_clicked)
-        self.removeDataProcessorBtn.setIcon(minus_icon)
+        self.removeDataProcessorBtn.setIcon(AppConfigs()._icon_minus)
 
         self.set_data_processor_input_field_value()
         self.set_data_processor_input_field_constrain()
@@ -126,7 +128,7 @@ class NotchFilterWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/NotchFilterWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_NotchFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
@@ -189,7 +191,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
             data_processor.fs = float(get_stream_nominal_sampling_rate(parent.stream_name))
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/ButterworthBandPassFilterWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthBandPassFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
@@ -207,7 +209,7 @@ class ButterworthBandPassFilterWidget(DataProcessorWidget):
         self.lowcutLineEdit.setValidator(QDoubleValidator())
         self.highcutLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthBandPassFilterWidget, self).connect_data_processor_input_field_signal()
@@ -261,7 +263,7 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/ButterworthLowpassFilterWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthLowPassFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
@@ -277,7 +279,7 @@ class ButterworthLowpassFilterWidget(DataProcessorWidget):
     def set_data_processor_input_field_constrain(self):
         self.cutoffLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthLowpassFilterWidget, self).connect_data_processor_input_field_signal()
@@ -322,7 +324,7 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/ButterworthHighpassFilterWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ButterworthHighPassFilterWidget, self)
         # self.data_processor = data_processor
 
         ####################
@@ -338,7 +340,7 @@ class ButterworthHighpassFilterWidget(DataProcessorWidget):
     def set_data_processor_input_field_constrain(self):
         self.cutoffLineEdit.setValidator(QDoubleValidator())
         self.fsLineEdit.setValidator(QDoubleValidator())
-        self.orderLineEdit.setValidator(QIntValidator())
+        self.orderLineEdit.setValidator(NoCommaIntValidator())
 
     def connect_data_processor_input_field_signal(self):
         super(ButterworthHighpassFilterWidget, self).connect_data_processor_input_field_signal()
@@ -383,7 +385,7 @@ class RootMeanSquareWidget(DataProcessorWidget):
 
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/RootMeanSquareWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_RootMeanSquareWidget, self)
 
         ####################
         self.__post_init__()
@@ -430,7 +432,7 @@ class ClutterRemovalWidget(DataProcessorWidget):
             data_processor = ClutterRemoval()
 
         super().__init__(parent, data_processor, adding_data_processor)
-        self.ui = uic.loadUi("ui/dsp_ui/ClutterRemovalWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ClutterRemovalWidget, self)
 
         ####################
         self.__post_init__()

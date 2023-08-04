@@ -145,7 +145,7 @@
         </property>
         <property name="icon">
          <iconset>
-          <normaloff>../../media/icons/stop.png</normaloff>../../media/icons/stop.png</iconset>
+          <normaloff>media/icons/stop.png</normaloff>media/icons/stop.png</iconset>
         </property>
        </widget>
       </item>

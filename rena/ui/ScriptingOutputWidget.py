@@ -1,22 +1,23 @@
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtGui import QIntValidator
 
-from rena.ui_shared import minus_icon
+from rena.configs.configs import AppConfigs
+from rena.utils.Validators import NoCommaIntValidator
 
 
 class ScriptingOutputWidget(QtWidgets.QWidget):
     def __init__(self, parent, label_text, num_channels):
         super().__init__()
-        self.ui = uic.loadUi("ui/ScriptingOutputWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ScriptingOutputWidget, self)
         self.parent = parent
         self.label.setText(label_text)
+
+        self.numChan_lineEdit.setValidator(NoCommaIntValidator())
         self.numChan_lineEdit.textChanged.connect(self.on_channel_num_changed)
-        self.numChan_lineEdit.setValidator(QIntValidator())
         self.set_output_num_channels(num_channels)
-        self.button.setIcon(minus_icon)
+        self.button.setIcon(AppConfigs()._icon_minus)
 
         self.on_channel_num_changed()
-
 
     def set_button_callback(self, callback):
         self.button.clicked.connect(callback)

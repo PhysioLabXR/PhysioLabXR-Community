@@ -22,7 +22,7 @@ from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
 def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=True):
     print('Initializing test fixture for ' + 'Visualization Features')
-    update_test_cwd()
+    # update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
@@ -244,12 +244,12 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
         names.append(rand_name)
     return names
 
-def update_test_cwd():
-    print('update_test_cwd: current working directory is', os.getcwd())
-    if os.getcwd().endswith('tests'):
-        os.chdir('../rena/')
-    elif 'rena' in os.listdir(os.getcwd()):
-        os.chdir('rena')
+# def update_test_cwd():
+#     print('update_test_cwd: current working directory is', os.getcwd())
+#     if os.getcwd().endswith('tests'):
+#         os.chdir('..')
+#     elif 'rena' in os.listdir(os.getcwd()):
+#         os.chdir('rena')
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
 
@@ -376,6 +376,10 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         app_main_window.replay_tab.select_file(recording_file_name)
 
         print(f"test: selected file at {recording_file_name} for replaying. starting replay")
+
+        def replay_reloaded():
+            assert app_main_window.replay_tab.StartStopReplayBtn.isVisible()
+        test_context.qtbot.waitUntil(replay_reloaded, timeout=test_context.stream_availability_timeout)
         test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
         test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
         # start the streams from replay and record them ################################################

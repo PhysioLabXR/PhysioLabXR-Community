@@ -23,27 +23,24 @@ test_modules=(
   ReplayTest
   XdfTest
   CsvTest
+  MatTest
 )
 
-# Detect the operating system
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # Linux
-    source venv/bin/activate
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    # Mac OSX
-    source venv/bin/activate
-elif [[ "$OSTYPE" == "cygwin" ]]; then
-    # Windows with Cygwin
-    source venv/bin/activate
-elif [[ "$OSTYPE" == "msys" ]]; then
-    # Windows with MSYS2
-    source venv/Scripts/activate
-elif [[ "$OSTYPE" == "win32" ]]; then
-    # Windows with native shell
-    source venv/Scripts/activate
+warning_text="You should create a venv-dev and install packages using pip install -r requirements-dev.txt"
+
+if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* || "$OSTYPE" == "cygwin" ]]; then
+    # Linux, Mac OSX, or Windows with Cygwin
+    source venv-dev/bin/activate || source venv/bin/activate
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows with MSYS2 or Windows with native shell
+    source venv-dev/Scripts/activate || source venv/Scripts/activate
 else
     echo "Unknown operating system: $OSTYPE"
     exit 1
+fi
+
+if [ ! -d "venv-dev" ]; then
+    echo "WARNING: $warning_text"
 fi
 
 export PYTHONPATH="$(pwd)" # add content root to PYTHONPATH

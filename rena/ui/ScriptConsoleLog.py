@@ -6,13 +6,14 @@ from PyQt6.QtCore import QMutex
 from PyQt6.QtWidgets import QLabel, QHBoxLayout
 
 from rena.config import CONSOLE_LOG_MAX_NUM_ROWS
+from rena.configs.configs import AppConfigs
 
 
 class ScriptConsoleLog(QtWidgets.QWidget):
 
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi("ui/ScriptConsoleLog.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ScriptConsoleLog, self)
         self.log_history = ''
         self.msg_labels = []
         self.ts_labels = []

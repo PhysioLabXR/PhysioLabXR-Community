@@ -40,8 +40,8 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>../../media/icons/play.png</normaloff>
-     <normalon>../../media/icons/pause.png</normalon>../../media/icons/play.png</iconset>
+     <normaloff>media/icons/play.png</normaloff>
+     <normalon>media/icons/pause.png</normalon>media/icons/play.png</iconset>
    </property>
   </widget>
   <widget class="QPushButton" name="StopButton">
@@ -58,8 +58,8 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>../../media/icons/play.png</normaloff>
-     <normalon>../../media/icons/pause.png</normalon>../../media/icons/play.png</iconset>
+     <normaloff>media/icons/play.png</normaloff>
+     <normalon>media/icons/pause.png</normalon>media/icons/play.png</iconset>
    </property>
   </widget>
   <widget class="QPushButton" name="SkipBackButton">
@@ -76,8 +76,8 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>../../media/icons/play.png</normaloff>
-     <normalon>../../media/icons/pause.png</normalon>../../media/icons/play.png</iconset>
+     <normaloff>media/icons/play.png</normaloff>
+     <normalon>media/icons/pause.png</normalon>media/icons/play.png</iconset>
    </property>
   </widget>
   <widget class="QPushButton" name="SkipForwardButton">
@@ -94,8 +94,8 @@
    </property>
    <property name="icon">
     <iconset>
-     <normaloff>../../media/icons/play.png</normaloff>
-     <normalon>../../media/icons/pause.png</normalon>../../media/icons/play.png</iconset>
+     <normaloff>media/icons/play.png</normaloff>
+     <normalon>media/icons/pause.png</normalon>media/icons/play.png</iconset>
    </property>
   </widget>
   <widget class="QTextEdit" name="TimeElapsed">

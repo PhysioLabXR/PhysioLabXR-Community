@@ -4,6 +4,7 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
 
+from rena.configs.configs import AppConfigs
 from rena.presets.Cmap import Cmap
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_a_group_info, \
@@ -16,6 +17,7 @@ from rena.presets.presets_utils import get_stream_a_group_info, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
     set_image_levels_rmax, set_image_scaling_percentile, get_image_levels
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
+from rena.utils.Validators import NoCommaIntValidator
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -28,7 +30,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         :rtype: object
         """
         # self.setWindowTitle('Options')
-        self.ui = uic.loadUi("ui/OptionsWindowPlotFormatWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_OptionsWindowPlotFormatWidget, self)
         self.stream_name = stream_name
         self.group_name = None
         self.parent = parent
@@ -39,8 +41,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
 
         # image ###############################################################
-        self.imageWidthLineEdit.setValidator(QIntValidator())
-        self.imageHeightLineEdit.setValidator(QIntValidator())
+        self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
+        self.imageHeightLineEdit.setValidator(NoCommaIntValidator())
         self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
         self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
 
@@ -257,7 +259,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def image_valid_update(self):
         if self.group_name is not None:
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            channel_num = len(get_stream_a_group_info(self.stream_name, self.group_name).channel_indices)
+            group_info = get_stream_a_group_info(self.stream_name, self.group_name)
+            channel_num = group_info.get_num_channels()
             width, height, image_format, channel_format = image_config.width, image_config.height, image_config.image_format, image_config.channel_format
 
             self.imageFormatInfoLabel.setText('Width x Height x Depth = {0} \n Group Channel Number = {1}'.format(

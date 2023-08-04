@@ -3,28 +3,28 @@ from PyQt6.QtGui import QIcon, QPixmap
 from rena.config_ui import stream_widget_icon_size
 from rena.load_asset_file import load_media_icon
 
-start_stream_icon = load_media_icon('start.svg')
-stop_stream_icon = load_media_icon('stop.svg')
-terminate_icon = load_media_icon('terminate.svg')  # Only used in replay playback widget as of now
-options_icon = load_media_icon('options.svg')
-pop_window_icon = load_media_icon('popwindow.svg')
-dock_window_icon = load_media_icon('dockwindow.svg')
-remove_stream_icon = load_media_icon('removestream.svg')
-
-add_icon = load_media_icon('add.svg')
-minus_icon = load_media_icon('minus.svg')
-
-pause_icon = load_media_icon('pause.svg')
-
-collapse_icon = load_media_icon('collapse.svg')
-expand_icon = load_media_icon('expand.svg')
+# start_stream_icon = load_media_icon('start.svg')
+# stop_stream_icon = load_media_icon('stop.svg')
+# terminate_icon = load_media_icon('terminate.svg')  # Only used in replay playback widget as of now
+# options_icon = load_media_icon('options.svg')
+# pop_window_icon = load_media_icon('pop_window.svg')
+# dock_window_icon = load_media_icon('dock_window.svg')
+# remove_stream_icon = load_media_icon('remove.svg')
+#
+# add_icon = load_media_icon('add.svg')
+# minus_icon = load_media_icon('minus.svg')
+#
+# pause_icon = load_media_icon('pause.svg')
+#
+# collapse_icon = load_media_icon('collapse.svg')
+# expand_icon = load_media_icon('expand.svg')
 
 # Stream widget icon in the visualization tab
-stream_unavailable_icon = load_media_icon('streamwidget_stream_unavailable.svg')
+# stream_unavailable_icon = load_media_icon('streamwidget_stream_unavailable.svg')
 # stream_unavailable_pixmap = stream_unavailable_icon.pixmap(72, 72)
-stream_available_icon = load_media_icon('streamwidget_stream_available.svg')
+# stream_available_icon = load_media_icon('streamwidget_stream_available.svg')
 # stream_available_pixmap = stream_available_icon.pixmap(72, 72)
-stream_active_icon = load_media_icon('streamwidget_stream_viz_active.svg')
+# stream_active_icon = load_media_icon('streamwidget_stream_viz_active.svg')
 # stream_active_pixmap = stream_active_icon.pixmap(72, 72)
 
 

@@ -3,6 +3,7 @@ import time
 import cv2
 import numpy as np
 import pyqtgraph as pg
+from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal
 from pylsl import local_clock
 
@@ -33,7 +34,7 @@ class WebcamWorker(QObject, RenaWorker):
         self.is_streaming = True
         self.cap = cv2.VideoCapture(self.cam_id)
 
-    @pg.QtCore.pyqtSlot()
+    @QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()

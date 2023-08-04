@@ -1,27 +1,26 @@
 # This Python file uses the following encoding: utf-8
-import json
-import os
+import multiprocessing
 
+import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QSettings
+from PyQt6.QtCore import QThread
 from PyQt6.QtGui import QIntValidator
-
 from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 
-from rena import config_ui, config
+from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
-from rena.presets.Presets import Presets
+from rena.presets.Presets import Presets, PresetType, _load_video_device_presets
 from rena.startup import load_settings
-from rena.utils.string_utils import remove_space_all_caps
-
+from rena.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import stream_stylesheet, dialog_popup
-import pyqtgraph as pg
+
 
 class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
-        self.ui = uic.loadUi("ui/SettingsWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_SettingsWidget, self)
         self.parent = parent
         self.set_theme(config.settings.value('theme'))
 
@@ -40,7 +39,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.reload_stream_preset_button.clicked.connect(self.reload_stream_presets)
 
         self.plot_fps_lineedit.textChanged.connect(self.on_plot_fps_changed)
-        onlyInt = QIntValidator()
+        onlyInt = NoCommaIntValidator()
         onlyInt.setRange(*config.plot_fps_range)
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(AppConfigs().visualization_refresh_interval)))))
@@ -49,6 +48,43 @@ class SettingsWidget(QtWidgets.QWidget):
         self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
 
         self.load_settings_to_ui()
+
+        # start a thread to listen to video preset reloading
+        # self.zmq_endpoint = "tcp://127.0.0.1:5550"
+        self._load_video_device_process = None
+        self.wait_process_thread = None
+        self.wait_process_worker = None
+        self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
+        self.reload_video_device_presets()
+
+    def reload_video_device_presets(self):
+        """
+        this function will start a separate process look for video devices.
+        an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
+        rtn is the return of the process Presets()._load_video_device_process.
+
+
+        """
+        self.reload_video_device_button.setEnabled(False)
+        self.reload_video_device_button.setText("Reloading...")
+        Presets().remove_video_presets()
+        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        self._load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
+        self._load_video_device_process.start()
+        self.wait_process_thread = QThread()
+        self.wait_process_worker = WaitForProcessWorker(self._load_video_device_process)
+        self.wait_process_worker.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.wait_process_worker.moveToThread(self.wait_process_thread)
+
+        self.wait_process_thread.started.connect(self.wait_process_worker.run)
+        self.wait_process_thread.start()
+
+    def on_video_device_preset_reloaded(self, video_presets):
+        Presets().add_video_presets(video_presets)
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        self.reload_video_device_button.setEnabled(True)
+        self.reload_video_device_button.setText("Reload Video Devices")
 
     def load_settings_to_ui(self):
         self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)
@@ -138,3 +174,8 @@ class SettingsWidget(QtWidgets.QWidget):
         Presets().reload_stream_presets()
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         dialog_popup('Stream presets reloaded!', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
+
+    def try_close(self):
+        if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
+            self._load_video_device_process.terminate()
+        self.wait_process_thread.quit()

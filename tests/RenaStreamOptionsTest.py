@@ -17,13 +17,11 @@ AppConfigs(_reset=True)  # create the singleton app configs object
 from rena.MainWindow import MainWindow
 from rena.startup import load_settings
 from tests.TestStream import LSLTestStream
-from tests.test_utils import update_test_cwd
 
 
 @pytest.fixture
 def app(qtbot: QtBot):
     print('Initializing test fixture for ' + 'Visualization Features')
-    update_test_cwd()
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)

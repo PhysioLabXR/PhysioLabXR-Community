@@ -2,8 +2,7 @@ from PyQt6 import QtWidgets
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QLayout, QPushButton
 
-from rena.config import app_logo_path
-from rena.ui_shared import pop_window_icon, dock_window_icon
+from rena.configs.configs import AppConfigs
 from rena.utils.ui_utils import AnotherWindow
 
 
@@ -17,7 +16,7 @@ class Poppable(QtWidgets.QWidget):
         self.close_function = close_function
 
         self.is_popped = False
-        self.window_icon = QIcon(app_logo_path)
+        self.window_icon = QIcon(AppConfigs()._app_logo)
 
     def set_pop_button(self, pop_button: QPushButton):
         self.pop_button = pop_button
@@ -55,9 +54,9 @@ class Poppable(QtWidgets.QWidget):
     def set_pop_icons(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling pop_window"
         if not self.is_popped:
-            self.pop_button.setIcon(pop_window_icon)
+            self.pop_button.setIcon(AppConfigs()._icon_pop_window)
         else:
-            self.pop_button.setIcon(dock_window_icon)
+            self.pop_button.setIcon(AppConfigs()._icon_dock_window)
 
     def delete_window(self):
         self.another_window.deleteLater()

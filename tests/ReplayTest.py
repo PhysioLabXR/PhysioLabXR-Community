@@ -61,11 +61,10 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     from rena.presets.Presets import PresetType
     from rena.config import stream_availability_wait_time
 
-
     num_stream_to_test = 3
-    recording_time_second = 6
+    recording_time_second = 10
     replay_file_session_name = 'replayed'
-    stream_availability_timeout = 2 * stream_availability_wait_time * 1e3
+    stream_availability_timeout = 4 * stream_availability_wait_time * 1e3
 
     test_stream_names = []
     test_stream_processes = []
@@ -95,7 +94,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
 
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the LSL stream becomes available
 
-    for ts_name in test_stream_names:
+    for ts_name in test_stream_names:  # start all test streams
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
@@ -126,9 +125,9 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     t.start()
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
     t.join()  # wait until the dialog is closed
-    #
+
     qtbot.mouseClick(app_main_window.stop_all_btn, QtCore.Qt.MouseButton.LeftButton)  # stop all the streams, so we don't need to handle stream lost
-    #
+
     print("Waiting for test stream processes to close")
     [p.kill() for p in test_stream_processes]
     qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
@@ -139,7 +138,13 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     data_original = RNStream(recording_file_name).stream_in()  # this original data will be compared with replayed data later
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'replay_tab'))  # switch to the replay widget
     app_main_window.replay_tab.select_file(recording_file_name)
-    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
+
+    qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
+
+    def replay_reloaded():
+        assert app_main_window.replay_tab.StartStopReplayBtn.isVisible()
+    qtbot.waitUntil(replay_reloaded, timeout=stream_availability_timeout)
+    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
 
     print("Waiting for replay streams to become available")
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay

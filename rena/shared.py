@@ -1,8 +1,8 @@
 # replay
 
 FAIL_INFO = 'fail!'
-START_COMMAND = 'start!'
-START_SUCCESS_INFO = 'start'
+LOAD_COMMAND = 'load!'
+LOAD_SUCCESS_INFO = 'load'
 VIRTUAL_CLOCK_REQUEST = 'v'
 
 PLAY_PAUSE_COMMAND = 'pp!'
@@ -15,7 +15,7 @@ STOP_COMMAND = 'stop!'
 STOP_SUCCESS_INFO = 'stop'
 
 GO_AHEAD_COMMAND = 'go'
-DUPLICATE_STREAM_STOP_COMMAND = 'ds!'
+CANCEL_START_REPLAY_COMMAND = 'ds!'
 
 TERMINATE_COMMAND = 't!'
 TERMINATE_SUCCESS_COMMAND = 't'
@@ -30,13 +30,13 @@ SCRIPT_INFO_REQUEST = 'i'
 DATA_BUFFER_PREFIX = 'd'.encode('utf-8')
 SCRIPT_PARAM_CHANGE = 'p'
 
-try:
-    rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
-except FileNotFoundError:
-    try:
-        rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
-    except FileNotFoundError:
-        rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
+# try:
+#     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
+# except FileNotFoundError:
+#     try:
+#         rena_base_script = open("../scripting/BaseRenaScript.py", "r").read()
+#     except FileNotFoundError:
+#         rena_base_script = open("rena/scripting/BaseRenaScript.py", "r").read()
 
 default_plot_format = {
         'time_series': {'is_valid': 1, 'display':1},

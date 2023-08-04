@@ -1,4 +1,7 @@
 import copy
+import os
+import shutil
+
 import numpy as np
 import pytest
 
@@ -7,7 +10,7 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
-
+from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
 from tests.TestStream import CSVTestStream
 
@@ -136,8 +139,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
 
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '')
-    load_csv = CsvStoreLoad()
-    csv_data = load_csv.load_csv(saved_file_path)
+    csv_data = stream_in(saved_file_path)
 
     def compare_column_vec(vec1, vec2, persentage):
         percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
@@ -170,4 +172,6 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         assert is_passing
 
     assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
+    os.remove(saved_file_path + '.dats')
+    shutil.rmtree(saved_file_path)
 

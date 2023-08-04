@@ -10,6 +10,7 @@ from PyQt6.QtGui import QIntValidator
 
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
+from rena.configs.configs import AppConfigs
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.Presets import Presets
@@ -17,7 +18,7 @@ from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import start_rena_script, get_target_class_name
 from rena.scripting.scripting_enums import ParamChange, ParamType
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
+from rena.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
@@ -25,11 +26,12 @@ from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
 from rena.ui.ParamWidget import ParamWidget
-from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
+from rena.ui_shared import script_realtime_info_text
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
-    get_experiment_preset_names, get_stream_preset_info, check_preset_exists, remove_script_from_settings
+    get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path
@@ -39,7 +41,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset, layout: QLayout):
         super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
-        self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_ScriptingWidget, self)
         self.set_pop_button(self.PopWindowBtn)
 
         self.parent = parent_widget
@@ -54,17 +56,17 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # set up the add buttons
         self.removeBtn.clicked.connect(self.remove_script_clicked)
-        self.addInputBtn.setIcon(add_icon)
+        self.addInputBtn.setIcon(AppConfigs()._icon_add)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
         self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
         self.inputComboBox.lineEdit().returnPressed.connect(self.addInputBtn.click)
 
-        self.addOutput_btn.setIcon(add_icon)
+        self.addOutput_btn.setIcon(AppConfigs()._icon_add)
         self.addOutput_btn.clicked.connect(self.add_output_clicked)
         self.output_lineEdit.textChanged.connect(self.on_output_lineEdit_changed)
         self.output_lineEdit.returnPressed.connect(self.addOutput_btn.click)
 
-        self.addParam_btn.setIcon(add_icon)
+        self.addParam_btn.setIcon(AppConfigs()._icon_add)
         self.addParam_btn.clicked.connect(self.add_params_clicked)
         self.param_lineEdit.textChanged.connect(self.check_can_add_param)
         self.param_lineEdit.returnPressed.connect(self.addParam_btn.click)
@@ -72,13 +74,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
         self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 
-        self.timeWindowLineEdit.setValidator(QIntValidator())
-        self.frequencyLineEdit.setValidator(QIntValidator())
+        self.timeWindowLineEdit.setValidator(NoCommaIntValidator())
+        self.frequencyLineEdit.setValidator(NoCommaIntValidator())
 
         self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")
 
-        self.removeBtn.setIcon(minus_icon)
+        self.removeBtn.setIcon(AppConfigs()._icon_minus)
 
         self.is_running = False
         self.is_simulating = False
@@ -189,13 +191,18 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def close_stdout(self):
         self.stdout_timer.stop()
+        self.stdout_worker_thread.requestInterruption()
         self.stdout_worker_thread.exit()
+        self.stdout_worker_thread.wait()
+        del self.stdout_socket_interface
         # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
     def close_info_interface(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
+        self.info_thread.requestInterruption()
         self.info_thread.exit()
+        self.info_thread.wait()
 
     def on_script_abnormal_termination(self):
         self.stop_run(True)
@@ -265,6 +272,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        if script_path == '':
+            return
         self.process_locate_script(script_path)
         self.export_script_args_to_settings()
 
@@ -276,17 +285,19 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
         else:
-            self.runBtn.setEnabled(False)
+            raise ValueError('Script path cannot be empty in process_locate_script')
         print("Selected script path ", script_path)
 
     def on_create_btn_clicked(self):
         script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
+        if script_path == '':
+            return
         self.create_script(script_path)
 
     def create_script(self, script_path, is_open_file=True):
         if script_path:
             base_script_name = os.path.basename(os.path.normpath(script_path))
-            this_script: str = rena_base_script[:]  # make a copy
+            this_script: str = AppConfigs()._rena_base_script[:]  # make a copy
             class_name = base_script_name if not base_script_name.endswith('.py') else base_script_name.strip('.py')
             this_script = this_script.replace('BaseRenaScript', class_name)
             if not script_path.endswith('.py'):
@@ -303,7 +314,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             if is_open_file:
                 click_on_file(script_path)
         else:
-            self.runBtn.setEnabled(False)
+            raise ValueError('Script path cannot be empty in process_locate_script')
         print("Selected script path ", script_path)
         self.export_script_args_to_settings()
 
@@ -496,7 +507,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             w.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
 
     def get_preset_input_info_text(self, preset_name):
-        if not check_preset_exists(preset_name):
+        if not is_stream_name_in_presets(preset_name):
             raise MissingPresetError(preset_name)
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')
@@ -506,7 +517,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_preset_expected_shape(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        return num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate
+        return num_channel, int(self.timeWindowLineEdit.text() * sampling_rate)
 
     def on_settings_changed(self):
         """
@@ -519,24 +530,19 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def try_close(self):
         if self.is_running:
-            # reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-            #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            # if reply == QMessageBox.Yes:
-            #     self.on_run_btn_clicked()
-            # else:
-            #     return False
             self.on_run_btn_clicked()
         self.close_stdout()
+        if self.is_popped:
+            self.delete_window()
+        self.script_console_log_window.close()
+        self.deleteLater()
+        self.parent.remove_script_widget(self)
         print('Script widget closed')
         return True
 
     def remove_script_clicked(self):
-        # self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
-        if self.is_popped:
-            self.delete_window()
-        self.deleteLater()
+        self.try_close()
         remove_script_from_settings(self.id)
-        self.script_console_log_window.close()
 
     def on_input_combobox_changed(self):
         self.check_can_add_input()
@@ -586,7 +592,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),
-                'is_simulate': self.simulateCheckbox.isChecked()}
+                'is_simulate': self.simulateCheckbox.isChecked(),
+                'presets': Presets()}
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),

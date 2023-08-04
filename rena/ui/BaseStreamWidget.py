@@ -18,8 +18,6 @@ from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
 from rena.ui.VizComponents import VizComponents
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pop_window_icon, dock_window_icon, remove_stream_icon, \
-    options_icon
 from rena.utils.buffers import DataBufferSingleStream
 from rena.utils.dsp_utils.dsp_modules import run_data_processors
 from rena.utils.performance_utils import timeit
@@ -44,11 +42,11 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
-        self.ui = uic.loadUi("ui/StreamWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_StreamWidget, self)
         self.set_pop_button(self.PopWindowBtn)
         self.StreamNameLabel.setText(stream_name)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveStreamBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
 
         if type(insert_position) == int:
             parent_layout.insertWidget(insert_position, self)
@@ -80,9 +78,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.RemoveStreamBtn.clicked.connect(self.remove_stream)
 
         # inefficient loading of assets TODO need to confirm creating Pixmap in ui_shared result in crash
-        self.stream_unavailable_pixmap = QPixmap('../media/icons/streamwidget_stream_unavailable.png')
-        self.stream_available_pixmap = QPixmap('../media/icons/streamwidget_stream_available.png')
-        self.stream_active_pixmap = QPixmap('../media/icons/streamwidget_stream_viz_active.png')
+        self.stream_unavailable_pixmap = QPixmap(AppConfigs()._stream_unavailable)
+        self.stream_available_pixmap = QPixmap(AppConfigs()._stream_available)
+        self.stream_active_pixmap = QPixmap(AppConfigs()._stream_viz_active)
 
         # visualization components
         self.viz_components = None  # stores all the visualization components we initialize it in the init_stream_visualization()
@@ -189,15 +187,15 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def set_pop_button_icons(self):
 
         if not self.is_popped:
-            self.PopWindowBtn.setIcon(pop_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_pop_window)
         else:
-            self.PopWindowBtn.setIcon(dock_window_icon)
+            self.PopWindowBtn.setIcon(AppConfigs()._icon_dock_window)
 
     def set_start_stop_button_icon(self):
         if not self.is_streaming():
-            self.StartStopStreamBtn.setIcon(start_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
         else:
-            self.StartStopStreamBtn.setIcon(stop_stream_icon)
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
 
     def options_btn_clicked(self):
         print("Option window button clicked")
@@ -228,11 +226,11 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.create_visualization_component()
 
     def create_buffer(self):
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
+        num_channels = get_stream_preset_info(self.stream_name, 'num_channels')
         sr = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         display_duration = get_stream_preset_info(self.stream_name, 'display_duration')
-        buffer_size = 1 if len(channel_names) > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
-        self.viz_data_buffer = DataBufferSingleStream(num_channels=len(channel_names), buffer_sizes=buffer_size, append_zeros=True)
+        buffer_size = 1 if num_channels > AppConfigs.max_timeseries_num_channels_per_group else int(sr * display_duration)
+        self.viz_data_buffer = DataBufferSingleStream(num_channels=num_channels, buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
 
@@ -279,7 +277,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
         group_info = get_stream_group_info(self.stream_name)
         for group_name in group_info.keys():
-            group_channel_names = [channel_names[int(i)] for i in group_info[group_name].channel_indices]
+            group_channel_names = None if channel_names is None else [channel_names[int(i)] for i in group_info[group_name].channel_indices]
             group_plot_widget_dict[group_name] = GroupPlotWidget(self, self.stream_name, group_name, group_channel_names, get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'), self.plot_format_changed_signal)
             self.splitter.addWidget(group_plot_widget_dict[group_name])
             self.num_points_to_plot = self.get_num_points_to_plot()
