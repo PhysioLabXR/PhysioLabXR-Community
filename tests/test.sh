@@ -24,6 +24,7 @@ test_modules=(
   XdfTest
   CsvTest
   MatTest
+  RenaScriptingTest
 )
 
 warning_text="You should create a venv-dev and install packages using pip install -r requirements-dev.txt"

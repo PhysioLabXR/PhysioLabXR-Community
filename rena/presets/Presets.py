@@ -10,6 +10,7 @@ from multiprocessing import Process
 from typing import Dict, Any, List, Union
 
 import numpy as np
+from pylsl import cf_float32, cf_double64, cf_int64, cf_int32, cf_int16, cf_int8
 
 from rena import config
 from rena.config import default_group_name
@@ -71,6 +72,21 @@ class DataType(Enum):
         elif self == DataType.float64:
             return np.float64
 
+    def get_lsl_type(self):
+        if self == DataType.int8:
+            return cf_int8
+        elif self == DataType.int16:
+            return cf_int16
+        elif self == DataType.int32:
+            return cf_int32
+        elif self == DataType.int64:
+            return cf_int64
+        elif self == DataType.float32:
+            return cf_float32
+        elif self == DataType.float64:
+            return cf_double64
+        else:
+            raise ValueError(f"Data type {self} is not supported by LSL.")
 
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'

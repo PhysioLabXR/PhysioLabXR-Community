@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QWidget
 
 from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
-from tests.TestStream import CSVTestStream
+from tests.TestStream import SampleDefinedTestStream
 
 
 @pytest.fixture
@@ -54,7 +54,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         test_stream_names.append(ts_name)
         sample = np.random.random((n_channels, 2 * recording_time_second * srate))
         samples[ts_name] = np.array(sample)
-        p = Process(target=CSVTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
+        p = Process(target=SampleDefinedTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
@@ -172,6 +172,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         assert is_passing
 
     assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
-    os.remove(saved_file_path + '.dats')
+    os.remove(saved_file_path + '.dats')        # remove the saved file
     shutil.rmtree(saved_file_path)
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(0)  # set recording file format to dats
 

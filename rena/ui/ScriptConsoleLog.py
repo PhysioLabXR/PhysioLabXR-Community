@@ -95,3 +95,9 @@ class ScriptConsoleLog(QtWidgets.QWidget):
     def optionally_scroll_down(self):
         if self.auto_scroll:
             self.scroll_bar.setSliderPosition(self.scroll_bar.maximum())
+
+    def get_most_recent_msg(self):
+        if len(self.msg_labels) > 0:
+            return self.msg_labels[-1].text()
+        else:
+            return ''

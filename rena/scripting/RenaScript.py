@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import sys
 import threading
 import time
@@ -90,6 +91,8 @@ class RenaScript(ABC, threading.Thread):
 
         print('RenaScript: Script init successfully')
 
+        self.not_saved = True
+
     @abstractmethod
     def init(self):
         """
@@ -168,6 +171,9 @@ class RenaScript(ABC, threading.Thread):
                     try:
                         data, is_chunk = validate_output(data, self.output_num_channels[stream_name])
                         if is_chunk:
+                            if self.not_saved:
+                                pickle.dump(data, open('test.pkl', 'wb'))
+                                self.not_saved = False
                             self.output_outlets[stream_name].push_chunk(data)
                         else:
                             self.output_outlets[stream_name].push_sample(data)
