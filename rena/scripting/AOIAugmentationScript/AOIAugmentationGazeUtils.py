@@ -3,11 +3,11 @@ from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import TobiiProF
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 import numpy as np
 
+
 class GazeType(enum.Enum):
     SACCADE = 1
     FIXATION = 2
     UNDETERMINED = 0
-
 
 
 class EyeData:
@@ -17,7 +17,7 @@ class EyeData:
                  gaze_origin_in_trackbox_coordinate=np.array([0, 0, 0]),
                  pupil_diameter=0.0,
                  pupil_diameter_valid=False,
-                 gaze_point_on_display_area = np.array([0, 0]),
+                 gaze_point_on_display_area=np.array([0, 0]),
                  timestamp=0):
 
         self.gaze_origin_in_user_coordinate = gaze_origin_in_user_coordinate
@@ -40,7 +40,6 @@ class EyeData:
         if normalize:
             gaze_direction = gaze_direction / np.linalg.norm(gaze_direction)
         return gaze_direction
-
 
 
 class GazeData:
@@ -67,7 +66,6 @@ class GazeData:
         )
 
     def construct_gaze_data_tobii_pro_fusion(self, gaze_data_t):
-
         left_gaze_origin_in_user_coordinate = gaze_data_t[[TobiiProFusionChannel.LeftGazeOriginInUserCoordinatesX,
                                                            TobiiProFusionChannel.LeftGazeOriginInUserCoordinatesY,
                                                            TobiiProFusionChannel.LeftGazeOriginInUserCoordinatesZ]]
@@ -183,30 +181,51 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
     def reset_data_processor(self):
         self.last_gaze_data = GazeData()
 
+
 '''
  The 0,0 coordinate of the image is the top left corner of the image
  The 0,0 coordinate of the display area is the top left corner of the display area
 '''
+
+
 def tobii_gaze_on_display_area_to_image_matrix_index(
-                                                    image_center_x,
-                                                    image_center_y,
+        image_center_x,
+        image_center_y,
 
-                                                    image_width,
-                                                    image_height,
+        image_width,
+        image_height,
 
-                                                    screen_width,
-                                                    screen_height,
+        screen_width,
+        screen_height,
 
-                                                    gaze_on_display_area_x,
-                                                    gaze_on_display_area_y):
+        gaze_on_display_area_x,
+        gaze_on_display_area_y):
+
+    image_top_left_x_coordinate = image_center_x - image_width / 2
+    image_top_left_y_coordinate = image_center_y + image_height / 2
+
+    gaze_on_display_area_x_coordinate = screen_width * (gaze_on_display_area_x-0.5)
+    gaze_on_display_area_y_coordinate = screen_height * (0.5-gaze_on_display_area_y)
+
+    gaze_on_image_x_index = gaze_on_display_area_x_coordinate - image_top_left_x_coordinate
+    gaze_on_image_y_index = image_top_left_y_coordinate - gaze_on_display_area_y_coordinate
+
+    coordinate = np.array([gaze_on_image_y_index, gaze_on_image_x_index], dtype=np.int_) # the matrix location of the gaze point
+
+    return coordinate # the matrix location of the gaze point
 
 
 
-    image_top_left_x_index = image_center_x - image_width / 2
-    image_top_left_y_index = image_center_y + image_height / 2
+if __name__ == '__main__':
+    tobii_gaze_on_display_area_to_image_matrix_index(
+        image_center_x=0,
+        image_center_y=0,
+        image_width=1000,
+        image_height=500,
+        screen_width=1920,
+        screen_height=1080,
+        gaze_on_display_area_x=0.49,
+        gaze_on_display_area_y=0.49
 
-    gaze_on_display_area_x_index = screen_width*(gaze_on_display_area_x-0.5)
-    gaze_on_display_area_y_index = screen_height*(0.5 - gaze_on_display_area_y)
-
-
+    )
     pass

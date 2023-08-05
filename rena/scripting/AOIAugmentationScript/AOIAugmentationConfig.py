@@ -37,6 +37,15 @@ class GazeDataLSLStreamInfo:
     ChannelNum = 51
     NominalSamplingRate = 250
 
+class StaticAOIAugmentationStateLSLStreamInfo:
+    StreamName = "StaticAOIAugmentationStateLSLInlet"
+    StreamType = "AttentionData"
+    StreamID = "3"
+    ChannelNum = attention_grid_shape[0]*attention_grid_shape[1]
+    NominalSamplingRate = 250
+
+
+
 
 # class EventMarkerLSLInletInfo(Enum):
 #     StreamName = "AOIAugmentationEventMarkerLSLInlet"

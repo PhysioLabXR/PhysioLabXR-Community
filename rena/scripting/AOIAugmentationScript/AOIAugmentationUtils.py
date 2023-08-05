@@ -40,7 +40,7 @@ def gaussian_filter(shape, center, sigma=1.0, normalized=True):
 
 
 class AOIAttentionMatrixTorch():
-    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_patch_shape = np.array([20,20]), #attention_grid_shape=np.array([25, 50]),
+    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_patch_shape = np.array([20,20]), sigma=20, #attention_grid_shape=np.array([25, 50]),
                  device=None):
 
         super().__init__()
@@ -56,7 +56,7 @@ class AOIAttentionMatrixTorch():
 
         self._filter_size = self.image_shape * 2 - 1
         self._filter_map_center_location = image_shape - 1
-        self._filter_map = torch.tensor(gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=20,
+        self._filter_map = torch.tensor(gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=sigma,
                                            normalized=True), device=device)
 
         self._attention_patch_average_kernel = torch.tensor(np.ones(shape=attention_patch_shape)/(attention_patch_shape[0] * attention_patch_shape[1]), device=device)
@@ -65,11 +65,11 @@ class AOIAttentionMatrixTorch():
 
 
 
-    def add_attention(self, image_center_location):
-        x_offset_min = self._filter_map_center_location[0] - image_center_location[0]
+    def add_attention(self, attention_center_location):
+        x_offset_min = self._filter_map_center_location[0] - attention_center_location[0]
         x_offset_max = x_offset_min + self.image_shape[0]
 
-        y_offset_min = self._filter_map_center_location[1] - image_center_location[1]
+        y_offset_min = self._filter_map_center_location[1] - attention_center_location[1]
         y_offset_max = y_offset_min + self.image_shape[1]
 
         self._image_attention_buffer += self._filter_map[x_offset_min: x_offset_max, y_offset_min:y_offset_max]
@@ -78,7 +78,7 @@ class AOIAttentionMatrixTorch():
         # gaussian decay
         self._image_attention_buffer = self._image_attention_buffer / 2
 
-    def attention_grid(self):
+    def calculate_attention_grid(self):
         # pass
         self._attention_grid_buffer = F.conv2d(
             input=self._image_attention_buffer.view(1,1,self._image_attention_buffer.shape[0],self._image_attention_buffer.shape[1]),

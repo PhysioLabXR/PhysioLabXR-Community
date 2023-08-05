@@ -15,13 +15,13 @@ if __name__ == '__main__':
     attention_grid_shape = np.array([25, 50])
     attention_patch_shape = np.array([20,20])
     a = AOIAttentionMatrixTorch(attention_matrix=None, image_shape=image_shape, attention_patch_shape=attention_patch_shape, device=device)
-    a.add_attention(image_center_location=[100,100])
+    a.add_attention(attention_center_location=[100, 100])
     a.decay()
-    a.attention_grid()
+    a.calculate_attention_grid()
 
     while 1:
         attention_add_start = time.perf_counter_ns()
-        a.add_attention(image_center_location=[100, 100])
+        a.add_attention(attention_center_location=[100, 100])
         attention_add_time = time.perf_counter_ns()-attention_add_start
 
         attention_decay_start = time.perf_counter_ns()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
 
         attention_grid_average_start = time.perf_counter_ns()
-        a.attention_grid()
+        a.calculate_attention_grid()
         attention_grid_average_time = time.perf_counter_ns()-attention_grid_average_start
 
         detach_start = time.perf_counter_ns()

@@ -1,4 +1,7 @@
-from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT
+from pylsl import StreamInfo, StreamOutlet
+
+from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
+    tobii_gaze_on_display_area_to_image_matrix_index, GazeType
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.AOIAugmentationScript import AOIAugmentationConfig
 from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
@@ -33,6 +36,14 @@ class AOIAugmentationScript(RenaScript):
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
         self.ivt_filter.evoke_data_processor()
 
+        info = StreamInfo(AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
+                          AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
+                          AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
+                          AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
+                          'someuuid1234')
+        self.static_aoi_augmentation_lsl_outlet = StreamOutlet(info)
+
+
     # Start will be called once when the run button is hit.
     def init(self):
         pass
@@ -51,7 +62,7 @@ class AOIAugmentationScript(RenaScript):
         # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
         #     return
 
-        if EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys(): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        if EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys():  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
 
         self.state_shift()
@@ -69,30 +80,6 @@ class AOIAugmentationScript(RenaScript):
         elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
             self.interactive_aoi_augmentation_state_callback()
 
-        # if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
-        #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
-
-        # if InterruptExperimentMarker in self.inputs.get_data(P300EventStreamName)[
-        #     p300_speller_event_marker_channel_index['P300SpellerGameStateControlMarker']]:
-
-        # event_marker = self.inputs[EventMarkerLSLOutlet.StreamName].pop()
-
-        # if not in  #self.inputs.keys() or EventMarkerLSLOutlet not in self.inputs.keys():
-        #     return
-
-        # practice
-        #
-        #
-        #
-        #
-        # experiment
-
-        # check if we are in the static interaction mode
-
-        # state machine
-
-    # cleanup is called when the stop button is hit
-
     def cleanup(self):
         print('Cleanup function is called')
 
@@ -106,11 +93,10 @@ class AOIAugmentationScript(RenaScript):
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ReportLabelChannelIndex]
 
-            if block_marker and block_marker>0: # evoke block change
+            if block_marker and block_marker > 0:  # evoke block change
                 self.enter_block(block_marker)
 
-
-            if state_marker and state_marker>0: # evoke state change
+            if state_marker and state_marker > 0:  # evoke state change
                 self.enter_state(state_marker)
                 print(self.currentExperimentState)
                 if state_marker == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState or \
@@ -119,7 +105,7 @@ class AOIAugmentationScript(RenaScript):
                     # switch to new interaction state
                     currentReportLabel = report_label_marker
                     print("set report interaction label to {}".format(currentReportLabel))
-                    self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName) # clear gaze data
+                    self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
         # AOI state machine
         if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
@@ -134,8 +120,6 @@ class AOIAugmentationScript(RenaScript):
         else:
             # no interaction required
             pass
-
-
 
     def enter_block(self, block_marker):
         if block_marker == AOIAugmentationConfig.ExperimentBlock.InitBlock.value:
@@ -198,29 +182,51 @@ class AOIAugmentationScript(RenaScript):
 
         print("clear eye tracking data")
         pass
+
     def attention_map_callback(self):
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][1]:
             # construct gaze data
             gaze_data = GazeData()
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
+
             gaze_data = self.ivt_filter.process_sample(gaze_data)
-            # the gaze data has been classified at this point
 
-            # 1. calculate the fixation location on the image
-            # 2.
+            # get the gaze data on screen position
+            if gaze_data.gaze_type == GazeType.FIXATION:
+                gaze_point_on_image = tobii_gaze_on_display_area_to_image_matrix_index(
+                    image_center_x=AOIAugmentationConfig.image_center_x,
+                    image_center_y=AOIAugmentationConfig.image_center_y,
 
+                    image_width=AOIAugmentationConfig.image_width,
+                    image_height=AOIAugmentationConfig.image_height,
 
+                    screen_width=AOIAugmentationConfig.screen_width,
+                    screen_height=AOIAugmentationConfig.screen_height,
 
-            # based on if this is a fixation, we define
-            #
-            # get the fixation on screen position
+                    gaze_on_display_area_x=gaze_data.gaze_on_display_area_x,
+                    gaze_on_display_area_y=gaze_data.gaze_on_display_area_y
+                )
 
+                # apply attention map to
+                self.attentionMatrix.add_attention(attention_center_location=gaze_point_on_image)
 
+            self.attentionMatrix.decay()
+            self.attentionMatrix.calculate_attention_grid()  # calculate the average
+            self.static_aoi_augmentation_lsl_outlet.push_sample(
+                self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
+            )
 
-            # print(gaze_data)
-            # construct gaze data
+            # send out the attention map with LSL
 
             pass
 
+    # def init_attention_grid_lsl_outlet(self):
+    #     print("init attention grid lsl outlet")
+    #     info = StreamInfo(AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
+    #                       AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
+    #                       AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
+    #                       AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
+    #                       'someuuid1234')
+    #     self.attentionGridLSLOutlet = StreamOutlet(info)
 
-
+        # info = StreamInfo(LSL, type, n_channels, srate, 'float32', 'someuuid1234')
