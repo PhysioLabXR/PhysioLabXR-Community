@@ -1,7 +1,8 @@
+from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.AOIAugmentationScript import AOIAugmentationConfig
 from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
-from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLOutlet, GazeDataLSLOutlet
+from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
 import torch
 
 
@@ -28,6 +29,10 @@ class AOIAugmentationScript(RenaScript):
             device=self.device
         )
 
+        # gaze data component
+        self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
+        self.ivt_filter.evoke_data_processor()
+
     # Start will be called once when the run button is hit.
     def init(self):
         pass
@@ -41,12 +46,12 @@ class AOIAugmentationScript(RenaScript):
 
         # state machine
         # gaze_on_screen_area = [0.12, 0.1]
-        print('Loop function is called')
+        # print('Loop function is called')
 
         # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
         #     return
 
-        if EventMarkerLSLOutlet.StreamName not in self.inputs.keys(): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        if EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys(): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
 
         self.state_shift()
@@ -92,25 +97,29 @@ class AOIAugmentationScript(RenaScript):
         print('Cleanup function is called')
 
     def state_shift(self):
-        event_markers = self.inputs[EventMarkerLSLOutlet.StreamName].pop()
+        event_markers = self.inputs[EventMarkerLSLStreamInfo.StreamName][0]
+        self.inputs.clear_stream_buffer(EventMarkerLSLStreamInfo.StreamName)
 
         # state shift
-        for event_marker in event_markers:
-            block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLOutlet.BlockChannelIndex]
-            state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLOutlet.ExperimentStateChannelIndex]
-            report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLOutlet.ReportLabelChannelIndex]
+        for event_marker in event_markers.T:
+            block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
+            state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
+            report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ReportLabelChannelIndex]
 
-            if block_marker:
+            if block_marker and block_marker>0: # evoke block change
                 self.enter_block(block_marker)
 
-            if state_marker:
+
+            if state_marker and state_marker>0: # evoke state change
                 self.enter_state(state_marker)
+                print(self.currentExperimentState)
                 if state_marker == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState or \
                         state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState or \
                         state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
                     # switch to new interaction state
                     currentReportLabel = report_label_marker
                     print("set report interaction label to {}".format(currentReportLabel))
+                    self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName) # clear gaze data
 
         # AOI state machine
         if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
@@ -142,7 +151,8 @@ class AOIAugmentationScript(RenaScript):
         elif block_marker == AOIAugmentationConfig.ExperimentBlock.EndBlock.value:
             self.currentBlock = AOIAugmentationConfig.ExperimentBlock.EndBlock
         else:
-            raise ValueError('Invalid block marker')
+            print("Invalid block marker")
+            # raise ValueError('Invalid block marker')
 
     def enter_state(self, state_marker):
         if state_marker == AOIAugmentationConfig.ExperimentState.CalibrationState.value:
@@ -170,14 +180,47 @@ class AOIAugmentationScript(RenaScript):
         elif state_marker == AOIAugmentationConfig.ExperimentState.EndState.value:
             self.currentExperimentState = AOIAugmentationConfig.ExperimentState.EndState
         else:
-            raise ValueError('Invalid state marker')
+            print("Invalid state marker")
+            # raise ValueError('Invalid state marker')
 
     def no_aoi_augmentation_state_callback(self):
-
         pass
 
     def static_aoi_augmentation_state_callback(self):
+        # process the eye tracking data
+        # run real-time fixation detection algorithm
         pass
 
     def interactive_aoi_augmentation_state_callback(self):
         pass
+
+    def clear_eye_tracking_data(self):
+
+        print("clear eye tracking data")
+        pass
+    def attention_map_callback(self):
+        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][1]:
+            # construct gaze data
+            gaze_data = GazeData()
+            gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
+            gaze_data = self.ivt_filter.process_sample(gaze_data)
+            # the gaze data has been classified at this point
+
+            # 1. calculate the fixation location on the image
+            # 2.
+
+
+
+            # based on if this is a fixation, we define
+            #
+            # get the fixation on screen position
+
+
+
+            # print(gaze_data)
+            # construct gaze data
+
+            pass
+
+
+

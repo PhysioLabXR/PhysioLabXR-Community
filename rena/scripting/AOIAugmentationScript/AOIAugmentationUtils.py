@@ -1,15 +1,9 @@
-import time
-from enum import Enum
-import matplotlib.pyplot as plt
+import enum
 import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
 
-
-
-
-
+from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import TobiiProFusionChannel
 
 
 def gaussian_filter(shape, center, sigma=1.0, normalized=True):
@@ -98,3 +92,10 @@ class AOIAttentionMatrixTorch():
     @property
     def attention_grid_buffer(self):
         return self._attention_grid_buffer
+
+
+
+
+
+
+
