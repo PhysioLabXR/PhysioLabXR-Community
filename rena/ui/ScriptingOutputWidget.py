@@ -37,3 +37,15 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
 
     def get_num_channels(self):
         return 0 if self.numChan_lineEdit.text() == '' else int(self.numChan_lineEdit.text())
+
+#         # give the dialog warning for data type
+#         try:
+#             lsl_data_type = data_type.get_lsl_type()
+#         except ValueError as e:
+#             dialog_popup(msg=
+#                          f"""
+# {e},
+# LSL supports {[dtype.name for dtype in DataType.get_lsl_supported_types()]}
+# LSL outlet will use default float32. Unexpected casting may occur if your outlet data type is not float32.
+#             """, title='WARNING')
+#             lsl_data_type = DataType.float32.get_lsl_type()

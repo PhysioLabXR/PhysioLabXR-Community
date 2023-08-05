@@ -52,12 +52,10 @@ class LSLInletWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, stream_name, channel_names, data_type, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, stream_name, channel_names, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
-
-        self.data_type = data_type
 
         self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
         self._rena_tcp_interface = RenaTCPInterface

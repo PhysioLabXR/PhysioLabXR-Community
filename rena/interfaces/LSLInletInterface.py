@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from pylsl import StreamInlet, LostError, resolve_byprop
+from pylsl import StreamInlet, LostError, resolve_byprop, cf_float32
 
 from rena.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
@@ -28,7 +28,7 @@ class LSLInletInterface:
         self.lsl_num_chan = num_chan
         self.streams = None
         self.inlet = None
-        pass
+        self.data_type = None
 
     def start_stream(self):
         # connect to the sensor
@@ -46,7 +46,7 @@ class LSLInletInterface:
         except AssertionError:
             self.inlet.close_stream()
             raise ChannelMismatchError(actual_num_channels)
-
+        self.data_type = self.inlet.channel_format()
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
     def is_stream_available(self):

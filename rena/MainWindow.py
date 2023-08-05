@@ -191,7 +191,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 raise NotImplementedError
                 self.init_device(selected_text)  # add device stream
             elif preset_type == PresetType.LSL:
-                self.init_LSL_streaming(stream_name, data_type)  # add lsl stream
+                self.init_LSL_streaming(stream_name)  # add lsl stream
             elif preset_type == PresetType.ZMQ:
                 self.init_ZMQ_streaming(stream_name, port, data_type)  # add lsl stream
             elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
@@ -283,12 +283,11 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 
-    def init_LSL_streaming(self, stream_name, data_type=None):
+    def init_LSL_streaming(self, stream_name):
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
                                  stream_name=stream_name,
-                                 data_type=data_type,
                                  insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
