@@ -97,9 +97,15 @@
       </item>
       <item alignment="Qt::AlignLeft">
        <widget class="QLineEdit" name="numChan_lineEdit">
+        <property name="minimumSize">
+         <size>
+          <width>96</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>36</width>
+          <width>16777215</width>
           <height>16777215</height>
          </size>
         </property>
