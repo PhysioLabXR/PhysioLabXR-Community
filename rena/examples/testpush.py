@@ -1,5 +1,5 @@
-from tests.TestStream import SampleDefinedTestStream
+from tests.TestStream import SampleDefinedLSLStream
 
 sample = [1,2,3,4]
 
-SampleDefinedTestStream(stream_name='TestStream1', sample=sample, n_channels=81, srate=2048)
+SampleDefinedLSLStream(stream_name='TestStream1', sample=sample, n_channels=81, srate=2048)

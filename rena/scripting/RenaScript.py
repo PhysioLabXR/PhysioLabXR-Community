@@ -196,7 +196,7 @@ class RenaScript(ABC, threading.Thread):
                         else:  # this is a zmq socket
                             if is_chunk:
                                 for i in range(len(data)):
-                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), data[i]])
+                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), np.ascontiguousarray(data[i])])
                             else:
                                 outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), data])
                     except Exception as e:
