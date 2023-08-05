@@ -139,7 +139,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        from rena.presets.Presets import PresetType
+        from rena.presets.PresetEnums import PresetType
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget

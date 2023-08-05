@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QHBoxLayout,
 
 from rena import config, shared
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType, DataType, PresetsEncoder
+from rena.presets.Presets import PresetsEncoder
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.sub_process.ReplayServer import start_replay_server
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response

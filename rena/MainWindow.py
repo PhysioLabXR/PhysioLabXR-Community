@@ -11,7 +11,8 @@ from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType, DataType
+from rena.presets.Presets import Presets
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget

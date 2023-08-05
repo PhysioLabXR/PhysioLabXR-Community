@@ -14,6 +14,7 @@ from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.exceptions.exceptions import MissingPresetError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
+from rena.presets.PresetEnums import DataType, PresetType
 from rena.presets.Presets import Presets
 from rena.presets.ScriptPresets import ScriptPreset
 from rena.scripting.RenaScript import RenaScript
@@ -372,11 +373,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def add_output_clicked(self):
         output_name = self.output_lineEdit.text()
-        self.process_add_output(output_name)
+        self.process_add_output(output_name, num_channels=1, port_number=self.get_next_available_output_port(), data_type=DataType.float32, interface_type=PresetType.LSL)
         self.export_script_args_to_settings()
 
-    def process_add_output(self, output_name, num_channels=1):
-        output_widget = ScriptingOutputWidget(self, output_name, num_channels)
+    def process_add_output(self, stream_name, num_channels, port_number, data_type, interface_type):
+        output_widget = ScriptingOutputWidget(self, stream_name, num_channels, port_number=port_number, data_type=data_type, interface_type=interface_type)
         self.outputLayout.addWidget(output_widget)
         self.outputLayout.setAlignment(output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
@@ -442,6 +443,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def get_outputs_num_channels(self):
         return [w.get_num_channels() for w in self.output_widgets]
+
+    def get_output_presets(self):
+        return [w.get_output_preset() for w in self.output_widgets]
+
+    def get_output_ports(self):
+        return [w.get_output_port() for w in self.output_widgets]
 
     def get_params(self):
         return [w.get_param_name() for w in self.param_widgets]
@@ -582,9 +589,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'presets': Presets()}
 
     def export_script_args_to_settings(self):
-        script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), outputs=self.get_outputs(), output_num_channels=self.get_outputs_num_channels(),
-                                     # params=self.get_params(), params_types=self.get_param_types(), params_value_strs=self.get_param_value_texts(),
-                                     param_presets = self.get_params_presets_recursive(),
+        script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), output_presets=self.get_output_presets(),
+                                     param_presets=self.get_params_presets_recursive(),
                                      run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
                                      script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
         Presets().script_presets[self.id] = script_preset
@@ -598,8 +604,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         for input_preset_name in script_preset.inputs:
             self.process_add_input(input_preset_name)
-        for output_name, output_num_channel in zip(script_preset.outputs, script_preset.output_num_channels):
-            self.process_add_output(output_name, num_channels=output_num_channel)
+        for output_preset in script_preset.output_presets:
+            self.process_add_output(**output_preset.__dict__)
 
         for param_preset in script_preset.param_presets:
             self.process_add_param(param_preset.name, param_type=param_preset.type, value=param_preset.value)
@@ -622,3 +628,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         """
         if change[0] in self.get_inputs():
             self.update_input_info()
+
+    def get_next_available_output_port(self):
+        existing_ports = self.get_output_ports()
+        if len(existing_ports) == 0:
+            return AppConfigs().output_stream_starting_port
+        else:
+            return max(existing_ports) + 1

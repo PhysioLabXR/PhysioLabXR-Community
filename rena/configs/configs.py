@@ -88,6 +88,7 @@ class AppConfigs(metaclass=Singleton):
     video_device_refresh_interval: int = 33
 
     replay_stream_starting_port = 10000
+    output_stream_starting_port = 11000
 
     # path_dict = {'splash_screen_path': 'media/logo/splash_screen.png',
     #              'stream_unavailable': 'media/logo/streamwidget_stream_unavailable.png',

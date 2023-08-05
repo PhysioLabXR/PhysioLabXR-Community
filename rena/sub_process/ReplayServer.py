@@ -12,7 +12,7 @@ import zmq
 from pylsl import pylsl
 
 from rena import config, shared
-from rena.presets.Presets import PresetType
+from rena.presets.PresetEnums import PresetType
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.RNStream import RNStream
 from rena.utils.xdf_utils import load_xdf

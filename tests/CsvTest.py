@@ -32,7 +32,8 @@ def context_bot(app_main_window, qtbot):
 def test_csv_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
-    from rena.presets.Presets import DataType, PresetType
+    from rena.presets.PresetEnums import DataType
+    from rena.presets.PresetEnums import PresetType
     from rena.startup import apply_patches
     from rena.utils.data_utils import CsvStoreLoad
 

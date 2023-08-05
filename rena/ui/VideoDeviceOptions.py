@@ -3,7 +3,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QWidget
 
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import VideoDeviceChannelOrder
+from rena.presets.PresetEnums import VideoDeviceChannelOrder
 from rena.presets.presets_utils import set_video_scale, set_video_channel_order
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel
 
