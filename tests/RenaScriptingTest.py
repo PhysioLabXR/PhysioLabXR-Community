@@ -7,9 +7,11 @@ from multiprocessing import Process
 import numpy as np
 import pytest
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import QWidget
 from rena.configs.configs import AppConfigs
+from rena.presets.PresetEnums import DataType
+
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 
@@ -67,15 +69,16 @@ def test_create_script(app_main_window, qtbot):
     qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     os.remove(script_path)
 
-def test_script_input_output(context_bot, qtbot):
+def test_script_single_lsl_input_output(context_bot, qtbot):
     test_stream_name = get_random_test_stream_names(1)[0]
     n_channels = 2
     recording_time_second = 15
     wait_for_script_to_send_output_timeout = 5 * 1e3
     out_message = "Sent to output"
     srate = 2048
+    dtype = DataType.float64
 
-    sent_samples = context_bot.create_add_start_predefined_stream(test_stream_name, n_channels, srate, recording_time_second)
+    sent_samples = context_bot.create_add_start_predefined_stream(test_stream_name, n_channels, srate, recording_time_second, dtype)
 
     class_name = 'ScriptTest'
     script_path = os.path.join(os.getcwd(), class_name + '.py')
@@ -127,6 +130,15 @@ class ScriptTest(RenaScript):
     # set the number of output channels
     qtbot.keyPress(this_scripting_widget.output_widgets[0].numChan_lineEdit, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(this_scripting_widget.output_widgets[0].numChan_lineEdit, str(n_channels))
+    # change the output data type to match the sample's
+    dtype_combobox = this_scripting_widget.output_widgets[0].data_type_comboBox
+    assert (dtype_index := dtype_combobox.findText(dtype.name)) != -1
+    qtbot.mouseClick(dtype_combobox.view().viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))
+    qtbot.keyPress(dtype_combobox.view().viewport(), Qt.Key.Key_Down)
+    for i in range(dtype_index):
+        qtbot.keyPress(dtype_combobox.view().viewport(), Qt.Key.Key_Down)
+    qtbot.keyPress(dtype_combobox.view().viewport(), Qt.Key.Key_Return)
+    assert dtype_combobox.currentText() == dtype.name
 
     # start the script
     qtbot.mouseClick(this_scripting_widget.runBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box

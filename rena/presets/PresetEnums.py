@@ -94,6 +94,9 @@ class DataType(Enum):
     def get_lsl_supported_types(cls):
         return [cls.int8, cls.int16, cls.int32, cls.int64, cls.float32, cls.float64]
 
+    @classmethod
+    def get_lsl_supported_names(cls):
+        return [dtype.name for dtype in cls.get_lsl_supported_types()]
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0

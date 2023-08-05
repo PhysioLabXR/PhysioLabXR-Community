@@ -75,10 +75,8 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
     def on_interface_type_changed(self, export_to_settings=True):
         if self.interface_type_comboBox.currentText() == PresetType.LSL.name:
             self.port_lineEdit.setVisible(False)
-            self.data_type_comboBox.setVisible(False)
         elif self.interface_type_comboBox.currentText() == PresetType.ZMQ.name:
             self.port_lineEdit.setVisible(True)
-            self.data_type_comboBox.setVisible(True)
         else:
             raise ValueError(f'Unknown interface type for output widget {self.interface_type_comboBox.currentText()}')
         if export_to_settings: self.parent.export_script_args_to_settings()

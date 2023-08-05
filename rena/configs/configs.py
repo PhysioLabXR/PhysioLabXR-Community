@@ -96,6 +96,8 @@ class AppConfigs(metaclass=Singleton):
     #              'stream_viz_active': 'media/logo/streamwidget_stream_viz_active.png',
     #              }
 
+    zmq_lost_connection_timeout = 4000  # in milliseconds
+
     _media_paths = ['media/icons', 'media/logo', 'media/gifs']
     _supported_media_formats = ['.svg', '.gif']
     _ui_path = 'ui'

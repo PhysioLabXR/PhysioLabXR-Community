@@ -341,7 +341,7 @@ def validate_output(data, expected_size):
         except AssertionError:
             raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
 
-    return data.tolist(), is_chunk
+    return data, is_chunk
 
 def is_homogeneous_type(seq):
     iseq = iter(seq)

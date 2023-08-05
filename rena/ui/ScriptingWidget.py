@@ -2,6 +2,7 @@
 import json
 import os
 import uuid
+from typing import List
 
 import numpy as np
 from PyQt6 import QtWidgets, uic, QtCore
@@ -12,11 +13,11 @@ from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
-from rena.exceptions.exceptions import MissingPresetError
+from rena.exceptions.exceptions import MissingPresetError, UnsupportedLSLDataTypeError, RenaError
 from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
 from rena.presets.PresetEnums import DataType, PresetType
 from rena.presets.Presets import Presets
-from rena.presets.ScriptPresets import ScriptPreset
+from rena.presets.ScriptPresets import ScriptPreset, ScriptOutput
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.script_utils import start_rena_script, get_target_class_name
 from rena.scripting.scripting_enums import ParamChange, ParamType
@@ -41,7 +42,7 @@ from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent_widget: QtWidgets, port, script_preset: ScriptPreset, layout: QLayout):
+    def __init__(self, parent_widget: QtWidgets, main_window, port, script_preset: ScriptPreset, layout: QLayout):
         super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
         self.ui = uic.loadUi(AppConfigs()._ui_ScriptingWidget, self)
         self.set_pop_button(self.PopWindowBtn)
@@ -52,6 +53,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.input_widgets = []
         self.output_widgets = []
         self.param_widgets = []
+        self.main_window = main_window
 
         # add all presents to camera
         add_presets_to_combobox(self.inputComboBox)
@@ -220,12 +222,17 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
             if not validate_script_path(script_path, RenaScript): return
+            try:
+                script_args = self.get_verify_script_args()
+            except RenaError as e:
+                dialog_popup(str(e), title='Error', main_parent=self.main_window)
+                return
+
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
 
             self.script_console_log_window.show()
             self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
-            script_args = self.get_script_args()
             self.script_process = start_rena_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
@@ -444,7 +451,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_outputs_num_channels(self):
         return [w.get_num_channels() for w in self.output_widgets]
 
-    def get_output_presets(self):
+    def get_output_presets(self) -> List[ScriptOutput]:
         return [w.get_output_preset() for w in self.output_widgets]
 
     def get_output_ports(self):
@@ -574,10 +581,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             return False
 
-    def get_script_args(self):
+    def get_verify_script_args(self):
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
-        return {'inputs': self.get_inputs(),
+        rtn = {'inputs': self.get_inputs(),
                 'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_output_presets(),
@@ -587,6 +594,14 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked(),
                 'presets': Presets()}
+        lsl_supported_types = DataType.get_lsl_supported_types()
+        lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
+        for output_name, dtype in lsl_output_data_types:
+            try:
+                assert dtype in lsl_supported_types
+            except AssertionError:
+                raise UnsupportedLSLDataTypeError(f'{output_name} has unsupported data type {dtype}')
+        return rtn
 
     def export_script_args_to_settings(self):
         script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), output_presets=self.get_output_presets(),

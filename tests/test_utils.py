@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
+from rena.presets.PresetEnums import DataType
 from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedTestStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
@@ -155,11 +156,11 @@ class ContextBot:
         self.add_stream(stream_name)
         self.start_a_stream(stream_name, num_channels)
 
-    def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float):
+    def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float, dtype: DataType):
         from rena.presets.Presets import Presets
 
-        samples = np.random.random((num_channels, stream_time * srate))
-        p = Process(target=SampleDefinedTestStream, args=(stream_name, samples), kwargs={'n_channels': num_channels, 'srate': srate})
+        samples = np.random.random((num_channels, stream_time * srate)).astype(dtype.get_data_type())
+        p = Process(target=SampleDefinedTestStream, args=(stream_name, samples), kwargs={'n_channels': num_channels, 'srate': srate, 'dtype': dtype.get_lsl_type()})
         p.start()
         self.send_data_processes[stream_name] = p
         self.add_stream(stream_name)
