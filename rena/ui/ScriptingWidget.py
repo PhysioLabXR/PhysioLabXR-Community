@@ -580,7 +580,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         return {'inputs': self.get_inputs(),
                 'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
-                'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
+                'outputs': self.get_output_presets(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),

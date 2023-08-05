@@ -7,10 +7,14 @@ import time
 from abc import ABC, abstractmethod
 from collections import deque
 from pydoc import locate
+from typing import List, Dict
 
 import numpy as np
+import zmq
 
-from rena.exceptions.exceptions import BadOutputError
+from rena.exceptions.exceptions import BadOutputError, ZMQPortOccupiedError, RenaError
+from rena.presets.PresetEnums import PresetType
+from rena.presets.ScriptPresets import ScriptOutput
 from rena.presets.presets_utils import get_stream_nominal_sampling_rate, get_stream_data_type, get_stream_num_channels
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
     SCRIPT_PARAM_CHANGE
@@ -27,7 +31,7 @@ class RenaScript(ABC, threading.Thread):
     An abstract class for implementing scripting models.
     """
 
-    def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params: dict, port, run_frequency, time_window,
+    def __init__(self, inputs, input_shapes, buffer_sizes, outputs: List[ScriptOutput], params: dict, port, run_frequency, time_window,
                  script_path, is_simulate, presets, *args, **kwargs):
         """
 
@@ -73,11 +77,19 @@ class RenaScript(ABC, threading.Thread):
         self.inputs = DataBuffer(stream_buffer_sizes=buffer_sizes)
         self.run_frequency = run_frequency
         # set up the outputs
-        self.output_names = outputs
-        self.output_num_channels = dict([(x, n) for x, n in zip(outputs, output_num_channels)])
-        self._output_default = dict([(x, None) for x in outputs])
-        self.output_outlets = dict([(x, create_lsl_outlet(x, n, run_frequency)) for x, n in zip(outputs, output_num_channels)])
+        self.output_presets: Dict[str, ScriptOutput] = {o.stream_name: o for o in outputs}
+        self.output_names = [o.stream_name for o in outputs]
+        self.output_num_channels = {o.stream_name: o.num_channels for o in outputs}
+
+        self._output_default = dict([(x.stream_name, None) for x in outputs])  # default output with None values
         self.outputs = None  # dict holding the output data
+
+        self.output_outlets = {}
+
+        try:
+            self._create_output_streams()
+        except RenaError as e:
+            print('Error setting up output streams: {0}'.format(e))
 
         # set up the parameters
         self.params = params
@@ -89,9 +101,7 @@ class RenaScript(ABC, threading.Thread):
         # set up the presets
         self.presets = presets
 
-        print('RenaScript: Script init successfully')
-
-        self.not_saved = True
+        print('RenaScript: Script init completed')
 
     @abstractmethod
     def init(self):
@@ -171,9 +181,6 @@ class RenaScript(ABC, threading.Thread):
                     try:
                         data, is_chunk = validate_output(data, self.output_num_channels[stream_name])
                         if is_chunk:
-                            if self.not_saved:
-                                pickle.dump(data, open('test.pkl', 'wb'))
-                                self.not_saved = False
                             self.output_outlets[stream_name].push_chunk(data)
                         else:
                             self.output_outlets[stream_name].push_sample(data)
@@ -225,6 +232,19 @@ class RenaScript(ABC, threading.Thread):
             return self.presets.stream_presets[stream_name].channel_names
         elif info == 'DataType':
             return self.presets.stream_presets[stream_name].data_type
+
+    def _create_output_streams(self):
+        for stream_name, o_preset in self.output_presets.items():
+            if o_preset.interface_type == PresetType.LSL:
+                self.output_outlets[stream_name] = create_lsl_outlet(stream_name, o_preset.num_channels, self.run_frequency)
+            elif o_preset.interface_type == PresetType.ZMQ:
+                socket = self.command_socket_interface.context.socket(zmq.PUB)
+                try:
+                    socket.bind("tcp://*:%s" % o_preset.port_number)
+                except zmq.error.ZMQError:
+                    print('Error when binding to port {0} for stream {1}'.format(o_preset.port_number, stream_name))
+                    raise ZMQPortOccupiedError(o_preset.port_number)
+                self.output_outlets[stream_name] = socket
 
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):

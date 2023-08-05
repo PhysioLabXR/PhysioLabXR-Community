@@ -42,7 +42,7 @@ class LSLWidget(BaseStreamWidget):
             reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
                                  buttons=self.channel_mismatch_buttons)
             if reply.result():
-                self.reset_preset_by_num_channels(e.message, self.data_type)
+                self.reset_preset_by_num_channels(e.message, get_stream_preset_info(self.stream_name, 'data_type'))
                 try:
                     self.data_worker.start_stream()  # start the stream again with updated preset
                     self.set_button_icons()
