@@ -203,8 +203,8 @@ class ContextBot:
             def waitForCurrentDialog():
                 assert self.app.current_dialog
             t = threading.Timer(thread_timer_second, lambda: handle_current_dialog_button(QDialogButtonBox.StandardButton.Yes, self.app, self.qtbot, click_delay_second=1, patience_second=4, expected_message_include=stream_name))   # get the messagebox about channel mismatch
-            self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
             t.start()
+            self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
             self.qtbot.waitUntil(waitForCurrentDialog)
             t.join()
         else:
