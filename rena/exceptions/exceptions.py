@@ -1,3 +1,6 @@
+from rena.presets.PresetEnums import DataType
+
+
 class RenaError(Exception):
     def __init__(self, message=""):
         self.message = message
@@ -197,4 +200,21 @@ class InvalidStreamMetaInfoError(RenaError):
     def __str__(self):
         return f'Invalid Stream Meta Info: {self.error}'
 
-    pass
+
+class ZMQPortOccupiedError(RenaError):
+    """Raised when the zmq port is occupied"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f'ZMQ Port Occupied: {self.error}'
+
+class UnsupportedLSLDataTypeError(RenaError):
+    """Raised when the zmq port is occupied"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f'Unsupported Data Type for LSL {self.error}. LSL only supports {DataType.get_lsl_supported_names()}'

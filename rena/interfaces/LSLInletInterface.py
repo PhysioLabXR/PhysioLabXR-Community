@@ -46,7 +46,7 @@ class LSLInletInterface:
         except AssertionError:
             self.inlet.close_stream()
             raise ChannelMismatchError(actual_num_channels)
-        self.data_type = self.inlet.channel_format()
+        self.data_type = self.inlet.channel_format
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
     def is_stream_available(self):

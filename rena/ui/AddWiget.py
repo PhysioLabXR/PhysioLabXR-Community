@@ -4,7 +4,7 @@ from PyQt6.QtGui import QIntValidator
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType, DataType
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
     is_stream_name_in_presets

@@ -609,7 +609,7 @@ class ZMQWorker(QObject, RenaWorker):
         self.is_streaming = False
 
     def is_stream_available(self):
-        poll_results = dict(self.poller.poll(timeout=1000))
+        poll_results = dict(self.poller.poll(timeout=AppConfigs().zmq_lost_connection_timeout))
         # print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
         return len(poll_results) > 0
 

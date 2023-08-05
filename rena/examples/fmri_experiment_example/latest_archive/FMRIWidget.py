@@ -7,7 +7,7 @@ from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
-from rena.presets.Presets import DataType
+from rena.presets.PresetEnums import DataType
 from rena.threadings.workers import ZMQWorker
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.SliderWithValueLabel import SliderWithValueLabel

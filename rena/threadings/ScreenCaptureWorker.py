@@ -7,7 +7,7 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from pylsl import local_clock
 
-from rena.presets.Presets import VideoDeviceChannelOrder
+from rena.presets.PresetEnums import VideoDeviceChannelOrder
 from rena.threadings.workers import RenaWorker
 from rena.utils.image_utils import process_image
 

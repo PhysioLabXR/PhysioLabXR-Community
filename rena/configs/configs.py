@@ -88,12 +88,16 @@ class AppConfigs(metaclass=Singleton):
     video_device_refresh_interval: int = 33
 
     replay_stream_starting_port = 10000
+    output_stream_starting_port = 11000
+    test_port_starting_port = 12000
 
     # path_dict = {'splash_screen_path': 'media/logo/splash_screen.png',
     #              'stream_unavailable': 'media/logo/streamwidget_stream_unavailable.png',
     #              'stream_available': 'media/logo/streamwidget_stream_unavailable.png',
     #              'stream_viz_active': 'media/logo/streamwidget_stream_viz_active.png',
     #              }
+
+    zmq_lost_connection_timeout = 1500  # in milliseconds
 
     _media_paths = ['media/icons', 'media/logo', 'media/gifs']
     _supported_media_formats = ['.svg', '.gif']

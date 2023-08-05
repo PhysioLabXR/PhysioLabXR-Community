@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.presets.Presets import DataType, PresetType
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.config import stream_availability_wait_time
 from tests.test_utils import app_fixture, \
     ContextBot, handle_current_dialog_button

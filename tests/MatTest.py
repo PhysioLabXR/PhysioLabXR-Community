@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QWidget
 
 from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
-from tests.TestStream import SampleDefinedTestStream
+from tests.TestStream import SampleDefinedLSLStream
 
 
 @pytest.fixture
@@ -32,7 +32,8 @@ def context_bot(app_main_window, qtbot):
 def test_mat_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
-    from rena.presets.Presets import DataType, PresetType
+    from rena.presets.PresetEnums import DataType
+    from rena.presets.PresetEnums import PresetType
     from rena.startup import apply_patches
     from rena.utils.xdf_utils import load_xdf
 
@@ -54,7 +55,7 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
         test_stream_names.append(ts_name)
         sample = np.random.random((n_channels, 10 * recording_time_second * srate))
         samples[ts_name] = np.array(sample)
-        p = Process(target=SampleDefinedTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
+        p = Process(target=SampleDefinedLSLStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
