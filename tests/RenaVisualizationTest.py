@@ -110,14 +110,14 @@ def test_add_active_unknown_stream_and_close(app_main_window, qtbot) -> None:
 
 def test_add_active_known_stream_and_close(app_main_window, qtbot, context_bot) -> None:
     test_stream_name = get_random_test_stream_names(1)[0]
-    context_bot.start_stream(test_stream_name, 8, 128)
+    context_bot.create_add_start_stream(test_stream_name, 8, 128)
     context_bot.close_stream(test_stream_name)
     context_bot.remove_stream(test_stream_name)
 
 
 def test_start_all_close_all_stream(app_main_window, qtbot, context_bot) -> None:
     test_stream_name = get_random_test_stream_names(1)[0]
-    context_bot.start_stream(test_stream_name, 8, 128)
+    context_bot.create_add_start_stream(test_stream_name, 8, 128)
     context_bot.connect_to_monitor_0()
     qtbot.wait(1500)
 

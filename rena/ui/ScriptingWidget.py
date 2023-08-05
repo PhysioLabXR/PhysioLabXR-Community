@@ -222,8 +222,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
 
             self.script_console_log_window.show()
-            self.stdout_socket_interface.send_string(
-                'Go')  # send an empty message, this is for setting up the routing id
+            self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
             script_args = self.get_script_args()
             self.script_process = start_rena_script(script_path, script_args)
@@ -569,11 +568,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             return False
 
     def get_script_args(self):
-        buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in
-                        self.get_input_shapes().items()]
+        buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
         return {'inputs': self.get_inputs(),
-                'input_shapes': self.get_input_shapes(),
+                'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,

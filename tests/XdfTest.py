@@ -171,4 +171,5 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
     assert np.all(buffer_copy['monitor 0'][0] == xdf_data['monitor 0'][0])
     os.remove(saved_file_path)
     os.remove(saved_file_path.replace('.xdf', '.dats'))
-
+    # revert back the recording file format
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(0)  # set recording file format to dats
