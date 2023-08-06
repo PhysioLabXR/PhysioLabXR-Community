@@ -52,12 +52,12 @@ class LSLInletWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, stream_name, channel_names, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, stream_name, num_channels, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
+        self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
         self.timestamp_queue = deque(maxlen=1024)
@@ -111,9 +111,9 @@ class LSLInletWorker(QObject, RenaWorker):
                 self.previous_availability = is_stream_availability
                 self.signal_stream_availability.emit(is_stream_availability)
 
-    def reset_interface(self, stream_name, channel_names):
+    def reset_interface(self, stream_name, num_channels):
         self.interface_mutex.lock()
-        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
+        self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
         self.interface_mutex.unlock()
 
     def start_stream(self):
@@ -365,8 +365,13 @@ class PlaybackWorker(QObject):
                             self.command_info_interface.send(s)
                 else:
                     raise NotImplementedError
+                # a command has been sent, wait for reply
+                print('PlaybackWorker: waiting for reply')
                 reply = self.command_info_interface.socket.recv()
+                print('PlaybackWorker: reply received')
+
                 reply = reply.decode('utf-8')
+
                 if reply == STOP_SUCCESS_INFO:
                     self.replay_stopped()
                     self.send_command_mutex.unlock()
@@ -380,7 +385,11 @@ class PlaybackWorker(QObject):
                     self.send_command_mutex.unlock()
                     return
                 elif reply == SLIDER_MOVED_SUCCESS_INFO:
-                    # do something
+                    self.send_command_mutex.unlock()
+                    return
+                elif reply == TERMINATE_SUCCESS_COMMAND:
+                    self.is_running = False
+                    self.replay_terminated_signal.emit()
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
@@ -424,17 +433,25 @@ class PlaybackWorker(QObject):
         self.send_command_mutex.unlock()
 
     def queue_terminate_command(self):
-        self.send_command_mutex.lock()
-        self.command_info_interface.send_string(TERMINATE_COMMAND)
-        reply = self.command_info_interface.socket.recv()
-        reply = reply.decode('utf-8')
 
-        if reply == TERMINATE_SUCCESS_COMMAND:
-            self.is_running = False
-            self.replay_terminated_signal.emit()
-        else:
-            raise NotImplementedError(f'response for reply {reply} is not implemented')
+        self.send_command_mutex.lock()
+        self.command_queue.append(TERMINATE_COMMAND)
         self.send_command_mutex.unlock()
+        self.terminated = True
+
+        # self.send_command_mutex.lock()
+        # self.command_info_interface.send_string(TERMINATE_COMMAND)
+        # print("PlaybackWorker issued terminate command to replay server.")
+        # reply = self.command_info_interface.socket.recv()
+        # print("PlaybackWorker received reply from replay server.")
+        # reply = reply.decode('utf-8')
+        #
+        # if reply == TERMINATE_SUCCESS_COMMAND:
+        #     self.is_running = False
+        #     self.replay_terminated_signal.emit()
+        # else:
+        #     raise NotImplementedError(f'response for reply {reply} is not implemented')
+        # self.send_command_mutex.unlock()
 
 class ScriptingStdoutWorker(QObject):
     stdout_signal = pyqtSignal(str)

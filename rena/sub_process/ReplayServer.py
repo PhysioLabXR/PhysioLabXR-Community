@@ -71,6 +71,7 @@ class ReplayServer(threading.Thread):
                             self.reset_replay()
                             continue
                         try:
+                            print(f'ReplayServer: loading file at {file_location}')
                             if file_location.endswith('.dats'):
                                 rns_stream = RNStream(file_location)
                                 # self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
@@ -185,6 +186,7 @@ class ReplayServer(threading.Thread):
                     else:
                         raise Exception('Unexpected command ' + command)
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
+        del self.command_info_interface  # close the socket and terminate the context
         print("Replay terminated")
         # return here
 
@@ -208,7 +210,10 @@ class ReplayServer(threading.Thread):
         self.outlet_infos = []
         # close all outlets if there's any
         for stream_name in self.outlets.keys():
-            del self.outlets[stream_name]
+            if isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
+                del self.outlets[stream_name]
+            elif isinstance(self.outlets[stream_name], zmq.sugar.socket.Socket):
+                self.outlets[stream_name].close()
         print("Replay Server: Reset replay: removed all outlets")
 
     def replay(self):
@@ -240,11 +245,11 @@ class ReplayServer(threading.Thread):
         this_chunk_data = (this_stream_data[0][..., this_next_sample_start_index: this_next_sample_end_index]).transpose()
 
         # prepare the data (if necessary)
-        if isinstance(this_chunk_data, np.ndarray):
+        # if isinstance(this_chunk_data, np.ndarray):
             # load_xdf loads numbers into numpy arrays (strings will be put into lists). however, LSL doesn't seem to
             # handle them properly as providing data in numpy arrays leads to falsified data being sent. therefore the data
             # are converted to lists
-            this_chunk_data = this_chunk_data.tolist()
+            # this_chunk_data = this_chunk_data.tolist()
         self.next_sample_index_of_stream[this_stream_name] += this_chunk_size  # index of the next sample yet to be sent of this stream
 
         stream_total_num_samples = this_stream_data[0].shape[-1]
@@ -268,9 +273,9 @@ class ReplayServer(threading.Thread):
             data = this_chunk_data[0]
 
             if isinstance(outlet, pylsl.stream_outlet):
-                outlet.push_sample(data, timestamp)
+                outlet.push_sample(data.tolist(), timestamp)
             else:  # zmq
-                outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamp), np.array(data)])
+                outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamp), data.copy()])  # copy to make data contiguous
             # print("pushed, chunk size 1")
             # print(nextChunkValues)
         else:
@@ -278,10 +283,10 @@ class ReplayServer(threading.Thread):
             timestamps = this_chunk_timestamps + self.virtual_clock_offset + self.slider_offset_time
             data = this_chunk_data
             if isinstance(outlet, pylsl.stream_outlet):
-                outlet.push_chunk(data, timestamps[-1])
+                outlet.push_chunk(data.tolist(), timestamps[-1])
             else:  # zmq
                 for i in range(len(timestamps)):
-                    outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamps[i]), np.array(data[i])])
+                    outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamps[i]), data[i].copy()])  # copy to make data contiguous
             # print("pushed else")
             # chunks are not printed to the terminal because they happen hundreds of times per second and therefore
             # would make the terminal output unreadable

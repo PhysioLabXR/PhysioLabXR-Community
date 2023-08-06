@@ -125,7 +125,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         valid_levels = get_valid_image_levels(self.stream_name, group_name)
         self.update_image_level_valid(valid_levels)
         image_format = this_group_entry.plot_configs.image_config.image_format
-        if image_format == ImageFormat.rgb:
+        if image_format == ImageFormat.rgb or image_format == ImageFormat.bgr:
             self.pixelmap_display_options.setVisible(False)
             self.rgb_display_options.setVisible(True)
         elif image_format == ImageFormat.pixelmap:
@@ -237,7 +237,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         image_format = self.get_image_format()
         set_group_image_format(self.stream_name, self.group_name, image_format=image_format)
 
-        if image_format == ImageFormat.rgb:
+        if image_format == ImageFormat.rgb or image_format == ImageFormat.bgr:
             self.pixelmap_display_options.setVisible(False)
             self.rgb_display_options.setVisible(True)
         elif image_format == ImageFormat.pixelmap:
@@ -248,7 +248,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def image_channel_format_change(self):
         image_channel_format = self.get_image_channel_format()
         set_group_image_channel_format(self.stream_name, self.group_name, channel_format=image_channel_format)
-        if image_channel_format == ImageFormat.rgb:
+        if image_channel_format == ImageFormat.rgb or image_channel_format == ImageFormat.bgr:
             self.pixelmap_display_options.setVisible(False)
             self.rgb_display_options.setVisible(True)
         elif image_channel_format == ImageFormat.pixelmap:

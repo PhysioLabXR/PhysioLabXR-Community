@@ -3,6 +3,7 @@
 from rena.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from rena.configs.configs import AppConfigs
 from rena.presets.PresetEnums import PresetType, DataType
+from rena.presets.Presets import Presets
 from rena.presets.presets_utils import get_stream_preset_info
 from rena.threadings import workers
 from rena.ui.BaseStreamWidget import BaseStreamWidget
@@ -23,9 +24,8 @@ class LSLWidget(BaseStreamWidget):
         super().__init__(parent_widget, parent_layout, PresetType.LSL, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
-        channel_names = get_stream_preset_info(self.stream_name, 'channel_names')
-
-        lsl_worker = workers.LSLInletWorker(self.stream_name, channel_names, RenaTCPInterface=None)
+        num_channels = get_stream_preset_info(self.stream_name, 'num_channels')
+        lsl_worker = workers.LSLInletWorker(self.stream_name, num_channels, RenaTCPInterface=None)
         self.connect_worker(lsl_worker, True)
         self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()

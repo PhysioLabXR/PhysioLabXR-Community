@@ -276,11 +276,15 @@ class ReplayTab(QtWidgets.QWidget):
         self.window = QtWidgets.QMainWindow()
 
     def try_close(self):
+        # print("ReplayTab: closing playback widget")
         self.playback_widget.issue_terminate_command()
+        # print('ReplayTab: calling try close for playback window')
         self.playback_widget.try_close()
         self.playback_window.close()  # opened windows must be closed
+        # print('ReplayTab: playback window closed, waiting for replay server process to terminate')
         self.replay_server_process.join(timeout=1)
         if self.replay_server_process.is_alive():
+            # print("ReplayTab: replay server process did not terminate, killing it")
             self.replay_server_process.kill()
         return True
 

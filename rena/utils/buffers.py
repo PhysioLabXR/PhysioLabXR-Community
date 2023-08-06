@@ -23,12 +23,12 @@ def get_fps(queue):
         return 0
 
 
-def create_lsl_interface(lsl_name, channel_names):
+def create_lsl_interface(lsl_name, num_channels):
     # try:
     #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
     # except AttributeError:
     #     raise AssertionError('Unable to find LSL Stream in LAN.')
-    interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
+    interface = LSLInletInterface.LSLInletInterface(lsl_name, num_channels)
     return interface
 
 
