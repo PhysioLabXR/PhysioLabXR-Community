@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import AOIAttentionMatrixTorch
+from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import GazeAttentionMatrixTorch
 
 if __name__ == '__main__':
     device = torch.device('cuda:0')
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     image_shape = np.array([500, 1000])
     attention_grid_shape = np.array([25, 50])
     attention_patch_shape = np.array([20,20])
-    a = AOIAttentionMatrixTorch(attention_matrix=None, image_shape=image_shape, attention_patch_shape=attention_patch_shape, device=device)
+    a = GazeAttentionMatrixTorch(image_shape=image_shape, attention_patch_shape=attention_patch_shape, device=device)
     a.add_attention(attention_center_location=[100, 100])
     a.decay()
     a.calculate_attention_grid()
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         attention_grid_average_time = time.perf_counter_ns()-attention_grid_average_start
 
         detach_start = time.perf_counter_ns()
-        b = a.attention_grid_buffer.view(25, 50).cpu()
+        b = a.get_attention_grid_buffer.view(25, 50).cpu()
         detach_time = time.perf_counter_ns() - detach_start
 
         print(attention_add_time*1e-6, attention_decay_time*1e-6, attention_grid_average_time*1e-6, detach_time*1e-6)

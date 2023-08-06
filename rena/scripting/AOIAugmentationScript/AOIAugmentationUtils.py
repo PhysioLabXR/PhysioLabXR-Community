@@ -39,12 +39,12 @@ def gaussian_filter(shape, center, sigma=1.0, normalized=True):
 
 
 
-class AOIAttentionMatrixTorch():
-    def __init__(self, attention_matrix, image_shape=np.array([1000, 2000]), attention_patch_shape = np.array([20,20]), sigma=20, #attention_grid_shape=np.array([25, 50]),
+class GazeAttentionMatrixTorch():
+    def __init__(self, image_shape=np.array([1000, 2000]), attention_patch_shape = np.array([20,20]), sigma=20, #attention_grid_shape=np.array([25, 50]),
                  device=None):
 
         super().__init__()
-        self.attention_matrix = attention_matrix
+        # self.attention_matrix = attention_matrix
         self.image_shape = image_shape
         self.attention_patch_shape = attention_patch_shape
         self.device = device
@@ -85,17 +85,47 @@ class AOIAttentionMatrixTorch():
             weight=self._attention_patch_average_kernel.view(1,1, self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1]),
             stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1]))
 
+    def get_attention_grid_vector(self, flatten=True, threshold=0.5):
+        if flatten:
+            return self._attention_grid_buffer.flatten().cpu().numpy()
+        else:
+            return self._attention_grid_buffer.cpu().numpy()
+
 
     def reset_image_attention_buffer(self):
         self._image_attention_buffer *= 0
 
-    @property
-    def attention_grid_buffer(self):
+    def get_attention_grid_buffer(self):
         return self._attention_grid_buffer
 
 
+class ViTAttentionMatrix():
+    def __init__(self, attention_matrix = None):
+        self.attention_matrix = attention_matrix
+        self.patch_average_attention = None
+        if self.attention_matrix:
+            self.calculate_patch_average_attention_vector()
 
+    def set_attention_matrix(self, attention_matrix):
+        self.attention_matrix = attention_matrix
+        self.patch_average_attention()
 
+    def get_attention_matrix(self):
+        return self.attention_matrix
 
+    def calculate_patch_average_attention_vector(self):
+        self.patch_average_attention = np.mean(self.attention_matrix, axis=1)
 
+    def threshold_patch_average_attention(self, threshold=0.5):
+        return np.where(self.patch_average_attention > threshold, 1, 0)
+
+    def generate_random_attention_matrix(self, patch_num):
+        self.attention_matrix = np.random.rand(patch_num, patch_num)
+
+# if __name__ == '__main__':
+#     a  = ViTAttentionMatrix()
+#     a.generate_random_attention_matrix(10)
+#     a.calculate_patch_average_attention_vector()
+#     print(a.attention_matrix)
+#     b = a.threshold_patch_average_attention(0.5)
 

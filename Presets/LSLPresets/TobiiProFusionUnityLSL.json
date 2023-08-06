@@ -54,6 +54,6 @@
     "OriginalGazeSystemTimeStamp"
 ],
   "NominalSamplingRate":  250,
-  "GroupInfo":  [49],
+  "GroupInfo":  [7, 28, 49],
   "DataType": "float32"
 }

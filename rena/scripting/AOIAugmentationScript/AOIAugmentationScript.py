@@ -15,6 +15,7 @@ class AOIAugmentationScript(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
+
         self.currentExperimentState: AOIAugmentationConfig.ExperimentState = \
             AOIAugmentationConfig.ExperimentState.StartState
 
@@ -25,14 +26,14 @@ class AOIAugmentationScript(RenaScript):
 
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-        self.attentionMatrix = AOIAttentionMatrixTorch(
-            attention_matrix=None,
+        self.gaze_attention_matrix = GazeAttentionMatrixTorch(
             image_shape=AOIAugmentationConfig.image_shape,
             attention_patch_shape=AOIAugmentationConfig.attention_grid_shape,
             device=self.device
         )
+        self.vit_attention_matrix = ViTAttentionMatrix()
+        self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
 
-        # gaze data component
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
         self.ivt_filter.evoke_data_processor()
 
@@ -104,6 +105,13 @@ class AOIAugmentationScript(RenaScript):
                         state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
                     # switch to new interaction state
                     currentReportLabel = report_label_marker
+                    # set attention matrix
+
+                    # calculate average attention vector
+                    # todo: set attention matrix
+                    ######
+                    self.vit_attention_matrix.calculate_patch_average_attention_vector()
+
                     print("set report interaction label to {}".format(currentReportLabel))
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
@@ -184,6 +192,8 @@ class AOIAugmentationScript(RenaScript):
         pass
 
     def attention_map_callback(self):
+
+        #
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][1]:
             # construct gaze data
             gaze_data = GazeData()
@@ -193,6 +203,7 @@ class AOIAugmentationScript(RenaScript):
 
             # get the gaze data on screen position
             if gaze_data.gaze_type == GazeType.FIXATION:
+                # if this is a fixation, add the attention to the attention matrix
                 gaze_point_on_image = tobii_gaze_on_display_area_to_image_matrix_index(
                     image_center_x=AOIAugmentationConfig.image_center_x,
                     image_center_y=AOIAugmentationConfig.image_center_y,
@@ -208,13 +219,33 @@ class AOIAugmentationScript(RenaScript):
                 )
 
                 # apply attention map to
-                self.attentionMatrix.add_attention(attention_center_location=gaze_point_on_image)
+                self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
 
-            self.attentionMatrix.decay()
-            self.attentionMatrix.calculate_attention_grid()  # calculate the average
-            self.static_aoi_augmentation_lsl_outlet.push_sample(
-                self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
-            )
+            # calculate the visual attention map on grid buffer
+            self.gaze_attention_matrix.calculate_attention_grid()  # calculate the average
+            # apply the decay function
+            self.gaze_attention_matrix.decay()
+
+            # threshold gaze attention map
+            threshold_gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True, threshold=0.5)
+            threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.5)
+            print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
+            print("threshold vit attention vector: ", threshold_vit_attention_vector)
+
+
+
+
+
+            # self.gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True)
+            # self.vit_grid_attention_vector = self.vit_attention_matrix.calculate_patch_average_attention_vector()
+
+
+            # apply the attention map to the image
+
+
+            # self.static_aoi_augmentation_lsl_outlet.push_sample(
+            #     self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
+            # )
 
             # send out the attention map with LSL
 
@@ -228,5 +259,5 @@ class AOIAugmentationScript(RenaScript):
     #                       AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
     #                       'someuuid1234')
     #     self.attentionGridLSLOutlet = StreamOutlet(info)
-
-        # info = StreamInfo(LSL, type, n_channels, srate, 'float32', 'someuuid1234')
+    #
+    #     info = StreamInfo(LSL, type, n_channels, srate, 'float32', 'someuuid1234')
