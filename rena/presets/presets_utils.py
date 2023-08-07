@@ -5,7 +5,8 @@ from rena import config
 from rena.exceptions.exceptions import InvalidStreamMetaInfoError
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
-from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
+from rena.presets.Presets import Presets, preprocess_stream_preset
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 

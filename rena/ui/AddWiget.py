@@ -4,7 +4,7 @@ from PyQt6.QtGui import QIntValidator
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType, DataType
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
     is_stream_name_in_presets
@@ -112,19 +112,22 @@ class AddStreamWidget(QtWidgets.QWidget):
         if stream_name == '':
             return
         current_type = PresetType(self.preset_type_combobox.currentText().upper())
-        if not is_new: change_stream_preset_type(stream_name, current_type)
+        if not is_new: change_stream_preset_type(stream_name, current_type)  # update the preset type in the preset singleton
         self.check_can_add_input()
 
     def update_preset_type_uis(self):
         current_type = PresetType(self.preset_type_combobox.currentText().upper())
         if current_type == PresetType.LSL:
             self.PortLineEdit.setHidden(True)
+            self.data_type_combo_box.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.ZMQ:
             self.PortLineEdit.show()
+            self.data_type_combo_box.setHidden(False)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.CUSTOM:
             self.PortLineEdit.setHidden(True)
+            self.data_type_combo_box.setHidden(False)
             self.add_custom_data_stream_widget.setVisible(True)
 
     def get_selected_preset_type_str(self):
@@ -195,7 +198,7 @@ class AddStreamWidget(QtWidgets.QWidget):
 
     def show_lsl_preset_ui(self):
         self.preset_type_combobox.show()
-        self.data_type_combo_box.show()
+        self.data_type_combo_box.hide()
         self.PortLineEdit.setHidden(True)
         self.preset_type_combobox.setEnabled(True)
 

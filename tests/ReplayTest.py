@@ -58,7 +58,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     '''
     from rena.utils.RNStream import RNStream
     from rena.utils.ui_utils import CustomDialog
-    from rena.presets.Presets import PresetType
+    from rena.presets.PresetEnums import PresetType
     from rena.config import stream_availability_wait_time
 
     num_stream_to_test = 3

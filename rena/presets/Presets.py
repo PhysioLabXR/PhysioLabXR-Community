@@ -1,121 +1,26 @@
-import copy
-import dataclasses
 import json
-import multiprocessing
 import os
-import string
 from dataclasses import dataclass, field
 from enum import Enum
 from multiprocessing import Process
 from typing import Dict, Any, List, Union
 
 import numpy as np
-from pylsl import cf_float32, cf_double64, cf_int64, cf_int32, cf_int16, cf_int8
 
 from rena import config
 from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.ScriptPresets import ScriptPreset, ParamPreset
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
+from rena.presets.ScriptPresets import ScriptPreset, ScriptParam
 from rena.presets.preset_class_helpers import SubPreset
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
-from rena.utils.dsp_utils.dsp_modules import DataProcessor, NotchFilter, IIRFilter
+from rena.utils.dsp_utils.dsp_modules import DataProcessor
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
-
-
-class DataType(Enum):
-    """
-    Data types supported by RenaLabApp.
-    Calling the enum with a value will return the same value of the  corresponding numpy data type.
-    Use the class method get_data_type to get actual data type.
-    """
-    uint8 = "uint8"
-    uint16 = "uint16"
-    uint32 = "uint32"
-    uint64 = "uint64"
-    int8 = "int8"
-    int16 = "int16"
-    int32 = "int32"
-    int64 = "int64"
-    float16 = "float16"
-    float32 = "float32"
-    float64 = "float64"
-
-    def __call__(self, *args, **kwargs):
-        return self.get_data_type()(args[0])
-
-    def get_data_type(self):
-        if self == DataType.uint8:
-            return np.uint8
-        elif self == DataType.uint16:
-            return np.uint16
-        elif self == DataType.uint32:
-            return np.uint32
-        elif self == DataType.uint64:
-            return np.uint64
-        elif self == DataType.int8:
-            return np.int8
-        elif self == DataType.int16:
-            return np.int16
-        elif self == DataType.int32:
-            return np.int32
-        elif self == DataType.int64:
-            return np.int64
-        elif self == DataType.float16:
-            return np.float16
-        elif self == DataType.float32:
-            return np.float32
-        elif self == DataType.float64:
-            return np.float64
-
-    def get_lsl_type(self):
-        if self == DataType.int8:
-            return cf_int8
-        elif self == DataType.int16:
-            return cf_int16
-        elif self == DataType.int32:
-            return cf_int32
-        elif self == DataType.int64:
-            return cf_int64
-        elif self == DataType.float32:
-            return cf_float32
-        elif self == DataType.float64:
-            return cf_double64
-        else:
-            raise ValueError(f"Data type {self} is not supported by LSL.")
-
-class PresetType(Enum):
-    WEBCAM = 'WEBCAM'
-    MONITOR = 'MONITOR'
-    FMRI = 'FMRI'
-    LSL = 'LSL'
-    ZMQ = 'ZMQ'
-    CUSTOM = 'CUSTOM'
-    EXPERIMENT = 'EXPERIMENT'
-
-    @classmethod
-    def is_video_preset(cls, preset_type):
-        if isinstance(preset_type, str):
-            preset_type = PresetType(preset_type)
-        return preset_type in [cls.WEBCAM, cls.MONITOR]
-
-    @classmethod
-    def is_lsl_zmq_custom_preset(cls, preset_type):
-        if isinstance(preset_type, str):
-            preset_type = PresetType(preset_type)
-        return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
-
-    def is_self_video_preset(self):
-        return self in [self.WEBCAM, self.MONITOR]
-
-
-class VideoDeviceChannelOrder(Enum):
-    RGB = 0
-    BGR = 1
 
 
 def is_monotonically_increasing(lst):
@@ -333,9 +238,9 @@ def _load_param_presets_recursive(param_preset_dict):
     elif isinstance(param_preset_dict, dict):
         if isinstance(param_preset_dict['value'], list):
             param_preset_dict['value'] = _load_param_presets_recursive(param_preset_dict['value'])
-            return ParamPreset(**param_preset_dict)
+            return ScriptParam(**param_preset_dict)
         else:
-            return ParamPreset(**param_preset_dict)
+            return ScriptParam(**param_preset_dict)
     return rtn
 
 def save_presets_locally(app_data_path, preset_dict, file_name) -> None:
@@ -458,7 +363,9 @@ class Presets(metaclass=Singleton):
 
         dirty_presets = {PresetType.LSL.value: None, PresetType.ZMQ.value: None, PresetType.CUSTOM.value: None, PresetType.EXPERIMENT.value: None}
 
-        (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[PresetType.CUSTOM.value], dirty_presets[PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
+        (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[
+            PresetType.CUSTOM.value], dirty_presets[
+             PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
         with open(self._last_mod_time_path, 'w') as f:

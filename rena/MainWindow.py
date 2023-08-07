@@ -11,7 +11,8 @@ from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import Presets, PresetType, DataType
+from rena.presets.Presets import Presets
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
@@ -191,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 raise NotImplementedError
                 self.init_device(selected_text)  # add device stream
             elif preset_type == PresetType.LSL:
-                self.init_LSL_streaming(stream_name, data_type)  # add lsl stream
+                self.init_LSL_streaming(stream_name)  # add lsl stream
             elif preset_type == PresetType.ZMQ:
                 self.init_ZMQ_streaming(stream_name, port, data_type)  # add lsl stream
             elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
@@ -217,8 +218,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for stream_name, info in stream_infos.items():
             if stream_name not in self.stream_widgets.keys():
                 if not is_stream_name_in_presets(stream_name):
-                    sampling_rate = max(0, int(info['sampling_rate']))
-                    self.create_preset(stream_name, preset_type=info['preset_type'], num_channels=info['n_channels'], data_type=info['data_type'], port=info['port'], nominal_sample_rate=sampling_rate)
+                    sampling_rate = max(0, int(info['srate']))
+                    self.create_preset(stream_name, preset_type=info['preset_type'], num_channels=info['n_channels'], data_type=info['data_type'], port=info['port_number'], nominal_sample_rate=sampling_rate)
                     is_new_preset_added = True
                 else:
                     stream_meta_info = get_stream_meta_info(stream_name)
@@ -235,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.process_add(stream_name, *get_stream_meta_info(stream_name))
 
         if is_new_preset_added:
-            GlobalSignals.stream_presets_entry_changed_signal.emit()
+            GlobalSignals().stream_presets_entry_changed_signal.emit()
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
@@ -283,12 +284,11 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 
-    def init_LSL_streaming(self, stream_name, data_type=None):
+    def init_LSL_streaming(self, stream_name):
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
                                  stream_name=stream_name,
-                                 data_type=data_type,
                                  insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
@@ -365,8 +365,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # close other tabs
             stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
             [c() for c in stream_close_calls]
+            print('MainWindow: closing scripting')
             self.scripting_tab.try_close()
+            print('MainWindow: closing replay')
             self.replay_tab.try_close()
+            print('MainWindow: closing replay')
             self.settings_widget.try_close()
 
             Presets().__del__()

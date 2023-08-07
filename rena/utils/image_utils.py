@@ -1,6 +1,6 @@
 import cv2
 
-from rena.presets.Presets import VideoDeviceChannelOrder
+from rena.presets.PresetEnums import VideoDeviceChannelOrder
 
 
 def process_image(image, rgb_channel_order: VideoDeviceChannelOrder=None, scale: float=1.0):

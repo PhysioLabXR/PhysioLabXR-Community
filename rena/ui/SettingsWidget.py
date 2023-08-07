@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
-from rena.presets.Presets import Presets, PresetType, _load_video_device_presets
+from rena.presets.Presets import Presets, _load_video_device_presets
+from rena.presets.PresetEnums import PresetType
 from rena.startup import load_settings
 from rena.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue
 from rena.utils.Validators import NoCommaIntValidator

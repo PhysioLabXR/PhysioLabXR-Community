@@ -2,7 +2,7 @@
 
 from rena.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
+from rena.presets.PresetEnums import PresetType
 from rena.presets.presets_utils import get_stream_preset_info
 from rena.threadings import workers
 from rena.ui.BaseStreamWidget import BaseStreamWidget
@@ -41,10 +41,9 @@ class ZMQWidget(BaseStreamWidget):
             super().process_stream_data(data_dict)
         except ChannelMismatchError as e:
             self.in_error_state = True
-            preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
+            preset_chan_num = get_stream_preset_info(self.stream_name, 'num_channels')
             message = f'The stream with name {self.stream_name} found on the network has {e.message} channels.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
-            reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
-                                 buttons=self.channel_mismatch_buttons)
+            reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent, buttons=self.channel_mismatch_buttons)
             if reply.result():
                 self.reset_preset_by_num_channels(e.message, self.data_type, port=self.port)
                 self.in_error_state = False

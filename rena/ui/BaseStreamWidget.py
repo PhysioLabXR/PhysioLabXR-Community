@@ -213,7 +213,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         pop_stream_preset_from_settings(self.stream_name)
         self.main_parent.create_preset(self.stream_name, self.preset_type, data_type=data_type, num_channels=num_channels, **kwargs)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
-        self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
+        self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'num_channels'))
 
         self.option_window.reload_preset_to_UI()
         self.reset_viz()

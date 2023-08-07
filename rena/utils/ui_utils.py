@@ -278,6 +278,7 @@ class CustomDialog(QDialog):
         self.buttonBox = QDialogButtonBox(QBtn)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
+        self.msg = msg
 
         self.layout = QVBoxLayout()
         message = QLabel(str(msg))
