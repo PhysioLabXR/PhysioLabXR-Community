@@ -85,9 +85,19 @@ class GazeAttentionMatrixTorch():
             weight=self._attention_patch_average_kernel.view(1,1, self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1]),
             stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1])).view((self.attention_grid_shape[0], self.attention_grid_shape[1]))
 
-    def threshold_attention_grid_vector(self, flatten=True, threshold=0.5):
+    def threshold_attention_grid_vector(self, flatten=True, threshold=0.5, dtype=np.float64):
         # attention_grid = self._attention_grid_buffer.cpu().numpy()
-        attention_grid = np.where(self._attention_grid_buffer.cpu().numpy() > threshold, 1, 0)
+        attention_grid = np.where(self._attention_grid_buffer.cpu().numpy() > threshold, 1, 0).astype(dtype)
+        if flatten:
+            return attention_grid.flatten()
+        else:
+            return attention_grid
+
+    # def threshold_attention_grid_vector_buffer(self, flatten=True, threshold=0.5):
+
+
+    def get_attention_grid(self, flatten=True):
+        attention_grid = self._attention_grid_buffer.cpu().numpy()
         if flatten:
             return attention_grid.flatten()
         else:

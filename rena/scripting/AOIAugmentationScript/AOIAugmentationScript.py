@@ -214,12 +214,13 @@ class AOIAugmentationScript(RenaScript):
             self.gaze_attention_matrix.decay()
 
             # threshold gaze attention map
-            threshold_gaze_attention_vector = self.gaze_attention_matrix.threshold_attention_grid_vector(flatten=True,
-                                                                                                         threshold=0.5)
+            # threshold_gaze_attention_vector = self.gaze_attention_matrix.threshold_attention_grid_vector(flatten=True,
+            #                                                                                              threshold=0.5)
+            gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid(flatten=True)
             threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
 
             # mask both arrays
-            self.outputs["gaze_attention_vector"] = threshold_gaze_attention_vector
+            self.outputs["gaze_attention_vector"] = gaze_attention_vector
 
 
 
