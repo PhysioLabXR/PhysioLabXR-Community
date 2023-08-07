@@ -2,7 +2,7 @@ import enum
 import numpy as np
 import torch
 import torch.nn.functional as F
-
+import matplotlib.pyplot as plt
 from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import TobiiProFusionChannel
 
 
@@ -99,6 +99,14 @@ class GazeAttentionMatrixTorch():
 
     def get_attention_grid_buffer(self):
         return self._attention_grid_buffer
+
+    def plot_image_attention_buffer(self):
+        plt.imshow(self._image_attention_buffer.cpu().numpy())
+        plt.show()
+
+    def plot_attention_grid_buffer(self):
+        plt.imshow(self._attention_grid_buffer.cpu().numpy())
+        plt.show()
 
 
 class ViTAttentionMatrix():

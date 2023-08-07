@@ -188,7 +188,7 @@ class AOIAugmentationScript(RenaScript):
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
 
             gaze_data = self.ivt_filter.process_sample(gaze_data)  # ivt filter
-            if gaze_data.gaze_type == GazeType.FIXATION:
+            if gaze_data.gaze_type == GazeType.FIXATION: # only care about the fixation data
                 gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
                     image_center_x=AOIAugmentationConfig.image_center_x,
                     image_center_y=AOIAugmentationConfig.image_center_y,

@@ -2,7 +2,7 @@ import enum
 from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import TobiiProFusionChannel
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class GazeType(enum.Enum):
     SACCADE = 1
