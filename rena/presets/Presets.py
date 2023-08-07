@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from dataclasses import dataclass, field
@@ -252,7 +253,7 @@ def save_presets_locally(app_data_path, preset_dict, file_name) -> None:
     if not os.path.exists(app_data_path):
         os.makedirs(app_data_path)
     path = os.path.join(app_data_path, file_name)
-    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
+    json_data = json.dumps(copy.deepcopy(preset_dict), indent=4, cls=PresetsEncoder)
     with open(path, 'w') as f:
         f.write(json_data)
 
