@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import json
+from collections import defaultdict
 from multiprocessing import Process
 
 import numpy as np
@@ -13,7 +14,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetsEncoder
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.sub_process.ReplayServer import start_replay_server
-from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.sub_process.TCPInterface import RenaTCPInterface, test_port_range
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
 from rena.ui.PlayBackWidget import PlayBackWidget
 from rena.utils.lsl_utils import get_available_lsl_streams
@@ -109,13 +110,16 @@ class ReplayTab(QtWidgets.QWidget):
         self.stream_list_items = {}
 
         # start replay client
+        self.replay_port = test_port_range(*AppConfigs().replay_port_range)
+        if self.replay_port is None:
+            dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
+            return
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                       port_id=config.replay_port,
+                                                       port_id=self.replay_port,
                                                        identity='client',
                                                        pattern='router-dealer')
         self._create_playback_widget()
-
-        self.replay_server_process = Process(target=start_replay_server)
+        self.replay_server_process = Process(target=start_replay_server, args=(self.replay_port, ))
         self.replay_server_process.start()
 
     def _create_playback_widget(self):
@@ -154,6 +158,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.SelectDataDirBtn.setEnabled(False)
         self.show_loading()
         self.StartStopReplayBtn.setVisible(False)
+        self.playback_window.hide()
 
         self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
         self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
@@ -232,32 +237,39 @@ class ReplayTab(QtWidgets.QWidget):
                     if not reply.result(): raise AssertionError
                         # self.command_info_interface.send_string(shared.CANCEL_START_REPLAY_COMMAND)
                         # return
-                self.stream_info = self.get_replay_stream_info()
+                replay_stream_info = self.get_replay_stream_info()
             except AssertionError:
                 self.StartStopReplayBtn.setEnabled(True)
                 self.StartStopReplayBtn.setText('Start Replay')
                 return
-            self.playback_window.show()
-            self.playback_window.activateWindow()
-            self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
 
             self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
-            self.command_info_interface.send_string(json.dumps(self.stream_info, cls=PresetsEncoder))  # use PresetsEncoder to encode enums
+            self.command_info_interface.send_string(json.dumps(replay_stream_info, cls=PresetsEncoder))  # use PresetsEncoder to encode enums
             # receive the new timing info
+            reply = self.command_info_interface.recv_string()
+            if reply.startswith(shared.FAIL_INFO):
+                dialog_popup(f'Replay failed to start: {reply.strip(shared.FAIL_INFO)}', title='ERROR')
+                self.StartStopReplayBtn.setEnabled(True)
+                self.StartStopReplayBtn.setText('Start Replay')
+                return
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(self.command_info_interface.socket.recv())
 
-            self.parent.add_streams_from_replay(self.stream_info)
+            self.parent.add_streams_from_replay(replay_stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
             self.is_replaying = True
             self.StartStopReplayBtn.setText('Stop Replay')
             self.StartStopReplayBtn.setEnabled(True)
             self.SelectDataDirBtn.setEnabled(False)
+
+            self.playback_window.show()
+            self.playback_window.activateWindow()
+            self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
+
             # self.loading_canceled = False  # TODO implement canceling loading of replay file
             # self.loading_replay_dialog = dialog_popup('Loading replay file...', title='Starting Replay', mode='modeless', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Cancel)
             # self.loading_replay_dialog.buttonBox.rejected.connect(self.cancel_loading_replay)
         else:
             self.stop_replay_btn_pressed()  # it is not known if the replay has successfully stopped yet
-            self.playback_window.hide()
             self.replay_successfully_stopped()
 
     def stop_replay_btn_pressed(self):
@@ -314,15 +326,15 @@ class ReplayTab(QtWidgets.QWidget):
             list_item.change_port(AppConfigs().replay_stream_starting_port + i)
 
     def get_replay_stream_info(self):
-        rtn = {}
         zmq_ports = []
+        rtn = defaultdict(dict)
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
             if list_item.is_enabled_in_replay():
-                rtn[s_name] = {**list_item.get_info(), **self.stream_info[s_name]}  # merge with existing info
+                self.stream_info[s_name].update(list_item.get_info())  # merge with existing info
+                rtn[s_name] = self.stream_info[s_name]
                 if rtn[s_name]['preset_type'] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name]['port_number'])
         assert len(zmq_ports) == len(set(zmq_ports)), 'ZMQ ports cannot have duplicates'
         return rtn
-
     def show_loading(self):
         self.loading_label.show()
         self.loading_movie.start()

@@ -116,16 +116,21 @@ class ReplayServer(threading.Thread):
                     #     self.stream_data
 
                     self.setup_stream()  # set up streams again, because some streams may be disabled by user
+                    try:
+                        for outlet_info in self.outlet_infos:
+                            if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
+                                port = replay_stream_info[outlet_info.name()]['port_number']
+                                socket = self.command_info_interface.context.socket(zmq.PUB)
+                                socket.bind("tcp://*:%s" % port)
+                                self.outlets[outlet_info.name()] = socket
+                            else:
+                                self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                    except zmq.error.ZMQError as e:
+                        self.send_string(shared.FAIL_INFO + f'Failed to open stream: {e}')
+                        self.reset_replay()
+                        continue
+                    self.send_string(shared.SUCCESS_INFO)
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
-
-                    for outlet_info in self.outlet_infos:
-                        if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
-                            port = replay_stream_info[outlet_info.name()]['port_number']
-                            socket = self.command_info_interface.context.socket(zmq.PUB)
-                            socket.bind("tcp://*:%s" % port)
-                            self.outlets[outlet_info.name()] = socket
-                        else:
-                            self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
                     print(f"replay started for streams: {list(self.stream_data)}")
                     self.is_replaying = True  # this is the only entry point of the replay loop
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:
@@ -168,7 +173,6 @@ class ReplayServer(threading.Thread):
                         self.set_to_time(set_to_time)
                         self.send_string(shared.SLIDER_MOVED_SUCCESS_INFO)
                     elif command == shared.STOP_COMMAND:  # process stop command
-                        self.reset_replay()
                         self.is_replaying = False
                         self.is_paused = False  # reset is_paused in case is_paused had been set to True
                         self.send_string(shared.STOP_SUCCESS_INFO)
@@ -178,7 +182,6 @@ class ReplayServer(threading.Thread):
                         break
 
                 print('Replay Server: exited replay loop')
-                self.reset_replay()
                 if self.replay_finished:  # the case of a finished replay
                     self.replay_finished = False
                     command = self.recv_string(is_block=True)
@@ -186,13 +189,14 @@ class ReplayServer(threading.Thread):
                         self.send(np.array(-1.))
                     else:
                         raise Exception('Unexpected command ' + command)
+                self.reset_replay()
+
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
         del self.command_info_interface  # close the socket and terminate the context
         print("Replay terminated")
         # return here
 
     def reset_replay(self):
-        self.outlets = {}
         self.next_sample_index_of_stream = {}
         self.chunk_sizes = {}  # chunk sizes are initialized to 1 in setup stream
         self.virtual_clock_offset = None
@@ -202,7 +206,6 @@ class ReplayServer(threading.Thread):
         self.total_time = None
         self.slider_offset_time = None
         self.stream_data = None
-        self.stream_names = None
         self.remaining_stream_names = None
 
         self.is_paused = False
@@ -210,11 +213,17 @@ class ReplayServer(threading.Thread):
 
         self.outlet_infos = []
         # close all outlets if there's any
-        for stream_name in self.outlets.keys():
+
+        outlet_names = list(self.outlets)
+        for stream_name in outlet_names:
             if isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
-                del self.outlets[stream_name]
-            elif isinstance(self.outlets[stream_name], zmq.sugar.socket.Socket):
                 self.outlets[stream_name].close()
+                del self.outlets[stream_name]
+            else:
+                self.outlets[stream_name].close()
+        self.outlets = {}
+        self.stream_names = None
+
         print("Replay Server: Reset replay: removed all outlets")
 
     def replay(self):
@@ -410,8 +419,7 @@ class ReplayServer(threading.Thread):
             return command.decode('utf-8')
         else:
             try:
-                self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(
-                    flags=zmq.NOBLOCK)
+                self.main_program_routing_id, command = self.command_info_interface.socket.recv_multipart(flags=zmq.NOBLOCK)
                 return command.decode('utf-8')
             except zmq.error.Again:
                 return None  # no message has arrived at the socket yet
@@ -447,12 +455,12 @@ class ReplayServer(threading.Thread):
             return 0
 
 
-def start_replay_server():
+def start_replay_server(replay_port):
     print("Replay Server Started")
     # TODO connect to a different port if this port is already in use
     try:
         command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                  port_id=config.replay_port,
+                                                  port_id=replay_port,
                                                   identity='server',
                                                   pattern='router-dealer')
     except zmq.error.ZMQError as e:
