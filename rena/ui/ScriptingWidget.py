@@ -455,7 +455,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         return [w.get_output_preset() for w in self.output_widgets]
 
     def get_output_ports(self):
-        return [w.get_output_port() for w in self.output_widgets]
+        return [w.get_port_number() for w in self.output_widgets]
 
     def get_params(self):
         return [w.get_param_name() for w in self.param_widgets]

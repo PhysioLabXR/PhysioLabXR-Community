@@ -104,7 +104,7 @@ class DataBuffer():
     def _update_buffer(self, stream_name, frames, timestamps):
 
         if stream_name not in self.buffer.keys():
-            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0)),
+            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0), dtype=frames.dtype),
                                       np.empty(shape=(0,))]  # data first, timestamps second
         buffered_data = self.buffer[stream_name][0]
         buffered_timestamps = self.buffer[stream_name][1]
@@ -145,6 +145,33 @@ class DataBuffer():
         """
         for stream_name in self.buffer.keys():
             self.clear_stream_buffer_data(stream_name)
+
+    def clear_stream_up_to(self, stream_name, timestamp):
+        """
+        The resulting timestamp is guaranteed to be greater than the given cut-to timestamp
+        :param timestamp:
+        :return:
+        """
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        if timestamp < np.min(self.buffer[stream_name][1]):
+            return
+        elif timestamp >= np.max(self.buffer[stream_name][1]):
+            self.clear_stream_buffer_data(stream_name)
+        else:
+            cut_to_index = np.argmax([self.buffer[stream_name][1] > timestamp])
+            self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+            self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
+
+    def clear_stream_up_to_index(self, stream_name, cut_to_index):
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+        self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
 
     def clear_up_to(self, timestamp, ignores=()):
         """

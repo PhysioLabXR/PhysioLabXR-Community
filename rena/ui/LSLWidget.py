@@ -37,7 +37,7 @@ class LSLWidget(BaseStreamWidget):
             self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
             return
         except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data
-            preset_chan_num = len(get_stream_preset_info(self.stream_name, 'channel_names'))
+            preset_chan_num = get_stream_preset_info(self.stream_name, 'num_channels')
             message = f'The stream with name {self.stream_name} found on the network has {e.message}.\n The preset has {preset_chan_num} channels. \n Do you want to reset your preset to a default and start stream.\n You can edit your stream channels in Options if you choose Cancel'
             reply = dialog_popup(msg=message, title='Channel Mismatch', mode='modal', main_parent=self.main_parent,
                                  buttons=self.channel_mismatch_buttons)
