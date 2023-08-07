@@ -217,7 +217,6 @@ class ReplayServer(threading.Thread):
         outlet_names = list(self.outlets)
         for stream_name in outlet_names:
             if isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
-                self.outlets[stream_name].close()
                 del self.outlets[stream_name]
             else:
                 self.outlets[stream_name].close()
