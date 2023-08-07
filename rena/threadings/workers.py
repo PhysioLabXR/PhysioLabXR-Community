@@ -552,10 +552,11 @@ class ZMQWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, port_number, subtopic, data_type, *args, **kwargs):
+    def __init__(self, port_number, subtopic, data_type, poll_stream_availability=False, *args, **kwargs):
         super(ZMQWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
-        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+        if poll_stream_availability:
+            self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
         self.data_type = data_type if isinstance(data_type, str) else data_type.value
         # networking parameters

@@ -116,16 +116,21 @@ class ReplayServer(threading.Thread):
                     #     self.stream_data
 
                     self.setup_stream()  # set up streams again, because some streams may be disabled by user
+                    try:
+                        for outlet_info in self.outlet_infos:
+                            if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
+                                port = replay_stream_info[outlet_info.name()]['port_number']
+                                socket = self.command_info_interface.context.socket(zmq.PUB)
+                                socket.bind("tcp://*:%s" % port)
+                                self.outlets[outlet_info.name()] = socket
+                            else:
+                                self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                    except zmq.error.ZMQError as e:
+                        self.send_string(shared.FAIL_INFO + f'Failed to open stream: {e}')
+                        self.reset_replay()
+                        continue
+                    self.send_string(shared.SUCCESS_INFO)
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
-
-                    for outlet_info in self.outlet_infos:
-                        if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
-                            port = replay_stream_info[outlet_info.name()]['port_number']
-                            socket = self.command_info_interface.context.socket(zmq.PUB)
-                            socket.bind("tcp://*:%s" % port)
-                            self.outlets[outlet_info.name()] = socket
-                        else:
-                            self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
                     print(f"replay started for streams: {list(self.stream_data)}")
                     self.is_replaying = True  # this is the only entry point of the replay loop
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:

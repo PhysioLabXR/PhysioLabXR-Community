@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 
 from rena.scripting.RenaScript import RenaScript
@@ -23,20 +22,13 @@ class FixationDetection(RenaScript):
 
         self.gaze_stream_name = 'Example-Eyetracking'
 
-        self.gaze_timestamp_head = 0
-        self.video_stream_name = 'Example-Video'
-        self.video_shape = (400, 400, 3)
-
-        self.frame_gaze_pixel_stream_name = 'Example-Video-Gaze-Pixel'
-
-
     # loop is called <Run Frequency> times per second
     def loop(self):
         # gap filling
         # if the last sample is valid, we go back and see if there's any gap needs to be filled
         # once the gaps are filled we send the gap-filled data and clear 'em from the buffer
 
-        if self.gaze_stream_name in self.inputs.keys():
+        if self.gaze_stream_name  in self.inputs.keys():
             gaze_status = self.inputs[self.gaze_stream_name][0][self.gaze_channels.index('status')]
             gaze_timestamps = self.inputs[self.gaze_stream_name][1]
             gaze_xyz = self.inputs[self.gaze_stream_name][0][:3]
@@ -45,24 +37,9 @@ class FixationDetection(RenaScript):
             #     start_invalid_end_index = np.where(gaze_status != self.gaze_status['invalid'])[0][0]
             #     starting_invalid_duration = gaze_timestamps[start_invalid_end_index] - gaze_timestamps[0]
             if gaze_status[-1] == self.gaze_status['valid']:  # and starting_invalid_duration > self.max_gap_time:  # if the sequence starts out invalid, we must wait until the end of the invalid
-                gap_filled_xyz = gap_fill(gaze_xyz, gaze_status, self.gaze_status['valid'], gaze_timestamps, max_gap_time=self.max_gap_time, verbose=False)
+                gap_filled_xyz = gap_fill(gaze_xyz, gaze_status, self.gaze_status['valid'], gaze_timestamps, max_gap_time=self.max_gap_time)
                 self.outputs['gap_filled_xyz'] = gap_filled_xyz
                 self.inputs.clear_stream_buffer(self.gaze_stream_name)
-                self.gaze_timestamp_head = gaze_timestamps[-1]
-
-        # release video frames up to the processed gaze timestamp
-        # but we only release one video frame per loop
-        if self.video_stream_name in self.inputs.keys():
-            video_timestamps = self.inputs[self.video_stream_name][1]
-            video_frames = self.inputs[self.video_stream_name][0]
-            frame_pixel = self.inputs[self.frame_gaze_pixel_stream_name][0]
-            if video_timestamps[0] < self.gaze_timestamp_head:
-                this_frame = video_frames[:, 0].reshape(self.video_shape).copy()
-                cv2.circle(this_frame, np.array(frame_pixel[:, 0], dtype=np.uint8), 10, (255, 0, 0), 2)
-                self.outputs['gaze_processed_video'] = this_frame.reshape(-1)
-                # remove the first video frame from the buffer
-                self.inputs.clear_stream_up_to_index(self.video_stream_name, 1)
-                self.inputs.clear_stream_up_to_index(self.frame_gaze_pixel_stream_name, 1)
 
     # cleanup is called when the stop button is hit
     def cleanup(self):

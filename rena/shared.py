@@ -1,5 +1,6 @@
 # replay
 
+SUCCESS_INFO = 'success!'
 FAIL_INFO = 'fail!'
 LOAD_COMMAND = 'load!'
 LOAD_SUCCESS_INFO = 'load'
