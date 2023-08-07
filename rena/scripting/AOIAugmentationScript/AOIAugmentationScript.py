@@ -218,6 +218,11 @@ class AOIAugmentationScript(RenaScript):
                                                                                                          threshold=0.5)
             threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
 
+            # mask both arrays
+            self.outputs["gaze_attention_vector"] = threshold_gaze_attention_vector
+
+
+
             # print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
             # print("threshold vit attention vector: ", threshold_vit_attention_vector)
 
