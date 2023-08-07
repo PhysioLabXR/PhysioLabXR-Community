@@ -80,9 +80,10 @@ def fixation_detection_idt(gaze_xyz, timestamps, window_size=0.175, dispersion_t
     last_window_start = 0
     fixations = []
     for start, end in windows:
-        assert end - start > saccade_min_sample, "fixation_detection_idt: window size is too small, not enough samples for a window"
         if end >= len(timestamps):
             break
+        if end - start < saccade_min_sample:
+            continue
         center_time = timestamps[start] + window_size / 2
         if _compute_dispersion(gaze_angles_degree[start:end]) < dispersion_threshold_degree:
             fixations.append([1, center_time])  # 1 for fixation
@@ -90,6 +91,6 @@ def fixation_detection_idt(gaze_xyz, timestamps, window_size=0.175, dispersion_t
             fixations.append([0, center_time])
         last_window_start = start
     if return_last_window_start:
-        return fixations, last_window_start
+        return np.array(fixations).T, last_window_start
     else:
-        return fixations
+        return np.array(fixations).T

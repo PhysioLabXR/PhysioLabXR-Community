@@ -182,7 +182,6 @@ class ReplayServer(threading.Thread):
                         break
 
                 print('Replay Server: exited replay loop')
-                self.reset_replay()
                 if self.replay_finished:  # the case of a finished replay
                     self.replay_finished = False
                     command = self.recv_string(is_block=True)
@@ -190,7 +189,8 @@ class ReplayServer(threading.Thread):
                         self.send(np.array(-1.))
                     else:
                         raise Exception('Unexpected command ' + command)
-                    self.reset_replay()
+                self.reset_replay()
+
         self.send_string(shared.TERMINATE_SUCCESS_COMMAND)
         del self.command_info_interface  # close the socket and terminate the context
         print("Replay terminated")
@@ -217,6 +217,7 @@ class ReplayServer(threading.Thread):
         outlet_names = list(self.outlets)
         for stream_name in outlet_names:
             if isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
+                self.outlets[stream_name].close()
                 del self.outlets[stream_name]
             else:
                 self.outlets[stream_name].close()
