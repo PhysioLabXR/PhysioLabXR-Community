@@ -65,7 +65,7 @@ class GazeData:
             gaze_point_on_display_area= (self.left_eye_gaze_data.gaze_point_on_display_area + self.right_eye_gaze_data.gaze_point_on_display_area) / 2,
             timestamp=self.left_eye_gaze_data.timestamp
         )
-        self.timestamp = self.combined_eye_gaze_data.timestamp
+        self.timestamp = self.combined_eye_gaze_data.timestamp/1000000
 
     def construct_gaze_data_tobii_pro_fusion(self, gaze_data_t):
         left_gaze_origin_in_user_coordinate = gaze_data_t[[TobiiProFusionChannel.LeftGazeOriginInUserCoordinatesX,

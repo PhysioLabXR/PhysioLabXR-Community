@@ -76,7 +76,7 @@ class GazeAttentionMatrixTorch():
 
     def decay(self, decay_factor=0.5):
         # gaussian decay
-        self._image_attention_buffer = self._image_attention_buffer / decay_factor
+        self._image_attention_buffer = self._image_attention_buffer * decay_factor
 
     def calculate_attention_grid(self):
         # pass
