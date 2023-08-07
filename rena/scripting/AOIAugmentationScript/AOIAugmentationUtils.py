@@ -74,22 +74,24 @@ class GazeAttentionMatrixTorch():
 
         self._image_attention_buffer += self._filter_map[x_offset_min: x_offset_max, y_offset_min:y_offset_max]
 
-    def decay(self):
+    def decay(self, decay_factor=0.5):
         # gaussian decay
-        self._image_attention_buffer = self._image_attention_buffer / 2
+        self._image_attention_buffer = self._image_attention_buffer / decay_factor
 
     def calculate_attention_grid(self):
         # pass
         self._attention_grid_buffer = F.conv2d(
             input=self._image_attention_buffer.view(1,1,self._image_attention_buffer.shape[0],self._image_attention_buffer.shape[1]),
             weight=self._attention_patch_average_kernel.view(1,1, self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1]),
-            stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1]))
+            stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1])).view((self.attention_grid_shape[0], self.attention_grid_shape[1]))
 
-    def get_attention_grid_vector(self, flatten=True, threshold=0.5):
+    def threshold_attention_grid_vector(self, flatten=True, threshold=0.5):
+        # attention_grid = self._attention_grid_buffer.cpu().numpy()
+        attention_grid = np.where(self._attention_grid_buffer.cpu().numpy() > threshold, 1, 0)
         if flatten:
-            return self._attention_grid_buffer.flatten().cpu().numpy()
+            return attention_grid.flatten()
         else:
-            return self._attention_grid_buffer.cpu().numpy()
+            return attention_grid
 
 
     def reset_image_attention_buffer(self):

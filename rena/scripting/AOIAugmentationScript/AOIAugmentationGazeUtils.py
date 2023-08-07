@@ -47,13 +47,14 @@ class GazeData:
     def __init__(self, left_eye_gaze_data: EyeData = EyeData(), right_eye_gaze_data: EyeData = EyeData()):
         self.left_eye_gaze_data = left_eye_gaze_data
         self.right_eye_gaze_data = right_eye_gaze_data
-        self.combined_eye_gaze_data = self.get_combined_eye_gaze_data()
+        self.combined_eye_gaze_data = EyeData()
+        self.get_combined_eye_gaze_data()
         self.timestamp = self.combined_eye_gaze_data.timestamp
 
         self.gaze_type = GazeType.UNDETERMINED
 
     def get_combined_eye_gaze_data(self):
-        return EyeData(
+        self.combined_eye_gaze_data = EyeData(
             gaze_origin_in_user_coordinate=(self.left_eye_gaze_data.gaze_origin_in_user_coordinate + self.right_eye_gaze_data.gaze_origin_in_user_coordinate) / 2,
             gaze_point_in_user_coordinate=(self.left_eye_gaze_data.gaze_point_in_user_coordinate + self.right_eye_gaze_data.gaze_point_in_user_coordinate) / 2,
             gaze_origin_valid=self.left_eye_gaze_data.gaze_origin_valid and self.right_eye_gaze_data.gaze_origin_valid,
@@ -64,6 +65,7 @@ class GazeData:
             gaze_point_on_display_area= (self.left_eye_gaze_data.gaze_point_on_display_area + self.right_eye_gaze_data.gaze_point_on_display_area) / 2,
             timestamp=self.left_eye_gaze_data.timestamp
         )
+        self.timestamp = self.combined_eye_gaze_data.timestamp
 
     def construct_gaze_data_tobii_pro_fusion(self, gaze_data_t):
         left_gaze_origin_in_user_coordinate = gaze_data_t[[TobiiProFusionChannel.LeftGazeOriginInUserCoordinatesX,
@@ -161,7 +163,7 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
         self.angular_threshold_degree = angular_speed_threshold_degree
 
     def process_sample(self, gaze_data: GazeData):
-        if self.last_gaze_data.combined_eye_gaze_data.gaze_point_valid:
+        if self.last_gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.combined_eye_gaze_data.gaze_point_valid: # if both gaze data valid
 
             speed = angular_velocity_between_vectors_degrees(
                 self.last_gaze_data.combined_eye_gaze_data.gaze_direction,
@@ -214,18 +216,25 @@ def tobii_gaze_on_display_area_to_image_matrix_index(
 
     return coordinate # the matrix location of the gaze point
 
+def gaze_point_on_image_valid(matrix_shape, coordinate):
+    if coordinate[0] < 0 or coordinate[0] > matrix_shape[0]-1:
+        return False
+    if coordinate[1] < 0 or coordinate[1] > matrix_shape[1]-1:
+        return False
+    return True
 
 
-if __name__ == '__main__':
-    tobii_gaze_on_display_area_to_image_matrix_index(
-        image_center_x=0,
-        image_center_y=0,
-        image_width=1000,
-        image_height=500,
-        screen_width=1920,
-        screen_height=1080,
-        gaze_on_display_area_x=0.49,
-        gaze_on_display_area_y=0.49
 
-    )
-    pass
+# if __name__ == '__main__':
+#     tobii_gaze_on_display_area_to_image_matrix_index(
+#         image_center_x=0,
+#         image_center_y=0,
+#         image_width=1000,
+#         image_height=500,
+#         screen_width=1920,
+#         screen_height=1080,
+#         gaze_on_display_area_x=0.49,
+#         gaze_on_display_area_y=0.49
+#
+#     )
+#     pass

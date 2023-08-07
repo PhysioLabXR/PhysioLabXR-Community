@@ -1,7 +1,7 @@
-from pylsl import StreamInfo, StreamOutlet
+from pylsl import StreamInfo, StreamOutlet, cf_float32
 
 from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
-    tobii_gaze_on_display_area_to_image_matrix_index, GazeType
+    tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
 from rena.scripting.RenaScript import RenaScript
 from rena.scripting.AOIAugmentationScript import AOIAugmentationConfig
 from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
@@ -28,7 +28,7 @@ class AOIAugmentationScript(RenaScript):
 
         self.gaze_attention_matrix = GazeAttentionMatrixTorch(
             image_shape=AOIAugmentationConfig.image_shape,
-            attention_patch_shape=AOIAugmentationConfig.attention_grid_shape,
+            attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
             device=self.device
         )
         self.vit_attention_matrix = ViTAttentionMatrix()
@@ -41,9 +41,8 @@ class AOIAugmentationScript(RenaScript):
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
-                          'someuuid1234')
+                          channel_format=cf_float32)
         self.static_aoi_augmentation_lsl_outlet = StreamOutlet(info)
-
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -86,7 +85,7 @@ class AOIAugmentationScript(RenaScript):
 
     def state_shift(self):
         event_markers = self.inputs[EventMarkerLSLStreamInfo.StreamName][0]
-        self.inputs.clear_stream_buffer(EventMarkerLSLStreamInfo.StreamName)
+        self.inputs.clear_stream_buffer_data(EventMarkerLSLStreamInfo.StreamName)
 
         # state shift
         for event_marker in event_markers.T:
@@ -100,9 +99,9 @@ class AOIAugmentationScript(RenaScript):
             if state_marker and state_marker > 0:  # evoke state change
                 self.enter_state(state_marker)
                 print(self.currentExperimentState)
-                if state_marker == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState or \
-                        state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState or \
-                        state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
+                if state_marker == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState.value or \
+                        state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState.value or \
+                        state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
                     # switch to new interaction state
                     currentReportLabel = report_label_marker
                     # set attention matrix
@@ -114,20 +113,6 @@ class AOIAugmentationScript(RenaScript):
 
                     print("set report interaction label to {}".format(currentReportLabel))
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
-
-        # AOI state machine
-        if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
-            self.no_aoi_augmentation_state_callback()
-
-        elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState:
-            self.static_aoi_augmentation_state_callback()
-
-        elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
-            self.interactive_aoi_augmentation_state_callback()
-
-        else:
-            # no interaction required
-            pass
 
     def enter_block(self, block_marker):
         if block_marker == AOIAugmentationConfig.ExperimentBlock.InitBlock.value:
@@ -176,14 +161,15 @@ class AOIAugmentationScript(RenaScript):
             # raise ValueError('Invalid state marker')
 
     def no_aoi_augmentation_state_callback(self):
+        self.attention_map_callback()
         pass
 
     def static_aoi_augmentation_state_callback(self):
-        # process the eye tracking data
-        # run real-time fixation detection algorithm
+        self.attention_map_callback()
         pass
 
     def interactive_aoi_augmentation_state_callback(self):
+        self.attention_map_callback()
         pass
 
     def clear_eye_tracking_data(self):
@@ -194,54 +180,51 @@ class AOIAugmentationScript(RenaScript):
     def attention_map_callback(self):
 
         #
-        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][1]:
+        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+
+            print("process gaze data")
             # construct gaze data
             gaze_data = GazeData()
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
 
-            gaze_data = self.ivt_filter.process_sample(gaze_data)
-
-            # get the gaze data on screen position
+            gaze_data = self.ivt_filter.process_sample(gaze_data)  # ivt filter
             if gaze_data.gaze_type == GazeType.FIXATION:
-                # if this is a fixation, add the attention to the attention matrix
-                gaze_point_on_image = tobii_gaze_on_display_area_to_image_matrix_index(
+                gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
                     image_center_x=AOIAugmentationConfig.image_center_x,
                     image_center_y=AOIAugmentationConfig.image_center_y,
 
-                    image_width=AOIAugmentationConfig.image_width,
-                    image_height=AOIAugmentationConfig.image_height,
+                    image_width=AOIAugmentationConfig.image_on_screen_width,
+                    image_height=AOIAugmentationConfig.image_on_screen_height,
 
                     screen_width=AOIAugmentationConfig.screen_width,
                     screen_height=AOIAugmentationConfig.screen_height,
 
-                    gaze_on_display_area_x=gaze_data.gaze_on_display_area_x,
-                    gaze_on_display_area_y=gaze_data.gaze_on_display_area_y
+                    gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
+                    gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
                 )
 
-                # apply attention map to
-                self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
+                if gaze_point_on_image_valid(
+                        matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
+                        coordinate=gaze_point_on_screen_image):
+                    gaze_point_on_image = np.round(gaze_point_on_screen_image/AOIAugmentationConfig.image_scaling_factor).astype(int)
+                    self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
 
-            # calculate the visual attention map on grid buffer
             self.gaze_attention_matrix.calculate_attention_grid()  # calculate the average
             # apply the decay function
             self.gaze_attention_matrix.decay()
 
             # threshold gaze attention map
-            threshold_gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True, threshold=0.5)
-            threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.5)
-            print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
-            print("threshold vit attention vector: ", threshold_vit_attention_vector)
+            threshold_gaze_attention_vector = self.gaze_attention_matrix.threshold_attention_grid_vector(flatten=True,
+                                                                                                         threshold=0.5)
+            threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
 
-
-
-
+            # print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
+            # print("threshold vit attention vector: ", threshold_vit_attention_vector)
 
             # self.gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True)
             # self.vit_grid_attention_vector = self.vit_attention_matrix.calculate_patch_average_attention_vector()
 
-
             # apply the attention map to the image
-
 
             # self.static_aoi_augmentation_lsl_outlet.push_sample(
             #     self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
