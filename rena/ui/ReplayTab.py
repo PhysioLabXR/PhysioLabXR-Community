@@ -155,6 +155,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.SelectDataDirBtn.setEnabled(False)
         self.show_loading()
         self.StartStopReplayBtn.setVisible(False)
+        self.playback_window.hide()
 
         self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
         self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
@@ -266,7 +267,6 @@ class ReplayTab(QtWidgets.QWidget):
             # self.loading_replay_dialog.buttonBox.rejected.connect(self.cancel_loading_replay)
         else:
             self.stop_replay_btn_pressed()  # it is not known if the replay has successfully stopped yet
-            self.playback_window.hide()
             self.replay_successfully_stopped()
 
     def stop_replay_btn_pressed(self):

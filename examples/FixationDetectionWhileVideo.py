@@ -69,7 +69,7 @@ class FixationDetection(RenaScript):
                 this_frame_timestamp = self.inputs[self.video_stream_name][1][0]
                 this_frame_pixel = frame_pixels[:, frame_pixel_timestamps == this_frame_timestamp]
 
-                if len(this_frame_pixel) > 0:
+                if this_frame_pixel.shape[1] > 0:
                     cv2.circle(this_frame, np.array(this_frame_pixel[:, 0], dtype=np.uint8), 10, (255, 0, 0), 2)
                 self.outputs['gaze_processed_video'] = this_frame.reshape(-1)
                 # remove the first video frame from the buffer

@@ -75,13 +75,15 @@ class PlayBackWidget(QtWidgets.QWidget):
         Replay will initiate or terminate depending on the `is_replaying` status of ReplayTab (parent).
         """
         if self.parent.is_replaying:
-            self.issue_stop_command()
-            self.stopButton.setIcon(AppConfigs()._icon_start)
-            self.playPauseButton.setEnabled(False)
+            self.parent.start_stop_replay_btn_pressed()
+            if not self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_start)
+                self.playPauseButton.setEnabled(False)
         else:
             self.parent.start_stop_replay_btn_pressed()
-            self.stopButton.setIcon(AppConfigs()._icon_terminate)
-            self.playPauseButton.setEnabled(True)
+            if self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_terminate)
+                self.playPauseButton.setEnabled(True)
             # self.stopButton.setIcon(stop_stream_icon)
 
     def ticks(self):
