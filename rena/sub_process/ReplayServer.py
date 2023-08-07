@@ -5,6 +5,7 @@ import os.path
 import pickle
 import threading
 import time
+import warnings
 from collections import deque, defaultdict
 
 import numpy as np
@@ -455,8 +456,8 @@ def start_replay_server():
                                                   identity='server',
                                                   pattern='router-dealer')
     except zmq.error.ZMQError as e:
-        print("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
-        print("Replay Server exiting...No replay will be available for this session")
+        warnings.warn("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
+        warnings.warn("Replay Server exiting...No replay will be available for this session")
         return
     replay_server_thread = ReplayServer(command_info_interface)
     replay_server_thread.start()
