@@ -123,8 +123,12 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def connect_worker(self, worker, add_stream_availibility: bool):
         self.worker_thread = QThread(self)
         self.data_worker = worker
+        self.add_stream_availability = add_stream_availibility
         self.data_worker.signal_data.connect(self.process_stream_data)
-        if add_stream_availibility: self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        if add_stream_availibility:
+            self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        else:
+            self.is_stream_available = True  # always true for stream that does not have stream availability
         self.data_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
         self.set_start_stop_button_icon()
@@ -135,7 +139,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
             self.data_worker.stop_stream()
-            if not self.data_worker.is_streaming and hasattr(self.data_worker, 'is_stream_available'):
+            if not self.data_worker.is_streaming and self.add_stream_availability:
                 self.update_stream_availability(self.data_worker.is_stream_available)
         else:
             self.data_worker.start_stream()

@@ -269,7 +269,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_all_btn.setEnabled(streaming_widget_count > 0)
 
     def on_start_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available and not x.is_widget_streaming()]
+        for x in self.stream_widgets.values():
+            if (not x.add_stream_availability or x.is_stream_available) and not x.is_widget_streaming():
+                x.start_stop_stream_btn_clicked()
 
     def on_stop_all_btn_clicked(self):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
