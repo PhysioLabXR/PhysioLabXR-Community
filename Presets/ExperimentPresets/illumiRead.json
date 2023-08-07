@@ -1,2 +1,2 @@
 {"ExperimentName": "illumiRead",
-  "PresetStreamNames": ["AOIAugmentationEventMarkerLSLOutlet", "TobiiProFusionUnityLSLOutlet"]}
+  "PresetStreamNames": ["AOIAugmentationEventMarkerLSLOutlet", "TobiiProFusionUnityLSLOutlet", "AOIAugmentationGazeAttentionGridVector"]}

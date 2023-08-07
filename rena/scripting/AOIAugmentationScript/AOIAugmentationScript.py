@@ -62,7 +62,7 @@ class AOIAugmentationScript(RenaScript):
         # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
         #     return
 
-        if EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys():  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
 
         self.state_shift()
@@ -209,9 +209,10 @@ class AOIAugmentationScript(RenaScript):
                     gaze_point_on_image = np.round(gaze_point_on_screen_image/AOIAugmentationConfig.image_scaling_factor).astype(int)
                     self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
 
+            self.gaze_attention_matrix.min_max_normalize_attention()
             self.gaze_attention_matrix.calculate_attention_grid()  # calculate the average
             # apply the decay function
-            self.gaze_attention_matrix.decay()
+            # self.gaze_attention_matrix.decay(decay_factor=self.params['gaze_attention_on_image_decay_factor'])
 
             # threshold gaze attention map
             # threshold_gaze_attention_vector = self.gaze_attention_matrix.threshold_attention_grid_vector(flatten=True,
@@ -220,7 +221,7 @@ class AOIAugmentationScript(RenaScript):
             threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
 
             # mask both arrays
-            self.outputs["gaze_attention_vector"] = gaze_attention_vector
+            self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
 
 
 
@@ -237,7 +238,8 @@ class AOIAugmentationScript(RenaScript):
             # )
 
             # send out the attention map with LSL
-
+            # clear gaze data
+            self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
             pass
 
     # def init_attention_grid_lsl_outlet(self):

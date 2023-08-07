@@ -74,6 +74,9 @@ class GazeAttentionMatrixTorch():
 
         self._image_attention_buffer += self._filter_map[x_offset_min: x_offset_max, y_offset_min:y_offset_max]
 
+    def min_max_normalize_attention(self):
+        self._image_attention_buffer = (self._image_attention_buffer - self._image_attention_buffer.min()) / (self._image_attention_buffer.max() - self._image_attention_buffer.min())
+
     def decay(self, decay_factor=0.5):
         # gaussian decay
         self._image_attention_buffer = self._image_attention_buffer * decay_factor
