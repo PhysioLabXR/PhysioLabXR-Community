@@ -14,7 +14,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.Presets import PresetsEncoder
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.sub_process.ReplayServer import start_replay_server
-from rena.sub_process.TCPInterface import RenaTCPInterface
+from rena.sub_process.TCPInterface import RenaTCPInterface, test_port_range
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
 from rena.ui.PlayBackWidget import PlayBackWidget
 from rena.utils.lsl_utils import get_available_lsl_streams
@@ -110,13 +110,16 @@ class ReplayTab(QtWidgets.QWidget):
         self.stream_list_items = {}
 
         # start replay client
+        self.replay_port = test_port_range(*AppConfigs().replay_port_range)
+        if self.replay_port is None:
+            dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
+            return
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                       port_id=config.replay_port,
+                                                       port_id=self.replay_port,
                                                        identity='client',
                                                        pattern='router-dealer')
         self._create_playback_widget()
-
-        self.replay_server_process = Process(target=start_replay_server)
+        self.replay_server_process = Process(target=start_replay_server, args=(self.replay_port, ))
         self.replay_server_process.start()
 
     def _create_playback_widget(self):

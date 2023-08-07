@@ -110,9 +110,6 @@ settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 # rena_server_name = 'RENA_SERVER'
 # rena_server_worker_ports = np.arange(1,100)
 
-replay_port = 9997
-
-
 rena_server_add_dsp_worker_request = 1
 rena_server_update_worker_request = 2
 rena_server_remove_worker_request = 3

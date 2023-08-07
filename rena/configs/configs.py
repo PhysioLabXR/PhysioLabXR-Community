@@ -90,6 +90,7 @@ class AppConfigs(metaclass=Singleton):
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
+    replay_port_range = 9980, 9990
 
     # path_dict = {'splash_screen_path': 'media/logo/splash_screen.png',
     #              'stream_unavailable': 'media/logo/streamwidget_stream_unavailable.png',
