@@ -1,9 +1,6 @@
 import threading
 import time
 
-import pyqtgraph as pg
-from PyQt5.QtCore import (QObject, pyqtSignal)
-
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.realtime_DSP import RealtimeButterBandpass
 from rena.config import *
@@ -17,7 +14,7 @@ class DSPWorker(threading.Thread):
         self.processor_dict = None
         # self.init_dsp_client_server('John')
 
-    # @pg.QtCore.pyqtSlot()
+    # @QtCore.pyqtSlot()
     def processing(self):
         pass
 
@@ -61,7 +58,7 @@ class DSPServerWorker(DSPWorker):
         # processing.........
         self.rena_tcp_interface.send_array(array=data)
 
-    # @pg.QtCore.pyqtSlot()
+    # @QtCore.pyqtSlot()
     def run(self):
         while self.is_streaming:
             data = self.rena_tcp_interface.recv_array()

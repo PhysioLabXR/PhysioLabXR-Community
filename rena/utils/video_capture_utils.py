@@ -1,5 +1,7 @@
 import cv2
 
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
+
 
 def get_working_camera_id():
     """
@@ -32,16 +34,16 @@ def get_working_camera_ports():
         camera = cv2.VideoCapture(dev_port)
         if not camera.isOpened():
             non_working_ports.append(dev_port)
-            print("Video device port %s is not working." %dev_port)
+            SplashLoadingTextNotifier().set_loading_text("Video port %s is not working." %dev_port)
         else:
             is_reading, img = camera.read()
             w = camera.get(3)
             h = camera.get(4)
             if is_reading:
-                print("Video device port %s is working and reads images (%s x %s)" %(dev_port,h,w))
+                SplashLoadingTextNotifier().set_loading_text("Video port %s is working and reads images (%s x %s)" %(dev_port,h,w))
                 working_ports.append(dev_port)
             else:
-                print("Video device port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
+                SplashLoadingTextNotifier().set_loading_text("Video port %s for camera ( %s x %s) is present but does not read." %(dev_port,h,w))
                 available_ports.append(dev_port)
         dev_port +=1
         camera.release()

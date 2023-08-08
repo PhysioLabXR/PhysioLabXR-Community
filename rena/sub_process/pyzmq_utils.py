@@ -3,7 +3,7 @@ import time
 import numpy
 import zmq
 
-from rena.utils.realtime_DSP import DataProcessor
+
 import zlib, pickle
 
 def send_array(socket, A, flags=0, copy=True, track=False):
@@ -50,3 +50,5 @@ def can_connect_to_port(port, socket_type=zmq.PUB):
             return True
         else:
             raise e
+
+

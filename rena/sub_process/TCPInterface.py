@@ -68,6 +68,7 @@ class RenaTCPInterface:
         if disable_linger:
             self.socket.setsockopt(zmq.LINGER, 0)  # avoid hanging on context termination
 
+        self.address = None
         if identity == 'server': self.bind_socket()
         elif identity == 'client': self.connect_socket()
         else: raise AttributeError('Unsupported interface identity: {0}'.format(identity))
@@ -80,11 +81,11 @@ class RenaTCPInterface:
             self.poller = None
 
     def bind_socket(self):
-        binder = self.bind_header % self.port_id
+        self.address = binder = self.bind_header % self.port_id
         self.socket.bind(binder)
 
     def connect_socket(self):
-        connection = self.connect_header + str(self.port_id)
+        self.address = connection = self.connect_header + str(self.port_id)
         self.socket.connect(connection)
 
     def send_array(self, array, flags=0, copy=True, track=False):
@@ -217,3 +218,17 @@ class RenaTCPClient:
 #
 #     def update_renaserverinterface_processor(self, RENATCPObject: RenaTCPObject):
 #         self.dsp_processors = RENATCPObject.processor_dict
+
+
+def test_port_range(start_port, end_port):
+    for port in range(start_port, end_port + 1):
+        try:
+            client = RenaTCPInterface(stream_name='test stream', port_id=port, identity='client', pattern='router-dealer')
+            print(f"test_port_range: client connected to {client.address}")
+            server = RenaTCPInterface(stream_name='test stream', port_id=port, identity='server', pattern='router-dealer')
+            print(f"test_port_range: client connected to {server.address}")
+            del client, server
+            return port
+        except zmq.error.ZMQError:
+            pass
+    return None

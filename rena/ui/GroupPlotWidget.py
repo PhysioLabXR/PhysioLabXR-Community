@@ -1,10 +1,10 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic, QtCore
 from scipy import signal
 
 from rena import config
+from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import PlotFormat
 from rena.presets.PlotConfig import ImageFormat, ChannelFormat
 from rena.presets.presets_utils import get_stream_preset_info, get_is_group_shown, \
@@ -12,9 +12,10 @@ from rena.presets.presets_utils import get_stream_preset_info, get_is_group_show
     is_group_image_only, get_bar_chart_max_min_range, get_selected_plot_format, get_selected_plot_format_index, \
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
-    get_spectrogram_percentile_level_min
-from rena.utils.ui_utils import get_distinct_colors, \
-    convert_rgb_to_qt_image, convert_array_to_qt_heatmap
+    get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, \
+    get_group_channel_indices_start_end, get_is_channels_show
+from rena.utils.image_utils import process_image
+from rena.utils.ui_utils import get_distinct_colors
 
 
 class GroupPlotWidget(QtWidgets.QWidget):
@@ -25,7 +26,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.parent = parent
-        self.ui = uic.loadUi("ui/GroupPlotWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_GroupPlotWidget, self)
         self.update_group_name(group_name)
 
         self.stream_name = stream_name
@@ -44,6 +45,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.legends = None
         self.spectrogram_widget = None
         self.spectrogram_img = None
+
+        self.is_auto_level_image = False
 
         if not is_group_image_only(self.stream_name, group_name):  # a stream will be image only only when it has too many channels
             self.init_line_chart()
@@ -66,8 +69,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.plot_tabs.currentChanged.connect(self.plot_tab_changed)
 
         self.group_option_button.clicked.connect(lambda: self.parent.group_plot_widget_edit_option_clicked(self.group_name))
-    # def update_image_info(self, new_image_info):
-    #     self.this_group_info['image'] = new_image_info
+
 
     @QtCore.pyqtSlot(dict)
     def plot_format_tab_changed(self, info_dict):
@@ -93,7 +95,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.linechart_widget.setXRange(0, get_stream_preset_info(self.stream_name, 'display_duration'))
 
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
-        is_channels_shown = get_is_group_shown(self.stream_name, self.group_name)
+        is_channels_shown = get_is_channels_show(self.stream_name, self.group_name)
 
         distinct_colors = get_distinct_colors(len(channel_indices))
         self.legends = self.linechart_widget.addLegend()
@@ -116,11 +118,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.image_layout.addWidget(self.plot_widget)
         self.plot_widget.enableAutoRange(enable=False)
         self.image_item = pg.ImageItem()
-        self.plot_widget.addItem(self.image_item)
 
-        # self.image_label = QLabel('Image_Label')
-        # self.image_label.setAlignment(QtCore.Qt.AlignCenter)
-        # self.image_layout.addWidget(self.image_label)
+        self.set_image_levels()
+        self.set_image_cmap()
+        self.plot_widget.addItem(self.image_item)
 
     def init_spectrogram(self):
         self.spectrogram_widget = pg.PlotWidget()
@@ -130,7 +131,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget.setXRange(0, 1)
         self.spectrogram_widget.setLabel('left', 'Frequency', units='Hz')
         self.spectrogram_widget.setLabel('bottom', 'Time', units='s')
-        # self.spectrogram_widget.setLogMode(False, True)
         self.spectrogram_widget.showGrid(x=True, y=True, alpha=0.5)
         self.spectrogram_widget.enableAutoRange(enable=False)
 
@@ -190,11 +190,6 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.viz_time_vector = self.get_viz_time_vector()
         if selected_plot_format == 0:  # linechart
 
-            # for index_in_group, channel_index in enumerate(channel_indices):
-            #     plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
-            #     if plot_data_item.isVisible():
-            #         plot_data_item.setData(self.viz_time_vector, data[int(channel_index), :])
-
             time_vector = np.linspace(0., duration, data.shape[1])
             for index_in_group, channel_index in enumerate(channel_indices):
                 plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
@@ -203,26 +198,32 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            width, height, image_format, channel_format, scaling = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling
+            width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentage
             depth = image_format.depth_dim()
-            image_plot_data = data[channel_indices, -1]  # only visualize the last frame
-            if image_format == ImageFormat.rgb:
+            if channel_indices is None:
+                start_end = get_group_channel_indices_start_end(self.stream_name, self.group_name)
+                image_plot_data = data[start_end[0]:start_end[1], -1]
+            else:
+                image_plot_data = data[channel_indices, -1]  # only visualize the last frame
+            if image_format == ImageFormat.rgb or image_format == ImageFormat.bgr:
                 if channel_format == ChannelFormat.channel_last:
                     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
                 elif channel_format == ChannelFormat.channel_first:
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
-                # image_plot_data = convert_numpy_to_uint8(image_plot_data)
-                # image_plot_data = image_plot_data.astype(np.uint8)
-                # image_plot_data = convert_rgb_to_qt_image(image_plot_data, scaling_factor=scaling)
-
-            # if we chose PixelMap
-            if image_format == ImageFormat.pixelmap:
-                # pixel map return value
+                # it's always channel last when we are done
+                if image_format == ImageFormat.bgr:
+                    image_plot_data = image_plot_data[:, :, ::-1]
+            elif image_format == ImageFormat.pixelmap:
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
-                # image_plot_data = convert_array_to_qt_heatmap(image_plot_data, scaling_factor=scaling)
-            self.image_item.setImage(image_plot_data)
-            # self.image_label.setPixmap(image_plot_data)
+                #image_plot_data = np.rot90(image_plot_data, k=-1) # rotate 90 degree counter-clockwise IndexPen TODO: delete this line when the indexpen is fixed
+
+            if not self.is_auto_level_image:
+                self.image_item.setLevels(get_valid_image_levels(self.stream_name, self.group_name))
+            if scaling_percentile != 100:
+                image_plot_data = process_image(image_plot_data, scale=scaling_percentile/100)
+            self.image_item.setImage(image_plot_data, autoLevels=self.is_auto_level_image)
+
         elif selected_plot_format == 2:
             bar_chart_plot_data = data[channel_indices, -1]  # only visualize the last frame
             self.barchart_widget.plotItem.curves[0].setOpts(x=np.arange(len(bar_chart_plot_data)), height=bar_chart_plot_data, width=1, brush='r')
@@ -272,3 +273,20 @@ class GroupPlotWidget(QtWidgets.QWidget):
     def set_spectrogram_cmap(self):
         lut = get_spectrogram_cmap_lut(self.stream_name, self.group_name)
         self.spectrogram_img.setLookupTable(lut)
+
+    def set_image_cmap(self):
+        lut = get_image_cmap_lut(self.stream_name, self.group_name)
+        self.image_item.setLookupTable(lut)
+
+    def set_image_levels(self, levels=None):
+        """
+        if levels is gotten from outside of this function, it can be passed in
+        """
+        if levels is None:
+            levels = get_valid_image_levels(self.stream_name, self.group_name)
+
+        if levels is None:
+            self.is_auto_level_image = True
+        elif levels is not None:
+            self.is_auto_level_image = False
+

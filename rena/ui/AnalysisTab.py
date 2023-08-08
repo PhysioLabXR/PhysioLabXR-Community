@@ -2,15 +2,16 @@
 import os
 import time
 
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
 import numpy as np
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer
+from PyQt6.QtCore import QTimer
 
 from rena import config
-from rena.utils.data_utils import RNStream
+from rena.configs.configs import AppConfigs
+from rena.utils.RNStream import RNStream
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -21,7 +22,7 @@ class AnalysisTab(QtWidgets.QWidget):
         :rtype: object
         """
         super().__init__()
-        self.ui = uic.loadUi("ui/RecordingsTab.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_RecordingsTab, self)
 
         self.recording_buffer = {}
 

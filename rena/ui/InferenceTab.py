@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QFileDialog
 
 import numpy as np
 
@@ -10,6 +10,8 @@ import numpy as np
 from pylsl import StreamInfo, StreamOutlet
 
 from rena.scripting.PupilTensorflowModel import PupilTensorflowModel
+
+from rena.configs.configs import AppConfigs
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -31,7 +33,7 @@ class InferenceTab(QtWidgets.QWidget):
         :rtype: object
         """
         super().__init__()
-        self.ui = uic.loadUi("ui/InferenceTab.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_InferenceTab, self)
 
         # set file path for real time model.
         self.model_file_path = ''

@@ -1,20 +1,28 @@
+import json
 import os
+import pickle
 import sys
 import threading
 import time
 from abc import ABC, abstractmethod
 from collections import deque
 from pydoc import locate
+from typing import List, Dict
 
 import numpy as np
+import zmq
+from pylsl import StreamOutlet, local_clock
 
-from exceptions.exceptions import RenaError, BadOutputError
-from rena.config import script_fps_counter_buffer_size
+from rena.exceptions.exceptions import BadOutputError, ZMQPortOccupiedError, RenaError
+from rena.presets.PresetEnums import PresetType
+from rena.presets.ScriptPresets import ScriptOutput
+from rena.presets.presets_utils import get_stream_nominal_sampling_rate, get_stream_data_type, get_stream_num_channels
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    SCRIPT_PARAM_CHANGE, ParamChange
+    SCRIPT_PARAM_CHANGE
+from rena.scripting.scripting_enums import ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
-from rena.utils.buffers import get_fps, DataBuffer, check_buffer_timestamps_monotonic
+from rena.utils.buffers import get_fps, DataBuffer
 from rena.utils.lsl_utils import create_lsl_outlet
 from rena.utils.networking_utils import recv_string_router, send_string_router, send_router, recv_data_dict
 
@@ -24,8 +32,8 @@ class RenaScript(ABC, threading.Thread):
     An abstract class for implementing scripting models.
     """
 
-    def __init__(self, inputs, input_shapes, buffer_sizes, outputs, output_num_channels, params: dict, port, run_frequency, time_window,
-                 script_path, is_simulate, *args, **kwargs):
+    def __init__(self, inputs, input_shapes, buffer_sizes, outputs: List[ScriptOutput], params: dict, port, run_frequency, time_window,
+                 script_path, is_simulate, presets, *args, **kwargs):
         """
 
         :param inputs:
@@ -36,22 +44,26 @@ class RenaScript(ABC, threading.Thread):
         super().__init__()
         self.sim_clock = time.time()
         print('RenaScript: RenaScript Thread started on process {0}'.format(os.getpid()))
-        self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                                        port_id=port,
-                                                        identity='server',
-                                                        pattern='router-dealer')
-        self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                                      port_id=port + 1,
-                                                      identity='server',
-                                                      pattern='router-dealer')
-        self.input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
-                                                       port_id=port + 2,
-                                                       identity='server',
-                                                       pattern='router-dealer')
-        self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
-                                                         port_id=port + 3,
-                                                         identity='server',
-                                                         pattern='router-dealer')
+        try:
+            self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
+                                                            port_id=port,
+                                                            identity='server',
+                                                            pattern='router-dealer')
+            self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
+                                                          port_id=port + 1,
+                                                          identity='server',
+                                                          pattern='router-dealer')
+            self.input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
+                                                           port_id=port + 2,
+                                                           identity='server',
+                                                           pattern='router-dealer')
+            self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
+                                                             port_id=port + 3,
+                                                             identity='server',
+                                                             pattern='router-dealer')
+        except zmq.error.ZMQError as e:
+            print("script failed to set up sockets {0}".format(e))
+            return
         print('RenaScript: Waiting for stdout routing ID from main app')
         _, self.stdout_routing_id = recv_string_router(self.stdout_socket_interface, True)
         # send_string_router_dealer(str(os.getpid()), self.stdout_routing_id, self.stdout_socket_interface)
@@ -70,11 +82,19 @@ class RenaScript(ABC, threading.Thread):
         self.inputs = DataBuffer(stream_buffer_sizes=buffer_sizes)
         self.run_frequency = run_frequency
         # set up the outputs
-        self.output_names = outputs
-        self.output_num_channels = dict([(x, n) for x, n in zip(outputs, output_num_channels)])
-        self._output_default = dict([(x, None) for x in outputs])
-        self.output_outlets = dict([(x, create_lsl_outlet(x, n, run_frequency)) for x, n in zip(outputs, output_num_channels)])
+        self.output_presets: Dict[str, ScriptOutput] = {o.stream_name: o for o in outputs}
+        self.output_names = [o.stream_name for o in outputs]
+        self.output_num_channels = {o.stream_name: o.num_channels for o in outputs}
+
+        self._output_default = dict([(x.stream_name, None) for x in outputs])  # default output with None values
         self.outputs = None  # dict holding the output data
+
+        self.output_outlets = {}
+
+        try:
+            self._create_output_streams()
+        except RenaError as e:
+            print('Error setting up output streams: {0}'.format(e))
 
         # set up the parameters
         self.params = params
@@ -83,7 +103,10 @@ class RenaScript(ABC, threading.Thread):
         self.is_simulate = is_simulate
         self.input_shapes = input_shapes
 
-        print('RenaScript: Script init successfully')
+        # set up the presets
+        self.presets = presets
+
+        print('RenaScript: Script init completed')
 
     @abstractmethod
     def init(self):
@@ -148,10 +171,10 @@ class RenaScript(ABC, threading.Thread):
                     change_info, _ = recv_string_router(self.command_socket_interface, is_block=True)
                     _, value = self.command_socket_interface.socket.recv_multipart()  # first element is routing ID
                     change_str, param_name, param_type = change_info.split('|')
-                    param_type = locate(param_type)
                     change = ParamChange(change_str)
                     if change == ParamChange.ADD or change == ParamChange.CHANGE:
-                        self.params[param_name] = np.frombuffer(np.array(value).tobytes(), dtype=param_type)[0]
+                        # self.params[param_name] = np.frombuffer(np.array(value).tobytes(), dtype=param_type)[0]
+                        self.params[param_name] = json.loads(value.decode('utf-8'))
                     else:
                         self.params.pop(param_name)
                     print('RenaScript: param changed')
@@ -159,13 +182,23 @@ class RenaScript(ABC, threading.Thread):
                     print('unknown command: ' + command)
             # send the output if they are updated in the loop
             for stream_name, data in self.outputs.items():
+                if stream_name not in self.output_outlets:
+                    print(f'RenaScript: output stream with name {stream_name} not found')
+                    continue
+                outlet = self.output_outlets[stream_name]
                 if data is not None:
                     try:
                         data, is_chunk = validate_output(data, self.output_num_channels[stream_name])
-                        if is_chunk:
-                            self.output_outlets[stream_name].push_chunk(data)
-                        else:
-                            self.output_outlets[stream_name].push_sample(data)
+                        data = data.astype(self.output_presets[stream_name].data_type.get_data_type())
+                        if isinstance(outlet, StreamOutlet):
+                            if is_chunk: outlet.push_chunk(data.tolist())
+                            else: outlet.push_sample(data.tolist())
+                        else:  # this is a zmq socket
+                            if is_chunk:
+                                for i in range(len(data)):
+                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), np.ascontiguousarray(data[i])])
+                            else:
+                                outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), data])
                     except Exception as e:
                         if type(e) == BadOutputError:
                             print('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
@@ -180,6 +213,16 @@ class RenaScript(ABC, threading.Thread):
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 
     def __del__(self):
+        self.stdout_socket_interface.socket.close()
+        self.input_socket_interface.socket.close()
+        self.info_socket_interface.socket.close()
+        self.command_socket_interface.socket.close()
+        for outlet in self.output_outlets.values():
+            if isinstance(outlet, StreamOutlet):
+                del outlet
+            else:
+                outlet.close()
+        self.command_socket_interface.context.term()
         sys.stdout = sys.__stdout__  # return control to regular stdout
 
     def update_input_buffer(self, data_dict):
@@ -200,6 +243,33 @@ class RenaScript(ABC, threading.Thread):
         #         self.inputs[key] = data_timestamps[0]
         #         self.inputs_timestamps[key] = data_timestamps[1]
 
+    def get_stream_info(self, stream_name, info):
+        """
+        info can be
+        @param stream_name:
+        @param info: str, can be one of the following  NominalSamplingRate, ChannelNames, DataType
+        @return:
+        """
+        assert info in ['NominalSamplingRate', 'ChannelNames', 'DataType'], f'Unknown info type {info}'
+        if info == 'NominalSamplingRate':
+            return self.presets.stream_presets[stream_name].nominal_sampling_rate
+        elif info == 'ChannelNames':
+            return self.presets.stream_presets[stream_name].channel_names
+        elif info == 'DataType':
+            return self.presets.stream_presets[stream_name].data_type
+
+    def _create_output_streams(self):
+        for stream_name, o_preset in self.output_presets.items():
+            if o_preset.interface_type == PresetType.LSL:
+                self.output_outlets[stream_name] = create_lsl_outlet(stream_name, o_preset.num_channels, self.run_frequency, o_preset.data_type.get_lsl_type())
+            elif o_preset.interface_type == PresetType.ZMQ:
+                socket = self.command_socket_interface.context.socket(zmq.PUB)
+                try:
+                    socket.bind("tcp://*:%s" % o_preset.port_number)
+                except zmq.error.ZMQError:
+                    print('Error when binding to port {0} for stream {1}'.format(o_preset.port_number, stream_name))
+                    raise ZMQPortOccupiedError(o_preset.port_number)
+                self.output_outlets[stream_name] = socket
 
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):

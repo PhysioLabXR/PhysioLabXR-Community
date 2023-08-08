@@ -1,96 +1,33 @@
+import copy
 import json
 import multiprocessing
 import os
 from dataclasses import dataclass, field
 from enum import Enum
+from multiprocessing import Process
 from typing import Dict, Any, List, Union
 
 import numpy as np
-from PyQt5.QtCore import QStandardPaths
 
 from rena import config
-from rena.config import app_data_name, default_group_name
+from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
+from rena.presets.ScriptPresets import ScriptPreset, ScriptParam
 from rena.presets.preset_class_helpers import SubPreset
-from rena.utils.ConfigPresetUtils import save_local, reload_enums
+from rena.ui.SplashScreen import SplashLoadingTextNotifier
+from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
+from rena.utils.dsp_utils.dsp_modules import DataProcessor
 from rena.utils.fs_utils import get_file_changes_multiple_dir
 from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
-class DataType(Enum):
-    """
-    Data types supported by RenaLabApp.
-    Calling the enum with a value will return the same value of the  corresponding numpy data type.
-    Use the class method get_data_type to get actual data type.
-    """
-    uint8 = "uint8"
-    uint16 = "uint16"
-    uint32 = "uint32"
-    uint64 = "uint64"
-    int8 = "int8"
-    int16 = "int16"
-    int32 = "int32"
-    int64 = "int64"
-    float16 = "float16"
-    float32 = "float32"
-    float64 = "float64"
-
-    def __call__(self, *args, **kwargs):
-        return self.get_data_type()(args[0])
-
-    def get_data_type(self):
-        if self == DataType.uint8:
-            return np.uint8
-        elif self == DataType.uint16:
-            return np.uint16
-        elif self == DataType.uint32:
-            return np.uint32
-        elif self == DataType.uint64:
-            return np.uint64
-        elif self == DataType.int8:
-            return np.int8
-        elif self == DataType.int16:
-            return np.int16
-        elif self == DataType.int32:
-            return np.int32
-        elif self == DataType.int64:
-            return np.int64
-        elif self == DataType.float16:
-            return np.float16
-        elif self == DataType.float32:
-            return np.float32
-        elif self == DataType.float64:
-            return np.float64
-
-
-class PresetType(Enum):
-    WEBCAM = 'WEBCAM'
-    MONITOR = 'MONITOR'
-    LSL = 'LSL'
-    ZMQ = 'ZMQ'
-    DEVICE = 'DEVICE'
-    EXPERIMENT = 'EXPERIMENT'
-
-
-class VideoDeviceChannelOrder(Enum):
-    RGB = 0
-    BGR = 1
-
-# class VideoDeviceTypeEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, Enum):
-#             return obj.value
-#         return json.JSONEncoder.default(self, obj)
-
-
-# class PresetsEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, StreamPreset) or isinstance(obj, PlotConfigs) or isinstance(obj, VideoPreset):
-#             return obj.to_dict()
-#         return super().default(obj)
+def is_monotonically_increasing(lst):
+    differences = np.diff(np.array(lst))
+    return np.all(differences >= 0)
 
 class PresetsEncoder(json.JSONEncoder):
     """
@@ -103,13 +40,31 @@ class PresetsEncoder(json.JSONEncoder):
     """
 
     def default(self, o):
+        # if dataclasses.is_dataclass(o):
+        #     attri_names = list(vars(o).keys())
+        #     for key in attri_names:
+        #         if key.startswith('_'):
+        #             o.__delattr__(key)
+        if isinstance(o, Process):
+            return None
         if isinstance(o, Enum):
             return o.name
+        if isinstance(o, DataProcessor):
+            return o.serialize_data_processor_params()
         if o.__class__.__class__ is SubPreset:
-            return o.__dict__
+            rtn = copy.copy(o.__dict__)
+            if isinstance(o, StreamPreset):
+                if not o.can_edit_channel_names:  # will not serialize channel names if it is not editable
+                    rtn['channel_names'] = None
+            if isinstance(o, GroupEntry):
+                if o._is_image_only:
+                    if o.channel_indices is not None:
+                        assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
+                        rtn['channel_indices_start_end'] = min(o.channel_indices), max(o.channel_indices) + 1
+                    rtn['channel_indices'] = None
+                    rtn['is_channels_shown'] = None
+            return rtn
         return super().default(o)
-
-
 
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
@@ -136,7 +91,6 @@ class StreamPreset(metaclass=SubPreset):
         is obtained by which folder the preset file is in (i.e., LSLPresets, ZMQPresets, or DevicePresets under the Presets folder)
     """
     stream_name: str
-    channel_names: List[str]
 
     num_channels: int
 
@@ -144,10 +98,13 @@ class StreamPreset(metaclass=SubPreset):
     device_info: dict
     preset_type: PresetType
 
+    channel_names: List[str] = None
     data_type: DataType = DataType.float32
     port_number: int = None
     display_duration: float = None
     nominal_sampling_rate: int = 10
+
+    can_edit_channel_names: bool = True
 
     def __post_init__(self):
         """
@@ -155,6 +112,13 @@ class StreamPreset(metaclass=SubPreset):
         Note any attributes loaded from the config will need to be loaded into the class's attribute here
         @return:
         """
+        if self.channel_names is None:  # channel names can be none when the number of channels is too big
+            self.channel_names = ['c {0}'.format(i) for i in range(self.num_channels)]
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
+        if self.num_channels > config.MAX_TS_CHANNEL_NUM:
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
         if self.display_duration is None:
             self.display_duration = float(config.settings.value('viz_display_duration'))
         for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
@@ -202,15 +166,38 @@ class VideoPreset(metaclass=SubPreset):
         reload_enums(self)
 
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class FMRIPreset(metaclass=SubPreset):
+
+    stream_name: str
+    preset_type: PresetType
+    data_type: DataType
+    num_channels: int
+    data_shape: tuple[int, int, int]
+    normalize: bool
+    alignment: bool
+    threshold: float
+    nominal_sampling_rate: int = 2
+    mri_file_path: str = None
+
+    def __post_init__(self):
+        """
+        VideoPreset's post init function.
+        @return:
+        """
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
+
+
 def _load_stream_presets(presets, dirty_presets):
     for category, dirty_preset_paths in dirty_presets.items():
         for dirty_preset_path in dirty_preset_paths:
             loaded_preset_dict = json.load(open(dirty_preset_path))
 
-            if category == 'LSL' or category == 'ZMQ' or category == 'Device':
+            if category == PresetType.LSL.value or category == PresetType.ZMQ.value or category == PresetType.CUSTOM.value:
                 stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
                 presets.add_stream_preset(stream_preset_dict)
-            elif category == 'Experiment':
+            elif category == PresetType.EXPERIMENT.value:
                 presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
             else:
                 raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
@@ -220,19 +207,58 @@ def preprocess_stream_preset(stream_preset_dict, category):
 
     """
     stream_preset_dict = validate_preset_json_preset(stream_preset_dict)
-    stream_preset_dict['preset_type'] = PresetType[category.upper()]
+    if type(category) == str:
+        preset_type = PresetType[category.upper()]
+    elif type(category) == PresetType:
+        preset_type = category
+    else:
+        raise ValueError(f'unknown category {category} for preset {stream_preset_dict} with type {type(category)}')
+    stream_preset_dict['preset_type'] = preset_type
     stream_preset_dict = process_plot_group_json_preset(stream_preset_dict)
     return stream_preset_dict
 
 
-def _load_video_device_presets(presets):
-    print('Loading available cameras')
-    _, working_camera_ports, _ = get_working_camera_ports()
-    working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
+def _load_video_device_presets():
+    try:
+        print('Loading available cameras')
+        rtn = []
+        _, working_camera_ports, _ = get_working_camera_ports()
+        working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
 
-    for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
-        presets.add_video_preset(camera_stream_name, PresetType.WEBCAM, camera_id)
-    presets.add_video_preset('monitor 0', PresetType.MONITOR, 0)
+        for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
+            rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
+        print("finished loading available cameras")
+        return rtn
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt: exiting')
+        return []
+
+def _load_param_presets_recursive(param_preset_dict):
+    rtn = []
+    if isinstance(param_preset_dict, list):
+        for param_preset in param_preset_dict:
+            rtn.append(_load_param_presets_recursive(param_preset))
+    elif isinstance(param_preset_dict, dict):
+        if isinstance(param_preset_dict['value'], list):
+            param_preset_dict['value'] = _load_param_presets_recursive(param_preset_dict['value'])
+            return ScriptParam(**param_preset_dict)
+        else:
+            return ScriptParam(**param_preset_dict)
+    return rtn
+
+def save_presets_locally(app_data_path, preset_dict, file_name) -> None:
+    """
+    sync the presets to the local disk. This will create a Presets.json file in the app data folder if it doesn't exist.
+    applies file lock while the json is being dumped. This will block another other process from accessing the file without
+    raising an exception.
+    """
+    if not os.path.exists(app_data_path):
+        os.makedirs(app_data_path)
+    path = os.path.join(app_data_path, file_name)
+    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
+    with open(path, 'w') as f:
+        f.write(json_data)
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class Presets(metaclass=Singleton):
@@ -244,6 +270,8 @@ class Presets(metaclass=Singleton):
         experiment_presets: dictionary containing all the experiment presets. The key is the experiment name and the value is a list of stream names
 
         _reset: if true, reload the presets. This is done in post_init by removing files at _last_mod_time_path and _preset_path.
+
+    Note: presets must not have multiprocessing.Process in the dataclass attributes. This will cause the program to crash.
     """
     _preset_root: str = None
     _reset: bool = False
@@ -253,7 +281,8 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, Union[StreamPreset, VideoPreset]] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset, FMRIPreset]] = field(default_factory=dict)
+    script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
     _app_data_path: str = AppConfigs().app_data_path
@@ -269,8 +298,11 @@ class Presets(metaclass=Singleton):
         4. check if any presets are dirty and load them
         5. save the presets to the local disk
         """
+        pass
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing Presets')
+        else:
+            print(f"Preset root is set to {self._preset_root}, is exists {os.path.exists(self._preset_root)}")
         if self._reset:
             if os.path.exists(self._last_mod_time_path):
                 os.remove(self._last_mod_time_path)
@@ -284,27 +316,35 @@ class Presets(metaclass=Singleton):
         self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
 
         if os.path.exists(self._preset_path):
-            print(f'Reloading presets from {self._app_data_path}')
+            SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
-                for key, value in preset_dict['stream_presets'].items():
-                    if value['preset_type'] == 'LSL' or value['preset_type'] == 'ZMQ' or value['preset_type'] == 'Device':
-                        preset = StreamPreset(**value)
-                    elif value['preset_type'] == 'WEBCAM' or value['preset_type'] == 'MONITOR':
-                        preset = VideoPreset(**value)
-                    preset_dict['stream_presets'][key] = preset
-
-                # for key, value in preset_dict['video_presets'].items():
-                #     preset = VideoPreset(**value)
-                #     preset_dict['video_presets'][key] = preset
+                preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
+                if 'stream_presets' in preset_dict.keys():
+                    for key, value in preset_dict['stream_presets'].items():
+                        if PresetType.is_lsl_zmq_custom_preset(value['preset_type']):
+                            preset = StreamPreset(**value)
+                            preset_dict['stream_presets'][key] = preset
+                        # elif PresetType.is_video_preset(value['preset_type']):  # video presets won't be loaded
+                        #     preset = VideoPreset(**value)
+                        #     preset_dict['stream_presets'][key] = preset
+                    preset_dict['stream_presets'] = {k: v for k, v in preset_dict['stream_presets'].items() if isinstance(v, (StreamPreset, VideoPreset))}
+                if 'script_presets' in preset_dict.keys():
+                    for key, value in preset_dict['script_presets'].items():
+                        try:
+                            value['param_presets'] = [_load_param_presets_recursive(param_preset) for param_preset in value['param_presets']]
+                            preset = ScriptPreset(**value)
+                            preset_dict['script_presets'][key] = preset
+                        except (TypeError, KeyError):
+                            print(f'Script with key {key} will not be loaded, because the script preset attributes was changed during the last update')
+                    preset_dict['script_presets'] = {k: v for k, v in preset_dict['script_presets'].items() if isinstance(v, ScriptPreset)}
                 self.__dict__.update(preset_dict)
         dirty_presets = self._record_presets_last_modified_times()
 
         _load_stream_presets(self, dirty_presets)
-        _load_video_device_presets(self)
-
-        self.save(is_async=True)
-        print("Presets instance successfully initialized")
+        SplashLoadingTextNotifier().set_loading_text('Loading video devices...You may notice webcam flashing.')
+        self.save(is_async=False)
+        SplashLoadingTextNotifier().set_loading_text("Presets instance successfully initialized")
 
     def _get_all_presets(self):
         """
@@ -324,8 +364,11 @@ class Presets(metaclass=Singleton):
         else:  # if the last_mod_times.json doesn't exist, then all the presets are dirty
             last_mod_times = {}  # passing empty last_mod_times to the get_file_changes_multiple_dir function will return all the files
 
-        dirty_presets = {'LSL': None, 'ZMQ': None, 'Device': None, 'Experiment': None}
-        (dirty_presets['LSL'], dirty_presets['ZMQ'], dirty_presets['Device'], dirty_presets['Experiment']), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
+        dirty_presets = {PresetType.LSL.value: None, PresetType.ZMQ.value: None, PresetType.CUSTOM.value: None, PresetType.EXPERIMENT.value: None}
+
+        (dirty_presets[PresetType.LSL.value], dirty_presets[PresetType.ZMQ.value], dirty_presets[
+            PresetType.CUSTOM.value], dirty_presets[
+             PresetType.EXPERIMENT.value]), current_mod_times = get_file_changes_multiple_dir(self._preset_roots, last_mod_times)
         if not os.path.exists(self._app_data_path):
             os.makedirs(self._app_data_path)
         with open(self._last_mod_time_path, 'w') as f:
@@ -337,8 +380,10 @@ class Presets(metaclass=Singleton):
         """
         save the presets to the local disk when the application is closed
         """
-        save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
+        save_presets_locally(self._app_data_path, self.__dict__, 'Presets.json')
         print(f"Presets instance successfully deleted with its contents saved to {self._app_data_path}")
+        # if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
+        #     self._load_video_device_process.terminate()
 
     def add_stream_preset(self, stream_preset_dict: Dict[str, Any]):
         """
@@ -358,9 +403,18 @@ class Presets(metaclass=Singleton):
         stream_preset = StreamPreset(**stream_preset_dict)
         self.stream_presets[stream_preset.stream_name] = stream_preset
 
-    def add_video_preset(self, stream_name, video_type, video_id):
+    def add_video_preset_by_fields(self, stream_name, video_type, video_id):
         video_preset = VideoPreset(stream_name, video_type, video_id)
         self.stream_presets[video_preset.stream_name] = video_preset
+
+    def add_video_presets(self, video_presets: List[VideoPreset]):
+        """
+        add a list of video presets to the presets
+        :param video_presets: list of video presets
+        :return: None
+        """
+        for video_preset in video_presets:
+            self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """
@@ -376,11 +430,13 @@ class Presets(metaclass=Singleton):
         save the presets to the local disk asynchronously.
         @return: None
         """
-        if is_async:
-            p = multiprocessing.Process(target=save_local, args=(self._app_data_path, self.__dict__, 'Presets.json', PresetsEncoder))
-            p.start()
-        else:
-            save_local(self._app_data_path, self.__dict__, 'Presets.json', encoder=PresetsEncoder)
+
+        # if is_async:
+        #     self_dict = copy.deepcopy(self.__dict__)
+        #     p = multiprocessing.Process(target=save_presets_locally, args=(self._app_data_path, self_dict, 'Presets.json'))
+        #     p.start()
+        # else:
+        save_presets_locally(self._app_data_path, self.__dict__, 'Presets.json')
 
     def __getitem__(self, key):
         return self._get_all_presets()[key]
@@ -388,4 +444,34 @@ class Presets(metaclass=Singleton):
     def keys(self):
         return self._get_all_presets().keys()
 
+    def reload_stream_presets(self):
+        """
+        This function will remove the json file in AppData containing the last modified times of the presets located
+        in the preset_roots. It then calls _load_stream_presets to reload the stream presets, and without the last modified
+        times, all the stream presets will be reloaded.
+        """
+        if os.path.exists(self._last_mod_time_path):
+            os.remove(self._last_mod_time_path)
+        dirty_presets = self._record_presets_last_modified_times()
+        _load_stream_presets(self, dirty_presets)
+        self.save(is_async=True)
 
+    # def reload_video_presets(self):
+    #     """
+    #     this function will start a separate process look for video devices.
+    #     an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
+    #     rtn is the return of the process Presets()._load_video_device_process.
+    #
+    #
+    #     """
+    #     self.add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+    #     _load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
+    #     _load_video_device_process.start()
+    #     return _load_video_device_process
+
+    def remove_video_presets(self):
+        """
+        remove all the video presets
+        :return: None
+        """
+        self.stream_presets = {stream_name: stream_preset for stream_name, stream_preset in self.stream_presets.items() if not stream_preset.preset_type.is_self_video_preset()}

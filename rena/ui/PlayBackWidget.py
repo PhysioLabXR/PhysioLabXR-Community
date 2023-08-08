@@ -1,19 +1,16 @@
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSignal, QTimer
-import pyqtgraph as pg
-from PyQt5.QtWidgets import QLabel
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer, QThread
 
-from rena import config
+from rena.configs.configs import AppConfigs
 from rena.threadings.workers import PlaybackWorker
-from rena.ui_shared import start_stream_icon, stop_stream_icon, pause_icon, terminate_icon
 
 
 class PlayBackWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, command_info_interface):
         super().__init__()
-        self.ui = uic.loadUi("ui/PlayBackWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_PlayBackWidget, self)
         self.parent = parent
         self.command_info_interface = command_info_interface
         self.slider_pressed_position = None
@@ -31,10 +28,10 @@ class PlayBackWidget(QtWidgets.QWidget):
         # create worker listening the playback position from the server
         # Initialize playback worker
         self.playback_command_interface_timer = QTimer()
-        self.playback_command_interface_timer.setInterval(int(float(config.settings.value('visualization_refresh_interval'))))
+        self.playback_command_interface_timer.setInterval(int(float(AppConfigs().visualization_refresh_interval)))
         self.playback_command_interface_timer.timeout.connect(self.ticks)
 
-        self.playback_thread = pg.QtCore.QThread(self.parent)
+        self.playback_thread = QThread(self.parent)
         self.playback_worker = PlaybackWorker(self.command_info_interface)
         self.playback_worker.moveToThread(self.playback_thread)
         self.playback_worker.replay_progress_signal.connect(self.update_playback_position)
@@ -47,8 +44,8 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def start_replay(self, start_time, end_time, total_time, virtual_clock_offset):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = start_time, end_time, total_time, virtual_clock_offset
-        self.playPauseButton.setIcon(pause_icon)
-        self.stopButton.setIcon(terminate_icon)
+        self.playPauseButton.setIcon(AppConfigs()._icon_pause)
+        self.stopButton.setIcon(AppConfigs()._icon_terminate)
         self.playPauseButton.setEnabled(True)
         self.playback_worker.start_run()
         self.playback_command_interface_timer.start()  # timer should stop when the replay is paused, over, or stopped
@@ -78,13 +75,15 @@ class PlayBackWidget(QtWidgets.QWidget):
         Replay will initiate or terminate depending on the `is_replaying` status of ReplayTab (parent).
         """
         if self.parent.is_replaying:
-            self.issue_stop_command()
-            self.stopButton.setIcon(start_stream_icon)
-            self.playPauseButton.setEnabled(False)
+            self.parent.start_stop_replay_btn_pressed()
+            if not self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_start)
+                self.playPauseButton.setEnabled(False)
         else:
             self.parent.start_stop_replay_btn_pressed()
-            self.stopButton.setIcon(terminate_icon)
-            self.playPauseButton.setEnabled(True)
+            if self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_terminate)
+                self.playPauseButton.setEnabled(True)
             # self.stopButton.setIcon(stop_stream_icon)
 
     def ticks(self):
@@ -95,14 +94,14 @@ class PlayBackWidget(QtWidgets.QWidget):
         called when pause command is executed.
         add any playback widget specific clean up steps here when replay is paused.
         '''
-        self.playPauseButton.setIcon(start_stream_icon)
+        self.playPauseButton.setIcon(AppConfigs()._icon_start)
 
     def resume_replay(self):
         '''
         called when resume command is executed.
         add any playback widget specific set-up steps here when replay is resumed.
         '''
-        self.playPauseButton.setIcon(pause_icon)
+        self.playPauseButton.setIcon(AppConfigs()._icon_pause)
 
     def slider_pressed(self):
         """
@@ -156,9 +155,9 @@ class PlayBackWidget(QtWidgets.QWidget):
         self.currentTimestamplabel.setText('')
         self.timeSinceStartedLabel.setText('')
         self.percentageReplayedLabel.setText('')
-        self.stopButton.setIcon(start_stream_icon)
+        self.stopButton.setIcon(AppConfigs()._icon_start)
         self.playPauseButton.setEnabled(False)
-        self.playPauseButton.setIcon(pause_icon)
+        self.playPauseButton.setIcon(AppConfigs()._icon_pause)
 
     def issue_play_pause_command(self):
         # prevent is_paused status from changing when the replay is not running
@@ -173,3 +172,22 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def issue_slider_moved_command(self, command):
         self.playback_worker.queue_slider_moved_command(command)
+
+    def try_close(self):
+        # Initialize playback worker
+        # print("PlayBackWidget: stopping timer")
+        self.playback_command_interface_timer.stop()
+        # print("PlayBackWidget: timer stopped, requesting interruption to playback thread")
+        self.playback_thread.requestInterruption()
+        # print("PlayBackWidget: interruption requested, exiting playback thread")
+        self.playback_thread.exit()
+        # print("PlayBackWidget: playback thread exited, waiting for playback thread to finish")
+        self.playback_thread.wait(2000)
+        # terminate the thread if it is still running
+        # if self.playback_thread.isRunning():
+        #     print("PlayBackWidget: playback thread is still running, terminating playback thread")
+        #     self.playback_thread.terminate()
+        #     print("PlayBackWidget: playback thread terminated")
+        # print("PlayBackWidget: playback thread finished, deleting playback widget")
+        self.deleteLater()
+        # print("PlaybackWidget try close finished")

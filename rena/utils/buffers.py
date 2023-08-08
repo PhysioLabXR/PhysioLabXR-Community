@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from exceptions.exceptions import ChannelMismatchError
+from rena.exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
 from rena.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -23,12 +23,12 @@ def get_fps(queue):
         return 0
 
 
-def create_lsl_interface(lsl_name, channel_names):
+def create_lsl_interface(lsl_name, num_channels):
     # try:
     #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
     # except AttributeError:
     #     raise AssertionError('Unable to find LSL Stream in LAN.')
-    interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
+    interface = LSLInletInterface.LSLInletInterface(lsl_name, num_channels)
     return interface
 
 
@@ -104,7 +104,7 @@ class DataBuffer():
     def _update_buffer(self, stream_name, frames, timestamps):
 
         if stream_name not in self.buffer.keys():
-            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0)),
+            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0), dtype=frames.dtype),
                                       np.empty(shape=(0,))]  # data first, timestamps second
         buffered_data = self.buffer[stream_name][0]
         buffered_timestamps = self.buffer[stream_name][1]
@@ -114,7 +114,7 @@ class DataBuffer():
 
         if stream_name in self.stream_name_buffer_sizes.keys():  # keep only the latest data according to the buffer size
             buffer_time_points = self.buffer[stream_name][0].shape[-1]
-            cut_to = -np.min([buffer_time_points, self.stream_name_buffer_sizes[stream_name]])
+            cut_to = int(-np.min([buffer_time_points, self.stream_name_buffer_sizes[stream_name]]))
             self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to:]
             self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to:]
 
@@ -145,6 +145,33 @@ class DataBuffer():
         """
         for stream_name in self.buffer.keys():
             self.clear_stream_buffer_data(stream_name)
+
+    def clear_stream_up_to(self, stream_name, timestamp):
+        """
+        The resulting timestamp is guaranteed to be greater than the given cut-to timestamp
+        :param timestamp:
+        :return:
+        """
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        if timestamp < np.min(self.buffer[stream_name][1]):
+            return
+        elif timestamp >= np.max(self.buffer[stream_name][1]):
+            self.clear_stream_buffer_data(stream_name)
+        else:
+            cut_to_index = np.argmax([self.buffer[stream_name][1] > timestamp])
+            self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+            self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
+
+    def clear_stream_up_to_index(self, stream_name, cut_to_index):
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+        self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
 
     def clear_up_to(self, timestamp, ignores=()):
         """

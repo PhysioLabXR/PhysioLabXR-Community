@@ -1,5 +1,6 @@
-from PyQt5 import QtWidgets, uic
+from PyQt6 import QtWidgets, uic
 
+from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import set_stream_preset_info
 
 
@@ -11,7 +12,7 @@ class CustomPropertyWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.parent = parent
-        self.ui = uic.loadUi("ui/CustomPropertyWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_CustomPropertyWidget, self)
 
         self.stream_name = stream_name
 

@@ -4,17 +4,16 @@ from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QTimer
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QTimer
 
 import rena.threadings.ScreenCaptureWorker
 import rena.threadings.WebcamWorker
 from rena.config import settings
+from rena.configs.configs import AppConfigs
 from rena.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.VideoDeviceOptions import VideoDeviceOptions
-from rena.ui_shared import remove_stream_icon, \
-    options_icon
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -28,7 +27,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         @param insert_position:
         """
         super().__init__(video_device_name, parent_widget, parent_layout, self.remove_video_device)
-        self.ui = uic.loadUi("ui/VideoDeviceWidget.ui", self)
+        self.ui = uic.loadUi(AppConfigs()._ui_VideoDeviceWidget, self)
         self.set_pop_button(self.PopWindowBtn)
 
         if type(insert_position) == int:
@@ -45,11 +44,11 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
         self.video_device_long_name = ('Webcam ' if self.is_webcam else 'Screen Capture ') + str(video_device_name)
         # Connect UIs ##########################################
         self.RemoveVideoBtn.clicked.connect(self.remove_video_device)
-        self.OptionsBtn.setIcon(options_icon)
-        self.RemoveVideoBtn.setIcon(remove_stream_icon)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveVideoBtn.setIcon(AppConfigs()._icon_remove_stream)
 
         # FPS counter``
-        self.tick_times = deque(maxlen=10 * settings.value('video_device_refresh_interval'))
+        self.tick_times = deque(maxlen=10 * AppConfigs().video_device_refresh_interval)
 
         # image label
         self.plot_widget = pg.PlotWidget()
@@ -76,7 +75,7 @@ class VideoDeviceWidget(Poppable, QtWidgets.QWidget):
 
         # define timer ##########################################
         self.timer = QTimer()
-        self.timer.setInterval(settings.value('video_device_refresh_interval'))
+        self.timer.setInterval(AppConfigs().video_device_refresh_interval)
         self.timer.timeout.connect(self.ticks)
 
         self.worker_thread.start()

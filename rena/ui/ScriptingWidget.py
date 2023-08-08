@@ -1,39 +1,50 @@
 # This Python file uses the following encoding: utf-8
+import json
+import os
 import uuid
+from typing import List
 
 import numpy as np
-from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QThread, QTimer
-from PyQt5.QtGui import QIntValidator
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtCore import QThread, QTimer
+from PyQt6.QtGui import QIntValidator
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QLayout
 
-from exceptions.exceptions import RenaError, MissingPresetError
-from rena.config import STOP_PROCESS_KILL_TIMEOUT
-from rena.shared import SCRIPT_STOP_SUCCESS, rena_base_script, ParamChange, SCRIPT_PARAM_CHANGE
+from rena.configs.GlobalSignals import GlobalSignals
+from rena.configs.configs import AppConfigs
+from rena.exceptions.exceptions import MissingPresetError, UnsupportedLSLDataTypeError, RenaError
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
+from rena.presets.PresetEnums import DataType, PresetType
+from rena.presets.Presets import Presets
+from rena.presets.ScriptPresets import ScriptPreset, ScriptOutput
+from rena.scripting.RenaScript import RenaScript
+from rena.scripting.script_utils import start_rena_script, get_target_class_name
+from rena.scripting.scripting_enums import ParamChange, ParamType
+from rena.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
 from rena.ui.ScriptingOutputWidget import ScriptingOutputWidget
-from rena.ui.ScriptingParamWidget import ScriptingParamWidget
-from rena.ui_shared import add_icon, minus_icon, script_realtime_info_text
+from rena.ui.ParamWidget import ParamWidget
+from rena.ui_shared import script_realtime_info_text
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.buffers import DataBuffer, click_on_file
 from rena.utils.networking_utils import send_data_dict
-from rena.scripting.script_utils import *
 from rena.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
-    get_experiment_preset_names, get_stream_preset_info, check_preset_exists
+    get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
-    another_window, update_presets_to_combobox
+    another_window, update_presets_to_combobox, validate_script_path
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
-    def __init__(self, parent_widget: QtWidgets, port, args):
-        super().__init__('Rena Script', parent_widget, parent_widget.layout(), self.remove_script_clicked)
-        self.ui = uic.loadUi("ui/ScriptingWidget.ui", self)
+    def __init__(self, parent_widget: QtWidgets, main_window, port, script_preset: ScriptPreset, layout: QLayout):
+        super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
+        self.ui = uic.loadUi(AppConfigs()._ui_ScriptingWidget, self)
         self.set_pop_button(self.PopWindowBtn)
 
         self.parent = parent_widget
@@ -42,23 +53,24 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.input_widgets = []
         self.output_widgets = []
         self.param_widgets = []
+        self.main_window = main_window
 
         # add all presents to camera
         add_presets_to_combobox(self.inputComboBox)
 
         # set up the add buttons
         self.removeBtn.clicked.connect(self.remove_script_clicked)
-        self.addInputBtn.setIcon(add_icon)
+        self.addInputBtn.setIcon(AppConfigs()._icon_add)
         self.addInputBtn.clicked.connect(self.add_input_clicked)
         self.inputComboBox.lineEdit().textChanged.connect(self.on_input_combobox_changed)
         self.inputComboBox.lineEdit().returnPressed.connect(self.addInputBtn.click)
 
-        self.addOutput_btn.setIcon(add_icon)
+        self.addOutput_btn.setIcon(AppConfigs()._icon_add)
         self.addOutput_btn.clicked.connect(self.add_output_clicked)
         self.output_lineEdit.textChanged.connect(self.on_output_lineEdit_changed)
         self.output_lineEdit.returnPressed.connect(self.addOutput_btn.click)
 
-        self.addParam_btn.setIcon(add_icon)
+        self.addParam_btn.setIcon(AppConfigs()._icon_add)
         self.addParam_btn.clicked.connect(self.add_params_clicked)
         self.param_lineEdit.textChanged.connect(self.check_can_add_param)
         self.param_lineEdit.returnPressed.connect(self.addParam_btn.click)
@@ -66,13 +78,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
         self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
 
-        self.timeWindowLineEdit.setValidator(QIntValidator())
-        self.frequencyLineEdit.setValidator(QIntValidator())
+        self.timeWindowLineEdit.setValidator(NoCommaIntValidator())
+        self.frequencyLineEdit.setValidator(NoCommaIntValidator())
 
         self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
         # self.TopLevelLayout.setStyleSheet("background-color: rgb(36,36,36); margin:5px; border:1px solid rgb(255, 255, 255); ")
 
-        self.removeBtn.setIcon(minus_icon)
+        self.removeBtn.setIcon(AppConfigs()._icon_minus)
 
         self.is_running = False
         self.is_simulating = False
@@ -108,16 +120,17 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.forward_input_socket_interface = None
 
         # loading from script preset from the persistent sittings ######################################################
-        if args is not None:
-            self.id = args['id']
-            self.import_script_args(args)
+        if script_preset is not None:
+            self.id = script_preset.id
+            self.import_script_args(script_preset)
         else:
-            self.id = uuid.uuid4()
+            self.id = str(uuid.uuid4())
             self.export_script_args_to_settings()
 
         self.internal_data_buffer = None
 
-
+        # global signals
+        GlobalSignals().stream_preset_nominal_srate_changed.connect(self.on_stream_nominal_sampling_rate_change)
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -135,12 +148,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_thread.start()
 
         self.info_timer = QTimer()
-        self.info_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.info_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
 
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
-        self.run_signal_timer.setInterval(forward_interval)
+        self.run_signal_timer.setInterval(int(forward_interval))
         self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                                port_id=self.port + 2,
@@ -178,19 +191,24 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stdout_worker.moveToThread(self.stdout_worker_thread)
         self.stdout_worker_thread.start()
         self.stdout_timer = QTimer()
-        self.stdout_timer.setInterval(config.SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.stdout_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
         self.stdout_timer.timeout.connect(self.stdout_worker.tick_signal.emit)
         self.stdout_timer.start()
 
     def close_stdout(self):
         self.stdout_timer.stop()
+        self.stdout_worker_thread.requestInterruption()
         self.stdout_worker_thread.exit()
+        self.stdout_worker_thread.wait()
+        del self.stdout_socket_interface
         # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
     def close_info_interface(self):
         self.info_timer.stop()
         self.info_worker.deactivate()
+        self.info_thread.requestInterruption()
         self.info_thread.exit()
+        self.info_thread.wait()
 
     def on_script_abnormal_termination(self):
         self.stop_run(True)
@@ -200,27 +218,22 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         if stdout_line != '\n':
             self.script_console_log.print_msg(stdout_line)
 
-    def _validate_script_path(self, script_path):
-        try:
-            validate_script_path(script_path)
-        except RenaError as error:
-            dialog_popup(str(error), title='Error')
-            return False
-        else:
-            return True
-
     def on_run_btn_clicked(self):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
-            if not self._validate_script_path(script_path): return
+            if not validate_script_path(script_path, RenaScript): return
+            try:
+                script_args = self.get_verify_script_args()
+            except RenaError as e:
+                dialog_popup(str(e), title='Error', main_parent=self.main_window)
+                return
+
             forward_interval = 1e3 / float(self.frequencyLineEdit.text())
 
             self.script_console_log_window.show()
-            self.stdout_socket_interface.send_string(
-                'Go')  # send an empty message, this is for setting up the routing id
+            self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
-            script_args = self.get_script_args()
-            self.script_process = start_script(script_path, script_args)
+            self.script_process = start_rena_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
             self.setup_info_worker(self.script_pid)
@@ -269,26 +282,32 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def on_locate_btn_clicked(self):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
+        if script_path == '':
+            return
         self.process_locate_script(script_path)
         self.export_script_args_to_settings()
 
     def process_locate_script(self, script_path):
         if script_path != '':
-            if not self._validate_script_path(script_path): return
+            if not validate_script_path(script_path, RenaScript):
+                self.runBtn.setEnabled(False)
+                return
             self.load_script_name(script_path)
             self.runBtn.setEnabled(True)
+            print("Selected script path ", script_path)
         else:
             self.runBtn.setEnabled(False)
-        print("Selected script path ", script_path)
 
     def on_create_btn_clicked(self):
         script_path, _ = QtWidgets.QFileDialog.getSaveFileName()
+        if script_path == '':
+            return
         self.create_script(script_path)
 
     def create_script(self, script_path, is_open_file=True):
         if script_path:
             base_script_name = os.path.basename(os.path.normpath(script_path))
-            this_script: str = rena_base_script[:]  # make a copy
+            this_script: str = AppConfigs()._rena_base_script[:]  # make a copy
             class_name = base_script_name if not base_script_name.endswith('.py') else base_script_name.strip('.py')
             this_script = this_script.replace('BaseRenaScript', class_name)
             if not script_path.endswith('.py'):
@@ -305,20 +324,20 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             if is_open_file:
                 click_on_file(script_path)
         else:
-            self.runBtn.setEnabled(False)
+            raise ValueError('Script path cannot be empty in process_locate_script')
         print("Selected script path ", script_path)
         self.export_script_args_to_settings()
 
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
-        self.scriptNameLabel.setText(get_target_class_name(script_path))
+        self.scriptNameLabel.setText(get_target_class_name(script_path, RenaScript))
 
     def change_ui_on_run_stop(self, is_run):
         self.widget_input.setEnabled(not is_run)
         self.widget_output.setEnabled(not is_run)
         self.frequencyLineEdit.setEnabled(not is_run)
         self.timeWindowLineEdit.setEnabled(not is_run)
-        self.widget_script_info.setEnabled(not is_run)
+        self.widget_script_basic_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
 
@@ -345,6 +364,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             print(str(e))
             return
         self.inputLayout.addWidget(input_widget)
+        self.inputLayout.setAlignment(input_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.inputLayout.removeWidget(input_widget)
@@ -360,12 +380,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def add_output_clicked(self):
         output_name = self.output_lineEdit.text()
-        self.process_add_output(output_name)
+        self.process_add_output(output_name, num_channels=1, port_number=self.get_next_available_output_port(), data_type=DataType.float32, interface_type=PresetType.LSL)
         self.export_script_args_to_settings()
 
-    def process_add_output(self, output_name, num_channels=1):
-        output_widget = ScriptingOutputWidget(self, output_name, num_channels)
+    def process_add_output(self, stream_name, num_channels, port_number, data_type, interface_type):
+        output_widget = ScriptingOutputWidget(self, stream_name, num_channels, port_number=port_number, data_type=data_type, interface_type=interface_type)
         self.outputLayout.addWidget(output_widget)
+        self.outputLayout.setAlignment(output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.outputLayout.removeWidget(output_widget)
@@ -384,9 +405,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.process_add_param(param_name)
         self.export_script_args_to_settings()
 
-    def process_add_param(self, param_name, type_text=None, value_text=None):
-        param_widget = ScriptingParamWidget(self, param_name, type_text, value_text)
+    def process_add_param(self, param_name, param_type=ParamType.bool, value=None):
+        param_widget = ParamWidget(self, param_name, param_type=param_type, value=value)
         self.paramsLayout.addWidget(param_widget)
+        self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.paramsLayout.removeWidget(param_widget)
@@ -394,16 +416,16 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             param_widget.deleteLater()
             self.check_can_add_param()
             self.export_script_args_to_settings()
-            self.param_change(ParamChange.REMOVE, param_name)
+            self.notify_script_process_param_change(ParamChange.REMOVE, param_name)
 
-        param_widget.set_button_callback(remove_btn_clicked)
+        param_widget.set_remove_button_callback(remove_btn_clicked)
         self.param_widgets.append(param_widget)
         self.check_can_add_param()
-        self.param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
+        self.notify_script_process_param_change(ParamChange.ADD, param_name, value=param_widget.get_value())
 
-    def param_change(self, change: ParamChange, name, value=None):
+    def notify_script_process_param_change(self, change: ParamChange, name, value=None):
         '''
-        send params to the script process
+        send changed params to the script process
         @return:
         '''
         print('Param {} changed: {}, {}'.format(name, change, value))
@@ -416,15 +438,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_inputs(self):
         return [w.get_input_name_text() for w in self.input_widgets]
 
-    def get_input_shapes(self):
+    def get_input_shape_dict(self):
         rtn = dict()
         for w in self.input_widgets:
             input_preset_name = w.get_input_name_text()
             rtn[input_preset_name] = self.get_preset_expected_shape(input_preset_name)
         return rtn
-
-    def get_input_shape_dict(self):
-        return dict([(i, s) for i, s in zip(self.get_inputs(), self.get_input_shapes())])
 
     def get_outputs(self):
         return [w.get_label_text() for w in self.output_widgets]
@@ -432,14 +451,24 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def get_outputs_num_channels(self):
         return [w.get_num_channels() for w in self.output_widgets]
 
+    def get_output_presets(self) -> List[ScriptOutput]:
+        return [w.get_output_preset() for w in self.output_widgets]
+
+    def get_output_ports(self):
+        return [w.get_port_number() for w in self.output_widgets]
+
     def get_params(self):
         return [w.get_param_name() for w in self.param_widgets]
 
-    def get_param_value_texts(self):
-        return [w.get_value_text() for w in self.param_widgets]
+    # def get_param_value_texts(self):
+    #     return [w.get_value_text() for w in self.param_widgets]
 
-    def get_param_type_texts(self):
-        return [w.get_type_text() for w in self.param_widgets]
+    def get_param_types(self):
+        return [w.get_param_type() for w in self.param_widgets]
+
+    def get_params_presets_recursive(self):
+        params_presets = [x.get_param_preset_recursive() for x in self.param_widgets]
+        return params_presets
 
     def get_param_dict(self):
         return dict([(w.get_param_name(), w.get_value()) for w in self.param_widgets])
@@ -491,47 +520,30 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             w.set_input_info_text(self.get_preset_input_info_text(input_preset_name))
 
     def get_preset_input_info_text(self, preset_name):
-        if not check_preset_exists(preset_name):
+        if not is_stream_name_in_presets(preset_name):
             raise MissingPresetError(preset_name)
-        sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
-        num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        _timewindow = 0 if self.timeWindowLineEdit.text() == '' else int(self.timeWindowLineEdit.text())
-        return '[{0}, {1}]'.format(num_channel, _timewindow * sampling_rate)
+        return '[{0}, {1}]'.format(*self.get_preset_expected_shape(preset_name))
 
     def get_preset_expected_shape(self, preset_name):
         sampling_rate = get_stream_preset_info(preset_name, 'nominal_sampling_rate')
         num_channel = get_stream_preset_info(preset_name, 'num_channels')
-        return num_channel, int(self.timeWindowLineEdit.text()) * sampling_rate
-
-    def on_settings_changed(self):
-        """
-        TODO should be called after every setting change
-        """
-        self.update_input_info()
-
-    def on_time_window_chagned(self):
-        self.update_input_info()
+        return num_channel, int(int(self.timeWindowLineEdit.text()) * sampling_rate)
 
     def try_close(self):
         if self.is_running:
-            # reply = QMessageBox.question(self, 'Window Close', 'Exit Application?',
-            #                              QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            # if reply == QMessageBox.Yes:
-            #     self.on_run_btn_clicked()
-            # else:
-            #     return False
             self.on_run_btn_clicked()
         self.close_stdout()
+        if self.is_popped:
+            self.delete_window()
+        self.script_console_log_window.close()
+        self.deleteLater()
+        self.parent.remove_script_widget(self)
         print('Script widget closed')
         return True
 
     def remove_script_clicked(self):
-        # self.ScriptingWidgetScrollLayout.removeWidget(script_widget)
-        if self.is_popped:
-            self.delete_window()
-        self.deleteLater()
+        self.try_close()
         remove_script_from_settings(self.id)
-        self.script_console_log_window.close()
 
     def on_input_combobox_changed(self):
         self.check_can_add_input()
@@ -541,7 +553,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def send_input(self, data_dict):
         if np.any(np.array(data_dict["timestamps"])< 100):
-            print('Hoi')
+            print('skipping input with timestamp < 100')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)
 
@@ -569,50 +581,49 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             return False
 
-    def get_script_args(self):
-        buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in
-                        self.get_input_shapes().items()]
+    def get_verify_script_args(self):
+        buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
-        return {'inputs': self.get_inputs(),
-                'input_shapes': self.get_input_shapes(),
+        rtn = {'inputs': self.get_inputs(),
+                'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
-                'outputs': self.get_outputs(), 'output_num_channels': self.get_outputs_num_channels(),
+                'outputs': self.get_output_presets(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
                 'run_frequency': int(self.frequencyLineEdit.text()),
                 'time_window': int(self.timeWindowLineEdit.text()),
                 'script_path': self.scriptPathLineEdit.text(),
-                'is_simulate': self.simulateCheckbox.isChecked()}
+                'is_simulate': self.simulateCheckbox.isChecked(),
+                'presets': Presets()}
+        lsl_supported_types = DataType.get_lsl_supported_types()
+        lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
+        for output_name, dtype in lsl_output_data_types:
+            try:
+                assert dtype in lsl_supported_types
+            except AssertionError:
+                raise UnsupportedLSLDataTypeError(f'{output_name} has unsupported data type {dtype}')
+        return rtn
 
     def export_script_args_to_settings(self):
-        config.settings.beginGroup('scripts/{0}/'.format(self.id))
-        config.settings.setValue('inputs', self.get_inputs())
-        config.settings.setValue('outputs', self.get_outputs())
-        config.settings.setValue('output_num_channels', self.get_outputs_num_channels())
-        config.settings.setValue('params', self.get_params())
-        config.settings.setValue('params_type_texts', self.get_param_type_texts())
-        config.settings.setValue('params_value_texts', self.get_param_value_texts())
+        script_preset = ScriptPreset(id=self.id, inputs=self.get_inputs(), output_presets=self.get_output_presets(),
+                                     param_presets=self.get_params_presets_recursive(),
+                                     run_frequency=self.frequencyLineEdit.text(), time_window=self.timeWindowLineEdit.text(),
+                                     script_path=self.scriptPathLineEdit.text(), is_simulate=self.simulateCheckbox.isChecked())
+        Presets().script_presets[self.id] = script_preset
 
-        config.settings.setValue('run_frequency', self.frequencyLineEdit.text())
-        config.settings.setValue('time_window', self.timeWindowLineEdit.text())
-        config.settings.setValue('script_path', self.scriptPathLineEdit.text())
-        config.settings.setValue('is_simulate', self.simulateCheckbox.isChecked())
-        config.settings.endGroup()
+    def import_script_args(self, script_preset: ScriptPreset):
+        self.process_locate_script(script_preset.script_path)
 
-    def import_script_args(self, args):
-        self.process_locate_script(args['script_path'])
+        self.frequencyLineEdit.setText(script_preset.run_frequency)
+        self.timeWindowLineEdit.setText(script_preset.time_window)
+        self.simulateCheckbox.setChecked(script_preset.is_simulate)  # is checked?
 
-        self.frequencyLineEdit.setText(args['run_frequency'])
-        self.timeWindowLineEdit.setText(args['time_window'])
-        self.simulateCheckbox.setChecked(args['is_simulate'] == 'true')  # is checked?
-
-        for input_preset_name in args['inputs']:
+        for input_preset_name in script_preset.inputs:
             self.process_add_input(input_preset_name)
-        for output_name, output_num_channel in zip(args['outputs'], args['output_num_channels']):
-            self.process_add_output(output_name, num_channels=output_num_channel)
+        for output_preset in script_preset.output_presets:
+            self.process_add_output(**output_preset.__dict__)
 
-        for param_name, type_text, value_text in zip(args['params'], args['params_type_texts'],
-                                                     args['params_value_texts']):
-            self.process_add_param(param_name, type_text=type_text, value_text=value_text)
+        for param_preset in script_preset.param_presets:
+            self.process_add_param(param_preset.name, param_type=param_preset.type, value=param_preset.value)
 
     def update_input_combobox(self):
         update_presets_to_combobox(self.inputComboBox)
@@ -620,7 +631,22 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def forward_param_change(self, change: ParamChange, name, value):
         self.command_socket_interface.socket.send_string(SCRIPT_PARAM_CHANGE)
         self.command_socket_interface.socket.send_string('|'.join([change.value, name, type(value).__name__]))
-        self.command_socket_interface.socket.send(np.array(value))
+        self.command_socket_interface.socket.send_string(json.dumps(value))
 
     def onSimulationCheckboxChanged(self):
         print('Script {} simulating input.'.format('is' if self.simulateCheckbox.isChecked() else 'isn\'t'))
+
+    def on_stream_nominal_sampling_rate_change(self, change):
+        """
+        change what's displayed in the input widgets
+        @return:
+        """
+        if change[0] in self.get_inputs():
+            self.update_input_info()
+
+    def get_next_available_output_port(self):
+        existing_ports = self.get_output_ports()
+        if len(existing_ports) == 0:
+            return AppConfigs().output_stream_starting_port
+        else:
+            return max(existing_ports) + 1

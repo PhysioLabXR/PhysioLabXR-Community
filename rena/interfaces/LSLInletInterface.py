@@ -1,9 +1,9 @@
 import time
 import numpy as np
 
-from pylsl import StreamInlet, LostError, resolve_byprop
+from pylsl import StreamInlet, LostError, resolve_byprop, cf_float32
 
-from exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
+from rena.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from rena import config
 from rena.config import stream_availability_wait_time
 from stream_shared import lsl_continuous_resolver
@@ -23,18 +23,14 @@ class LSLInletInterface:
         it finds that the number of channels in the opened streams is different from this number, which is from the
         preset
         """
-        # self.streams = resolve_byprop('name', lsl_stream_name, timeout=0.1)
-        # if len(self.streams) < 1:
-        #     raise AttributeError('Unable to find LSL Stream with given type {0}'.format(lsl_stream_name))
-        # self.inlet = StreamInlet(self.streams[0])
 
         self.lsl_stream_name = lsl_stream_name
         self.lsl_num_chan = num_chan
         self.streams = None
         self.inlet = None
-        pass
+        self.data_type = None
 
-    def start_sensor(self):
+    def start_stream(self):
         # connect to the sensor
         self.streams = resolve_byprop('name', self.lsl_stream_name, timeout=stream_availability_wait_time)
         if len(self.streams) < 1:
@@ -50,7 +46,7 @@ class LSLInletInterface:
         except AssertionError:
             self.inlet.close_stream()
             raise ChannelMismatchError(actual_num_channels)
-
+        self.data_type = self.inlet.channel_format
         print('LSLInletInterface: resolved, created and opened inlet for lsl stream with type ' + self.lsl_stream_name)
 
     def is_stream_available(self):
@@ -69,9 +65,10 @@ class LSLInletInterface:
         try:
             return np.transpose(frames), timestamps
         except:
-            print("error occured in transposing frames")
+            print("error occurred in transposing frames")
             return frames, timestamps
-    def stop_sensor(self):
+
+    def stop_stream(self):
         if self.inlet:
             self.inlet.close_stream()
         print('LSLInletInterface: inlet stream closed.')
@@ -79,11 +76,11 @@ class LSLInletInterface:
     def info(self):
         return self.inlet.info()
 
-    def get_num_chan(self):
-        return self.lsl_num_chan
-
-    def get_nominal_srate(self):
-        return self.streams[0].nominal_srate()
+    # def get_num_chan(self):
+    #     return self.lsl_num_chan
+    #
+    # def get_nominal_srate(self):
+    #     return self.streams[0].nominal_srate()
 
 
 def run_test():
@@ -105,6 +102,6 @@ def run_test():
 
 if __name__ == "__main__":
     unityLSL_inferface = LSLInletInterface()
-    unityLSL_inferface.start_sensor()
+    unityLSL_inferface.start_stream()
     data = run_test()
-    unityLSL_inferface.stop_sensor()
+    unityLSL_inferface.stop_stream()
