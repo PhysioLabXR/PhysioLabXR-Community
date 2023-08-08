@@ -1,5 +1,6 @@
 import copy
 import json
+import multiprocessing
 import os
 from dataclasses import dataclass, field
 from enum import Enum
@@ -51,17 +52,18 @@ class PresetsEncoder(json.JSONEncoder):
         if isinstance(o, DataProcessor):
             return o.serialize_data_processor_params()
         if o.__class__.__class__ is SubPreset:
+            rtn = copy.copy(o.__dict__)
             if isinstance(o, StreamPreset):
                 if not o.can_edit_channel_names:  # will not serialize channel names if it is not editable
-                    o.channel_names = None
+                    rtn['channel_names'] = None
             if isinstance(o, GroupEntry):
                 if o._is_image_only:
                     if o.channel_indices is not None:
                         assert is_monotonically_increasing(o.channel_indices), "channel indices must be monotonically increasing when _is_image_only is True"
-                        o.channel_indices_start_end = min(o.channel_indices), max(o.channel_indices) + 1
-                    o.channel_indices = None
-                    o.is_channels_shown = None
-            return o.__dict__
+                        rtn['channel_indices_start_end'] = min(o.channel_indices), max(o.channel_indices) + 1
+                    rtn['channel_indices'] = None
+                    rtn['is_channels_shown'] = None
+            return rtn
         return super().default(o)
 
 
@@ -253,7 +255,7 @@ def save_presets_locally(app_data_path, preset_dict, file_name) -> None:
     if not os.path.exists(app_data_path):
         os.makedirs(app_data_path)
     path = os.path.join(app_data_path, file_name)
-    json_data = json.dumps(copy.deepcopy(preset_dict), indent=4, cls=PresetsEncoder)
+    json_data = json.dumps(preset_dict, indent=4, cls=PresetsEncoder)
     with open(path, 'w') as f:
         f.write(json_data)
 
