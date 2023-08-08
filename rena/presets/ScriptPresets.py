@@ -22,7 +22,7 @@ class ScriptOutput(metaclass=SubPreset):
     stream_name: str
     num_channels: int
     interface_type: PresetType
-    data_type: DataType = DataType.float32
+    data_type: DataType
     port_number: int = None
 
     def __post_init__(self):
