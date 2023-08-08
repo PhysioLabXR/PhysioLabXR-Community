@@ -12,7 +12,7 @@ for i in range(0,length):
     value = (value+accumulate_value)*decay_factor
     result_buffer.append(value)
 
-plt.plot(result_buffer[:1000])
+plt.plot(result_buffer[:100])
 plt.show()
 
 print(result_buffer)

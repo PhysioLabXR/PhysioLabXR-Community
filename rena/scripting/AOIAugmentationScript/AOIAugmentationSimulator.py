@@ -17,7 +17,7 @@ if __name__ == '__main__':
     a = GazeAttentionMatrixTorch(image_shape=image_shape, attention_patch_shape=attention_patch_shape, device=device)
     a.add_attention(attention_center_location=[100, 100])
     a.decay()
-    a.calculate_attention_grid()
+    a.convolve_attention_grid_buffer()
 
     while 1:
         attention_add_start = time.perf_counter_ns()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
 
         attention_grid_average_start = time.perf_counter_ns()
-        a.calculate_attention_grid()
+        a.convolve_attention_grid_buffer()
         attention_grid_average_time = time.perf_counter_ns()-attention_grid_average_start
 
         detach_start = time.perf_counter_ns()

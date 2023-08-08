@@ -8,6 +8,8 @@ from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
 from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
 import torch
 
+from rena.utils.dsp_utils.dsp_modules import ClutterRemoval
+
 
 class AOIAugmentationScript(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -31,6 +33,11 @@ class AOIAugmentationScript(RenaScript):
             attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
             device=self.device
         )
+        self.gaze_attention_clutter_removal_data_processor = ClutterRemoval(signal_clutter_ratio=0.1)
+        self.gaze_attention_clutter_removal_data_processor.evoke_data_processor()
+
+
+
         self.vit_attention_matrix = ViTAttentionMatrix()
         self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
 
@@ -62,7 +69,8 @@ class AOIAugmentationScript(RenaScript):
         # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
         #     return
 
-        if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+        if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
+                GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
 
         self.state_shift()
@@ -181,14 +189,19 @@ class AOIAugmentationScript(RenaScript):
 
         #
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
-
+            self.gaze_attention_matrix.reset_image_attention_buffer()
+            self.gaze_attention_matrix.reset_attention_grid_buffer()
             print("process gaze data")
             # construct gaze data
             gaze_data = GazeData()
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
+            gaze_point_is_in_screen_image_boundary = False
 
             gaze_data = self.ivt_filter.process_sample(gaze_data)  # ivt filter
-            if gaze_data.gaze_type == GazeType.FIXATION: # only care about the fixation data
+
+            if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
+                # gaze point is valid and gaze type is fixation
+                # check if gaze point is in screen image boundary
                 gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
                     image_center_x=AOIAugmentationConfig.image_center_x,
                     image_center_y=AOIAugmentationConfig.image_center_y,
@@ -203,44 +216,94 @@ class AOIAugmentationScript(RenaScript):
                     gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
                 )
 
-                if gaze_point_on_image_valid(
-                        matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
-                        coordinate=gaze_point_on_screen_image):
-                    gaze_point_on_image = np.round(gaze_point_on_screen_image/AOIAugmentationConfig.image_scaling_factor).astype(int)
-                    self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
+                gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
+                    matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
+                    coordinate=gaze_point_on_screen_image)
 
-            self.gaze_attention_matrix.min_max_normalize_attention()
-            self.gaze_attention_matrix.calculate_attention_grid()  # calculate the average
-            # apply the decay function
-            # self.gaze_attention_matrix.decay(decay_factor=self.params['gaze_attention_on_image_decay_factor'])
+                if gaze_point_is_in_screen_image_boundary:
+                    gaze_point_on_image = np.round(
+                        gaze_point_on_screen_image / AOIAugmentationConfig.image_scaling_factor).astype(int)
+                    self.gaze_attention_matrix.get_image_attention_buffer(gaze_point_on_image) # get attention position G
+                    self.gaze_attention_matrix.convolve_attention_grid_buffer() # calculate attention grid using convolve
 
-            # threshold gaze attention map
-            # threshold_gaze_attention_vector = self.gaze_attention_matrix.threshold_attention_grid_vector(flatten=True,
-            #                                                                                              threshold=0.5)
-            gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid(flatten=True)
+            self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(attention_clutter_ratio=0.01)
+            gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
             threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
-
-            # mask both arrays
             self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
 
 
 
-            # print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
-            # print("threshold vit attention vector: ", threshold_vit_attention_vector)
 
-            # self.gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True)
-            # self.vit_grid_attention_vector = self.vit_attention_matrix.calculate_patch_average_attention_vector()
+            #         self.gaze_attention_matrix.convolve_attention_grid_buffer() # calculate attention grid using convolve
+            #
+            #         # clutter removal
+            #         gaze_attention_vector = \
+            #             self.gaze_attention_clutter_removal_data_processor.process_sample(self.gaze_attention_matrix.get_attention_grid())
+            #     else:
+            #
+            #         # clutter removal
+            #         gaze_attention_vector = self.gaze_attention_clutter_removal_data_processor.process_sample(np.zeros(self.gaze_attention_matrix.))
+            #
+            # else:
+            #
+            #     # clutter removal
+            #     gaze_attention_vector = self.gaze_attention_clutter_removal_data_processor.process_sample(0)
 
-            # apply the attention map to the image
 
-            # self.static_aoi_augmentation_lsl_outlet.push_sample(
-            #     self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
-            # )
 
-            # send out the attention map with LSL
-            # clear gaze data
-            self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
-            pass
+
+
+
+            # if gaze_data.combined_eye_gaze_data.gaze_point_valid:
+            #     gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
+            #         image_center_x=AOIAugmentationConfig.image_center_x,
+            #         image_center_y=AOIAugmentationConfig.image_center_y,
+            #
+            #         image_width=AOIAugmentationConfig.image_on_screen_width,
+            #         image_height=AOIAugmentationConfig.image_on_screen_height,
+            #
+            #         screen_width=AOIAugmentationConfig.screen_width,
+            #         screen_height=AOIAugmentationConfig.screen_height,
+            #
+            #         gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
+            #         gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
+            #     )
+            # else:
+            #     gaze_point_on_screen_image = np.array([-1, -1])
+            #
+            # gaze_point_on_image =gaze_point_on_image_valid(
+            #                      matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
+            #                      coordinate=gaze_point_on_screen_image)
+
+            # if gaze_data.gaze_type == GazeType.FIXATION: # only care about the fixation data
+            #
+            #     if gaze_point_on_image_valid(
+            #             matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
+            #             coordinate=gaze_point_on_screen_image):
+            #         gaze_point_on_image = np.round(gaze_point_on_screen_image/AOIAugmentationConfig.image_scaling_factor).astype(int)
+            #         self.gaze_attention_matrix.get_attention_map(attention_center_location=gaze_point_on_image)
+            #
+
+            # self.gaze_attention_matrix.add_attention(attention_center_location=gaze_point_on_image)
+
+            # self.gaze_attention_matrix.decay(decay_factor=self.params['gaze_attention_on_image_decay_factor'])
+
+            # add decay
+            # self.gaze_attention_matrix.decay(decay_factor=self.params['gaze_attention_on_image_decay_factor'])
+            # minimax normalization
+            # self.gaze_attention_matrix.decay(decay_factor=0.99)
+            # self.gaze_attention_matrix.normalize_attention(lower_bound=0, upper_bound=100)
+
+            # self.gaze_attention_matrix.calculate_attention_grid()  # calculate the average
+            #
+            # gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid(flatten=True)
+            # threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
+            #
+            # # mask both arrays
+            # self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
+
+        self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+        pass
 
     # def init_attention_grid_lsl_outlet(self):
     #     print("init attention grid lsl outlet")
@@ -252,3 +315,18 @@ class AOIAugmentationScript(RenaScript):
     #     self.attentionGridLSLOutlet = StreamOutlet(info)
     #
     #     info = StreamInfo(LSL, type, n_channels, srate, 'float32', 'someuuid1234')
+
+    # print("threshold gaze attention vector: ", threshold_gaze_attention_vector)
+    # print("threshold vit attention vector: ", threshold_vit_attention_vector)
+
+    # self.gaze_attention_vector = self.gaze_attention_matrix.get_attention_grid_vector(flatten=True)
+    # self.vit_grid_attention_vector = self.vit_attention_matrix.calculate_patch_average_attention_vector()
+
+    # apply the attention map to the image
+
+    # self.static_aoi_augmentation_lsl_outlet.push_sample(
+    #     self.attentionMatrix.attention_grid_buffer[-1].flatten().tolist() # TODO: check if this is correct
+    # )
+
+    # send out the attention map with LSL
+    # clear gaze data
