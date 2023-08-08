@@ -221,7 +221,7 @@ class AOIAugmentationScript(RenaScript):
                     coordinate=gaze_point_on_screen_image)
 
                 if gaze_point_is_in_screen_image_boundary:
-                    gaze_point_on_image = np.round(
+                    gaze_point_on_image = np.floor(
                         gaze_point_on_screen_image / AOIAugmentationConfig.image_scaling_factor).astype(int)
                     self.gaze_attention_matrix.get_image_attention_buffer(gaze_point_on_image) # get attention position G
                     self.gaze_attention_matrix.convolve_attention_grid_buffer() # calculate attention grid using convolve
