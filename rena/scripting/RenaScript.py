@@ -4,6 +4,7 @@ import pickle
 import sys
 import threading
 import time
+import traceback
 from abc import ABC, abstractmethod
 from collections import deque
 from pydoc import locate
@@ -18,7 +19,7 @@ from rena.presets.PresetEnums import PresetType
 from rena.presets.ScriptPresets import ScriptOutput
 from rena.presets.presets_utils import get_stream_nominal_sampling_rate, get_stream_data_type, get_stream_num_channels
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    SCRIPT_PARAM_CHANGE
+    SCRIPT_PARAM_CHANGE, SCRIPT_STDERR_MSG_PREFIX
 from rena.scripting.scripting_enums import ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
@@ -72,7 +73,8 @@ class RenaScript(ABC, threading.Thread):
         print('RenaScript: Waiting for command routing ID from main app')
         _, self.command_routing_id = recv_string_router(self.command_socket_interface, True)
         # redirect stdout
-        sys.stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
+        sys.stdout = self.redirect_stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
+        sys.stderr = self.redirect_stderr = RedirectStderr(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
 
         # set up measuring realtime performance
         self.loop_durations = deque(maxlen=run_frequency * 2)
@@ -95,6 +97,7 @@ class RenaScript(ABC, threading.Thread):
             self._create_output_streams()
         except RenaError as e:
             print('Error setting up output streams: {0}'.format(e))
+            traceback.print_exc()
 
         # set up the parameters
         self.params = params
@@ -134,7 +137,7 @@ class RenaScript(ABC, threading.Thread):
         try:
             self.init()
         except Exception as e:
-            print('Exception in init(): {0} {1}'.format(type(e), str(e)))
+            traceback.print_exc()
         # start the loop here, accept interrupt command
         print('Entering loop')
         while True:
@@ -145,10 +148,10 @@ class RenaScript(ABC, threading.Thread):
             try:
                 self.loop()
             except Exception as e:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                print('Exception in loop(): {0} {1}'.format(type(e), e))
-                # print(exc_type, fname, exc_tb.tb_lineno)
+                # print('Exception in loop(): {0} {1}'.format(type(e), e))
+                traceback.print_exc()
+                # print(traceback.format_exc())
+                self.redirect_stderr.send_buffered_messages()
             self.loop_durations.append(time.time() - loop_start_time)
             self.run_while_start_times.append(loop_start_time)
             # receive info request from main process
@@ -203,12 +206,13 @@ class RenaScript(ABC, threading.Thread):
                         if type(e) == BadOutputError:
                             print('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
                         else:
-                            print('Unknown error occured when trying to send output data: {0}'.format(str(e)))
+                            print('Unknown error occurred when trying to send output data: {0}'.format(str(e)))
+                        traceback.print_exc()
         # exiting the script loop
         try:
             self.cleanup()
         except Exception as e:
-            print('Exception in cleanup(): {0} {1}'.format(type(e), str(e)))
+            traceback.print_exc()
         print('Sending stop success')
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 
@@ -283,3 +287,23 @@ class RedirectStdout(object):
 
     def flush(self):
         pass
+
+
+class RedirectStderr(object):
+    def __init__(self, socket_interface, routing_id):
+        self.terminal = sys.stderr
+        self.routing_id = routing_id
+        self.socket_interface = socket_interface
+        self.message_buffer = ""
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.message_buffer += message
+
+    def flush(self):
+        pass
+
+    def send_buffered_messages(self):
+        if self.message_buffer:
+            send_string_router(SCRIPT_STDERR_MSG_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
+            self.message_buffer = ""

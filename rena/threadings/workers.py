@@ -17,7 +17,7 @@ from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
 from rena.configs.configs import AppConfigs
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
 from rena.utils.networking_utils import recv_string
@@ -454,22 +454,24 @@ class PlaybackWorker(QObject):
         # self.send_command_mutex.unlock()
 
 class ScriptingStdoutWorker(QObject):
-    stdout_signal = pyqtSignal(str)
+    std_signal = pyqtSignal(tuple)
     tick_signal = pyqtSignal()
 
     def __init__(self, stdout_socket_interface):
         super().__init__()
-        self.tick_signal.connect(self.process_stdout)
+        self.tick_signal.connect(self.process_std)
         self.stdout_socket_interface = stdout_socket_interface
 
     @QtCore.pyqtSlot()
-    def process_stdout(self):
+    def process_std(self):
         msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
-        if msg:
-            if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
-                msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
-                self.stdout_signal.emit(msg)  # send message if it's not None
-
+        if msg:  # if received is a message
+            prefix = msg[:len(SCRIPT_STDOUT_MSG_PREFIX)]
+            msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
+            if prefix == SCRIPT_STDOUT_MSG_PREFIX:  # if received is a message
+                self.std_signal.emit(('out', msg))  # send message if it's not None
+            elif prefix == SCRIPT_STDERR_MSG_PREFIX:
+                self.std_signal.emit(('error', msg))
 
 class ScriptInfoWorker(QObject):
     abnormal_termination_signal = pyqtSignal()

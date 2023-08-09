@@ -187,7 +187,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                                                         pattern='router-dealer')
         self.stdout_worker_thread = QThread(self.parent)
         self.stdout_worker = workers.ScriptingStdoutWorker(self.stdout_socket_interface)
-        self.stdout_worker.stdout_signal.connect(self.redirect_script_stdout)
+        self.stdout_worker.std_signal.connect(self.redirect_script_std)
         self.stdout_worker.moveToThread(self.stdout_worker_thread)
         self.stdout_worker_thread.start()
         self.stdout_timer = QTimer()
@@ -213,10 +213,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def on_script_abnormal_termination(self):
         self.stop_run(True)
 
-    def redirect_script_stdout(self, stdout_line: str):
+    def redirect_script_std(self, std_message):
         # print('[Script]: ' + stdout_line)
-        if stdout_line != '\n':
-            self.script_console_log.print_msg(stdout_line)
+        # if std_message[1] != '\n':
+        self.script_console_log.print_msg(*std_message)
 
     def on_run_btn_clicked(self):
         if not self.is_running:
