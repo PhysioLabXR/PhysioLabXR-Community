@@ -178,9 +178,9 @@ class GazeAttentionMatrixTorch():
 
     def convolve_attention_grid_buffer(self):
         # pass
-        print(self._image_attention_buffer.shape)
-        if self._image_attention_buffer.shape[0] == 0 or self._image_attention_buffer.shape[1] == 0:
-            print("GGGG")
+        # print(self._image_attention_buffer.shape)
+        # if self._image_attention_buffer.shape[0] == 0 or self._image_attention_buffer.shape[1] == 0:
+        #     print("GGGG")
             # self._attention_grid_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape), device=self.device)
         self._attention_grid_buffer = F.conv2d(
             input=self._image_attention_buffer.view(1,1,self._image_attention_buffer.shape[0],self._image_attention_buffer.shape[1]),

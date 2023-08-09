@@ -1,3 +1,6 @@
+import time
+from collections import deque
+
 from pylsl import StreamInfo, StreamOutlet, cf_float32
 
 from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
@@ -33,8 +36,8 @@ class AOIAugmentationScript(RenaScript):
             attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
             device=self.device
         )
-        self.gaze_attention_clutter_removal_data_processor = ClutterRemoval(signal_clutter_ratio=0.1)
-        self.gaze_attention_clutter_removal_data_processor.evoke_data_processor()
+        # self.gaze_attention_clutter_removal_data_processor = ClutterRemoval(signal_clutter_ratio=0.1)
+        # self.gaze_attention_clutter_removal_data_processor.evoke_data_processor()
 
 
 
@@ -44,12 +47,17 @@ class AOIAugmentationScript(RenaScript):
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
         self.ivt_filter.evoke_data_processor()
 
+        ################################################################################################################
         info = StreamInfo(AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
                           channel_format=cf_float32)
         self.static_aoi_augmentation_lsl_outlet = StreamOutlet(info)
+        ################################################################################################################
+
+
+        self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -180,15 +188,21 @@ class AOIAugmentationScript(RenaScript):
         self.attention_map_callback()
         pass
 
-    def clear_eye_tracking_data(self):
+    # def clear_eye_tracking_data(self):
+    #
+    #     print("clear eye tracking data")
+    #     pass
 
-        print("clear eye tracking data")
+    def send_aoi_augmentation(self):
+
         pass
 
     def attention_map_callback(self):
 
         #
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+            gaze_data_process_start = time.time()
+
             self.gaze_attention_matrix.reset_image_attention_buffer()
             self.gaze_attention_matrix.reset_attention_grid_buffer()
             print("process gaze data")
@@ -226,10 +240,27 @@ class AOIAugmentationScript(RenaScript):
                     self.gaze_attention_matrix.get_image_attention_buffer(gaze_point_on_image) # get attention position G
                     self.gaze_attention_matrix.convolve_attention_grid_buffer() # calculate attention grid using convolve
 
-            self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(attention_clutter_ratio=0.01)
+            # clutter removal
+            self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(attention_clutter_ratio=0.95)
+            self.send_static_aoi_augmentation_state_lsl(gaze_attention_threshold=0.1) # send the attention vector
+            self.process_gaze_data_time_buffer.append(time.time() - gaze_data_process_start)
+            # calculate average process time of process gaze data time buffer
+            average_time = np.mean(self.process_gaze_data_time_buffer)
+            print("average_process_gaze_data_time:", average_time)
+
             gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-            threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
             self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
+            # gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
+
+
+
+            threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
+            # mask vit attention with gaze attention
+
+
+
+
+            # threshold_vit_attention-vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
 
 
 
@@ -303,6 +334,17 @@ class AOIAugmentationScript(RenaScript):
             # self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
 
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+        pass
+
+    def send_static_aoi_augmentation_state_lsl(self, gaze_attention_threshold=0.1):
+        # print("send static aoi augmentation state lsl")
+        gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
+        threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
+        # mask vit attention with gaze attention
+        vit_attention_vector_mask = np.where(gaze_attention_vector > gaze_attention_threshold, 0, 1)
+        self.static_aoi_augmentation_lsl_outlet.push_sample(vit_attention_vector_mask * threshold_vit_attention_vector)
+
+
         pass
 
     # def init_attention_grid_lsl_outlet(self):
