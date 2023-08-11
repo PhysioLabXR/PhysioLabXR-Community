@@ -1,14 +1,14 @@
 from enum import Enum
 import numpy as np
 
-screen_width = 2560
-screen_height = 1600
+screen_width = 1920
+screen_height = 1080
 
 patch_grid_width = 50
 patch_grid_height = 25
 
-image_on_screen_width = 2000
-image_on_screen_height = 1000
+image_on_screen_width = 1900
+image_on_screen_height = 950
 
 
 image_center_x = 0
