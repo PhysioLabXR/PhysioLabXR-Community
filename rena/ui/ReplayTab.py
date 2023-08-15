@@ -256,6 +256,9 @@ class ReplayTab(QtWidgets.QWidget):
 
             self.parent.add_streams_from_replay(replay_stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+
+            # this is the official start of replay
+            self.set_enable_stream_list_editable_fields(False)
             self.is_replaying = True
             self.StartStopReplayBtn.setText('Stop Replay')
             self.StartStopReplayBtn.setEnabled(True)
@@ -283,6 +286,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.is_replaying = False
         self.SelectDataDirBtn.setEnabled(True)
         self.StartStopReplayBtn.setText('Start Replay')
+        self.set_enable_stream_list_editable_fields(True)
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()
@@ -348,3 +352,9 @@ class ReplayTab(QtWidgets.QWidget):
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
             if list_item.get_info()['preset_type'] == PresetType.LSL: rtn.append(s_name)
         return rtn
+
+    def set_enable_stream_list_editable_fields(self, enable):
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            list_item.include_in_replay_checkbox.setEnabled(enable)
+            list_item.interface_combobox.setEnabled(enable)
+            list_item.zmq_port_line_edit.setEnabled(enable)
