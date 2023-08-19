@@ -29,6 +29,9 @@ class PresetType(Enum):
     def is_self_video_preset(self):
         return self in [self.WEBCAM, self.MONITOR]
 
+    def is_self_audio_preset(self):
+        return self in [self.AUDIO]
+
 
 class DataType(Enum):
     """

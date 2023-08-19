@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
-from rena.presets.Presets import Presets, _load_video_device_presets
+from rena.presets.Presets import Presets, _load_video_device_presets, _load_audio_device_presets
 from rena.presets.PresetEnums import PresetType
 from rena.startup import load_settings
 from rena.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue
@@ -54,10 +54,17 @@ class SettingsWidget(QtWidgets.QWidget):
         # self.zmq_endpoint = "tcp://127.0.0.1:5550"
         self._load_video_device_process = None
         self._load_audio_device_process = None
-        self.wait_process_thread = None
-        self.wait_process_worker = None
+
+        self.wait_load_video_device_process_thread = None
+        self.wait_load_video_device_process_worker = None
+
+        self.wait_load_audio_device_process_thread = None
+        self.wait_load_audio_device_process_worker = None
+
         self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
+        self.reload_audio_device_button.clicked.connect(self.reload_audio_device_presets)
         self.reload_video_device_presets()
+        self.reload_audio_device_presets()
 
     def reload_video_device_presets(self):
         """
@@ -74,13 +81,13 @@ class SettingsWidget(QtWidgets.QWidget):
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         self._load_video_device_process = ProcessWithQueue(target=_load_video_device_presets)
         self._load_video_device_process.start()
-        self.wait_process_thread = QThread()
-        self.wait_process_worker = WaitForProcessWorker(self._load_video_device_process)
-        self.wait_process_worker.process_finished.connect(self.on_video_device_preset_reloaded)
-        self.wait_process_worker.moveToThread(self.wait_process_thread)
+        self.wait_load_video_device_process_thread = QThread()
+        self.wait_load_video_device_process_worker = WaitForProcessWorker(self._load_video_device_process)
+        self.wait_load_video_device_process_worker.process_finished.connect(self.on_video_device_preset_reloaded)
+        self.wait_load_video_device_process_worker.moveToThread(self.wait_load_video_device_process_thread)
 
-        self.wait_process_thread.started.connect(self.wait_process_worker.run)
-        self.wait_process_thread.start()
+        self.wait_load_video_device_process_thread.started.connect(self.wait_load_video_device_process_worker.run)
+        self.wait_load_video_device_process_thread.start()
 
     def reload_audio_device_presets(self):
         """
@@ -88,7 +95,22 @@ class SettingsWidget(QtWidgets.QWidget):
         an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
         rtn is the return of the process Presets()._load_video_device_process.
         """
-        pass
+        self.reload_audio_device_button.setEnabled(False)
+        self.reload_audio_device_button.setText("Reloading...")
+        Presets().remove_audio_presets()
+
+        # Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        self._load_audio_device_process = ProcessWithQueue(target=_load_audio_device_presets)
+        self._load_audio_device_process.start()
+        self.wait_load_audio_device_process_thread = QThread()
+        self.wait_load_audio_device_process_worker = WaitForProcessWorker(self._load_audio_device_process)
+        self.wait_load_audio_device_process_worker.process_finished.connect(self.on_audio_device_preset_reloaded)
+        self.wait_load_audio_device_process_worker.moveToThread(self.wait_load_audio_device_process_thread)
+
+        self.wait_load_audio_device_process_thread.started.connect(self.wait_load_audio_device_process_worker.run)
+        self.wait_load_audio_device_process_thread.start()
 
 
     def on_video_device_preset_reloaded(self, video_presets):
@@ -96,6 +118,12 @@ class SettingsWidget(QtWidgets.QWidget):
         GlobalSignals().stream_presets_entry_changed_signal.emit()
         self.reload_video_device_button.setEnabled(True)
         self.reload_video_device_button.setText("Reload Video Devices")
+
+    def on_audio_device_preset_reloaded(self, audio_presets):
+        Presets().add_audio_presets(audio_presets)
+        GlobalSignals().stream_presets_entry_changed_signal.emit()
+        self.reload_audio_device_button.setEnabled(True)
+        self.reload_audio_device_button.setText("Reload Audio Devices")
 
     def load_settings_to_ui(self):
         self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)
@@ -189,4 +217,8 @@ class SettingsWidget(QtWidgets.QWidget):
     def try_close(self):
         if self._load_video_device_process is not None and self._load_video_device_process.is_alive():
             self._load_video_device_process.terminate()
-        self.wait_process_thread.quit()
+        self.wait_load_video_device_process_thread.quit()
+
+        if self._load_audio_device_process is not None and self._load_audio_device_process.is_alive():
+            self._load_audio_device_process.terminate()
+        self.wait_load_audio_device_process_thread.quit()

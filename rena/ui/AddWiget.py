@@ -182,6 +182,8 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.show_custom_preset_ui(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.show_video_uis(selected_type)
+        elif selected_type == PresetType.AUDIO:
+            self.hide_stream_uis()
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         elif selected_type == PresetType.FMRI:
