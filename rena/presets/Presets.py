@@ -233,6 +233,22 @@ def _load_video_device_presets():
         print('KeyboardInterrupt: exiting')
         return []
 
+def _load_audio_device_presets():
+    try:
+        print('Loading available audio devices')
+        rtn = []
+        _, working_camera_ports, _ = get_working_camera_ports()
+        working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
+
+        for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
+            rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
+        print("finished loading available cameras")
+        return rtn
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt: exiting')
+        return []
+
+
 def _load_param_presets_recursive(param_preset_dict):
     rtn = []
     if isinstance(param_preset_dict, list):

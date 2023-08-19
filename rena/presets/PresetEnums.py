@@ -7,6 +7,7 @@ from pylsl import cf_int8, cf_int16, cf_int32, cf_int64, cf_float32, cf_double64
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
+    AUDIO = 'AUDIO'
     FMRI = 'FMRI'
     LSL = 'LSL'
     ZMQ = 'ZMQ'

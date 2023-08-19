@@ -53,6 +53,7 @@ class SettingsWidget(QtWidgets.QWidget):
         # start a thread to listen to video preset reloading
         # self.zmq_endpoint = "tcp://127.0.0.1:5550"
         self._load_video_device_process = None
+        self._load_audio_device_process = None
         self.wait_process_thread = None
         self.wait_process_worker = None
         self.reload_video_device_button.clicked.connect(self.reload_video_device_presets)
@@ -80,6 +81,15 @@ class SettingsWidget(QtWidgets.QWidget):
 
         self.wait_process_thread.started.connect(self.wait_process_worker.run)
         self.wait_process_thread.start()
+
+    def reload_audio_device_presets(self):
+        """
+        this function will start a separate process look for video devices.
+        an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
+        rtn is the return of the process Presets()._load_video_device_process.
+        """
+        pass
+
 
     def on_video_device_preset_reloaded(self, video_presets):
         Presets().add_video_presets(video_presets)
