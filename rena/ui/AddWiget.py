@@ -4,7 +4,7 @@ from PyQt6.QtGui import QIntValidator
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
-from rena.presets.PresetEnums import PresetType, DataType
+from rena.presets.PresetEnums import PresetType, DataType, AudioInputDataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
     is_stream_name_in_presets
@@ -41,12 +41,15 @@ class AddStreamWidget(QtWidgets.QWidget):
 
         # data type combobox
         add_enum_values_to_combobox(self.data_type_combo_box, DataType)
+        add_enum_values_to_combobox(self.audio_device_data_type_combo_box, AudioInputDataType)
         self.data_type_combo_box.currentIndexChanged.connect(self.on_data_type_changed)
         self.set_data_type_to_default()
 
         add_enum_values_to_combobox(self.preset_type_combobox, PresetType)
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
+
+
 
         self.update_preset_type_uis()
         self.device_property_fields = {}
@@ -120,14 +123,17 @@ class AddStreamWidget(QtWidgets.QWidget):
         if current_type == PresetType.LSL:
             self.PortLineEdit.setHidden(True)
             self.data_type_combo_box.setHidden(True)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.ZMQ:
             self.PortLineEdit.show()
             self.data_type_combo_box.setHidden(False)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.CUSTOM:
             self.PortLineEdit.setHidden(True)
             self.data_type_combo_box.setHidden(False)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(True)
 
     def get_selected_preset_type_str(self):
@@ -183,7 +189,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.show_video_uis(selected_type)
         elif selected_type == PresetType.AUDIO:
-            self.hide_stream_uis()
+            self.show_audio_uis(selected_type)
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         elif selected_type == PresetType.FMRI:
@@ -232,10 +238,20 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.PortLineEdit.setHidden(True)
         self.data_type_combo_box.setHidden(True)
         self.preset_type_combobox.setEnabled(False)
+        self.audio_device_settings_widget.setHidden(True)
+
+    def show_audio_uis(self, selected_type):
+        self.PortLineEdit.setHidden(True)
+        self.data_type_combo_box.setHidden(True)
+        self.preset_type_combobox.setEnabled(False)
+        self.audio_device_settings_widget.setHidden(False)
+
+
 
     def hide_stream_uis(self):
         self.data_type_combo_box.setHidden(True)
         self.PortLineEdit.setHidden(True)
+        self.audio_device_settings_widget.setHidden(True)
         self.preset_type_combobox.setEnabled(False)
 
     def load_data_type_into_ui(self, stream_name):
