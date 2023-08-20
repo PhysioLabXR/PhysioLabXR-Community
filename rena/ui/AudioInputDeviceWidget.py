@@ -10,7 +10,7 @@ from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.utils.ui_utils import dialog_popup
 
 
-class AudioDeviceWidget(BaseStreamWidget):
+class AudioInputDeviceWidget(BaseStreamWidget):
 
     def __init__(self, parent_widget, parent_layout, stream_name, insert_position=None):
         """

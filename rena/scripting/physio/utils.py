@@ -20,3 +20,9 @@ def interpolate_array_nan(data_array):
 
 def time_to_index(timestamps, time):
     return np.argmin(np.abs(timestamps - time))
+
+def string_to_enum(enum_type, string_value):
+    try:
+        return enum_type[string_value]
+    except KeyError:
+        raise ValueError(f"'{string_value}' is not a valid value for {enum_type.__name__}")

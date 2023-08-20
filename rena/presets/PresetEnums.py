@@ -144,5 +144,5 @@ class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
 
-if __name__ == '__main__':
-    a = AudioInputDataType.paFloat32()
+# if __name__ == '__main__':
+#     a = AudioInputDataType.paFloat32()

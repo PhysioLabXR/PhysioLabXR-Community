@@ -8,7 +8,8 @@ from rena.presets.PresetEnums import PresetType, DataType, AudioInputDataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
     is_stream_name_in_presets, change_stream_preset_audio_device_sampling_rate, \
-    change_stream_preset_audio_device_frames_per_buffer
+    change_stream_preset_audio_device_frames_per_buffer, change_stream_preset_audio_device_data_type
+from rena.scripting.physio.utils import string_to_enum
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.Validators import NoCommaIntValidator
@@ -64,12 +65,26 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
         self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
+        self.connect_audio_input_settings_on_change_signals()
 
     def disconnect_stream_name_combo_box_signals(self):
         self.stream_name_combo_box.lineEdit().returnPressed.disconnect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.on_streamName_combobox_text_changed)
         self.stream_name_combo_box.currentIndexChanged.disconnect(self.on_streamName_combobox_text_changed)
+        self.disconnect_audio_input_settings_on_change_signals()
+
+
+    def connect_audio_input_settings_on_change_signals(self):
+        self.audio_device_sampling_rate_line_edit.textChanged.connect(self.on_audio_device_sampling_rate_line_edit_changed)
+        self.audio_device_frames_per_buffer_line_edit.textChanged.connect(self.on_audio_device_frames_per_buffer_line_edit_changed)
+        self.audio_device_data_type_combo_box.currentIndexChanged.connect(self.on_audio_input_data_type_combobox_changed)
+
+    def disconnect_audio_input_settings_on_change_signals(self):
+        self.audio_device_sampling_rate_line_edit.textChanged.disconnect(self.on_audio_device_sampling_rate_line_edit_changed)
+        self.audio_device_frames_per_buffer_line_edit.textChanged.disconnect(self.on_audio_device_frames_per_buffer_line_edit_changed)
+        self.audio_device_data_type_combo_box.currentIndexChanged.disconnect(self.on_audio_input_data_type_combobox_changed)
+
 
     def select_by_stream_name(self, stream_name):
         index = self.stream_name_combo_box.findText(stream_name, Qt.MatchFlag.MatchFixedString)
@@ -316,9 +331,9 @@ class AddStreamWidget(QtWidgets.QWidget):
 
 
 
+########################################################
 
-
-    def on_audio_device_frames_per_buffer_line_edit(self):
+    def on_audio_device_frames_per_buffer_line_edit_changed(self):
         stream_name, is_new = self.get_selected_stream_name_is_new()
         if stream_name == '':
             return
@@ -332,7 +347,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         except ValueError:
             return -1
 
-    def on_audio_device_sampling_rate_line_edit(self):
+    def on_audio_device_sampling_rate_line_edit_changed(self):
         stream_name, is_new = self.get_selected_stream_name_is_new()
         if stream_name == '':
             return
@@ -345,5 +360,20 @@ class AddStreamWidget(QtWidgets.QWidget):
             return int(self.audio_device_sampling_rate_line_edit.text())
         except ValueError:
             return -1
+
+    def on_audio_input_data_type_combobox_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            data_type = self.get_audio_input_data_type()
+            change_stream_preset_audio_device_data_type(stream_name, data_type)
+
+    def get_audio_input_data_type(self):
+        return string_to_enum(enum_type=AudioInputDataType, string_value=self.audio_device_data_type_combo_box.currentText())
+
+
+
+
 
 

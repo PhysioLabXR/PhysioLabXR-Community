@@ -14,6 +14,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -186,6 +187,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if preset_type == PresetType.WEBCAM:  # add video device
                 self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.AUDIO:
+                self.init_audio_device(stream_name)
             elif preset_type == PresetType.MONITOR:
                 self.init_video_device(stream_name, video_preset_type=preset_type)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset
@@ -305,6 +308,15 @@ class MainWindow(QtWidgets.QMainWindow):
                                  insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[topic_name] = stream_widget
+
+    def init_audio_input_device(self, stream_name):
+        widget_name = stream_name + '_widget'
+        stream_widget = AudioInputDeviceWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
 
     def update_meta_data(self):
         # get the stream viz fps
