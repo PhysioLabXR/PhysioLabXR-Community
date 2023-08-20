@@ -298,7 +298,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         update the visualization buffer, recording buffer, and scripting buffer
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
-
             # if only applied to visualization, then only update the visualization buffer
             if get_stream_data_processor_only_apply_to_visualization(self.stream_name):
                 self.main_parent.recording_tab.update_recording_buffer(data_dict)
