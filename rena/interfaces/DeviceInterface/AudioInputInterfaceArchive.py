@@ -91,7 +91,7 @@ if __name__ == '__main__':
     info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 8000, pylsl.cf_int16, "myuniqueid")
     outlet = pylsl.StreamOutlet(info)
 
-    audio_interface = AudioInputInterface(_device_name='Participant Microphone',
+    audio_interface = AudioInputInterfaceArchive(_device_name='Participant Microphone',
                                           _audio_device_index=0,
                                           _audio_device_channel=2,
                                           _device_type=DeviceType.AUDIOINPUT)
