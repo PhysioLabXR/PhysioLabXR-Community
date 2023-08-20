@@ -42,6 +42,8 @@ class AddStreamWidget(QtWidgets.QWidget):
         # data type combobox
         add_enum_values_to_combobox(self.data_type_combo_box, DataType)
         add_enum_values_to_combobox(self.audio_device_data_type_combo_box, AudioInputDataType)
+        self.set_audio_device_input_field_validator()
+
         self.data_type_combo_box.currentIndexChanged.connect(self.on_data_type_changed)
         self.set_data_type_to_default()
 
@@ -294,3 +296,9 @@ class AddStreamWidget(QtWidgets.QWidget):
         if not is_new:
             data_type = DataType(self.data_type_combo_box.currentText())
             change_stream_preset_data_type(self.get_selected_stream_name(), data_type)
+
+    def set_audio_device_input_field_validator(self):
+        self.audio_device_frames_per_buffer_line_edit.setValidator(QIntValidator(0, 2048))
+        self.audio_device_sampling_rate_line_edit.setValidator(QIntValidator(0, 32768))
+
+
