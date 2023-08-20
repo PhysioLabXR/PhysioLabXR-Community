@@ -390,6 +390,20 @@ def change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate):
 def change_stream_preset_audio_device_data_type(stream_name, data_type: AudioInputDataType):
     Presets().stream_presets[stream_name].audio_device_data_format = data_type
 
+def get_audio_device_frames_per_buffer(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_frames_per_buffer
+
+def get_audio_device_sampling_rate(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_sampling_rate
+
+def get_audio_device_data_type(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_data_format
+
+def get_audio_device_index(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_index
+
+
+
 def verify_stream_meta_info(*args, **kwargs):
     rtn = kwargs['preset_type'] in PresetType
     rtn = (rtn and kwargs['data_type'] in DataType) if PresetType.is_lsl_zmq_custom_preset(kwargs['preset_type']) else rtn

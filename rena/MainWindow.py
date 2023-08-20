@@ -188,7 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if preset_type == PresetType.WEBCAM:  # add video device
                 self.init_video_device(stream_name, video_preset_type=preset_type)
             elif preset_type == PresetType.AUDIO:
-                self.init_audio_device(stream_name)
+                self.init_audio_input_device(stream_name)
             elif preset_type == PresetType.MONITOR:
                 self.init_video_device(stream_name, video_preset_type=preset_type)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset

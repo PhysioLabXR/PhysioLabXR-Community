@@ -21,12 +21,12 @@ class AudioInputDeviceWidget(BaseStreamWidget):
         """
 
         # GUI elements
-        super().__init__(parent_widget, parent_layout, PresetType.LSL, stream_name,
+        super().__init__(parent_widget, parent_layout, PresetType.AUDIO, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
-        num_channels = get_stream_preset_info(self.stream_name, 'num_channels')
-        lsl_worker = workers.LSLInletWorker(self.stream_name, num_channels, RenaTCPInterface=None)
-        self.connect_worker(lsl_worker, True)
+
+        audio_input_device_worker = workers.AudioInputDeviceWorker(self.stream_name)
+        self.connect_worker(audio_input_device_worker, True)
         self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
 

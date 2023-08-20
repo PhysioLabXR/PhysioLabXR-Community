@@ -9,7 +9,7 @@ from rena.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from rena.utils.ConfigPresetUtils import DeviceType
 
 
-class AudioInputInterface(DeviceInterface):
+class AudioInputInterfaceArchive(DeviceInterface):
 
     def __init__(self,
                  _device_name,
@@ -20,7 +20,7 @@ class AudioInputInterface(DeviceInterface):
                  audio_device_frames_per_buffer=128,
                  audio_device_sampling_rate=8000,
                  device_nominal_sampling_rate=8000):
-        super(AudioInputInterface, self).__init__(_device_name=_device_name,
+        super(AudioInputInterfaceArchive, self).__init__(_device_name=_device_name,
                                                   _device_type=_device_type,
                                                   device_nominal_sampling_rate=device_nominal_sampling_rate)
 
@@ -40,7 +40,7 @@ class AudioInputInterface(DeviceInterface):
         self.audio = None
         self.stream = None
 
-    def start_sensor(self):
+    def start_stream(self):
         self.audio = pyaudio.PyAudio()
 
         # open stream
@@ -78,7 +78,7 @@ class AudioInputInterface(DeviceInterface):
 
         return np.array(frames), timestamps
 
-    def stop_sensor(self):
+    def stop_stream(self):
         if self.stream:
             self.stream.stop_stream()
             self.stream.close()
@@ -95,7 +95,7 @@ if __name__ == '__main__':
                                           _audio_device_index=0,
                                           _audio_device_channel=2,
                                           _device_type=DeviceType.AUDIOINPUT)
-    audio_interface.start_sensor()
+    audio_interface.start_stream()
     while 1:
         data, timestamps = audio_interface.process_frames()
         if len(timestamps) > 0:

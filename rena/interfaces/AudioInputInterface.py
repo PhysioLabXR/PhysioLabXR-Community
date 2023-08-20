@@ -157,19 +157,19 @@ class AudioInputInterface(DeviceInterface):
 #         return self.sampling_rate
 
 
-if __name__ == '__main__':
-    print()
-    # LSL example
-    info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 4000, pylsl.cf_int16, "myuniqueid")
-    outlet = pylsl.StreamOutlet(info)
-
-    audio_interface = AudioInputInterface(_device_name='Participant Microphone',
-                                          _audio_device_index=0,
-                                          _audio_device_channel=2,
-                                          _device_type=DeviceType.AUDIOINPUT)
-    audio_interface.start_stream()
-    while 1:
-        data, timestamps = audio_interface.process_frames()
-        if len(timestamps) > 0:
-            for index, sample in enumerate(data.T):
-                outlet.push_sample(sample, timestamp=timestamps[index])
+# if __name__ == '__main__':
+#     print()
+#     # LSL example
+#     info = pylsl.StreamInfo("Participant Microphone", "MyData", 2, 4000, pylsl.cf_int16, "myuniqueid")
+#     outlet = pylsl.StreamOutlet(info)
+#
+#     audio_interface = AudioInputInterface(_device_name='Participant Microphone',
+#                                           _audio_device_index=0,
+#                                           _audio_device_channel=2,
+#                                           _device_type=DeviceType.AUDIOINPUT)
+#     audio_interface.start_sensor()
+#     while 1:
+#         data, timestamps = audio_interface.process_frames()
+#         if len(timestamps) > 0:
+#             for index, sample in enumerate(data.T):
+#                 outlet.push_sample(sample, timestamp=timestamps[index])
