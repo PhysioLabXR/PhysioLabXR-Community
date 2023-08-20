@@ -381,6 +381,13 @@ def change_stream_preset_type(stream_name, preset_type: PresetType):
 def change_stream_preset_data_type(stream_name, data_type: DataType):
     Presets().stream_presets[stream_name].data_type = data_type
 
+def change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer):
+    Presets().stream_presets[stream_name].audio_device_frames_per_buffer = frames_per_buffer
+
+def change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate):
+    Presets().stream_presets[stream_name].audio_device_sampling_rate = sampling_rate
+
+
 
 def verify_stream_meta_info(*args, **kwargs):
     rtn = kwargs['preset_type'] in PresetType

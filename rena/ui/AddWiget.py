@@ -7,7 +7,8 @@ from rena.configs.configs import AppConfigs
 from rena.presets.PresetEnums import PresetType, DataType, AudioInputDataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
-    is_stream_name_in_presets
+    is_stream_name_in_presets, change_stream_preset_audio_device_sampling_rate, \
+    change_stream_preset_audio_device_frames_per_buffer
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.Validators import NoCommaIntValidator
@@ -176,6 +177,9 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.load_port_num_into_ui(stream_name)
             self.load_data_type_into_ui(stream_name)
 
+        if PresetType.is_self_audio_preset(selected_type) and not is_new_preset:
+            self.load_audio_device_settings_into_ui(stream_name)
+
         if is_new_preset:
             selected_type = PresetType.LSL
 
@@ -269,6 +273,15 @@ class AddStreamWidget(QtWidgets.QWidget):
         port_number = get_stream_preset_info(stream_name, "port_number")
         if port_number is not None: self.PortLineEdit.setText(str(port_number))
 
+
+    # audio_device_data_format: int = pyaudio.paInt16
+    # audio_device_frames_per_buffer: int = 128
+    # audio_device_sampling_rate: float = 4000
+    def load_audio_device_settings_into_ui(self, stream_name):
+        self.audio_device_frames_per_buffer_line_edit.setText(str(get_stream_preset_info(stream_name, "audio_device_frames_per_buffer")))
+        self.audio_device_sampling_rate_line_edit.setText(str(get_stream_preset_info(stream_name, "audio_device_sampling_rate")))
+        self.audio_device_data_type_combo_box.setCurrentText(get_stream_preset_info(stream_name, "audio_device_data_format").name)
+
     def on_stream_presets_entry_changed(self):
         self.disconnect_stream_name_combo_box_signals()
         self.stream_name_combo_box.clear()
@@ -300,5 +313,37 @@ class AddStreamWidget(QtWidgets.QWidget):
     def set_audio_device_input_field_validator(self):
         self.audio_device_frames_per_buffer_line_edit.setValidator(QIntValidator(0, 2048))
         self.audio_device_sampling_rate_line_edit.setValidator(QIntValidator(0, 32768))
+
+
+
+
+
+    def on_audio_device_frames_per_buffer_line_edit(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            frames_per_buffer = self.get_audio_device_frames_per_buffer()
+            change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer)
+
+    def get_audio_device_frames_per_buffer(self):
+        try:
+            return int(self.audio_device_frames_per_buffer_line_edit.text())
+        except ValueError:
+            return -1
+
+    def on_audio_device_sampling_rate_line_edit(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            sampling_rate = self.get_audio_device_sampling_rate()
+            change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate)
+
+    def get_audio_device_sampling_rate(self):
+        try:
+            return int(self.audio_device_sampling_rate_line_edit.text())
+        except ValueError:
+            return -1
 
 

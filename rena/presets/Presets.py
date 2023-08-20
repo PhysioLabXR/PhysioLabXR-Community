@@ -14,7 +14,7 @@ from rena import config
 from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType
 from rena.presets.ScriptPresets import ScriptPreset, ScriptParam
 from rena.presets.preset_class_helpers import SubPreset
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
@@ -201,7 +201,7 @@ class AudioPreset(metaclass=SubPreset):
     group_info: dict[str, GroupEntry]
     device_info: dict
 
-    audio_device_data_format: int = pyaudio.paInt16
+    audio_device_data_format: AudioInputDataType = AudioInputDataType.paInt16
     audio_device_frames_per_buffer: int = 128
     audio_device_sampling_rate: float = 4000
 
