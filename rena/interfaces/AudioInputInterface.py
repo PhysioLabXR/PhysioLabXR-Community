@@ -89,8 +89,10 @@ class AudioInputInterface(DeviceInterface):
             self.stream.close()
             self.audio.terminate()
 
-    # def get_sampling_rate(self):
-    #     return self.n
+    def is_stream_available(self):
+
+        return True
+        # return True
 
 
 # class RenaAudioInputInterface(DeviceInterface):
