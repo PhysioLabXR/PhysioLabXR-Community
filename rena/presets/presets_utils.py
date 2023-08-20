@@ -80,6 +80,11 @@ def get_is_channels_show(stream_name, group_name) -> List[bool]:
 def is_group_image_only(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].is_image_only()
 
+def get_stream_data_processor_only_apply_to_visualization(stream_name) -> bool:
+    return Presets().stream_presets[stream_name].data_processor_only_apply_to_visualization
+
+def set_stream_data_processor_only_apply_to_visualization(stream_name, value):
+    Presets().stream_presets[stream_name].data_processor_only_apply_to_visualization = value
 
 def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format: Union[str, int, PlotFormat]) -> PlotFormat:
     if isinstance(plot_format, str):

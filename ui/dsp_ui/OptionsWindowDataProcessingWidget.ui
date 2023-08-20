@@ -13,7 +13,7 @@
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>200</height>
+    <height>400</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -111,6 +111,22 @@
        </widget>
       </item>
       <item>
+       <widget class="QWidget" name="DataProcessorOnlyAppliedToVisualizationCheckBoxWidget" native="true">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QCheckBox" name="DataProcessorsOnlyApplyToVisualizationCheckBox">
+           <property name="text">
+            <string>Data Processors Only Apply to Visualization</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QWidget" name="DataProcessorWidget" native="true">
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <property name="leftMargin">
@@ -151,7 +167,7 @@
                  <x>0</x>
                  <y>0</y>
                  <width>837</width>
-                 <height>442</height>
+                 <height>402</height>
                 </rect>
                </property>
                <property name="sizePolicy">

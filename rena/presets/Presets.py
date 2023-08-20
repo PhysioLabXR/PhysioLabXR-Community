@@ -106,6 +106,8 @@ class StreamPreset(metaclass=SubPreset):
 
     can_edit_channel_names: bool = True
 
+    data_processor_only_apply_to_visualization: bool = False
+
     def __post_init__(self):
         """
         StreamPreset's post init function. It will set the display_duration attribute based on the default_display_duration in the config file.

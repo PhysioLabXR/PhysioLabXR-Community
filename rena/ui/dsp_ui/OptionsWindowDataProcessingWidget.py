@@ -2,9 +2,11 @@
 
 from PyQt6 import QtWidgets
 from PyQt6 import uic
+from PyQt6.QtCore import Qt
 
 from rena.configs.configs import AppConfigs
-from rena.presets.presets_utils import get_group_data_processors
+from rena.presets.presets_utils import get_group_data_processors, get_stream_data_processor_only_apply_to_visualization, \
+    set_stream_data_processor_only_apply_to_visualization
 from rena.ui.dsp_ui.DataProcessorWidget import DataProcessorWidgetType
 from rena.utils.dsp_utils.dsp_modules import *
 # class data_processor_widget_type:
@@ -28,6 +30,12 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
         self.AddDataProcessorBtn.setIcon(AppConfigs()._icon_add)
 
         self.init_data_processor_combobox()
+
+        # set visualization types
+        self.set_data_processor_only_apply_to_visualization_checkbox()
+
+        self.DataProcessorsOnlyApplyToVisualizationCheckBox.stateChanged.connect(self.data_processor_only_apply_to_visualization_checkbox_state_changed)
+
 
     def init_data_processor_combobox(self):
         for data_processor_type in DataProcessorType:
@@ -57,7 +65,20 @@ class OptionsWindowDataProcessingWidget(QtWidgets.QWidget):
     def change_group_name(self, new_name):
         self.group_name = new_name
 
+    def set_data_processor_only_apply_to_visualization_checkbox(self):
+        if get_stream_data_processor_only_apply_to_visualization(self.stream_name):
+            self.DataProcessorsOnlyApplyToVisualizationCheckBox.setChecked(True)
+        else:
+            self.DataProcessorsOnlyApplyToVisualizationCheckBox.setChecked(False)
+        # self.DataProcessorsOnlyApplyToVisualizationCheckBox.setChecked(get_stream_data_processor_only_apply_to_visualization(self.stream_name))
 
+    def data_processor_only_apply_to_visualization_checkbox_state_changed(self):
+        if self.DataProcessorsOnlyApplyToVisualizationCheckBox.isChecked():
+            set_stream_data_processor_only_apply_to_visualization(self.stream_name, True)
+        else:
+            set_stream_data_processor_only_apply_to_visualization(self.stream_name, False)
+
+        print('Stream: ', self.stream_name, ' set_data_processor_only_apply_to_visualization_checkbox_state_changed: ', self.DataProcessorsOnlyApplyToVisualizationCheckBox.isChecked())
 
 
 
