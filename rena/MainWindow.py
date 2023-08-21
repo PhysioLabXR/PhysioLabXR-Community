@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
-from rena.configs.configs import AppConfigs, DialogReplyResult
+from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
@@ -441,7 +441,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # f'It is recommended to remove the other data stream with the same name.',
                 title='Stream Added Warning', mode='modal',
                 buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
-            if reply.result() == DialogReplyResult.YES:
+            if reply.result():
                 for stream_name in target_widget_names:
                     self.stream_widgets[stream_name].try_close()
             else:
