@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena import config
-from rena.configs.configs import AppConfigs
+from rena.configs.configs import AppConfigs, DialogReplyResult
 from rena.presets.Presets import Presets
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
@@ -428,22 +428,24 @@ class MainWindow(QtWidgets.QMainWindow):
         return np.any(is_stream_widgets_streaming)
 
     def remove_stream_widget_with_preset_type(self, preset_type, remove_warning=True):
-        pass
+        # pass
         # # if any stream is streaming, warn the user
-        # target_widget_names = [s_name for s_name, s_widget in self.stream_widgets.items() if s_widget.preset_type == preset_type]
-        # if remove_warning and len(target_widget_names) > 0:
-        #     reply = dialog_popup(
-        #         f'There\'s another stream source with the name {target_widget_names} on the network.\n'
-        #         f'Are you sure you want to proceed with replaying this file? \n'
-        #         f'Proceeding may result in unpredictable streaming behavior.\n'
-        #         f'It is recommended to remove the other data stream with the same name.',
-        #         title='Stream Added Warning', mode='modal', main_parent=self.parent,
-        #         buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
-        #     if reply == QDialogButtonBox.StandardButton.Yes:
-        #         for stream_name in target_widget_names:
-        #             self.stream_widgets[stream_name].try_close()
-        #     else:
-        #         return
+        target_widget_names = [s_name for s_name, s_widget in self.stream_widgets.items() if s_widget.preset_type == preset_type]
+        if remove_warning and len(target_widget_names) > 0:
+            reply = dialog_popup(
+                msg=f"Remove all the streams added with preset {preset_type}?.\n"
+                    f"Proceeding will remove the following streams: {target_widget_names}",
+                # f'There\'s another stream source with the name {target_widget_names} on the network.\n'
+                # f'Are you sure you want to proceed with replaying this file? \n'
+                # f'Proceeding may result in unpredictable streaming behavior.\n'
+                # f'It is recommended to remove the other data stream with the same name.',
+                title='Stream Added Warning', mode='modal',
+                buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+            if reply.result() == DialogReplyResult.YES:
+                for stream_name in target_widget_names:
+                    self.stream_widgets[stream_name].try_close()
+            else:
+                return
 
 
 

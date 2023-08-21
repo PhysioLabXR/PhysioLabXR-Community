@@ -16,6 +16,15 @@ class LinechartVizMode(Enum):
     INPLACE = "in place"
     CONTINUOUS = "continuous"
 
+class IntEnum(int, Enum):
+    pass
+
+class DialogReplyResult(IntEnum):
+    YES = 1
+    NO = 0
+    def __int__(self) -> int:
+        return int.__int__(self)
+
 
 class RecordingFileFormat(Enum):
     dats = "data arrays and timestamps (.dats)"
