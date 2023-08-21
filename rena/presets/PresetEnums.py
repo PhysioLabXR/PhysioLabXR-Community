@@ -1,12 +1,14 @@
 from enum import Enum
 
 import numpy as np
+import pyaudio
 from pylsl import cf_int8, cf_int16, cf_int32, cf_int64, cf_float32, cf_double64
 
 
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
     MONITOR = 'MONITOR'
+    AUDIO = 'AUDIO'
     FMRI = 'FMRI'
     LSL = 'LSL'
     ZMQ = 'ZMQ'
@@ -27,6 +29,19 @@ class PresetType(Enum):
 
     def is_self_video_preset(self):
         return self in [self.WEBCAM, self.MONITOR]
+
+    def is_self_audio_preset(self):
+        return self in [self.AUDIO]
+
+
+class AudioInputDataType(Enum):
+
+    paFloat32 = pyaudio.paFloat32  #: 32 bit float
+    paInt32 = pyaudio.paInt32  #: 32 bit int
+    paInt24 = pyaudio.paInt24  #: 24 bit int
+    paInt16 = pyaudio.paInt16  #: 16 bit int
+    paInt8 = pyaudio.paInt8  #: 8 bit int
+    paUInt8 = pyaudio.paUInt8  #: 8 bit unsigned int
 
 
 class DataType(Enum):

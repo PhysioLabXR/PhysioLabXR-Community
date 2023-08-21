@@ -5,7 +5,7 @@ from typing import Dict
 
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
@@ -14,6 +14,7 @@ from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
 from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
@@ -186,6 +187,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if preset_type == PresetType.WEBCAM:  # add video device
                 self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.AUDIO:
+                self.init_audio_input_device(stream_name)
             elif preset_type == PresetType.MONITOR:
                 self.init_video_device(stream_name, video_preset_type=preset_type)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset
@@ -306,6 +309,15 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[topic_name] = stream_widget
 
+    def init_audio_input_device(self, stream_name):
+        widget_name = stream_name + '_widget'
+        stream_widget = AudioInputDeviceWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
+
     def update_meta_data(self):
         # get the stream viz fps
         fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()]])
@@ -415,3 +427,28 @@ class MainWindow(QtWidgets.QMainWindow):
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
         return np.any(is_stream_widgets_streaming)
 
+    def remove_stream_widget_with_preset_type(self, preset_type, remove_warning=True):
+        # pass
+        # # if any stream is streaming, warn the user
+        target_widget_names = [s_name for s_name, s_widget in self.stream_widgets.items() if s_widget.preset_type == preset_type]
+        if remove_warning and len(target_widget_names) > 0:
+            reply = dialog_popup(
+                msg=f"The following streams are active {target_widget_names}?.\n"
+                    f"Do you want to remove these streams from visualization for now (you can always add them back)?",
+                # f'There\'s another stream source with the name {target_widget_names} on the network.\n'
+                # f'Are you sure you want to proceed with replaying this file? \n'
+                # f'Proceeding may result in unpredictable streaming behavior.\n'
+                # f'It is recommended to remove the other data stream with the same name.',
+                title='Stream Added Warning', mode='modal',
+                buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+            if reply.result():
+                for stream_name in target_widget_names:
+                    self.stream_widgets[stream_name].try_close()
+            else:
+                return
+
+
+
+        # for stream_name, stream_widget in self.stream_widgets.items():
+        #     if stream_widget.preset_type == preset_type:
+        #         stream_widget.try_close()

@@ -4,10 +4,12 @@ from PyQt6.QtGui import QIntValidator
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
-from rena.presets.PresetEnums import PresetType, DataType
+from rena.presets.PresetEnums import PresetType, DataType, AudioInputDataType
 from rena.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
-    is_stream_name_in_presets
+    is_stream_name_in_presets, change_stream_preset_audio_device_sampling_rate, \
+    change_stream_preset_audio_device_frames_per_buffer, change_stream_preset_audio_device_data_type
+from rena.scripting.physio.utils import string_to_enum
 from rena.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from rena.ui.CustomPropertyWidget import CustomPropertyWidget
 from rena.utils.Validators import NoCommaIntValidator
@@ -41,12 +43,17 @@ class AddStreamWidget(QtWidgets.QWidget):
 
         # data type combobox
         add_enum_values_to_combobox(self.data_type_combo_box, DataType)
+        add_enum_values_to_combobox(self.audio_device_data_type_combo_box, AudioInputDataType)
+        self.set_audio_device_input_field_validator()
+
         self.data_type_combo_box.currentIndexChanged.connect(self.on_data_type_changed)
         self.set_data_type_to_default()
 
         add_enum_values_to_combobox(self.preset_type_combobox, PresetType)
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
+
+
 
         self.update_preset_type_uis()
         self.device_property_fields = {}
@@ -58,12 +65,26 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.connect(self.on_streamName_combobox_text_changed)
         self.stream_name_combo_box.currentIndexChanged.connect(self.on_streamName_combobox_text_changed)
+        self.connect_audio_input_settings_on_change_signals()
 
     def disconnect_stream_name_combo_box_signals(self):
         self.stream_name_combo_box.lineEdit().returnPressed.disconnect(self.on_streamName_comboBox_returnPressed)
         self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.check_can_add_input)
         self.stream_name_combo_box.lineEdit().textChanged.disconnect(self.on_streamName_combobox_text_changed)
         self.stream_name_combo_box.currentIndexChanged.disconnect(self.on_streamName_combobox_text_changed)
+        self.disconnect_audio_input_settings_on_change_signals()
+
+
+    def connect_audio_input_settings_on_change_signals(self):
+        self.audio_device_sampling_rate_line_edit.textChanged.connect(self.on_audio_device_sampling_rate_line_edit_changed)
+        self.audio_device_frames_per_buffer_line_edit.textChanged.connect(self.on_audio_device_frames_per_buffer_line_edit_changed)
+        self.audio_device_data_type_combo_box.currentIndexChanged.connect(self.on_audio_input_data_type_combobox_changed)
+
+    def disconnect_audio_input_settings_on_change_signals(self):
+        self.audio_device_sampling_rate_line_edit.textChanged.disconnect(self.on_audio_device_sampling_rate_line_edit_changed)
+        self.audio_device_frames_per_buffer_line_edit.textChanged.disconnect(self.on_audio_device_frames_per_buffer_line_edit_changed)
+        self.audio_device_data_type_combo_box.currentIndexChanged.disconnect(self.on_audio_input_data_type_combobox_changed)
+
 
     def select_by_stream_name(self, stream_name):
         index = self.stream_name_combo_box.findText(stream_name, Qt.MatchFlag.MatchFixedString)
@@ -120,14 +141,17 @@ class AddStreamWidget(QtWidgets.QWidget):
         if current_type == PresetType.LSL:
             self.PortLineEdit.setHidden(True)
             self.data_type_combo_box.setHidden(True)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.ZMQ:
             self.PortLineEdit.show()
             self.data_type_combo_box.setHidden(False)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
         elif current_type == PresetType.CUSTOM:
             self.PortLineEdit.setHidden(True)
             self.data_type_combo_box.setHidden(False)
+            self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(True)
 
     def get_selected_preset_type_str(self):
@@ -168,6 +192,9 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.load_port_num_into_ui(stream_name)
             self.load_data_type_into_ui(stream_name)
 
+        if PresetType.is_self_audio_preset(selected_type) and not is_new_preset:
+            self.load_audio_device_settings_into_ui(stream_name)
+
         if is_new_preset:
             selected_type = PresetType.LSL
 
@@ -182,6 +209,8 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.show_custom_preset_ui(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.show_video_uis(selected_type)
+        elif selected_type == PresetType.AUDIO:
+            self.show_audio_uis(selected_type)
         elif selected_type == PresetType.EXPERIMENT:
             self.hide_stream_uis()
         elif selected_type == PresetType.FMRI:
@@ -230,10 +259,20 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.PortLineEdit.setHidden(True)
         self.data_type_combo_box.setHidden(True)
         self.preset_type_combobox.setEnabled(False)
+        self.audio_device_settings_widget.setHidden(True)
+
+    def show_audio_uis(self, selected_type):
+        self.PortLineEdit.setHidden(True)
+        self.data_type_combo_box.setHidden(True)
+        self.preset_type_combobox.setEnabled(False)
+        self.audio_device_settings_widget.setHidden(False)
+
+
 
     def hide_stream_uis(self):
         self.data_type_combo_box.setHidden(True)
         self.PortLineEdit.setHidden(True)
+        self.audio_device_settings_widget.setHidden(True)
         self.preset_type_combobox.setEnabled(False)
 
     def load_data_type_into_ui(self, stream_name):
@@ -248,6 +287,15 @@ class AddStreamWidget(QtWidgets.QWidget):
     def load_port_num_into_ui(self, stream_name):
         port_number = get_stream_preset_info(stream_name, "port_number")
         if port_number is not None: self.PortLineEdit.setText(str(port_number))
+
+
+    # audio_device_data_format: int = pyaudio.paInt16
+    # audio_device_frames_per_buffer: int = 128
+    # audio_device_sampling_rate: float = 4000
+    def load_audio_device_settings_into_ui(self, stream_name):
+        self.audio_device_frames_per_buffer_line_edit.setText(str(get_stream_preset_info(stream_name, "audio_device_frames_per_buffer")))
+        self.audio_device_sampling_rate_line_edit.setText(str(get_stream_preset_info(stream_name, "audio_device_sampling_rate")))
+        self.audio_device_data_type_combo_box.setCurrentText(get_stream_preset_info(stream_name, "audio_device_data_format").name)
 
     def on_stream_presets_entry_changed(self):
         self.disconnect_stream_name_combo_box_signals()
@@ -276,3 +324,56 @@ class AddStreamWidget(QtWidgets.QWidget):
         if not is_new:
             data_type = DataType(self.data_type_combo_box.currentText())
             change_stream_preset_data_type(self.get_selected_stream_name(), data_type)
+
+    def set_audio_device_input_field_validator(self):
+        self.audio_device_frames_per_buffer_line_edit.setValidator(QIntValidator(0, 2048))
+        self.audio_device_sampling_rate_line_edit.setValidator(QIntValidator(0, 32768))
+
+
+
+########################################################
+
+    def on_audio_device_frames_per_buffer_line_edit_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            frames_per_buffer = self.get_audio_device_frames_per_buffer()
+            change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer)
+
+    def get_audio_device_frames_per_buffer(self):
+        try:
+            return int(self.audio_device_frames_per_buffer_line_edit.text())
+        except ValueError:
+            return -1
+
+    def on_audio_device_sampling_rate_line_edit_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            sampling_rate = self.get_audio_device_sampling_rate()
+            change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate)
+
+    def get_audio_device_sampling_rate(self):
+        try:
+            return int(self.audio_device_sampling_rate_line_edit.text())
+        except ValueError:
+            return -1
+
+    def on_audio_input_data_type_combobox_changed(self):
+        stream_name, is_new = self.get_selected_stream_name_is_new()
+        if stream_name == '':
+            return
+        if not is_new:
+            data_type = self.get_audio_input_data_type()
+            change_stream_preset_audio_device_data_type(stream_name, data_type)
+
+    def get_audio_input_data_type(self):
+        return string_to_enum(enum_type=AudioInputDataType, string_value=self.audio_device_data_type_combo_box.currentText())
+
+
+
+
+
+
