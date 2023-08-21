@@ -74,6 +74,10 @@ class SettingsWidget(QtWidgets.QWidget):
 
 
         """
+        # self.parent.remove_stream_widget_with_preset_type(PresetType.WEBCAM)
+        # self.parent.remove_stream_widget_with_preset_type(PresetType.MONITOR)
+
+
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
         Presets().remove_video_presets()
