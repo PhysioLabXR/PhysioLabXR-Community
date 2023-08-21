@@ -33,32 +33,6 @@ class PresetType(Enum):
     def is_self_audio_preset(self):
         return self in [self.AUDIO]
 
-# class AudioInputDataType(Enum):
-#
-#     paFloat32 = "paFloat32"  #: 32 bit float
-#     paInt32 = "paInt32"  #: 32 bit int
-#     paInt24 = "paInt24"  #: 24 bit int
-#     paInt16 = "paInt16"  #: 16 bit int
-#     paInt8 = "paInt8"  #: 8 bit int
-#     paUInt8 = "paUInt8"  #: 8 bit unsigned int
-#     def __call__(self, *args, **kwargs):
-#         return self.get_data_type()
-#
-#     def get_data_type(self):
-#         if self == AudioInputDataType.paFloat32:
-#             return pyaudio.paFloat32
-#         elif self == AudioInputDataType.paInt32:
-#             return pyaudio.paInt32
-#         elif self == AudioInputDataType.paInt24:
-#             return pyaudio.paInt24
-#         elif self == AudioInputDataType.paInt16:
-#             return pyaudio.paInt16
-#         elif self == AudioInputDataType.paInt8:
-#             return pyaudio.paInt8
-#         elif self == AudioInputDataType.paUInt8:
-#             return pyaudio.paUInt8
-#         else:
-#             return pyaudio.paFloat32
 
 class AudioInputDataType(Enum):
 
@@ -68,7 +42,6 @@ class AudioInputDataType(Enum):
     paInt16 = pyaudio.paInt16  #: 16 bit int
     paInt8 = pyaudio.paInt8  #: 8 bit int
     paUInt8 = pyaudio.paUInt8  #: 8 bit unsigned int
-
 
 
 class DataType(Enum):
@@ -143,6 +116,3 @@ class DataType(Enum):
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
-
-# if __name__ == '__main__':
-#     a = AudioInputDataType.paFloat32()
