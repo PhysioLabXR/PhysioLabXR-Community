@@ -182,6 +182,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(stream_name),title='Warning')
                 return
             if not is_name_in_preset(stream_name):
+                if not PresetType.is_lsl_zmq_custom_preset(preset_type):
+                    dialog_popup("New stream must be either LSL or ZMQ", title="Error", buttons=QDialogButtonBox.StandardButton.Ok)
+                    return
                 self.create_preset(stream_name, preset_type=preset_type, data_type=data_type, port=port)
                 GlobalSignals().stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
 
@@ -193,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.init_video_device(stream_name, video_preset_type=preset_type)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset
                 raise NotImplementedError
-                self.init_device(selected_text)  # add device stream
+                # self.init_device(selected_text)  # add device stream
             elif preset_type == PresetType.LSL:
                 self.init_LSL_streaming(stream_name)  # add lsl stream
             elif preset_type == PresetType.ZMQ:
@@ -254,7 +257,6 @@ class MainWindow(QtWidgets.QMainWindow):
             raise NotImplementedError
         else:
             raise ValueError(f"Unknown preset type {preset_type}")
-        self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
         self.streamsHorizontalLayout.removeWidget(target)

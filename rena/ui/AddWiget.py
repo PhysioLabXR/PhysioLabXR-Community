@@ -52,8 +52,9 @@ class AddStreamWidget(QtWidgets.QWidget):
         add_enum_values_to_combobox(self.preset_type_combobox, PresetType)
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
-
-
+        # remove CUSTOM type from preset type combobox
+        index = self.preset_type_combobox.findText(PresetType.CUSTOM.value, Qt.MatchFlag.MatchFixedString)
+        self.preset_type_combobox.removeItem(index)
 
         self.update_preset_type_uis()
         self.device_property_fields = {}
