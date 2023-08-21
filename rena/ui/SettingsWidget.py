@@ -95,6 +95,9 @@ class SettingsWidget(QtWidgets.QWidget):
         an outside qthread must monitor the return of this process and call Presets().add_video_presets(rtn), where
         rtn is the return of the process Presets()._load_video_device_process.
         """
+        # remove all existing audio streams if detected
+        self.parent.remove_stream_widget_with_preset_type(PresetType.AUDIO)
+
         self.reload_audio_device_button.setEnabled(False)
         self.reload_audio_device_button.setText("Reloading...")
         Presets().remove_audio_presets()
