@@ -433,8 +433,8 @@ class MainWindow(QtWidgets.QMainWindow):
         target_widget_names = [s_name for s_name, s_widget in self.stream_widgets.items() if s_widget.preset_type == preset_type]
         if remove_warning and len(target_widget_names) > 0:
             reply = dialog_popup(
-                msg=f"Remove all the streams added with preset {preset_type}?.\n"
-                    f"Proceeding will remove the following streams: {target_widget_names}",
+                msg=f"The following streams are active {target_widget_names}?.\n"
+                    f"Do you want to remove these streams from visualization for now (you can always add them back)?",
                 # f'There\'s another stream source with the name {target_widget_names} on the network.\n'
                 # f'Are you sure you want to proceed with replaying this file? \n'
                 # f'Proceeding may result in unpredictable streaming behavior.\n'
