@@ -110,6 +110,8 @@ class ReplayTab(QtWidgets.QWidget):
         self.stream_list_items = {}
 
         # start replay client
+        self.playback_widget = None
+        self.replay_server_process = None
         self.replay_port = test_port_range(*AppConfigs().replay_port_range)
         if self.replay_port is None:
             dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
@@ -292,16 +294,17 @@ class ReplayTab(QtWidgets.QWidget):
         self.window = QtWidgets.QMainWindow()
 
     def try_close(self):
-        # print("ReplayTab: closing playback widget")
-        self.playback_widget.issue_terminate_command()
-        # print('ReplayTab: calling try close for playback window')
-        self.playback_widget.try_close()
-        self.playback_window.close()  # opened windows must be closed
-        # print('ReplayTab: playback window closed, waiting for replay server process to terminate')
-        self.replay_server_process.join(timeout=1)
-        if self.replay_server_process.is_alive():
-            # print("ReplayTab: replay server process did not terminate, killing it")
-            self.replay_server_process.kill()
+        if self.playback_widget is not None and self.replay_server_process is not None:
+            # print("ReplayTab: closing playback widget")
+            self.playback_widget.issue_terminate_command()
+            # print('ReplayTab: calling try close for playback window')
+            self.playback_widget.try_close()
+            self.playback_window.close()  # opened windows must be closed
+            # print('ReplayTab: playback window closed, waiting for replay server process to terminate')
+            self.replay_server_process.join(timeout=1)
+            if self.replay_server_process.is_alive():
+                # print("ReplayTab: replay server process did not terminate, killing it")
+                self.replay_server_process.kill()
         return True
 
     # def ticks(self):
