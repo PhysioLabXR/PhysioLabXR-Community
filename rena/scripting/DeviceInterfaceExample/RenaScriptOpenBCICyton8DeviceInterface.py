@@ -1,5 +1,5 @@
 import numpy as np
-
+import brainflow
 from rena.scripting.RenaScript import RenaScript
 
 class RenaScriptOpenBCICyton8DeviceInterface(RenaScript):
