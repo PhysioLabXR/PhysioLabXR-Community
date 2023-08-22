@@ -8,6 +8,7 @@ class RenaScriptOpenBCICyton8DeviceInterface(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
+        # test network
 
     # Start will be called once when the run button is hit.
     def init(self):
