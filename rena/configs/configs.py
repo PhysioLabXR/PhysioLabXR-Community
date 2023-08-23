@@ -16,7 +16,6 @@ class LinechartVizMode(Enum):
     INPLACE = "in place"
     CONTINUOUS = "continuous"
 
-
 class RecordingFileFormat(Enum):
     dats = "data arrays and timestamps (.dats)"
     pickle = "pickle (.p)"
