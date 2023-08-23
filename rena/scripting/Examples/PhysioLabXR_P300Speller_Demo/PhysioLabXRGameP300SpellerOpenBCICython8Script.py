@@ -2,7 +2,7 @@ import numpy as np
 import brainflow
 from rena.scripting.RenaScript import RenaScript
 
-class OpenBCICyton8DeviceInterfaceScript(RenaScript):
+class PhysioLabXRGameP300SpellerOpenBCICython8Script(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
