@@ -1,6 +1,11 @@
 import numpy as np
 
 from rena.scripting.RenaScript import RenaScript
+import pickle
+from datetime import datetime
+from pylsl import StreamInfo, StreamOutlet
+from sklearn.linear_model import LogisticRegression
+from rena.utils.buffers import DataBuffer
 
 
 class PhysioLabXRP300SpellerDemoScript(RenaScript):
@@ -9,6 +14,9 @@ class PhysioLabXRP300SpellerDemoScript(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
+        # initialize model
+        self.model = LogisticRegression()
+
 
     # Start will be called once when the run button is hit.
     def init(self):
