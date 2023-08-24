@@ -43,7 +43,8 @@ diverse data streams in real time, enable flexible processing pipelines, and sup
 We introduce *PhysioLabXR*, an open-source software platform aimed at streamlining experimentation involving real-time 
 physiological data and interactive interfaces. *PhysioLabXR* provides native support for various devices and popular data 
 transfer protocols such as LabStreamingLayer and ZMQ. Its Key features include multi-stream visualization, digital signal 
-processing modules, robust recording and synchronized replay of multi-modal data, and a Python-based scripting interface to enable custom pipelines. The software architecture utilizes concurrency and parallelism to ensure smooth performance.
+processing modules, robust recording and synchronized replay of multi-modal data, and a Python-based scripting interface 
+to enable custom pipelines. The software architecture utilizes concurrency and parallelism to ensure smooth performance.
 
 *PhysioLabXR* is built for neurosciences and HCI experiments. Benchmarks demonstrate its ability to handle high-throughput 
 multi-stream data reliably. Use cases showcase its versatility in areas like VR experiments, P300 spellers, and novel 
@@ -199,7 +200,7 @@ captured using a microphone connected to PhysioLabXR that visualizes the audio d
 and pupillometry data are recorded through an eyetracker outside of the scanner that receives the participant's eye image 
 via a mirror. The time series of the eyetracking data are plotted in a line chart. (E) Simultaneously, a machine learning 
 model deployed through RenaLabApp's scripting interface predicts from the fMRI data and pupillometry if a target memory 
-is being retrieved, with the two-class inference result visualized as a bar plot..\label{fig:teaser}](ALlPlottingFormat.png)
+is being retrieved, with the two-class inference result visualized as a bar plot.](ALlPlottingFormat.png)
 
 
 ## Scripting Interface
@@ -213,9 +214,9 @@ the participant. (B) The fixation results are streamed through the output LSL ou
 (C) In the *.init* function of P300Detector, the P300 classifier model is loaded from the file system path indicated by
 the script parameter *model_path*. (D) and (E) If a fixation is detected, the model takes the EEG epoch time locked to 
 the fixation and makes a prediction. A loop call is completed by writing the prediction results to the output stream named 
-*P300Detect*.](scripting%example.png)
+*P300Detect*.](scripting%20example.png)
 
-The scripting interface, within PhysioLabXR offers extensive possibility to researchers. 
+The scripting interface within PhysioLabXR creates many possibility for researchers building diverse experiment paradigms. 
 It enables the execution of user-defined Python scripts, empowering users to create and deploy custom data processing 
 pipelines. With python's versatility and open-source libraries encouraging exploration of novel applications like close-loop 
 neurofeedback, users can train and run ML models in real-time, and communicate 
@@ -245,7 +246,7 @@ PhysioLabXR is optimized through a combination of concurrency, parallelism, and 
 concurrent threads of the main GUI controller, serialization, data worker, and visualization. When the user adds a new 
 data source, the GUI thread forks a data worker and a visualization thread. More demanding operations run on separate 
 server processes, including replay and scripting. User commands such as *StartStreaming*, *StartReplay*, 
-and *StopRecording* are passed from the main GUI to the corresponding threads or processes.](RenaLabApp%Sequence%Diagram.png)
+and *StopRecording* are passed from the main GUI to the corresponding threads or processes.](PhysioLabXR%20Sequence%20Diagram.png)
 
 The architecture of PhysioLabXR follows rigorous software design patterns, minimizing maintenance efforts while maximizing 
 scalability. Unit testing is at the core of our development process, each software feature, backend and GUI frontend,
@@ -266,7 +267,7 @@ We would like to express our gratitude for the support from our colleagues at th
 and Computer Graphics and User Interfaces (CGUI) Lab at Columbia University. We would also like thank all the community members who have contributed to PhysioLabXR.
 
 # Licensing and Availability
-RenaLabApp is an open-source project distributed under the copyleft license - GNU General Public License v3.0, ensuring the free and open-source nature of the software and any downstream derivatives. Researchers are encouraged to modify the software to meet their specific needs and share their modifications with the community. To facilitate easy access to RenaLabApp and its resources, we provide the following links:
+PhysioLabXR is an open-source project distributed under the copyleft license - GNU General Public License v3.0, ensuring the free and open-source nature of the software and any downstream derivatives. Researchers are encouraged to modify the software to meet their specific needs and share their modifications with the community. To facilitate easy access to RenaLabApp and its resources, we provide the following links:
 
 - **Website:** The official RenaLabApp website serves as a central hub for information and updates. It can be accessed at [https://www.physiolabxr.org](https://www.renalabapp.org).
 
