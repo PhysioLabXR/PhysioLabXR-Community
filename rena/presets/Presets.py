@@ -8,12 +8,13 @@ from multiprocessing import Process
 from typing import Dict, Any, List, Union
 
 import numpy as np
+import pyaudio
 
 from rena import config
 from rena.config import default_group_name
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import GroupEntry
-from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType
 from rena.presets.ScriptPresets import ScriptPreset, ScriptParam
 from rena.presets.preset_class_helpers import SubPreset
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
@@ -21,7 +22,8 @@ from rena.utils.ConfigPresetUtils import reload_enums
 from rena.utils.Singleton import Singleton
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 from rena.utils.fs_utils import get_file_changes_multiple_dir
-from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset
+from rena.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset, \
+    create_default_group_info
 from rena.utils.video_capture_utils import get_working_camera_ports
 
 
@@ -167,6 +169,89 @@ class VideoPreset(metaclass=SubPreset):
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
 
+@dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
+class AudioPreset(metaclass=SubPreset):
+    """
+    Stream preset defines a stream to be loaded from the GUI.
+
+    IMPORTANT: the only entry point to create stream preset is through the add_stream_preset function in the Presets class.
+    attributes:
+        stream_name: name of the stream
+        channel_names: list of channel names
+        num_channels: number of channels in the stream
+
+        group_info: dictionary containing the group information. The key is the group name and the value is the GroupEntry object.
+        This attribute directs how the stream should be displayed in the GUI.
+
+        device_info: dictionary containing the device information. The key is the device name and the value is the device information.
+        This attribute is used to connect to the devices that are not hooked to LSL or ZMQ. It contains information necessary for
+        the connection. While LSL finds stream by StreamName, and ZMQ finds stream by IP address and port number, the device_info
+        contains information that is specific to the connection of a device such as the serial port, baud rate, etc.
+
+        networking_interface: name of the networking interface to use to receive the stream. This is set from the Presets
+        class when calling the add_stream_preset function. If from json preset file loaded at startup, this information
+        is obtained by which folder the preset file is in (i.e., LSLPresets, ZMQPresets, or DevicePresets under the Presets folder)
+    """
+    stream_name: str
+
+    ################ audio device fields ################
+    audio_device_index:int
+    ################ audio device fields ################
+
+    num_channels: int
+
+    group_info: dict[str, GroupEntry]
+    device_info: dict
+
+    audio_device_data_format: AudioInputDataType = AudioInputDataType.paInt16
+    audio_device_frames_per_buffer: int = 128
+    audio_device_sampling_rate: float = 4000
+
+    preset_type: PresetType = PresetType.AUDIO
+
+    channel_names: List[str] = None
+    data_type: DataType = DataType.float32
+    port_number: int = None
+    display_duration: float = None
+    nominal_sampling_rate: int = 10
+
+    can_edit_channel_names: bool = True
+
+    def __post_init__(self):
+        """
+        StreamPreset's post init function. It will set the display_duration attribute based on the default_display_duration in the config file.
+        Note any attributes loaded from the config will need to be loaded into the class's attribute here
+        @return:
+        """
+        if self.channel_names is None:  # channel names can be none when the number of channels is too big
+            self.channel_names = ['c {0}'.format(i) for i in range(self.num_channels)]
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
+        if self.num_channels > config.MAX_TS_CHANNEL_NUM:
+            self.can_edit_channel_names = False
+            print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
+        if self.display_duration is None:
+            self.display_duration = float(config.settings.value('viz_display_duration'))
+        for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
+            if isinstance(value, dict):
+                self.group_info[key] = GroupEntry(**value)
+        # convert any enum attribute loaded as string to the corresponding enum value
+        reload_enums(self)
+
+    def add_group_entry(self, group_entry: GroupEntry):
+        assert group_entry.group_name not in self.group_info.keys(), f'Group {group_entry.group_name} already exists in the stream preset'
+        self.group_info[group_entry.group_name] = group_entry
+
+    def get_next_available_groupname(self):
+        i = 0
+        rtn = f'{default_group_name}{i}'
+        while rtn in self.group_info.keys():
+            i += 1
+            rtn = f'{default_group_name}{i}'
+
+        return rtn
+
+
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class FMRIPreset(metaclass=SubPreset):
@@ -235,6 +320,65 @@ def _load_video_device_presets():
         print('KeyboardInterrupt: exiting')
         return []
 
+def _load_audio_device_presets():
+    try:
+        print('Loading available audio devices')
+        rtn = []
+        # _, working_camera_ports, _ = get_working_camera_ports()
+        # working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
+        #
+        # for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
+        #     rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
+        # print("finished loading available cameras")
+
+        audio = pyaudio.PyAudio()
+        info = audio.get_host_api_info_by_index(0)
+        numdevices = info.get('deviceCount')
+
+        for i in range(0, numdevices):
+            if (audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+                audio_preset_dict = create_default_audio_preset(
+                    stream_name=audio.get_device_info_by_host_api_device_index(0, i).get('name'),
+                    audio_device_index=i,
+                    num_channels=audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels'),
+                )
+                audio_preset = AudioPreset(**audio_preset_dict)
+                rtn.append(audio_preset)
+                print(
+                    "Create Audio Preset: ", audio_preset.stream_name,
+                    ' ', audio_preset.audio_device_index,
+                    ' ', audio_preset.num_channels)
+
+        return rtn
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt: exiting')
+        return []
+
+def create_default_audio_preset(stream_name, audio_device_index, num_channels):
+    group_info = create_default_group_info(num_channels)
+
+    audio_default_preset_dict = {
+    'stream_name': stream_name,
+    'audio_device_index': audio_device_index,
+    'num_channels': num_channels,
+    'channel_names': ['c {0}'.format(i) for i in range(num_channels)],
+    'group_info': group_info,
+    'device_info': {}
+    }
+    return audio_default_preset_dict
+
+
+# def create_default_audio_preset(stream_name, audio_device_index, num_channels):
+#     if is_stream_name_in_presets(stream_name):
+#         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
+#     audio_device_default_preset_dict = create_default_audio_preset(stream_name, audio_device_index, num_channels)
+#
+#     # audio_preset = AudioPreset(**audio_device_default_preset_dict)
+#
+#     return audio_preset
+
+
+
 def _load_param_presets_recursive(param_preset_dict):
     rtn = []
     if isinstance(param_preset_dict, list):
@@ -283,7 +427,7 @@ class Presets(metaclass=Singleton):
     _device_preset_root: str = 'DevicePresets'
     _experiment_preset_root: str = 'ExperimentPresets'
 
-    stream_presets: Dict[str, Union[StreamPreset, VideoPreset, FMRIPreset]] = field(default_factory=dict)
+    stream_presets: Dict[str, Union[StreamPreset, VideoPreset, AudioPreset, FMRIPreset]] = field(default_factory=dict)
     script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
@@ -418,6 +562,15 @@ class Presets(metaclass=Singleton):
         for video_preset in video_presets:
             self.stream_presets[video_preset.stream_name] = video_preset
 
+    def add_audio_presets(self, audio_presets: List[AudioPreset]):
+        """
+        add a list of audio presets to the presets
+        :param audio_presets: list of audio presets
+        :return: None
+        """
+        for audio_preset in audio_presets:
+            self.stream_presets[audio_preset.stream_name] = audio_preset
+
     def add_experiment_preset(self, experiment_name: str, stream_names: List[str]):
         """
         add an experiment preset to the presets
@@ -477,3 +630,10 @@ class Presets(metaclass=Singleton):
         :return: None
         """
         self.stream_presets = {stream_name: stream_preset for stream_name, stream_preset in self.stream_presets.items() if not stream_preset.preset_type.is_self_video_preset()}
+
+    def remove_audio_presets(self):
+        """
+        remove all the audio presets
+        :return: None
+        """
+        self.stream_presets = {stream_name: stream_preset for stream_name, stream_preset in self.stream_presets.items() if not stream_preset.preset_type.is_self_audio_preset()}

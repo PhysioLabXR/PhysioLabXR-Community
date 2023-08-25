@@ -6,7 +6,7 @@ from rena.exceptions.exceptions import InvalidStreamMetaInfoError
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
 from rena.presets.Presets import Presets, preprocess_stream_preset
-from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 
@@ -385,6 +385,28 @@ def change_stream_preset_type(stream_name, preset_type: PresetType):
 
 def change_stream_preset_data_type(stream_name, data_type: DataType):
     Presets().stream_presets[stream_name].data_type = data_type
+
+def change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer):
+    Presets().stream_presets[stream_name].audio_device_frames_per_buffer = frames_per_buffer
+
+def change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate):
+    Presets().stream_presets[stream_name].audio_device_sampling_rate = sampling_rate
+
+def change_stream_preset_audio_device_data_type(stream_name, data_type: AudioInputDataType):
+    Presets().stream_presets[stream_name].audio_device_data_format = data_type
+
+def get_audio_device_frames_per_buffer(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_frames_per_buffer
+
+def get_audio_device_sampling_rate(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_sampling_rate
+
+def get_audio_device_data_type(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_data_format
+
+def get_audio_device_index(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_index
+
 
 
 def verify_stream_meta_info(*args, **kwargs):

@@ -20,7 +20,7 @@
       <item>
        <widget class="QTabWidget" name="settings_tabs">
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="settings_appearance_tab">
          <attribute name="title">
@@ -145,6 +145,20 @@
               </widget>
              </item>
             </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="settings_audio_device_tab">
+         <attribute name="title">
+          <string>Audio Device</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_11">
+          <item>
+           <widget class="QPushButton" name="reload_audio_device_button">
+            <property name="text">
+             <string>Reload Audio Devices</string>
+            </property>
            </widget>
           </item>
          </layout>

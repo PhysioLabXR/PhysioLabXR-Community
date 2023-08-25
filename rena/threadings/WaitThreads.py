@@ -20,30 +20,39 @@ class ProcessWithQueue(multiprocessing.Process):
 
 class WaitForProcessWorker(QObject):
     process_finished = pyqtSignal(object)
+    run_finished = pyqtSignal()
 
     def __init__(self, process):
         super().__init__()
         self.process = process
 
     def run(self):
-        self.process.join()
-        # Wait for the process to finish
+        print("WaitForProcessWorker: wait for process to finish")
+        self.process.join()  # Wait for the process to finish
+        print(f"WaitForProcessWorker: process {self.process} finished")
         result = self.process.result_queue.get()
-
-        # Emit the signal with the result
-        self.process_finished.emit(result)
-
+        print(f"WaitForProcessWorker: recevied results from process {result}")
+        self.process_finished.emit(result)  # Emit the signal with the result
+        print(f"WaitForProcessWorker: emitted results {result}")
+        self.run_finished.emit()
 
 def start_wait_process(target: typing.Callable, args=(), finish_call_back: typing.Callable=None):
     _task_process = ProcessWithQueue(target=target, args=args)
     _task_process.start()
     wait_process_thread = QThread()
     wait_process_worker = WaitForProcessWorker(_task_process)
-    wait_process_worker.moveToThread(wait_process_thread)
+
+    # connect run finished signals
     if finish_call_back is not None:
         wait_process_worker.process_finished.connect(finish_call_back)
+    wait_process_worker.run_finished.connect(wait_process_thread.quit)
+
+    # start the thread
+    wait_process_worker.moveToThread(wait_process_thread)
+    wait_process_thread.started.connect(wait_process_worker.run)
+
     wait_process_thread.start()
-    return wait_process_worker
+    return wait_process_worker, wait_process_thread
 
 
 class WaitForResponseWorker(QObject):
