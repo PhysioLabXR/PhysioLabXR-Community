@@ -36,22 +36,22 @@ diverse visualization methods, digital
 signal processing modules, replaying past experiments, and a scripting interface to deploy custom pipelines.\label{fig:teaser}](physiolabxr%20teaser.png)
 
 
-Recent years have seen growing interest in multi-modal experiments and closed-loop interaction systems in fields of 
-neuroscience and human-computer interaction (HCI). This creates a need for versatile software platforms that can handle 
-diverse data streams in real time, enable flexible processing pipelines, and support prototyping of interactive paradigms. 
+Recent years have seen growing interest in multi-modal experiments and closed-loop interaction systems in  
+neuroscience and human-computer interaction (HCI). A need arises for versatile software platforms that can handle 
+diverse data streams in real time, enable flexible processing pipelines, and support the prototyping of interactive paradigms. 
 
-We introduce *PhysioLabXR*, an open-source software platform aimed at streamlining experimentation involving real-time 
-physiological data and interactive interfaces. *PhysioLabXR* provides native support for various devices and popular data 
-transfer protocols such as LabStreamingLayer and ZMQ. Its Key features include multi-stream visualization, digital signal 
-processing modules, robust recording and synchronized replay of multi-modal data, and a Python-based scripting interface 
-to enable custom pipelines. The software architecture utilizes concurrency and parallelism to ensure smooth performance.
+We introduce *PhysioLabXR*, an open-source software platform aimed at streamlining experiments involving real-time 
+physiological data processing and interactive interfaces. *PhysioLabXR* provides native support for an increasing list of devices such as EEG, eyetracker, fNIRS, camera, and microphone, and implements popular data 
+transfer protocols, including LabStreamingLayer and ZMQ. The software platform features multi-stream visualization, real-time digital signal 
+processing (DSP), robust recording and synchronized replay of multi-modal data, and a Python-based scripting interface 
+for users to create custom pipelines. Mostly in Python, the software architecture is optimized through concurrency and parallelism to ensure smooth performance.
 
-*PhysioLabXR* is built for neurosciences and HCI experiments. Benchmarks demonstrate its ability to handle high-throughput 
-multi-stream data reliably. Use cases showcase its versatility in areas like VR experiments, P300 spellers, and novel 
-gesture interfaces. The software reduces overheads in the research cycle and provides researchers full flexibility to build 
+*PhysioLabXR* is built for neurosciences and HCI experiments. Benchmarks demonstrate its ability to handle high-throughput and
+multi-stream data reliably. Use cases showcase its versatility for VR experiments and BCI applications such as P300 speller. The software reduces research cycle overhead and provides researchers full flexibility to build 
 customized systems. It represents an extensible framework to tackle the complexity of modern experiments at the intersection 
-of neuroscience, HCI and related fields. By simplifying real-time multi-modal data handling and interactive prototyping, 
-it has the potential to accelerate insights and innovations. 
+of neuroscience, HCI, and related fields. By simplifying real-time multi-modal data handling and interactive prototyping, 
+*PhysioLabXR* has the potential to foster research insights and accelerate innovations. 
+
 
 
 # Statement of need
@@ -133,10 +133,10 @@ closed-loop systems, including deploying machine learning models and sending pre
 # PhysioLabXR: the experiment platform
 To facilitate HCI and neuroscience experiments, prototyping interaction paradigms such as brain-computer interface (BCI), 
 we present PhysioLabXR (Reality Navigation Laboratory Application), a software platform designed to simplify the 
-research \& development (R\&D) process. PhysioLabXR combines the ease of use and versatility of Python as main language 
-in its codebase, while leveraging the performance of C++ for computation-intensive subroutines. As an a open-source, 
-cross-platform  experiment tool caters to both academic researcher and industry practitioners. It offers native support 
-for various sensing hardware such as electroencephalogram (EEG), eyetracker, mmWave radar, as well as video and audio 
+research & development (R&D) process. PhysioLabXR combines the ease of use and versatility of Python as main language
+, while leveraging the performance of C++ for computation-intensive subroutines. As an open-source, 
+cross-platform, experiment tool caters to both academic researcher and industry practitioners. It offers native support 
+for various sensing hardware covering electroencephalogram (EEG), eyetracker, mmWave radar, as well as video and audio 
 devices. Moreover, PhysioLabXR integrates with popular stimulus-presentation software such as Unity \cite{Unity} and 
 PsychoPy \cite{peirce2007psychopy}, and other analysis software including MATLAB \cite{matlab}. For experiments already 
 utilizing LabStreamLayer (LSL) and ZeroMQ (ZMQ) for data transfer, PhysioLabXR provides convenient network stream 
@@ -267,13 +267,14 @@ We would like to express our gratitude for the support from our colleagues at th
 and Computer Graphics and User Interfaces (CGUI) Lab at Columbia University. We would also like thank all the community members who have contributed to PhysioLabXR.
 
 # Licensing and Availability
-PhysioLabXR is an open-source project distributed under the copyleft license - GNU General Public License v3.0, ensuring the free and open-source nature of the software and any downstream derivatives. Researchers are encouraged to modify the software to meet their specific needs and share their modifications with the community. To facilitate easy access to RenaLabApp and its resources, we provide the following links:
+PhysioLabXR is an open-source project distributed under BSD 3-Clause License. Researchers are welcome to modify the software 
+to meet their specific needs and share their modifications with the community. We provide the following links to help access resources related to PhysioLabXR:
 
 - **Website:** The official RenaLabApp website serves as a central hub for information and updates. It can be accessed at [https://www.physiolabxr.org](https://www.renalabapp.org).
 
-- **Documentation:** Detailed documentation is available to guide users through the various features, tutorials, example use cases, and developer guides. It can be accessed at [https://realitynavigationdocs.readthedocs.io/en/latest/index.html](https://realitynavigationdocs.readthedocs.io/en/latest/index.html).
+- **Documentation:** documentation providing guides and tutorial for the various features, tutorials, example use cases, and developer guides. It is hosted at [https://realitynavigationdocs.readthedocs.io/en/latest/index.html](https://realitynavigationdocs.readthedocs.io/en/latest/index.html).
 
-- **GitHub Repository:** Users can access the repository at [https://github.com/ApocalyVec/RenaLabApp](https://github.com/ApocalyVec/RenaLabApp). Additionally, users can submit bug reports and feature requests through the GitHub issue tracker.
+- **GitHub Repository:** Users can access the repository at [https://github.com/ApocalyVec/PhysioLabXR](https://github.com/ApocalyVec/RenaLabApp). User can submit bug reports and feature requests through the GitHub issue tracker.
 
 
 # References
