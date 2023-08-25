@@ -30,7 +30,7 @@ if __name__ == '__main__':
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=True, reload_presets=True)
+    load_settings(revert_to_default=False, reload_presets=False)
     apply_patches()
     # main window init
     print("Creating main window")

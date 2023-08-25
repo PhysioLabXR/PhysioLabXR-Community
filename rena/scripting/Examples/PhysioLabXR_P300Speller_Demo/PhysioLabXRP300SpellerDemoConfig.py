@@ -4,7 +4,7 @@ import numpy as np
 
 # OpenBCI Stream Name
 EEG_STREAM_NAME = 'PhysioLabXRGameP300SpellerOpenBCICython8'
-Event_Marker_Stream_Name = 'PhysioLabXRP300SpellerDemoEventMarker'
+EVNET_MARKER_CHANNEL_NAME = 'PhysioLabXRP300SpellerDemoEventMarker'
 
 # Sampling Rate
 EEG_SAMPLING_RATE = 250

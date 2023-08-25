@@ -24,10 +24,16 @@ class PhysioLabXRGameP300SpellerOpenBCICython8Script(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         print('Loop function is called')
-        if EEG_STREAM_NAME not in self.inputs.keys() or Event_Marker_Stream_Name not in self.inputs.keys():
+        if EEG_STREAM_NAME not in self.inputs.keys() or EVNET_MARKER_CHANNEL_NAME not in self.inputs.keys():
             # if no event marker or no eeg stream, we do not do anything
+            print('No EEG stream or no event marker stream, return')
             return
 
+        print(self.inputs)
+
+        # if EventMarkerChannelInfo.StateInterruptMarker in self.inputs.get_data(Event_Marker_Stream_Name):
+        #     # if the state is interrupted, we do not do anything
+        #     return
 
 
 
