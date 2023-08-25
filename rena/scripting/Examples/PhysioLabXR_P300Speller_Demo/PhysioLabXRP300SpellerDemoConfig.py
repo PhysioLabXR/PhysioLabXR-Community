@@ -3,7 +3,8 @@ from enum import Enum
 import numpy as np
 
 # OpenBCI Stream Name
-EEG_STREAM_NAME = 'OpenBCI_Cython_8_LSL'
+EEG_STREAM_NAME = 'PhysioLabXRGameP300SpellerOpenBCICython8'
+Event_Marker_Stream_Name = 'PhysioLabXRP300SpellerDemoEventMarker'
 
 # Sampling Rate
 EEG_SAMPLING_RATE = 250
