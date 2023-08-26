@@ -55,7 +55,7 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
 
         event_marker_data = self.inputs.get_data(EVENT_MARKER_CHANNEL_NAME)
         event_marker_timestamps = self.inputs.get_timestamps(EVENT_MARKER_CHANNEL_NAME)
-        print(event_marker_data)
+        # print(event_marker_data)
         # in this example, we only care about the Train, Test, Interrupt, and Block Start/Block end markers
         # process event markers
         # try:
@@ -157,20 +157,55 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         for eeg_epoch_start_index in eeg_epoch_start_indices:
             eeg_epoch = self.data_buffer.get_data(EEG_STREAM_NAME)[:, eeg_epoch_start_index+sample_before_epoch:eeg_epoch_start_index+sample_after_epoch]
             self.train_state_x.append(eeg_epoch)
-        self.train_state_y.extend(self.data_buffer.get_data(EVENT_MARKER_CHANNEL_NAME)[EventMarkerChannelInfo.FlashingTargetMarker, :])
 
+        labels = self.data_buffer.get_data(EVENT_MARKER_CHANNEL_NAME)[EventMarkerChannelInfo.FlashingTargetMarker, :]
+        self.train_state_y.extend(labels)
+
+        # train based on all the data in the buffer
         x = np.array(self.train_state_x)
         y = np.array(self.train_state_y)
 
         train_logistic_regression(x, y, self.model, test_size=0.1)
-
-
+        self.data_buffer.clear_buffer_data() # clear the buffer data for the next flashing block
         pass
 
     def test_callback(self):
         # test callback
 
-        pass
+        x = []
+
+        flash_timestamps = self.data_buffer.get_timestamps(EVENT_MARKER_CHANNEL_NAME)
+        eeg_timestamps = self.data_buffer.get_timestamps(EEG_STREAM_NAME)
+        eeg_epoch_start_indices = np.searchsorted(eeg_timestamps, flash_timestamps, side='left')
+
+        sample_before_epoch = np.floor(EEG_EPOCH_T_MIN * EEG_SAMPLING_RATE).astype(int)
+        sample_after_epoch = np.floor(EEG_EPOCH_T_MAX * EEG_SAMPLING_RATE).astype(int)
+
+        for eeg_epoch_start_index in eeg_epoch_start_indices:
+            eeg_epoch = self.data_buffer.get_data(EEG_STREAM_NAME)[:, eeg_epoch_start_index+sample_before_epoch:eeg_epoch_start_index+sample_after_epoch]
+            x.append(eeg_epoch)
+
+        # predict based on all the data in the buffer
+        x = np.array(x)
+        x = x.reshape(x.shape[0], -1)
+        y_target_probabilities = self.model.predict_proba(x)[:, 1]
+        print(y_target_probabilities)
+        flashing_item_indices = self.data_buffer.get_data(EVENT_MARKER_CHANNEL_NAME)[EventMarkerChannelInfo.FlashingItemIndexMarker, :]
+
+        probability_matrix = np.zeros(shape=np.array(Board).shape)
+        for flashing_item_index, y_target_probability in zip(flashing_item_indices, y_target_probabilities):
+            if flashing_item_index<=5: # this is row index
+                row_index = flashing_item_index
+                probability_matrix[row_index, :] += y_target_probability
+            else: # this is column index, we need -6 to get the column index
+                column_index = flashing_item_index-6
+                probability_matrix[:, column_index] += y_target_probability
+        print(probability_matrix)
+        plt.imshow(probability_matrix, cmap='hot', interpolation='nearest')
+        plt.show()
+
+        self.data_buffer.clear_buffer_data()
+
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
