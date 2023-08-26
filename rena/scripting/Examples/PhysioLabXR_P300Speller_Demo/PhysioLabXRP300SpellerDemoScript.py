@@ -36,6 +36,9 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         if EEG_STREAM_NAME not in self.inputs.keys() or EVENT_MARKER_CHANNEL_NAME not in self.inputs.keys():
             # if no event marker or no eeg stream, we do not do anything
             print('No EEG stream or no event marker stream, return')
+            # state is None, and Flashing is False. We interrupt the experiment
+            self.EXPERIMENT_STATE = None
+            self.IN_FLASHING_BLOCK = False
             return
 
         event_marker_data = self.inputs.get_data(EVENT_MARKER_CHANNEL_NAME)
@@ -43,6 +46,7 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
 
         # in this example, we only care about the Train, Test, Interrupt, and Block Start/Block end markers
         # process event markers
+        # try:
         for event_index, event_marker_timestamp in enumerate(event_marker_timestamps):
             event_marker = event_marker_data[:, event_index]
 
@@ -74,14 +78,22 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
                     print('End Flashing Block')
                     if self.EXPERIMENT_STATE == ExperimentStateMarker.TrainState:
                         # train callback
+                        self.train_callback()
                         pass
                     elif self.EXPERIMENT_STATE == ExperimentStateMarker.TestState:
                         # test callback
+                        self.test_callback()
                         pass
-            elif FlashingMarker: # flashing
+            elif FlashingMarker:  # flashing
+                print("Flashing")
                 print('Flashing Marker: ', FlashingMarker)
-                print('Flashing Item Index Marker: ', FlashingItemIndexMarker)
                 print('Flashing Target Marker: ', FlashingTargetMarker)
+                print('Flashing Item Index Marker: ', FlashingItemIndexMarker)
+            else:
+                pass
+        # except Exception as e:
+        #     print(e)
+        #     return
 
         # if flashing
         if self.IN_FLASHING_BLOCK:
@@ -123,10 +135,12 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
 
     def train_callback(self):
         # train callback
+
         pass
 
     def test_callback(self):
         # test callback
+
         pass
 
     # cleanup is called when the stop button is hit
