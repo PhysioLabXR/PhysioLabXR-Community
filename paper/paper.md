@@ -85,6 +85,7 @@ At the same time, the data transfer middleware does not cover the ability to vis
 The second group of experiment software consists of device-independent software tools. Popular platforms like OpenVibe [@renard2010openvibe], MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@] are primarily built using statically compiled and the later two are close-sourced commercial software. Python, despite its rising popularity as a programming language [@srinath2017python] for its ease of use and versatility, is less favored by developers as a backbone language for experiment platforms that require high precision and high data throughput. Although not impossible, implementing an experiment platform in an interpreted language like Python necessitates significant optimization efforts to match the performance level of platforms built with a compiled language.
 
 # Benefits
+
 *PhysioLabXR* offers a complete all-in-one GUI application for
 visualizing, recording, replaying past experiments, and deploying end-to-end DSP & ML pipelines.
 One of the objectives that *PhysioLabXR* seeks to address is to prioritize ease of understanding, enabling 
