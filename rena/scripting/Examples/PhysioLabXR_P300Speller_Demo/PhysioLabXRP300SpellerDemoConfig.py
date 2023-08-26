@@ -3,8 +3,8 @@ from enum import Enum
 import numpy as np
 
 # OpenBCI Stream Name
-EEG_STREAM_NAME = 'PhysioLabXRGameP300SpellerOpenBCICython8'
-EVNET_MARKER_CHANNEL_NAME = 'PhysioLabXRP300SpellerDemoEventMarker'
+EEG_STREAM_NAME = 'PhysioLabXRP300SpellerOpenBCICython8'
+EVENT_MARKER_CHANNEL_NAME = 'PhysioLabXRP300SpellerDemoEventMarker'
 
 # Sampling Rate
 EEG_SAMPLING_RATE = 250
@@ -53,6 +53,9 @@ class ExperimentStateMarker(IndexClass):
     TestIntroductionState = 4,
     TestState = 5,
     EndState = 6,
+
+    # # this is not included in the unity paradigm
+    # IDLEState = 7
 
 
 ROW_FLASH_MARKER_LIST = [0, 1, 2, 3, 4, 5]
