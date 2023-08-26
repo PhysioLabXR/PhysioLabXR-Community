@@ -272,7 +272,7 @@ def rebalance_classes(x, y, by_channel=False):
 
         # Loop through each channel and balance the classes separately
         for channel_index in range(0, channel_num):
-            sm = SMOTE(n_neighbors=1, random_state=42)
+            sm = SMOTE(k_neighbors=5, random_state=42)
             x_channel = x[:, channel_index, :]
             x_channel, y_resample = sm.fit_resample(x_channel, y)
             channel_data.append(x_channel)
