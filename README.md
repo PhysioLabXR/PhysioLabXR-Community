@@ -24,14 +24,14 @@ _This README is still under construction_
   <p align="center">
     A Python Software Platform for Multi-Modal Brain-Computer Interface and Real-Time Experiment Pipelines
     <br />
-    <a href="https://realitynavigationdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
+    <a href="https://physiolabxrdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apocalyvec/renalabapp">View Demo</a>
+    <a href="https://github.com/apocalyvec/physiolabxr">View Demo</a>
     ·
-    <a href="https://github.com/apocalyvec/renalabapp/issues">Report Bug</a>
+    <a href="https://github.com/apocalyvec/physiolabxr/issues">Report Bug</a>
     ·
-    <a href="https://github.com/apocalyvec/renalabapp/issues">Request Feature</a>
+    <a href="https://github.com/apocalyvec/physiolabxr/issues">Request Feature</a>
   </p>
 </div>
 
