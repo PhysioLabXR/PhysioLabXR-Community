@@ -292,3 +292,5 @@ def rebalance_classes(x, y, by_channel=False):
         x = np.reshape(x, newshape=(len(x),) + epoch_shape)
 
     return x, y
+
+# END CLASS
