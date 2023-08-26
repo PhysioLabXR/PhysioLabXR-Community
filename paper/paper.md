@@ -148,7 +148,7 @@ captured using a microphone connected to the software  that visualizes the audio
 and pupillometry data are recorded through an eye tracker outside of the scanner that receives the participant's eye image 
 via a mirror. The time series of the eye-tracking data are plotted in a line chart. (E) Simultaneously, a machine learning 
 model deployed through PhysioLabXR's scripting interface predicts from the fMRI data and pupillometry if a target memory 
-is being retrieved, with the two-class inference result visualized as a bar plot.](ALlPlottingFormat.png)
+is being retrieved, with the two-class inference result visualized as a bar plot.](AllPlottingFormat.png)
 
 
 ## Scripting Interface
