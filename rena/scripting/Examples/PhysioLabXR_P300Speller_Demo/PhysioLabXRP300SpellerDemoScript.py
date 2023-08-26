@@ -164,7 +164,7 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         # train based on all the data in the buffer
         x = np.array(self.train_state_x)
         y = np.array(self.train_state_y)
-
+        print("Train On Data: ", x.shape, y.shape)
         train_logistic_regression(x, y, self.model, test_size=0.1)
         self.data_buffer.clear_buffer_data() # clear the buffer data for the next flashing block
         pass
@@ -191,7 +191,7 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         y_target_probabilities = self.model.predict_proba(x)[:, 1]
         print(y_target_probabilities)
         flashing_item_indices = self.data_buffer.get_data(EVENT_MARKER_CHANNEL_NAME)[EventMarkerChannelInfo.FlashingItemIndexMarker, :]
-
+        flashing_item_indices = np.array(flashing_item_indices).astype(int)
         probability_matrix = np.zeros(shape=np.array(Board).shape)
         for flashing_item_index, y_target_probability in zip(flashing_item_indices, y_target_probabilities):
             if flashing_item_index<=5: # this is row index
@@ -200,9 +200,17 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
             else: # this is column index, we need -6 to get the column index
                 column_index = flashing_item_index-6
                 probability_matrix[:, column_index] += y_target_probability
+
+        # normalize the probability matrix to 0 to 1
+        probability_matrix = probability_matrix / len(flashing_item_indices/24)
+
+
+
         print(probability_matrix)
         plt.imshow(probability_matrix, cmap='hot', interpolation='nearest')
         plt.show()
+
+        self.outputs[PREDICTION_PROBABILITY_CHANNEL_NAME] = probability_matrix.flatten()
 
         self.data_buffer.clear_buffer_data()
 
