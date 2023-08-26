@@ -230,7 +230,7 @@ to meet their specific needs and share their modifications with the community. W
 
 - **Documentation:** documentation providing guides and tutorials for the various features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html).
 
-- **GitHub Repository:** Users can access the repository at [https://github.com/ApocalyVec/PhysioLabXR](https://github.com/ApocalyVec/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
+- **GitHub Repository:** Users can access the repository at [https://github.com/PhysioLabXR/PhysioLabXR](https://github.com/PhysioLabXR/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
 
 
 # References
