@@ -78,12 +78,10 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
                     elif self.EXPERIMENT_STATE == ExperimentStateMarker.TestState:
                         # test callback
                         pass
-            elif FlashingMarker: #
-                pass
-                # do nothing
-                # print('Flashing Marker: ', FlashingMarker)
-                # print('Flashing Item Index Marker: ', FlashingItemIndexMarker)
-                # print('Flashing Target Marker: ', FlashingTargetMarker)
+            elif FlashingMarker: # flashing
+                print('Flashing Marker: ', FlashingMarker)
+                print('Flashing Item Index Marker: ', FlashingItemIndexMarker)
+                print('Flashing Target Marker: ', FlashingTargetMarker)
 
         # if flashing
         if self.IN_FLASHING_BLOCK:
@@ -122,6 +120,14 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         else:
             print('Exit Current State: ', new_state)
             self.EXPERIMENT_STATE = None
+
+    def train_callback(self):
+        # train callback
+        pass
+
+    def test_callback(self):
+        # test callback
+        pass
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
