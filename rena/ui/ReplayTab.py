@@ -18,7 +18,7 @@ from rena.sub_process.TCPInterface import RenaTCPInterface, test_port_range
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
 from rena.ui.PlayBackWidget import PlayBackWidget
 from rena.utils.lsl_utils import get_available_lsl_streams
-from rena.utils.ui_utils import another_window
+from rena.utils.ui_utils import another_window, show_label_movie
 from rena.utils.ui_utils import dialog_popup
 
 class ReplayStreamHeader(QWidget):
@@ -158,7 +158,8 @@ class ReplayTab(QtWidgets.QWidget):
 
         # start loading the replay file
         self.SelectDataDirBtn.setEnabled(False)
-        self.show_loading()
+        show_label_movie(self.loading_label, True)
+
         self.StartStopReplayBtn.setVisible(False)
         self.playback_window.hide()
 
@@ -177,7 +178,7 @@ class ReplayTab(QtWidgets.QWidget):
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
             self.SelectDataDirBtn.setEnabled(True)
-            self.hide_loading()
+            show_label_movie(self.loading_label, False)
             self.stream_list_widget.setVisible(False)
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
@@ -210,7 +211,7 @@ class ReplayTab(QtWidgets.QWidget):
             self.StartStopReplayBtn.setVisible(True)
             self.SelectDataDirBtn.setEnabled(True)
             self.stream_list_widget.setVisible(True)
-            self.hide_loading()
+            show_label_movie(self.loading_label, False)
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
@@ -342,13 +343,6 @@ class ReplayTab(QtWidgets.QWidget):
                 if rtn[s_name]['preset_type'] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name]['port_number'])
         assert len(zmq_ports) == len(set(zmq_ports)), 'ZMQ ports cannot have duplicates'
         return rtn
-    def show_loading(self):
-        self.loading_label.show()
-        self.loading_movie.start()
-
-    def hide_loading(self):
-        self.loading_label.hide()
-        self.loading_movie.stop()
 
     def get_replay_lsl_stream_names(self):
         rtn = []
@@ -361,3 +355,4 @@ class ReplayTab(QtWidgets.QWidget):
             list_item.include_in_replay_checkbox.setEnabled(enable)
             list_item.interface_combobox.setEnabled(enable)
             list_item.zmq_port_line_edit.setEnabled(enable)
+

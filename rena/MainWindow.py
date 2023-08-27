@@ -16,6 +16,7 @@ from rena.presets.PresetEnums import PresetType, DataType
 from rena.ui.AddWiget import AddStreamWidget
 from rena.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
+from rena.ui.CloseDialog import CloseDialog
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
@@ -134,6 +135,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
+
+
+        # close dialog
+        self.close_dialog = None
+        self.close_event = None
+        self.is_already_closed = False
 
         # # fmri widget
         # # TODO: FMRI WIDGET
@@ -367,6 +374,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiment_combo_box.addItems(self.experiment_presets_dict.keys())
 
     def closeEvent(self, event):
+        if self.is_already_closed:
+            event.accept()
+            return
         if self.ask_to_close:
             reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit?',
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
@@ -381,18 +391,31 @@ class MainWindow(QtWidgets.QMainWindow):
             # close other tabs
             stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
             [c() for c in stream_close_calls]
-            print('MainWindow: closing scripting')
-            self.scripting_tab.try_close()
-            print('MainWindow: closing replay')
-            self.replay_tab.try_close()
-            print('MainWindow: closing replay')
-            self.settings_widget.try_close()
 
-            Presets().__del__()
-            AppConfigs().__del__()
-            event.accept()
+            self.close_event = event
+            self.scripting_tab.try_close()
+            if self.scripting_tab.need_to_wait_to_close():
+                def abort_script_finish_close():
+                    self.scripting_tab.kill_all_scripts()
+                    self.finish_close()
+                self.close_dialog = CloseDialog(abort_script_finish_close)
+                event.ignore()
+            else:
+                self.finish_close()
         else:
             event.ignore()
+
+    def finish_close(self):
+        print('MainWindow: closing replay')
+        self.replay_tab.try_close()
+        print('MainWindow: closing replay')
+        self.settings_widget.try_close()
+
+        Presets().__del__()
+        AppConfigs().__del__()
+
+        self.is_already_closed = True
+        self.close()  # fire another close event
 
     def fire_action_documentation(self):
         webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
@@ -449,8 +472,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 return
 
-
-
         # for stream_name, stream_widget in self.stream_widgets.items():
         #     if stream_widget.preset_type == preset_type:
         #         stream_widget.try_close()
+

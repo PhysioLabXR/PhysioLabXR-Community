@@ -238,3 +238,4 @@ class SettingsWidget(QtWidgets.QWidget):
         if self._load_audio_device_process is not None and self._load_audio_device_process.is_alive():
             self._load_audio_device_process.terminate()
         self.wait_load_audio_device_process_thread.quit()
+

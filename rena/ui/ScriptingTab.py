@@ -22,7 +22,7 @@ class ScriptingTab(QtWidgets.QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ScriptingTab, self)
         self.parent = parent
 
-        self.script_widgets = []
+        self.script_widgets = {}  # dict of scripting widgets
 
         self.AddScriptBtn.setIcon(AppConfigs()._icon_add)
         self.AddScriptBtn.clicked.connect(self.add_script_clicked)
@@ -37,28 +37,50 @@ class ScriptingTab(QtWidgets.QWidget):
 
     def add_script_widget(self, script_preset=None):
         script_widget = ScriptingWidget(self, self.parent, port=config.scripting_port + 4 * len(self.script_widgets), script_preset=script_preset, layout=self.ScriptingWidgetScrollLayout)  # reverse three ports for each scripting widget
-        self.script_widgets.append(script_widget)
+        self.script_widgets[script_widget.id] = script_widget
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 
     def forward_data(self, data_dict):
-        for script_widget in self.script_widgets:
+        for script_widget in self.script_widgets.values():
             if script_widget.is_running and data_dict['stream_name'] in script_widget.get_inputs():
                 script_widget.send_input(data_dict)
 
     def try_close(self):
-        for script_widget in self.script_widgets:
+        """
+        this function needs to iterate the ids because calling try_close will pop the script widget from the dict
+        @return:
+        """
+        script_ids = list(self.script_widgets.keys())
+        for script_widget_id in script_ids:
+            script_widget = self.script_widgets[script_widget_id]
             script_widget.try_close()
         return True
+
+    def need_to_wait_to_close(self):
+        for script_widget in self.script_widgets.values():
+            if script_widget.is_running:
+                return True
+        return False
+
+    def kill_all_scripts(self):
+        """
+        this function is called by the CloseDialog when the user clicks abort
+        @return:
+        """
+        script_ids = list(self.script_widgets.keys())
+        for script_widget_id in script_ids:
+            script_widget = self.script_widgets[script_widget_id]
+            if script_widget.is_running:
+                script_widget.kill_script_process()  # kill will cause the script widget to be popped from the dict
 
     def add_script_widgets_from_settings(self):
         for script_preset in Presets().script_presets.values():
             self.add_script_widget(script_preset)
 
     def update_script_widget_input_combobox(self):
-        for script_widget in self.script_widgets:
+        for script_widget in self.script_widgets.values():
             script_widget.update_input_combobox()
 
     def remove_script_widget(self, script_widget):
-        self.script_widgets.remove(script_widget)
-
+        self.script_widgets.pop(script_widget.id)
 
