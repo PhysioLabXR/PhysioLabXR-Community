@@ -55,7 +55,8 @@ def test_create_script(app_main_window, qtbot):
     qtbot.mouseClick(app_main_window.scripting_tab.AddScriptBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     class_name = 'ScriptTest'
-    this_scripting_widget = app_main_window.scripting_tab.script_widgets[-1]
+    script_ids = list(app_main_window.scripting_tab.script_widgets.keys())
+    this_scripting_widget = app_main_window.scripting_tab.script_widgets[script_ids[-1]]
     script_path = os.path.join(os.getcwd(), class_name + '.py')  # TODO also need to test without .py
     this_scripting_widget.create_script(script_path, is_open_file=False)
 
@@ -84,7 +85,8 @@ def test_script_single_lsl_input_output(context_bot, qtbot):
     script_path = os.path.join(os.getcwd(), class_name + '.py')
     context_bot.app.ui.tabWidget.setCurrentWidget(context_bot.app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
     qtbot.mouseClick(context_bot.app.scripting_tab.AddScriptBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    this_scripting_widget = context_bot.app.scripting_tab.script_widgets[-1]
+    script_ids = list(context_bot.app.scripting_tab.script_widgets.keys())
+    this_scripting_widget = context_bot.app.scripting_tab.script_widgets[script_ids[-1]]
     this_scripting_widget.create_script(script_path, is_open_file=False)
 
     # add script content
@@ -165,6 +167,8 @@ class ScriptTest(RenaScript):
 
     # as clean up steps, delete the file and remove the script from rena
     qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.wait_until(lambda: context_bot.app.scripting_tab.script_widgets_empty(), timeout=wait_for_script_to_send_output_timeout)
+
     os.remove(recording_file_path)
     os.remove(script_path)
 
@@ -196,7 +200,8 @@ def test_script_single_zmq_input_output(context_bot, qtbot):
     script_path = os.path.join(os.getcwd(), class_name + '.py')
     context_bot.app.ui.tabWidget.setCurrentWidget(context_bot.app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
     qtbot.mouseClick(context_bot.app.scripting_tab.AddScriptBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    this_scripting_widget = context_bot.app.scripting_tab.script_widgets[-1]
+    script_ids = list(context_bot.app.scripting_tab.script_widgets.keys())
+    this_scripting_widget = context_bot.app.scripting_tab.script_widgets[script_ids[-1]]
     this_scripting_widget.create_script(script_path, is_open_file=False)
 
     # add script content
@@ -292,7 +297,8 @@ class ScriptTest(RenaScript):
     assert np.isin(recorded_data[output_stream_name][0], sent_samples).all()
 
     # as clean up steps, delete the file and remove the script from rena
-    qtbot.mouseClick(this_scripting_widget.removeBtn,
-                     QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    qtbot.wait_until(lambda: context_bot.app.scripting_tab.script_widgets_empty(), timeout=wait_for_script_to_send_output_timeout)
+
     os.remove(recording_file_path)
     os.remove(script_path)
