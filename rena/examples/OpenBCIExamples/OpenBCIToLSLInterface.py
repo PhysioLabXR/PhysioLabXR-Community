@@ -180,7 +180,7 @@ def run_test_lsl():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIToLSLInterface(stream_name='OpenBCI_Cyton_8_Channels', serial_port='COM5')
+    openBCI_interface = OpenBCIToLSLInterface(stream_name='OpenBCI_Cyton_8_Channels', serial_port='COM4')
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test_lsl()
