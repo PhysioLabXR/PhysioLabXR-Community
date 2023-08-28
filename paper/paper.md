@@ -36,6 +36,7 @@ visualization methods, digital
 signal processing modules, support for recording and replaying experiments, and a scripting interface to deploy custom pipelines.\label{fig:teaser}](physiolabxr%20teaser.png)
 
 
+
 *PhysioLabXR* is an open-source software platform for developing experiments for 
 neuroscience and human–computer interaction (HCI)
 that involve real-time 
