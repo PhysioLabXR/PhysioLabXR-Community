@@ -3,7 +3,7 @@ from enum import Enum
 import numpy as np
 
 # OpenBCI Stream Name
-EEG_STREAM_NAME = 'PhysioLabXRP300SpellerOpenBCICython8'
+EEG_STREAM_NAME = 'OpenBCICyton8Channels'
 EVENT_MARKER_CHANNEL_NAME = 'PhysioLabXRP300SpellerDemoEventMarker'
 PREDICTION_PROBABILITY_CHANNEL_NAME = "PhysioLabXRP300SpellerDemoPredictionProbability"
 

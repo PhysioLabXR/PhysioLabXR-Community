@@ -16,7 +16,7 @@ def main(argv):
     letters = string.digits
 
     srate = 250
-    name = 'PhysioLabXRP300SpellerOpenBCICython8'
+    name = 'OpenBCICyton8Channels'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 8
