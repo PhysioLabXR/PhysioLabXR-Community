@@ -37,7 +37,7 @@ signal processing modules, support for recording and replaying experiments, and 
 
 
 
-*PhysioLabXR* is an open-source software platform for developing experiments for 
+The *PhysioLabXR* is an open-source software platform for developing experiments for 
 neuroscience and human–computer interaction (HCI)
 that involve real-time 
 physiological data processing and interactive interfaces. *PhysioLabXR* provides native support for data sources such as electrophysiological sensors (e.g., EEG, EMG, EOG), fNIRS, eye trackers, cameras, microphones, and screen capture, and implements the popular data transfer protocols: Lab Streaming Layer (LSL) [@kothe2014labstreaminglayer] and ZeroMQ (ZMQ) [@zeromq]. It features multi-stream visualization methods, real-time digital signal 
