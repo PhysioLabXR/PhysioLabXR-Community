@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 from rena.scripting.RenaScript import RenaScript
@@ -9,42 +11,44 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
-        self.port = None
-        self.impedance = None
-        self.params_available = False
-        self.board_connected = False
+
 
     # Start will be called once when the run button is hit.
     def init(self):
-        # self.params is a dictionary of parameters
 
-        assert 1 == 2, 'Please implement this function'
+        self.serial_port_available = False
+        self.impedance_available = False
 
-        try:
-            self.port = self.params['port']
-            self.params_available = False
-        except KeyError:
-            print('parameter port is not set')
-            return
+        if "serial_port" in self.params: # check
+            if type(self.params["serial_port"]) is str:
+                self.serial_port_available = True
+            else:
+                print("serial_port should be a string (e.g. COM3)")
+        else:
+            print("serial_port is not set. Please set it in the parameters tab (e.g. COM3)")
 
-        try:
-            self.impedance = self.params['impedance']
-            self.params_available = False
-        except KeyError:
-            print('parameter impedance is not set')
-            return
+        if "impedance" in self.params: # check
+            if type(self.params["impedance"]) is str:
+                self.impedance_available = True
+            else:
+                print("impedance should be a boolean (e.g. True)")
+        else:
+            print("impedance is not set. Please set it in the parameters tab (e.g. True)")
 
-        self.board_params = BrainFlowInputParams()
+        print("serial_port_available: ", self.serial_port_available)
+        print("impedance_available: ", self.impedance_available)
 
-        raise NotImplementedError('Please implement this function')
-        print("John's code starts here")
+
+        time.sleep(1)
+
+
+
 
 
 
     # loop is called <Run Frequency> times per second
     def loop(self):
         print('Loop function is called')
-
 
 
     # cleanup is called when the stop button is hit
