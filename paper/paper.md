@@ -36,8 +36,6 @@ visualization methods, digital
 signal processing modules, support for recording and replaying experiments, and a scripting interface to deploy custom pipelines.\label{fig:teaser}](physiolabxr%20teaser.png)
 
 
-
-
 *PhysioLabXR* is an open-source software platform for developing experiments for 
 neuroscience and human–computer interaction (HCI)
 that involve real-time 
@@ -46,27 +44,28 @@ processing (DSP) modules, support for recording and replay experiments, and a Py
 for creating custom pipelines. 
 
 *PhysioLabXR* is written mostly in Python, and has an architecture that is optimized through concurrency and parallelism to ensure smooth performance. We provide a set of detailed tutorials covering all features, and example applications such as a P300 speller with a Unity frontend [@Unity] and a mental arithmetic experiment interfacing with PsychoPy [@peirce2007psychopy]. An accompanying set of benchmarks demonstrate the ability of *PhysioLabXR* to handle high-throughput and
-multi-stream data reliably and efficiently. Published use cases show its versatility for VR and screen-based experiments [@lapborisuth2023pupil] [@koorathota2023multimodal] and sensor fusion studies  [@wei2022indexpen] [^1].
----
+multi-stream data reliably and efficiently. Published use cases show its versatility for VR and screen-based experiments [@lapborisuth2023pupil] [@koorathota2023multimodal] and gesture detection paradigms [@wei2022indexpen] [^1].
+
+<!--
 The software reduces research cycle overhead and provides researchers full flexibility to build 
 customized systems. It represents an extensible framework to tackle the complexity of modern experiments at the intersection 
 of neuroscience, HCI, and related fields. By simplifying real-time multi-modal data handling and interactive prototyping, 
 *PhysioLabXR* has the potential to foster impactful research insights and accelerate innovations. 
----
+-->
+
 [^1]: *PhysioLabXR* was formerly called *RealityNavigation*, and *RNApp* in older publications.
 
 
 # Statement of need
 
-Recent years have seen a growing interest in multi-modal experiments and closed-loop interaction systems in  
-neuroscience and human–computer interaction (HCI).
+Recent years have seen a growing interest in multi-modal experiments and closed-loop interaction systems in neuroscience and human–computer interaction (HCI).
 Modern experiments in these fields are placing increasingly greater emphasis on fusing multiple modalities and combining different physiological measurements. For example, one sensor can generate events to extract
 meaningful data intervals from other sensors, such as fixation-related potential (FRP) studies in which EEG epochs are locked to visual fixations from eye trackers [@nikolaev2016combining]. Multiple physiological signals can also be combined to enhance their predictive
 power for use in applications ranging from emotion recognition [@koelstra2011deap] [@he2020advances] to movement actuation
 via sensorimotor rhythms [@sollfrank2016effect]. Further, multi-modal paradigms can help in exploring how different physiological systems interact, like
 using pupil dilation as a proxy for locus coeruleus activity from functional magnetic resonance imaging (fMRI) [@murphy2014pupil].
 
----
+<!--
 Many analysis methods and computational modeling have been proposed specifically for multi-modal data, including the
 analytical approach of FRP deconvolution [@dimigen2021regression] and the data-driven multi-modal deep learning (DL) models
 [@wang2022husformer] [@nie20163d]. 
@@ -75,7 +74,7 @@ using multi-modal data [@ahn2017multi] and supporting software were developed
 [@kothe2014labstreaminglayer] [@razavi2022opensync]. 
 A large number of the supporting software are networking protocols focusing
 on timestamp synchronization across different modalities. We aim to provide researchers with an open-source, community-driven software tool to address the increasing needs in multi-modal experiments. 
-—
+-->
 
 Despite the prevalence of real-time behavior or interactive experiments, software tools supporting them are surprisingly far between.
 The software tools for real-time physiological data handling can be categorized into two groups. The first group includes proprietary software tied to specific hardware, offering device-specific data visualization interfaces and analysis tools [@nirx] [@tobii]. However, they often lack support for multi-modal experiments. To address this, researchers resort to creating custom data pipeline aided by third-party data transfer protocols such as LSL, and ZMQ [@kothe2014labstreaminglayer] [@wang2023scoping] [@michalareas2022scalable] [@macinnes2020pyneal] [@baltruvsaitis2016openface]. This process is typically time-consuming and not scalable to new experiments.
@@ -230,7 +229,7 @@ to meet their specific needs and share their modifications with the community. W
 
 - **Documentation:** documentation providing guides and tutorials for the various features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html).
 
-- **GitHub Repository:** Users can access the repository at [https://github.com/ApocalyVec/PhysioLabXR](https://github.com/ApocalyVec/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
+- **GitHub Repository:** Users can access the repository at [https://github.com/PhysioLabXR/PhysioLabXR](https://github.com/PhysioLabXR/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
 
 
 # References
