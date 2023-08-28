@@ -597,9 +597,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.delete_window()
         self.script_console_log_window.close()
         self.deleteLater()
-        self.parent.remove_script_widget(self)
         print('Script widget closed')
-        return True
+        self.parent.remove_script_widget(self)
 
     def remove_script_clicked(self):
         self.try_close()

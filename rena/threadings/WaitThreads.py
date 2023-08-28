@@ -105,3 +105,49 @@ def start_wait_for_response(socket: zmq.Socket, poll_interval: int=100):
     wait_response_thread.start()
     poll_timer.start()
     return wait_for_response_worker, wait_response_thread
+
+
+class WaitForTargetWorker(QObject):
+    run_tick = pyqtSignal()
+
+    def __init__(self, target: callable, target_return_signal: pyqtSignal, poll_interval):
+        super().__init__()
+        self.target = target
+        self.target_return_signal = target_return_signal
+        self.poll_interval = poll_interval
+        self.timer = None
+        self.run_tick.connect(self.run)
+        self.is_stop = False
+
+    @QtCore.pyqtSlot()
+    def run(self):
+        if not self.is_stop:
+            if self.target():
+                self._exit()
+                self.target_return_signal.emit()
+        else:
+            self._exit()
+
+    def _exit(self):
+        self.timer.stop()
+        current_thread = QThread.currentThread()
+        current_thread.quit()
+        current_thread.wait()
+        print("WaitForResponseWorker thread exited")
+
+    def stop(self):
+        self.is_stop = True
+
+def start_wait_for_target_worker(target: callable, target_return_signal: pyqtSignal, poll_interval: int=100):
+    wait_for_target_worker = WaitForTargetWorker(target, target_return_signal, poll_interval)
+    wait_target_thread = QThread()
+    wait_for_target_worker.moveToThread(wait_target_thread)
+
+    poll_timer = QTimer()
+    poll_timer.setInterval(poll_interval)
+    poll_timer.timeout.connect(wait_for_target_worker.run_tick)
+    wait_for_target_worker.timer = poll_timer
+
+    wait_target_thread.start()
+    poll_timer.start()
+    return wait_for_target_worker, wait_target_thread

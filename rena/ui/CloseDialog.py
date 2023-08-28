@@ -27,6 +27,8 @@ class CloseDialog(QtWidgets.QDialog):
         self.abort_callback = abort_callback
         self.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Abort).clicked.connect(self.abort_clicked)
 
+        self.close_success_signal.connect(self.properly_closed)
+
         self.show()
         self.activateWindow()
 
@@ -38,3 +40,6 @@ class CloseDialog(QtWidgets.QDialog):
     def closeEvent(self, event):
         self.abort_clicked()
         event.accept()
+
+    def properly_closed(self):
+        self.close()

@@ -393,14 +393,15 @@ class MainWindow(QtWidgets.QMainWindow):
             [c() for c in stream_close_calls]
 
             self.close_event = event
-            self.scripting_tab.try_close()
             if self.scripting_tab.need_to_wait_to_close():
                 def abort_script_finish_close():
                     self.scripting_tab.kill_all_scripts()
                     self.finish_close()
                 self.close_dialog = CloseDialog(abort_script_finish_close)
+                self.scripting_tab.try_close(self.close_dialog.close_success_signal)
                 event.ignore()
             else:
+                self.scripting_tab.try_close()
                 self.finish_close()
         else:
             event.ignore()
@@ -414,7 +415,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Presets().__del__()
         AppConfigs().__del__()
 
-        self.is_already_closed = True
+        self.is_already_closed = True  # set this to true so we don't through another close event
         self.close()  # fire another close event
 
     def fire_action_documentation(self):

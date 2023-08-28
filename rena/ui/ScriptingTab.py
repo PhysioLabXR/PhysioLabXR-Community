@@ -6,7 +6,10 @@ from rena import config
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.presets.Presets import Presets
+from rena.threadings.WaitThreads import start_wait_for_target_worker
 from rena.ui.ScriptingWidget import ScriptingWidget
+
+
 
 
 class ScriptingTab(QtWidgets.QWidget):
@@ -32,6 +35,8 @@ class ScriptingTab(QtWidgets.QWidget):
         # load scripting widget from settings
         self.add_script_widgets_from_settings()
 
+        self.wait_script_widgets_close_worker, self.wait_script_widgets_close_thread = None, None
+
     def add_script_clicked(self):
         self.add_script_widget()
 
@@ -45,7 +50,7 @@ class ScriptingTab(QtWidgets.QWidget):
             if script_widget.is_running and data_dict['stream_name'] in script_widget.get_inputs():
                 script_widget.send_input(data_dict)
 
-    def try_close(self):
+    def try_close(self, close_finished_signal=None):
         """
         this function needs to iterate the ids because calling try_close will pop the script widget from the dict
         @return:
@@ -54,7 +59,9 @@ class ScriptingTab(QtWidgets.QWidget):
         for script_widget_id in script_ids:
             script_widget = self.script_widgets[script_widget_id]
             script_widget.try_close()
-        return True
+        if close_finished_signal is not None:
+            self.wait_script_widgets_close_worker, self.wait_script_widgets_close_thread \
+                = start_wait_for_target_worker(self.script_widgets_empty, close_finished_signal)
 
     def need_to_wait_to_close(self):
         for script_widget in self.script_widgets.values():
@@ -73,6 +80,12 @@ class ScriptingTab(QtWidgets.QWidget):
             if script_widget.is_running:
                 script_widget.kill_script_process()  # kill will cause the script widget to be popped from the dict
 
+        # stop the wait process
+        self.wait_script_widgets_close_worker.stop()
+        self.wait_script_widgets_close_thread.requestInterruption()
+        self.wait_script_widgets_close_thread.exit()
+        self.wait_script_widgets_close_thread.wait()
+
     def add_script_widgets_from_settings(self):
         for script_preset in Presets().script_presets.values():
             self.add_script_widget(script_preset)
@@ -84,3 +97,5 @@ class ScriptingTab(QtWidgets.QWidget):
     def remove_script_widget(self, script_widget):
         self.script_widgets.pop(script_widget.id)
 
+    def script_widgets_empty(self):
+        return len(self.script_widgets) == 0
