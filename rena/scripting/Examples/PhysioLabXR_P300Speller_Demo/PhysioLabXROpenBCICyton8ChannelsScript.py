@@ -29,19 +29,19 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
                     print("serial_port should be a string (e.g. COM3)")
                     time.sleep(1)
 
-        if "impedance" not in self.params: # check
-            while True:
-                print("impedance is not set. Please set it in the parameters tab (e.g. True)")
-                time.sleep(1)
-        else:
-            if type(self.params["impedance"]) is not bool:
-                while True:
-                    print("impedance should be a boolean (e.g. True)")
-                    time.sleep(1)
+        # if "impedance" not in self.params: # check
+        #     while True:
+        #         print("impedance is not set. Please set it in the parameters tab (e.g. True)")
+        #         time.sleep(1)
+        # else:
+        #     if type(self.params["impedance"]) is not bool:
+        #         while True:
+        #             print("impedance should be a boolean (e.g. True)")
+        #             time.sleep(1)
 
 
         print("serial_port: ", self.params["serial_port"])
-        print("impedance: ", self.params["impedance"])
+        # print("impedance: ", self.params["impedance"])
 
         # try init board
         self.brinflow_input_params = BrainFlowInputParams()
@@ -100,7 +100,7 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
-        print('OpenBCIInterface: cleanup')
+        print('Stop OpenBCI Cyton 8 Channels. Sensor Stop.')
         # try:
         #     self.board.stop_stream()
         #     print('OpenBCIInterface: stopped streaming.')
