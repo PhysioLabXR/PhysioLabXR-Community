@@ -9,7 +9,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from pydoc import locate
-from typing import List, Dict
+from typing import List, Dict, Union
 
 import numpy as np
 import zmq
@@ -286,16 +286,21 @@ class RenaScript(ABC, threading.Thread):
                     raise ZMQPortOccupiedError(o_preset.port_number)
                 self.output_outlets[stream_name] = socket
 
-    def set_output(self, stream_name, data, timestamp=None):
+    def set_output(self, stream_name: str, data: Union[np.ndarray, list, tuple], timestamp: Union[np.ndarray, list, tuple, float]=None) -> None:
         """
         Set the output data of the given stream,
         use this function as an alternative to directly setting the self.outputs["stream_name"] = data
 
         if you have timestamp for your data, use this function to set the timestamp. Timestamps cannot be set directly in self.outputs
 
-        @param stream_name:
-        @param data:
-        @return:
+        expectation for @param data
+
+        @param stream_name: the name of the stream to set the output
+        @param data: can be a numpy array, tuple or list.
+            If data is a 2D list, tuple or array, the first dimension is the number of frames, the second dimension is the number of channels.
+            if data is a 1D list, tuple or array, it is treated as a single frame, the number of channels must match the number of channels of the output set in the GUI
+        @timestamp: can be a single number or a list/tuple/numpy array of numbers,
+            if it is a list/tuple/numpy array, the length of the timestamp must match the number of frames in data
         """
         self.outputs[stream_name] = {'data': data, 'timestamp': timestamp}
 
