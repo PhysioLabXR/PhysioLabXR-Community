@@ -35,7 +35,7 @@ class OpenBCIToLSLInterface:
 
         try:
             self.board = BoardShim(self.board_id, self.params)
-            self.info_print()
+            # self.info_print()
 
         except brainflow.board_shim.BrainFlowError:
             print('Cannot connect to board')

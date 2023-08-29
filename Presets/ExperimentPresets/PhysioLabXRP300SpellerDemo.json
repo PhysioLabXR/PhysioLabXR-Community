@@ -1,4 +1,4 @@
 {"ExperimentName": "PhysioLabXRP300SpellerDemo",
-  "PresetStreamNames": ["PhysioLabXRP300SpellerOpenBCICython8",
+  "PresetStreamNames": ["OpenBCICyton8Channels",
     "PhysioLabXRP300SpellerDemoEventMarker",
     "PhysioLabXRP300SpellerDemoPredictionProbability"]}
