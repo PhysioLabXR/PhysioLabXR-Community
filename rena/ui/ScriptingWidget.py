@@ -584,6 +584,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         return num_channel, int(int(self.timeWindowLineEdit.text()) * sampling_rate)
 
     def try_close(self):
+        """
+        if the script is running, it will call the stop button, which will call on_run_btn_clicked and close routine.
+        otherwise it will call finish_close
+        @return: None
+        """
         if self.is_running:
             if self.wait_for_response_worker is None:  # if is not already stopping the script
                 self.on_run_btn_clicked()
