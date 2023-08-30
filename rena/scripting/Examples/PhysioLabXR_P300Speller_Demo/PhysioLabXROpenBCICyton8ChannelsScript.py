@@ -1,9 +1,9 @@
 import time
+
 import brainflow
-import numpy as np
-from brainflow.board_shim import BoardShim, BrainFlowInputParams
-from pylsl import StreamOutlet, StreamInfo
 import pylsl
+from brainflow.board_shim import BoardShim, BrainFlowInputParams
+
 from rena.scripting.RenaScript import RenaScript
 
 
@@ -29,19 +29,9 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
                     print("serial_port should be a string (e.g. COM3)")
                     time.sleep(1)
 
-        # if "impedance" not in self.params: # check
-        #     while True:
-        #         print("impedance is not set. Please set it in the parameters tab (e.g. True)")
-        #         time.sleep(1)
-        # else:
-        #     if type(self.params["impedance"]) is not bool:
-        #         while True:
-        #             print("impedance should be a boolean (e.g. True)")
-        #             time.sleep(1)
 
 
         print("serial_port: ", self.params["serial_port"])
-        # print("impedance: ", self.params["impedance"])
 
         # try init board
         self.brinflow_input_params = BrainFlowInputParams()
@@ -64,7 +54,7 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
         try:
             self.board = BoardShim(self.board_id, self.brinflow_input_params)
             self.board.prepare_session()
-            self.board.start_stream(45000, '') # 45000 is the default ring buffer size
+            self.board.start_stream(45000, '') # 45000 is the default and recommended ring buffer size
             print("OpenBCI Cyton 8 Channels. Sensor Start.")
         except brainflow.board_shim.BrainFlowError:
             while True:
@@ -92,6 +82,7 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
     # cleanup is called when the stop button is hit
     def cleanup(self):
         print('Stop OpenBCI Cyton 8 Channels. Sensor Stop.')
+        # TODO: fix the following error, the KILL process action will break the script
         # try:
         #     self.board.stop_stream()
         #     print('OpenBCIInterface: stopped streaming.')
