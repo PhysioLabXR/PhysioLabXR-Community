@@ -210,7 +210,8 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         plt.imshow(probability_matrix, cmap='hot', interpolation='nearest')
         plt.show()
 
-        self.outputs[PREDICTION_PROBABILITY_CHANNEL_NAME] = probability_matrix.flatten()
+        # self.outputs[PREDICTION_PROBABILITY_CHANNEL_NAME] = probability_matrix.flatten()
+        self.set_output(PREDICTION_PROBABILITY_CHANNEL_NAME, probability_matrix.flatten())
 
         self.data_buffer.clear_buffer_data()
 
