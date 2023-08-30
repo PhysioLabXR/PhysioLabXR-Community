@@ -71,13 +71,6 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
                 print('Board is not ready. Start Fild. Please check the serial port and try again.')
                 time.sleep(1)
 
-        # init lsl outlet
-        # self.outlet_info = StreamInfo(name="OpenBCICyton8Channels", type="EEG", channel_count=8,
-        #                            nominal_srate=250, channel_format='float32',
-        #                            source_id='Cyton8Channels')
-        # self.stream_outlet = StreamOutlet(self.outlet_info)
-
-
 
     # loop is called <Run Frequency> times per second
     def loop(self):
@@ -94,10 +87,6 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
         absolute_time_to_lsl_time_offset = time.time() - pylsl.local_clock()
         timestamps = timestamps - absolute_time_to_lsl_time_offset # remove the offset between lsl clock and absolute time
         self.set_output(stream_name="OpenBCICyton8Channels", data=data, timestamp=timestamps)
-
-        # # send data to lsl
-        # for timestamp, frame in zip(timestamps, data.T):
-        #     self.stream_outlet.push_sample(frame, timestamp-absolute_time_to_lsl_time_offset)
 
 
     # cleanup is called when the stop button is hit
