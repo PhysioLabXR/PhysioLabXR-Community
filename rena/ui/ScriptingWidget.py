@@ -5,16 +5,17 @@ import uuid
 from typing import List
 
 import numpy as np
+import psutil
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QThread, QTimer
-from PyQt6.QtGui import QIntValidator
+from PyQt6.QtGui import QIntValidator, QMovie
 
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.exceptions.exceptions import MissingPresetError, UnsupportedLSLDataTypeError, RenaError
-from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVA
+from rena.config import STOP_PROCESS_KILL_TIMEOUT, SCRIPTING_UPDATE_REFRESH_INTERVAL
 from rena.presets.PresetEnums import DataType, PresetType
 from rena.presets.Presets import Presets
 from rena.presets.ScriptPresets import ScriptPreset, ScriptOutput
@@ -24,6 +25,7 @@ from rena.scripting.scripting_enums import ParamChange, ParamType
 from rena.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.threadings import workers
+from rena.threadings.WaitThreads import start_wait_for_response
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.ScriptConsoleLog import ScriptConsoleLog
 from rena.ui.ScriptingInputWidget import ScriptingInputWidget
@@ -37,7 +39,7 @@ from rena.presets.presets_utils import get_stream_preset_names, get_experiment_p
     get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
 from rena.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
-    another_window, update_presets_to_combobox, validate_script_path
+    another_window, update_presets_to_combobox, validate_script_path, show_label_movie
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
@@ -88,6 +90,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         self.is_running = False
         self.is_simulating = False
+        self.needs_to_close = False
 
         self.locateBtn.clicked.connect(self.on_locate_btn_clicked)
         self.createBtn.clicked.connect(self.on_create_btn_clicked)
@@ -95,6 +98,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.runBtn.setEnabled(False)
         self.script_process = None
 
+        # ui elements #####################
+        self.stopping_label.setVisible(False)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.stopping_label.setMovie(self.loading_movie)
+        self.wait_for_response_worker, self.wait_response_thread = None, None
         # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
         self.script_console_log = ScriptConsoleLog()
@@ -140,7 +148,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         print('MainApp: Sending command info socket routing ID')
         self.info_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
         self.info_worker = workers.ScriptInfoWorker(self.info_socket_interface, script_pid)
-        self.info_worker.abnormal_termination_signal.connect(self.on_script_abnormal_termination)
+        self.info_worker.abnormal_termination_signal.connect(self.kill_script_process)
         self.info_worker.realtime_info_signal.connect(self.show_realtime_info)
         self.info_thread = QThread(
             self.parent)  # set thread to attach to the scriptingtab instead of the widget because it runs a timeout of 2 seconds in the event loop, causing problem when removing the scriptingwidget.
@@ -148,7 +156,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_thread.start()
 
         self.info_timer = QTimer()
-        self.info_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.info_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVAL)
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
 
@@ -191,7 +199,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stdout_worker.moveToThread(self.stdout_worker_thread)
         self.stdout_worker_thread.start()
         self.stdout_timer = QTimer()
-        self.stdout_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVA)
+        self.stdout_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVAL)
         self.stdout_timer.timeout.connect(self.stdout_worker.tick_signal.emit)
         self.stdout_timer.start()
 
@@ -209,9 +217,6 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_thread.requestInterruption()
         self.info_thread.exit()
         self.info_thread.wait()
-
-    def on_script_abnormal_termination(self):
-        self.stop_run(True)
 
     def redirect_script_std(self, std_message):
         # print('[Script]: ' + stdout_line)
@@ -246,26 +251,75 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.change_ui_on_run_stop(self.is_running)
             self.input_shape_dict = self.get_input_shape_dict()
         else:
-            self.stop_run(False)
+            self.info_worker.deactivate()
+            show_label_movie(self.stopping_label, True)
+            self.runBtn.setText('Kill')
+            self.runBtn.clicked.disconnect()
+            self.runBtn.clicked.connect(self.kill_script_process)
+            self.notify_script_to_stop()
 
-    def stop_run(self, is_abnormal_termination):
-        is_timeout_killed = False
-        if not is_abnormal_termination:  # no need to call stop if the process is dead
-            if not self.notify_script_to_stop():
-                is_timeout_killed = True
-                self.script_process.kill()
-        self.close_info_interface()
+        # if is_abnormal_termination:
+        #     dialog_popup('Script process terminated abnormally.', title='ERROR')
+        # if is_timeout_killed:
+        #     dialog_popup('Failed to terminate script process within timeout. Killing it', title='ERROR')
+
+
+    def stop_message_is_available(self):
+        """
+        this function is connected to the wait for response worker's result available signal
+        when stop button is clicked, it calls notify_script_to_stop, which sends a message to the script process,
+        and create a wait for response worker to wait for the script process to send back a message to confirm
+        when the message is received, this function is called,
+        if the response is not right, this function calls kill_script_process to kill the script process
+
+        @return:
+        """
+        msg = self.command_socket_interface.socket.recv().decode('utf-8')
+        if msg != SCRIPT_STOP_SUCCESS:
+            self.kill_script_process()
+        else:
+            self.clean_up_after_stop()
+
+    def kill_script_process(self):
+        """
+        This function is called from
+        * when the stop button is clicked, it calls notify_script_to_stop, which sends a message to the script process,
+          but the message received is not the right response to a stop request, so it calls this function to kill the script process
+        * when ScriptInfoWorker cannot find the script process, the worker will deactivate itself and emit abnormal_termination_signal
+        * when the user click the kill button, it calls this function to kill the script process
+
+        In the later two cases, the info worked needs to be deactivated so it stops checking pid.
+        otherwise this function will be called again when the info worker finds the script process missing
+        @return:
+        """
+        self.info_worker.deactivate()
+        # stop the wait threads and processes
+        self.wait_for_response_worker.stop()
+        self.wait_response_thread.requestInterruption()
+        self.wait_response_thread.exit()
+        self.wait_response_thread.wait()
+        if psutil.pid_exists(self.script_pid):
+            self.script_process.kill()
+        self.clean_up_after_stop()
+
+    def clean_up_after_stop(self):
+        """
+        this is the final step of stopping the script process
+        @return:
+        """
         self.close_command_interface()
         self.stop_run_signal_forward_input()
+        self.close_info_interface()
         del self.info_socket_interface
         self.script_console_log_window.hide()
         self.is_running = False
         self.change_ui_on_run_stop(self.is_running)
-
-        if is_abnormal_termination:
-            dialog_popup('Script process terminated abnormally.', title='ERROR')
-        if is_timeout_killed:
-            dialog_popup('Failed to terminate script process within timeout. Killing it', title='ERROR')
+        self.runBtn.clicked.disconnect()
+        self.runBtn.clicked.connect(self.on_run_btn_clicked)
+        show_label_movie(self.stopping_label, False)
+        self.wait_for_response_worker, self.wait_response_thread = None, None
+        if self.needs_to_close:  # this is set to true when try_close is called
+            self.finish_close()
 
     # def process_command_return(self, command_return):
     #     command, is_success = command_return
@@ -530,16 +584,26 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         return num_channel, int(int(self.timeWindowLineEdit.text()) * sampling_rate)
 
     def try_close(self):
+        """
+        if the script is running, it will call the stop button, which will call on_run_btn_clicked and close routine.
+        otherwise it will call finish_close
+        @return: None
+        """
         if self.is_running:
-            self.on_run_btn_clicked()
+            if self.wait_for_response_worker is None:  # if is not already stopping the script
+                self.on_run_btn_clicked()
+            self.needs_to_close = True  # will be used in clean_up_after_stop
+        else:
+            self.finish_close()
+
+    def finish_close(self):
         self.close_stdout()
         if self.is_popped:
             self.delete_window()
         self.script_console_log_window.close()
         self.deleteLater()
-        self.parent.remove_script_widget(self)
         print('Script widget closed')
-        return True
+        self.parent.remove_script_widget(self)
 
     def remove_script_clicked(self):
         self.try_close()
@@ -571,15 +635,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.command_socket_interface.send_string(SCRIPT_STOP_REQUEST)
         self.run_signal()  # run the loop so it can process the stop command
         print("MainApp: waiting for stop success")
-        events = self.command_socket_interface.poller.poll(STOP_PROCESS_KILL_TIMEOUT)
-        if len(events) > 0:
-            msg = self.command_socket_interface.socket.recv().decode('utf-8')
-        else:
-            msg = None
-        if msg == SCRIPT_STOP_SUCCESS:
-            return True
-        else:
-            return False
+
+        self.wait_for_response_worker, self.wait_response_thread = start_wait_for_response(self.command_socket_interface.socket)
+        self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)
 
     def get_verify_script_args(self):
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
