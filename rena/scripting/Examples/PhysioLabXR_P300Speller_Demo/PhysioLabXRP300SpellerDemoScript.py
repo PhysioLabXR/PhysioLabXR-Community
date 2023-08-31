@@ -110,7 +110,7 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         if self.IN_FLASHING_BLOCK:
             # the event marker in the buffer only contains the event marker in the current flashing block
             self.data_buffer.update_buffers(self.inputs.buffer)
-            print('In Flashing Block, save data to buffer')
+            # print('In Flashing Block, save data to buffer')
 
         self.inputs.clear_buffer_data()
 
