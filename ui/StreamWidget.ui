@@ -135,7 +135,7 @@
                <property name="bottomMargin">
                 <number>0</number>
                </property>
-               <item alignment="Qt::AlignLeft">
+               <item>
                 <widget class="QLabel" name="ts_label">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
@@ -149,12 +149,15 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Timestamp of the most recent frame received.</string>
+                 </property>
                  <property name="text">
                   <string>Current Timestamp</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignRight">
+               <item>
                 <widget class="QLabel" name="fs_label">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
@@ -167,6 +170,9 @@
                    <width>250</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Average number of frames received per second over a recent period of time.</string>
                  </property>
                  <property name="text">
                   <string>Sampling Rate</string>
