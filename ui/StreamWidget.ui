@@ -102,7 +102,7 @@
               </property>
              </widget>
             </item>
-            <item alignment="Qt::AlignHCenter">
+            <item>
              <widget class="QFrame" name="frame_2">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -138,7 +138,7 @@
                <item alignment="Qt::AlignLeft">
                 <widget class="QLabel" name="ts_label">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                  <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -157,7 +157,7 @@
                <item alignment="Qt::AlignRight">
                 <widget class="QLabel" name="fs_label">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                  <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
