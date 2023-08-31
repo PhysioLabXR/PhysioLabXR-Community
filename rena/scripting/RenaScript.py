@@ -143,7 +143,7 @@ class RenaScript(ABC, threading.Thread):
         # start the loop here, accept interrupt command
         print('Entering loop')
         while True:
-            self.outputs = self._output_default  # reset the output to be default values
+            self.outputs = dict([(s_name, None) for s_name in self.output_outlets.keys()])  # reset the output to be default values
             data_dict = recv_data_dict(self.input_socket_interface)
             self.update_input_buffer(data_dict)
             loop_start_time = time.time()
