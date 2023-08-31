@@ -102,7 +102,7 @@
               </property>
              </widget>
             </item>
-            <item>
+            <item alignment="Qt::AlignHCenter">
              <widget class="QFrame" name="frame_2">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
