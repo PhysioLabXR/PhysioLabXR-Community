@@ -11,8 +11,6 @@ from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
 from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
 import torch
 
-from rena.utils.dsp_utils.dsp_modules import ClutterRemoval
-
 
 class AOIAugmentationScript(RenaScript):
     def __init__(self, *args, **kwargs):
