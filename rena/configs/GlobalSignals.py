@@ -14,4 +14,4 @@ class GlobalSignals(QObject, metaclass=SingletonQObject):
         ScriptingWidget needs to update the input combobox with the new stream preset entries
     """
     stream_presets_entry_changed_signal = pyqtSignal()
-
+    stream_preset_nominal_srate_changed = pyqtSignal(tuple)

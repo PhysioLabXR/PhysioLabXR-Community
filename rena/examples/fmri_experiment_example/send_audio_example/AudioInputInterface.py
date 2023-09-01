@@ -45,7 +45,7 @@ class AudioInputInterface(DeviceInterface):
         self.audio = None
         self.stream = None
 
-    def start_sensor(self):
+    def start_stream(self):
         self.audio = pyaudio.PyAudio()
 
         # open stream
@@ -83,7 +83,7 @@ class AudioInputInterface(DeviceInterface):
 
         return np.array(frames), timestamps
 
-    def stop_sensor(self):
+    def stop_stream(self):
         if self.stream:
             self.stream.stop_stream()
             self.stream.close()
@@ -167,7 +167,7 @@ if __name__ == '__main__':
                                           _audio_device_index=0,
                                           _audio_device_channel=2,
                                           _device_type=DeviceType.AUDIOINPUT)
-    audio_interface.start_sensor()
+    audio_interface.start_stream()
     while 1:
         data, timestamps = audio_interface.process_frames()
         if len(timestamps) > 0:

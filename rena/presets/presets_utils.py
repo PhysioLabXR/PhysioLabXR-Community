@@ -2,9 +2,11 @@ import os.path
 from typing import Union, List
 
 from rena import config
+from rena.exceptions.exceptions import InvalidStreamMetaInfoError
 from rena.presets.Cmap import Cmap
 from rena.presets.GroupEntry import GroupEntry, PlotFormat
-from rena.presets.Presets import Presets, PresetType, preprocess_stream_preset, VideoDeviceChannelOrder, DataType
+from rena.presets.Presets import Presets, preprocess_stream_preset
+from rena.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType
 from rena.utils.dsp_utils.dsp_modules import DataProcessor
 
 
@@ -15,7 +17,7 @@ from rena.utils.dsp_utils.dsp_modules import DataProcessor
 #     elif os.path.exists('Presets'):
 #         return 'Presets'
 
-def get_preset_category(preset_name):
+def get_preset_type(preset_name):
     preset = Presets()
     if preset_name in preset.experiment_presets.keys():
         return PresetType.EXPERIMENT
@@ -51,7 +53,7 @@ def set_stream_preset_info(stream_name, key, value):
     setattr(Presets().stream_presets[stream_name], key, value)
 
 
-def check_preset_exists(stream_name):
+def is_stream_name_in_presets(stream_name):
     return stream_name in Presets().stream_presets.keys()
 
 def get_stream_nominal_sampling_rate(stream_name):# ->float:
@@ -78,6 +80,11 @@ def get_is_channels_show(stream_name, group_name) -> List[bool]:
 def is_group_image_only(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].is_image_only()
 
+def get_stream_data_processor_only_apply_to_visualization(stream_name) -> bool:
+    return Presets().stream_presets[stream_name].data_processor_only_apply_to_visualization
+
+def set_stream_data_processor_only_apply_to_visualization(stream_name, value):
+    Presets().stream_presets[stream_name].data_processor_only_apply_to_visualization = value
 
 def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format: Union[str, int, PlotFormat]) -> PlotFormat:
     if isinstance(plot_format, str):
@@ -146,7 +153,7 @@ def save_preset(is_async=True):
 
 
 def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
@@ -159,7 +166,7 @@ def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: in
     return preset_dict
 
 def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
                    'ChannelNames': ['c {0}'.format(i) for i in range(num_channels)],
@@ -181,7 +188,7 @@ def get_stream_num_channels(stream_name):
 
 
 def create_custom_data_stream_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
-    if check_preset_exists(stream_name):
+    if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     # preset_dict = {'StreamName': stream_name,
     #                'ChannelNames': ['channel{0}'.format(i) for i in range(num_channels)],
@@ -345,8 +352,8 @@ def get_video_scale(video_device_name) -> float:
 def get_video_channel_order(video_device_name) -> VideoDeviceChannelOrder:
     return Presets().stream_presets[video_device_name].channel_order
 
-def is_video_webcam(video_device_name) -> bool:
-    return Presets().stream_presets[video_device_name].preset_type == PresetType.WEBCAM
+def is_video_webcam(stream_name) -> bool:
+    return Presets().stream_presets[stream_name].preset_type == PresetType.WEBCAM
 
 def get_video_device_id(video_device_name) -> int:
     return Presets().stream_presets[video_device_name].video_id
@@ -369,3 +376,50 @@ def get_stream_data_type(stream_name) -> DataType:
 
 def remove_script_from_settings(script_id):
     Presets().script_presets.pop(script_id)
+
+def change_stream_preset_port_number(stream_name, port_number):
+    Presets().stream_presets[stream_name].port_number = port_number
+
+def change_stream_preset_type(stream_name, preset_type: PresetType):
+    Presets().stream_presets[stream_name].preset_type = preset_type
+
+def change_stream_preset_data_type(stream_name, data_type: DataType):
+    Presets().stream_presets[stream_name].data_type = data_type
+
+def change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer):
+    Presets().stream_presets[stream_name].audio_device_frames_per_buffer = frames_per_buffer
+
+def change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate):
+    Presets().stream_presets[stream_name].audio_device_sampling_rate = sampling_rate
+
+def change_stream_preset_audio_device_data_type(stream_name, data_type: AudioInputDataType):
+    Presets().stream_presets[stream_name].audio_device_data_format = data_type
+
+def get_audio_device_frames_per_buffer(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_frames_per_buffer
+
+def get_audio_device_sampling_rate(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_sampling_rate
+
+def get_audio_device_data_type(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_data_format
+
+def get_audio_device_index(stream_name):
+    return Presets().stream_presets[stream_name].audio_device_index
+
+
+
+def verify_stream_meta_info(*args, **kwargs):
+    rtn = kwargs['preset_type'] in PresetType
+    rtn = (rtn and kwargs['data_type'] in DataType) if PresetType.is_lsl_zmq_custom_preset(kwargs['preset_type']) else rtn
+    rtn = (rtn and kwargs['port_number'] > 0) if kwargs['preset_type'] == PresetType.ZMQ else rtn
+    assert rtn, InvalidStreamMetaInfoError(kwargs)
+
+def get_stream_meta_info(stream_name):
+    preset_type = Presets().stream_presets[stream_name].preset_type
+    data_type = Presets().stream_presets[stream_name].data_type if PresetType.is_lsl_zmq_custom_preset(preset_type) else None
+    port_number = Presets().stream_presets[stream_name].port_number if preset_type == PresetType.ZMQ else None
+    return preset_type, data_type, port_number
+
+def is_name_in_preset(name):
+    return name in Presets().keys()

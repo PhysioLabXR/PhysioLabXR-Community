@@ -1,9 +1,9 @@
-from pylsl import StreamInfo, StreamOutlet, resolve_streams
+from pylsl import StreamInfo, StreamOutlet, resolve_streams, cf_double64
 from stream_shared import lsl_continuous_resolver
 
 
-def create_lsl_outlet(stream_name: str, n_channels, srate):
-    info = StreamInfo(stream_name, stream_name, n_channels, srate, 'float32', 'someuuid1234')
+def create_lsl_outlet(stream_name: str, n_channels, srate, data_type):
+    info = StreamInfo(stream_name, stream_name, n_channels, srate, data_type, 'someuuid1234')
     # next make an outlet
     outlet = StreamOutlet(info)
     return outlet

@@ -4,6 +4,7 @@ import pickle
 import secrets
 import string
 import sys
+import threading
 import time
 from collections import defaultdict
 from multiprocessing import Process
@@ -11,12 +12,13 @@ from typing import Union, Iterable, List
 
 import numpy as np
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QPoint
 
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
-from tests.TestStream import LSLTestStream, ZMQTestStream
+from rena.presets.PresetEnums import DataType, PresetType
+from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedLSLStream, SampleDefinedZMQStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
 
@@ -80,7 +82,7 @@ def handle_current_dialog_ok(app, qtbot: QtBot, patience_second=0, click_delay_s
     """
     handle_current_dialog_button(QtWidgets.QDialogButtonBox.StandardButton.Ok, app, qtbot, patience_second, click_delay_second)
 
-def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, click_delay_second=0):
+def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, click_delay_second=0, expected_message_include=None):
     """
     This is compatible with CustomDialogue creation that also sets the current_dialog in MainWindow
     @param app: the main window
@@ -90,6 +92,8 @@ def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, c
     """
     from rena.utils.ui_utils import CustomDialog
 
+    if expected_message_include is not None:
+        qtbot.waitUntil(lambda: expected_message_include in app.current_dialog.msg, timeout=patience_second * 1e3)
     if patience_second == 0:
         if isinstance(app.current_dialog, CustomDialog):
             yes_button = app.current_dialog.buttonBox.button(button)
@@ -126,7 +130,7 @@ class ContextBot:
     def cleanup(self):
         pass
 
-    def start_stream(self, stream_name: str, num_channels: int, srate:int):
+    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int):
         """
         start a stream as a separate process, add it to the app's streams, and start it once it becomes
         available
@@ -138,7 +142,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        from rena.presets.Presets import PresetType
+        from rena.presets.PresetEnums import PresetType
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
@@ -149,6 +153,88 @@ class ContextBot:
 
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+
+    def add_and_start_stream(self, stream_name: str, num_channels:int, interface_type=PresetType.LSL, port=None, dtype: DataType=None, *args, **kwargs):
+        self.add_stream(stream_name, interface_type, port, dtype, *args, **kwargs)
+        self.start_a_stream(stream_name, num_channels, *args, **kwargs)
+
+    def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float, dtype: DataType, interface_type=PresetType.LSL, port=None):
+        from rena.presets.Presets import Presets
+
+        samples = np.random.random((num_channels, stream_time * srate)).astype(dtype.get_data_type())
+        if interface_type == PresetType.LSL:
+            p = Process(target=SampleDefinedLSLStream, args=(stream_name, samples), kwargs={'n_channels': num_channels, 'srate': srate, 'dtype': dtype.get_lsl_type()})
+        elif interface_type == PresetType.ZMQ:
+            assert port is not None, "port must be specified for ZMQ interface"
+            p = Process(target=SampleDefinedZMQStream, args=(stream_name, samples), kwargs={'srate': srate, 'port': port})
+        else:
+            raise ValueError(f"create_add_start_predefined_stream: interface_type {interface_type} is not supported")
+        p.start()
+        self.send_data_processes[stream_name] = p
+        self.add_stream(stream_name, interface_type=interface_type, port=port, dtype=dtype)
+        self.start_a_stream(stream_name, num_channels)
+
+        this_stream_widget = self.app.stream_widgets[stream_name]
+        # go to the stream option window and set the sampling rate
+        self.qtbot.mouseClick(this_stream_widget.OptionsBtn, QtCore.Qt.MouseButton.LeftButton)
+        # check if the option window is open
+        assert this_stream_widget.option_window.isVisible()
+        self.qtbot.mouseClick(this_stream_widget.option_window.nominalSamplingRateIineEdit, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(this_stream_widget.option_window.nominalSamplingRateIineEdit, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyClicks(this_stream_widget.option_window.nominalSamplingRateIineEdit, str(srate))
+
+        # check the sampling rate has been changed in preset
+        assert Presets().stream_presets[stream_name].nominal_sampling_rate == srate
+        return samples
+
+    def start_a_stream(self, stream_name: str, num_channels: int, thread_timer_second= 4, *args, **kwargs):
+        """
+        start a stream once it becomes available.
+        It also checks if the number of channels in the stream is the same as the number of channels in the preset,
+        if not, it clicks the yes button in the dialog box so that it resets the number of channels in the preset
+        @param stream_name:
+        @param num_channels:
+        @return:
+        """
+        from rena.presets.Presets import Presets
+        self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
+
+        if num_channels != Presets().stream_presets[stream_name].num_channels:
+            def waitForCurrentDialog():
+                assert self.app.current_dialog
+            t = threading.Timer(thread_timer_second, lambda: handle_current_dialog_button(QDialogButtonBox.StandardButton.Yes, self.app, self.qtbot, click_delay_second=1, patience_second=4, expected_message_include=stream_name))   # get the messagebox about channel mismatch
+            t.start()
+            self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+            self.qtbot.waitUntil(waitForCurrentDialog)
+            t.join()
+        else:
+            self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+
+    def add_stream(self, stream_name, interface_type=PresetType.LSL, port=None, dtype=None, *args, **kwargs):
+        self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
+        self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+        self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
+
+        preset_type_combo_box = self.app.ui.addStreamWidget.preset_type_combobox
+        assert (preset_type_index := preset_type_combo_box.findText(interface_type.name)) != -1
+        preset_type_combo_box.setCurrentIndex(preset_type_index)
+        # self.qtbot.mouseClick(preset_type_combo_box.view().viewport(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QPoint(0, 0))
+        # for i in range(preset_type_index + 1):
+        #     self.qtbot.keyPress(preset_type_combo_box.view().viewport(), Qt.Key.Key_Down)
+        # self.qtbot.keyPress(preset_type_combo_box.view().viewport(), Qt.Key.Key_Return)
+        assert preset_type_combo_box.currentText() == interface_type.name
+
+        if interface_type == PresetType.ZMQ:
+            assert port is not None, "port must be specified for ZMQ interface"
+            assert dtype is not None, "dtype must be specified for ZMQ interface"
+            self.qtbot.mouseClick(self.app.addStreamWidget.PortLineEdit, QtCore.Qt.MouseButton.LeftButton)
+            self.qtbot.keyPress(self.app.addStreamWidget.PortLineEdit, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
+            self.qtbot.keyClicks(self.app.addStreamWidget.PortLineEdit, str(port))
+            assert (dtype_index := self.app.addStreamWidget.data_type_combo_box.findText(dtype.name)) != -1
+            self.app.addStreamWidget.data_type_combo_box.setCurrentIndex(dtype_index)
+
+        self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
         from rena.sub_process.pyzmq_utils import can_connect_to_port
@@ -178,7 +264,7 @@ class ContextBot:
         self.qtbot.mouseClick(self.app.stream_widgets[stream_name].RemoveStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     def clean_up(self):
-        [p.kill() for _, p in self.send_data_processes.items()]
+        [p.kill() for _, p in self.send_data_processes.items() if p.is_alive()]
 
     def stop_recording(self):
         if not self.app.recording_tab.is_recording:
@@ -215,7 +301,7 @@ class ContextBot:
         ts_names = get_random_test_stream_names(num_stream_to_test)
         for i, ts_name in enumerate(ts_names):
             test_stream_names.append(ts_name)
-            self.start_stream(ts_name, num_channels[i], sampling_rate[i])
+            self.create_add_start_stream(ts_name, num_channels[i], sampling_rate[i])
         self.start_recording()
         return test_stream_names
 
@@ -262,7 +348,7 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
         print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {stream_names}...", end='')
         start_time = time.perf_counter()
         for s_name in stream_names:
-            test_context.start_stream(s_name, num_channels, sampling_rate)
+            test_context.create_add_start_stream(s_name, num_channels, sampling_rate)
         if is_reocrding:
             app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
             test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
@@ -354,7 +440,7 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         # start the designated number of streams with given number of channels and sampling rate
         print("test: starting the original streams as separate processes")
         for s_name in this_stream_names:
-            test_context.start_stream(s_name, num_channels, sampling_rate)
+            test_context.create_add_start_stream(s_name, num_channels, sampling_rate)
         test_context.start_recording()
 
         # wait for experiment time
@@ -376,6 +462,10 @@ def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_
         app_main_window.replay_tab.select_file(recording_file_name)
 
         print(f"test: selected file at {recording_file_name} for replaying. starting replay")
+
+        def replay_reloaded():
+            assert app_main_window.replay_tab.StartStopReplayBtn.isVisible()
+        test_context.qtbot.waitUntil(replay_reloaded, timeout=test_context.stream_availability_timeout)
         test_context.qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
         test_context.qtbot.waitUntil(lambda: streams_are_available(app_main_window, this_stream_names), timeout=test_context.stream_availability_timeout)  # wait until the streams becomes available from replay
         # start the streams from replay and record them ################################################

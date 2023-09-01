@@ -7,7 +7,7 @@ from PyQt6.QtCore import QTimer, QThread
 
 import rena.threadings.WebcamWorker
 from rena.configs.configs import AppConfigs
-from rena.presets.Presets import PresetType
+from rena.presets.PresetEnums import PresetType
 from rena.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
 from rena.ui.BaseStreamWidget import BaseStreamWidget
 from rena.ui.VideoDeviceOptions import VideoDeviceOptions

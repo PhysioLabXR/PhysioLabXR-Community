@@ -1,4 +1,7 @@
 import copy
+import os
+import shutil
+
 import numpy as np
 import pytest
 
@@ -7,9 +10,9 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
-
+from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
-from tests.TestStream import CSVTestStream
+from tests.TestStream import SampleDefinedLSLStream
 
 
 @pytest.fixture
@@ -29,7 +32,8 @@ def context_bot(app_main_window, qtbot):
 def test_csv_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
-    from rena.presets.Presets import DataType, PresetType
+    from rena.presets.PresetEnums import DataType
+    from rena.presets.PresetEnums import PresetType
     from rena.startup import apply_patches
     from rena.utils.data_utils import CsvStoreLoad
 
@@ -51,7 +55,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         test_stream_names.append(ts_name)
         sample = np.random.random((n_channels, 2 * recording_time_second * srate))
         samples[ts_name] = np.array(sample)
-        p = Process(target=CSVTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
+        p = Process(target=SampleDefinedLSLStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
@@ -136,8 +140,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
 
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '')
-    load_csv = CsvStoreLoad()
-    csv_data = load_csv.load_csv(saved_file_path)
+    csv_data = stream_in(saved_file_path)
 
     def compare_column_vec(vec1, vec2, persentage):
         percentage_diff = np.abs((vec1 - vec2) / vec2) * 100
@@ -170,4 +173,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
         assert is_passing
 
     assert np.all(buffer_copy['monitor 0'][0] == csv_data['monitor 0'][0])
+    os.remove(saved_file_path + '.dats')        # remove the saved file
+    shutil.rmtree(saved_file_path)
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(0)  # set recording file format to dats
 

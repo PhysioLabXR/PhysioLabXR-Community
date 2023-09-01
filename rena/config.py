@@ -14,7 +14,7 @@ VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequ
 MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
 VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
 
-SCRIPTING_UPDATE_REFRESH_INTERVA = 15
+SCRIPTING_UPDATE_REFRESH_INTERVAL = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
@@ -106,12 +106,9 @@ DEFAULT_CHANNEL_DISPLAY_NUM = 40
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
-rena_server_port = 9999999
-rena_server_name = 'RENA_SERVER'
-rena_server_worker_ports = np.arange(1,100)
-
-replay_port = 9995
-
+# rena_server_port = 9999999
+# rena_server_name = 'RENA_SERVER'
+# rena_server_worker_ports = np.arange(1,100)
 
 rena_server_add_dsp_worker_request = 1
 rena_server_update_worker_request = 2

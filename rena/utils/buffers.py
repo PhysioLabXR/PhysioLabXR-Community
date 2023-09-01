@@ -7,8 +7,12 @@ import numpy as np
 
 from rena.exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
+from rena.interfaces.AudioInputInterface import AudioInputInterface
 from rena.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
+from rena.presets.PresetEnums import PresetType
+from rena.presets.presets_utils import get_audio_device_index, get_stream_num_channels, get_audio_device_data_type, \
+    get_audio_device_sampling_rate, get_audio_device_frames_per_buffer, get_stream_nominal_sampling_rate
 
 
 def slice_len_for(slc, seqlen):
@@ -23,14 +27,36 @@ def get_fps(queue):
         return 0
 
 
-def create_lsl_interface(lsl_name, channel_names):
+def create_lsl_interface(lsl_name, num_channels):
     # try:
     #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
     # except AttributeError:
     #     raise AssertionError('Unable to find LSL Stream in LAN.')
-    interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
+    interface = LSLInletInterface.LSLInletInterface(lsl_name, num_channels)
     return interface
 
+
+def create_audio_input_interface(stream_name):
+
+    _audio_device_index = get_audio_device_index(stream_name)
+    _audio_device_channel = get_stream_num_channels(stream_name)
+    _device_type = PresetType.AUDIO
+    audio_device_data_format = get_audio_device_data_type(stream_name)
+    audio_device_frames_per_buffer = get_audio_device_frames_per_buffer(stream_name)
+    audio_device_sampling_rate = get_audio_device_sampling_rate(stream_name)
+    device_nominal_sampling_rate = get_stream_nominal_sampling_rate(stream_name)
+
+    audio_input_device_interface = AudioInputInterface(
+        stream_name,
+        _audio_device_index,
+        _audio_device_channel,
+        _device_type,
+        audio_device_data_format.value,
+        audio_device_frames_per_buffer,
+        audio_device_sampling_rate,
+        device_nominal_sampling_rate
+    )
+    return audio_input_device_interface
 
 def process_preset_create_openBCI_interface_startsensor(device_name, serial_port, board_id):
     try:
@@ -104,7 +130,7 @@ class DataBuffer():
     def _update_buffer(self, stream_name, frames, timestamps):
 
         if stream_name not in self.buffer.keys():
-            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0)),
+            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0), dtype=frames.dtype),
                                       np.empty(shape=(0,))]  # data first, timestamps second
         buffered_data = self.buffer[stream_name][0]
         buffered_timestamps = self.buffer[stream_name][1]
@@ -145,6 +171,33 @@ class DataBuffer():
         """
         for stream_name in self.buffer.keys():
             self.clear_stream_buffer_data(stream_name)
+
+    def clear_stream_up_to(self, stream_name, timestamp):
+        """
+        The resulting timestamp is guaranteed to be greater than the given cut-to timestamp
+        :param timestamp:
+        :return:
+        """
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        if timestamp < np.min(self.buffer[stream_name][1]):
+            return
+        elif timestamp >= np.max(self.buffer[stream_name][1]):
+            self.clear_stream_buffer_data(stream_name)
+        else:
+            cut_to_index = np.argmax([self.buffer[stream_name][1] > timestamp])
+            self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+            self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
+
+    def clear_stream_up_to_index(self, stream_name, cut_to_index):
+        if stream_name not in self.buffer.keys():
+            return
+        if len(self.buffer[stream_name][1]) == 0:
+            return
+        self.buffer[stream_name][1] = self.buffer[stream_name][1][cut_to_index:]
+        self.buffer[stream_name][0] = self.buffer[stream_name][0][:, cut_to_index:]
 
     def clear_up_to(self, timestamp, ignores=()):
         """

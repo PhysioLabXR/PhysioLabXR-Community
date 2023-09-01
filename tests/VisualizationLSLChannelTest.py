@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from rena.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.presets.Presets import PresetType
+from rena.presets.PresetEnums import PresetType
 from rena.config import stream_availability_wait_time
 from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, \
@@ -57,7 +57,7 @@ def test_lsl_channel_mistmatch(app_main_window, qtbot) -> None:
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-
+    assert app_main_window.addStreamWidget.add_btn.isEnabled()
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.wait(int(stream_availability_wait_time * 1e3))
     def stream_is_available():

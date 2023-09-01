@@ -7,7 +7,7 @@ from rena.configs.configs import AppConfigs
 from rena.examples.fmri_experiment_example.mri_utils import *
 # get_mri_coronal_view_dimension, get_mri_sagittal_view_dimension, \
 #     get_mri_axial_view_dimension
-from rena.presets.Presets import DataType
+from rena.presets.PresetEnums import DataType
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_num_channels, get_stream_num_channels, \
     get_fmri_data_shape
 from rena.threadings import workers

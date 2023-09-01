@@ -13,7 +13,8 @@ from rena.configs.configs import AppConfigs, LinechartVizMode
 from rena.presets.load_user_preset import create_default_group_entry
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
     get_is_group_shown, pop_group_from_stream_preset, add_group_entry_to_stream, change_stream_group_order, \
-    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, reset_all_group_data_processors
+    change_stream_group_name, pop_stream_preset_from_settings, change_group_channels, reset_all_group_data_processors, \
+    get_stream_data_processor_only_apply_to_visualization
 from rena.ui.GroupPlotWidget import GroupPlotWidget
 from rena.ui.PoppableWidget import Poppable
 from rena.ui.StreamOptionsWindow import StreamOptionsWindow
@@ -123,8 +124,12 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def connect_worker(self, worker, add_stream_availibility: bool):
         self.worker_thread = QThread(self)
         self.data_worker = worker
+        self.add_stream_availability = add_stream_availibility
         self.data_worker.signal_data.connect(self.process_stream_data)
-        if add_stream_availibility: self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        if add_stream_availibility:
+            self.data_worker.signal_stream_availability.connect(self.update_stream_availability)
+        else:
+            self.is_stream_available = True  # always true for stream that does not have stream availability
         self.data_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
         self.set_start_stop_button_icon()
@@ -135,7 +140,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
             self.data_worker.stop_stream()
-            if not self.data_worker.is_streaming and hasattr(self.data_worker, 'is_stream_available'):
+            if not self.data_worker.is_streaming and self.add_stream_availability:
                 self.update_stream_availability(self.data_worker.is_stream_available)
         else:
             self.data_worker.start_stream()
@@ -213,7 +218,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         pop_stream_preset_from_settings(self.stream_name)
         self.main_parent.create_preset(self.stream_name, self.preset_type, data_type=data_type, num_channels=num_channels, **kwargs)  # update preset in settings
         self.create_buffer()  # recreate the interface and buffer, using the new preset
-        self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'channel_names'))
+        self.data_worker.reset_interface(self.stream_name, get_stream_preset_info(self.stream_name, 'num_channels'))
 
         self.option_window.reload_preset_to_UI()
         self.reset_viz()
@@ -293,19 +298,46 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         update the visualization buffer, recording buffer, and scripting buffer
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
-            self.run_data_processor(data_dict)
-            self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+            # if only applied to visualization, then only update the visualization buffer
+            if get_stream_data_processor_only_apply_to_visualization(self.stream_name):
+                self.main_parent.recording_tab.update_recording_buffer(data_dict)
+                self.main_parent.scripting_tab.forward_data(data_dict)
+                self.run_data_processor(data_dict) # run data processor after updating recording buffer and scripting buffer
+                self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+            else:
+                # run data processor first
+                self.run_data_processor(data_dict)
+                self.main_parent.recording_tab.update_recording_buffer(data_dict)
+                self.main_parent.scripting_tab.forward_data(data_dict)
+                self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+
+
+            # self.run_data_processor(data_dict)
+            # self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
             self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
             self._has_new_viz_data = True
 
             self.actualSamplingRate = data_dict['sampling_rate']
             self.current_timestamp = data_dict['timestamps'][-1]
-            # notify the internal buffer in recordings tab
 
-            # reshape data_dict based on sensor interface
-            self.main_parent.recording_tab.update_recording_buffer(data_dict)
-            self.main_parent.scripting_tab.forward_data(data_dict)
-            # scripting tab
+
+
+            # if data_dict['frames'].shape[
+            #     -1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
+            #     self.run_data_processor(data_dict)
+            #     self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
+            #     self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
+            #                                         1])  # NOTE performance test scripts, don't include in production code
+            #     self._has_new_viz_data = True
+            #
+            #     self.actualSamplingRate = data_dict['sampling_rate']
+            #     self.current_timestamp = data_dict['timestamps'][-1]
+            #     # notify the internal buffer in recordings tab
+            #
+            #     # reshape data_dict based on sensor interface
+            #     self.main_parent.recording_tab.update_recording_buffer(data_dict)
+            #     self.main_parent.scripting_tab.forward_data(data_dict)
+            #     # scripting tab
 
     def stream_settings_changed(self, change):
         self.setting_update_viz_mutex.lock()
@@ -337,8 +369,8 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
 
         self.viz_components.fs_label.setText(
-            'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
+            'fps: {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        self.viz_components.ts_label.setText('timestamp: {:.3f}'.format(self.current_timestamp))
 
         self._has_new_viz_data = False
         if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound

@@ -105,6 +105,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.sessionTagTextEdit.setEnabled(True)
 
     def update_recording_buffer(self, data_dict: dict):
+        # TODO: change lsl_data_type to stream_name?
         if self.is_recording:
             lsl_data_type = data_dict['stream_name']  # get the type of the newly-come data
 

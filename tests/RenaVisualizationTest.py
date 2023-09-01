@@ -33,6 +33,7 @@ def context_bot(app_main_window, qtbot):
     yield test_context
     test_context.clean_up()
 
+
 def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
     '''
     Adding inactive stream
@@ -46,9 +47,11 @@ def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qt
     qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
     qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
+    assert app_main_window.addStreamWidget.add_btn.isEnabled()
     qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
     assert test_stream_name in app_main_window.get_added_stream_names()
+
 
 def test_add_active_unknown_stream_widgets(app_main_window, qtbot) -> None:
     '''
@@ -81,6 +84,7 @@ def test_add_active_unknown_stream_widgets(app_main_window, qtbot) -> None:
 #     qtbot.mouseClick(app.button, QtCore.Qt.LeftButton)
 #     assert app.text_label.text() == "Changed!"
 
+
 def test_add_active_unknown_stream_and_close(app_main_window, qtbot) -> None:
     '''
     Adding active stream
@@ -103,15 +107,17 @@ def test_add_active_unknown_stream_and_close(app_main_window, qtbot) -> None:
 
     p.kill()  # stop the dummy LSL process
 
+
 def test_add_active_known_stream_and_close(app_main_window, qtbot, context_bot) -> None:
     test_stream_name = get_random_test_stream_names(1)[0]
-    context_bot.start_stream(test_stream_name, 8, 128)
+    context_bot.create_add_start_stream(test_stream_name, 8, 128)
     context_bot.close_stream(test_stream_name)
     context_bot.remove_stream(test_stream_name)
 
+
 def test_start_all_close_all_stream(app_main_window, qtbot, context_bot) -> None:
     test_stream_name = get_random_test_stream_names(1)[0]
-    context_bot.start_stream(test_stream_name, 8, 128)
+    context_bot.create_add_start_stream(test_stream_name, 8, 128)
     context_bot.connect_to_monitor_0()
     qtbot.wait(1500)
 

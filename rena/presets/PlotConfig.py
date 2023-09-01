@@ -9,10 +9,11 @@ from rena.utils.ConfigPresetUtils import reload_enums
 class ImageFormat(Enum):
     pixelmap = 0
     rgb = 1
+    bgr = 2
     def depth_dim(self):
         if self == ImageFormat.pixelmap:
             return 1
-        elif self == ImageFormat.rgb:
+        elif self == ImageFormat.rgb or self == ImageFormat.bgr:
             return 3
 
 class ChannelFormat(Enum):
@@ -60,7 +61,7 @@ class ImageConfig(metaclass=SubPreset):
                 return None
             else:
                 return (self.vmin, self.vmax)
-        elif self.image_format == ImageFormat.rgb:
+        elif self.image_format == ImageFormat.rgb or self.image_format == ImageFormat.bgr:
             if self.vminR is None or self.vmaxR is None or self.vminG is None or self.vmaxG is None or self.vminB is None or self.vmaxB is None:
                 return None
             elif self.vminR == self.vmaxR or self.vminG == self.vmaxG or self.vminB == self.vmaxB:
@@ -76,7 +77,7 @@ class ImageConfig(metaclass=SubPreset):
         """
         if self.image_format == ImageFormat.pixelmap:
             return (self.vmin, self.vmax)
-        elif self.image_format == ImageFormat.rgb:
+        elif self.image_format == ImageFormat.rgb or self.image_format == ImageFormat.bgr:
             return ((self.vminR, self.vmaxR), (self.vminG, self.vmaxG), (self.vminB, self.vmaxB))
 
 

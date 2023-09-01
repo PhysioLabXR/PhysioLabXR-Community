@@ -205,12 +205,15 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 image_plot_data = data[start_end[0]:start_end[1], -1]
             else:
                 image_plot_data = data[channel_indices, -1]  # only visualize the last frame
-            if image_format == ImageFormat.rgb:
+            if image_format == ImageFormat.rgb or image_format == ImageFormat.bgr:
                 if channel_format == ChannelFormat.channel_last:
                     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
                 elif channel_format == ChannelFormat.channel_first:
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
+                # it's always channel last when we are done
+                if image_format == ImageFormat.bgr:
+                    image_plot_data = image_plot_data[:, :, ::-1]
             elif image_format == ImageFormat.pixelmap:
                 image_plot_data = np.reshape(image_plot_data, (height, width))  # matrix : (height, width)
                 #image_plot_data = np.rot90(image_plot_data, k=-1) # rotate 90 degree counter-clockwise IndexPen TODO: delete this line when the indexpen is fixed

@@ -75,13 +75,15 @@ class PlayBackWidget(QtWidgets.QWidget):
         Replay will initiate or terminate depending on the `is_replaying` status of ReplayTab (parent).
         """
         if self.parent.is_replaying:
-            self.issue_stop_command()
-            self.stopButton.setIcon(AppConfigs()._icon_start)
-            self.playPauseButton.setEnabled(False)
+            self.parent.start_stop_replay_btn_pressed()
+            if not self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_start)
+                self.playPauseButton.setEnabled(False)
         else:
             self.parent.start_stop_replay_btn_pressed()
-            self.stopButton.setIcon(AppConfigs()._icon_terminate)
-            self.playPauseButton.setEnabled(True)
+            if self.parent.is_replaying:
+                self.stopButton.setIcon(AppConfigs()._icon_terminate)
+                self.playPauseButton.setEnabled(True)
             # self.stopButton.setIcon(stop_stream_icon)
 
     def ticks(self):
@@ -173,9 +175,19 @@ class PlayBackWidget(QtWidgets.QWidget):
 
     def try_close(self):
         # Initialize playback worker
+        # print("PlayBackWidget: stopping timer")
         self.playback_command_interface_timer.stop()
+        # print("PlayBackWidget: timer stopped, requesting interruption to playback thread")
         self.playback_thread.requestInterruption()
+        # print("PlayBackWidget: interruption requested, exiting playback thread")
         self.playback_thread.exit()
-        self.playback_thread.wait()
+        # print("PlayBackWidget: playback thread exited, waiting for playback thread to finish")
+        self.playback_thread.wait(2000)
+        # terminate the thread if it is still running
+        # if self.playback_thread.isRunning():
+        #     print("PlayBackWidget: playback thread is still running, terminating playback thread")
+        #     self.playback_thread.terminate()
+        #     print("PlayBackWidget: playback thread terminated")
+        # print("PlayBackWidget: playback thread finished, deleting playback widget")
         self.deleteLater()
-        print("PlaybackWidget closed")
+        # print("PlaybackWidget try close finished")

@@ -1,6 +1,7 @@
 from PyQt6 import QtWidgets, uic
 
 from rena import ui_shared
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 
 
@@ -16,6 +17,7 @@ class ScriptingInputWidget(QtWidgets.QWidget):
         self.remove_btn.setToolTip(ui_shared.scripting_input_widget_button_tooltip)
         self.remove_btn.setIcon(AppConfigs()._icon_minus)
 
+
     def set_button_callback(self, callback):
         self.remove_btn.clicked.connect(callback)
 
@@ -27,3 +29,4 @@ class ScriptingInputWidget(QtWidgets.QWidget):
 
     def get_input_name_text(self):
         return self.label_stream_name.text()
+

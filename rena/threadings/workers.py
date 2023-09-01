@@ -15,11 +15,13 @@ from rena.exceptions.exceptions import DataPortNotOpenError
 from rena import config_signal, shared
 from rena.config import REQUEST_REALTIME_INFO_TIMEOUT
 from rena.configs.configs import AppConfigs
+from rena.interfaces.AudioInputInterface import AudioInputInterface
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
 from rena.sub_process.TCPInterface import RenaTCPInterface
-from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface
+from rena.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface, \
+    create_audio_input_interface
 from rena.utils.networking_utils import recv_string
 from rena.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 
@@ -52,14 +54,12 @@ class LSLInletWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, stream_name, channel_names, data_type, RenaTCPInterface=None, *args, **kwargs):
+    def __init__(self, stream_name, num_channels, RenaTCPInterface=None, *args, **kwargs):
         super(LSLInletWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.data_type = data_type
-
-        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
+        self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
         self._rena_tcp_interface = RenaTCPInterface
         self.is_streaming = False
         self.timestamp_queue = deque(maxlen=1024)
@@ -113,9 +113,9 @@ class LSLInletWorker(QObject, RenaWorker):
                 self.previous_availability = is_stream_availability
                 self.signal_stream_availability.emit(is_stream_availability)
 
-    def reset_interface(self, stream_name, channel_names):
+    def reset_interface(self, stream_name, num_channels):
         self.interface_mutex.lock()
-        self._lslInlet_interface = create_lsl_interface(stream_name, channel_names)
+        self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
         self.interface_mutex.unlock()
 
     def start_stream(self):
@@ -132,6 +132,90 @@ class LSLInletWorker(QObject, RenaWorker):
 
     def is_stream_available(self):
         return self._lslInlet_interface.is_stream_available()
+
+class AudioInputDeviceWorker(QObject, RenaWorker):
+    signal_stream_availability = pyqtSignal(bool)
+    signal_stream_availability_tick = pyqtSignal()
+
+    def __init__(self, stream_name, *args, **kwargs):
+        super(AudioInputDeviceWorker, self).__init__()
+        self.signal_data_tick.connect(self.process_on_tick)
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+
+        self._audio_device_interface: AudioInputInterface = create_audio_input_interface(stream_name)
+        # self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
+        self.is_streaming = False
+        self.timestamp_queue = deque(maxlen=1024)
+
+        self.start_time = time.time()
+        self.num_samples = 0
+
+        self.previous_availability = None
+
+        # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
+        self.interface_mutex = QMutex()
+
+    @QtCore.pyqtSlot()
+    def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
+        if self.is_streaming:
+            pull_data_start_time = time.perf_counter()
+            self.interface_mutex.lock()
+            frames, timestamps = self._audio_device_interface.process_frames()  # get all data and remove it from internal buffer
+            self.timestamp_queue.extend(timestamps)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
+
+            self.interface_mutex.unlock()
+
+            if frames.shape[-1] == 0:
+                return
+
+            self.num_samples += len(timestamps)
+
+            data_dict = {'stream_name': self._audio_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+            self.signal_data.emit(data_dict)
+            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+
+    @QtCore.pyqtSlot()
+    def process_stream_availability(self):
+        """
+        only emit when the stream is not available
+        """
+        if QThread.currentThread().isInterruptionRequested():
+            return
+        is_stream_availability = self._audio_device_interface.is_stream_available()
+        if self.previous_availability is None:  # first time running
+            self.previous_availability = is_stream_availability
+            self.signal_stream_availability.emit(self._audio_device_interface.is_stream_available())
+        else:
+            if is_stream_availability != self.previous_availability:
+                self.previous_availability = is_stream_availability
+                self.signal_stream_availability.emit(is_stream_availability)
+
+    def reset_interface(self, stream_name, num_channels):
+        self.interface_mutex.lock()
+        self._audio_device_interface = create_audio_input_interface(stream_name)
+        self.interface_mutex.unlock()
+
+    def start_stream(self):
+        self._audio_device_interface.start_stream()
+        self.is_streaming = True
+
+        self.num_samples = 0
+        self.start_time = time.time()
+        self.signal_stream_availability.emit(self._audio_device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
+
+    def stop_stream(self):
+        self._audio_device_interface.stop_stream()
+        self.is_streaming = False
+
+    def is_stream_available(self):
+        return self._audio_device_interface.is_stream_available()
+
 
 
 class OpenBCIDeviceWorker(QObject):
@@ -172,12 +256,12 @@ class OpenBCIDeviceWorker(QObject):
             self.signal_data.emit(data_dict)
 
     def start_stream(self):
-        self.interface.start_sensor()
+        self.interface.start_stream()
         self.is_streaming = True
         self.start_time = time.time()
 
     def stop_stream(self):
-        self.interface.stop_sensor()
+        self.interface.stop_stream()
         self.is_streaming = False
         self.end_time = time.time()
 
@@ -367,8 +451,13 @@ class PlaybackWorker(QObject):
                             self.command_info_interface.send(s)
                 else:
                     raise NotImplementedError
+                # a command has been sent, wait for reply
+                print('PlaybackWorker: waiting for reply')
                 reply = self.command_info_interface.socket.recv()
+                print('PlaybackWorker: reply received')
+
                 reply = reply.decode('utf-8')
+
                 if reply == STOP_SUCCESS_INFO:
                     self.replay_stopped()
                     self.send_command_mutex.unlock()
@@ -382,7 +471,11 @@ class PlaybackWorker(QObject):
                     self.send_command_mutex.unlock()
                     return
                 elif reply == SLIDER_MOVED_SUCCESS_INFO:
-                    # do something
+                    self.send_command_mutex.unlock()
+                    return
+                elif reply == TERMINATE_SUCCESS_COMMAND:
+                    self.is_running = False
+                    self.replay_terminated_signal.emit()
                     self.send_command_mutex.unlock()
                     return
                 # elif reply == TERMINATE_SUCCESS_COMMAND:
@@ -426,35 +519,45 @@ class PlaybackWorker(QObject):
         self.send_command_mutex.unlock()
 
     def queue_terminate_command(self):
-        self.send_command_mutex.lock()
-        self.command_info_interface.send_string(TERMINATE_COMMAND)
-        reply = self.command_info_interface.socket.recv()
-        reply = reply.decode('utf-8')
 
-        if reply == TERMINATE_SUCCESS_COMMAND:
-            self.is_running = False
-            self.replay_terminated_signal.emit()
-        else:
-            raise NotImplementedError(f'response for reply {reply} is not implemented')
+        self.send_command_mutex.lock()
+        self.command_queue.append(TERMINATE_COMMAND)
         self.send_command_mutex.unlock()
+        self.terminated = True
+
+        # self.send_command_mutex.lock()
+        # self.command_info_interface.send_string(TERMINATE_COMMAND)
+        # print("PlaybackWorker issued terminate command to replay server.")
+        # reply = self.command_info_interface.socket.recv()
+        # print("PlaybackWorker received reply from replay server.")
+        # reply = reply.decode('utf-8')
+        #
+        # if reply == TERMINATE_SUCCESS_COMMAND:
+        #     self.is_running = False
+        #     self.replay_terminated_signal.emit()
+        # else:
+        #     raise NotImplementedError(f'response for reply {reply} is not implemented')
+        # self.send_command_mutex.unlock()
 
 class ScriptingStdoutWorker(QObject):
-    stdout_signal = pyqtSignal(str)
+    std_signal = pyqtSignal(tuple)
     tick_signal = pyqtSignal()
 
     def __init__(self, stdout_socket_interface):
         super().__init__()
-        self.tick_signal.connect(self.process_stdout)
+        self.tick_signal.connect(self.process_std)
         self.stdout_socket_interface = stdout_socket_interface
 
     @QtCore.pyqtSlot()
-    def process_stdout(self):
+    def process_std(self):
         msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
-        if msg:
-            if msg.startswith(SCRIPT_STDOUT_MSG_PREFIX):  # if received is a message
-                msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
-                self.stdout_signal.emit(msg)  # send message if it's not None
-
+        if msg:  # if received is a message
+            prefix = msg[:len(SCRIPT_STDOUT_MSG_PREFIX)]
+            msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
+            if prefix == SCRIPT_STDOUT_MSG_PREFIX:  # if received is a message
+                self.std_signal.emit(('out', msg))  # send message if it's not None
+            elif prefix == SCRIPT_STDERR_MSG_PREFIX:
+                self.std_signal.emit(('error', msg))
 
 class ScriptInfoWorker(QObject):
     abnormal_termination_signal = pyqtSignal()
@@ -537,12 +640,13 @@ class ZMQWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, port_number, subtopic, data_type, *args, **kwargs):
+    def __init__(self, port_number, subtopic, data_type, poll_stream_availability=False, *args, **kwargs):
         super(ZMQWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
-        self.signal_stream_availability_tick.connect(self.process_stream_availability)
+        if poll_stream_availability:
+            self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.data_type = data_type
+        self.data_type = data_type if isinstance(data_type, str) else data_type.value
         # networking parameters
         self.sub_address = "tcp://localhost:%s" % port_number
         self.subtopic = subtopic
@@ -611,7 +715,7 @@ class ZMQWorker(QObject, RenaWorker):
         self.is_streaming = False
 
     def is_stream_available(self):
-        poll_results = dict(self.poller.poll(timeout=1000))
+        poll_results = dict(self.poller.poll(timeout=AppConfigs().zmq_lost_connection_timeout))
         # print(f"pulled stream availability: {len(poll_results)}, at {time.time()}" )
         return len(poll_results) > 0
 

@@ -58,9 +58,8 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     '''
     from rena.utils.RNStream import RNStream
     from rena.utils.ui_utils import CustomDialog
-    from rena.presets.Presets import PresetType
+    from rena.presets.PresetEnums import PresetType
     from rena.config import stream_availability_wait_time
-
 
     num_stream_to_test = 3
     recording_time_second = 10
@@ -139,7 +138,13 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     data_original = RNStream(recording_file_name).stream_in()  # this original data will be compared with replayed data later
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'replay_tab'))  # switch to the replay widget
     app_main_window.replay_tab.select_file(recording_file_name)
-    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
+
+    qtbot.waitUntil(stream_is_unavailable, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
+
+    def replay_reloaded():
+        assert app_main_window.replay_tab.StartStopReplayBtn.isVisible()
+    qtbot.waitUntil(replay_reloaded, timeout=stream_availability_timeout)
+    qtbot.mouseClick(app_main_window.replay_tab.StartStopReplayBtn, QtCore.Qt.MouseButton.LeftButton)
 
     print("Waiting for replay streams to become available")
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay

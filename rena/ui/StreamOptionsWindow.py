@@ -5,6 +5,7 @@ from PyQt6.QtGui import QIntValidator, QIcon
 from PyQt6.QtWidgets import QPushButton, QWidget
 
 from rena.config_ui import *
+from rena.configs.GlobalSignals import GlobalSignals
 from rena.configs.configs import AppConfigs
 from rena.presets.GroupEntry import PlotFormat
 from rena.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, is_group_image_only
@@ -12,6 +13,7 @@ from rena.ui.OptionsWindowPlotFormatWidget import OptionsWindowPlotFormatWidget
 from rena.ui.StreamGroupView import StreamGroupView
 from rena.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from rena.ui_shared import num_points_shown_text
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import dialog_popup
 
 
@@ -68,9 +70,10 @@ class StreamOptionsWindow(QWidget):
         self.stream_group_view.channel_is_display_changed_signal.connect(self.channel_is_display_changed)
 
         # nominal sampling rate UI elements
-        self.nominalSamplingRateIineEdit.setValidator(QIntValidator())
-        self.dataDisplayDurationLineEdit.setValidator(QIntValidator())
+        self.nominalSamplingRateIineEdit.setValidator(NoCommaIntValidator())
+        self.dataDisplayDurationLineEdit.setValidator(NoCommaIntValidator())
         self.load_sr_and_display_duration_from_settings_to_ui()
+        self.nominalSamplingRateIineEdit.textChanged.connect(self.nominal_sampling_rate_changed)
         self.nominalSamplingRateIineEdit.textChanged.connect(self.update_num_points_to_display)
         self.dataDisplayDurationLineEdit.textChanged.connect(self.update_num_points_to_display)
 
@@ -233,9 +236,14 @@ class StreamOptionsWindow(QWidget):
 
     def load_sr_and_display_duration_from_settings_to_ui(self):
         self.nominalSamplingRateIineEdit.setText(str(get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')))
-        self.last_sampling_rate = get_stream_preset_info(self.stream_name, 'nominal_sampling_rate')
         self.dataDisplayDurationLineEdit.setText(str(get_stream_preset_info(self.stream_name, 'display_duration')))
 
+    def nominal_sampling_rate_changed(self):
+        # save changed nominal sampling rate to preset if it is valid
+        new_sampling_rate = self.get_nominal_sampling_rate()
+        if new_sampling_rate > 0:
+            set_stream_preset_info(self.stream_name, 'nominal_sampling_rate', new_sampling_rate)
+            GlobalSignals().stream_preset_nominal_srate_changed.emit((self.stream_name, new_sampling_rate))
     @QtCore.pyqtSlot(tuple)
     def channel_is_display_changed(self, change: tuple):
         pass

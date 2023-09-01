@@ -5,23 +5,31 @@ from typing import Dict
 
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 
+from rena.configs.GlobalSignals import GlobalSignals
+from rena.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from rena.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from rena.exceptions.exceptions import RenaError
 from rena import config
 from rena.configs.configs import AppConfigs
+from rena.presets.Presets import Presets
+from rena.presets.PresetEnums import PresetType, DataType
 from rena.presets.Presets import Presets, PresetType, DataType, FMRIPreset
 from rena.ui.AddWiget import AddStreamWidget
+from rena.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from rena.ui.BaseStreamWidget import BaseStreamWidget
+from rena.ui.CloseDialog import CloseDialog
 from rena.ui.LSLWidget import LSLWidget
 from rena.ui.ScriptingTab import ScriptingTab
 from rena.ui.SplashScreen import SplashLoadingTextNotifier
 from rena.ui.VideoWidget import VideoWidget
 from rena.ui.ZMQWidget import ZMQWidget
 from rena.ui_shared import num_active_streams_label_text
-from rena.presets.presets_utils import get_experiment_preset_streams, check_preset_exists, create_default_lsl_preset, \
-    create_default_zmq_preset
+from rena.presets.presets_utils import get_experiment_preset_streams, is_stream_name_in_presets, \
+    create_default_lsl_preset, \
+    create_default_zmq_preset, verify_stream_meta_info, get_stream_meta_info, is_name_in_preset, \
+    change_stream_preset_type, change_stream_preset_data_type, change_stream_preset_port_number
 
 try:
     import rena.config
@@ -131,6 +139,13 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
+
+        # close dialog
+        self.close_dialog = None
+        self.close_event = None
+        self.is_already_closed = False
+
+        # # fmri widget
         # fmri widget
         # # TODO: FMRI WIDGET
         fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
@@ -155,51 +170,90 @@ class MainWindow(QtWidgets.QMainWindow):
         # task_thread = LongTaskThread(self, "process_add")
         # task_thread.completed.connect(self.add_completed)
         # task_thread.start()
-        self.process_add()
+        selected_text, preset_type, data_type, port = self.addStreamWidget.get_selected_stream_name(), \
+                                                      self.addStreamWidget.get_selected_preset_type(), \
+                                                       self.addStreamWidget.get_data_type(), \
+                                                       self.addStreamWidget.get_port_number()
+        self.process_add(selected_text, preset_type, data_type, port)
 
-    def add_completed(self):
-        self.addStreamWidget.add_btn.setEnabled(True)
-        self.loading_dialog.close()
+    # def add_completed(self):
+    #     self.addStreamWidget.add_btn.setEnabled(True)
+    #     self.loading_dialog.close()
 
-    def process_add(self):
+    def process_add(self, stream_name, preset_type, data_type, port):
         if self.recording_tab.is_recording:
             dialog_popup(msg='Cannot add while recording.')
             return
-        selected_text, data_type, port  = self.addStreamWidget.get_selected_stream_name(), \
-                                                               self.addStreamWidget.get_data_type(), \
-                                                               self.addStreamWidget.get_port_number()
-        if len(selected_text) == 0:
+
+        if len(stream_name) == 0:
             return
         try:
-            if selected_text in self.stream_widgets.keys():  # if this inlet hasn't been already added
-                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(selected_text),title='Warning')
+            verify_stream_meta_info(preset_type=preset_type, data_type=data_type, port_number=port)
+            if stream_name in self.stream_widgets.keys():  # if this inlet hasn't been already added
+                dialog_popup('Nothing is done for: {0}. This stream is already added.'.format(stream_name),title='Warning')
                 return
+            if not is_name_in_preset(stream_name):
+                if not PresetType.is_lsl_zmq_custom_preset(preset_type):
+                    dialog_popup("New stream must be either LSL or ZMQ", title="Error", buttons=QDialogButtonBox.StandardButton.Ok)
+                    return
+                self.create_preset(stream_name, preset_type=preset_type, data_type=data_type, port=port)
+                GlobalSignals().stream_presets_entry_changed_signal.emit()  # add the new preset to the combo box
 
-            selected_type, is_new_preset = self.addStreamWidget.get_current_selected_type()
-            if is_new_preset:
-                self.create_preset(selected_text, selected_type, data_type=data_type, port=port)
-                self.scripting_tab.update_script_widget_input_combobox()  # add the new preset to the combo box
-
-            if selected_type == PresetType.WEBCAM:  # add video device
-                self.init_video_device(selected_text, video_preset_type=selected_type)
-            elif selected_type == PresetType.MONITOR:
-                self.init_video_device(selected_text, video_preset_type=selected_type)
-            elif selected_type == PresetType.CUSTOM:  # if this is a device preset
+            if preset_type == PresetType.WEBCAM:  # add video device
+                self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.AUDIO:
+                self.init_audio_input_device(stream_name)
+            elif preset_type == PresetType.MONITOR:
+                self.init_video_device(stream_name, video_preset_type=preset_type)
+            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
                 raise NotImplementedError
-                self.init_device(selected_text)  # add device stream
-            elif selected_type == PresetType.LSL:
-                self.init_LSL_streaming(selected_text, data_type)  # add lsl stream
-            elif selected_type == PresetType.ZMQ:
-                self.init_ZMQ_streaming(selected_text, port, data_type)  # add lsl stream
-            elif selected_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
-                streams_for_experiment = get_experiment_preset_streams(selected_text)
-                self.add_streams_to_visualize(streams_for_experiment)
+                # self.init_device(selected_text)  # add device stream
+            elif preset_type == PresetType.LSL:
+                self.init_LSL_streaming(stream_name)  # add lsl stream
+            elif preset_type == PresetType.ZMQ:
+                self.init_ZMQ_streaming(stream_name, port, data_type)  # add lsl stream
+            elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
+                streams_for_experiment = get_experiment_preset_streams(stream_name)
+                self.add_streams_from_experiment_preset(streams_for_experiment)
             else:
-                raise Exception("Unknow preset type {}".format(selected_type))
+                raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
         except RenaError as error:
-            dialog_popup('Failed to add: {0}. {1}'.format(selected_text, str(error)), title='Error')
+            dialog_popup(f'Failed to add: {stream_name}. {error}', title='Error')
         self.addStreamWidget.check_can_add_input()
+
+    def add_streams_from_experiment_preset(self, stream_names):
+        for stream_name in stream_names:
+            if stream_name not in self.stream_widgets.keys():
+                assert is_stream_name_in_presets(stream_name), InvalidStreamMetaInfoError(f"Adding multiple streams must use streams already defined in presets. Undefined stream: {stream_name}")
+                self.process_add(stream_name, *get_stream_meta_info(stream_name))
+
+    def add_streams_from_replay(self, stream_infos):
+        # switch tab to stream
+        is_new_preset_added = False
+        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
+        for stream_name, info in stream_infos.items():
+            if stream_name not in self.stream_widgets.keys():
+                if not is_stream_name_in_presets(stream_name):
+                    sampling_rate = max(0, int(info['srate']))
+                    self.create_preset(stream_name, preset_type=info['preset_type'], num_channels=info['n_channels'], data_type=info['data_type'], port=info['port_number'], nominal_sample_rate=sampling_rate)
+                    is_new_preset_added = True
+                else:
+                    stream_meta_info = get_stream_meta_info(stream_name)
+
+                    if stream_meta_info[0].value != info['preset_type']:
+                        print(f"Warning: stream {stream_name} has different preset type {stream_meta_info[0].value} from the one in the replay file {info['preset_type']}.")
+                        change_stream_preset_type(stream_name, info['preset_type'])
+                    if stream_meta_info[1].value != info['data_type']:
+                        print(f"Warning: stream {stream_name} has different data type {stream_meta_info[1].value} from the one in the replay file {info['data_type']}.")
+                        change_stream_preset_data_type(stream_name, info['data_type'])
+                    if info['preset_type'] == PresetType.ZMQ:
+                        change_stream_preset_port_number(stream_name, info['port_number'])
+                    # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
+                self.process_add(stream_name, *get_stream_meta_info(stream_name))
+
+        if is_new_preset_added:
+            GlobalSignals().stream_presets_entry_changed_signal.emit()
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
@@ -214,7 +268,6 @@ class MainWindow(QtWidgets.QMainWindow):
             raise NotImplementedError
         else:
             raise ValueError(f"Unknown preset type {preset_type}")
-        self.addStreamWidget.update_combobox_presets()  # add thew new preset to the combo box
 
     def remove_stream_widget(self, target):
         self.streamsHorizontalLayout.removeWidget(target)
@@ -232,7 +285,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stop_all_btn.setEnabled(streaming_widget_count > 0)
 
     def on_start_all_btn_clicked(self):
-        [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_stream_available and not x.is_widget_streaming()]
+        for x in self.stream_widgets.values():
+            if (not x.add_stream_availability or x.is_stream_available) and not x.is_widget_streaming():
+                x.start_stop_stream_btn_clicked()
 
     def on_stop_all_btn_clicked(self):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
@@ -247,28 +302,11 @@ class MainWindow(QtWidgets.QMainWindow):
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 
-    def add_streams_to_visualize(self, stream_names):
-        for stream_name in stream_names:
-            # check if the stream in setting's preset
-            if stream_name not in self.stream_widgets.keys():
-                if check_preset_exists(stream_name):
-                    self.addStreamWidget.select_by_stream_name(stream_name)
-                    self.addStreamWidget.add_btn.click()
-                else:  # add a new preset if the stream name is not defined
-                    self.addStreamWidget.set_selection_text(stream_name)
-                    self.addStreamWidget.add_btn.click()
-
-    def add_streams_from_replay(self, stream_names):
-        # switch tab to stream
-        self.ui.tabWidget.setCurrentWidget(self.visualization_tab)
-        self.add_streams_to_visualize(stream_names)
-
-    def init_LSL_streaming(self, stream_name, data_type=None):
+    def init_LSL_streaming(self, stream_name):
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
                                  stream_name=stream_name,
-                                 data_type=data_type,
                                  insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
@@ -283,6 +321,15 @@ class MainWindow(QtWidgets.QMainWindow):
                                  insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[topic_name] = stream_widget
+
+    def init_audio_input_device(self, stream_name):
+        widget_name = stream_name + '_widget'
+        stream_widget = AudioInputDeviceWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
 
     def update_meta_data(self):
         # get the stream viz fps
@@ -331,6 +378,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiment_combo_box.addItems(self.experiment_presets_dict.keys())
 
     def closeEvent(self, event):
+        if self.is_already_closed:
+            event.accept()
+            return
         if self.ask_to_close:
             reply = QMessageBox.question(self, 'Confirm Exit', 'Are you sure you want to exit?',
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
@@ -345,15 +395,32 @@ class MainWindow(QtWidgets.QMainWindow):
             # close other tabs
             stream_close_calls = [s_widgets.try_close for s_widgets in self.stream_widgets.values()]
             [c() for c in stream_close_calls]
-            self.scripting_tab.try_close()
-            self.replay_tab.try_close()
-            self.settings_widget.try_close()
 
-            Presets().__del__()
-            AppConfigs().__del__()
-            event.accept()
+            self.close_event = event
+            if self.scripting_tab.need_to_wait_to_close():
+                def abort_script_finish_close():
+                    self.scripting_tab.kill_all_scripts()
+                    self.finish_close()
+                self.close_dialog = CloseDialog(abort_script_finish_close)
+                self.scripting_tab.try_close(self.close_dialog.close_success_signal)
+                event.ignore()
+            else:
+                self.scripting_tab.try_close()
+                self.finish_close()
         else:
             event.ignore()
+
+    def finish_close(self):
+        print('MainWindow: closing replay')
+        self.replay_tab.try_close()
+        print('MainWindow: closing replay')
+        self.settings_widget.try_close()
+
+        Presets().__del__()
+        AppConfigs().__del__()
+
+        self.is_already_closed = True  # set this to true so we don't through another close event
+        self.close()  # fire another close event
 
     def fire_action_documentation(self):
         webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
@@ -389,4 +456,28 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         is_stream_widgets_streaming = np.any([x.is_widget_streaming() for x in self.stream_widgets.values()])
         return np.any(is_stream_widgets_streaming)
+
+    def remove_stream_widget_with_preset_type(self, preset_type, remove_warning=True):
+        # pass
+        # # if any stream is streaming, warn the user
+        target_widget_names = [s_name for s_name, s_widget in self.stream_widgets.items() if s_widget.preset_type == preset_type]
+        if remove_warning and len(target_widget_names) > 0:
+            reply = dialog_popup(
+                msg=f"The following streams are active {target_widget_names}?.\n"
+                    f"Do you want to remove these streams from visualization for now (you can always add them back)?",
+                # f'There\'s another stream source with the name {target_widget_names} on the network.\n'
+                # f'Are you sure you want to proceed with replaying this file? \n'
+                # f'Proceeding may result in unpredictable streaming behavior.\n'
+                # f'It is recommended to remove the other data stream with the same name.',
+                title='Stream Added Warning', mode='modal',
+                buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+            if reply.result():
+                for stream_name in target_widget_names:
+                    self.stream_widgets[stream_name].try_close()
+            else:
+                return
+
+        # for stream_name, stream_widget in self.stream_widgets.items():
+        #     if stream_widget.preset_type == preset_type:
+        #         stream_widget.try_close()
 

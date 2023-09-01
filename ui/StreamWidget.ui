@@ -89,7 +89,7 @@
             <property name="bottomMargin">
              <number>1</number>
             </property>
-            <item>
+            <item alignment="Qt::AlignLeft">
              <widget class="QLabel" name="StreamNameLabel">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
@@ -102,8 +102,20 @@
               </property>
              </widget>
             </item>
-            <item alignment="Qt::AlignRight">
+            <item>
              <widget class="QFrame" name="frame_2">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="frameShape">
                <enum>QFrame::StyledPanel</enum>
               </property>
@@ -111,41 +123,59 @@
                <enum>QFrame::Raised</enum>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QLabel" name="ts_label">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+                  <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>16777215</width>
+                   <width>250</width>
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Timestamp of the most recent frame received.</string>
+                 </property>
                  <property name="text">
-                  <string>Current Timestamp</string>
+                  <string>timestamp</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QLabel" name="fs_label">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+                  <sizepolicy hsizetype="Ignored" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>16777215</width>
+                   <width>250</width>
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="toolTip">
+                  <string>Average number of frames received per second over a recent period of time.</string>
+                 </property>
                  <property name="text">
-                  <string>Sampling Rate</string>
+                  <string>fps</string>
                  </property>
                 </widget>
                </item>

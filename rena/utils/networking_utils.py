@@ -2,6 +2,7 @@ import numpy as np
 import zmq
 
 from rena.shared import DATA_BUFFER_PREFIX
+from rena.utils.RNStream import max_dtype_len
 from rena.utils.buffers import flatten
 
 
@@ -45,13 +46,15 @@ def send_data_dict(data_dict: dict, socket_interface):
     keys = [k.encode('utf-8') for k in data_dict.keys()]
     data_timestamp_list = []
     for data, timestamps in data_dict.values():
-        data_timestamp_list.append(np.concatenate([data, np.expand_dims(timestamps, axis=0)], axis=0))
+        data_timestamp_list.append((data, timestamps))
     # data_and_timestamps = [item for sublist in list(data_buffer.values()) for item in sublist]
     send_packet = [DATA_BUFFER_PREFIX] + flatten(
-        [(k, np.array(d.shape[0]), np.array(d.shape[1]), d.tobytes()) for k, d in zip(keys, data_timestamp_list)])
+        [(k, get_dtype_bypes(d.dtype), np.array(d.shape[0]), np.array(d.shape[1]), d.tobytes(), t.tobytes()) for k, (d, t) in zip(keys, data_timestamp_list)])
     socket_interface.socket.send_multipart(send_packet)
 
-
+def get_dtype_bypes(dtype):
+    dtype_str = str(dtype)
+    return bytes(dtype_str + "".join(" " for x in range(max_dtype_len - len(dtype_str))), 'utf-8')
 
 
 def recv_data_dict(socket_interface):
@@ -62,12 +65,12 @@ def recv_data_dict(socket_interface):
     else:
         data_dict = data_dict[1:]  # remove the prefix
         rtn = dict()
-        for i in range(0, len(data_dict), 4):
+        for i in range(0, len(data_dict), 6):
             key = data_dict[i].decode('utf-8')
-            shape = np.frombuffer(data_dict[i + 1], dtype=int)[0], np.frombuffer(data_dict[i + 2], dtype=int)[0]
-            data_timesamps = np.frombuffer(data_dict[i + 3]).reshape(shape)
-            data = data_timesamps[:-1, :]
-            timestamps = data_timesamps[-1]
+            dtype = np.dtype(data_dict[i + 1].decode('utf-8').strip(' '))
+            shape = np.frombuffer(data_dict[i + 2], dtype=int)[0], np.frombuffer(data_dict[i + 3], dtype=int)[0]
+            data = np.frombuffer(data_dict[i + 4], dtype=dtype).reshape(shape)
+            timestamps = np.frombuffer(data_dict[i + 5], dtype=np.float64)
             rtn[key] = (data, timestamps)
         return rtn
 

@@ -38,10 +38,10 @@ def LSLTestStream(stream_name, n_channels=81, srate=2048):
         # now send it and wait for a bit before trying again.
         time.sleep(1e-3)
 
-def CSVTestStream(stream_name, sample, n_channels=81, srate=2048):
+def SampleDefinedLSLStream(stream_name, sample, n_channels=81, srate=2048, dtype='double64'):
     print('Test stream name is ' + stream_name)
     type = 'EEG'
-    info = StreamInfo(stream_name, type, n_channels, srate, 'double64', 'someuuid1234')
+    info = StreamInfo(stream_name, type, n_channels, srate, dtype, 'someuuid1234')
 
     # next make an outlet
     outlet = StreamOutlet(info)
@@ -101,3 +101,41 @@ def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
         if len(send_times) > 0:
             fps = len(send_times) / (np.max(send_times) - np.min(send_times))
             print("Send FPS is {0}".format(fps), end='\r')
+
+
+def SampleDefinedZMQStream(stream_name, sample, port, srate=2048):
+    context = zmq.Context()
+    socket = context.socket(zmq.PUB)
+    socket.bind("tcp://*:%s" % port)
+
+    print('Test stream name is ' + stream_name)
+
+    print("now sending data...")
+    start_time = time.time()
+    sent_samples = 0
+    sent_id = 0
+
+    print(f'dim:{sample.shape}')
+    while True:
+        elapsed_time = time.time() - start_time
+        required_samples = int(srate * elapsed_time) - sent_samples
+
+        if required_samples > 0:
+            for _ in range(required_samples):
+                socket.send_multipart([bytes(stream_name, "utf-8"),
+                                       np.array(local_clock()),
+                                       sample[:, sent_id].copy()])
+                sent_id += 1
+                if sent_id == sample.shape[1]:
+                    sent_id = 0
+
+        sent_samples += required_samples
+
+        if sent_samples >= sample.shape[1]:
+            break
+
+        # now send it and wait for a bit before trying again.
+        time.sleep(0.01)
+
+    socket.close()
+    context.term()

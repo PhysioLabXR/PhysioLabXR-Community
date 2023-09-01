@@ -1,4 +1,6 @@
 import copy
+import os
+
 import numpy as np
 import pytest
 
@@ -8,8 +10,9 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
+from rena.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
-from tests.TestStream import CSVTestStream
+from tests.TestStream import SampleDefinedLSLStream
 
 
 @pytest.fixture
@@ -29,7 +32,8 @@ def context_bot(app_main_window, qtbot):
 def test_xdf_store_load(app_main_window, qtbot) -> None:
     from rena.config import stream_availability_wait_time
     from rena.configs.configs import AppConfigs
-    from rena.presets.Presets import DataType, PresetType
+    from rena.presets.PresetEnums import DataType
+    from rena.presets.PresetEnums import PresetType
     from rena.startup import apply_patches
     from rena.utils.xdf_utils import load_xdf
 
@@ -51,7 +55,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
         test_stream_names.append(ts_name)
         sample = np.random.random((n_channels, 10 * recording_time_second * srate))
         samples[ts_name] = np.array(sample)
-        p = Process(target=CSVTestStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
+        p = Process(target=SampleDefinedLSLStream, args=(ts_name, sample), kwargs={'n_channels':n_channels, 'srate':srate})
         test_stream_processes.append(p)
         test_stream_samples.append(sample)
         p.start()
@@ -136,7 +140,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
 
     # reload recorded file
     saved_file_path = app_main_window.recording_tab.save_path.replace('.dats', '.xdf')
-    xdf_data = load_xdf(saved_file_path)
+    xdf_data = stream_in(saved_file_path)
 
     def compare_column_vec(vec1, vec2):
         result = np.all(vec1 == vec2)
@@ -166,4 +170,7 @@ def test_xdf_store_load(app_main_window, qtbot) -> None:
         assert is_passing
 
     assert np.all(buffer_copy['monitor 0'][0] == xdf_data['monitor 0'][0])
-
+    os.remove(saved_file_path)
+    os.remove(saved_file_path.replace('.xdf', '.dats'))
+    # revert back the recording file format
+    app_main_window.settings_widget.saveFormatComboBox.setCurrentIndex(0)  # set recording file format to dats

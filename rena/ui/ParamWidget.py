@@ -3,8 +3,9 @@ from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtWidgets import QCheckBox, QLineEdit
 
 from rena.configs.configs import AppConfigs
-from rena.presets.ScriptPresets import ParamPreset
+from rena.presets.ScriptPresets import ScriptParam
 from rena.scripting.scripting_enums import ParamChange, ParamType
+from rena.utils.Validators import NoCommaIntValidator
 from rena.utils.ui_utils import add_enum_values_to_combobox
 
 
@@ -59,7 +60,7 @@ class ParamWidget(QtWidgets.QWidget):
             if new_type is ParamType.float:
                 self.value_widget.setValidator(QDoubleValidator())
             elif new_type is ParamType.int:
-                self.value_widget.setValidator(QIntValidator())
+                self.value_widget.setValidator(NoCommaIntValidator())
             self.value_widget.textChanged.connect(self.on_param_changed)
 
         if new_type is not ParamType.list:
@@ -137,7 +138,7 @@ class ParamWidget(QtWidgets.QWidget):
 
     def get_param_preset_recursive(self):
         if self.get_param_type() == ParamType.list:
-            rtn = ParamPreset(name=self.get_param_name(), type=self.get_param_type(), value=[])
+            rtn = ScriptParam(name=self.get_param_name(), type=self.get_param_type(), value=[])
             for i in range(self.value_widget.layout().count()):
                 item = self.value_widget.layout().itemAt(i)
                 if item.widget() is not None and item.widget().isWidgetType() and isinstance(item.widget(), ParamWidget):
@@ -146,7 +147,7 @@ class ParamWidget(QtWidgets.QWidget):
                     rtn.value.append(item.widget().get_param_preset_recursive())
             return rtn
         else:
-            return ParamPreset(name=self.get_param_name(), type=self.get_param_type(), value=self.get_value())
+            return ScriptParam(name=self.get_param_name(), type=self.get_param_type(), value=self.get_value())
 
     def add_to_list_button_pressed(self):
         assert self.value_widget == self.list_content_frame_widget, "add_to_list_button_pressed should only be called when the param type is list"
@@ -156,7 +157,7 @@ class ParamWidget(QtWidgets.QWidget):
         param_name = self.get_param_name()
         if isinstance(value, list):
             for val in value:
-                assert isinstance(val, ParamPreset), f"add_to_list_recursive should only be called with ParamPreset or list of ParamPreset, got {type(val)}"
+                assert isinstance(val, ScriptParam), f"add_to_list_recursive should only be called with ParamPreset or list of ParamPreset, got {type(val)}"
                 self.add_param_to_list(param_name, param_type=val.type, value=val.value)
         else:
             self.add_param_to_list(param_name, param_type, value)
