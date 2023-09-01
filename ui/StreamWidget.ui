@@ -153,7 +153,7 @@
                   <string>Timestamp of the most recent frame received.</string>
                  </property>
                  <property name="text">
-                  <string>Current Timestamp</string>
+                  <string>timestamp</string>
                  </property>
                 </widget>
                </item>
@@ -175,7 +175,7 @@
                   <string>Average number of frames received per second over a recent period of time.</string>
                  </property>
                  <property name="text">
-                  <string>Sampling Rate</string>
+                  <string>fps</string>
                  </property>
                 </widget>
                </item>
