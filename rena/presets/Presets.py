@@ -213,7 +213,7 @@ class AudioPreset(metaclass=SubPreset):
     data_type: DataType = DataType.float32
     port_number: int = None
     display_duration: float = None
-    nominal_sampling_rate: int = 10
+    nominal_sampling_rate: int = 4000
 
     can_edit_channel_names: bool = True
 
