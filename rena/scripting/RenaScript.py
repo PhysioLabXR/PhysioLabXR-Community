@@ -4,10 +4,12 @@ import pickle
 import sys
 import threading
 import time
+import traceback
+import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from pydoc import locate
-from typing import List, Dict
+from typing import List, Dict, Union
 
 import numpy as np
 import zmq
@@ -18,7 +20,7 @@ from rena.presets.PresetEnums import PresetType
 from rena.presets.ScriptPresets import ScriptOutput
 from rena.presets.presets_utils import get_stream_nominal_sampling_rate, get_stream_data_type, get_stream_num_channels
 from rena.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_STOP_REQUEST, SCRIPT_STOP_SUCCESS, SCRIPT_INFO_REQUEST, \
-    SCRIPT_PARAM_CHANGE
+    SCRIPT_PARAM_CHANGE, SCRIPT_STDERR_MSG_PREFIX
 from rena.scripting.scripting_enums import ParamChange
 from rena.sub_process.TCPInterface import RenaTCPInterface
 from rena.utils.data_utils import validate_output
@@ -72,7 +74,8 @@ class RenaScript(ABC, threading.Thread):
         print('RenaScript: Waiting for command routing ID from main app')
         _, self.command_routing_id = recv_string_router(self.command_socket_interface, True)
         # redirect stdout
-        sys.stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
+        sys.stdout = self.redirect_stdout = RedirectStdout(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
+        sys.stderr = self.redirect_stderr = RedirectStderr(socket_interface=self.stdout_socket_interface, routing_id=self.stdout_routing_id)
 
         # set up measuring realtime performance
         self.loop_durations = deque(maxlen=run_frequency * 2)
@@ -95,6 +98,7 @@ class RenaScript(ABC, threading.Thread):
             self._create_output_streams()
         except RenaError as e:
             print('Error setting up output streams: {0}'.format(e))
+            traceback.print_exc()
 
         # set up the parameters
         self.params = params
@@ -134,7 +138,7 @@ class RenaScript(ABC, threading.Thread):
         try:
             self.init()
         except Exception as e:
-            print('Exception in init(): {0} {1}'.format(type(e), str(e)))
+            traceback.print_exc()
         # start the loop here, accept interrupt command
         print('Entering loop')
         while True:
@@ -145,10 +149,10 @@ class RenaScript(ABC, threading.Thread):
             try:
                  self.loop()
             except Exception as e:
-                exc_type, exc_obj, exc_tb = sys.exc_info()
-                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                print('Exception in loop(): {0} {1}'.format(type(e), e))
-                # print(exc_type, fname, exc_tb.tb_lineno)
+                # print('Exception in loop(): {0} {1}'.format(type(e), e))
+                traceback.print_exc()
+                # print(traceback.format_exc())
+                self.redirect_stderr.send_buffered_messages()
             self.loop_durations.append(time.time() - loop_start_time)
             self.run_while_start_times.append(loop_start_time)
             # receive info request from main process
@@ -188,27 +192,38 @@ class RenaScript(ABC, threading.Thread):
                 outlet = self.output_outlets[stream_name]
                 if data is not None:
                     try:
-                        data, is_chunk = validate_output(data, self.output_num_channels[stream_name])
-                        data = data.astype(self.output_presets[stream_name].data_type.get_data_type())
+                        _data, timestamp, is_data_chunk, is_timestamp_chunk = validate_output(data, self.output_num_channels[stream_name])
+                        _data = _data.astype(self.output_presets[stream_name].data_type.get_data_type())
                         if isinstance(outlet, StreamOutlet):
-                            if is_chunk: outlet.push_chunk(data.tolist())
-                            else: outlet.push_sample(data.tolist())
-                        else:  # this is a zmq socket
-                            if is_chunk:
-                                for i in range(len(data)):
-                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), np.ascontiguousarray(data[i])])
+                            if is_data_chunk and is_timestamp_chunk:
+                                for i in range(len(_data)):
+                                    outlet.push_sample(_data[i].tolist(), timestamp=timestamp[i])  # 0.0 is default value, using it will use the local clock
+                            elif is_data_chunk and not is_timestamp_chunk:
+                                outlet.push_chunk(_data.tolist(), timestamp=0.0 if timestamp is None else timestamp)  # timestamp is a number or None if not provided by the user
                             else:
-                                outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(local_clock()), data])
+                                # timestamp will never be a chunk in this case when data is not chunk
+                                outlet.push_sample(_data.tolist(), timestamp=0.0 if timestamp is None else timestamp)  # 0.0 is default value, using it will use the local clock
+                        else:  # this is a zmq socket
+                            if is_data_chunk and is_timestamp_chunk:
+                                for i in range(len(_data)):
+                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(timestamp[i]), np.ascontiguousarray(_data[i])])
+                            elif is_data_chunk and not is_timestamp_chunk:
+                                for i in range(len(_data)):
+                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(timestamp), np.ascontiguousarray(_data[i])])
+                            else:
+                                _timestamp = local_clock() if timestamp is None else timestamp  # timestamp is not a chunk when data is not chunk
+                                outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(_timestamp), _data])
                     except Exception as e:
                         if type(e) == BadOutputError:
                             print('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
                         else:
-                            print('Unknown error occured when trying to send output data: {0}'.format(str(e)))
+                            print('Unknown error occurred when trying to send output data: {0}'.format(str(e)))
+                        traceback.print_exc()
         # exiting the script loop
         try:
             self.cleanup()
         except Exception as e:
-            print('Exception in cleanup(): {0} {1}'.format(type(e), str(e)))
+            traceback.print_exc()
         print('Sending stop success')
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 
@@ -271,6 +286,24 @@ class RenaScript(ABC, threading.Thread):
                     raise ZMQPortOccupiedError(o_preset.port_number)
                 self.output_outlets[stream_name] = socket
 
+    def set_output(self, stream_name: str, data: Union[np.ndarray, list, tuple], timestamp: Union[np.ndarray, list, tuple, float]=None) -> None:
+        """
+        Set the output data of the given stream,
+        use this function as an alternative to directly setting the self.outputs["stream_name"] = data
+
+        if you have timestamp for your data, use this function to set the timestamp. Timestamps cannot be set directly in self.outputs
+
+        expectation for @param data
+
+        @param stream_name: the name of the stream to set the output
+        @param data: can be a numpy array, tuple or list.
+            If data is a 2D list, tuple or array, the first dimension is the number of frames, the second dimension is the number of channels.
+            if data is a 1D list, tuple or array, it is treated as a single frame, the number of channels must match the number of channels of the output set in the GUI
+        @timestamp: can be a single number or a list/tuple/numpy array of numbers,
+            if it is a list/tuple/numpy array, the length of the timestamp must match the number of frames in data
+        """
+        self.outputs[stream_name] = {'data': data, 'timestamp': timestamp}
+
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):
         self.terminal = sys.stdout
@@ -283,3 +316,23 @@ class RedirectStdout(object):
 
     def flush(self):
         pass
+
+
+class RedirectStderr(object):
+    def __init__(self, socket_interface, routing_id):
+        self.terminal = sys.stderr
+        self.routing_id = routing_id
+        self.socket_interface = socket_interface
+        self.message_buffer = ""
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.message_buffer += message
+
+    def flush(self):
+        pass
+
+    def send_buffered_messages(self):
+        if self.message_buffer:
+            send_string_router(SCRIPT_STDERR_MSG_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
+            self.message_buffer = ""

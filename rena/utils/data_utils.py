@@ -310,18 +310,24 @@ def replace_special(target_str: str, replacement_dict):
 #     for stream_name, (data, timestamps) in buffer.items():
 #         pass
 
-def validate_output(data, expected_size):
+
+def validate_output_data(data, expected_size):
     is_chunk = False
 
-    if type(data) == list:
+    if type(data) == list or type(data) == tuple:
         try:
             assert is_homogeneous_type(data)
         except AssertionError:
-            raise BadOutputError('Output data must be a homogeneous (all elements are of the same type) when given as a list')
+            raise BadOutputError('Output data must be a homogeneous (all elements are of the same type) when given as a list or tuple')
         try:
             data = np.array(data)
         except np.VisibleDeprecationWarning:
-            raise BadOutputError('Output data must not be a ragged list (containing sublist of different length) when given as a list')
+            raise BadOutputError('Output data must not be a ragged list (containing sublist of different length) when given as a list or tuple')
+    else:
+        try:
+            assert type(data) == np.ndarray
+        except AssertionError:
+            raise BadOutputError(f'Output data must be a list, tuple or ndarray, got {type(data)}')
 
     try:
         assert len(data.shape) == 2 or len(data.shape) == 1
@@ -342,6 +348,19 @@ def validate_output(data, expected_size):
             raise BadOutputError('Output data length {0} does not match the given size {1}'.format(len(data), expected_size))
 
     return data, is_chunk
+
+def validate_output(data, expected_size):
+    if type(data) == dict:  # data will be a dict if output is set using RenaScript.set_output
+        _data, timestamp = data['data'], data['timestamp']
+    else:
+        _data, timestamp = data, None
+    _data, is_data_chunk = validate_output_data(_data, expected_size)
+    if type(timestamp) == list or type(timestamp) == tuple or type(timestamp) == np.ndarray:
+        assert len(timestamp) == len(_data), BadOutputError(f"When given as a tuple, list or ndarray, the timestamp's length {len(timestamp)} does not match the given data length {len(data)}")
+        is_timestamp_chunk = True
+    else:
+        is_timestamp_chunk = False
+    return _data, timestamp, is_data_chunk, is_timestamp_chunk
 
 def is_homogeneous_type(seq):
     iseq = iter(seq)

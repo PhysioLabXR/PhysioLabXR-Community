@@ -18,7 +18,7 @@ from rena.sub_process.TCPInterface import RenaTCPInterface, test_port_range
 from rena.threadings.WaitThreads import start_wait_process, start_wait_for_response
 from rena.ui.PlayBackWidget import PlayBackWidget
 from rena.utils.lsl_utils import get_available_lsl_streams
-from rena.utils.ui_utils import another_window
+from rena.utils.ui_utils import another_window, show_label_movie
 from rena.utils.ui_utils import dialog_popup
 
 class ReplayStreamHeader(QWidget):
@@ -110,6 +110,8 @@ class ReplayTab(QtWidgets.QWidget):
         self.stream_list_items = {}
 
         # start replay client
+        self.playback_widget = None
+        self.replay_server_process = None
         self.replay_port = test_port_range(*AppConfigs().replay_port_range)
         if self.replay_port is None:
             dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
@@ -156,7 +158,8 @@ class ReplayTab(QtWidgets.QWidget):
 
         # start loading the replay file
         self.SelectDataDirBtn.setEnabled(False)
-        self.show_loading()
+        show_label_movie(self.loading_label, True)
+
         self.StartStopReplayBtn.setVisible(False)
         self.playback_window.hide()
 
@@ -175,7 +178,7 @@ class ReplayTab(QtWidgets.QWidget):
         if client_info.startswith(shared.FAIL_INFO):
             dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
             self.SelectDataDirBtn.setEnabled(True)
-            self.hide_loading()
+            show_label_movie(self.loading_label, False)
             self.stream_list_widget.setVisible(False)
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
@@ -208,7 +211,7 @@ class ReplayTab(QtWidgets.QWidget):
             self.StartStopReplayBtn.setVisible(True)
             self.SelectDataDirBtn.setEnabled(True)
             self.stream_list_widget.setVisible(True)
-            self.hide_loading()
+            show_label_movie(self.loading_label, False)
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
@@ -256,6 +259,9 @@ class ReplayTab(QtWidgets.QWidget):
 
             self.parent.add_streams_from_replay(replay_stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+
+            # this is the official start of replay
+            self.set_enable_stream_list_editable_fields(False)
             self.is_replaying = True
             self.StartStopReplayBtn.setText('Stop Replay')
             self.StartStopReplayBtn.setEnabled(True)
@@ -283,21 +289,23 @@ class ReplayTab(QtWidgets.QWidget):
         self.is_replaying = False
         self.SelectDataDirBtn.setEnabled(True)
         self.StartStopReplayBtn.setText('Start Replay')
+        self.set_enable_stream_list_editable_fields(True)
 
     def openWindow(self):
         self.window = QtWidgets.QMainWindow()
 
     def try_close(self):
-        # print("ReplayTab: closing playback widget")
-        self.playback_widget.issue_terminate_command()
-        # print('ReplayTab: calling try close for playback window')
-        self.playback_widget.try_close()
-        self.playback_window.close()  # opened windows must be closed
-        # print('ReplayTab: playback window closed, waiting for replay server process to terminate')
-        self.replay_server_process.join(timeout=1)
-        if self.replay_server_process.is_alive():
-            # print("ReplayTab: replay server process did not terminate, killing it")
-            self.replay_server_process.kill()
+        if self.playback_widget is not None and self.replay_server_process is not None:
+            # print("ReplayTab: closing playback widget")
+            self.playback_widget.issue_terminate_command()
+            # print('ReplayTab: calling try close for playback window')
+            self.playback_widget.try_close()
+            self.playback_window.close()  # opened windows must be closed
+            # print('ReplayTab: playback window closed, waiting for replay server process to terminate')
+            self.replay_server_process.join(timeout=1)
+            if self.replay_server_process.is_alive():
+                # print("ReplayTab: replay server process did not terminate, killing it")
+                self.replay_server_process.kill()
         return True
 
     # def ticks(self):
@@ -335,16 +343,16 @@ class ReplayTab(QtWidgets.QWidget):
                 if rtn[s_name]['preset_type'] == PresetType.ZMQ.value: zmq_ports.append(rtn[s_name]['port_number'])
         assert len(zmq_ports) == len(set(zmq_ports)), 'ZMQ ports cannot have duplicates'
         return rtn
-    def show_loading(self):
-        self.loading_label.show()
-        self.loading_movie.start()
-
-    def hide_loading(self):
-        self.loading_label.hide()
-        self.loading_movie.stop()
 
     def get_replay_lsl_stream_names(self):
         rtn = []
         for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
             if list_item.get_info()['preset_type'] == PresetType.LSL: rtn.append(s_name)
         return rtn
+
+    def set_enable_stream_list_editable_fields(self, enable):
+        for i, (s_name, list_item) in enumerate(self.stream_list_items.items()):
+            list_item.include_in_replay_checkbox.setEnabled(enable)
+            list_item.interface_combobox.setEnabled(enable)
+            list_item.zmq_port_line_edit.setEnabled(enable)
+

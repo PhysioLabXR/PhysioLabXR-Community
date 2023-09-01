@@ -7,8 +7,12 @@ import numpy as np
 
 from rena.exceptions.exceptions import ChannelMismatchError
 from rena.interfaces import LSLInletInterface
+from rena.interfaces.AudioInputInterface import AudioInputInterface
 from rena.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from rena.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
+from rena.presets.PresetEnums import PresetType
+from rena.presets.presets_utils import get_audio_device_index, get_stream_num_channels, get_audio_device_data_type, \
+    get_audio_device_sampling_rate, get_audio_device_frames_per_buffer, get_stream_nominal_sampling_rate
 
 
 def slice_len_for(slc, seqlen):
@@ -31,6 +35,28 @@ def create_lsl_interface(lsl_name, num_channels):
     interface = LSLInletInterface.LSLInletInterface(lsl_name, num_channels)
     return interface
 
+
+def create_audio_input_interface(stream_name):
+
+    _audio_device_index = get_audio_device_index(stream_name)
+    _audio_device_channel = get_stream_num_channels(stream_name)
+    _device_type = PresetType.AUDIO
+    audio_device_data_format = get_audio_device_data_type(stream_name)
+    audio_device_frames_per_buffer = get_audio_device_frames_per_buffer(stream_name)
+    audio_device_sampling_rate = get_audio_device_sampling_rate(stream_name)
+    device_nominal_sampling_rate = get_stream_nominal_sampling_rate(stream_name)
+
+    audio_input_device_interface = AudioInputInterface(
+        stream_name,
+        _audio_device_index,
+        _audio_device_channel,
+        _device_type,
+        audio_device_data_format.value,
+        audio_device_frames_per_buffer,
+        audio_device_sampling_rate,
+        device_nominal_sampling_rate
+    )
+    return audio_input_device_interface
 
 def process_preset_create_openBCI_interface_startsensor(device_name, serial_port, board_id):
     try:

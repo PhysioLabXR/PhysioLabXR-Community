@@ -488,3 +488,12 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
 
 def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum]):
     combobox.addItems([name for name, member in enum.__members__.items()])
+
+
+def show_label_movie(label: QLabel, is_show: bool):
+    label.setVisible(is_show)
+    if is_show:
+        label.movie().start()
+    else:
+        label.movie().stop()
+

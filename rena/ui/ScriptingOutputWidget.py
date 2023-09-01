@@ -35,6 +35,7 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
 
         add_enum_values_to_combobox(self.data_type_comboBox, DataType)
         self.data_type_comboBox.setCurrentText(data_type.name)
+        self.data_type_comboBox.currentTextChanged.connect(self.on_data_type_changed)
 
         self.interface_type_comboBox.addItems([PresetType.LSL.name, PresetType.ZMQ.name])
         self.interface_type_comboBox.currentTextChanged.connect(self.on_interface_type_changed)
@@ -43,6 +44,7 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
         self.button.setIcon(AppConfigs()._icon_minus)
         self.on_channel_num_changed(export_to_settings=False)
         self.on_interface_type_changed(export_to_settings=False)
+        # no addition ui change is needed for on_data_type_changed, so no need to call it
 
     def set_button_callback(self, callback):
         self.button.clicked.connect(callback)
@@ -80,6 +82,9 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
         else:
             raise ValueError(f'Unknown interface type for output widget {self.interface_type_comboBox.currentText()}')
         if export_to_settings: self.parent.export_script_args_to_settings()
+
+    def on_data_type_changed(self):
+        self.parent.export_script_args_to_settings()
 
     def get_output_preset(self):
         return ScriptOutput(stream_name=self.get_label_text(),
