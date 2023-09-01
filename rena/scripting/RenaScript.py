@@ -139,10 +139,11 @@ class RenaScript(ABC, threading.Thread):
             self.init()
         except Exception as e:
             traceback.print_exc()
+            self.redirect_stderr.send_buffered_messages()
         # start the loop here, accept interrupt command
         print('Entering loop')
         while True:
-            self.outputs = self._output_default  # reset the output to be default values
+            self.outputs = dict([(s_name, None) for s_name in self.output_outlets.keys()])  # reset the output to be default values
             data_dict = recv_data_dict(self.input_socket_interface)
             self.update_input_buffer(data_dict)
             loop_start_time = time.time()
@@ -224,6 +225,7 @@ class RenaScript(ABC, threading.Thread):
             self.cleanup()
         except Exception as e:
             traceback.print_exc()
+            self.redirect_stderr.send_buffered_messages()
         print('Sending stop success')
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 

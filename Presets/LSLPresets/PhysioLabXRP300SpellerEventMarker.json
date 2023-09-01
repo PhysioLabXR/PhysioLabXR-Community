@@ -1,0 +1,12 @@
+{ "StreamName":"PhysioLabXRP300SpellerDemoEventMarker",
+  "ChannelNames":[
+        "StateEnterExitMarker",
+        "FlashBlockStartEndMarker",
+        "FlashingMarker",
+        "FlashingItemIndexMarker",
+        "FlashingTargetMarker",
+        "StateInterruptMarker"
+  ],
+  "NominalSamplingRate":  10,
+  "DataType": "float32",
+  "GroupInfo":  [1, 2, 3, 4, 5]}

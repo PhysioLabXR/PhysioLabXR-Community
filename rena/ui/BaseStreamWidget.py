@@ -369,8 +369,8 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.plot_data_times.append(timeit(self.viz_components.group_plots[group_name].plot_data, (data_to_plot, ))[1])  # NOTE performance test scripts, don't include in production code
 
         self.viz_components.fs_label.setText(
-            'Sampling rate = {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
-        self.viz_components.ts_label.setText('Current Time Stamp = {:.3f}'.format(self.current_timestamp))
+            'fps: {:.3f}'.format(round(actual_sampling_rate, config_ui.sampling_rate_decimal_places)))
+        self.viz_components.ts_label.setText('timestamp: {:.3f}'.format(self.current_timestamp))
 
         self._has_new_viz_data = False
         if self.viz_data_head > get_stream_preset_info(self.stream_name, 'display_duration') * get_stream_preset_info(self.stream_name, 'nominal_sampling_rate'):  # reset the head if it is out of bound
