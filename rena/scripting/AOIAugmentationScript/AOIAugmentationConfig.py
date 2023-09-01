@@ -49,6 +49,13 @@ class StaticAOIAugmentationStateLSLStreamInfo:
     ChannelNum = int(attention_grid_shape[0]*attention_grid_shape[1])
     NominalSamplingRate = 250
 
+class AOIAugmentationGazeAttentionMapLSLStreamInfo:
+    StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
+    StreamType = "AttentionData"
+    StreamID = "4"
+    ChannelNum = int(attention_grid_shape[0]*attention_grid_shape[1])
+    NominalSamplingRate = 250
+
 
 
 

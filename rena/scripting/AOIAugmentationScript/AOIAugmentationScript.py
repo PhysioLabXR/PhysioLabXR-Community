@@ -46,12 +46,25 @@ class AOIAugmentationScript(RenaScript):
         self.ivt_filter.evoke_data_processor()
 
         ################################################################################################################
-        info = StreamInfo(AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
+        static_aoi_augmentation_lsl_outlet_info = StreamInfo(AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
                           AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
                           channel_format=cf_float32)
-        self.static_aoi_augmentation_lsl_outlet = StreamOutlet(info)
+        self.static_aoi_augmentation_lsl_outlet = StreamOutlet(static_aoi_augmentation_lsl_outlet_info)
+        ################################################################################################################
+
+
+
+        ################################################################################################################
+        gaze_attention_map_lsl_outlet_info = StreamInfo(AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamName,
+                                                        AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamType,
+                                                        AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.ChannelNum,
+                                                        AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.NominalSamplingRate,
+                                                        channel_format=cf_float32)
+
+        self.gaze_attention_map_lsl_outlet = StreamOutlet(gaze_attention_map_lsl_outlet_info) # shape: (1250, 1)
+
         ################################################################################################################
 
 
@@ -77,6 +90,7 @@ class AOIAugmentationScript(RenaScript):
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+            # print("EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys() or GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()")
             return
 
         self.state_shift()
@@ -203,7 +217,9 @@ class AOIAugmentationScript(RenaScript):
 
             self.gaze_attention_matrix.reset_image_attention_buffer()
             self.gaze_attention_matrix.reset_attention_grid_buffer()
-            print("process gaze data")
+
+            # print("process gaze data")
+
             # construct gaze data
             gaze_data = GazeData()
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
@@ -244,10 +260,14 @@ class AOIAugmentationScript(RenaScript):
             self.process_gaze_data_time_buffer.append(time.time() - gaze_data_process_start)
             # calculate average process time of process gaze data time buffer
             average_time = np.mean(self.process_gaze_data_time_buffer)
-            print("average_process_gaze_data_time:", average_time)
+            # print("average_process_gaze_data_time:", average_time)
 
+
+            # push attention map for visualization
             gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-            self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
+            self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_vector)
+
+            # self.outputs["AOIAugmentationGazeAttentionGridVector"] = gaze_attention_vector
             # gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
 
 
