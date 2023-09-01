@@ -205,7 +205,7 @@ class AudioPreset(metaclass=SubPreset):
 
     audio_device_data_format: AudioInputDataType = AudioInputDataType.paInt16
     audio_device_frames_per_buffer: int = 128
-    audio_device_sampling_rate: float = 4000
+    audio_device_sampling_rate: float = 8192
 
     preset_type: PresetType = PresetType.AUDIO
 
@@ -213,7 +213,7 @@ class AudioPreset(metaclass=SubPreset):
     data_type: DataType = DataType.float32
     port_number: int = None
     display_duration: float = None
-    nominal_sampling_rate: int = 4000
+    nominal_sampling_rate: int = 8192
 
     can_edit_channel_names: bool = True
 
