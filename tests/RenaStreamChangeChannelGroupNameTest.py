@@ -1,5 +1,5 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 
@@ -11,11 +11,11 @@ from multiprocessing import Process
 import pytest
 from PyQt6 import QtWidgets
 from pytestqt.qtbot import QtBot
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.MainWindow import MainWindow
-from rena.startup import load_settings
+from physiolabxr.ui.MainWindow import MainWindow
+from physiolabxr.startup.startup import load_settings
 from tests.TestStream import LSLTestStream
 
 

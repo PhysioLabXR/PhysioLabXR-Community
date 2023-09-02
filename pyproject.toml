@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="physiolabxr"
-version="0.1.0.dev0"
+version="0.1.0.dev1"
 authors=[
     { name="Ziheng 'Leo' Li", email="s-vector.lee@hotmail.com"}
 ]
@@ -48,20 +48,20 @@ dependencies = [
 "Documentation" = "https://physiolabxrdocs.readthedocs.io/en/latest/"
 
 [project.scripts]
-physiolabxr = "physiolabxr:rena"
+physiolabxr = "physiolabxr:physiolabxr"
 
 [tool.setuptools]
 include-package-data = true
 
-[tool.setuptools.packages.find]
-where = ["rena", "tests", 'media', 'ui', "Presets"]  # list of folders that contain the packages (["."] by default)
-#include = ["my_package*"]  # package names should match these glob patterns (["*"] by default)
+#[tool.setuptools.packages.find]
+#where = ["physiolabxr"]  # list of folders that contain the packages (["."] by default)
+#include = ["physiolabxr*"]  # package names should match these glob patterns (["*"] by default)
 #exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
-namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+#namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 #[tool.setuptools.package-data]
 #package_dir = [
-#    "ui/*",
-#    "Presets/*",
-#    "media/*",
+#    "_ui/*",
+#    "_presets/*",
+#    "_media/*",
 #]

@@ -2,7 +2,7 @@
 
 import pytest
 
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.test_utils import ContextBot, app_fixture

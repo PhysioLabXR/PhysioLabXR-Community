@@ -2,22 +2,21 @@
 import importlib
 import os
 import sys
-from multiprocessing import Process
 
 import numpy as np
 import pytest
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtWidgets import QWidget
-from rena.configs.configs import AppConfigs
-from rena.presets.PresetEnums import DataType, PresetType
+from physiolabxr.configs.configs import AppConfigs
+from physiolabxr.presets.PresetEnums import DataType, PresetType
 
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 
-from rena.utils.user_utils import stream_in
-from rena.MainWindow import MainWindow
-from rena.startup import load_settings
+from physiolabxr.utils.user_utils import stream_in
+from physiolabxr.ui.MainWindow import MainWindow
+from physiolabxr.startup.startup import load_settings
 from tests.test_utils import ContextBot, app_fixture, get_random_test_stream_names
 
 
@@ -66,7 +65,7 @@ def test_create_script(app_main_window, qtbot):
     except ImportError:
         raise AssertionError
 
-    # delete the file and remove the script from rena as clean up steps
+    # delete the file and remove the script from physiolabxr as clean up steps
     qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     os.remove(script_path)
 
@@ -92,7 +91,7 @@ def test_script_single_lsl_input_output(context_bot, qtbot):
     # add script content
     code = f"""
 import numpy as np
-from rena.scripting.RenaScript import RenaScript
+from physiolabxr.scripting.RenaScript import RenaScript
 
 class ScriptTest(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -165,7 +164,7 @@ class ScriptTest(RenaScript):
     assert np.isin(recorded_data[test_stream_name][0], sent_samples).all()
     assert np.isin(recorded_data[output_stream_name][0], sent_samples).all()
 
-    # as clean up steps, delete the file and remove the script from rena
+    # as clean up steps, delete the file and remove the script from physiolabxr
     qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.wait_until(lambda: context_bot.app.scripting_tab.script_widgets_empty(), timeout=wait_for_script_to_send_output_timeout)
 
@@ -207,7 +206,7 @@ def test_script_single_zmq_input_output(context_bot, qtbot):
     # add script content
     code = f"""
 import numpy as np
-from rena.scripting.RenaScript import RenaScript
+from physiolabxr.scripting.RenaScript import RenaScript
 
 class ScriptTest(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -296,7 +295,7 @@ class ScriptTest(RenaScript):
     assert np.isin(recorded_data[test_stream_name][0], sent_samples).all()
     assert np.isin(recorded_data[output_stream_name][0], sent_samples).all()
 
-    # as clean up steps, delete the file and remove the script from rena
+    # as clean up steps, delete the file and remove the script from physiolabxr
     qtbot.mouseClick(this_scripting_widget.removeBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
     qtbot.wait_until(lambda: context_bot.app.scripting_tab.script_widgets_empty(), timeout=wait_for_script_to_send_output_timeout)
 
