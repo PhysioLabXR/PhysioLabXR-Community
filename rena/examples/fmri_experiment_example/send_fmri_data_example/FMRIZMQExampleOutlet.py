@@ -1,5 +1,6 @@
 """Example program to demonstrate how to send a multi-channel time series to
 LSL."""
+import random
 import time
 from collections import deque
 
@@ -45,21 +46,27 @@ def main():
     start_time = time.time()
     sent_samples = 0
 
-    image = fmri_data[:, :, :, 10]
+    image_list = []
+
+    for i in range(fmri_data.shape[-1]):
+        image = fmri_data[:, :, :, i]
+        # move the image down
+
+
+        new_matrix = image[:, :, 17:]
+
+        # Pad 5 zero layers to the top
+        padding = np.zeros((256, 256, 17))
+        image = np.concatenate((new_matrix, padding), axis=-1)
+        image = (image - np.min(image)) / (np.max(image) - np.min(image))
+        # zoom image to
+        scale_factor = (0.9375, 0.9375, 1.5)
+
+        # Rescale the matrix using zoom
+        image = zoom(image, scale_factor)
+        image_list.append(image)
+
     del fmri_data
-    # do the image down
-    new_matrix = image[:, :, 17:]
-
-    # Pad 5 zero layers to the top
-    padding = np.zeros((256, 256, 17))
-    image = np.concatenate((new_matrix, padding), axis=-1)
-    del new_matrix
-    image = (image - np.min(image)) / (np.max(image) - np.min(image))
-    # zoom image to
-    scale_factor = (0.9375, 0.9375, 1.5)
-
-    # Rescale the matrix using zoom
-    image = zoom(image, scale_factor)
 
     #
     # image_array = image.flatten()
@@ -83,7 +90,9 @@ def main():
                 # padding = np.zeros((256, 256, 5))
                 # image = np.concatenate((padding, new_matrix), axis=-1)
 
-                image_array = image.flatten()
+                image_index = random.randint(0, len(image_list)-1)
+                print(image_index)
+                image_array = image_list[image_index].flatten()
 
                 mysample = image_array
                 socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])

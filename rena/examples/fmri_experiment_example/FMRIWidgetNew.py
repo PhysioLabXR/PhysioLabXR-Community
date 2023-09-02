@@ -196,7 +196,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # self.volume_view_plot.addItem(g)
 
         _, self.mri_volume_data = load_nii_gz_file(
-            'D:/HaowenWei/Rena/RenaLabApp/rena/examples/fmri_experiment_example/structural.nii.gz', zoomed=True)
+            'D:/HaowenWei/Rena/PhysioLabXR/rena/examples/fmri_experiment_example/structural.nii.gz', zoomed=True)
         self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data, non_linear_interpolation_factor=2)
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()
