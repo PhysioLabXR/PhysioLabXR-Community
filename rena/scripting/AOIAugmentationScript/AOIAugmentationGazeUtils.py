@@ -224,17 +224,3 @@ def gaze_point_on_image_valid(matrix_shape, coordinate):
     return True
 
 
-
-# if __name__ == '__main__':
-#     tobii_gaze_on_display_area_to_image_matrix_index(
-#         image_center_x=0,
-#         image_center_y=0,
-#         image_width=1000,
-#         image_height=500,
-#         screen_width=1920,
-#         screen_height=1080,
-#         gaze_on_display_area_x=0.49,
-#         gaze_on_display_area_y=0.49
-#
-#     )
-#     pass
