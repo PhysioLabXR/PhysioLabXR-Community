@@ -35,7 +35,7 @@ class OpenBCIToLSLInterface:
 
         try:
             self.board = BoardShim(self.board_id, self.params)
-            self.info_print()
+            # self.info_print()
 
         except brainflow.board_shim.BrainFlowError:
             print('Cannot connect to board')
@@ -180,7 +180,7 @@ def run_test_lsl():
 
 
 if __name__ == "__main__":
-    openBCI_interface = OpenBCIToLSLInterface(stream_name='OpenBCI_Cyton_8_Channels', serial_port='COM5')
+    openBCI_interface = OpenBCIToLSLInterface(stream_name='OpenBCI_Cyton_8_Channels', serial_port='COM4')  # change the port number to what yours
     openBCI_interface.create_lsl()
     openBCI_interface.start_sensor()
     data = run_test_lsl()

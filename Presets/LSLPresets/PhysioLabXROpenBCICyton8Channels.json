@@ -1,0 +1,15 @@
+{
+  "StreamName": "OpenBCICyton8Channels",
+  "ChannelNames": [
+    "Fz",
+    "Cz",
+    "Pz",
+    "C3",
+    "C4",
+    "P3",
+    "P4",
+    "O1"
+  ],
+  "NominalSamplingRate": 250
+
+}

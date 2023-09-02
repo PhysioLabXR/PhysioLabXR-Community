@@ -1,8 +1,6 @@
 import setuptools
 from pkg_resources import parse_requirements
 
-with open("README-deprecated.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
 
 requires = [
     'brainflow',
