@@ -7,20 +7,61 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name="ReNaLabApp"
-version="0.0.1.dev14"
+name="physiolabxr"
+version="0.1.0.dev0"
 authors=[
     { name="Ziheng 'Leo' Li", email="s-vector.lee@hotmail.com"}
 ]
-description="Reality Navigation Lab App"
+description="PhysioLabXR"
 
 classifiers=[
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "brainflow",
+    "numpy",
+    "PyQt6",
+    "pyserial",
+    "pylsl",
+    "scikit-learn",
+    "scipy~=1.9.1",
+    "pyqtgraph",
+    "pyxdf",
+    "pyscreeze",
+    "opencv-python",
+    "pyzmq",
+    "setuptools",
+    "psutil",
+    "pytest-qt",
+    "numba",
+    "PyOpenGL",
+    "PyOpenGL_accelerate",
+    "pyaudio",
+    "soundfile"
+]
 
 [project.urls]
-"Homepage" = "https://github.com/ApocalyVec/RenaLabApp"
-"Bug Tracker" = "https://github.com/ApocalyVec/RenaLabApp/issues"
-"Documentation" = "https://realitynavigationdocs.readthedocs.io/en/latest/"
+"Homepage" = "https://github.com/physiolabxr/physiolabxr"
+"Bug Tracker" = "https://github.com/physiolabxr/physiolabxr/issues"
+"Documentation" = "https://physiolabxrdocs.readthedocs.io/en/latest/"
+
+[project.scripts]
+physiolabxr = "physiolabxr:rena"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["rena", "tests", 'media', 'ui', "Presets"]  # list of folders that contain the packages (["."] by default)
+#include = ["my_package*"]  # package names should match these glob patterns (["*"] by default)
+#exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+#[tool.setuptools.package-data]
+#package_dir = [
+#    "ui/*",
+#    "Presets/*",
+#    "media/*",
+#]
