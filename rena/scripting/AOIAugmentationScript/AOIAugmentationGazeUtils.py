@@ -161,6 +161,7 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
         super().__init__()
         self.last_gaze_data = GazeData()
         self.angular_threshold_degree = angular_speed_threshold_degree
+        self.invalid_gaze_data_count = 0
 
     def process_sample(self, gaze_data: GazeData):
         if self.last_gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.combined_eye_gaze_data.gaze_point_valid: # if both gaze data valid
@@ -175,7 +176,8 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
             else:
                 gaze_data.gaze_type = GazeType.SACCADE
         else:
-            print('invalid gaze data')
+            self.invalid_gaze_data_count += 1
+            print('invalid gaze data:', self.invalid_gaze_data_count)
         self.last_gaze_data = gaze_data
 
         return gaze_data
