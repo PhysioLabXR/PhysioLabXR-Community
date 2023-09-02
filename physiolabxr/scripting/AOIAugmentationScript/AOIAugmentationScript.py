@@ -51,6 +51,15 @@ class AOIAugmentationScript(RenaScript):
             AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
             channel_format=cf_float32)
         self.static_aoi_augmentation_lsl_outlet = StreamOutlet(static_aoi_augmentation_lsl_outlet_info)
+
+        ################################################################################################################
+        interactive_aoi_augmentation_lsl_outlet_info = StreamInfo(
+            AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.StreamName,
+            AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.StreamType,
+            AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.ChannelNum,
+            AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
+            channel_format=cf_float32)
+        self.interactive_aoi_augmentation_lsl_outlet = StreamOutlet(interactive_aoi_augmentation_lsl_outlet_info)
         ################################################################################################################
 
         ################################################################################################################
@@ -116,7 +125,7 @@ class AOIAugmentationScript(RenaScript):
         for event_marker in event_markers.T:
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
-            report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
+            image_index_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
             interrupt_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.InterruptChannelIndex]
 
             # ignore the block_marker <0 and state_marker <0 those means exit the current state
@@ -130,15 +139,17 @@ class AOIAugmentationScript(RenaScript):
                         state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState.value or \
                         state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
                     # switch to new interaction state
-                    currentReportLabel = report_label_marker
+                    current_image_index = image_index_marker
                     # set attention matrix
 
                     # calculate average attention vector
-                    # todo: set attention matrix
+                    # todo: set attention matrix, get attention matrix!
+
+
                     ######
                     self.vit_attention_matrix.calculate_patch_average_attention_vector()
 
-                    print("set report interaction label to {}".format(currentReportLabel))
+                    print("set report interaction label to {}".format(current_image_index))
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
     def enter_block(self, block_marker):
@@ -188,29 +199,22 @@ class AOIAugmentationScript(RenaScript):
             # raise ValueError('Invalid state marker')
 
     def no_aoi_augmentation_state_callback(self):
-        self.attention_map_callback()
+        self.no_attention_callback()
         pass
 
     def static_aoi_augmentation_state_callback(self):
-        self.attention_map_callback()
+        self.static_attention_callback()
         pass
 
     def interactive_aoi_augmentation_state_callback(self):
-        self.attention_map_callback()
+        self.interactive_attention_callback()
         pass
 
-    # def clear_eye_tracking_data(self):
-    #
-    #     print("clear eye tracking data")
-    #     pass
-
-    def send_aoi_augmentation(self):
-
+    def no_attention_callback(self):
         pass
 
-    def attention_map_callback(self):
+    def static_attention_callback(self):
 
-        #
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
             gaze_data_process_start = time.time()
 
@@ -271,6 +275,35 @@ class AOIAugmentationScript(RenaScript):
 
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
         pass
+
+    def interactive_attention_callback(self):
+        # TODO: implement interactive attention callback
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def send_static_aoi_augmentation_state_lsl(self, gaze_attention_threshold=0.1):
         gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)

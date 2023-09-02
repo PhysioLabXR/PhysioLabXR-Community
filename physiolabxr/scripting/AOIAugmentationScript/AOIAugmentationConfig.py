@@ -10,18 +10,18 @@ screen_height = 1080
 image_on_screen_width = 1900
 image_on_screen_height = 950
 
-
 image_center_x = 0
 image_center_y = 0
 
-
 image_shape = np.array([500, 1000], dtype=np.int32)
 attention_patch_shape = np.array([20, 20], dtype=np.int32)
-attention_grid_shape = np.array([image_shape[0]//attention_patch_shape[0], image_shape[1]//attention_patch_shape[1]], dtype=np.int32)
+attention_grid_shape = np.array(
+    [image_shape[0] // attention_patch_shape[0], image_shape[1] // attention_patch_shape[1]], dtype=np.int32)
 
 # attention_grid_shape = np.array([25, 50], dtype=np.int32)
 image_on_screen_shape = np.array([image_on_screen_height, image_on_screen_width], dtype=np.int32)
-image_scaling_factor = np.array([image_on_screen_shape[0]/image_shape[0], image_on_screen_shape[1]/image_shape[1]], dtype=np.float32)
+image_scaling_factor = np.array([image_on_screen_shape[0] / image_shape[0], image_on_screen_shape[1] / image_shape[1]],
+                                dtype=np.float32)
 
 
 class EventMarkerLSLStreamInfo:
@@ -43,21 +43,34 @@ class GazeDataLSLStreamInfo:
     ChannelNum = 51
     NominalSamplingRate = 250
 
+
+class NoAOIAugmentationStateLSLStreamInfo:
+    # we do not need to send any data for this state
+    pass
+
+
 class StaticAOIAugmentationStateLSLStreamInfo:
     StreamName = "StaticAOIAugmentationStateLSLInlet"
     StreamType = "AttentionData"
     StreamID = "3"
-    ChannelNum = int(attention_grid_shape[0]*attention_grid_shape[1])
+    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
     NominalSamplingRate = 250
+
+
+class InteractiveAOIAugmentationStateLSLStreamInfo:
+    StreamName = "InteractiveAOIAugmentationStateLSLInlet"
+    StreamType = "AttentionData"
+    StreamID = "4"
+    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
+    NominalSamplingRate = 250
+
 
 class AOIAugmentationGazeAttentionMapLSLStreamInfo:
     StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
     StreamType = "AttentionData"
-    StreamID = "4"
-    ChannelNum = int(attention_grid_shape[0]*attention_grid_shape[1])
+    StreamID = "5"
+    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
     NominalSamplingRate = 250
-
-
 
 
 # class EventMarkerLSLInletInfo(Enum):
@@ -97,7 +110,6 @@ class ExperimentBlock(Enum):
 
 class NetworkConfig(Enum):
     ZMQPortNumber = 6667
-
 
 
 from enum import Enum
