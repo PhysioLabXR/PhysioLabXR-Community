@@ -116,9 +116,10 @@ class AOIAugmentationScript(RenaScript):
         for event_marker in event_markers.T:
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
-            report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ReportLabelChannelIndex]
+            report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
             interrupt_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.InterruptChannelIndex]
 
+            # ignore the block_marker <0 and state_marker <0 those means exit the current state
             if block_marker and block_marker > 0:  # evoke block change
                 self.enter_block(block_marker)
 

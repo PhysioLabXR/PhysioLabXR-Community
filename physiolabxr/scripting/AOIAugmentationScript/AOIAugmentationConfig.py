@@ -28,11 +28,11 @@ class EventMarkerLSLStreamInfo:
     StreamName = "AOIAugmentationEventMarkerLSLOutlet"
     StreamType = "EventMarker"
     StreamID = "1"
-    ChannelNum = 3
+    ChannelNum = 4
     NominalSamplingRate = 1
     BlockChannelIndex = 0
     ExperimentStateChannelIndex = 1
-    ReportLabelChannelIndex = 2
+    ImageIndexChannelIndex = 2
     InterruptChannelIndex = 3
 
 
@@ -75,14 +75,15 @@ class ExperimentState(Enum):
     StartState = 2
     IntroductionInstructionState = 3
     PracticeInstructionState = 4
-    NoAOIAugmentationInstructionState = 5
-    NoAOIAugmentationState = 6
-    StaticAOIAugmentationInstructionState = 7
-    StaticAOIAugmentationState = 8
-    InteractiveAOIAugmentationInstructionState = 9
-    InteractiveAOIAugmentationState = 10
-    FeedbackState = 11
-    EndState = 12
+    TestInstructionState = 5
+    NoAOIAugmentationInstructionState = 6
+    NoAOIAugmentationState = 7
+    StaticAOIAugmentationInstructionState = 8
+    StaticAOIAugmentationState = 9
+    InteractiveAOIAugmentationInstructionState = 10
+    InteractiveAOIAugmentationState = 11
+    FeedbackState = 12
+    EndState = 13
 
 
 class ExperimentBlock(Enum):
