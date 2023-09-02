@@ -316,7 +316,7 @@
                   <item>
                    <widget class="QLabel" name="w0Lable">
                     <property name="text">
-                     <string>w0</string>
+                     <string>freq:</string>
                     </property>
                    </widget>
                   </item>
@@ -384,7 +384,7 @@
                   <item>
                    <widget class="QLabel" name="QLabel">
                     <property name="text">
-                     <string>Q:</string>
+                     <string>quality factor:</string>
                     </property>
                    </widget>
                   </item>
