@@ -48,7 +48,7 @@ def main():
 
     image_list = []
 
-    for i in range(fmri_data.shape[-1]):
+    for i in range(12):
         image = fmri_data[:, :, :, i]
         # move the image down
 
@@ -58,19 +58,21 @@ def main():
         # Pad 5 zero layers to the top
         padding = np.zeros((256, 256, 17))
         image = np.concatenate((new_matrix, padding), axis=-1)
-        image = (image - np.min(image)) / (np.max(image) - np.min(image))
+        # image = (image - np.min(image)) / (np.max(image) - np.min(image))
         # zoom image to
         scale_factor = (0.9375, 0.9375, 1.5)
 
         # Rescale the matrix using zoom
         image = zoom(image, scale_factor)
         image_list.append(image)
+    image_list = np.array(image_list)
+    image_list = (image_list - np.min(image_list)) / (np.max(image_list) - np.min(image_list))
 
     del fmri_data
 
     #
     # image_array = image.flatten()
-
+    sent_sample = 0
     while True:
         elapsed_time = time.time() - start_time
         required_samples = int(srate * elapsed_time) - sent_samples
@@ -90,8 +92,10 @@ def main():
                 # padding = np.zeros((256, 256, 5))
                 # image = np.concatenate((padding, new_matrix), axis=-1)
 
-                image_index = random.randint(0, len(image_list)-1)
-                print(image_index)
+                # image_index = random.randint(0, len(image_list)-1)
+                # print(image_index)
+                image_index = sent_sample % len(image_list)
+                sent_sample += 1
                 image_array = image_list[image_index].flatten()
 
                 mysample = image_array
