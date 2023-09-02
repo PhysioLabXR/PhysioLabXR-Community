@@ -120,7 +120,7 @@
          <item>
           <widget class="QLabel" name="audio_device_sampling_rate_label">
            <property name="text">
-            <string>fs:</string>
+            <string>sampling rate:</string>
            </property>
           </widget>
          </item>
@@ -166,6 +166,13 @@
            </property>
            <property name="placeholderText">
             <string>Int</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="audio_device_data_type_label">
+           <property name="text">
+            <string>data type:</string>
            </property>
           </widget>
          </item>
