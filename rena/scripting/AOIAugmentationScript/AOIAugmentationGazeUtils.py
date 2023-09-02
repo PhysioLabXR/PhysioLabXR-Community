@@ -176,8 +176,9 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
             else:
                 gaze_data.gaze_type = GazeType.SACCADE
         else:
-            self.invalid_gaze_data_count += 1
-            print('invalid gaze data:', self.invalid_gaze_data_count)
+            pass
+            # self.invalid_gaze_data_count += 1
+            # print('invalid gaze data:', self.invalid_gaze_data_count)
         self.last_gaze_data = gaze_data
 
         return gaze_data
