@@ -7,7 +7,7 @@ from random import gauss
 import io
 from contextlib import redirect_stdout
 
-from rena.utils.RNStream import RNStream
+from physiolabxr.utils.RNStream import RNStream
 
 
 def create_test_stream(test_stream_length, test_stream_mean, test_stream_variance):

@@ -1,5 +1,5 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 
@@ -10,7 +10,7 @@ import pytest
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.TestStream import LSLTestStream

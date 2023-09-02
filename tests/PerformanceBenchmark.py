@@ -1,5 +1,5 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 import math
@@ -8,7 +8,7 @@ import pickle
 import numpy as np
 import pytest
 
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
