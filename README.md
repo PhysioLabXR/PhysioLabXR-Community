@@ -16,7 +16,7 @@ _This README is still under construction_
 <br />
 <div align="center">
   <a href="https://github.com/apocalyvec/renalabapp">
-    <img src="media/readme/RenaLabApp Overview.png" alt="Logo">
+    <img src="physiolabxr/_media/readme/PhysioLabXR Overview.png" alt="Logo">
   </a>
 
 <h3 align="center">RenaLabApp</h3>
@@ -68,7 +68,7 @@ _This README is still under construction_
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![RenaLabApp Screen Shot][product-screenshot]](media/example/screenshot.png)
+[![RenaLabApp Screen Shot][product-screenshot]](physiolabxr/_media/readme/screenshot.png)
 
 **RenaLabApp** (reality navigation laboratory application) is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
 data streams. RenaLabApp can help you build novel interaction interface like BCIs as well as aid you in 
@@ -210,7 +210,7 @@ We thank the members from LIINC at Columbia University, Advance Human-computer I
 [license-url]: https://github.com/apocalyvec/renalabapp/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/ziheng-leo-li/
-[product-screenshot]: media/example/screenshot.png
+[product-screenshot]: physiolabxr/_media/readme/screenshot.png
 
 [Python.org]: https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&color=3776AB&logoColor=white
 [Python-url]: https://python.org/

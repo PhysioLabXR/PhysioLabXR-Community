@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from rena.utils.data_utils import reject_outliers
+from physiolabxr.utils.data_utils import reject_outliers
 
 
 def plot_replay_benchmark_results(results, test_axes, metrics, notes=''):

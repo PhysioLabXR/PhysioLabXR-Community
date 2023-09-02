@@ -1,5 +1,5 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 
@@ -13,11 +13,11 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
-from rena.presets.PresetEnums import PresetType, DataType
-from rena.config import stream_availability_wait_time
+from physiolabxr.presets.PresetEnums import PresetType, DataType
+from physiolabxr.configs.config import stream_availability_wait_time
 from tests.test_utils import app_fixture, \
     ContextBot, handle_current_dialog_button
 
