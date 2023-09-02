@@ -2,8 +2,9 @@
   "ChannelNames":[
     "Block Marker",
     "State Marker",
-    "Report Label Marker"
+    "Report Label Marker",
+    "Interrupt Marker"
   ],
   "NominalSamplingRate":  10,
-  "GroupInfo":  [1,2],
+  "GroupInfo":  [1,2,3],
   "DataType": "float32"}

@@ -31,7 +31,7 @@ def physiolabxr():
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=False, reload_presets=False)
+    load_settings(revert_to_default=True, reload_presets=True)
     apply_patches()
     # main window init
     print("Creating main window")

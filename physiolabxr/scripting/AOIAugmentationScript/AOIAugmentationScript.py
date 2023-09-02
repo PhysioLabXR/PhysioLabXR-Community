@@ -3,12 +3,12 @@ from collections import deque
 
 from pylsl import StreamInfo, StreamOutlet, cf_float32
 
-from rena.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
+from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
     tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
-from rena.scripting.RenaScript import RenaScript
-from rena.scripting.AOIAugmentationScript import AOIAugmentationConfig
-from rena.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
-from rena.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
+from physiolabxr.scripting.RenaScript import RenaScript
+from physiolabxr.scripting.AOIAugmentationScript import AOIAugmentationConfig
+from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
+from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
 import torch
 
 
@@ -117,6 +117,7 @@ class AOIAugmentationScript(RenaScript):
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             report_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ReportLabelChannelIndex]
+            interrupt_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.InterruptChannelIndex]
 
             if block_marker and block_marker > 0:  # evoke block change
                 self.enter_block(block_marker)
