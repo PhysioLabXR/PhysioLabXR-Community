@@ -145,7 +145,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
+<!--
 <!-- ROADMAP -->
 ## Roadmap
 
@@ -185,6 +185,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+-->
 
 
 <!-- CONTACT -->
