@@ -1,11 +1,15 @@
 from enum import Enum
 import numpy as np
+import os
+
+PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
+TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
+
+assert os.path.exists(PracticeBlockImageDirectoryPath)
+assert os.path.exists(TestBlockImageDirectoryPath)
 
 screen_width = 1920
 screen_height = 1080
-
-# patch_grid_width = 50
-# patch_grid_height = 25
 
 image_on_screen_width = 1900
 image_on_screen_height = 950
@@ -22,6 +26,8 @@ attention_grid_shape = np.array(
 image_on_screen_shape = np.array([image_on_screen_height, image_on_screen_width], dtype=np.int32)
 image_scaling_factor = np.array([image_on_screen_shape[0] / image_shape[0], image_on_screen_shape[1] / image_shape[1]],
                                 dtype=np.float32)
+
+#########################################################################################
 
 
 class EventMarkerLSLStreamInfo:

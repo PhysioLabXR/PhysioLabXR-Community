@@ -76,12 +76,17 @@ class AOIAugmentationScript(RenaScript):
 
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
+        ################################################################################################################
+        self.practice_attention_map = {}
+        self.test_attention_map = {}
     # Start will be called once when the run button is hit.
     def init(self):
         pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
+
+
         # fixation_detection
         # list of gaze of intersection
         # show pixel on patch x
@@ -284,30 +289,10 @@ class AOIAugmentationScript(RenaScript):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def send_static_aoi_augmentation_state_lsl(self, gaze_attention_threshold=0.1):
         gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
         threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
         # mask vit attention with gaze attention
         vit_attention_vector_mask = np.where(gaze_attention_vector > gaze_attention_threshold, 0, 1)
         self.static_aoi_augmentation_lsl_outlet.push_sample(vit_attention_vector_mask * threshold_vit_attention_vector)
+
