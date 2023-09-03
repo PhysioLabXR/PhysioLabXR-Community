@@ -15,11 +15,11 @@ _This README is still under construction_
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/apocalyvec/renalabapp">
+  <a href="https://github.com/PhysioLabXR/PhysioLabXR">
     <img src="physiolabxr/_media/readme/PhysioLabXR Overview.png" alt="Logo">
   </a>
 
-<h3 align="center">RenaLabApp</h3>
+<h3 align="center">PhysioLabXR</h3>
 
   <p align="center">
     A Python Software Platform for Multi-Modal Brain-Computer Interface and Real-Time Experiment Pipelines
@@ -68,10 +68,10 @@ _This README is still under construction_
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![RenaLabApp Screen Shot][product-screenshot]](physiolabxr/_media/readme/screenshot.png)
+[![PhysioLabXR Screen Shot][product-screenshot]](physiolabxr/_media/readme/screenshot.png)
 
-**RenaLabApp** (reality navigation laboratory application) is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
-data streams. RenaLabApp can help you build novel interaction interface like BCIs as well as aid you in 
+**PhysioLabXR** is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
+data streams. PhysioLabXR can help you build novel interaction interface like BCIs as well as aid you in 
 running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (~500Mbps/sec), real-time data streams.
 
 [//]: # (Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`)
@@ -97,22 +97,37 @@ running experiments. It works best with multi-modal (e.g., combining EEG and eye
 <!-- GETTING STARTED -->
 ## Getting Started
 
-Download the latest release from [here](https://github.com/ApocalyVec/RenaLabApp/releases).
+### Download and run the executable
+
+Download the latest release exe from [here](https://github.com/PhysioLabXR/PhysioLabXR/releases), available for Windows, Mac, and Linux.
+
+### Install with pip
+
+Install PhysioLabXR's [PYPI distribution](https://pypi.org/project/physiolabxr/) with
+
+  ```sh
+    pip install physiolabxr
+  ```
+Then run with
+
+  ```sh
+    physiolabxr
+  ```
 
 ### Run from Source
 
 Alternatively, you can clone the repo and run from source.
 
   ```sh
-    git clone https://github.com/ApocalyVec/RenaLabApp.git
-    cd RenaLabApp
+    git clone https://github.com/PhysioLabXR/PhysioLabXR.git
+    cd PhysioLabXR
     pip install -r requirements.txt
   ```
 
-The entry point to RenaLabApp is `main.py`, located in the root folder. You can run it by:
+The entry point to PhysioLabXR is `physiolabxr.py`, located in the folder named "physiolabxr". From the root folder, you can run it by:
 
   ```sh
-    python main.py
+    python physiolabxr/physiolabxr.py
   ```
 
 
