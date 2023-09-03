@@ -4,6 +4,7 @@ import os
 
 PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
 TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
+IMAGE_FORMAT = '.png'
 
 assert os.path.exists(PracticeBlockImageDirectoryPath)
 assert os.path.exists(TestBlockImageDirectoryPath)

@@ -1,8 +1,13 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
 import cv2
+
+from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import IMAGE_FORMAT
+
 
 def gaussian_filter(shape, center, sigma=1.0, normalized=True):
     """
@@ -190,7 +195,7 @@ def generate_attention_grid_mask(image_mask, attention_patch_shape):
     return attention_grid_mask
 
 
-def generate_square_attention_matrix_mask(attention_grid_mask):
+def attention_grid_mask_to_attention_matrix_mask(attention_grid_mask):
     attention_grid_mask_flatten = attention_grid_mask.flatten()
     attention_matrix_mask = np.ones(shape=(attention_grid_mask_flatten.shape[0], attention_grid_mask_flatten.shape[0]))
 
@@ -211,8 +216,22 @@ def get_attention_matrix(image_path, image_shape, attention_patch_shape, mask_wh
     if mask_white:
         binary_mask = generate_image_binary_mask(image)
         attention_grid_mask = generate_attention_grid_mask(binary_mask, attention_patch_shape=attention_patch_shape)
-        attention_matrix_mask = generate_square_attention_matrix_mask(attention_grid_mask)
+        attention_matrix_mask = attention_grid_mask_to_attention_matrix_mask(attention_grid_mask)
         attention_matrix = attention_matrix * attention_matrix_mask
 
     return attention_matrix
+
+def get_all_attention_matrices(image_directory, image_shape, attention_patch_shape, mask_white=True):
+    attention_matrices = {}
+    # TODO : get the VIT model
+
+
+    all_files = os.listdir(image_directory)
+    image_files = [file for file in all_files if file.endswith(IMAGE_FORMAT)]
+    for image_file in image_files:
+        image_path = os.path.join(image_directory, image_file)
+        attention_matrix = get_attention_matrix(image_path, image_shape, attention_patch_shape, mask_white)
+        attention_matrices[image_file] = attention_matrix
+
+
 
