@@ -38,7 +38,7 @@ class AOIAugmentationScript(RenaScript):
         # self.gaze_attention_clutter_removal_data_processor.evoke_data_processor()
 
         self.vit_attention_matrix = ViTAttentionMatrix()
-        self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
+        # self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
 
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
         self.ivt_filter.evoke_data_processor()
@@ -77,11 +77,21 @@ class AOIAugmentationScript(RenaScript):
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
         ################################################################################################################
-        self.practice_attention_map = {}
-        self.test_attention_map = {}
+        self.practice_block_attention_map = {}
+        self.test_block_attention_map = {}
     # Start will be called once when the run button is hit.
     def init(self):
-        pass
+        self.practice_block_attention_map = get_all_attention_matrices(
+            image_directory=AOIAugmentationConfig.PracticeBlockImageDirectoryPath,
+            image_shape=AOIAugmentationConfig.image_shape,
+            attention_patch_shape=AOIAugmentationConfig.attention_patch_shape
+        )
+
+        self.test_block_attention_map = get_all_attention_matrices(
+            image_directory=AOIAugmentationConfig.TestBlockImageDirectoryPath,
+            image_shape=AOIAugmentationConfig.image_shape,
+            attention_patch_shape=AOIAugmentationConfig.attention_patch_shape
+        )
 
     # loop is called <Run Frequency> times per second
     def loop(self):
@@ -144,17 +154,17 @@ class AOIAugmentationScript(RenaScript):
                         state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState.value or \
                         state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
                     # switch to new interaction state
-                    current_image_index = image_index_marker
+                    current_image_index = int(image_index_marker)
+                    print("current block is {}".format(self.currentBlock))
+                    print("current image index is {}".format(current_image_index))
                     # set attention matrix
-
-                    # calculate average attention vector
-                    # todo: set attention matrix, get attention matrix!
-
+                    if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.PracticeBlock:
+                        self.vit_attention_matrix.set_attention_matrix(self.practice_block_attention_map[current_image_index])
+                    if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.TestBlock:
+                        self.vit_attention_matrix.set_attention_matrix(self.test_block_attention_map[current_image_index])
 
                     ######
                     self.vit_attention_matrix.calculate_patch_average_attention_vector()
-
-                    print("set report interaction label to {}".format(current_image_index))
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
     def enter_block(self, block_marker):
@@ -166,8 +176,8 @@ class AOIAugmentationScript(RenaScript):
             self.currentBlock = AOIAugmentationConfig.ExperimentBlock.IntroductionBlock
         elif block_marker == AOIAugmentationConfig.ExperimentBlock.PracticeBlock.value:
             self.currentBlock = AOIAugmentationConfig.ExperimentBlock.PracticeBlock
-        elif block_marker == AOIAugmentationConfig.ExperimentBlock.ExperimentBlock.value:
-            self.currentBlock = AOIAugmentationConfig.ExperimentBlock.ExperimentBlock
+        elif block_marker == AOIAugmentationConfig.ExperimentBlock.TestBlock.value:
+            self.currentBlock = AOIAugmentationConfig.ExperimentBlock.TestBlock
         elif block_marker == AOIAugmentationConfig.ExperimentBlock.EndBlock.value:
             self.currentBlock = AOIAugmentationConfig.ExperimentBlock.EndBlock
         else:

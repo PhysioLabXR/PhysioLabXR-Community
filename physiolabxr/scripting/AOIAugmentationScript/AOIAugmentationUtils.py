@@ -157,7 +157,6 @@ class ViTAttentionMatrix():
 
     def set_attention_matrix(self, attention_matrix):
         self.attention_matrix = attention_matrix
-        self.patch_average_attention()
 
     def get_attention_matrix(self):
         return self.attention_matrix
@@ -227,11 +226,13 @@ def get_all_attention_matrices(image_directory, image_shape, attention_patch_sha
 
 
     all_files = os.listdir(image_directory)
-    image_files = [file for file in all_files if file.endswith(IMAGE_FORMAT)]
-    for image_file in image_files:
-        image_path = os.path.join(image_directory, image_file)
+    image_file_names = [file for file in all_files if file.endswith(IMAGE_FORMAT)]
+    for image_file_name in image_file_names:
+        image_path = os.path.join(image_directory, image_file_name)
         attention_matrix = get_attention_matrix(image_path, image_shape, attention_patch_shape, mask_white)
-        attention_matrices[image_file] = attention_matrix
+        attention_matrices[int(image_file_name.split('.')[0])] = attention_matrix
+
+    return attention_matrices
 
 
 
