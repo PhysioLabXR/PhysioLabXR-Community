@@ -7,8 +7,9 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import PresetType, DataType, AudioInputDataType
 from physiolabxr.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
-    is_stream_name_in_presets, change_stream_preset_audio_device_sampling_rate, \
-    change_stream_preset_audio_device_frames_per_buffer, change_stream_preset_audio_device_data_type
+    is_stream_name_in_presets, set_stream_preset_audio_device_frames_per_buffer, \
+    set_stream_preset_audio_device_sampling_rate, set_stream_nominal_sampling_rate, \
+    set_stream_preset_audio_device_data_type
 from physiolabxr.scripting.physio.utils import string_to_enum
 from physiolabxr.ui.AddCustomDataStreamWidget import AddCustomDataStreamWidget
 from physiolabxr.ui.CustomPropertyWidget import CustomPropertyWidget
@@ -340,7 +341,7 @@ class AddStreamWidget(QtWidgets.QWidget):
             return
         if not is_new:
             frames_per_buffer = self.get_audio_device_frames_per_buffer()
-            change_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer)
+            set_stream_preset_audio_device_frames_per_buffer(stream_name, frames_per_buffer)
 
     def get_audio_device_frames_per_buffer(self):
         try:
@@ -354,7 +355,9 @@ class AddStreamWidget(QtWidgets.QWidget):
             return
         if not is_new:
             sampling_rate = self.get_audio_device_sampling_rate()
-            change_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate)
+            set_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate)
+            set_stream_nominal_sampling_rate(stream_name, sampling_rate)
+
 
     def get_audio_device_sampling_rate(self):
         try:
@@ -368,7 +371,7 @@ class AddStreamWidget(QtWidgets.QWidget):
             return
         if not is_new:
             data_type = self.get_audio_input_data_type()
-            change_stream_preset_audio_device_data_type(stream_name, data_type)
+            set_stream_preset_audio_device_data_type(stream_name, data_type)
 
     def get_audio_input_data_type(self):
         return string_to_enum(enum_type=AudioInputDataType, string_value=self.audio_device_data_type_combo_box.currentText())
