@@ -10,6 +10,7 @@ from pylsl import local_clock
 from physiolabxr.presets.PresetEnums import VideoDeviceChannelOrder
 from physiolabxr.threadings.workers import RenaWorker
 from physiolabxr.utils.image_utils import process_image
+from physiolabxr.utils.ui_utils import dialog_popup
 
 
 class ScreenCaptureWorker(QObject, RenaWorker):
@@ -33,7 +34,12 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
-            img = pyscreeze.screenshot()
+            try:
+                img = pyscreeze.screenshot()
+            except NotImplementedError as e:
+                self.is_streaming = False
+                dialog_popup(str(e), title='Warning', mode='modeless')
+                return
             frame = np.array(img)
             frame = frame.astype(np.uint8)
             frame = process_image(frame, self.channel_order, self.video_scale)
