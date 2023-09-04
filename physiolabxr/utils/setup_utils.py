@@ -1,8 +1,10 @@
 import os.path
 import platform
+import sys
 import urllib.request
 import warnings
 import shutil
+import subprocess
 
 
 def get_ubuntu_version():
@@ -64,7 +66,6 @@ def download_lsl_binary():
         with zipfile.ZipFile(binary_name, "r") as zip_ref:
             zip_ref.extractall(output_directory)
     elif binary_name.endswith(".deb"):
-        import subprocess
         subprocess.run(["dpkg", "-x", binary_name, output_directory])
     # delete the downloaded compressed file
     os.remove(binary_name)
@@ -75,22 +76,33 @@ def download_lsl_binary():
     return output_directory, downloaded_lib_path
 
 def get_lsl_binary():
+    # # mac does not need lsl binary
+    # if platform.system() == 'Darwin':
+    #     print(f"LSL binary is not needed for MacOS")
+
     import site
     site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x][0]
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
-    output_directory, downloaded_lib_path = download_lsl_binary()
-    assert os.path.exists(pylsl_path), 'pylsl package is not installed, please install pylsl first'
-    # move the extracted lib folder to the lsl site-package's lib folder
-    if os.path.exists(downloaded_lib_path):
-        # remove the lib folder if it exists
-        if os.path.exists(pylsl_lib_path := os.path.join(pylsl_path, 'lib')):
-            shutil.rmtree(pylsl_lib_path)
-        shutil.move(downloaded_lib_path, pylsl_path)
-        # delete the extracted folder
-        shutil.rmtree(output_directory)
+    pylsl_lib_path = None
+    if platform.system() == "Darwin":
+        print("Brew installing lsl library ...")
+        subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
+        env_command = 'export DYLD_LIBRARY_PATH="/opt/homebrew/lib"'
+        subprocess.run(env_command, shell=True)
     else:
-        warnings.warn(f"lib path {downloaded_lib_path} not found in the downloaded binary. "
-                      f"PyLSL will not be available.")
-        return
-    print(f"LSL binary installed successfully to {pylsl_path}")
+        output_directory, downloaded_lib_path = download_lsl_binary()
+        assert os.path.exists(pylsl_path), 'pylsl package is not installed, please install pylsl first'
+        # move the extracted lib folder to the lsl site-package's lib folder
+        if os.path.exists(downloaded_lib_path):
+            # remove the lib folder if it exists
+            if os.path.exists(pylsl_lib_path := os.path.join(pylsl_path, 'lib')):
+                shutil.rmtree(pylsl_lib_path)
+            shutil.move(downloaded_lib_path, pylsl_path)
+            # delete the extracted folder
+            shutil.rmtree(output_directory)
+        else:
+            warnings.warn(f"lib path {downloaded_lib_path} not found in the downloaded binary. "
+                          f"PyLSL will not be available.")
+            return
+        print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path

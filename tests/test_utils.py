@@ -560,3 +560,41 @@ def get_replay_time_reenactment_accuracy(data_original, data_replayed, stream_na
     return tick_time_discrepancies, tick_time_discrepancies_pairwise
 
 
+def send_data_time(run_time):
+    import sys
+    import getopt
+
+    import time
+    from random import random as rand
+
+    from pylsl import StreamInfo, StreamOutlet, local_clock
+
+    srate = 100
+    name = 'BioSemi'
+    type = 'EEG'
+    n_channels = 8
+    help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
+
+    info = StreamInfo(name, type, n_channels, srate, 'float32', 'myuid34234')
+
+    # next make an outlet
+    outlet = StreamOutlet(info)
+
+    print("now sending data...")
+    start_time = local_clock()
+    sent_samples = 0
+    while True:
+        elapsed_time = local_clock() - start_time
+        required_samples = int(srate * elapsed_time) - sent_samples
+        for sample_ix in range(required_samples):
+            # make a new random n_channels sample; this is converted into a
+            # pylsl.vectorf (the data type that is expected by push_sample)
+            mysample = [rand() for _ in range(n_channels)]
+            # now send it
+            outlet.push_sample(mysample)
+        sent_samples += required_samples
+        # now send it and wait for a bit before trying again.
+        time.sleep(0.01)
+        duration = local_clock() - start_time
+        if duration > run_time:
+            break
