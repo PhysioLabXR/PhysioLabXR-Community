@@ -1,6 +1,14 @@
 
 
 def physiolabxr():
+    # try import pylsl check if the lib exist
+    try:
+        import pylsl
+    except RuntimeError:
+        # the error is LSL binary library file was not found.
+        from physiolabxr.utils.setup_utils import get_lsl_binary
+        get_lsl_binary()
+
     import multiprocessing
     import sys
 
