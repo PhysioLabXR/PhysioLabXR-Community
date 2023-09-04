@@ -68,15 +68,18 @@ def download_lsl_binary():
         subprocess.run(["dpkg", "-x", binary_name, output_directory])
     # delete the downloaded compressed file
     os.remove(binary_name)
-    return output_directory
+    if user_os == "Windows":
+        # move dll from bin to lib
+        shutil.move(os.path.join(output_directory, 'bin', 'lsl.dll'), os.path.join(output_directory, 'lib'))
+    downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib') if os.path.exists(os.path.join(output_directory, 'usr')) else os.path.join(output_directory, 'lib')
+    return output_directory, downloaded_lib_path
 
 def get_lsl_binary():
     import site
-    site_packages_path = site.getsitepackages()[0]
+    site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x][0]
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
-    output_directory = download_lsl_binary()
+    output_directory, downloaded_lib_path = download_lsl_binary()
     # move the extracted lib folder to the lsl site-package's lib folder
-    downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib')
     if os.path.exists(downloaded_lib_path):
         # remove the lib folder if it exists
         if os.path.exists(pylsl_lib_path := os.path.join(pylsl_path, 'lib')):
@@ -88,5 +91,5 @@ def get_lsl_binary():
         warnings.warn(f"lib path {downloaded_lib_path} not found in the downloaded binary. "
                       f"PyLSL will not be available.")
         return
-    print(f"LSL binary installed successfully to {downloaded_lib_path}")
+    print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path
