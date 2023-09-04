@@ -43,7 +43,7 @@ def download_lsl_binary():
                           f"Using Jammy (2022) binary, LSL may not function properly.")
             ubuntu_version = 'jammy'
         # Ubuntu with supported versions (bionic, focal, jammy)
-        binary_name = f"liblsl-1.16.2-{ubuntu_version}_amd64.deb"
+        binary_name = f"liblsl-1.16.2-bionic_amd64.deb"
     else:
         # Unsupported OS, architecture, or version
         warnings.warn(f"Unsupported OS {user_os} {architecture}. PyLSL will not be available.")
