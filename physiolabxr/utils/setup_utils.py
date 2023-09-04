@@ -76,13 +76,17 @@ def get_lsl_binary():
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     output_directory = download_lsl_binary()
     # move the extracted lib folder to the lsl site-package's lib folder
-    lib_path = os.path.join(output_directory, 'usr', 'lib')
-    if os.path.exists(lib_path):
-        shutil.move(lib_path, pylsl_path)
+    downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib')
+    if os.path.exists(downloaded_lib_path):
+        # remove the lib folder if it exists
+        if os.path.exists(pylsl_lib_path := os.path.join(pylsl_path, 'lib')):
+            shutil.rmtree(pylsl_lib_path)
+        shutil.move(downloaded_lib_path, pylsl_path)
         # delete the extracted folder
         shutil.rmtree(output_directory)
     else:
-        warnings.warn(f"lib path {lib_path} not found in the downloaded binary. "
+        warnings.warn(f"lib path {downloaded_lib_path} not found in the downloaded binary. "
                       f"PyLSL will not be available.")
         return
-    print("LSL binary installed successfully.")
+    print(f"LSL binary installed successfully to {downloaded_lib_path}")
+    return pylsl_lib_path
