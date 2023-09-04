@@ -79,6 +79,7 @@ def get_lsl_binary():
     site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x][0]
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     output_directory, downloaded_lib_path = download_lsl_binary()
+    assert os.path.exists(pylsl_path), 'pylsl package is not installed, please install pylsl first'
     # move the extracted lib folder to the lsl site-package's lib folder
     if os.path.exists(downloaded_lib_path):
         # remove the lib folder if it exists
