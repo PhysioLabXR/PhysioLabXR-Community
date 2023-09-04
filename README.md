@@ -145,21 +145,6 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!--
-<!-- ROADMAP -->
-## Roadmap
-
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
-
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
 <!-- CONTRIBUTING -->
 ## Contributing
 
@@ -181,7 +166,7 @@ Don't forget to give the project a star! Thanks again!
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the 3-Clause BSD License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -191,9 +176,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
-
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+[Ziheng 'Leo' Li](https://www.linkedin.com/in/ziheng-leo-li/) - zl2990@columbia.edu
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -201,8 +184,9 @@ Project Link: [https://github.com/github_username/repo_name](https://github.com/
 
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
-We thank the members from LIINC at Columbia University, Advance Human-computer Interaction Lab, and CWINS at Worcester Polytechnic Institute for their feedback in developing the App. ningkko for the great contribution to the original code base, and AlexG1031 for the help in the various versions.
-* [LIINC at Columbia](https://liinc.bme.columbia.edu/)
+
+We would like to express our gratitude for the support from our colleagues at Columbia University and Worcester Polytechnic Institute. We would also like to thank all the community members who have contributed to *PhysioLabXR*.
+
 
 [//]: # (* []&#40;&#41;)
 
