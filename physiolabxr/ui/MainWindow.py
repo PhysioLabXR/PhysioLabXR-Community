@@ -291,6 +291,9 @@ class MainWindow(QtWidgets.QMainWindow):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name, video_preset_type):
+        if video_preset_type == PresetType.MONITOR and not AppConfigs().is_monitor_available:
+            dialog_popup(AppConfigs().monitor_error_message, title='Error')
+            return
         widget_name = video_device_name + '_widget'
         widget = VideoWidget(parent_widget=self,
                            parent_layout=self.camHorizontalLayout,

@@ -84,6 +84,10 @@ class AppConfigs(metaclass=Singleton):
     # data worker configs
     pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
 
+    # monitor capture
+    is_monitor_available: bool = True
+    monitor_error_message: str = None
+
     # visualization configs
     max_timeseries_num_channels_per_group = int(2 ** 10)
     viz_buffer_max_size = int(2 ** 18)
@@ -147,6 +151,15 @@ class AppConfigs(metaclass=Singleton):
             setattr(self, name, ui_path)
         self._rena_base_script = open(self._rena_base_script, "r").read()
         reload_enums(self)
+
+        # check if screen capture is available
+        try:
+            import pyscreeze
+            img = pyscreeze.screenshot()
+            self.is_monitor_available = True
+        except NotImplementedError as e:
+            self.is_monitor_available = False
+            self.monitor_error_message = str(e)
 
     def __del__(self):
         """
