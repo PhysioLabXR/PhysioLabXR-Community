@@ -1,6 +1,7 @@
+from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.exceptions.exceptions import InvalidPresetErrorChannelNameOrNumChannel
 from physiolabxr.configs import config
-from physiolabxr.configs.config import DEFAULT_CHANNEL_DISPLAY_NUM, default_group_name
+from physiolabxr.configs.config import default_group_name
 from physiolabxr.presets.GroupEntry import GroupEntry
 from physiolabxr.utils.data_utils import convert_dict_keys_to_snake_case
 
@@ -65,7 +66,7 @@ def process_plot_group_json_preset(preset_dict):
         num_shown_channel = 0
         for i, group in enumerate(plot_group_slice):
             channel_indices = list(range(*group))
-            num_available_ch_shown = DEFAULT_CHANNEL_DISPLAY_NUM - num_shown_channel
+            num_available_ch_shown = AppConfigs().default_channel_display_num - num_shown_channel
             if num_available_ch_shown <= 0:
                 is_channels_shown = [True] * len(channel_indices)
                 # is_channels_shown = [0 for c in range(len(channel_indices))]
@@ -73,9 +74,9 @@ def process_plot_group_json_preset(preset_dict):
                 # is_channels_shown = [1 for c in range(min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM))]
                 # is_channels_shown += [0] * (len(channel_indices) - len(is_channels_shown))  # won't pad if len(channel_indices) - len(is_channels_shown) is negative
 
-                is_channels_shown = [True] * min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
+                is_channels_shown = [True] * min(len(channel_indices), AppConfigs().default_channel_display_num)
                 is_channels_shown += [False] * (len(channel_indices) - len(is_channels_shown))
-                num_shown_channel += min(len(channel_indices), DEFAULT_CHANNEL_DISPLAY_NUM)
+                num_shown_channel += min(len(channel_indices), AppConfigs().default_channel_display_num)
 
             # preset_dict['GroupInfo'][f"{default_group_name}{i}"] = \
             #     {
