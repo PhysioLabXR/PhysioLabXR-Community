@@ -88,7 +88,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
-    AppConfigs.eviction_interval = 5 * (recording_time_second) * 1e3
+    AppConfigs.eviction_interval = int(5 * (recording_time_second) * 1e3)
 
     # app_main_window._ui.tabWidget.setCurrentWidget(
     #     app_main_window._ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget

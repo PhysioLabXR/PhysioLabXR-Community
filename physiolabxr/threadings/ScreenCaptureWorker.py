@@ -34,12 +34,7 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
-            try:
-                img = pyscreeze.screenshot()
-            except NotImplementedError as e:
-                self.is_streaming = False
-                dialog_popup(str(e), title='Warning', mode='modeless')
-                return
+            img = pyscreeze.screenshot()
             frame = np.array(img)
             frame = frame.astype(np.uint8)
             frame = process_image(frame, self.channel_order, self.video_scale)
