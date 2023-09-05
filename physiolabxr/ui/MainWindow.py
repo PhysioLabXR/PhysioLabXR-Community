@@ -424,10 +424,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()  # fire another close event
 
     def fire_action_documentation(self):
-        webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
+        webbrowser.open("https://physiolabxrdocs.readthedocs.io/en/latest/")
 
     def fire_action_repo(self):
-        webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
+        webbrowser.open("https://https://github.com/PhysioLabXR/PhysioLabXR#physiolabxr")
 
     def fire_action_show_recordings(self):
         self.recording_tab.open_recording_directory()
