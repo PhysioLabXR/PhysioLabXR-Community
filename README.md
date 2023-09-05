@@ -7,6 +7,8 @@
 
 
 
+<h3 align="center">PhysioLabXR</h3>
+
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -14,7 +16,6 @@
     <img src="physiolabxr/_media/readme/PhysioLabXR Overview.png" alt="Logo">
   </a>
 
-<h3 align="center">PhysioLabXR</h3>
 
   <p align="center">
     A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments
