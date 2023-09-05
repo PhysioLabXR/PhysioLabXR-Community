@@ -427,7 +427,7 @@ class MainWindow(QtWidgets.QMainWindow):
         webbrowser.open("https://physiolabxrdocs.readthedocs.io/en/latest/")
 
     def fire_action_repo(self):
-        webbrowser.open("https://https://github.com/PhysioLabXR/PhysioLabXR#physiolabxr")
+        webbrowser.open("https://github.com/PhysioLabXR/PhysioLabXR#physiolabxr")
 
     def fire_action_show_recordings(self):
         self.recording_tab.open_recording_directory()
