@@ -71,8 +71,8 @@ def download_lsl_binary():
     os.remove(binary_name)
     if user_os == "Windows":
         # move dll from bin to lib
-        if (dll_path:=os.path.join(output_directory, 'bin', 'lsl.dll')) not in (lib_path:=os.path.join(output_directory, 'lib')):
-            shutil.move(dll_path, lib_path)
+        if 'lsl.dll' not in os.listdir(lib_path:=os.path.join(output_directory, 'lib')):
+            shutil.move(os.path.join(output_directory, 'bin', 'lsl.dll'), lib_path)
     downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib') if os.path.exists(os.path.join(output_directory, 'usr')) else os.path.join(output_directory, 'lib')
     return output_directory, downloaded_lib_path
 
