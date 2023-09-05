@@ -1,8 +1,3 @@
-
-_This README is still under construction_
-
-
-
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -22,7 +17,7 @@ _This README is still under construction_
 <h3 align="center">PhysioLabXR</h3>
 
   <p align="center">
-    A Python Software Platform for Multi-Modal Brain-Computer Interface and Real-Time Experiment Pipelines
+    A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments
     <br />
     <a href="https://physiolabxrdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
