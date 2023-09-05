@@ -123,7 +123,7 @@ class StreamPreset(metaclass=SubPreset):
             self.can_edit_channel_names = False
             print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
         if self.display_duration is None:
-            self.display_duration = float(config.settings.value('viz_display_duration'))
+            self.display_duration = float(AppConfigs().viz_display_duration)
         for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
             if isinstance(value, dict):
                 self.group_info[key] = GroupEntry(**value)
@@ -232,7 +232,7 @@ class AudioPreset(metaclass=SubPreset):
             self.can_edit_channel_names = False
             print(f"StreamPreset: disabling channel editing for stream {self.stream_name}")
         if self.display_duration is None:
-            self.display_duration = float(config.settings.value('viz_display_duration'))
+            self.display_duration = float(AppConfigs().viz_display_duration)
         for key, value in self.group_info.items():  # recreate the GroupEntry object from the dictionary
             if isinstance(value, dict):
                 self.group_info[key] = GroupEntry(**value)

@@ -22,20 +22,11 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
         load_default_recording_file_location()
-        config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
-        config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
-        config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
         if not config.settings.contains('recording_file_location') or config.settings.value('recording_file_location') is None:
             load_default_recording_file_location()
-        if not config.settings.contains('viz_display_duration') or config.settings.value('viz_display_duration') is None:
-            config.settings.setValue('viz_display_duration', config.VIZ_DISPLAY_DURATION)
-        if not config.settings.contains('downsample_method_mean_sr_threshold') or config.settings.value('downsample_method_mean_sr_threshold') is None:
-            config.settings.setValue('downsample_method_mean_sr_threshold', config.downsample_method_mean_sr_threshold)
-        if not config.settings.contains('main_window_meta_data_refresh_interval') or config.settings.value('main_window_meta_data_refresh_interval') is None:
-            config.settings.setValue('main_window_meta_data_refresh_interval', config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)
     config.settings.sync()
     # load the presets, reload from local directory the default LSL, device and experiment presets
     preset_root = AppConfigs()._preset_path

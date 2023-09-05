@@ -90,6 +90,9 @@ class AppConfigs(metaclass=Singleton):
     visualization_refresh_interval: int = 20  # in milliseconds, how often does the visualization refreshes
     video_device_refresh_interval: int = 33
     default_channel_display_num: int = 40
+    downsample_method_mean_sr_threshold: int = 256
+    viz_display_duration: int = 10  # in seconds, how long does the visualization display the data
+    main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
     # ZMQ ports
     replay_stream_starting_port = 10000

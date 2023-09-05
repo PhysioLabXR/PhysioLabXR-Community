@@ -11,14 +11,10 @@ REFRESH_FREQUENCY_RETAIN_FRAMES = 50
 
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
-MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
-VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
-
 SCRIPTING_UPDATE_REFRESH_INTERVAL = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
-downsample_method_mean_sr_threshold = 256
 '''
 ########################################################################################################################
 Advanced parameters:

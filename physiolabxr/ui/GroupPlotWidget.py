@@ -107,7 +107,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.channel_index_channel_dict[int(channel_index)] = channel_plot_item
             if not is_channel_shown:
                 channel_plot_item.hide()  # TODO does disable do what it should do: uncheck from the plots
-            downsample_method = 'mean' if self.sampling_rate > config.settings.value('downsample_method_mean_sr_threshold') else 'subsample'
+            downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
             channel_plot_item.setDownsampling(auto=True, method=downsample_method)
             channel_plot_item.setClipToView(True)
             channel_plot_item.setSkipFiniteCheck(True)
