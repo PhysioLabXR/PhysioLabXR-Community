@@ -216,6 +216,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_active_streams()
         except RenaError as error:
             dialog_popup(f'Failed to add: {stream_name}. {error}', title='Error')
+        except Exception as error:
+            dialog_popup(f'Failed to add: {stream_name} as {preset_type}. {error}', title='Error')
         self.addStreamWidget.check_can_add_input()
 
     def add_streams_from_experiment_preset(self, stream_names):

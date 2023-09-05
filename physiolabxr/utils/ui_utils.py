@@ -486,9 +486,15 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
     else:
         return True
 
-def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum]):
-    combobox.addItems([name for name, member in enum.__members__.items()])
-
+def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_selected_in_gui: list=None):
+    if can_be_selected_in_gui is None:
+        combobox.addItems([name for name, member in enum.__members__.items()])
+    else:
+        for name, member in enum.__members__.items():
+            combobox.addItem(name)
+            item = combobox.model().item(combobox.count() - 1)
+            if member not in can_be_selected_in_gui:
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
 
 def show_label_movie(label: QLabel, is_show: bool):
     label.setVisible(is_show)

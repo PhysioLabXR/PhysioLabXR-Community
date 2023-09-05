@@ -27,6 +27,10 @@ class PresetType(Enum):
             preset_type = PresetType(preset_type)
         return preset_type in [cls.LSL, cls.ZMQ, cls.CUSTOM]
 
+    @classmethod
+    def can_be_selected_in_gui(cls):
+        return [cls.LSL, cls.ZMQ]
+
     def is_self_video_preset(self):
         return self in [self.WEBCAM, self.MONITOR]
 

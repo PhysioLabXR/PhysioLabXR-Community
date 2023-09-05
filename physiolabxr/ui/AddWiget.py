@@ -50,7 +50,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.data_type_combo_box.currentIndexChanged.connect(self.on_data_type_changed)
         self.set_data_type_to_default()
 
-        add_enum_values_to_combobox(self.preset_type_combobox, PresetType)
+        add_enum_values_to_combobox(self.preset_type_combobox, PresetType, PresetType.can_be_selected_in_gui())
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
         # remove CUSTOM type from preset type combobox
@@ -269,8 +269,6 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.preset_type_combobox.setEnabled(False)
         self.audio_device_settings_widget.setHidden(False)
 
-
-
     def hide_stream_uis(self):
         self.data_type_combo_box.setHidden(True)
         self.PortLineEdit.setHidden(True)
@@ -331,9 +329,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.audio_device_frames_per_buffer_line_edit.setValidator(QIntValidator(0, 2048))
         self.audio_device_sampling_rate_line_edit.setValidator(QIntValidator(0, 32768))
 
-
-
-########################################################
+    # Audio Widgets #########################################
 
     def on_audio_device_frames_per_buffer_line_edit_changed(self):
         stream_name, is_new = self.get_selected_stream_name_is_new()
@@ -357,7 +353,6 @@ class AddStreamWidget(QtWidgets.QWidget):
             sampling_rate = self.get_audio_device_sampling_rate()
             set_stream_preset_audio_device_sampling_rate(stream_name, sampling_rate)
             set_stream_nominal_sampling_rate(stream_name, sampling_rate)
-
 
     def get_audio_device_sampling_rate(self):
         try:
