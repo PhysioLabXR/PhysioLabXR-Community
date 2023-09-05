@@ -90,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #########
         # meta data update timer
         self.meta_data_update_timer = QTimer()
-        self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.meta_data_update_timer.setInterval(AppConfigs().main_window_meta_data_refresh_interval)  # for 15 Hz refresh rate
         self.meta_data_update_timer.timeout.connect(self.update_meta_data)
         self.meta_data_update_timer.start()
 

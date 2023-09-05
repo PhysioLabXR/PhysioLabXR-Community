@@ -76,16 +76,25 @@ class AppConfigs(metaclass=Singleton):
     app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), _app_data_name)
 
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
+
+    # recording configs
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000
 
+    # data worker configs
+    pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
+
+    # visualization configs
     max_timeseries_num_channels_per_group = int(2 ** 10)
     viz_buffer_max_size = int(2 ** 18)
-
     visualization_refresh_interval: int = 20  # in milliseconds, how often does the visualization refreshes
-    pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources
     video_device_refresh_interval: int = 33
+    default_channel_display_num: int = 40
+    downsample_method_mean_sr_threshold: int = 256
+    viz_display_duration: int = 10  # in seconds, how long does the visualization display the data
+    main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
+    # ZMQ ports
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
