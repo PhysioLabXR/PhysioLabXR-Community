@@ -34,9 +34,7 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
     from physiolabxr.configs.configs import AppConfigs
     from physiolabxr.presets.PresetEnums import DataType
     from physiolabxr.presets.PresetEnums import PresetType
-    from physiolabxr.startup.startup import apply_patches
 
-    apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048

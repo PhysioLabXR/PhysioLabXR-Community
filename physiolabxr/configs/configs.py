@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import sys
 import warnings
 from dataclasses import dataclass, fields
@@ -155,6 +156,7 @@ class AppConfigs(metaclass=Singleton):
         # check if screen capture is available
         try:
             import pyscreeze
+            self.apply_pyscreeze_patches()
             img = pyscreeze.screenshot()
             self.is_monitor_available = True
         except NotImplementedError as e:
@@ -188,3 +190,14 @@ class AppConfigs(metaclass=Singleton):
                 ui_file_paths[os.path.splitext(x)[0]] = full_path
 
         return ui_file_paths
+
+    @staticmethod
+    def apply_pyscreeze_patches():
+        """
+        apply patches to fix bugs in dependencies, if any
+        """
+        import pyscreeze
+        import PIL
+        if platform.system() == 'Darwin' and pyscreeze.__version__ == '0.1.29':
+            __PIL_TUPLE_VERSION = tuple(int(x) for x in PIL.__version__.split("."))
+            pyscreeze.PIL__version__ = __PIL_TUPLE_VERSION

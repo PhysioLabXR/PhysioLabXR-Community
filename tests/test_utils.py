@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
+from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import DataType, PresetType
 from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedLSLStream, SampleDefinedZMQStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
@@ -30,8 +31,6 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     app = QtWidgets.QApplication(sys.argv)
     from physiolabxr.startup.startup import load_settings
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
-    from physiolabxr.startup.startup import apply_patches
-    apply_patches()
     from physiolabxr.ui.MainWindow import MainWindow
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     if show_window:

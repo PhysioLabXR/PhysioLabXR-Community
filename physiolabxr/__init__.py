@@ -21,7 +21,7 @@ def physiolabxr():
 
     AppConfigs(_reset=False)  # create the singleton app configs object
     from physiolabxr.ui.MainWindow import MainWindow
-    from physiolabxr.startup.startup import load_settings, apply_patches
+    from physiolabxr.startup.startup import load_settings
 
     app = None
 
@@ -40,7 +40,6 @@ def physiolabxr():
 
     # load default settings
     load_settings(revert_to_default=False, reload_presets=False)
-    apply_patches()
     # main window init
     print("Creating main window")
     window = MainWindow(app=app)
