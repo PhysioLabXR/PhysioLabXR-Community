@@ -218,3 +218,12 @@ class UnsupportedLSLDataTypeError(RenaError):
 
     def __str__(self):
         return f'Unsupported Data Type for LSL {self.error}. LSL only supports {DataType.get_lsl_supported_names()}'
+
+class InvalidZMQMessageError(RenaError):
+    """Raised when the zmq message is not valid"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f"Invalid ZMQ Message. Please refer to the documentation page 'Using the ZMQ Interface' for more information. \n{self.error}"
