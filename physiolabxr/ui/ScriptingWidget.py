@@ -295,10 +295,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         """
         self.info_worker.deactivate()
         # stop the wait threads and processes
-        self.wait_for_response_worker.stop()
-        self.wait_response_thread.requestInterruption()
-        self.wait_response_thread.exit()
-        self.wait_response_thread.wait()
+        if self.wait_for_response_worker is not None:
+            self.wait_for_response_worker.stop()
+        if self.wait_response_thread is not None:
+            self.wait_response_thread.requestInterruption()
+            self.wait_response_thread.exit()
+            self.wait_response_thread.wait()
         if psutil.pid_exists(self.script_pid):
             self.script_process.kill()
         self.clean_up_after_stop()

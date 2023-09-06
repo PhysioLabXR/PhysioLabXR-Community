@@ -10,7 +10,7 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QMutex, QThread
 from PyQt6.QtCore import (QObject, pyqtSignal)
 
-from physiolabxr.exceptions.exceptions import DataPortNotOpenError
+from physiolabxr.exceptions.exceptions import DataPortNotOpenError, InvalidZMQMessageError
 from physiolabxr.configs import config_signal, shared
 from physiolabxr.configs.config import REQUEST_REALTIME_INFO_TIMEOUT
 from physiolabxr.configs.configs import AppConfigs
@@ -630,6 +630,7 @@ class ScriptInfoWorker(QObject):
 #         else:
 #             return False
 
+
 class ZMQWorker(QObject, RenaWorker):
     """
     Rena's implementation of working with ZMQ's tcp interfaces
@@ -659,6 +660,7 @@ class ZMQWorker(QObject, RenaWorker):
 
         self.ZQMSocket = RenaTCPInterface
         self.is_streaming = False
+        self.interrupted = False
         self.timestamp_queue = deque(maxlen=1024)
 
         self.previous_availability = None
@@ -674,28 +676,37 @@ class ZMQWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if QThread.currentThread().isInterruptionRequested():
             return
-        if self.is_streaming:
+        if self.is_streaming and not self.interrupted:
             pull_data_start_time = time.perf_counter()
             timestamp_list, data_list = [], []
+            error_message = None
             while True:
                 try:
-                    _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-
+                    message = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                    topic, timestamp, data = self.decode_zmq_frame(message)
                     # timestamp can be 64-bit float or 32-bit float
-                    timestamp = np.frombuffer(timestamp, dtype=(np.float64 if len(timestamp) == 8 else np.float32))
                     timestamp_list.append(timestamp)
-                    data_list.append(np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1))
+                    data_list.append(data)
                     self.timestamp_queue.append(timestamp)
                 except zmq.error.Again:
                     break
-            if len(timestamp_list) > 0:
-                if len(self.timestamp_queue) > 1:
-                    sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-                else:
-                    sampling_rate = np.nan
-                data_dict = {'stream_name': self.subtopic, 'frames': np.concatenate(data_list, axis=1), 'timestamps': np.concatenate(timestamp_list), 'sampling_rate': sampling_rate}
-                self.signal_data.emit(data_dict)
-                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+                except InvalidZMQMessageError as e:
+                    error_message = str(e)
+                    self.interrupted = True
+                    break
+
+            if error_message is None:
+                if len(timestamp_list) > 0:
+                    if len(self.timestamp_queue) > 1:
+                        sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+                    else:
+                        sampling_rate = np.nan
+                    data_dict = {'stream_name': self.subtopic, 'frames': np.concatenate(data_list, axis=1), 'timestamps': np.array(timestamp_list), 'sampling_rate': sampling_rate}
+                    self.signal_data.emit(data_dict)
+                    self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+            else:
+                # send all none dict
+                self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
 
     @QtCore.pyqtSlot()
     def process_stream_availability(self):
@@ -712,6 +723,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def start_stream(self):
         self.is_streaming = True
+        self.interrupted = False
         self.signal_stream_availability.emit(True)  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
@@ -724,3 +736,19 @@ class ZMQWorker(QObject, RenaWorker):
 
     def reset_interface(self, stream_name, channel_names):
         pass
+
+    def decode_zmq_frame(self, message):
+        try:
+            if len(message) == 2:
+                topic_name = message[0].decode('utf-8')
+                timestamp = get_clock_time()
+                data = np.expand_dims(np.frombuffer(message[1], dtype=self.data_type), axis=-1)
+            elif len(message) == 3:
+                topic_name = message[0].decode('utf-8')
+                timestamp = np.frombuffer(message[1], dtype=(np.float64 if len(message[1]) == 8 else np.float32))[0]
+                data = np.expand_dims(np.frombuffer(message[2], dtype=self.data_type), axis=-1)
+            else:
+                raise InvalidZMQMessageError(f'ZMQ message has invalid length: {len(message)} != 1, 2, or 3')
+        except Exception as e:
+            raise InvalidZMQMessageError(f'ZMQ message cannot be decoded: {e}')
+        return topic_name, timestamp, data

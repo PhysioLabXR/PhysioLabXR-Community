@@ -235,7 +235,7 @@ class ContextBot:
 
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
-    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
+    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100), data_type=DataType.uint8):
         from physiolabxr.sub_process.pyzmq_utils import can_connect_to_port
         using_port = None
         for port in range(*port_range):
@@ -246,7 +246,7 @@ class ContextBot:
             raise ValueError(f"Could not find a port in range {port_range}. Consider use a different range.")
         if stream_name in self.send_data_processes.keys():
             raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
-        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate))
+        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate, DataType.uint8))
         p.start()
         self.send_data_processes[stream_name] = p
         return using_port
