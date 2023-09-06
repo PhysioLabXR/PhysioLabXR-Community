@@ -52,7 +52,7 @@ def stream_is_unavailable(app_main_window, stream_name):
     assert not app_main_window.stream_widgets[stream_name].is_stream_available
 
 def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
-    from physiolabxr.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
     if patience_second == 0:
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
@@ -89,7 +89,7 @@ def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, c
     @param patience_second: how long to wait for the current dialog to be a CustomDialog
     @param delay: how long to wait before clicking the button
     """
-    from physiolabxr.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
 
     if expected_message_include is not None:
         qtbot.waitUntil(lambda: expected_message_include in app.current_dialog.msg, timeout=patience_second * 1e3)

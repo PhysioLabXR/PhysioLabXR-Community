@@ -38,8 +38,8 @@ from physiolabxr.ui.RecordingsTab import RecordingsTab
 from physiolabxr.ui.SettingsWidget import SettingsWidget
 from physiolabxr.ui.ReplayTab import ReplayTab
 from physiolabxr.utils.buffers import DataBuffer
-from physiolabxr.utils.ui_utils import dialog_popup, \
-    another_window
+from physiolabxr.utils.ui_utils import another_window
+from physiolabxr.ui.dialogs import dialog_popup
 
 import numpy as np
 

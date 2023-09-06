@@ -6,7 +6,7 @@ from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ZMQWidget(BaseStreamWidget):

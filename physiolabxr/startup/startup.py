@@ -10,7 +10,7 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.configs import config_ui, config
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):

@@ -10,9 +10,10 @@ from physiolabxr.configs.configs import AppConfigs, LinechartVizMode, RecordingF
 from physiolabxr.presets.Presets import Presets, _load_video_device_presets, _load_audio_device_presets
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.startup.startup import load_settings
-from physiolabxr.threadings.WaitThreads import WaitForProcessWorker, ProcessWithQueue, start_wait_process
+from physiolabxr.threadings.WaitThreads import start_wait_process
 from physiolabxr.utils.Validators import NoCommaIntValidator
-from physiolabxr.utils.ui_utils import stream_stylesheet, dialog_popup
+from physiolabxr.utils.ui_utils import stream_stylesheet
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class SettingsWidget(QtWidgets.QWidget):
@@ -64,7 +65,12 @@ class SettingsWidget(QtWidgets.QWidget):
         self.is_first_time_loading_video_devices = True
 
         self.reload_video_device_presets()
-        self.reload_audio_device_presets()
+
+        if not AppConfigs().is_audio_available:
+            self.reload_audio_device_button.setEnabled(False)
+            self.reload_audio_device_button.setText("Audio Unavailable")
+        else:
+            self.reload_audio_device_presets()
 
 
     def reload_video_device_presets(self):

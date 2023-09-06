@@ -12,7 +12,7 @@ from PyQt6.QtCore import QTimer
 from physiolabxr.configs import config
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.utils.RNStream import RNStream
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class AnalysisTab(QtWidgets.QWidget):

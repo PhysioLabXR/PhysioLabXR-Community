@@ -2,7 +2,6 @@ import time
 
 import pyscreeze
 import numpy as np
-import pyqtgraph as pg
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
 from pylsl import local_clock
@@ -10,7 +9,6 @@ from pylsl import local_clock
 from physiolabxr.presets.PresetEnums import VideoDeviceChannelOrder
 from physiolabxr.threadings.workers import RenaWorker
 from physiolabxr.utils.image_utils import process_image
-from physiolabxr.utils.ui_utils import dialog_popup
 
 
 class ScreenCaptureWorker(QObject, RenaWorker):

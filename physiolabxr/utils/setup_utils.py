@@ -1,10 +1,11 @@
 import os.path
 import platform
-import sys
 import urllib.request
 import warnings
 import shutil
 import subprocess
+
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 def get_ubuntu_version():
@@ -107,3 +108,38 @@ def get_lsl_binary():
             return
         print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path
+
+def install_pylsl():
+    # try import pylsl check if the lib exist
+    try:
+        import pylsl
+    except RuntimeError:
+        # the error is LSL binary library file was not found.
+        get_lsl_binary()
+
+
+def install_pyaudio():
+    # check if we are on mac
+    try:
+        import pyaudio
+    except ModuleNotFoundError:
+        if platform.system() == 'Darwin':
+            # check if brew is installed
+            if shutil.which('brew') is None:
+                from PyQt6.QtWidgets import QDialogButtonBox
+                dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
+                                  "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.", title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                from physiolabxr.configs.configs import AppConfigs
+                AppConfigs().is_audio_interface_available = False
+                return
+            # need to brew install portaudio
+            print("Brew installing portaudio ...")
+            subprocess.run(["brew", "install", "portaudio"])
+        # pip install pyaudio
+        print("pip installing pyaudio ...")
+        subprocess.run(["pip", "install", "pyaudio"])
+
+
+def run_setup_check():
+    install_pylsl()
+    install_pyaudio()

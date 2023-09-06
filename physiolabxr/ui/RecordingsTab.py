@@ -17,7 +17,7 @@ from physiolabxr.configs.configs import AppConfigs, RecordingFileFormat
 from physiolabxr.ui.RecordingConversionDialog import RecordingConversionDialog
 from physiolabxr.ui.ui_shared import stop_recording_text, start_recording_text
 from physiolabxr.utils.RNStream import RNStream
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 import subprocess
 
 class RecordingsTab(QtWidgets.QWidget):

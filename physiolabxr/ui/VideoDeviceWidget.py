@@ -13,7 +13,7 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
 from physiolabxr.ui.PoppableWidget import Poppable
 from physiolabxr.ui.VideoDeviceOptions import VideoDeviceOptions
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class VideoDeviceWidget(Poppable, QtWidgets.QWidget):

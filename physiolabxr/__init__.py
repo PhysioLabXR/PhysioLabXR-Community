@@ -1,14 +1,6 @@
 
 
 def physiolabxr():
-    # try import pylsl check if the lib exist
-    try:
-        import pylsl
-    except RuntimeError:
-        # the error is LSL binary library file was not found.
-        from physiolabxr.utils.setup_utils import get_lsl_binary
-        get_lsl_binary()
-
     import multiprocessing
     import sys
 
@@ -20,8 +12,6 @@ def physiolabxr():
     from physiolabxr.ui.SplashScreen import SplashScreen
 
     AppConfigs(_reset=False)  # create the singleton app configs object
-    from physiolabxr.ui.MainWindow import MainWindow
-    from physiolabxr.startup.startup import load_settings
 
     app = None
 
@@ -39,9 +29,13 @@ def physiolabxr():
     splash.show()
 
     # load default settings
+    from physiolabxr.utils.setup_utils import run_setup_check
+    run_setup_check()
+    from physiolabxr.startup.startup import load_settings
     load_settings(revert_to_default=False, reload_presets=False)
     # main window init
     print("Creating main window")
+    from physiolabxr.ui.MainWindow import MainWindow
     window = MainWindow(app=app)
 
     window.setWindowIcon(QIcon(AppConfigs()._app_logo))

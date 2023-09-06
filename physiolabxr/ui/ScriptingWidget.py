@@ -38,8 +38,9 @@ from physiolabxr.utils.networking_utils import send_data_dict
 from physiolabxr.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
     get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
-from physiolabxr.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
+from physiolabxr.utils.ui_utils import add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path, show_label_movie
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):

@@ -7,7 +7,7 @@ import numpy as np
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtCore import pyqtSignal, Qt, QSize
 from PyQt6.QtGui import QMovie
-from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QHBoxLayout, QLabel, QCheckBox, QListWidgetItem
+from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QWidget, QListWidgetItem
 
 from physiolabxr.configs import config, shared
 from physiolabxr.configs.configs import AppConfigs
@@ -15,11 +15,12 @@ from physiolabxr.presets.Presets import PresetsEncoder
 from physiolabxr.presets.PresetEnums import PresetType, DataType
 from physiolabxr.sub_process.ReplayServer import start_replay_server
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface, test_port_range
-from physiolabxr.threadings.WaitThreads import start_wait_process, start_wait_for_response
+from physiolabxr.threadings.WaitThreads import start_wait_for_response
 from physiolabxr.ui.PlayBackWidget import PlayBackWidget
 from physiolabxr.utils.lsl_utils import get_available_lsl_streams
 from physiolabxr.utils.ui_utils import another_window, show_label_movie
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
+
 
 class ReplayStreamHeader(QWidget):
     def __init__(self):
