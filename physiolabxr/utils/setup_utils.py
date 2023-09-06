@@ -87,6 +87,13 @@ def get_lsl_binary():
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     pylsl_lib_path = None
     if platform.system() == "Darwin":
+        if shutil.which('brew') is None:
+            from PyQt6.QtWidgets import QDialogButtonBox
+            dialog_popup("Tried to brew install labstreaminglayer/tap/lsl, necessary for using LSL interface."
+                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need to use pylsl."
+                         "Unexpected behavior may occur if you continue to use the app without brew.",
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            return
         print("Brew installing lsl library ...")
         subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
         env_command = 'export DYLD_LIBRARY_PATH="/opt/homebrew/lib"'
