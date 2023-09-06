@@ -14,7 +14,6 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.presets.PresetEnums import PresetType, DataType
 from physiolabxr.ui.AddWiget import AddStreamWidget
-from physiolabxr.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
@@ -328,6 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_audio_input_device(self, stream_name):
         widget_name = stream_name + '_widget'
+        from physiolabxr.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
         stream_widget = AudioInputDeviceWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
                                  stream_name=stream_name,

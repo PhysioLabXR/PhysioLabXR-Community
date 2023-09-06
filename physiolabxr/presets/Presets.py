@@ -324,7 +324,6 @@ def _load_audio_device_presets():
     try:
         print('Loading available audio devices')
         rtn = []
-
         import pyaudio
         audio = pyaudio.PyAudio()
         info = audio.get_host_api_info_by_index(0)
@@ -348,6 +347,10 @@ def _load_audio_device_presets():
     except KeyboardInterrupt:
         print('KeyboardInterrupt: exiting')
         return []
+    except ModuleNotFoundError:
+        print('PyAudio not installed, skipping audio device presets')
+        return []
+
 
 def create_default_audio_preset(stream_name, audio_device_index, num_channels):
     group_info = create_default_group_info(num_channels)
