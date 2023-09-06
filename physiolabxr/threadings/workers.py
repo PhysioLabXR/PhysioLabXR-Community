@@ -4,12 +4,11 @@ from collections import deque
 
 import numpy as np
 import psutil as psutil
-import pyqtgraph as pg
+
 import zmq
 from PyQt6 import QtCore
 from PyQt6.QtCore import QMutex, QThread
 from PyQt6.QtCore import (QObject, pyqtSignal)
-from pylsl import local_clock
 
 from physiolabxr.exceptions.exceptions import DataPortNotOpenError
 from physiolabxr.configs import config_signal, shared
@@ -20,10 +19,11 @@ from physiolabxr.configs.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQ
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
-from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface, \
-    create_audio_input_interface
+from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_audio_input_interface
+from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
 from physiolabxr.utils.networking_utils import recv_string
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
@@ -244,7 +244,7 @@ class OpenBCIDeviceWorker(QObject):
             # to_local_clock = time.time() - local_clock()
             # timestamps = data[-2,:] - to_local_clock
 
-            timestamps = data[-2, :] - data[-2, :][-1] + local_clock() if len(data[-2, :]) > 0 else []
+            timestamps = data[-2, :] - data[-2, :][-1] + get_clock_time() if len(data[-2, :]) > 0 else []
             #print("samplee num = ", len(data[-2,:]))
 
             self.timestamps_queue.extend(timestamps)
@@ -680,7 +680,10 @@ class ZMQWorker(QObject, RenaWorker):
             while True:
                 try:
                     _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                    timestamp_list.append(timestamp:=np.frombuffer(timestamp, dtype=np.float64))
+
+                    # timestamp can be 64-bit float or 32-bit float
+                    timestamp = np.frombuffer(timestamp, dtype=(np.float64 if len(timestamp) == 8 else np.float32))
+                    timestamp_list.append(timestamp)
                     data_list.append(np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1))
                     self.timestamp_queue.append(timestamp)
                 except zmq.error.Again:

@@ -1,9 +1,9 @@
 import time
 import numpy as np
 import pyaudio
-from pylsl import local_clock
 
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class AudioInputInterface(DeviceInterface):
@@ -65,7 +65,7 @@ class AudioInputInterface(DeviceInterface):
         samples = len(frames) // (
                     self._audio_device_channel * self.audio.get_sample_size(self.audio_device_data_format))
         timestamps = np.array([current_time - (samples - i) * self.frame_duration for i in range(samples)])
-        timestamps = timestamps - timestamps[-1] + local_clock() if len(frames) > 0 else np.array([])
+        timestamps = timestamps - timestamps[-1] + get_clock_time() if len(frames) > 0 else np.array([])
 
         # byte frames to numpy
         frames = np.frombuffer(frames, dtype=np.int16)

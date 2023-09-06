@@ -116,7 +116,7 @@ def get_lsl_binary():
         print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path
 
-def install_pylsl():
+def install_lsl_binary():
     # try import pylsl check if the lib exist
     try:
         import pylsl
@@ -148,5 +148,5 @@ def install_pyaudio():
 
 
 def run_setup_check():
-    install_pylsl()
+    install_lsl_binary()
     install_pyaudio()

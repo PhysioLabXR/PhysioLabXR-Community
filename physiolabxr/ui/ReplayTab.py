@@ -45,7 +45,7 @@ class ReplayStreamListItem(QWidget):
         self.dtype_label.setText(f'{data_type}')
         self.include_in_replay_checkbox.setChecked(enabled_in_replay)
 
-        self.interface_combobox.addItem(PresetType.LSL.value)
+        if AppConfigs().is_lsl_available(): self.interface_combobox.addItem(PresetType.LSL.value)
         self.interface_combobox.addItem(PresetType.ZMQ.value)
         # select the current interface
         self.interface_combobox.setCurrentText(stream_interface.value)

@@ -304,6 +304,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stream_widgets[video_device_name] = widget
 
     def init_LSL_streaming(self, stream_name):
+        if not AppConfigs().is_lsl_available():
+            dialog_popup("LSL is not available. Please install pylsl.", title='Error')
+            return
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,

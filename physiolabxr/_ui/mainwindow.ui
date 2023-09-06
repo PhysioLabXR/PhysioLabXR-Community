@@ -15,6 +15,9 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="cursor">
@@ -60,7 +63,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>1554</width>
-                <height>848</height>
+                <height>857</height>
                </rect>
               </property>
               <layout class="QHBoxLayout" name="scrollAreaWidgetContents_3_layout">

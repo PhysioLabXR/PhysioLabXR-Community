@@ -1,8 +1,13 @@
 import time
+import warnings
 
 import brainflow
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
-from pylsl import StreamInfo, StreamOutlet
+try:
+    from pylsl import StreamInfo, StreamOutlet
+except:
+    warnings.warn("OpenBCIDeviceInterface: pylsl is not installed, LSL interface will not work.")
+
 from physiolabxr.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 

@@ -6,7 +6,6 @@ import warnings
 import numpy as np
 
 from physiolabxr.exceptions.exceptions import ChannelMismatchError
-from physiolabxr.interfaces import LSLInletInterface
 from physiolabxr.interfaces.AudioInputInterface import AudioInputInterface
 from physiolabxr.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
 from physiolabxr.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
@@ -25,15 +24,6 @@ def get_fps(queue):
         return len(queue) / (queue[-1] - queue[0])
     except ZeroDivisionError:
         return 0
-
-
-def create_lsl_interface(lsl_name, num_channels):
-    # try:
-    #     interface = LSLInletInterface.LSLInletInterface(lsl_name, len(channel_names))
-    # except AttributeError:
-    #     raise AssertionError('Unable to find LSL Stream in LAN.')
-    interface = LSLInletInterface.LSLInletInterface(lsl_name, num_channels)
-    return interface
 
 
 def create_audio_input_interface(stream_name):

@@ -1,8 +1,12 @@
 import time
+import warnings
+
 import numpy as np
 
-from pylsl import StreamInlet, LostError, resolve_byprop
-
+try:
+    from pylsl import StreamInlet, LostError, resolve_byprop
+except:
+    warnings.warn("pylsl is not installed, LSL interface will not work.")
 from physiolabxr.exceptions.exceptions import LSLStreamNotFoundError, ChannelMismatchError
 from physiolabxr.configs import config
 from physiolabxr.configs.config import stream_availability_wait_time
@@ -105,3 +109,8 @@ if __name__ == "__main__":
     unityLSL_inferface.start_stream()
     data = run_test()
     unityLSL_inferface.stop_stream()
+
+
+def create_lsl_interface(lsl_name, num_channels):
+    interface = LSLInletInterface(lsl_name, num_channels)
+    return interface

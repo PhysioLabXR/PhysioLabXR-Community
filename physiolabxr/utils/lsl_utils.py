@@ -1,4 +1,9 @@
-from pylsl import StreamInfo, StreamOutlet
+import warnings
+
+try:
+    from pylsl import StreamInfo, StreamOutlet
+except:
+    warnings.warn("pylsl is not installed, LSL interface will not work.")
 from physiolabxr.utils.stream_shared import lsl_continuous_resolver
 
 
