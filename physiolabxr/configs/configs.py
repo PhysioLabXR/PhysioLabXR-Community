@@ -202,5 +202,5 @@ class AppConfigs(metaclass=Singleton):
         try:
             import pylsl
             return True
-        except ImportError:
+        except Exception as e:
             return False

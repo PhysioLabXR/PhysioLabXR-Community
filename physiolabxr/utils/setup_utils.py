@@ -148,5 +148,5 @@ def install_pyaudio():
 
 
 def run_setup_check():
-    install_lsl_binary()
+    # install_lsl_binary()
     install_pyaudio()
