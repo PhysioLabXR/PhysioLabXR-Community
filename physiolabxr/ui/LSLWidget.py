@@ -2,12 +2,11 @@
 
 from physiolabxr.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.presets.PresetEnums import PresetType, DataType
-from physiolabxr.presets.Presets import Presets
+from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class LSLWidget(BaseStreamWidget):

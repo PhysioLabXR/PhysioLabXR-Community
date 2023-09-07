@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
+from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import DataType, PresetType
 from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedLSLStream, SampleDefinedZMQStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
@@ -30,8 +31,6 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     app = QtWidgets.QApplication(sys.argv)
     from physiolabxr.startup.startup import load_settings
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
-    from physiolabxr.startup.startup import apply_patches
-    apply_patches()
     from physiolabxr.ui.MainWindow import MainWindow
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     if show_window:
@@ -53,7 +52,7 @@ def stream_is_unavailable(app_main_window, stream_name):
     assert not app_main_window.stream_widgets[stream_name].is_stream_available
 
 def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
-    from physiolabxr.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
     if patience_second == 0:
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
@@ -90,7 +89,7 @@ def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, c
     @param patience_second: how long to wait for the current dialog to be a CustomDialog
     @param delay: how long to wait before clicking the button
     """
-    from physiolabxr.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
 
     if expected_message_include is not None:
         qtbot.waitUntil(lambda: expected_message_include in app.current_dialog.msg, timeout=patience_second * 1e3)
@@ -236,7 +235,7 @@ class ContextBot:
 
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
-    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
+    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100), data_type=DataType.uint8):
         from physiolabxr.sub_process.pyzmq_utils import can_connect_to_port
         using_port = None
         for port in range(*port_range):
@@ -247,7 +246,7 @@ class ContextBot:
             raise ValueError(f"Could not find a port in range {port_range}. Consider use a different range.")
         if stream_name in self.send_data_processes.keys():
             raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
-        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate))
+        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate, DataType.uint8))
         p.start()
         self.send_data_processes[stream_name] = p
         return using_port

@@ -22,7 +22,8 @@ from physiolabxr.ui.VizComponents import VizComponents
 from physiolabxr.utils.buffers import DataBufferSingleStream
 from physiolabxr.utils.dsp_utils.dsp_modules import run_data_processors
 from physiolabxr.utils.performance_utils import timeit
-from physiolabxr.utils.ui_utils import dialog_popup, clear_widget
+from physiolabxr.utils.ui_utils import clear_widget
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class BaseStreamWidget(Poppable, QtWidgets.QWidget):

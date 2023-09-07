@@ -1,9 +1,6 @@
 import os.path
-import platform
 
-import PIL
 import pyqtgraph
-import pyscreeze
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QLabel
@@ -13,7 +10,7 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.configs import config_ui, config
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
@@ -67,11 +64,5 @@ def load_default_recording_file_location():
     print("Using default recording location {0}".format(config.settings.value('recording_file_location')))
 
 
-def apply_patches():
-    """
-    apply patches to fix bugs in dependencies, if any
-    """
-    if platform.system() == 'Darwin' and pyscreeze.__version__ == '0.1.29':
-        __PIL_TUPLE_VERSION = tuple(int(x) for x in PIL.__version__.split("."))
-        pyscreeze.PIL__version__ = __PIL_TUPLE_VERSION
+
 

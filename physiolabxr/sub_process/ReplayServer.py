@@ -10,13 +10,19 @@ from collections import deque, defaultdict
 
 import numpy as np
 import zmq
-from pylsl import pylsl
+
+try:
+    import pylsl
+    is_pylsl_imported = True
+except:
+    warnings.warn("ReplayServer: pylsl is not installed, LSL streams will not be available")
+    is_pylsl_imported = False
 
 from physiolabxr.configs import shared
-from physiolabxr.configs import config
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.utils.RNStream import RNStream
+from physiolabxr.utils.time_utils import get_clock_time
 from physiolabxr.utils.xdf_utils import load_xdf
 
 
@@ -119,13 +125,13 @@ class ReplayServer(threading.Thread):
                     self.setup_stream()  # set up streams again, because some streams may be disabled by user
                     try:
                         for outlet_info in self.outlet_infos:
-                            if replay_stream_info[outlet_info.name()]['preset_type'] == PresetType.ZMQ.value:
-                                port = replay_stream_info[outlet_info.name()]['port_number']
+                            if replay_stream_info[outlet_info["name"]]['preset_type'] == PresetType.ZMQ.value:
+                                port = replay_stream_info[outlet_info["name"]]['port_number']
                                 socket = self.command_info_interface.context.socket(zmq.PUB)
                                 socket.bind("tcp://*:%s" % port)
-                                self.outlets[outlet_info.name()] = socket
+                                self.outlets[outlet_info["name"]] = socket
                             else:
-                                self.outlets[outlet_info.name()] = pylsl.StreamOutlet(outlet_info)
+                                self.outlets[outlet_info["name"]] = pylsl.StreamOutlet(pylsl.StreamInfo(**outlet_info))
                     except zmq.error.ZMQError as e:
                         self.send_string(shared.FAIL_INFO + f'Failed to open stream: {e}')
                         self.reset_replay()
@@ -150,7 +156,7 @@ class ReplayServer(threading.Thread):
                         # streams get removed from the list if there are no samples left to play
                         self.replay()
                     else:
-                        pause_time_offset = pylsl.local_clock() - self.pause_start_time
+                        pause_time_offset = get_clock_time() - self.pause_start_time
                         self.pause_time_offset_total = self.pause_time_offset_copy + pause_time_offset
                         self.update_virtual_clock()  # time since replay start + first stream timestamps
                     # process commands
@@ -160,7 +166,7 @@ class ReplayServer(threading.Thread):
                     elif command == shared.PLAY_PAUSE_COMMAND:  # handle play_pause command
                         print("command received from replay server: ", command)
                         if not self.is_paused:
-                            self.pause_start_time = pylsl.local_clock()
+                            self.pause_start_time = get_clock_time()
                             self.pause_time_offset_copy = copy.copy(self.pause_time_offset_total)
                         else:
                             print(f"resumed: pause time is ticking: {self.pause_time_offset_total}")
@@ -217,7 +223,7 @@ class ReplayServer(threading.Thread):
 
         outlet_names = list(self.outlets)
         for stream_name in outlet_names:
-            if isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
+            if is_pylsl_imported and isinstance(self.outlets[stream_name], pylsl.StreamOutlet):
                 del self.outlets[stream_name]
                 print('Replay Server: Reset replay: removed outlet ' + stream_name)
             else:
@@ -284,7 +290,7 @@ class ReplayServer(threading.Thread):
             timestamp = this_chunk_timestamps[0] + self.virtual_clock_offset + self.slider_offset_time
             data = this_chunk_data[0]
 
-            if isinstance(outlet, pylsl.stream_outlet):
+            if is_pylsl_imported and isinstance(outlet, pylsl.stream_outlet):
                 outlet.push_sample(data.tolist(), timestamp)
             else:  # zmq
                 outlet.send_multipart([bytes(this_stream_name, "utf-8"), np.array(timestamp), data.copy()])  # copy to make data contiguous
@@ -294,7 +300,7 @@ class ReplayServer(threading.Thread):
             # according to the documentation push_chunk can only be invoked with exactly one (the last) time stamp
             timestamps = this_chunk_timestamps + self.virtual_clock_offset + self.slider_offset_time
             data = this_chunk_data
-            if isinstance(outlet, pylsl.stream_outlet):
+            if is_pylsl_imported and isinstance(outlet, pylsl.stream_outlet):
                 outlet.push_chunk(data.tolist(), timestamps[-1])
             else:  # zmq
                 for i in range(len(timestamps)):
@@ -353,7 +359,7 @@ class ReplayServer(threading.Thread):
             stream_channel_count = int(np.prod(self.stream_data[stream_name][0].shape[:-1]))
             stream_channel_format = 'double64'
             stream_source_id = 'Replay Stream - ' + stream_name
-            outlet_info = pylsl.StreamInfo(stream_name, '', stream_channel_count, 0.0, stream_channel_format, stream_source_id)
+            outlet_info = {"name": stream_name, "type": "", "channel_count": stream_channel_count, "nominal_srate": 0.0, "channel_format": stream_channel_format, "source_id": stream_source_id}
             self.outlet_infos.append(outlet_info)
             print("\t" + str(streamIndex) + "\t" + stream_name)
 
@@ -371,12 +377,12 @@ class ReplayServer(threading.Thread):
 
             self.total_time = self.end_time - self.start_time
 
-        self.virtual_clock_offset = pylsl.local_clock() - self.virtual_clock
+        self.virtual_clock_offset = get_clock_time() - self.virtual_clock
         print("Offsetting replayed timestamps by " + str(self.virtual_clock_offset))
         print("start time and end time ", self.start_time, self.end_time)
 
     def update_virtual_clock(self):
-        self.virtual_clock = pylsl.local_clock() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset_total
+        self.virtual_clock = get_clock_time() - self.virtual_clock_offset + self.slider_offset_time - self.pause_time_offset_total
 
     def set_to_time(self, set_to_time):
         remaining_stream_names_copy = copy.deepcopy(self.remaining_stream_names)

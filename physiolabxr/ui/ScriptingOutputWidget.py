@@ -37,7 +37,8 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
         self.data_type_comboBox.setCurrentText(data_type.name)
         self.data_type_comboBox.currentTextChanged.connect(self.on_data_type_changed)
 
-        self.interface_type_comboBox.addItems([PresetType.LSL.name, PresetType.ZMQ.name])
+        interface_types = [PresetType.LSL.name, PresetType.ZMQ.name] if AppConfigs().is_lsl_available() else [PresetType.ZMQ.name]
+        self.interface_type_comboBox.addItems(interface_types)
         self.interface_type_comboBox.currentTextChanged.connect(self.on_interface_type_changed)
         self.interface_type_comboBox.setCurrentText(interface_type.name)
 

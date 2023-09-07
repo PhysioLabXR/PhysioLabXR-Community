@@ -3,15 +3,12 @@ import time
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt6.QtCore import QTimer, QThread
 
-import physiolabxr.threadings.WebcamWorker
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import PresetType
-from physiolabxr.presets.presets_utils import get_video_scale, get_video_channel_order, is_video_webcam, get_video_device_id
+from physiolabxr.presets.presets_utils import get_video_scale, get_video_channel_order, get_video_device_id
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.VideoDeviceOptions import VideoDeviceOptions
-from physiolabxr.utils.ui_utils import dialog_popup
 from physiolabxr.threadings.ScreenCaptureWorker import ScreenCaptureWorker
 from physiolabxr.threadings.WebcamWorker import WebcamWorker
 

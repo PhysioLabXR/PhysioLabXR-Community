@@ -9,6 +9,9 @@ from multiprocessing import Process
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
+from physiolabxr.configs.configs import AppConfigs
+
+AppConfigs(_reset=True)  # create the singleton app configs object
 
 from physiolabxr.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
@@ -34,9 +37,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     from physiolabxr.configs.configs import AppConfigs
     from physiolabxr.presets.PresetEnums import DataType
     from physiolabxr.presets.PresetEnums import PresetType
-    from physiolabxr.startup.startup import apply_patches
 
-    apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048

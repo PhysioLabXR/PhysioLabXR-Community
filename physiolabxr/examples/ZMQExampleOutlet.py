@@ -1,14 +1,9 @@
 """Example program to demonstrate how to send a multi-channel time series to
 LSL."""
-import random
-import sys
-import getopt
-import string
 from collections import deque
 
 import numpy as np
 import time
-from random import random as rand
 
 import pylsl
 import zmq
@@ -42,7 +37,9 @@ def main():
             samples = (samples * 255).astype(np.uint8)
             for sample_ix in range(required_samples):
                 mysample = samples[sample_ix]
-                socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])
+                # socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])
+                # socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock())])
+                socket.send_multipart([bytes(topic, "utf-8"), mysample])
                 send_times.append(time.time())
             sent_samples += required_samples
         # now send it and wait for a bit before trying again.

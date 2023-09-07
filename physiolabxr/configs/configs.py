@@ -1,12 +1,12 @@
 import json
 import os
-import sys
+import platform
 import warnings
 from dataclasses import dataclass, fields
 from enum import Enum
 
 from PyQt6.QtCore import QStandardPaths
-from PyQt6.QtGui import QIcon, QMovie
+from PyQt6.QtGui import QIcon
 
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
@@ -88,6 +88,9 @@ class AppConfigs(metaclass=Singleton):
     is_monitor_available: bool = True
     monitor_error_message: str = None
 
+    # audio
+    is_audio_available: bool = True
+
     # visualization configs
     max_timeseries_num_channels_per_group = int(2 ** 10)
     viz_buffer_max_size = int(2 ** 18)
@@ -103,13 +106,6 @@ class AppConfigs(metaclass=Singleton):
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
     replay_port_range = 9980, 9990
-
-    # path_dict = {'splash_screen_path': '_media/logo/splash_screen.png',
-    #              'stream_unavailable': '_media/logo/streamwidget_stream_unavailable.png',
-    #              'stream_available': '_media/logo/streamwidget_stream_unavailable.png',
-    #              'stream_viz_active': '_media/logo/streamwidget_stream_viz_active.png',
-    #              }
-
     zmq_lost_connection_timeout = 4000  # in milliseconds
 
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
@@ -155,6 +151,7 @@ class AppConfigs(metaclass=Singleton):
         # check if screen capture is available
         try:
             import pyscreeze
+            self.apply_pyscreeze_patches()
             img = pyscreeze.screenshot()
             self.is_monitor_available = True
         except NotImplementedError as e:
@@ -188,3 +185,22 @@ class AppConfigs(metaclass=Singleton):
                 ui_file_paths[os.path.splitext(x)[0]] = full_path
 
         return ui_file_paths
+
+    @staticmethod
+    def apply_pyscreeze_patches():
+        """
+        apply patches to fix bugs in dependencies, if any
+        """
+        import pyscreeze
+        import PIL
+        if platform.system() == 'Darwin' and pyscreeze.__version__ == '0.1.29':
+            __PIL_TUPLE_VERSION = tuple(int(x) for x in PIL.__version__.split("."))
+            pyscreeze.PIL__version__ = __PIL_TUPLE_VERSION
+
+    @staticmethod
+    def is_lsl_available():
+        try:
+            import pylsl
+            return True
+        except Exception as e:
+            return False

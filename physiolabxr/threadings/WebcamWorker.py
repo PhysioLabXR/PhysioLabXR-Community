@@ -2,14 +2,12 @@ import time
 
 import cv2
 import numpy as np
-import pyqtgraph as pg
 from PyQt6 import QtCore
-from PyQt6.QtCore import QObject, pyqtSignal
-from pylsl import local_clock
-
+from PyQt6.QtCore import QObject
 from physiolabxr.presets.PresetEnums import VideoDeviceChannelOrder
 from physiolabxr.threadings.workers import RenaWorker
 from physiolabxr.utils.image_utils import process_image
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class WebcamWorker(QObject, RenaWorker):
@@ -44,4 +42,4 @@ class WebcamWorker(QObject, RenaWorker):
                 cv_img = process_image(cv_img, self.channel_order, self.video_scale)
                 cv_img = np.flip(cv_img, axis=0)
                 self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-                self.signal_data.emit({"camera id": self.cam_id, "frame": cv_img, "timestamp": local_clock()})  # uses lsl local clock for syncing
+                self.signal_data.emit({"camera id": self.cam_id, "frame": cv_img, "timestamp": get_clock_time()})  # uses lsl local clock for syncing

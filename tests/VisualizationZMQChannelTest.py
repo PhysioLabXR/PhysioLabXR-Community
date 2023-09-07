@@ -46,7 +46,7 @@ def test_zmq_channel_mistmatch(app_main_window, context_bot, qtbot) -> None:
     test_stream_name = 'TestStreamName' + str(uuid.uuid4())
     streaming_time_second = 3
 
-    port = context_bot.create_zmq_stream(test_stream_name, num_channels=random.randint(100, 200), srate=30)
+    port = context_bot.create_zmq_stream(test_stream_name, num_channels=random.randint(100, 200), srate=30, data_type=DataType.uint8)
     app_main_window.create_preset(test_stream_name, PresetType.ZMQ, num_channels=random.randint(1, 99), data_type=DataType.uint8, port=port)  # add a default preset
 
     app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget

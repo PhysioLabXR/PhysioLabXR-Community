@@ -7,7 +7,6 @@ from multiprocessing import Process
 from typing import Dict, Any, List, Union
 
 import numpy as np
-import pyaudio
 
 from physiolabxr.configs import config
 from physiolabxr.configs.config import default_group_name
@@ -325,13 +324,7 @@ def _load_audio_device_presets():
     try:
         print('Loading available audio devices')
         rtn = []
-        # _, working_camera_ports, _ = get_working_camera_ports()
-        # working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
-        #
-        # for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
-        #     rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
-        # print("finished loading available cameras")
-
+        import pyaudio
         audio = pyaudio.PyAudio()
         info = audio.get_host_api_info_by_index(0)
         numdevices = info.get('deviceCount')
@@ -354,6 +347,10 @@ def _load_audio_device_presets():
     except KeyboardInterrupt:
         print('KeyboardInterrupt: exiting')
         return []
+    except ModuleNotFoundError:
+        print('PyAudio not installed, skipping audio device presets')
+        return []
+
 
 def create_default_audio_preset(stream_name, audio_device_index, num_channels):
     group_info = create_default_group_info(num_channels)

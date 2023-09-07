@@ -1,10 +1,11 @@
 import os.path
 import platform
-import sys
 import urllib.request
 import warnings
 import shutil
 import subprocess
+
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 def get_ubuntu_version():
@@ -71,8 +72,8 @@ def download_lsl_binary():
     os.remove(binary_name)
     if user_os == "Windows":
         # move dll from bin to lib
-        if (dll_path:=os.path.join(output_directory, 'bin', 'lsl.dll')) not in (lib_path:=os.path.join(output_directory, 'lib')):
-            shutil.move(dll_path, lib_path)
+        if 'lsl.dll' not in os.listdir(lib_path:=os.path.join(output_directory, 'lib')):
+            shutil.move(os.path.join(output_directory, 'bin', 'lsl.dll'), lib_path)
     downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib') if os.path.exists(os.path.join(output_directory, 'usr')) else os.path.join(output_directory, 'lib')
     return output_directory, downloaded_lib_path
 
@@ -86,6 +87,13 @@ def get_lsl_binary():
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     pylsl_lib_path = None
     if platform.system() == "Darwin":
+        if shutil.which('brew') is None:
+            from PyQt6.QtWidgets import QDialogButtonBox
+            dialog_popup("Tried to brew install labstreaminglayer/tap/lsl, necessary for using LSL interface."
+                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need to use pylsl."
+                         "Unexpected behavior may occur if you continue to use the app without brew.",
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            return
         print("Brew installing lsl library ...")
         subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
         env_command = 'export DYLD_LIBRARY_PATH="/opt/homebrew/lib"'
@@ -107,3 +115,38 @@ def get_lsl_binary():
             return
         print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path
+
+def install_lsl_binary():
+    # try import pylsl check if the lib exist
+    try:
+        import pylsl
+    except RuntimeError:
+        # the error is LSL binary library file was not found.
+        get_lsl_binary()
+
+
+def install_pyaudio():
+    # check if we are on mac
+    try:
+        import pyaudio
+    except ModuleNotFoundError:
+        if platform.system() == 'Darwin':
+            # check if brew is installed
+            if shutil.which('brew') is None:
+                from PyQt6.QtWidgets import QDialogButtonBox
+                dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
+                                  "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.", title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                from physiolabxr.configs.configs import AppConfigs
+                AppConfigs().is_audio_interface_available = False
+                return
+            # need to brew install portaudio
+            print("Brew installing portaudio ...")
+            subprocess.run(["brew", "install", "portaudio"])
+        # pip install pyaudio
+        print("pip installing pyaudio ...")
+        subprocess.run(["pip", "install", "pyaudio"])
+
+
+def run_setup_check():
+    # install_lsl_binary()
+    install_pyaudio()

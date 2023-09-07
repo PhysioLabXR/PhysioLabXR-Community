@@ -1,13 +1,12 @@
 # This Python file uses the following encoding: utf-8
-
+import physiolabxr.threadings.AudioWorkers
 from physiolabxr.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.presets.PresetEnums import PresetType, DataType
-from physiolabxr.presets.Presets import Presets
+from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class AudioInputDeviceWidget(BaseStreamWidget):
@@ -25,7 +24,7 @@ class AudioInputDeviceWidget(BaseStreamWidget):
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
 
-        audio_input_device_worker = workers.AudioInputDeviceWorker(self.stream_name)
+        audio_input_device_worker = physiolabxr.threadings.AudioWorkers.AudioInputDeviceWorker(self.stream_name)
         self.connect_worker(audio_input_device_worker, False)
         self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()

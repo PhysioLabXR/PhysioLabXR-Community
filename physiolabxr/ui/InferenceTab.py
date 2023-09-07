@@ -12,7 +12,7 @@ from pylsl import StreamInfo, StreamOutlet
 from physiolabxr.scripting.PupilTensorflowModel import PupilTensorflowModel
 
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 # class EEGModel(RealTimeModel):

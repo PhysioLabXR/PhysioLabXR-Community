@@ -13,6 +13,8 @@ import numpy as np
 import zmq
 from pylsl import StreamInfo, StreamOutlet, local_clock
 
+from physiolabxr.presets.PresetEnums import DataType
+
 
 def LSLTestStream(stream_name, n_channels=81, srate=2048):
     print('Test stream name is ' + stream_name)
@@ -73,7 +75,7 @@ def SampleDefinedLSLStream(stream_name, sample, n_channels=81, srate=2048, dtype
         time.sleep(1e-3)
     del outlet
 
-def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
+def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30, data_type=DataType.uint8):
     topic = stream_name
 
     context = zmq.Context()
@@ -90,7 +92,7 @@ def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30):
         required_samples = int(srate * elapsed_time) - sent_samples
         if required_samples > 0:
             samples = np.random.rand(required_samples * num_channels).reshape((required_samples, -1))
-            samples = (samples * 255).astype(np.uint8)
+            samples = (samples * 255).astype(data_type.get_data_type())
             for sample_ix in range(required_samples):
                 mysample = samples[sample_ix]
                 socket.send_multipart([bytes(topic, "utf-8"), np.array(local_clock()), mysample])

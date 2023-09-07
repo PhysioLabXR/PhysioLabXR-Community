@@ -51,6 +51,10 @@ class AddStreamWidget(QtWidgets.QWidget):
         self.set_data_type_to_default()
 
         add_enum_values_to_combobox(self.preset_type_combobox, PresetType, PresetType.can_be_selected_in_gui())
+        # if lsl is not avaiable from appconfig, remove lsl from dropdown
+        if not AppConfigs().is_lsl_available():
+            index = self.preset_type_combobox.findText(PresetType.LSL.value, Qt.MatchFlag.MatchFixedString)
+            self.preset_type_combobox.model().item(index).setEnabled(False)
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
         # remove CUSTOM type from preset type combobox

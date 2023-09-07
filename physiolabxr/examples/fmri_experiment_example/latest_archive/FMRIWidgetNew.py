@@ -20,7 +20,7 @@ from physiolabxr.threadings import workers
 from physiolabxr.ui.PoppableWidget import Poppable
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.buffers import DataBufferSingleStream
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 # This Python file uses the following encoding: utf-8

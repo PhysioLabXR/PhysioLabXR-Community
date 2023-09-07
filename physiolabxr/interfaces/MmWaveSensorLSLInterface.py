@@ -1,9 +1,12 @@
 import time
+import warnings
 
 import numpy as np
 import serial
-from pylsl import StreamInfo, StreamOutlet
-
+try:
+    from pylsl import StreamInfo, StreamOutlet
+except:
+    warnings.warn("MmWaveSensorLSLInterface: pylsl is not installed, LSL interface will not work.")
 from physiolabxr.configs import config_signal
 from physiolabxr.exceptions.exceptions import BufferOverFlowError, DataPortNotOpenError, GeneralMmWError, PortsNotSetUpError
 from physiolabxr.utils.data_utils import clutter_removal

@@ -9,7 +9,7 @@ from physiolabxr.configs.config_ui import *
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.presets.presets_utils import get_stream_preset_info, get_stream_group_info
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 ## Reference:
