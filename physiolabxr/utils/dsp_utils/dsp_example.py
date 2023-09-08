@@ -1,3 +1,5 @@
+# This is an example of how to use the dsp modules
+
 import numpy as np
 from physiolabxr.utils.dsp_utils.dsp_modules import ButterworthLowpassFilter
 import matplotlib.pyplot as plt
