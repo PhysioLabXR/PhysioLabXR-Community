@@ -65,7 +65,8 @@ of neuroscience, HCI, and related fields. By simplifying real-time multi-modal d
 
 # Statement of Need
 
-Recent years have seen a growing interest in multi-modal experiments, often involving closed-loop interaction systems, in neuroscience and human–computer interaction (HCI), especially those designed for extended reality (XR) environments, including virtual reality (VR) and augmented reality (AR).
+Recent years have seen a growing interest in multi-modal experiments, often involving closed-loop interaction systems, in neuroscience and human–computer interaction (HCI).
+Many emerging paradigms have found new roots in extended reality (XR) environments, including virtual reality (VR) and augmented reality (AR).
 Such experiments are increasingly fusing multiple modalities and combining different physiological measurements. For example, one sensor can generate events to extract
 meaningful data intervals from other sensors, such as fixation-related potential (FRP) studies in which EEG epochs are locked to visual fixations from eye trackers [@nikolaev2016combining]. Multiple physiological signals can also be combined to enhance their predictive
 power for use in applications ranging from emotion recognition [@koelstra2011deap] [@he2020advances] to movement actuation
@@ -82,17 +83,17 @@ Much of this supporting software is networking protocols focusing
 on timestamp synchronization across different modalities. We aim to provide researchers with an open-source, community-driven software tool to address the increasing needs in multi-modal experiments. 
 -->
 
-Despite the prevalence of these experiments, software tools for real-time physiological data handling are surprisingly few and far between.
-They  can be categorized into two groups: device-specific tools and device-independent tools 
+Despite the prevalence of these experiments, software tools for real-time physiological data handling are surprisingly few and far between. 
+They can be categorized into two groups: device-specific tools and device-independent tools.
 Device-specific tools, which are typically proprietary, offer data visualization 
 and analysis [@nirx] [@tobii] [@luhrs2017turbo]  for the hardware to which they are tied. However, they often lack support for multi-modal experiments. 
 To address this, researchers have created custom data pipelines aided by third-party data transfer protocols 
-such as LSL, and ZMQ [@kothe2014labstreaminglayer] [@wang2023scoping] [@michalareas2022scalable] [@macinnes2020pyneal] 
+such as LSL and ZMQ [@kothe2014labstreaminglayer] [@wang2023scoping] [@michalareas2022scalable] [@macinnes2020pyneal] 
 [@baltruvsaitis2016openface]. This approach is typically time-consuming and requires substantial effort to adapt to new experiments. In addition, the data transfer middleware typically does not allow researchers to visually inspect data streams in 
 real-time. This can be a crucial feature for many experiments, particularly those involving devices prone to failure and artifacts during operation, such as in EEG and fNIRS. Real-time visualization allows experimenters to react 
 promptly to sensor failures and prevents wasting valuable participant time.
 
-Device-independent tools, including popular platforms such as OpenVibe [@renard2010openvibe], 
+Device-independent tools, including popular platforms, such as OpenVibe [@renard2010openvibe], 
 MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@iMotion], support real-time visualization. However, they are primarily written in statically compiled languages, limiting customization, and some are closed-source commercial products, such as NeuroPype and iMotion. Python's rise in popularity as a programming 
 language [@srinath2017python] has made it an obvious choice for developing new device-independent tools that allow customization through rapid prototyping. However, using Python as a backbone language for high-precision and high-throughput data
 necessitates significant optimization to match the performance level of a compiled language.
@@ -120,7 +121,7 @@ extensive APIs to shape the platform according to their needs.
 data stream and communicate processed results with built-in I/O modules. This flexibility allows users to design 
 closed-loop systems, including deploying ML models and sending predictions to and from *PhysioLabXR*.
 
-*PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity] and 
+*PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity],  
 PsychoPy [@peirce2007psychopy] and other analysis software, including MATLAB [@matlab]. For experiments already 
 utilizing LSL and ZMQ for data transfer, the software provides convenient network stream 
 connectivity with these two widely-used data middleware. As its name implies, *PhysioLabXR* has extensive support for XR, including headset-based VR and AR. 
