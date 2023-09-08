@@ -12,12 +12,13 @@ from typing import Union, Iterable, List
 
 import numpy as np
 from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt
 
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox
 from pytestqt.qtbot import QtBot
 
-from rena.presets.PresetEnums import DataType, PresetType
+from physiolabxr.configs.configs import AppConfigs
+from physiolabxr.presets.PresetEnums import DataType, PresetType
 from tests.TestStream import LSLTestStream, ZMQTestStream, SampleDefinedLSLStream, SampleDefinedZMQStream
 from tests.test_viz import visualize_metrics_across_num_chan_sampling_rate
 
@@ -28,11 +29,9 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
-    from rena.startup import load_settings
+    from physiolabxr.startup.startup import load_settings
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
-    from rena.startup import apply_patches
-    apply_patches()
-    from rena.MainWindow import MainWindow
+    from physiolabxr.ui.MainWindow import MainWindow
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
     if show_window:
         test_renalabapp_main_window.show()
@@ -53,7 +52,7 @@ def stream_is_unavailable(app_main_window, stream_name):
     assert not app_main_window.stream_widgets[stream_name].is_stream_available
 
 def handle_custom_dialog_ok(qtbot, patience_second=0, click_delay_second=0):
-    from rena.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
     if patience_second == 0:
         w = QtWidgets.QApplication.activeWindow()
         if isinstance(w, CustomDialog):
@@ -90,7 +89,7 @@ def handle_current_dialog_button(button, app, qtbot: QtBot, patience_second=0, c
     @param patience_second: how long to wait for the current dialog to be a CustomDialog
     @param delay: how long to wait before clicking the button
     """
-    from rena.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
 
     if expected_message_include is not None:
         qtbot.waitUntil(lambda: expected_message_include in app.current_dialog.msg, timeout=patience_second * 1e3)
@@ -122,7 +121,7 @@ class ContextBot:
         self.app = app
         self.qtbot = qtbot
 
-        from rena.config import stream_availability_wait_time
+        from physiolabxr.configs.config import stream_availability_wait_time
         self.stream_availability_timeout = int(20 * stream_availability_wait_time * 1e3)
 
         self.monitor_stream_name = "monitor 0"
@@ -142,7 +141,7 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        from rena.presets.PresetEnums import PresetType
+        from physiolabxr.presets.PresetEnums import PresetType
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
@@ -159,7 +158,7 @@ class ContextBot:
         self.start_a_stream(stream_name, num_channels, *args, **kwargs)
 
     def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float, dtype: DataType, interface_type=PresetType.LSL, port=None):
-        from rena.presets.Presets import Presets
+        from physiolabxr.presets.Presets import Presets
 
         samples = np.random.random((num_channels, stream_time * srate)).astype(dtype.get_data_type())
         if interface_type == PresetType.LSL:
@@ -196,7 +195,7 @@ class ContextBot:
         @param num_channels:
         @return:
         """
-        from rena.presets.Presets import Presets
+        from physiolabxr.presets.Presets import Presets
         self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
 
         if num_channels != Presets().stream_presets[stream_name].num_channels:
@@ -236,8 +235,8 @@ class ContextBot:
 
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
-    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100)):
-        from rena.sub_process.pyzmq_utils import can_connect_to_port
+    def create_zmq_stream(self, stream_name: str, num_channels: int, srate:int, port_range=(5000, 5100), data_type=DataType.uint8):
+        from physiolabxr.sub_process.pyzmq_utils import can_connect_to_port
         using_port = None
         for port in range(*port_range):
             if not can_connect_to_port(port):
@@ -247,7 +246,7 @@ class ContextBot:
             raise ValueError(f"Could not find a port in range {port_range}. Consider use a different range.")
         if stream_name in self.send_data_processes.keys():
             raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
-        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate))
+        p = Process(target=ZMQTestStream, args=(stream_name, using_port, num_channels, srate, DataType.uint8))
         p.start()
         self.send_data_processes[stream_name] = p
         return using_port
@@ -280,7 +279,7 @@ class ContextBot:
         if self.app.recording_tab.is_recording:
             raise ValueError("App is already recording when calling stop_recording from test_context")
         self.app.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
-        # self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
+        # self.app._ui.tabWidget.setCurrentWidget(self.app._ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     def start_streams_and_recording(self, num_stream_to_test: int, num_channels: Union[int, Iterable[int]]=1, sampling_rate: Union[int, Iterable[int]]=1, stream_availability_timeout=2 * 1e3):
@@ -290,7 +289,7 @@ class ContextBot:
         @param num_channels: int or iterable of int, the number of channels in the stream
         @rtype: object
         """
-        from rena.config import stream_availability_wait_time
+        from physiolabxr.configs.config import stream_availability_wait_time
         stream_availability_timeout = stream_availability_timeout * stream_availability_wait_time
         if isinstance(num_channels, int):
             num_channels = [num_channels] * num_stream_to_test
@@ -334,13 +333,13 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
 #     print('update_test_cwd: current working directory is', os.getcwd())
 #     if os.getcwd().endswith('tests'):
 #         os.chdir('..')
-#     elif 'rena' in os.listdir(os.getcwd()):
-#         os.chdir('rena')
+#     elif 'physiolabxr' in os.listdir(os.getcwd()):
+#         os.chdir('physiolabxr')
     # else:
-    #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/rena/tests or <project_root>. Instead cwd is', os.getcwd())
+    #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/physiolabxr/tests or <project_root>. Instead cwd is', os.getcwd())
 
 def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
-    from rena.utils.buffers import flatten
+    from physiolabxr.utils.buffers import flatten
 
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     for n_streams, num_channels, sampling_rate in itertools.product(num_streams_to_test, num_channels_to_test, sampling_rates_to_test):
@@ -426,7 +425,7 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
 
 
 def run_replay_benchmark(app_main_window, test_context: ContextBot, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, results_path):
-    from rena.utils.RNStream import RNStream
+    from physiolabxr.utils.RNStream import RNStream
 
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
     start_time = time.perf_counter()
@@ -560,3 +559,41 @@ def get_replay_time_reenactment_accuracy(data_original, data_replayed, stream_na
     return tick_time_discrepancies, tick_time_discrepancies_pairwise
 
 
+def send_data_time(run_time):
+    import sys
+    import getopt
+
+    import time
+    from random import random as rand
+
+    from pylsl import StreamInfo, StreamOutlet, local_clock
+
+    srate = 100
+    name = 'BioSemi'
+    type = 'EEG'
+    n_channels = 8
+    help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
+
+    info = StreamInfo(name, type, n_channels, srate, 'float32', 'myuid34234')
+
+    # next make an outlet
+    outlet = StreamOutlet(info)
+
+    print("now sending data...")
+    start_time = local_clock()
+    sent_samples = 0
+    while True:
+        elapsed_time = local_clock() - start_time
+        required_samples = int(srate * elapsed_time) - sent_samples
+        for sample_ix in range(required_samples):
+            # make a new random n_channels sample; this is converted into a
+            # pylsl.vectorf (the data type that is expected by push_sample)
+            mysample = [rand() for _ in range(n_channels)]
+            # now send it
+            outlet.push_sample(mysample)
+        sent_samples += required_samples
+        # now send it and wait for a bit before trying again.
+        time.sleep(0.01)
+        duration = local_clock() - start_time
+        if duration > run_time:
+            break

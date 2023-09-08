@@ -1,5 +1,5 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 
@@ -15,7 +15,7 @@ from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 
@@ -56,10 +56,10 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     :param qtbot:
     :return:
     '''
-    from rena.utils.RNStream import RNStream
-    from rena.utils.ui_utils import CustomDialog
-    from rena.presets.PresetEnums import PresetType
-    from rena.config import stream_availability_wait_time
+    from physiolabxr.utils.RNStream import RNStream
+    from physiolabxr.ui.dialogs import CustomDialog
+    from physiolabxr.presets.PresetEnums import PresetType
+    from physiolabxr.configs.config import stream_availability_wait_time
 
     num_stream_to_test = 3
     recording_time_second = 10

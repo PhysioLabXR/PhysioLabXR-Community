@@ -9,8 +9,11 @@ from multiprocessing import Process
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
+from physiolabxr.configs.configs import AppConfigs
 
-from rena.utils.user_utils import stream_in
+AppConfigs(_reset=True)  # create the singleton app configs object
+
+from physiolabxr.utils.user_utils import stream_in
 from tests.test_utils import get_random_test_stream_names, app_fixture, ContextBot
 from tests.TestStream import SampleDefinedLSLStream
 
@@ -30,14 +33,11 @@ def context_bot(app_main_window, qtbot):
 
 
 def test_csv_store_load(app_main_window, qtbot) -> None:
-    from rena.config import stream_availability_wait_time
-    from rena.configs.configs import AppConfigs
-    from rena.presets.PresetEnums import DataType
-    from rena.presets.PresetEnums import PresetType
-    from rena.startup import apply_patches
-    from rena.utils.data_utils import CsvStoreLoad
+    from physiolabxr.configs.config import stream_availability_wait_time
+    from physiolabxr.configs.configs import AppConfigs
+    from physiolabxr.presets.PresetEnums import DataType
+    from physiolabxr.presets.PresetEnums import PresetType
 
-    apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048
@@ -89,10 +89,10 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
-    AppConfigs.eviction_interval = 5 * (recording_time_second) * 1e3
+    AppConfigs.eviction_interval = int(5 * (recording_time_second) * 1e3)
 
-    # app_main_window.ui.tabWidget.setCurrentWidget(
-    #     app_main_window.ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
+    # app_main_window._ui.tabWidget.setCurrentWidget(
+    #     app_main_window._ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
 
     qtbot.wait(int(recording_time_second * 1e3))

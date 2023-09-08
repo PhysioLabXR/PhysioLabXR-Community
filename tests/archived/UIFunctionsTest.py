@@ -1,7 +1,7 @@
 import unittest
 
-from rena.MainWindow import MainWindow
-from rena.interfaces import InferenceInterface
+from physiolabxr.ui.MainWindow import MainWindow
+from physiolabxr.interfaces import InferenceInterface
 
 
 class TestCase(unittest.TestCase):

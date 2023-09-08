@@ -1,12 +1,12 @@
 """
-If you have get file not found error, make sure you set the working directory to .../RealityNavigation/rena
+If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
 
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 
 import pytest
-from rena.configs.configs import AppConfigs
+from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.test_utils import app_fixture, ContextBot
