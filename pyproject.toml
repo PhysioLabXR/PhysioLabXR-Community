@@ -12,8 +12,8 @@ version="1.0.0.alpha0"
 authors=[
     { name="Ziheng 'Leo' Li", email="s-vector.lee@hotmail.com"}
 ]
-description="PhysioLabXR"
-
+description="PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments"
+readme = "README.md"
 classifiers=[
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD License",

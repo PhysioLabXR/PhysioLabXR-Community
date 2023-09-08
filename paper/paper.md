@@ -11,11 +11,11 @@ authors:
   - name: Ziheng 'Leo' Li
     orcid: 0000-0001-5187-200X
     equal-contrib: true
-    corresponding: true # (This is how to denote the corresponding author)
+    corresponding: true
     affiliation: 1
   - name: Haowen Wei
     orcid: 0000-0003-1856-5627
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
+    equal-contrib: true 
     affiliation: 1
   - name: Ziwen Xie
     affiliation: 1
@@ -32,7 +32,7 @@ authors:
 affiliations:
  - name: Columbia University, USA
    index: 1
-date: 31 August 2023
+date: 8 September 2023
 bibliography: paper.bib
 ---
 
