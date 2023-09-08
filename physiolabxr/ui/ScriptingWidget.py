@@ -353,6 +353,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.runBtn.setEnabled(True)
             print("Selected script path ", script_path)
         else:
+            self.scriptPathLineEdit.setText("")
             self.runBtn.setEnabled(False)
 
     def on_create_btn_clicked(self):

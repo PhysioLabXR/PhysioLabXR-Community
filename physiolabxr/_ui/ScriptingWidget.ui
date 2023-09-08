@@ -110,7 +110,7 @@
                </size>
               </property>
               <property name="toolTip">
-               <string>Current timestamp in the replay file</string>
+               <string>Class name of the RenaScript to be executed</string>
               </property>
               <property name="text">
                <string>Script Name</string>
