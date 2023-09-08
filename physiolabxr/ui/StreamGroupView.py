@@ -82,7 +82,7 @@ class ChannelItem(QTreeWidgetItem):
         item_check_state_before = self.checkState(column)
 
         channel_name_changed = False
-        if role == Qt.ItemDataRole.EditRole and type(value) is str and column == 0:
+        if role == Qt.ItemDataRole.EditRole and type(value) is str and column == 0 and self.channel_name != value:
             # editing the name
             if value in self.group_view.get_channel_names():
                 dialog_popup(f"Cannot have repeating channel names for a stream: {value}", title="Warning")
