@@ -77,16 +77,18 @@ def get_target_class(script_path):
     return classes[0]
 
 
-def get_target_class_name(script_path, desired_class: Type):
+def get_target_class_name(script_path, desired_class: Type=RenaScript):
     spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
     script_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(script_module)
-    classes = [x for x in dir(script_module) if
+    class_names = [x for x in dir(script_module) if
                isclass(getattr(script_module, x))]  # all the classes defined in the module
-    classes = [x for x in classes if x != desired_class.__name__]  # exclude RenaScript itself
-    if len(classes) == 0:
+    class_names = [x for x in class_names if x != desired_class.__name__]  # exclude RenaScript itself
+    class_names = [x for x in class_names if issubclass(script_module.__getattribute__(x), RenaScript)]
+
+    if len(class_names) == 0:
         raise InvalidScriptPathError(script_path, f'Script does not have desired class with name {desired_class.__name__} defined')
-    return classes[0]
+    return class_names[0]
 
 
 def start_rena_script(script_path, script_args):

@@ -1,3 +1,5 @@
+# This is an example of how to use the dsp modules
+
 import numpy as np
 from physiolabxr.utils.dsp_utils.dsp_modules import ButterworthLowpassFilter
 import matplotlib.pyplot as plt
@@ -14,11 +16,12 @@ def signal_generator(f, fs, duration, amp):
     wave = amp * (np.sin(2 * np.pi * np.arange(fs * duration) * f / fs)).astype(np.float32)
     return wave
 
+
 channel_num = 1000
 
 signal1 = signal_generator(f=50, fs=1000, duration=1, amp=1)
 signal2 = signal_generator(f=100, fs=1000, duration=1, amp=1)
-signal3 = signal1+signal2
+signal3 = signal1 + signal2
 signal3 = np.transpose([signal3] * channel_num).T
 
 input_signal = signal3
@@ -28,7 +31,7 @@ digital_filter = ButterworthLowpassFilter()
 # set channel number
 digital_filter.set_channel_num(channel_num)
 # set data processor params
-digital_filter.set_data_processor_params(fs=2000, cutoff=70, order=4)
+digital_filter.set_data_processor_params(fs=1000, cutoff=70, order=4)
 # set data processor
 digital_filter.evoke_data_processor()
 # activate data processor
@@ -36,10 +39,9 @@ digital_filter.activate_data_processor()
 # process data
 output = digital_filter.process_buffer(input_signal)
 
-input_channel_0 = input_signal[0,:]
+input_channel_0 = input_signal[0, :]
 
-output_channel_0 = output[0,:]
-
+output_channel_0 = output[0, :]
 
 
 
@@ -50,7 +52,6 @@ plt.title('Input Signal')
 plt.plot(input_channel_0)
 plt.ylabel('Amplitude')
 plt.xlabel('Sample')
-plt.grid(True)
 plt.show()
 
 ##################################################
@@ -69,10 +70,9 @@ fft_magnitude_input = np.abs(fft_result_input)
 plt.plot(fft_freqs_input, fft_magnitude_input)
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Magnitude')
-plt.title('Fourier Transform of Input Signal')
+plt.title('Fourier Transform of Input Time Series Data')
 plt.grid(True)
 plt.show()
-
 
 ##################################################
 
@@ -81,9 +81,7 @@ plt.title('Output Signal')
 plt.plot(output_channel_0)
 plt.ylabel('Amplitude')
 plt.xlabel('Sample')
-plt.grid(True)
 plt.show()
-
 
 ##################################################
 
@@ -101,7 +99,7 @@ fft_magnitude_output = np.abs(fft_result_output)
 plt.plot(fft_freqs_output, fft_magnitude_output)
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Magnitude')
-plt.title('Fourier Transform of Output Signal')
+plt.title('Fourier Transform of Output Time Series Data')
 plt.grid(True)
 plt.show()
 

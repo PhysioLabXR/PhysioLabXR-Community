@@ -2,14 +2,13 @@ import time
 
 import pyscreeze
 import numpy as np
-import pyqtgraph as pg
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
-from pylsl import local_clock
 
 from physiolabxr.presets.PresetEnums import VideoDeviceChannelOrder
 from physiolabxr.threadings.workers import RenaWorker
 from physiolabxr.utils.image_utils import process_image
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class ScreenCaptureWorker(QObject, RenaWorker):
@@ -39,4 +38,4 @@ class ScreenCaptureWorker(QObject, RenaWorker):
             frame = process_image(frame, self.channel_order, self.video_scale)
             frame = np.flip(frame, axis=0)
             self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-            self.signal_data.emit({"frame": frame, "timestamp": local_clock()})  # uses lsl local clock for syncing
+            self.signal_data.emit({"frame": frame, "timestamp": get_clock_time()})  # uses lsl local clock for syncing

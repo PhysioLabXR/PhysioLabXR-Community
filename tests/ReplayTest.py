@@ -57,7 +57,7 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     :return:
     '''
     from physiolabxr.utils.RNStream import RNStream
-    from physiolabxr.utils.ui_utils import CustomDialog
+    from physiolabxr.ui.dialogs import CustomDialog
     from physiolabxr.presets.PresetEnums import PresetType
     from physiolabxr.configs.config import stream_availability_wait_time
 

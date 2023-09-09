@@ -14,7 +14,7 @@ from physiolabxr.ui.StreamGroupView import StreamGroupView
 from physiolabxr.ui.dsp_ui.OptionsWindowDataProcessingWidget import OptionsWindowDataProcessingWidget
 from physiolabxr.ui.ui_shared import num_points_shown_text
 from physiolabxr.utils.Validators import NoCommaIntValidator
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class StreamOptionsWindow(QWidget):

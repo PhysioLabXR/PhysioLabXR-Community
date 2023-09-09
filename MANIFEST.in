@@ -1,6 +1,6 @@
 recursive-include physiolabxr/_ui *
 recursive-include physiolabxr/_media *
-recursive-include physiolabxr/_Presets *
+recursive-include physiolabxr/_presets *
 
 # Exclude any __pycache__ directories
 global-exclude __pycache__

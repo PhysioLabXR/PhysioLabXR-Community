@@ -14,7 +14,6 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.presets.PresetEnums import PresetType, DataType
 from physiolabxr.ui.AddWiget import AddStreamWidget
-from physiolabxr.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
@@ -38,8 +37,8 @@ from physiolabxr.ui.RecordingsTab import RecordingsTab
 from physiolabxr.ui.SettingsWidget import SettingsWidget
 from physiolabxr.ui.ReplayTab import ReplayTab
 from physiolabxr.utils.buffers import DataBuffer
-from physiolabxr.utils.ui_utils import dialog_popup, \
-    another_window
+from physiolabxr.utils.ui_utils import another_window
+from physiolabxr.ui.dialogs import dialog_popup
 
 import numpy as np
 
@@ -90,7 +89,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #########
         # meta data update timer
         self.meta_data_update_timer = QTimer()
-        self.meta_data_update_timer.setInterval(config.MAIN_WINDOW_META_DATA_REFRESH_INTERVAL)  # for 15 Hz refresh rate
+        self.meta_data_update_timer.setInterval(AppConfigs().main_window_meta_data_refresh_interval)  # for 15 Hz refresh rate
         self.meta_data_update_timer.timeout.connect(self.update_meta_data)
         self.meta_data_update_timer.start()
 
@@ -216,6 +215,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.update_active_streams()
         except RenaError as error:
             dialog_popup(f'Failed to add: {stream_name}. {error}', title='Error')
+        except Exception as error:
+            dialog_popup(f'Failed to add: {stream_name} as {preset_type}. {error}', title='Error')
         self.addStreamWidget.check_can_add_input()
 
     def add_streams_from_experiment_preset(self, stream_names):
@@ -289,6 +290,9 @@ class MainWindow(QtWidgets.QMainWindow):
         [x.start_stop_stream_btn_clicked() for x in self.stream_widgets.values() if x.is_widget_streaming and x.is_widget_streaming()]
 
     def init_video_device(self, video_device_name, video_preset_type):
+        if video_preset_type == PresetType.MONITOR and not AppConfigs().is_monitor_available:
+            dialog_popup(AppConfigs().monitor_error_message, title='Error')
+            return
         widget_name = video_device_name + '_widget'
         widget = VideoWidget(parent_widget=self,
                            parent_layout=self.camHorizontalLayout,
@@ -299,6 +303,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stream_widgets[video_device_name] = widget
 
     def init_LSL_streaming(self, stream_name):
+        if not AppConfigs().is_lsl_available():
+            dialog_popup("LSL is not available. Please install pylsl.", title='Error')
+            return
         widget_name = stream_name + '_widget'
         stream_widget = LSLWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
@@ -320,6 +327,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_audio_input_device(self, stream_name):
         widget_name = stream_name + '_widget'
+        from physiolabxr.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
         stream_widget = AudioInputDeviceWidget(parent_widget=self,
                                  parent_layout=self.streamsHorizontalLayout,
                                  stream_name=stream_name,
@@ -419,10 +427,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close()  # fire another close event
 
     def fire_action_documentation(self):
-        webbrowser.open("https://realitynavigationdocs.readthedocs.io/")
+        webbrowser.open("https://physiolabxrdocs.readthedocs.io/en/latest/")
 
     def fire_action_repo(self):
-        webbrowser.open("https://github.com/ApocalyVec/RealityNavigation")
+        webbrowser.open("https://github.com/PhysioLabXR/PhysioLabXR#physiolabxr")
 
     def fire_action_show_recordings(self):
         self.recording_tab.open_recording_directory()

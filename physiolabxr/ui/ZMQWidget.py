@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+from PyQt6.QtWidgets import QDialogButtonBox
 
 from physiolabxr.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError
 from physiolabxr.configs.configs import AppConfigs
@@ -6,7 +7,7 @@ from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ZMQWidget(BaseStreamWidget):
@@ -37,6 +38,11 @@ class ZMQWidget(BaseStreamWidget):
             raise UnsupportedErrorTypeError(str(e))
 
     def process_stream_data(self, data_dict):
+        # check if there is an error decoding the zmq message
+        if 'e' in data_dict:
+            dialog_popup(msg=f"ZMQ streaming interrupted \n {data_dict['e']}", title='Error', mode='modal', main_parent=self.main_parent, buttons=QDialogButtonBox.StandardButton.Ok)
+            self.start_stop_stream_btn_clicked()  # stop streaming
+            return
         try:
             super().process_stream_data(data_dict)
         except ChannelMismatchError as e:

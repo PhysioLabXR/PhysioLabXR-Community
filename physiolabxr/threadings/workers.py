@@ -4,26 +4,25 @@ from collections import deque
 
 import numpy as np
 import psutil as psutil
-import pyqtgraph as pg
+
 import zmq
 from PyQt6 import QtCore
 from PyQt6.QtCore import QMutex, QThread
 from PyQt6.QtCore import (QObject, pyqtSignal)
-from pylsl import local_clock
 
-from physiolabxr.exceptions.exceptions import DataPortNotOpenError
+from physiolabxr.exceptions.exceptions import DataPortNotOpenError, InvalidZMQMessageError
 from physiolabxr.configs import config_signal, shared
 from physiolabxr.configs.config import REQUEST_REALTIME_INFO_TIMEOUT
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.interfaces.AudioInputInterface import AudioInputInterface
 from physiolabxr.configs.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
-from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor, create_lsl_interface, \
-    create_audio_input_interface
+from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
+from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
 from physiolabxr.utils.networking_utils import recv_string
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
@@ -133,90 +132,6 @@ class LSLInletWorker(QObject, RenaWorker):
     def is_stream_available(self):
         return self._lslInlet_interface.is_stream_available()
 
-class AudioInputDeviceWorker(QObject, RenaWorker):
-    signal_stream_availability = pyqtSignal(bool)
-    signal_stream_availability_tick = pyqtSignal()
-
-    def __init__(self, stream_name, *args, **kwargs):
-        super(AudioInputDeviceWorker, self).__init__()
-        self.signal_data_tick.connect(self.process_on_tick)
-        self.signal_stream_availability_tick.connect(self.process_stream_availability)
-
-        self._audio_device_interface: AudioInputInterface = create_audio_input_interface(stream_name)
-        # self._lslInlet_interface = create_lsl_interface(stream_name, num_channels)
-        self.is_streaming = False
-        self.timestamp_queue = deque(maxlen=1024)
-
-        self.start_time = time.time()
-        self.num_samples = 0
-
-        self.previous_availability = None
-
-        # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
-        self.interface_mutex = QMutex()
-
-    @QtCore.pyqtSlot()
-    def process_on_tick(self):
-        if QThread.currentThread().isInterruptionRequested():
-            return
-        if self.is_streaming:
-            pull_data_start_time = time.perf_counter()
-            self.interface_mutex.lock()
-            frames, timestamps = self._audio_device_interface.process_frames()  # get all data and remove it from internal buffer
-            self.timestamp_queue.extend(timestamps)
-            if len(self.timestamp_queue) > 1:
-                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-            else:
-                sampling_rate = np.nan
-
-            self.interface_mutex.unlock()
-
-            if frames.shape[-1] == 0:
-                return
-
-            self.num_samples += len(timestamps)
-
-            data_dict = {'stream_name': self._audio_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
-            self.signal_data.emit(data_dict)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-
-    @QtCore.pyqtSlot()
-    def process_stream_availability(self):
-        """
-        only emit when the stream is not available
-        """
-        if QThread.currentThread().isInterruptionRequested():
-            return
-        is_stream_availability = self._audio_device_interface.is_stream_available()
-        if self.previous_availability is None:  # first time running
-            self.previous_availability = is_stream_availability
-            self.signal_stream_availability.emit(self._audio_device_interface.is_stream_available())
-        else:
-            if is_stream_availability != self.previous_availability:
-                self.previous_availability = is_stream_availability
-                self.signal_stream_availability.emit(is_stream_availability)
-
-    def reset_interface(self, stream_name, num_channels):
-        self.interface_mutex.lock()
-        self._audio_device_interface = create_audio_input_interface(stream_name)
-        self.interface_mutex.unlock()
-
-    def start_stream(self):
-        self._audio_device_interface.start_stream()
-        self.is_streaming = True
-
-        self.num_samples = 0
-        self.start_time = time.time()
-        self.signal_stream_availability.emit(self._audio_device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
-
-    def stop_stream(self):
-        self._audio_device_interface.stop_stream()
-        self.is_streaming = False
-
-    def is_stream_available(self):
-        return self._audio_device_interface.is_stream_available()
-
-
 
 class OpenBCIDeviceWorker(QObject):
     # for passing data to the gesture tab
@@ -244,7 +159,7 @@ class OpenBCIDeviceWorker(QObject):
             # to_local_clock = time.time() - local_clock()
             # timestamps = data[-2,:] - to_local_clock
 
-            timestamps = data[-2, :] - data[-2, :][-1] + local_clock() if len(data[-2, :]) > 0 else []
+            timestamps = data[-2, :] - data[-2, :][-1] + get_clock_time() if len(data[-2, :]) > 0 else []
             #print("samplee num = ", len(data[-2,:]))
 
             self.timestamps_queue.extend(timestamps)
@@ -630,6 +545,7 @@ class ScriptInfoWorker(QObject):
 #         else:
 #             return False
 
+
 class ZMQWorker(QObject, RenaWorker):
     """
     Rena's implementation of working with ZMQ's tcp interfaces
@@ -659,6 +575,7 @@ class ZMQWorker(QObject, RenaWorker):
 
         self.ZQMSocket = RenaTCPInterface
         self.is_streaming = False
+        self.interrupted = False
         self.timestamp_queue = deque(maxlen=1024)
 
         self.previous_availability = None
@@ -674,25 +591,37 @@ class ZMQWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if QThread.currentThread().isInterruptionRequested():
             return
-        if self.is_streaming:
+        if self.is_streaming and not self.interrupted:
             pull_data_start_time = time.perf_counter()
             timestamp_list, data_list = [], []
+            error_message = None
             while True:
                 try:
-                    _, timestamp, data = self.socket.recv_multipart(flags=zmq.NOBLOCK)
-                    timestamp_list.append(timestamp:=np.frombuffer(timestamp, dtype=np.float64))
-                    data_list.append(np.expand_dims(np.frombuffer(data, dtype=self.data_type), axis=-1))
+                    message = self.socket.recv_multipart(flags=zmq.NOBLOCK)
+                    topic, timestamp, data = self.decode_zmq_frame(message)
+                    # timestamp can be 64-bit float or 32-bit float
+                    timestamp_list.append(timestamp)
+                    data_list.append(data)
                     self.timestamp_queue.append(timestamp)
                 except zmq.error.Again:
                     break
-            if len(timestamp_list) > 0:
-                if len(self.timestamp_queue) > 1:
-                    sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-                else:
-                    sampling_rate = np.nan
-                data_dict = {'stream_name': self.subtopic, 'frames': np.concatenate(data_list, axis=1), 'timestamps': np.concatenate(timestamp_list), 'sampling_rate': sampling_rate}
-                self.signal_data.emit(data_dict)
-                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+                except InvalidZMQMessageError as e:
+                    error_message = str(e)
+                    self.interrupted = True
+                    break
+
+            if error_message is None:
+                if len(timestamp_list) > 0:
+                    if len(self.timestamp_queue) > 1:
+                        sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+                    else:
+                        sampling_rate = np.nan
+                    data_dict = {'stream_name': self.subtopic, 'frames': np.concatenate(data_list, axis=1), 'timestamps': np.array(timestamp_list), 'sampling_rate': sampling_rate}
+                    self.signal_data.emit(data_dict)
+                    self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+            else:
+                # send all none dict
+                self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
 
     @QtCore.pyqtSlot()
     def process_stream_availability(self):
@@ -709,6 +638,7 @@ class ZMQWorker(QObject, RenaWorker):
 
     def start_stream(self):
         self.is_streaming = True
+        self.interrupted = False
         self.signal_stream_availability.emit(True)  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
@@ -721,3 +651,19 @@ class ZMQWorker(QObject, RenaWorker):
 
     def reset_interface(self, stream_name, channel_names):
         pass
+
+    def decode_zmq_frame(self, message):
+        try:
+            if len(message) == 2:
+                topic_name = message[0].decode('utf-8')
+                timestamp = get_clock_time()
+                data = np.expand_dims(np.frombuffer(message[1], dtype=self.data_type), axis=-1)
+            elif len(message) == 3:
+                topic_name = message[0].decode('utf-8')
+                timestamp = np.frombuffer(message[1], dtype=(np.float64 if len(message[1]) == 8 else np.float32))[0]
+                data = np.expand_dims(np.frombuffer(message[2], dtype=self.data_type), axis=-1)
+            else:
+                raise InvalidZMQMessageError(f'ZMQ message has invalid length: {len(message)} != 1, 2, or 3')
+        except Exception as e:
+            raise InvalidZMQMessageError(f'ZMQ message cannot be decoded: {e}')
+        return topic_name, timestamp, data

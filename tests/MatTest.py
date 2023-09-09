@@ -34,9 +34,7 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
     from physiolabxr.configs.configs import AppConfigs
     from physiolabxr.presets.PresetEnums import DataType
     from physiolabxr.presets.PresetEnums import PresetType
-    from physiolabxr.startup.startup import apply_patches
 
-    apply_patches()
     num_stream_to_test = 3
     recording_time_second = 4
     srate = 2048
@@ -88,7 +86,7 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
     # time.sleep(0.5)
     for ts_name in test_stream_names:
         qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
-    AppConfigs.eviction_interval = 5 * (recording_time_second) * 1e3
+    AppConfigs.eviction_interval = int(5 * (recording_time_second) * 1e3)
 
     # app_main_window._ui.tabWidget.setCurrentWidget(
     #     app_main_window._ui.tabWidget.findChild(QWidget, 'recording_tab'))  # switch to the recoding widget

@@ -38,8 +38,9 @@ from physiolabxr.utils.networking_utils import send_data_dict
 from physiolabxr.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
     get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
-from physiolabxr.utils.ui_utils import dialog_popup, add_presets_to_combobox, \
+from physiolabxr.utils.ui_utils import add_presets_to_combobox, \
     another_window, update_presets_to_combobox, validate_script_path, show_label_movie
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
@@ -294,10 +295,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         """
         self.info_worker.deactivate()
         # stop the wait threads and processes
-        self.wait_for_response_worker.stop()
-        self.wait_response_thread.requestInterruption()
-        self.wait_response_thread.exit()
-        self.wait_response_thread.wait()
+        if self.wait_for_response_worker is not None:
+            self.wait_for_response_worker.stop()
+        if self.wait_response_thread is not None:
+            self.wait_response_thread.requestInterruption()
+            self.wait_response_thread.exit()
+            self.wait_response_thread.wait()
         if psutil.pid_exists(self.script_pid):
             self.script_process.kill()
         self.clean_up_after_stop()
@@ -350,6 +353,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.runBtn.setEnabled(True)
             print("Selected script path ", script_path)
         else:
+            self.scriptPathLineEdit.setText("")
             self.runBtn.setEnabled(False)
 
     def on_create_btn_clicked(self):

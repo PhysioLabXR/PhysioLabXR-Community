@@ -24,7 +24,7 @@ from physiolabxr.configs import config_ui
 from physiolabxr.ui.PoppableWidget import Poppable
 
 from physiolabxr.utils.buffers import DataBufferSingleStream
-from physiolabxr.utils.ui_utils import dialog_popup
+from physiolabxr.ui.dialogs import dialog_popup
 
 
 class FMRIWidget(Poppable, QtWidgets.QWidget):

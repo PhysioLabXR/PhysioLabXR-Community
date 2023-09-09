@@ -12,8 +12,6 @@ def physiolabxr():
     from physiolabxr.ui.SplashScreen import SplashScreen
 
     AppConfigs(_reset=False)  # create the singleton app configs object
-    from physiolabxr.ui.MainWindow import MainWindow
-    from physiolabxr.startup.startup import load_settings, apply_patches
 
     app = None
 
@@ -31,10 +29,13 @@ def physiolabxr():
     splash.show()
 
     # load default settings
-    load_settings(revert_to_default=True, reload_presets=True)
-    apply_patches()
+    from physiolabxr.utils.setup_utils import run_setup_check
+    run_setup_check()
+    from physiolabxr.startup.startup import load_settings
+    load_settings(revert_to_default=False, reload_presets=False)
     # main window init
     print("Creating main window")
+    from physiolabxr.ui.MainWindow import MainWindow
     window = MainWindow(app=app)
 
     window.setWindowIcon(QIcon(AppConfigs()._app_logo))

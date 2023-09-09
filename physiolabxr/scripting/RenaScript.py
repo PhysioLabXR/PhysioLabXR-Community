@@ -13,7 +13,15 @@ from typing import List, Dict, Union
 
 import numpy as np
 import zmq
-from pylsl import StreamOutlet, local_clock
+
+from physiolabxr.utils.time_utils import get_clock_time
+
+try:
+    from pylsl import StreamOutlet
+    pylsl_imported = True
+except:
+    warnings.warn('pylsl is not installed, LSL output will not be available')
+    pylsl_imported = False
 
 from physiolabxr.exceptions.exceptions import BadOutputError, ZMQPortOccupiedError, RenaError
 from physiolabxr.presets.PresetEnums import PresetType
@@ -194,7 +202,7 @@ class RenaScript(ABC, threading.Thread):
                     try:
                         _data, timestamp, is_data_chunk, is_timestamp_chunk = validate_output(data, self.output_num_channels[stream_name])
                         _data = _data.astype(self.output_presets[stream_name].data_type.get_data_type())
-                        if isinstance(outlet, StreamOutlet):
+                        if pylsl_imported and isinstance(outlet, StreamOutlet):
                             if is_data_chunk and is_timestamp_chunk:
                                 for i in range(len(_data)):
                                     outlet.push_sample(_data[i].tolist(), timestamp=timestamp[i])  # 0.0 is default value, using it will use the local clock
@@ -211,7 +219,8 @@ class RenaScript(ABC, threading.Thread):
                                 for i in range(len(_data)):
                                     outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(timestamp), np.ascontiguousarray(_data[i])])
                             else:
-                                _timestamp = local_clock() if timestamp is None else timestamp  # timestamp is not a chunk when data is not chunk
+                                clock_time = get_clock_time()
+                                _timestamp = clock_time if timestamp is None else timestamp  # timestamp is not a chunk when data is not chunk
                                 outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(_timestamp), _data])
                     except Exception as e:
                         if type(e) == BadOutputError:
@@ -234,7 +243,7 @@ class RenaScript(ABC, threading.Thread):
         self.info_socket_interface.socket.close()
         self.command_socket_interface.socket.close()
         for outlet in self.output_outlets.values():
-            if isinstance(outlet, StreamOutlet):
+            if pylsl_imported and isinstance(outlet, StreamOutlet):
                 del outlet
             else:
                 outlet.close()

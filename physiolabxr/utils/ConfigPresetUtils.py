@@ -5,17 +5,12 @@ import typing
 from typing import Iterable
 
 
-from physiolabxr.utils.dsp_utils.dsp_modules import DataProcessorType
-
 class DeviceType(enum.Enum):
     AUDIOINPUT = 'AUDIOINPUT'
     OPENBCI = 'OPENBCI'
     TOBIIPRO = 'TOBIIPRO'
     MONITOR = 'MONITOR'
     MMWAVE = 'MMWAVE'
-
-
-
 
 
 def is_iterable_type(t):

@@ -11,14 +11,10 @@ REFRESH_FREQUENCY_RETAIN_FRAMES = 50
 
 VISUALIZATION_REFRESH_FREQUENCY_RETAIN_FRAMES = 20  # the duration use for frequency calculation (the back track duration partially depends on the refresh rate)
 
-MAIN_WINDOW_META_DATA_REFRESH_INTERVAL = 500
-VIZ_DISPLAY_DURATION = 10.  # in seconds, how long a history do the plots keep
-
 SCRIPTING_UPDATE_REFRESH_INTERVAL = 15
 STOP_PROCESS_KILL_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 REQUEST_REALTIME_INFO_TIMEOUT = 2000  # wait up to 2 second after sending the stop command,
 
-downsample_method_mean_sr_threshold = 256
 '''
 ########################################################################################################################
 Advanced parameters:
@@ -102,7 +98,6 @@ EYE_TOTAL_POINTS_PER_INFERENCE = EYE_SAMPLES_PER_INFERENCE * EYE_INFERENCE_WINDO
 #     json.dump(USER_SETTINGS, open(USER_SETTINGS_PATH, 'w'))
 # else:
 #     USER_SETTINGS = json.load(open(USER_SETTINGS_PATH))
-DEFAULT_CHANNEL_DISPLAY_NUM = 40
 
 settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 

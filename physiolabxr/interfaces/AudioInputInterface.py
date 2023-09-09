@@ -1,9 +1,13 @@
 import time
 import numpy as np
 import pyaudio
-from pylsl import local_clock
 
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
+from physiolabxr.presets.PresetEnums import PresetType
+from physiolabxr.presets.presets_utils import get_audio_device_index, get_stream_num_channels, \
+    get_audio_device_data_type, get_audio_device_frames_per_buffer, get_audio_device_sampling_rate, \
+    get_stream_nominal_sampling_rate
+from physiolabxr.utils.time_utils import get_clock_time
 
 
 class AudioInputInterface(DeviceInterface):
@@ -65,7 +69,7 @@ class AudioInputInterface(DeviceInterface):
         samples = len(frames) // (
                     self._audio_device_channel * self.audio.get_sample_size(self.audio_device_data_format))
         timestamps = np.array([current_time - (samples - i) * self.frame_duration for i in range(samples)])
-        timestamps = timestamps - timestamps[-1] + local_clock() if len(frames) > 0 else np.array([])
+        timestamps = timestamps - timestamps[-1] + get_clock_time() if len(frames) > 0 else np.array([])
 
         # byte frames to numpy
         frames = np.frombuffer(frames, dtype=np.int16)
@@ -87,3 +91,24 @@ class AudioInputInterface(DeviceInterface):
         # return True
 
 
+def create_audio_input_interface(stream_name):
+
+    _audio_device_index = get_audio_device_index(stream_name)
+    _audio_device_channel = get_stream_num_channels(stream_name)
+    _device_type = PresetType.AUDIO
+    audio_device_data_format = get_audio_device_data_type(stream_name)
+    audio_device_frames_per_buffer = get_audio_device_frames_per_buffer(stream_name)
+    audio_device_sampling_rate = get_audio_device_sampling_rate(stream_name)
+    device_nominal_sampling_rate = get_stream_nominal_sampling_rate(stream_name)
+
+    audio_input_device_interface = AudioInputInterface(
+        stream_name,
+        _audio_device_index,
+        _audio_device_channel,
+        _device_type,
+        audio_device_data_format.value,
+        audio_device_frames_per_buffer,
+        audio_device_sampling_rate,
+        device_nominal_sampling_rate
+    )
+    return audio_input_device_interface
