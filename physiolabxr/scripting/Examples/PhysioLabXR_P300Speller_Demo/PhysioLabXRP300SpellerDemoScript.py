@@ -1,5 +1,6 @@
+# This is a demo script for the PhysioLabXR P300 Speller Game
+
 import numpy as np
-from physiolabxr.scripting.Examples.PhysioLabXR_P300Speller_Demo.PhysioLabXRP300SpellerDemoConfig import *
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.utils.buffers import DataBuffer
 from imblearn.over_sampling import SMOTE
@@ -7,6 +8,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 from sklearn import metrics
+
+# import the config file
+from physiolabxr.scripting.Examples.PhysioLabXR_P300Speller_Demo.PhysioLabXRP300SpellerDemoConfig import *
+
 
 # matplotlib and seaborn are not installed in PhysioLabXR by default, so we need to check if they are installed before importing them
 # If you want to use matplotlib and seaborn in your script, please install them in the PhysioLabXR environment following the instructions in the PhysioLabXR documentation
