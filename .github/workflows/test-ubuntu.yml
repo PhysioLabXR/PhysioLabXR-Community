@@ -1,5 +1,5 @@
 name: test-ubuntu
-run-name: Run unity tests on ubuntu by @${{ github.actor }}
+run-name: Run unite tests on ubuntu by @${{ github.actor }}
 on: [push]
 jobs:
   check-bats-version:
