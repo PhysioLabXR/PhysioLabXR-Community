@@ -9,5 +9,7 @@ jobs:
       - run: python -m venv venv.dev
       - run: source venv.dev/bin/activate
       - run: python -m pip install --upgrade build
+      # install the build to install the dependencies
       - run: python -m build
+      - run: pip install dist/*.whl
       - run: ./tests/test.sh
