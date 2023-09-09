@@ -187,7 +187,7 @@ We would also like to thank all the community members who have contributed to *P
 [license-url]: https://github.com/apocalyvec/renalabapp/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/ziheng-leo-li/
-[product-screenshot]: physiolabxr/_media/readme/screenshot.png
+[product-screenshot]: physiolabxr/_media/readme/AllPlottingFormat.png
 
 [Python.org]: https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&color=3776AB&logoColor=white
 [Python-url]: https://python.org/
