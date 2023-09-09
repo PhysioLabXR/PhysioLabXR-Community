@@ -1,15 +1,25 @@
-name: test-ubuntu
-run-name: Run unite tests on ubuntu by @${{ github.actor }}
-on: [push]
+name: unit-test
+run-name: Run unit tests by @${{ github.actor }}
+on:
+  push:
+    branches: [ master ]
 jobs:
-  check-bats-version:
+  unit-test-ubuntu:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.9 ]
+    env:
+      DISPLAY: ':99.0'
     steps:
       - uses: actions/checkout@v3
-      - run: python -m venv venv.dev
-      - run: source venv.dev/bin/activate
-      - run: python -m pip install --upgrade build
-      # install the build to install the dependencies
-      - run: python -m build
-      - run: pip install dist/*.whl
-      - run: ./tests/test.sh
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.dev.txt
+          sudo apt install -y xvfb x11-utils libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 xdotool
+      - name: Test with pytest
+        run: ./tests/test.sh
