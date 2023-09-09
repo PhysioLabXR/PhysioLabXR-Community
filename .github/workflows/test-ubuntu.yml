@@ -4,7 +4,7 @@ on:
   push:
     branches: [ test-actions ]
 jobs:
-  unit-test-ubuntu:
+  unit-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
