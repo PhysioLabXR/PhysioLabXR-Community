@@ -131,32 +131,13 @@ The entry point to PhysioLabXR is `physiolabxr.py`, located in the folder named 
 
 
 
-<!-- USAGE EXAMPLES -->
+
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+_For more examples, please refer to the tutorials in the [documentation](https://physiolabxrdocs.readthedocs.io/en/latest/index.html)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- LICENSE -->
@@ -166,7 +147,6 @@ Distributed under the 3-Clause BSD License. See `LICENSE.txt` for more informati
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
--->
 
 
 <!-- CONTACT -->
@@ -181,7 +161,8 @@ Distributed under the 3-Clause BSD License. See `LICENSE.txt` for more informati
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-We would like to express our gratitude for the support from our colleagues at Columbia University and Worcester Polytechnic Institute. We would also like to thank all the community members who have contributed to *PhysioLabXR*.
+We would like to express our gratitude for the support from our colleagues at Columbia University and Worcester Polytechnic Institute. 
+We would also like to thank all the community members who have contributed to *PhysioLabXR*.
 
 
 [//]: # (* []&#40;&#41;)
