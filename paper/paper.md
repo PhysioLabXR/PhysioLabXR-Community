@@ -38,8 +38,8 @@ bibliography: paper.bib
 
 # Summary
 
-![PhysioLabXR is a Python-based open-source software platform for real-time, multi-modal physiological experiments. It includes
-visualization methods, digital 
+![PhysioLabXR includes
+various visualization methods, digital 
 signal processing modules, support for recording and replaying experiments, and a scripting interface to deploy custom pipelines.\label{fig:teaser}](physiolabxr%20teaser.png)
 
 
