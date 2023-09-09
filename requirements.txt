@@ -16,5 +16,4 @@ pytest-qt
 numba
 PyOpenGL
 PyOpenGL_accelerate
-pyaudio
 soundfile
