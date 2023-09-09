@@ -1,0 +1,10 @@
+name: test-ubuntu
+run-name: Run unity tests on ubuntu by @${{ github.actor }}
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: pip install -r requirements.dev.txt
+      - run: ./tests/test.sh
