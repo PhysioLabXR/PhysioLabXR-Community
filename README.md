@@ -137,6 +137,15 @@ The entry point to PhysioLabXR is `physiolabxr.py`, located in the folder named 
 
 _For more examples, please refer to the tutorials in the [documentation](https://physiolabxrdocs.readthedocs.io/en/latest/index.html)_
 
+Tutorials have examples for:
+
+* Real-time fixation detection ([link](https://physiolabxrdocs.readthedocs.io/en/latest/FixationDetection.html))
+* Real-time multi-modal event-related-potential classification with EEG and pupillometry
+* P300 speller in Unity
+* Stroop task with PsychoPy (link [https://physiolabxrdocs.readthedocs.io/en/latest/PsychoPy.html])
+
+More are coming soon!
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
