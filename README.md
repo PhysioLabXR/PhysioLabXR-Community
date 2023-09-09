@@ -64,7 +64,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![PhysioLabXR Screen Shot][product-screenshot]](physiolabxr/_media/readme/screenshot.png)
+[![PhysioLabXR Screen Shot][product-screenshot]](physiolabxr/_media/readme/AllPlottingFormat.png)
 
 **PhysioLabXR** is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
 data streams. PhysioLabXR can help you build novel interaction interface like BCIs as well as aid you in 
