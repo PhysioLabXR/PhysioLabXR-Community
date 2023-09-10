@@ -1,3 +1,7 @@
+# This is an example script for PhysioLabXR. It is a simple script that reads data from OpenBCI Cyton 8 Channels and sends it to Lab Streaming Layer.
+# The output stream name is "OpenBCICyton8Channels"
+
+
 import time
 
 import brainflow
@@ -82,12 +86,5 @@ class PhysioLabXROpenBCICyton8ChannelsScript(RenaScript):
     # cleanup is called when the stop button is hit
     def cleanup(self):
         print('Stop OpenBCI Cyton 8 Channels. Sensor Stop.')
-        # TODO: fix the following error, the KILL process action will break the script
-        # try:
-        #     self.board.stop_stream()
-        #     print('OpenBCIInterface: stopped streaming.')
-        #     self.board.release_session()
-        #     print('OpenBCIInterface: released session.')
-        # except brainflow.board_shim.BrainFlowError as e:
-        #     print(e)
+
 
