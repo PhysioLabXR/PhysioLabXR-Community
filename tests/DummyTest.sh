@@ -1,1 +1,2 @@
-pytest tests/DummyTest.py
+cd tests
+pytest DummyTest.py
