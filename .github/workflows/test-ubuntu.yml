@@ -5,10 +5,11 @@ on:
     branches: [ test-actions ]
 jobs:
   unit-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [ 3.10 ]
+        os : [ubuntu-latest]
+        python-version: [ "3.10" ]
     env:
       DISPLAY: ':99.0'
     steps:
