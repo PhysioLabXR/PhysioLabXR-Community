@@ -1,7 +1,8 @@
 import faulthandler
+import sys
 
 import pytest
-from PyQt6 import QtCore
+from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
 
 
@@ -21,7 +22,7 @@ class DummyApp(QMainWindow):
 @pytest.fixture
 def app(qtbot):
     # Create a QApplication instance for testing
-    test_app = QApplication([])
+    test_app = QtWidgets.QApplication(sys.argv)
 
     # Create a dummy application window and show it
     window = DummyApp()
