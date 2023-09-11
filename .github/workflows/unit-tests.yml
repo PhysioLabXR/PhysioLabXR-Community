@@ -30,4 +30,4 @@ jobs:
           cd tests
           ls
           cd ..
-          ./tests/DummyTest.sh
+          ./tests/test.sh
