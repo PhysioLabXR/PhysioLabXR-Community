@@ -37,7 +37,7 @@ def app(qtbot):
     window.close()
 
 def test_button_click(app, qtbot):
-    faulthandler.disable()
+    # faulthandler.disable()
     # Simulate a button click
     qtbot.mouseClick(app.button, QtCore.Qt.MouseButton.LeftButton)
 
