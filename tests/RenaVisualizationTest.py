@@ -2,7 +2,7 @@
 If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
-
+import faulthandler
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 from multiprocessing import Process
 
@@ -23,6 +23,7 @@ def app_main_window(qtbot):
     print("here")
 
     app, test_renalabapp_main_window = app_fixture(qtbot)
+    faulthandler.disable()  # disable the faulthandler to avoid the error message
     yield test_renalabapp_main_window
     app.quit()
 
