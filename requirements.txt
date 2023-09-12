@@ -17,3 +17,4 @@ numba
 PyOpenGL
 PyOpenGL_accelerate
 soundfile
+imbalance-learn
