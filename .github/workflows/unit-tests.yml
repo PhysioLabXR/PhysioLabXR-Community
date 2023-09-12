@@ -26,10 +26,5 @@ jobs:
           sudo apt install qt6-base-dev
           pip install -r requirements.dev.txt
       - name: Test with pytest
-
         run: |
-          ls
-          cd tests
-          ls
-          cd ..
           ./tests/test.sh
