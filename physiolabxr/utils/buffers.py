@@ -202,6 +202,9 @@ class DataBuffer():
     def keys(self):
         return self.buffer.keys()
 
+    def __contains__(self, item):
+        return item in self.buffer.keys()
+
 class DataBufferSingleStream():
     def __init__(self, num_channels: int, buffer_sizes: int, append_zeros=False):
         self.buffer_size = buffer_sizes
