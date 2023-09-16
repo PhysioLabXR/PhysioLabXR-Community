@@ -24,6 +24,11 @@ class ImageAttentionInfo():
         self.attention_patch_shape = None
         self.attention_matrix = None
 
+        self.y = None
+        self.y_pred = None
+
+
+
 
 
 ##########################################################################
@@ -34,10 +39,17 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 
 
 root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\images'
-image_paths = [os.path.join(root_dir, file) for file in os.listdir(root_dir) if file.endswith('.png')]
+image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 
-for image_path in image_paths:
+data_dict = {}
+
+for image_name in image_names:
+
+    image_path = os.path.join(root_dir, image_name)
+
+    image_meta_info = image_name.split('_')
+
 
     image_attention_info = ImageAttentionInfo()
     # get the prediction and attention matrix
@@ -45,6 +57,7 @@ for image_path in image_paths:
     y_pred, attention_matrix = model(torch.Tensor(image_normalized).unsqueeze(0).to(device),
                                      collapse_attention_matrix=False)
     predicted_label = np.array([torch.argmax(y_pred).item()])
+    print(f'y_pred: {y_pred}')
     decoded_label = compound_label_encoder.decode(predicted_label)
     print(f'Predicted label: {decoded_label}')
 
@@ -61,7 +74,45 @@ for image_path in image_paths:
     image_attention_info.attention_patch_shape = attention_matrix.shape
     image_attention_info.attention_matrix = attention_matrix
 
+    image_attention_info.y = image_meta_info[1]
+    image_attention_info.y_pred = predicted_label
+
+    # data_dict[int(image_meta_info[0])] = image_attention_info
 
 
 
 
+    # post analysis
+    average_attention = np.mean(attention_matrix, axis=1)
+
+    # reshape to attention grid
+    average_attention_grid = average_attention.reshape(AOIAugmentationConfig.attention_grid_shape[0], AOIAugmentationConfig.attention_grid_shape[1])
+
+    # normalize the attention grid
+    average_attention_grid_normalized = (average_attention_grid - np.min(average_attention_grid)) / (
+            np.max(average_attention_grid) - np.min(average_attention_grid))
+
+    # upscale the attention grid to the image size
+    attention_grid_upscale_y = image.shape[0] // AOIAugmentationConfig.attention_grid_shape[0]
+    attention_grid_upscale_x = image.shape[1] // AOIAugmentationConfig.attention_grid_shape[1]
+
+
+
+    attention_image = np.repeat(np.repeat(average_attention_grid_normalized, attention_grid_upscale_x, axis=1),
+                            attention_grid_upscale_y, axis=0)
+
+
+    threshold_mask = np.where(attention_image > 0.85, 1, 0)
+    plt.imshow(threshold_mask)
+    plt.show()
+
+
+    # # overlay the threshold mask on the image
+    # image_attention = image.copy()
+    # image_attention[:, :, 0] = image_attention[:, :, 0] * threshold_mask
+
+
+
+
+
+print(data_dict.keys())
