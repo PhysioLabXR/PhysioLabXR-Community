@@ -6,8 +6,8 @@ PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmen
 TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
 IMAGE_FORMAT = '.png'
 
-assert os.path.exists(PracticeBlockImageDirectoryPath)
-assert os.path.exists(TestBlockImageDirectoryPath)
+# assert os.path.exists(PracticeBlockImageDirectoryPath)
+# assert os.path.exists(TestBlockImageDirectoryPath)
 
 screen_width = 1920
 screen_height = 1080

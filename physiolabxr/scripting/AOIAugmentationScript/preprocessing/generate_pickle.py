@@ -38,7 +38,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 ##########################################################################
 
 
-root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\images'
+root_dir = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\images'
 image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 
@@ -101,17 +101,14 @@ for image_name in image_names:
     attention_image = np.repeat(np.repeat(average_attention_grid_normalized, attention_grid_upscale_x, axis=1),
                             attention_grid_upscale_y, axis=0)
 
-
+    # print(f'attention_image.shape: {attention_image.shape}')
     threshold_mask = np.where(attention_image > 0.85, 1, 0)
     plt.imshow(threshold_mask)
     plt.show()
+    time.sleep(0.1)
 
 
-    # # overlay the threshold mask on the image
-    # image_attention = image.copy()
-    # image_attention[:, :, 0] = image_attention[:, :, 0] * threshold_mask
-
-
+# static attention is [0, 1:]
 
 
 
