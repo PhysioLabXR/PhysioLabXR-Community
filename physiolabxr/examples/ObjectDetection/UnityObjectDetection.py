@@ -4,7 +4,7 @@ import cv2
 import zmq
 import numpy as np
 
-image_shape = (480, 480, 3)
+image_shape = (400, 400, 3)
 
 # parameters for object detection
 threshold = 0.45  # Threshold to detect object
@@ -22,9 +22,9 @@ net.setInputMean((127.5, 127.5, 127.5))
 net.setInputSwapRB(True)
 
 # setup information for the server
-subtopic = 'CamCapture1'
+subtopic = 'CamCapture'
 sub_tcpAddress = "tcp://localhost:5555"
-rep_tcpAddress = 'tcp://*:5556'
+rep_tcpAddress = 'tcp://*:5557'
 
 context = zmq.Context()
 cam_capture_sub_socket = context.socket(zmq.SUB)

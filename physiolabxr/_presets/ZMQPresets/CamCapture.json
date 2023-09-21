@@ -1,6 +1,7 @@
 { "StreamName":"CamCapture",
-  "NumChannels": 12288,
+  "NumChannels": 800000,
   "NominalSamplingRate":  30,
   "DataType": "uint8",
-  "PortNumber":  5557
-  }
+  "PortNumber":  5555,
+  "GroupInfo":  [480000]
+}
