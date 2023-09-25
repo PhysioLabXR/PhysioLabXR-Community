@@ -38,11 +38,13 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 ##########################################################################
 
 
-root_dir = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\images'
+root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned\G'
 image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 
 data_dict = {}
+
+y_true = 'G'
 
 for image_name in image_names:
 
@@ -60,6 +62,15 @@ for image_name in image_names:
     print(f'y_pred: {y_pred}')
     decoded_label = compound_label_encoder.decode(predicted_label)
     print(f'Predicted label: {decoded_label}')
+
+    ##################################
+    # plot the image
+    # if y_true != decoded_label:
+    plt.imshow(image.astype(np.uint8))
+    plt.title(f'y_true: {[y_true]}, y_pred: {decoded_label}')
+    plt.show()
+
+
 
     # detach the attention matrix
     attention_matrix = attention_matrix.squeeze().cpu().detach().numpy()
