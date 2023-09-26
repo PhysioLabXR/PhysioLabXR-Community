@@ -2,12 +2,16 @@ from enum import Enum
 import numpy as np
 import os
 
-PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
-TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
-IMAGE_FORMAT = '.png'
+# PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
+# TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
 
 # assert os.path.exists(PracticeBlockImageDirectoryPath)
 # assert os.path.exists(TestBlockImageDirectoryPath)
+
+
+IMAGE_FORMAT = '.png'
+
+
 
 screen_width = 1920
 screen_height = 1080
