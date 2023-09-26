@@ -88,6 +88,6 @@ for index, image_name in enumerate(image_names):
     )
 
 
-with open('practice', 'wb') as file:
+with open('../data/experiment_image_info/practice', 'wb') as file:
     # A new file will be created
     pickle.dump(data_dict, file)
