@@ -14,7 +14,7 @@ import torch
 import matplotlib
 from eidl.utils.model_utils import get_trained_model, load_image_preprocess
 import cv2
-
+import pickle
 
 class ImageInfo():
     def __init__(self,image_path, image, image_normalized, attention_patch_shape, attention_matrix, y=None, y_pred=None):
@@ -68,7 +68,13 @@ for index, image_name in enumerate(image_names):
 
     class_token_attention = attention_matrix[0, 1:]
 
-    attention_grid_mask = generate_attention_grid_mask(class_token_attention, attention_patch_shape=AOIAugmentationConfig.attention_patch_shape)
+    attention_grid = class_token_attention.reshape(AOIAugmentationConfig.attention_grid_shape)
+
+    attention_grid_upsample = np.repeat(attention_grid,2, axis=1)
+    plt.imshow(attention_grid_upsample)
+    plt.show()
+
+
 
 
     image_attention_info = ImageInfo(
@@ -82,6 +88,6 @@ for index, image_name in enumerate(image_names):
     )
 
 
-
-
-print('Done')
+with open('practice', 'wb') as file:
+    # A new file will be created
+    pickle.dump(data_dict, file)
