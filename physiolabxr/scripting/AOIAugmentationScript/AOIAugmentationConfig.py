@@ -119,8 +119,8 @@ class ExperimentBlock(Enum):
     EndBlock = 5
 
 
-class NetworkConfig(Enum):
-    ZMQPortNumber = 6667
+# class NetworkConfig(Enum):
+#     ZMQPortNumber = 6667
 
 
 from enum import Enum
