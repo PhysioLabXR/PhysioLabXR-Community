@@ -11,17 +11,18 @@ from eidl.viz.vit_rollout import VITAttentionRollout
 
 
 class ImageInfo():
-    def __init__(self, image_path, image, image_normalized, attention_patch_shape, raw_attention_matrix,
+    def __init__(self, image_path, image, image_normalized, model_image_shape,
+                 patch_shape, attention_grid_shape,
+                 raw_attention_matrix,
                  rollout_attention_matrix, average_self_attention_matrix,
                  y=None, y_pred=None):
         self.image_path = image_path
         self.image = image
         self.image_normalized = image_normalized
-        self.attention_patch_shape = attention_patch_shape
-        self.attention_grid_shape = (
-        image.shape[0] // attention_patch_shape[0], image.shape[1] // attention_patch_shape[1])
+        self.model_image_shape = model_image_shape
+        self.patch_shape = patch_shape
+        self.attention_grid_shape = attention_grid_shape
         self.raw_attention_matrix = raw_attention_matrix
-
         self.y = y
         self.y_pred = y_pred
 
@@ -74,19 +75,23 @@ for index, image_name in enumerate(image_names):
                                       discard_ratio=0.5)
     rollout = vit_rollout(depth=model.depth, input_tensor=image_tensor)
 
-
     attention_matrix_self_attention = attention_matrix.squeeze().detach().cpu().numpy()[1:, 1:]
     attention_matrix_self_attention = np.mean(attention_matrix_self_attention, axis=0).reshape(model.grid_size)
 
-
-
+    # minimax normalization attention_matrix_self_attention
+    attention_matrix_self_attention = (attention_matrix_self_attention - attention_matrix_self_attention.min()) / (
+                attention_matrix_self_attention.max() - attention_matrix_self_attention.min())
 
     image_info = ImageInfo(image_path,
                            image,
                            image_normalized,
-                           attention_patch_shape=(model.patch_size, model.patch_size),
-                           raw_attention_matrix=attention_matrix.detach().cpu().numpy(),
-                           rollout_attention_matrix=rollout,
+                           model_image_shape=np.array([512, 1024]),
+                           patch_shape=np.array([16, 32]),
+                           attention_grid_shape=np.array([32, 32]),
+                           raw_attention_matrix=attention_matrix.squeeze().detach().cpu().numpy(),
+                           rollout_attention_matrix=rollout.squeeze().detach().cpu().numpy(),
                            average_self_attention_matrix=attention_matrix_self_attention,
-                           y=y_true,
+                           # y=y_true,
                            y_pred=decoded_label)
+
+
