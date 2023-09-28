@@ -23,6 +23,8 @@ class ImageInfo():
         self.patch_shape = patch_shape
         self.attention_grid_shape = attention_grid_shape
         self.raw_attention_matrix = raw_attention_matrix
+        self.rollout_attention_matrix = rollout_attention_matrix
+        self.average_self_attention_matrix = average_self_attention_matrix
         self.y = y
         self.y_pred = y_pred
 
@@ -46,52 +48,69 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 
 
 # root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Practice'
-root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned\S'
-target_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\report_cleand_attention_vis\S'
+# root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned\S'
+# target_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\report_cleand_attention_vis\S'
 
-y_true = 'S'
+dataset_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned_small'
 
-image_names = [file for file in os.listdir(root_dir) if file.endswith('.png') or file.endswith('.jpg')]
+dirs = os.listdir(dataset_dir)
+
+# loop directory
 
 data_dict = {}
 
-for index, image_name in enumerate(image_names):
-    image_path = os.path.join(root_dir, image_name)
+for dir in dirs:
 
-    # get the prediction and attention matrix
-    image_normalized, image = load_image_preprocess(image_path, image_size, image_mean,
-                                                    image_std)  # the normalized image is z normalization
+    root_dir = os.path.join(dataset_dir, dir)
+    y_true = dir
 
-    image_tensor = torch.Tensor(image_normalized).unsqueeze(0).to(device)
-    y_pred, attention_matrix = model(image_tensor,
-                                     collapse_attention_matrix=False)
+    image_names = [file for file in os.listdir(root_dir) if file.endswith('.png') or file.endswith('.jpg')]
 
-    predicted_label = np.array([torch.argmax(y_pred).item()])
-    print(f'y_pred: {y_pred}')
-    decoded_label = compound_label_encoder.decode(predicted_label)
-    print(f'Predicted label: {decoded_label}')
+    class_dict = {}
 
-    vit_rollout = VITAttentionRollout(model, device=device, attention_layer_name='attn_drop', head_fusion="mean",
-                                      discard_ratio=0.5)
-    rollout = vit_rollout(depth=model.depth, input_tensor=image_tensor)
+    for index, image_name in enumerate(image_names):
+        image_path = os.path.join(root_dir, image_name)
 
-    attention_matrix_self_attention = attention_matrix.squeeze().detach().cpu().numpy()[1:, 1:]
-    attention_matrix_self_attention = np.mean(attention_matrix_self_attention, axis=0).reshape(model.grid_size)
+        # get the prediction and attention matrix
+        image_normalized, image = load_image_preprocess(image_path, image_size, image_mean,
+                                                        image_std)  # the normalized image is z normalization
 
-    # minimax normalization attention_matrix_self_attention
-    attention_matrix_self_attention = (attention_matrix_self_attention - attention_matrix_self_attention.min()) / (
-                attention_matrix_self_attention.max() - attention_matrix_self_attention.min())
+        image_tensor = torch.Tensor(image_normalized).unsqueeze(0).to(device)
+        y_pred, attention_matrix = model(image_tensor,
+                                         collapse_attention_matrix=False)
 
-    image_info = ImageInfo(image_path,
-                           image,
-                           image_normalized,
-                           model_image_shape=np.array([512, 1024]),
-                           patch_shape=np.array([16, 32]),
-                           attention_grid_shape=np.array([32, 32]),
-                           raw_attention_matrix=attention_matrix.squeeze().detach().cpu().numpy(),
-                           rollout_attention_matrix=rollout.squeeze().detach().cpu().numpy(),
-                           average_self_attention_matrix=attention_matrix_self_attention,
-                           # y=y_true,
-                           y_pred=decoded_label)
+        predicted_label = np.array([torch.argmax(y_pred).item()])
+        print(f'y_pred: {y_pred}')
+        decoded_label = compound_label_encoder.decode(predicted_label)
+        print(f'Predicted label: {decoded_label}')
 
+        vit_rollout = VITAttentionRollout(model, device=device, attention_layer_name='attn_drop', head_fusion="mean",
+                                          discard_ratio=0.5)
+        rollout = vit_rollout(depth=model.depth, input_tensor=image_tensor)
 
+        attention_matrix_self_attention = attention_matrix.squeeze().detach().cpu().numpy()[1:, 1:]
+        attention_matrix_self_attention = np.mean(attention_matrix_self_attention, axis=0).reshape(model.grid_size)
+
+        # minimax normalization attention_matrix_self_attention
+        attention_matrix_self_attention = (attention_matrix_self_attention - attention_matrix_self_attention.min()) / (
+                    attention_matrix_self_attention.max() - attention_matrix_self_attention.min())
+
+        image_info = ImageInfo(image_path,
+                               image,
+                               image_normalized,
+                               model_image_shape=np.array([512, 1024]),
+                               patch_shape=np.array([16, 32]),
+                               attention_grid_shape=np.array([32, 32]),
+                               raw_attention_matrix=attention_matrix.squeeze().detach().cpu().numpy(),
+                               rollout_attention_matrix=rollout,
+                               average_self_attention_matrix=attention_matrix_self_attention,
+                               y=y_true,
+                               y_pred=decoded_label[0])
+
+        class_dict[image_name] = image_info
+
+    data_dict[y_true] = class_dict
+
+# save the data_dict
+with open('data_dict.pkl', 'wb') as f:
+    pickle.dump(data_dict, f)
