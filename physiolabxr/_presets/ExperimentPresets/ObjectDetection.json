@@ -1,0 +1,2 @@
+{"ExperimentName": "ObjectDetection",
+  "PresetStreamNames": ["OutputImg", "DepthImg", "CamCapture"]}
