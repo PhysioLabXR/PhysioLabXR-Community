@@ -32,7 +32,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 ##########################################################################
 
 
-root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Test'
+root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Practice'
 image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 
@@ -113,6 +113,6 @@ for index, image_name in enumerate(image_names):
     # )
 
 
-with open('../data/experiment_image_info/test', 'wb') as file:
+with open('../data/experiment_image_info/practice', 'wb') as file:
     # A new file will be created
     pickle.dump(data_dict, file)
