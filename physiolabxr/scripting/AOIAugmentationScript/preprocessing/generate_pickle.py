@@ -33,7 +33,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 
 
 root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Practice'
-image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
+image_names = [file for file in os.listdir(root_dir) if file.endswith('.png') or file.endswith('.jpg')]
 
 
 data_dict = {}
@@ -87,32 +87,32 @@ for index, image_name in enumerate(image_names):
     axes[2].set_title(f'Overlayed attention rollout')
     plt.show()
 
-    # attention_matrix = attention_matrix.squeeze().cpu().detach().numpy()
-    #
-    # class_token_attention = attention_matrix[0, 1:]
-    # # class_token_attention = attention_matrix[1:, 0]
-    #
-    # attention_grid = class_token_attention.reshape(AOIAugmentationConfig.attention_grid_shape)
-    #
-    # attention_grid_upsample = np.repeat(attention_grid,2, axis=1)
-    # plt.imshow(attention_grid_upsample)
-    # plt.colorbar()
-    # plt.show()
-    #
-    #
-    #
-    #
-    # image_attention_info = ImageInfo(
-    #     image_path=image_path,
-    #     image=image,
-    #     image_normalized=image_normalized,
-    #     attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
-    #     attention_matrix=attention_matrix,
-    #     y=y_true,
-    #     y_pred=decoded_label
-    # )
-
-
-with open('../data/experiment_image_info/practice', 'wb') as file:
-    # A new file will be created
-    pickle.dump(data_dict, file)
+#     # attention_matrix = attention_matrix.squeeze().cpu().detach().numpy()
+#     #
+#     # class_token_attention = attention_matrix[0, 1:]
+#     # # class_token_attention = attention_matrix[1:, 0]
+#     #
+#     # attention_grid = class_token_attention.reshape(AOIAugmentationConfig.attention_grid_shape)
+#     #
+#     # attention_grid_upsample = np.repeat(attention_grid,2, axis=1)
+#     # plt.imshow(attention_grid_upsample)
+#     # plt.colorbar()
+#     # plt.show()
+#     #
+#     #
+#     #
+#     #
+#     # image_attention_info = ImageInfo(
+#     #     image_path=image_path,
+#     #     image=image,
+#     #     image_normalized=image_normalized,
+#     #     attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
+#     #     attention_matrix=attention_matrix,
+#     #     y=y_true,
+#     #     y_pred=decoded_label
+#     # )
+#
+#
+# with open('../data/experiment_image_info/practice', 'wb') as file:
+#     # A new file will be created
+#     pickle.dump(data_dict, file)
