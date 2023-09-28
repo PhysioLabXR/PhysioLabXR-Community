@@ -1,12 +1,25 @@
 from enum import Enum
 import numpy as np
 import os
+import pickle
 
 # PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
 # TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
 
 # assert os.path.exists(PracticeBlockImageDirectoryPath)
 # assert os.path.exists(TestBlockImageDirectoryPath)
+
+
+################################## Read the practice/test pickle file #################################################
+
+practice_image_info_file_path = 'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info\practice'
+test_image_info_file_path = 'D:/HaowenWei/PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info/test'
+
+assert os.path.exists(practice_image_info_file_path)
+assert os.path.exists(test_image_info_file_path)
+
+practice_image_info_dict = pickle.load(open(practice_image_info_file_path, 'rb'))
+test_image_info_dict = pickle.load(open(test_image_info_file_path, 'rb'))
 
 
 IMAGE_FORMAT = '.png'
@@ -22,15 +35,15 @@ image_on_screen_height = 950
 image_center_x = 0
 image_center_y = 0
 
-image_shape = np.array([512, 1024], dtype=np.int32)
-attention_patch_shape = np.array([16, 32], dtype=np.int32)
-attention_grid_shape = np.array(
-    [image_shape[0] // attention_patch_shape[0], image_shape[1] // attention_patch_shape[1]], dtype=np.int32)
-
-# attention_grid_shape = np.array([25, 50], dtype=np.int32)
-image_on_screen_shape = np.array([image_on_screen_height, image_on_screen_width], dtype=np.int32)
-image_scaling_factor = np.array([image_on_screen_shape[0] / image_shape[0], image_on_screen_shape[1] / image_shape[1]],
-                                dtype=np.float32)
+# image_shape = np.array([512, 1024], dtype=np.int32)
+# attention_patch_shape = np.array([16, 32], dtype=np.int32)
+# attention_grid_shape = np.array(
+#     [image_shape[0] // attention_patch_shape[0], image_shape[1] // attention_patch_shape[1]], dtype=np.int32)
+#
+# # attention_grid_shape = np.array([25, 50], dtype=np.int32)
+# image_on_screen_shape = np.array([image_on_screen_height, image_on_screen_width], dtype=np.int32)
+# image_scaling_factor = np.array([image_on_screen_shape[0] / image_shape[0], image_on_screen_shape[1] / image_shape[1]],
+#                                 dtype=np.float32)
 
 #########################################################################################
 
@@ -60,28 +73,28 @@ class NoAOIAugmentationStateLSLStreamInfo:
     pass
 
 
-class StaticAOIAugmentationStateLSLStreamInfo:
-    StreamName = "StaticAOIAugmentationStateLSLInlet"
-    StreamType = "AttentionData"
-    StreamID = "3"
-    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
-    NominalSamplingRate = 250
-
-
-class InteractiveAOIAugmentationStateLSLStreamInfo:
-    StreamName = "InteractiveAOIAugmentationStateLSLInlet"
-    StreamType = "AttentionData"
-    StreamID = "4"
-    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
-    NominalSamplingRate = 250
-
-
-class AOIAugmentationGazeAttentionMapLSLStreamInfo:
-    StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
-    StreamType = "AttentionData"
-    StreamID = "5"
-    ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
-    NominalSamplingRate = 250
+# class StaticAOIAugmentationStateLSLStreamInfo:
+#     StreamName = "StaticAOIAugmentationStateLSLInlet"
+#     StreamType = "AttentionData"
+#     StreamID = "3"
+#     ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
+#     NominalSamplingRate = 250
+#
+#
+# class InteractiveAOIAugmentationStateLSLStreamInfo:
+#     StreamName = "InteractiveAOIAugmentationStateLSLInlet"
+#     StreamType = "AttentionData"
+#     StreamID = "4"
+#     ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
+#     NominalSamplingRate = 250
+#
+#
+# class AOIAugmentationGazeAttentionMapLSLStreamInfo:
+#     StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
+#     StreamType = "AttentionData"
+#     StreamID = "5"
+#     ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
+#     NominalSamplingRate = 250
 
 
 # class EventMarkerLSLInletInfo(Enum):

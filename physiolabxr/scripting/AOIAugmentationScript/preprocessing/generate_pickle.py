@@ -1,23 +1,14 @@
-import time
-from collections import deque
+import os
+import pickle
 
+import cv2
+import matplotlib.pyplot as plt
+# from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
+import numpy as np
+import torch
+from eidl.utils.model_utils import get_trained_model, load_image_preprocess
 from eidl.viz.vit_rollout import VITAttentionRollout
 
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, \
-    GazeFilterFixationDetectionIVT, \
-    tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
-from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.scripting.AOIAugmentationScript import AOIAugmentationConfig
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
-    GazeDataLSLStreamInfo
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import matplotlib
-from eidl.utils.model_utils import get_trained_model, load_image_preprocess
-import cv2
-import pickle
 
 class ImageInfo():
     def __init__(self,image_path, image, image_normalized, attention_patch_shape, attention_matrix, y=None, y_pred=None):
@@ -41,7 +32,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 ##########################################################################
 
 
-root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Practice'
+root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Test'
 image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 
@@ -122,6 +113,6 @@ for index, image_name in enumerate(image_names):
     # )
 
 
-with open('../data/experiment_image_info/practice', 'wb') as file:
+with open('../data/experiment_image_info/test', 'wb') as file:
     # A new file will be created
     pickle.dump(data_dict, file)
