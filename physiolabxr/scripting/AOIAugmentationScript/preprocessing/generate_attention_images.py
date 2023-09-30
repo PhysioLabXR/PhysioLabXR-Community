@@ -99,7 +99,7 @@ for class_name in data_dict:
         contour_image_self_attention, thresholded_heatmap_self_attention, contours_self_attention = overlay_contour(image, attention_matrix_self_attention, (image_shape[1], image_shape[0]), threshold=0.5)
 
 
-        fig = plt.figure(figsize=(30, 50), constrained_layout=True)
+        fig = plt.figure(figsize=(30, 55), constrained_layout=True)
         axes = fig.subplots(5, 2)
 
         axes[0, 0].imshow(image.astype(np.uint8))  # plot the original image
@@ -145,7 +145,7 @@ for class_name in data_dict:
         axes[4, 1].set_title(f'Contour Self Attention', fontsize = 50)
 
 
-        plt.show()
+        # plt.show()
 
         fig.savefig(os.path.join(target_dir, class_name, image_name), dpi=300)
 
