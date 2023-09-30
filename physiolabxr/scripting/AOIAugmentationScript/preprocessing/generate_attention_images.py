@@ -99,12 +99,12 @@ for class_name in data_dict:
         contour_image_self_attention, thresholded_heatmap_self_attention, contours_self_attention = overlay_contour(image, attention_matrix_self_attention, (image_shape[1], image_shape[0]), threshold=0.5)
 
 
-        fig = plt.figure(figsize=(30, 55), constrained_layout=True)
+        fig = plt.figure(figsize=(40, 70), constrained_layout=True)
         axes = fig.subplots(5, 2)
 
         axes[0, 0].imshow(image.astype(np.uint8))  # plot the original image
         axes[0, 0].axis('off')
-        axes[0, 0].set_title(f'Original image. y_true: {[y_true]}, y_pred: {y_pred}', fontsize = 50)
+        axes[0, 0].set_title(f'Original image. y_true: {y_true}, y_pred: {y_pred}', fontsize = 50)
 
         axes[0, 1].imshow(image_normalized)  # plot the normalized image
         axes[0, 1].axis('off')
@@ -116,7 +116,7 @@ for class_name in data_dict:
 
         axes[2, 0].imshow(rollout_overlap)  # plot the attention rollout
         axes[2, 0].axis('off')
-        axes[2, 0].set_title(f'Overlayed attention rollout', fontsize = 50)
+        axes[2, 0].set_title(f'Overlaid attention rollout', fontsize = 50)
 
         axes[1, 1].imshow(self_attention_heatmap)  # plot the attention rollout
         axes[1, 1].axis('off')
@@ -124,17 +124,17 @@ for class_name in data_dict:
 
         axes[2, 1].imshow(self_attention_overlap)  # plot the attention rollout
         axes[2, 1].axis('off')
-        axes[2, 1].set_title(f'Overlayed Self Attention', fontsize = 50)
+        axes[2, 1].set_title(f'Overlaid Self Attention', fontsize = 50)
 
 
         axes[3,0].imshow(thresholded_heatmap_rollout_attention)  # plot the attention rollout
         axes[3,0].axis('off')
-        axes[3,0].set_title(f'Thresholded Rollout Attention, threshold = 0.5', fontsize = 50)
+        axes[3,0].set_title(f'Thresholded Rollout Attention, thresh: 0.5', fontsize = 50)
 
 
         axes[3,1].imshow(thresholded_heatmap_self_attention)  # plot the attention rollout
         axes[3,1].axis('off')
-        axes[3,1].set_title(f'Thresholded Self Attention, threshold = 0.5', fontsize = 50)
+        axes[3,1].set_title(f'Thresholded Self Attention, thresh: 0.5', fontsize = 50)
 
         axes[4, 0].imshow(contour_image_rollout_attention)  # plot the attention rollout
         axes[4, 0].axis('off')

@@ -35,6 +35,16 @@ image_on_screen_height = 950
 image_center_x = 0
 image_center_y = 0
 
+# image_shape = np.array([512, 1024], dtype=np.int32)
+# attention_patch_shape = np.array([16, 32], dtype=np.int32)
+# attention_grid_shape = np.array(
+#     [image_shape[0] // attention_patch_shape[0], image_shape[1] // attention_patch_shape[1]], dtype=np.int32)
+#
+# # attention_grid_shape = np.array([25, 50], dtype=np.int32)
+# image_on_screen_shape = np.array([image_on_screen_height, image_on_screen_width], dtype=np.int32)
+# image_scaling_factor = np.array([image_on_screen_shape[0] / image_shape[0], image_on_screen_shape[1] / image_shape[1]],
+#                                 dtype=np.float32)
+
 #########################################################################################
 
 
