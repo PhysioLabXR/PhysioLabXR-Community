@@ -1,7 +1,16 @@
 import time
 from collections import deque
+import cv2
+import numpy as np
+import time
+import os
+import pickle
+import sys
+import matplotlib.pyplot as plt
+import torch
 
 from pylsl import StreamInfo, StreamOutlet, cf_float32
+
 
 from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
     tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
@@ -10,6 +19,7 @@ from physiolabxr.scripting.AOIAugmentationScript import AOIAugmentationConfig
 from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
 from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
 import torch
+
 
 
 class AOIAugmentationScript(RenaScript):
@@ -25,43 +35,24 @@ class AOIAugmentationScript(RenaScript):
         self.currentBlock: AOIAugmentationConfig.ExperimentBlock = \
             AOIAugmentationConfig.ExperimentBlock.StartBlock
 
-        self.currentReportLabel: int = -1
-
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-        # self.gaze_attention_matrix = GazeAttentionMatrixTorch(
-        #     image_shape=AOIAugmentationConfig.image_shape,
-        #     attention_patch_shape=AOIAugmentationConfig.attention_patch_shape,
-        #     device=self.device
-        # )
-        # self.gaze_attention_clutter_removal_data_processor = ClutterRemoval(signal_clutter_ratio=0.1)
-        # self.gaze_attention_clutter_removal_data_processor.evoke_data_processor()
+        self.current_image_name = None
+        self.current_image_info= None
 
         self.vit_attention_matrix = ViTAttentionMatrix()
+
+        self.process_gaze_data_time_buffer = deque(maxlen=1000)
+
+        self.report_cleaned_image_info_dict = get_report_cleaned_image_info_dict(AOIAugmentationConfig.ReportCleanedImageInfoFilePath, merge_dict=True)
+
+        print("Experiment started")
         # self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
 
-        self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
-        self.ivt_filter.evoke_data_processor()
+        # self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
+        # self.ivt_filter.evoke_data_processor()
 
-        # ################################################################################################################
-        # static_aoi_augmentation_lsl_outlet_info = StreamInfo(
-        #     AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamName,
-        #     AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.StreamType,
-        #     AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.ChannelNum,
-        #     AOIAugmentationConfig.StaticAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
-        #     channel_format=cf_float32)
-        # self.static_aoi_augmentation_lsl_outlet = StreamOutlet(static_aoi_augmentation_lsl_outlet_info)
-        #
-        # ################################################################################################################
-        # interactive_aoi_augmentation_lsl_outlet_info = StreamInfo(
-        #     AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.StreamName,
-        #     AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.StreamType,
-        #     AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.ChannelNum,
-        #     AOIAugmentationConfig.InteractiveAOIAugmentationStateLSLStreamInfo.NominalSamplingRate,
-        #     channel_format=cf_float32)
-        # self.interactive_aoi_augmentation_lsl_outlet = StreamOutlet(interactive_aoi_augmentation_lsl_outlet_info)
-        # ################################################################################################################
-        #
+
         # ################################################################################################################
         # gaze_attention_map_lsl_outlet_info = StreamInfo(
         #     AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamName,
@@ -74,55 +65,26 @@ class AOIAugmentationScript(RenaScript):
         #
         # ################################################################################################################
 
-        self.process_gaze_data_time_buffer = deque(maxlen=1000)
+        # ################################################################################################################
+        # gaze_lsl_
 
-        ################################################################################################################
-        self.practice_block_attention_map = {}
-        self.test_block_attention_map = {}
+
+
     # Start will be called once when the run button is hit.
     def init(self):
-
         pass
-        # self.practice_block_attention_map = get_all_attention_matrices(
-        #     image_directory=AOIAugmentationConfig.PracticeBlockImageDirectoryPath,
-        #     image_shape=AOIAugmentationConfig.image_shape,
-        #     attention_patch_shape=AOIAugmentationConfig.attention_patch_shape
-        # )
-
-        # self.test_block_attention_map = get_all_attention_matrices(
-        #     image_directory=AOIAugmentationConfig.TestBlockImageDirectoryPath,
-        #     image_shape=AOIAugmentationConfig.image_shape,
-        #     attention_patch_shape=AOIAugmentationConfig.attention_patch_shape
-        # )
 
     # loop is called <Run Frequency> times per second
     def loop(self):
 
 
-        # fixation_detection
-        # list of gaze of intersection
-        # show pixel on patch x
-        # detected_fixation_on_display_area = [1000, 1000]
-
-        # state machine
-        # gaze_on_screen_area = [0.12, 0.1]
-        # print('Loop function is called')
-
-        # if EventMarkerLSLOutlet.StreamName not in self.inputs.keys() or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
-        #     return
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
-            # print("EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys() or GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()")
             return
 
         self.state_shift()
 
-        # if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.:
-        #     self.practice_state()
-        #
-        # # if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.PracticeState:
-        # #     self.practice_state()
 
         if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
             self.no_aoi_augmentation_state_callback()
@@ -157,17 +119,53 @@ class AOIAugmentationScript(RenaScript):
                         state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
 
                     # # switch to new interaction state
-                    # current_image_index = int(image_index_marker)
-                    # print("current block is {}".format(self.currentBlock))
-                    # print("current image index is {}".format(current_image_index))
-                    # # set attention matrix
-                    # if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.PracticeBlock:
-                    #     self.vit_attention_matrix.set_attention_matrix(self.practice_block_attention_map[current_image_index])
-                    # if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.TestBlock:
-                    #     self.vit_attention_matrix.set_attention_matrix(self.test_block_attention_map[current_image_index])
-                    #
-                    # ######
-                    # self.vit_attention_matrix.calculate_patch_average_attention_vector()
+                    current_image_index = int(image_index_marker)
+                    print("current block: {}".format(self.currentBlock))
+                    print("current image index: {}".format(current_image_index))
+                    if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.PracticeBlock:
+                        self.current_image_name = AOIAugmentationConfig.PracticeBlockImages[current_image_index]
+                    if self.currentBlock == AOIAugmentationConfig.ExperimentBlock.TestBlock:
+                        self.current_image_name = AOIAugmentationConfig.TestBlockImages[current_image_index]
+
+                    print("current report name: {}".format(self.current_image_name))
+
+                    if self.current_image_name in self.report_cleaned_image_info_dict.keys():
+                        current_image_info_dict = self.report_cleaned_image_info_dict[self.current_image_name]
+                        self.current_image_info = ImageInfo(**current_image_info_dict)
+                    else:
+                        self.current_image_info = None
+                        print("image info not found in dict")
+                        # stop the experiment
+
+
+#################################################################################################################
+                    # register the image on screen shape
+                    start = time.time()
+                    image_on_screen_shape = get_image_on_screen_shape(
+                        original_image_width=self.current_image_info.original_image.shape[1],
+                        original_image_height=self.current_image_info.original_image.shape[0],
+                        image_width=AOIAugmentationConfig.image_on_screen_width,
+                        image_height=AOIAugmentationConfig.image_on_screen_height,
+                    )
+
+                    # calculate the contour
+                    heatmap_processed = cv2.resize(self.current_image_info.average_self_attention_matrix,
+                                                   dsize=(image_on_screen_shape[1], image_on_screen_shape[0]),
+                                                   interpolation=cv2.INTER_NEAREST)
+                    ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
+                    # apply erosion to threshold image
+                    kernel = np.ones((3, 3), np.uint8)
+
+                    thresh = cv2.erode(thresh, kernel, iterations=1)
+                    contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                    # compile the contour information to lvt
+
+                    contours_lvt = contours_to_lvt(contours, hierarchy)
+                    print("time for contour: {}".format(time.time() - start))
+
+
+#################################################################################################################
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
@@ -231,87 +229,18 @@ class AOIAugmentationScript(RenaScript):
         self.interactive_attention_callback()
         pass
 
+
+
+
+##########################################################################
     def no_attention_callback(self):
         pass
 
     def static_attention_callback(self):
         pass
 
-    # def static_attention_callback_archive(self):
-
-        # for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
-        #     gaze_data_process_start = time.time()
-        #
-        #     self.gaze_attention_matrix.reset_image_attention_buffer()
-        #     self.gaze_attention_matrix.reset_attention_grid_buffer()
-        #
-        #     # print("process gaze data")
-        #
-        #     # construct gaze data
-        #     gaze_data = GazeData()
-        #     gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
-        #
-        #     gaze_data = self.ivt_filter.process_sample(gaze_data)  # ivt filter
-        #
-        #     if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
-        #         # gaze point is valid and gaze type is fixation
-        #         # check if gaze point is in screen image boundary
-        #         gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
-        #             image_center_x=AOIAugmentationConfig.image_center_x,
-        #             image_center_y=AOIAugmentationConfig.image_center_y,
-        #
-        #             image_width=AOIAugmentationConfig.image_on_screen_width,
-        #             image_height=AOIAugmentationConfig.image_on_screen_height,
-        #
-        #             screen_width=AOIAugmentationConfig.screen_width,
-        #             screen_height=AOIAugmentationConfig.screen_height,
-        #
-        #             gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
-        #             gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
-        #         )
-        #
-        #         gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
-        #             matrix_shape=AOIAugmentationConfig.image_on_screen_shape,
-        #             coordinate=gaze_point_on_screen_image)
-        #
-        #         if gaze_point_is_in_screen_image_boundary:
-        #             gaze_point_on_image = np.floor(
-        #                 gaze_point_on_screen_image / AOIAugmentationConfig.image_scaling_factor).astype(int)
-        #             self.gaze_attention_matrix.get_image_attention_buffer(
-        #                 gaze_point_on_image)  # get attention position G
-        #             self.gaze_attention_matrix.convolve_attention_grid_buffer()  # calculate attention grid using convolve
-        #
-        #     # clutter removal
-        #     self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(attention_clutter_ratio=0.95)
-        #     self.send_static_aoi_augmentation_state_lsl(gaze_attention_threshold=0.1)  # send the attention vector
-        #     self.process_gaze_data_time_buffer.append(time.time() - gaze_data_process_start)
-        #
-        #     # calculate average process time of process gaze data time buffer
-        #     # average_time = np.mean(self.process_gaze_data_time_buffer)
-        #     # print("average_process_gaze_data_time:", average_time)
-        #
-        #     # push attention map for visualization
-        #     gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-        #     self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_vector)
-        #
-        #     threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
-        #     # mask vit attention with gaze attention
-        #
-        # self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
-        # pass
 
     def interactive_attention_callback(self):
-        # TODO: implement interactive attention callback
         pass
 
-
-
-
-
-    # def send_static_aoi_augmentation_state_lsl(self, gaze_attention_threshold=0.1):
-    #     gaze_attention_vector = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-    #     threshold_vit_attention_vector = self.vit_attention_matrix.threshold_patch_average_attention(threshold=0.52)
-    #     # mask vit attention with gaze attention
-    #     vit_attention_vector_mask = np.where(gaze_attention_vector > gaze_attention_threshold, 0, 1)
-    #     self.static_aoi_augmentation_lsl_outlet.push_sample(vit_attention_vector_mask * threshold_vit_attention_vector)
-
+##########################################################################

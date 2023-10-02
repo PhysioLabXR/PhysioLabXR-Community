@@ -3,39 +3,33 @@ import numpy as np
 import os
 import pickle
 
-# PracticeBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Practice'
-# TestBlockImageDirectoryPath = 'D:/HaowenWei/UnityProject/PerceptualAOIAugmentation/Assets/Prefabs/OCTReportImages/Test'
-
-# assert os.path.exists(PracticeBlockImageDirectoryPath)
-# assert os.path.exists(TestBlockImageDirectoryPath)
 
 
-################################## Read the practice/test pickle file #################################################
-
-practice_image_info_file_path = 'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info\practice'
-test_image_info_file_path = 'D:/HaowenWei/PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info/test'
-
-assert os.path.exists(practice_image_info_file_path)
-assert os.path.exists(test_image_info_file_path)
-
-practice_image_info_dict = pickle.load(open(practice_image_info_file_path, 'rb'))
-test_image_info_dict = pickle.load(open(test_image_info_file_path, 'rb'))
 
 
-IMAGE_FORMAT = '.png'
-
+ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
 
 
 screen_width = 1920
 screen_height = 1080
 
-image_on_screen_width = 1900
-image_on_screen_height = 950
+image_on_screen_width = 2000
+image_on_screen_height = 1000
 
 image_center_x = 0
 image_center_y = 0
 
 #########################################################################################
+
+PracticeBlockImages = ["9175_OS_2021_widefield_report.png",
+                       "9172_OD_2021_widefield_report.png",
+                       "RLS_023_OS_TC.jpg"]
+
+TestBlockImages = ["9061_OS_2021_widefield_report.png",
+                   "RLS_064_OS_TC.jpg",
+                   "RLS_078_OS_TC.jpg"]
+
+
 
 
 class EventMarkerLSLStreamInfo:
@@ -58,9 +52,9 @@ class GazeDataLSLStreamInfo:
     NominalSamplingRate = 250
 
 
-class NoAOIAugmentationStateLSLStreamInfo:
-    # we do not need to send any data for this state
-    pass
+# class NoAOIAugmentationStateLSLStreamInfo:
+#     # we do not need to send any data for this state
+#     pass
 
 
 # class StaticAOIAugmentationStateLSLStreamInfo:
@@ -95,6 +89,14 @@ class NoAOIAugmentationStateLSLStreamInfo:
 #
 #
 # class TobiiProFusionUnityLSLOutlet(Enum):
+
+
+class AOIAugmentationContourLSLStreamInfo:
+    StreamName = "AOIAugmentationContourLSLOutlet"
+    StreamType = "AOIContour"
+    StreamID = "3"
+    ChannelNum = 1024
+    NominalSamplingRate = 1
 
 
 class ExperimentState(Enum):

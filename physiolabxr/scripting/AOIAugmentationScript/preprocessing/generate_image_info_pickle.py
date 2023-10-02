@@ -107,7 +107,7 @@ for dir in dirs:
                                y_true=y_true,
                                y_pred=decoded_label[0])
 
-        class_dict[image_name] = image_info
+        class_dict[image_name] = image_info.__dict__
 
     data_dict[y_true] = class_dict
 
