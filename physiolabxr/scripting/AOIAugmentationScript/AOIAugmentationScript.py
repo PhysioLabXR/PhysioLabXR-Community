@@ -183,7 +183,6 @@ class AOIAugmentationScript(RenaScript):
 
 
 
-
 #################################################################################################################
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
