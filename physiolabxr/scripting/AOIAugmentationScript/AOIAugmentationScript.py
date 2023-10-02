@@ -74,7 +74,7 @@ class AOIAugmentationScript(RenaScript):
             AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.NominalSamplingRate,
             channel_format=cf_float32)
 
-        self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024, 1)
+        self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024,)
         # ################################################################################################################
 
 

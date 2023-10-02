@@ -70,7 +70,8 @@ for class_name in data_dict:
 
     class_dict = data_dict[class_name]
     for image_name in class_dict:
-        image_info = class_dict[image_name]
+        image_info_dict = class_dict[image_name]
+        image_info = ImageInfo(**image_info_dict)
 
         image = image_info.image_to_model
         image_normalized = image_info.image_to_model_normalized
