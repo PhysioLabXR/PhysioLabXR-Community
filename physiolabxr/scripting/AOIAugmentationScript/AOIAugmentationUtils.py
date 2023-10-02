@@ -60,18 +60,20 @@ def get_report_cleaned_image_info_dict(file_path, merge_dict=True):
     else:
         return data_dict
 
-def contours_to_lvt(contours, hierarchy, max_length=2048):
+def contours_to_lvt(contours, hierarchy, max_length=1024):
     '''
     Convert contours to lvt format.
     :param contours:
     :param max_length:
     :return:
     '''
-    # [contour_num, contour
+    # data structure: [overflow_flag, contour_num, contour_0, contour_1, ...]
+    # contour_i: [contour_index, hierarchy_info_length, hierarchy_info_0, hierarchy_info_1, ..., contour_vertices_num, contour_point_0_x, contour_point_0_y, contour_point_1_x, contour_point_1_y, ...]
 
-    contours_lvt = []
+    contours_lvt = [0]
     contours_lvt.append(len(contours))
-    overflow = False
+    overflow_flag = False
+
 
     for contour_index, contour in enumerate(contours):
         contour_lvt = []
@@ -90,15 +92,17 @@ def contours_to_lvt(contours, hierarchy, max_length=2048):
         contours_lvt+=contour_lvt
 
         if len(contours_lvt) > max_length:
-            overflow = True
+            overflow_flag = True
             break
 
 
-    if not overflow:
+    if not overflow_flag:
         # pad with zeros
         contours_lvt += [0] * (max_length - len(contours_lvt))
+    else:
+        contours_lvt[0] = 1
 
-    return contours_lvt
+    return contours_lvt, overflow_flag
 
 
 

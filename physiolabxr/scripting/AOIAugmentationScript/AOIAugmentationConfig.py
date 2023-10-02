@@ -91,8 +91,8 @@ class GazeDataLSLStreamInfo:
 # class TobiiProFusionUnityLSLOutlet(Enum):
 
 
-class AOIAugmentationContourLSLStreamInfo:
-    StreamName = "AOIAugmentationContourLSLOutlet"
+class AOIAugmentationAttentionContourLSLStreamInfo:
+    StreamName = "AOIAugmentationAttentionContourStream"
     StreamType = "AOIContour"
     StreamID = "3"
     ChannelNum = 1024

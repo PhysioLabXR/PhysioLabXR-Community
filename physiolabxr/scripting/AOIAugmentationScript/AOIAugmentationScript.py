@@ -65,8 +65,19 @@ class AOIAugmentationScript(RenaScript):
         #
         # ################################################################################################################
 
+
         # ################################################################################################################
-        # gaze_lsl_
+        aoi_augmentation_attention_contour_lsl_outlet_info = StreamInfo(
+            AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.StreamName,
+            AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.StreamType,
+            AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum,
+            AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.NominalSamplingRate,
+            channel_format=cf_float32)
+
+        self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024, 1)
+        # ################################################################################################################
+
+
 
 
 
@@ -161,8 +172,16 @@ class AOIAugmentationScript(RenaScript):
 
                     # compile the contour information to lvt
 
-                    contours_lvt = contours_to_lvt(contours, hierarchy)
+                    contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy, max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+                    self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+
+
+                    # TODO: send the contour information to Unity
+                    self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
                     print("time for contour: {}".format(time.time() - start))
+
+
+
 
 
 #################################################################################################################
