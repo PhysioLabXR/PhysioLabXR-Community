@@ -173,7 +173,7 @@ class AOIAugmentationScript(RenaScript):
                     # compile the contour information to lvt
 
                     contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy, max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-                    self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+                    # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
 
 
                     # TODO: send the contour information to Unity
