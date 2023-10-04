@@ -5,9 +5,7 @@ import cv2
 import matplotlib.pyplot as plt
 # from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
 import numpy as np
-import torch
-from eidl.utils.model_utils import get_trained_model, load_image_preprocess
-from eidl.viz.vit_rollout import VITAttentionRollout
+
 
 
 class ImageInfo():
