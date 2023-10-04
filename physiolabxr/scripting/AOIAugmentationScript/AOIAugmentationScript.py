@@ -148,44 +148,51 @@ class AOIAugmentationScript(RenaScript):
                         print("image info not found in dict")
                         # stop the experiment
 
-
-#################################################################################################################
-                    # register the image on screen shape
-                    start = time.time()
-                    image_on_screen_shape = get_image_on_screen_shape(
-                        original_image_width=self.current_image_info.original_image.shape[1],
-                        original_image_height=self.current_image_info.original_image.shape[0],
-                        image_width=AOIAugmentationConfig.image_on_screen_width,
-                        image_height=AOIAugmentationConfig.image_on_screen_height,
-                    )
-
-                    # calculate the contour
-                    heatmap_processed = cv2.resize(self.current_image_info.average_self_attention_matrix,
-                                                   dsize=(image_on_screen_shape[1], image_on_screen_shape[0]),
-                                                   interpolation=cv2.INTER_NEAREST)
-                    ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
-                    # apply erosion to threshold image
-                    kernel = np.ones((3, 3), np.uint8)
-
-                    thresh = cv2.erode(thresh, kernel, iterations=1)
-                    contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-                    # compile the contour information to lvt
-
-                    contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy, max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-                    # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-
-
-                    # TODO: send the contour information to Unity
-                    self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-                    print("time for contour: {}".format(time.time() - start))
-
+                    if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
+                        pass
+                    elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState:
+                        self.static_aoi_augmentation_state_init_callback()
 
 
 
 #################################################################################################################
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
+
+    def static_aoi_augmentation_state_init_callback(self):
+        # register the image on screen shape
+        start = time.time()
+        image_on_screen_shape = get_image_on_screen_shape(
+            original_image_width=self.current_image_info.original_image.shape[1],
+            original_image_height=self.current_image_info.original_image.shape[0],
+            image_width=AOIAugmentationConfig.image_on_screen_width,
+            image_height=AOIAugmentationConfig.image_on_screen_height,
+        )
+
+        # calculate the contour
+        heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
+                                       dsize=(image_on_screen_shape[1], image_on_screen_shape[0]),
+                                       interpolation=cv2.INTER_NEAREST)
+        ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
+        # apply erosion to threshold image
+        kernel = np.ones((10, 10), np.uint8)
+
+        thresh = cv2.erode(thresh, kernel, iterations=1)
+        contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # convert contours coordinate to image on screen coordinate
+
+        # compile the contour information to lvt
+
+        contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
+                                                      max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+        # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+
+        # TODO: send the contour information to Unity
+        self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+        print("time for contour: {}".format(time.time() - start))
+
+
 
     def enter_block(self, block_marker):
         if block_marker == AOIAugmentationConfig.ExperimentBlock.InitBlock.value:
