@@ -113,7 +113,7 @@ def process_received_camera_images(image_data, image_depth_data, net, class_name
         'aveDepth': aveDepth,
     }, color_img, image_depth
 
-class BaseRenaScript(RenaScript):
+class UnityObjectDetection(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
