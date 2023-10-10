@@ -149,15 +149,20 @@ class AOIAugmentationScript(RenaScript):
                         # stop the experiment
 
                     if self.currentExperimentState == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState:
-                        pass
+                        self.no_aoi_augmentation_state_init_callback()
                     elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState:
                         self.static_aoi_augmentation_state_init_callback()
+                    elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState:
+                        self.interactive_aoi_augmentation_state_init_callback()
 
 
 
 #################################################################################################################
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
+
+    def no_aoi_augmentation_state_init_callback(self):
+        pass
 
     def static_aoi_augmentation_state_init_callback(self):
         # register the image on screen shape
@@ -192,6 +197,8 @@ class AOIAugmentationScript(RenaScript):
         self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
         print("time for contour: {}".format(time.time() - start))
 
+    def interactive_aoi_augmentation_state_init_callback(self):
+        pass
 
 
     def enter_block(self, block_marker):
