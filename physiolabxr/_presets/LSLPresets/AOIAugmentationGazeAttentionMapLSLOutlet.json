@@ -1,5 +1,5 @@
 { "StreamName":"AOIAugmentationGazeAttentionMapLSLOutlet",
-"NumChannels":  1250,
+"NumChannels":  1024,
   "DataType": "float32",
   "NominalSamplingRate":  250
 }

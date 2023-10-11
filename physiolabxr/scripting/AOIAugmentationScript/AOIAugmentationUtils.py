@@ -302,6 +302,7 @@ class GazeAttentionMatrix():
 
 
         self.device = device
+        self.sigma = 10
 
         self.image_shape = None
         self._filter_size = None
@@ -311,7 +312,7 @@ class GazeAttentionMatrix():
         self._attention_patch_average_kernel = None
         self.attention_patch_shape = None
         self.attention_grid_shape = None
-        self._gaze_attention_grid_map = None
+        self._gaze_attention_grid_map_buffer = None
 
 
     def set_image_shape(self, image_shape):
@@ -331,7 +332,7 @@ class GazeAttentionMatrix():
             (self.attention_patch_shape[0] * self.attention_patch_shape[1]), device=self.device)
 
         self.attention_grid_shape = np.array([int(self.image_shape[0]/self.attention_patch_shape[0]), int(self.image_shape[1]/self.attention_patch_shape[1])])
-        self._gaze_attention_grid_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape), device=self.device)
+        self._gaze_attention_grid_map_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape), device=self.device)
 
 
 
@@ -359,11 +360,11 @@ class GazeAttentionMatrix():
          return gaze_on_grid_attention_map
 
     def gaze_attention_grid_map_clutter_removal(self, gaze_on_grid_attention_map, attention_clutter_ratio=0.1):
-        self._gaze_attention_grid_map = attention_clutter_ratio * self._gaze_attention_grid_map + (
+        self._gaze_attention_grid_map_buffer = attention_clutter_ratio * self._gaze_attention_grid_map_buffer + (
                     1 - attention_clutter_ratio) * gaze_on_grid_attention_map
 
     def get_gaze_attention_grid_map(self, flatten=True):
-        gaze_attention_grid_map = self._gaze_attention_grid_map.cpu().numpy()
+        gaze_attention_grid_map = self._gaze_attention_grid_map_buffer.cpu().numpy()
         if flatten:
             return gaze_attention_grid_map.flatten()
         else:

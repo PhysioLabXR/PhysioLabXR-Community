@@ -323,13 +323,12 @@ class AOIAugmentationScript(RenaScript):
                     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
                     gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
 
-                    self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.95)
+                    self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.995)
 
                     gaze_attention_grid_map = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
 
                     self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_grid_map)
 
-                pass
                 # gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
                 #     image_center_
                 # )
