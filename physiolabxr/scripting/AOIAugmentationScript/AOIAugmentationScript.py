@@ -36,16 +36,18 @@ class AOIAugmentationScript(RenaScript):
             AOIAugmentationConfig.ExperimentBlock.StartBlock
 
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
 
         self.current_image_name = None
         self.current_image_info= None
 
-        self.vit_attention_matrix = ViTAttentionMatrix()
+        # self.vit_attention_matrix = ViTAttentionMatrix()
+
+        self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
         self.report_cleaned_image_info_dict = get_report_cleaned_image_info_dict(AOIAugmentationConfig.ReportCleanedImageInfoFilePath, merge_dict=True)
-
         print("Experiment started")
         # self.vit_attention_matrix.generate_random_attention_matrix(patch_num=1250)
 
@@ -54,14 +56,14 @@ class AOIAugmentationScript(RenaScript):
 
 
         # ################################################################################################################
-        # gaze_attention_map_lsl_outlet_info = StreamInfo(
-        #     AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamName,
-        #     AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamType,
-        #     AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.ChannelNum,
-        #     AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.NominalSamplingRate,
-        #     channel_format=cf_float32)
-        #
-        # self.gaze_attention_map_lsl_outlet = StreamOutlet(gaze_attention_map_lsl_outlet_info)  # shape: (1250, 1)
+        gaze_attention_map_lsl_outlet_info = StreamInfo(
+            AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamName,
+            AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.StreamType,
+            AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.ChannelNum,
+            AOIAugmentationConfig.AOIAugmentationGazeAttentionMapLSLStreamInfo.NominalSamplingRate,
+            channel_format=cf_float32)
+
+        self.gaze_attention_map_lsl_outlet = StreamOutlet(gaze_attention_map_lsl_outlet_info)  # shape: (1024, 1)
         #
         # ################################################################################################################
 
@@ -143,6 +145,26 @@ class AOIAugmentationScript(RenaScript):
                     if self.current_image_name in self.report_cleaned_image_info_dict.keys():
                         current_image_info_dict = self.report_cleaned_image_info_dict[self.current_image_name]
                         self.current_image_info = ImageInfo(**current_image_info_dict)
+
+                        self.gaze_attention_matrix.set_image_shape(self.current_image_info.model_image_shape)
+                        self.gaze_attention_matrix.set_attention_patch_shape(self.current_image_info.patch_shape)
+
+                        # get image on screen pixel shape
+                        image_on_screen_shape = get_image_on_screen_shape(
+                            original_image_width=self.current_image_info.original_image.shape[1],
+                            original_image_height=self.current_image_info.original_image.shape[0],
+                            image_width=AOIAugmentationConfig.image_on_screen_width,
+                            image_height=AOIAugmentationConfig.image_on_screen_height,
+                        )
+
+                        self.current_image_info.image_on_screen_shape = image_on_screen_shape
+
+
+
+                        # self.gaze_attention_matrix = GazeAttentionMatrixTorch(
+                        #     image_shape=
+
+
                     else:
                         self.current_image_info = None
                         print("image info not found in dict")
@@ -167,16 +189,10 @@ class AOIAugmentationScript(RenaScript):
     def static_aoi_augmentation_state_init_callback(self):
         # register the image on screen shape
         start = time.time()
-        image_on_screen_shape = get_image_on_screen_shape(
-            original_image_width=self.current_image_info.original_image.shape[1],
-            original_image_height=self.current_image_info.original_image.shape[0],
-            image_width=AOIAugmentationConfig.image_on_screen_width,
-            image_height=AOIAugmentationConfig.image_on_screen_height,
-        )
 
         # calculate the contour
         heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
-                                       dsize=(image_on_screen_shape[1], image_on_screen_shape[0]),
+                                       dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
                                        interpolation=cv2.INTER_NEAREST)
         ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
         # apply erosion to threshold image
@@ -198,6 +214,14 @@ class AOIAugmentationScript(RenaScript):
         print("time for contour: {}".format(time.time() - start))
 
     def interactive_aoi_augmentation_state_init_callback(self):
+
+
+
+        # self.gaze_attention_matrix = GazeAttentionMatrixTorch(
+        #     image_shape=,
+        #     attention_patch_shape=,
+        #     device=self.device
+        # )
         pass
 
 
@@ -258,8 +282,66 @@ class AOIAugmentationScript(RenaScript):
         pass
 
     def interactive_aoi_augmentation_state_callback(self):
-        self.interactive_attention_callback()
+
+        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+            gaze_data = GazeData()
+            gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
+
+            gaze_data = self.ivt_filter.process_sample(gaze_data)
+
+            # print(gaze_data.gaze_type)
+
+            if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
+
+                gaze_point_on_screen_image_index = tobii_gaze_on_display_area_to_image_matrix_index(
+                    image_center_x=AOIAugmentationConfig.image_center_x,
+                    image_center_y=AOIAugmentationConfig.image_center_y,
+
+                    image_width=self.current_image_info.image_on_screen_shape[1],
+                    image_height=self.current_image_info.image_on_screen_shape[0],
+
+                    screen_width=AOIAugmentationConfig.screen_width,
+                    screen_height=AOIAugmentationConfig.screen_height,
+
+                    gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
+                    gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
+                )
+
+
+                # check if on the image
+                gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
+                    matrix_shape=self.current_image_info.image_on_screen_shape,
+                    coordinate=gaze_point_on_screen_image_index)
+
+                if gaze_point_is_in_screen_image_boundary:
+                    gaze_point_on_model_coordinate = coordinate_transformation(
+                        original_image_shape=self.current_image_info.image_on_screen_shape,
+                        target_image_shape = self.current_image_info.model_image_shape,
+                        coordinate_on_original_image=gaze_point_on_screen_image_index
+                    )
+
+                    gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
+                    gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
+
+                    self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.95)
+
+                    gaze_attention_grid_map = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
+
+                    self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_grid_map)
+
+                pass
+                # gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
+                #     image_center_
+                # )
+
+
+
+        self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+
         pass
+
+        # self.interactive_attention_callback()
+        # pass
 
 
 

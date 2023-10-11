@@ -7,8 +7,8 @@ import pickle
 
 
 
-ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
-
+# ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
+ReportCleanedImageInfoFilePath = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
 
 screen_width = 1920
 screen_height = 1080
@@ -73,12 +73,12 @@ class GazeDataLSLStreamInfo:
 #     NominalSamplingRate = 250
 #
 #
-# class AOIAugmentationGazeAttentionMapLSLStreamInfo:
-#     StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
-#     StreamType = "AttentionData"
-#     StreamID = "5"
-#     ChannelNum = int(attention_grid_shape[0] * attention_grid_shape[1])
-#     NominalSamplingRate = 250
+class AOIAugmentationGazeAttentionMapLSLStreamInfo:
+    StreamName = "AOIAugmentationGazeAttentionMapLSLOutlet"
+    StreamType = "AttentionData"
+    StreamID = "5"
+    ChannelNum = int(32*32)
+    NominalSamplingRate = 250
 
 
 # class EventMarkerLSLInletInfo(Enum):

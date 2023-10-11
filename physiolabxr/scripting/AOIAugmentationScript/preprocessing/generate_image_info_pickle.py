@@ -50,7 +50,8 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 vit_rollout = VITAttentionRollout(model, device=device, attention_layer_name='attn_drop', head_fusion="mean",
                                   discard_ratio=0.5)
 
-dataset_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned'
+dataset_dir = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned_small'
+#dataset_dir = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned'
 
 dirs = os.listdir(dataset_dir)
 
