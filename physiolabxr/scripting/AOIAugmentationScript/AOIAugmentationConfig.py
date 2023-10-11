@@ -41,7 +41,7 @@ class EventMarkerLSLStreamInfo:
     BlockChannelIndex = 0
     ExperimentStateChannelIndex = 1
     ImageIndexChannelIndex = 2
-    InterruptChannelIndex = 3
+    UserInputsChannelIndex = 3
 
 
 class GazeDataLSLStreamInfo:

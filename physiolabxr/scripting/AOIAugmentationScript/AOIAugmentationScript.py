@@ -79,11 +79,10 @@ class AOIAugmentationScript(RenaScript):
         self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024,)
         # ################################################################################################################
 
+        self.cur_attention_human = None
+        # Start will be called once when the run button is hit.
 
 
-
-
-    # Start will be called once when the run button is hit.
     def init(self):
         pass
 
@@ -118,7 +117,7 @@ class AOIAugmentationScript(RenaScript):
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             image_index_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
-            interrupt_label_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.InterruptChannelIndex]
+            user_inputs_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UserInputsChannelIndex]
 
             # ignore the block_marker <0 and state_marker <0 those means exit the current state
             if block_marker and block_marker > 0:  # evoke block change
@@ -333,7 +332,7 @@ class AOIAugmentationScript(RenaScript):
                 #     image_center_
                 # )
 
-
+        self.cur_attention_human = gaze_attention_grid_map
 
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
 
