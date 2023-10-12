@@ -123,6 +123,11 @@ class ExperimentBlock(Enum):
     TestBlock = 4
     EndBlock = 5
 
+class UserInputTypes(Enum):
+
+        AOIAugmentationInteractionStateUpdateCueKeyPressed = 1
+
+
 
 # class NetworkConfig(Enum):
 #     ZMQPortNumber = 6667

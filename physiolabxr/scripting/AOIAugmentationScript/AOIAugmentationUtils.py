@@ -12,11 +12,11 @@ import pickle
 
 
 class ImageInfo():
-    def __init__(self, image_path, original_image,
-                 image_to_model, image_to_model_normalized, model_image_shape,
-                 patch_shape, attention_grid_shape,
-                 raw_attention_matrix,
-                 rollout_attention_matrix, average_self_attention_matrix,
+    def __init__(self, image_path=None, original_image=None,
+                 image_to_model=None, image_to_model_normalized=None, model_image_shape=None,
+                 patch_shape=None, attention_grid_shape=None,
+                 raw_attention_matrix=None,
+                 rollout_attention_matrix=None, average_self_attention_matrix=None,
                  y_true=None, y_pred=None):
         self.image_path = image_path
         self.original_image = original_image
@@ -312,7 +312,7 @@ class GazeAttentionMatrix():
         self._attention_patch_average_kernel = None
         self.attention_patch_shape = None
         self.attention_grid_shape = None
-        self._gaze_attention_grid_map_buffer = None
+        self.gaze_attention_grid_map_buffer = None
 
 
     def set_image_shape(self, image_shape):
@@ -332,7 +332,7 @@ class GazeAttentionMatrix():
             (self.attention_patch_shape[0] * self.attention_patch_shape[1]), device=self.device)
 
         self.attention_grid_shape = np.array([int(self.image_shape[0]/self.attention_patch_shape[0]), int(self.image_shape[1]/self.attention_patch_shape[1])])
-        self._gaze_attention_grid_map_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape), device=self.device)
+        self.gaze_attention_grid_map_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape), device=self.device)
 
 
 
@@ -360,11 +360,11 @@ class GazeAttentionMatrix():
          return gaze_on_grid_attention_map
 
     def gaze_attention_grid_map_clutter_removal(self, gaze_on_grid_attention_map, attention_clutter_ratio=0.1):
-        self._gaze_attention_grid_map_buffer = attention_clutter_ratio * self._gaze_attention_grid_map_buffer + (
+        self.gaze_attention_grid_map_buffer = attention_clutter_ratio * self.gaze_attention_grid_map_buffer + (
                     1 - attention_clutter_ratio) * gaze_on_grid_attention_map
 
     def get_gaze_attention_grid_map(self, flatten=True):
-        gaze_attention_grid_map = self._gaze_attention_grid_map_buffer.cpu().numpy()
+        gaze_attention_grid_map = self.gaze_attention_grid_map_buffer.cpu().numpy()
         if flatten:
             return gaze_attention_grid_map.flatten()
         else:
