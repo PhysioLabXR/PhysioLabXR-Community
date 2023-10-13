@@ -1,0 +1,8 @@
+{ "StreamName":"Example-Video-Gaze-Pixel",
+  "ChannelNames":[
+    "x",
+    "y"
+  ],
+  "NominalSamplingRate":  30,
+  "DataType": "float32"
+}
