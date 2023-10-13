@@ -1,5 +1,5 @@
 brainflow
-numpy >= 1.26.0
+numpy >= 1.22.3
 PyQt6
 pyserial
 pylsl
