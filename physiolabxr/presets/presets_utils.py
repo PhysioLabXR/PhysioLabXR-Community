@@ -119,6 +119,9 @@ def get_bar_chart_max_min_range(stream_name, group_name) -> tuple[float, float]:
 def set_group_image_format(stream_name, group_name, image_format):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format = image_format
 
+def set_group_image_rotation_clockwise_degree(stream_name, group_name, rotation_clockwise_degree):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.rotation_clockwise_degree = rotation_clockwise_degree
+
 def get_group_image_format(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.image_format
 
