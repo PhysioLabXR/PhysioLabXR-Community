@@ -1,0 +1,8 @@
+{ "StreamName":"Example-EventMarker-DTN-Block",
+  "ChannelNames":[
+    "DTN",
+    "BlockID"
+  ],
+  "NominalSamplingRate":  75,
+  "DataType": "float32"
+}

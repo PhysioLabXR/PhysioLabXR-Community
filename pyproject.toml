@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="physiolabxr"
-version="1.0.0-beta.1"
+version="1.0.0-beta.2"
 authors=[
     { name="Ziheng 'Leo' Li", email="s-vector.lee@hotmail.com"}
 ]
