@@ -14,7 +14,7 @@ from physiolabxr.presets.presets_utils import get_stream_preset_info, get_is_gro
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
     get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, \
     get_group_channel_indices_start_end, get_is_channels_show
-from physiolabxr.utils.image_utils import process_image
+from physiolabxr.utils.image_utils import process_image, rotate_image
 from physiolabxr.utils.ui_utils import get_distinct_colors
 
 
@@ -198,7 +198,12 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
-            width, height, image_format, channel_format, scaling_percentile = image_config.width, image_config.height, image_config.image_format, image_config.channel_format, image_config.scaling_percentage
+            width, height, image_format, channel_format, scaling_percentile, rotation_clockwise_degree = image_config.width, \
+                                                                                                         image_config.height, \
+                                                                                                         image_config.image_format, \
+                                                                                                         image_config.channel_format, \
+                                                                                                         image_config.scaling_percentage, \
+                                                                                                         image_config.rotation_clockwise_degree
             depth = image_format.depth_dim()
             if channel_indices is None:
                 start_end = get_group_channel_indices_start_end(self.stream_name, self.group_name)
@@ -206,10 +211,10 @@ class GroupPlotWidget(QtWidgets.QWidget):
             else:
                 image_plot_data = data[channel_indices, -1]  # only visualize the last frame
             if image_format == ImageFormat.rgb or image_format == ImageFormat.bgr:
-                if channel_format == ChannelFormat.channel_last:
+                if channel_format == ChannelFormat.channel_first:
                     image_plot_data = np.reshape(image_plot_data, (depth, height, width))
                     image_plot_data = np.moveaxis(image_plot_data, 0, -1)
-                elif channel_format == ChannelFormat.channel_first:
+                elif channel_format == ChannelFormat.channel_last:
                     image_plot_data = np.reshape(image_plot_data, (height, width, depth))
                 # it's always channel last when we are done
                 if image_format == ImageFormat.bgr:
@@ -222,6 +227,12 @@ class GroupPlotWidget(QtWidgets.QWidget):
                 self.image_item.setLevels(get_valid_image_levels(self.stream_name, self.group_name))
             if scaling_percentile != 100:
                 image_plot_data = process_image(image_plot_data, scale=scaling_percentile/100)
+            if rotation_clockwise_degree != 0:
+                # the image should already been formatted to channel last and RGB
+                image_plot_data = rotate_image(image_plot_data, rotation_clockwise_degree=rotation_clockwise_degree)
+                # image_plot_data = process_image(image_plot_data, rotate=rotation_clockwise_degree)
+                # pass
+
             self.image_item.setImage(image_plot_data, autoLevels=self.is_auto_level_image)
 
         elif selected_plot_format == 2:

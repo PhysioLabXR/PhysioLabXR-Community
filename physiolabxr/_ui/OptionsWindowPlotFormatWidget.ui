@@ -138,17 +138,17 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_13">
            <item>
-            <widget class="QWidget" name="display_rotation_widget" native="true">
+            <widget class="QWidget" name="image_rotation_clockwise_degree_widget" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_7">
               <item>
-               <widget class="QLabel" name="label_23">
+               <widget class="QLabel" name="image_rotation_clockwise_degree_label">
                 <property name="text">
                  <string>Rotation (Clockwise in Degree)</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QComboBox" name="comboBox">
+               <widget class="QComboBox" name="image_rotation_clockwise_degree_combobox">
                 <item>
                  <property name="text">
                   <string>0</string>
