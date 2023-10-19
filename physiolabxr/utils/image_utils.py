@@ -30,20 +30,4 @@ def rotate_image(image, rotation_clockwise_degree: int=0):
         return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
 
-# def rotate_image(image, rotation_clockwise_degree: int=0, image_format: ImageFormat=ImageFormat.pixelmap, channel_format: ChannelFormat=ChannelFormat.channel_last):
-#     pass
-#     # if rgb_channel_order is not None:
-#     #     if rgb_channel_order == VideoDeviceChannelOrder.BGR:
-#     #         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#     #     elif rgb_channel_order == VideoDeviceChannelOrder.RGB:
-#     #         pass
-#     #
-#     # if rotation_clockwise_degree==0:
-#     #     return image
-#     # elif rotation_clockwise_degree==90:
-#     #     return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-#     # elif rotation_clockwise_degree==180:
-#     #     return cv2.rotate(image, cv2.ROTATE_180)
-#     # elif rotation_clockwise_degree==270:
-#     #     return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-#
+
