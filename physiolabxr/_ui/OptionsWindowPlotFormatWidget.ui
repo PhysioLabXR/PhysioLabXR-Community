@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
@@ -133,10 +133,47 @@
             <x>0</x>
             <y>0</y>
             <width>809</width>
-            <height>362</height>
+            <height>410</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_13">
+           <item>
+            <widget class="QWidget" name="display_rotation_widget" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <item>
+               <widget class="QLabel" name="label_23">
+                <property name="text">
+                 <string>Rotation (Clockwise in Degree)</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="comboBox">
+                <item>
+                 <property name="text">
+                  <string>0</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>90</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>180</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>270</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item>
             <widget class="QWidget" name="display_options" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_12">
