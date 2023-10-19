@@ -121,6 +121,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentage)
 
         self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
+        self.image_rotation_clockwise_degree_combobox.setCurrentText(str(this_group_entry.plot_configs.image_config.rotation_clockwise_degree))
         self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)
 
         valid_levels = get_valid_image_levels(self.stream_name, group_name)
