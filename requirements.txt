@@ -13,6 +13,7 @@ pyzmq
 setuptools
 psutil
 pytest-qt
+pytest
 numba
 PyOpenGL
 PyOpenGL_accelerate
