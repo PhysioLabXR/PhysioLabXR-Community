@@ -31,6 +31,7 @@ jobs:
           sudo apt install qt6-base-dev
           pip install wheel
           pip install -r requirements.dev.txt
+          pip install pytest
       - name: Test with pytest
         run: |
           ./tests/test.sh
