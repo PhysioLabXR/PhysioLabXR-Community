@@ -337,7 +337,7 @@ def validate_output_data(data, expected_size):
         try:
             assert data.shape[0] == expected_size or data.shape[1] == expected_size
         except AssertionError:
-            raise BadOutputError(f'Out put data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
+            raise BadOutputError(f'Output data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
         if data.shape[0] == expected_size:
             data = np.transpose(data)  #  the first dimension is the number of samples and the second is channels
         is_chunk = True

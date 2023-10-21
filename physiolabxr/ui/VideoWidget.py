@@ -59,6 +59,8 @@ class VideoWidget(BaseStreamWidget):
             self.plot_widget.setYRange(0, image.shape[1])
             self.is_image_fitted_to_frame = True
 
+        data_dict = {"stream_name": self.stream_name, "frames": np.expand_dims(image.reshape(-1), -1), "timestamps": np.array([timestamp])}
+        self.main_parent.scripting_tab.forward_data(data_dict)
         self.main_parent.recording_tab.update_camera_screen_buffer(self.stream_name, image, timestamp)
 
     def video_preset_changed(self):
