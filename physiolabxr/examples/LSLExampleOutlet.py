@@ -12,8 +12,8 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
 def main(argv):
-    srate = 128
-    name = 'Dummy-8Chan'
+    srate = 250
+    name = 'OpenBCICyton8Channels'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = 8
