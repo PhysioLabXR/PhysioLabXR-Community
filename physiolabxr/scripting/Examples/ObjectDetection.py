@@ -82,11 +82,15 @@ class ObjectDetectionScript(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        if "Camera 0" in self.inputs: # check if the camera is in the inputs
-            image_data = self.inputs["Camera 0"][0][:, -1] # get the newest image data from the camera
+        camera_stream_names = [x for x in self.inputs.keys() if x.startswith("Camera")]
+        if len(camera_stream_names) > 0: # check if the camera is in the inputs
+            # take the first stream whose name starts with camera
+            stream_name = camera_stream_names[0]
+            image_data = self.inputs[stream_name][0][:, -1] # get the newest image data from the camera
             detected_pos, img_w_bbx = process_received_camera_images(image_data, self.ob_model, self.class_names, self.image_shape) # process the image data
             self.outputs["OutputImg"] = img_w_bbx.reshape(-1) # reshape the output image to send
             self.inputs.clear_buffer() # clear the input buffer
+
 
 
     # cleanup is called when the stop button is hit
