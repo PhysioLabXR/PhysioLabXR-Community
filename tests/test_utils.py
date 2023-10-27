@@ -129,7 +129,7 @@ class ContextBot:
     def cleanup(self):
         pass
 
-    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int):
+    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int, preset_type: PresetType = PresetType.LSL):
         """
         start a stream as a separate process, add it to the app's streams, and start it once it becomes
         available
@@ -141,8 +141,11 @@ class ContextBot:
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
         self.send_data_processes[stream_name] = p
-        from physiolabxr.presets.PresetEnums import PresetType
-        self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
+        # check the preset hasn't already been added
+        if stream_name not in self.app.presets.keys():
+            self.app.create_preset(stream_name, preset_type, num_channels=num_channels, nominal_sample_rate=srate)
+        else:
+            raise ValueError(f"test_utils.create_add_start_stream(): Stream name {stream_name} is already in keys for app.presets")
 
         self.app.ui.tabWidget.setCurrentWidget(self.app.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
         self.qtbot.mouseClick(self.app.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
@@ -597,3 +600,59 @@ def send_data_time(run_time):
         duration = local_clock() - start_time
         if duration > run_time:
             break
+
+
+
+def run_visualization_simulation_benchmark(app_main_window, test_context, test_combos, test_stream_params, test_time_second_per_combo, metrics, is_reocrding=False):
+    """
+    # TODO test this function
+    """
+
+    from physiolabxr.utils.buffers import flatten
+
+    results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
+    for simulation_streams in test_combos:
+        print(f"Testing stream combo {simulation_streams}", end='')
+        start_time = time.perf_counter()
+        for s_name in stream_names:
+            test_context.create_add_start_stream(s_name, num_channels, sampling_rate)
+        if is_reocrding:
+            app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
+            test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
+
+        test_context.qtbot.wait(int(test_time_second_per_stream * 1e3))
+        for s_name in stream_names:
+            test_context.close_stream(s_name)
+        for measure in metrics:
+            if measure == 'update buffer time':
+                update_buffer_times = flatten([app_main_window.stream_widgets[s_name].update_buffer_times for s_name in stream_names])
+                update_buffer_time_mean = np.mean(update_buffer_times)
+                update_buffer_time_std = np.std(update_buffer_times)
+                if np.isnan(update_buffer_time_mean) or np.isnan(update_buffer_time_std):
+                    raise ValueError()
+                results[measure][n_streams, num_channels, sampling_rate][measure] = update_buffer_time_mean
+                # results[measure][num_channels, sampling_rate]['update_buffer_time_std'] = update_buffer_time_std
+            elif measure == 'plot data time':
+                plot_data_times = flatten([app_main_window.stream_widgets[s_name].plot_data_times for s_name in stream_names])
+                plot_data_time_mean = np.mean(plot_data_times)
+                plot_data_time_std = np.std(plot_data_times)
+                if np.isnan(plot_data_time_mean) or np.isnan(plot_data_time_std):
+                    raise ValueError()
+                results[measure][n_streams, num_channels, sampling_rate][measure] = plot_data_time_mean
+                # results[measure][num_channels, sampling_rate]['plot_data_time_std'] = plot_data_time_std
+            elif measure == 'viz fps':
+                results[measure][n_streams, num_channels, sampling_rate][measure] = np.mean([app_main_window.stream_widgets[s_name].get_fps() for s_name in stream_names])
+            else:
+                raise ValueError(f"Unknown metric: {measure}")
+        [app_main_window.stream_widgets[s_name].reset_performance_measures() for s_name in stream_names]
+
+        if is_reocrding:
+            test_context.stop_recording()
+            recording_file_name = app_main_window.recording_tab.save_path
+            assert os.stat(recording_file_name).st_size != 0  # make sure recording file has content
+            os.remove(recording_file_name)
+        for s_name in stream_names:
+            test_context.remove_stream(s_name)
+        print(f"Took {time.perf_counter() - start_time}.", end='')
+
+    return results
