@@ -12,9 +12,12 @@ from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.test_utils import ContextBot, get_random_test_stream_names, run_visualization_benchmark, app_fixture, \
-    run_replay_benchmark, plot_viz_benchmark_results, run_visualization_simulation_benchmark
+    run_replay_benchmark, plot_viz_benchmark_results, run_visualization_simulation_benchmark, \
+    plot_viz_simulation_benchmark_results
 from tests.test_viz import plot_replay_benchmark_results
-
+from physiolabxr.presets.PlotConfig import ImageConfig, ImageFormat
+from physiolabxr.presets.PresetEnums import PresetType, DataType
+from physiolabxr.presets.GroupEntry import PlotFormat
 
 @pytest.fixture
 def app_main_window(qtbot):
@@ -68,27 +71,34 @@ def test_stream_visualization_simulation_streams_performance(app_main_window, qt
     :param qtbot:
     :return:
     '''
-    test_time_second_per_combo = 60
-    test_combos = [['EEGTest', 'TriggerTest'],
-                   ['EEGTest', 'TriggerTest', 'EyetrackingTest'],
-                   ['EEGTest', 'TriggerTest', 'EyetrackingTest', 'CamCaptureTest'],
-                   ['EEGTest', 'TriggerTest', 'fMRITest'],
-                   ['EEGTest', 'TriggerTest', 'EyetrackingTest', 'fMRITest'],
-                   ['EEGTest', 'TriggerTest', 'EyetrackingTest', 'fMRITest', 'CamCaptureTest']]
-    metrics = 'update buffer time', 'plot data time', 'viz fps'
+    test_time_second_per_combo = 60  # 60
+    test_combos = [['EEG', 'Trigger'],
+                   ['EEG', 'Trigger', 'Eyetracking'],
+                   ['EEG', 'Trigger', 'Eyetracking', 'CamCapture'],
+                   ['EEG', 'Trigger', 'fMRI'],
+                   ['EEG', 'Trigger', 'Eyetracking', 'fMRI'],
+                   ['EEG', 'Trigger', 'Eyetracking', 'fMRI', 'CamCapture']
+                   ]
+    metrics = 'update buffer time', 'viz fps'
 
-    test_stream_params = {'EEGTest': {'sampling_rate': 2048, 'num_channels': 128},
-                            'TriggerTest': {'sampling_rate': 2048, 'num_channels': 1},
-                            'EyetrackingTest': {'sampling_rate': 1200, 'num_channels': 30},
-                            'CamCaptureTest': {'sampling_rate': 30, 'num_channels': 1080 * 1920},  # assuming a 1080 * 720 video
-                            'fMRITest': {'sampling_rate': 1, 'num_channels': 1}}
+    test_stream_params = {'EEG':          {'srate': 2048, 'num_channels': 128, 'preset_type': PresetType.ZMQ, "data_type": DataType.float32},
+                          'Trigger':      {'srate': 2048, 'num_channels': 1, 'preset_type': PresetType.ZMQ, "data_type": DataType.float32},
+                          'Eyetracking':  {'srate': 1200, 'num_channels': 51, 'preset_type': PresetType.ZMQ, "data_type": DataType.float32},
+                          'CamCapture':   {'srate': 30, 'num_channels': 1080 * 1920 * 3, 'plot_format': PlotFormat.IMAGE, 'data_type': DataType.uint8, 'preset_type': PresetType.ZMQ,
+                                               'plot_configs': {'image_config':
+                                                                  {"width": 1080,
+                                                                   "height": 1920,
+                                                                   "image_format": ImageFormat.rgb
+                                                                   }
+                                                              }
+                                              },  # assuming a 1080 * 720 color video
+                          'fMRI': {'srate': 1, 'num_channels': 64 * 64 * 42, 'preset_type': PresetType.ZMQ, "data_type": DataType.float32}}
 
     test_context = ContextBot(app_main_window, qtbot)
 
     results_without_recording = run_visualization_simulation_benchmark(app_main_window, test_context, test_combos, test_stream_params, test_time_second_per_combo, metrics, is_reocrding=False)
-    pickle.dump({'results_without_recording': results_without_recording, 'test_combos': test_combos}, open("simulation_streams_benchmark.p", 'wb'))
-
-    # plot_viz_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")  # TODO add back viz benchmark results
+    pickle.dump(results_without_recording, open("benchmark_simulation.p", 'wb'))
+    plot_viz_simulation_benchmark_results(results_without_recording, notes="")  # TODO add back viz benchmark results
 
 
 def test_replay_data_throughput(app_main_window, qtbot) -> None:

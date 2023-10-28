@@ -294,6 +294,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         group_plot_dict = self.init_stream_visualization()
         self.viz_components = VizComponents(self.fs_label, self.ts_label, group_plot_dict)
 
+    def auto_scale_viz_components(self):
+        self.viz_components.auto_scale_all_groups()
+
     def process_stream_data(self, data_dict):
         '''
         update the visualization buffer, recording buffer, and scripting buffer

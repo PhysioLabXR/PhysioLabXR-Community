@@ -157,7 +157,7 @@ def save_preset(is_async=True):
     Presets().save(is_async=is_async)
 
 
-def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
+def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32, **kwargs):
     if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
@@ -168,9 +168,10 @@ def create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate: in
 
     stream_preset_dict = preprocess_stream_preset(preset_dict, PresetType.LSL)
     Presets().add_stream_preset(stream_preset_dict)
+    update_stream_preset(stream_name, **kwargs)
     return preset_dict
 
-def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32):
+def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_rate: int=None, data_type=DataType.float32, **kwargs):
     if is_stream_name_in_presets(stream_name):
         raise ValueError(f'Stream preset with stream name {stream_name} already exists.')
     preset_dict = {'StreamName': stream_name,
@@ -182,7 +183,17 @@ def create_default_zmq_preset(stream_name, port, num_channels, nominal_sample_ra
 
     stream_preset_dict = preprocess_stream_preset(preset_dict, PresetType.ZMQ)
     Presets().add_stream_preset(stream_preset_dict)
+    update_stream_preset(stream_name, **kwargs)
     return preset_dict
+
+
+def update_stream_preset(stream_name, **kwargs):
+    target_group_name = kwargs['group_name'] if 'group_name' in kwargs else list(Presets().stream_presets[stream_name].group_info.keys())[0]
+    if 'plot_format' in kwargs:
+        Presets().stream_presets[stream_name].group_info[target_group_name].selected_plot_format = kwargs['plot_format']
+    if 'plot_configs' in kwargs:
+        Presets().stream_presets[stream_name].group_info[target_group_name].plot_configs.set_config(kwargs['plot_configs'])
+
 
 def set_stream_num_channels(stream_name, num_channels):
     Presets().stream_presets[stream_name].num_channels = num_channels
