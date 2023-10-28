@@ -338,7 +338,8 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/physiolabxr/tests or <project_root>. Instead cwd is', os.getcwd())
 
-def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
+def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test,
+                                sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False, test_axes=None, result_fn=None):
     from physiolabxr.utils.buffers import flatten
 
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
@@ -386,6 +387,8 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
         for s_name in stream_names:
             test_context.remove_stream(s_name)
         print(f"Took {time.perf_counter() - start_time}.", end='')
+        pickle.dump({'results_without_recording': results, 'test_axes': test_axes},  open(result_fn, 'wb'))
+
 
     return results
 

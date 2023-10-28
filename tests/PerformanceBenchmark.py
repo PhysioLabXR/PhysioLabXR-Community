@@ -36,10 +36,12 @@ def test_stream_visualization_dummy_streams_performance(app_main_window, qtbot) 
     :param qtbot:
     :return:
     '''
-    test_time_second_per_stream = 60
-    num_streams_to_test = [1, 5, 3, 7, 9]
-    sampling_rates_to_test = np.linspace(1, 2048, 10)
-    num_channels_to_test = np.linspace(1, 128, 10)
+    result_fn = "single_stream_benchmark_5andmore.p"
+    test_time_second_per_stream = 60  # TODO 60
+    # num_streams_to_test = [1, 3, 5, 7, 9]
+    num_streams_to_test = [5, 7, 9]
+    sampling_rates_to_test = np.linspace(1, 2048, 10)  # TODO num=10
+    num_channels_to_test = np.linspace(1, 128, 10)  # TODO num=10
     metrics = 'update buffer time', 'plot data time', 'viz fps'
 
     num_channels_to_test = [math.ceil(x) for x in num_channels_to_test]
@@ -55,8 +57,8 @@ def test_stream_visualization_dummy_streams_performance(app_main_window, qtbot) 
 
     test_context = ContextBot(app_main_window, qtbot)
 
-    results_without_recording = run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False)
-    pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open("single_stream_benchmark.p", 'wb'))
+    results_without_recording = run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False, test_axes=test_axes, result_fn=result_fn)
+    pickle.dump({'results_without_recording': results_without_recording, 'test_axes': test_axes}, open(result_fn, 'wb'))
 
     plot_viz_benchmark_results(results_without_recording, test_axes=test_axes, metrics=metrics, notes="")
 
@@ -69,11 +71,11 @@ def test_stream_visualization_real_streams_performance(app_main_window, qtbot) -
     :return:
     '''
     test_time_second_per_stream = 60
-    test_combos = [['EEG', 'EventMarker'],
-                   ['EEG', 'EventMarker', 'Eyetracking'],
-                   ['EEG', 'EventMarker', 'fMRI'],
-                   ['EEG', 'EventMarker', 'Eyetracking', 'fMRI'],
-                   ['EEG', 'EventMarker', 'Eyetracking', 'fMRI', 'CamCapture']]
+    test_combos = [['EEG', 'ContinousTrigger'],
+                   ['EEG', 'ContinousTrigger', 'Eyetracking'],
+                   ['EEG', 'ContinousTrigger', 'fMRI'],
+                   ['EEG', 'ContinousTrigger', 'Eyetracking', 'fMRI'],
+                   ['EEG', 'ContinousTrigger', 'Eyetracking', 'fMRI', 'CamCapture']]
     metrics = 'update buffer time', 'plot data time', 'viz fps'
 
     # test_axes = {"number of streams": num_streams_to_test, "number of channels": num_channels_to_test, "sampling rate (Hz)": sampling_rates_to_test}
