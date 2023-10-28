@@ -40,7 +40,7 @@ def test_stream_visualization_dummy_streams_performance(app_main_window, qtbot) 
     test_time_second_per_stream = 60  # TODO 60
     # num_streams_to_test = [1, 3, 5, 7, 9]
     num_streams_to_test = [5, 7, 9]
-    sampling_rates_to_test = np.linspace(1, 2048, 10)  # TODO num=10
+    sampling_rates_to_test = np.linspace(229, 2048, 10)  # TODO start=1
     num_channels_to_test = np.linspace(1, 128, 10)  # TODO num=10
     metrics = 'update buffer time', 'plot data time', 'viz fps'
 

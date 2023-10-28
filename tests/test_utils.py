@@ -129,7 +129,7 @@ class ContextBot:
     def cleanup(self):
         pass
 
-    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int):
+    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int, after_process_wait_time=1):
         """
         start a stream as a separate process, add it to the app's streams, and start it once it becomes
         available
@@ -140,6 +140,7 @@ class ContextBot:
             raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
+
         self.send_data_processes[stream_name] = p
         from physiolabxr.presets.PresetEnums import PresetType
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
@@ -317,7 +318,7 @@ class ContextBot:
         self.clean_up()
 
 def secrets_random_choice(alphabet):
-    return ''.join(secrets.choice(alphabet) for _ in range(8))
+    return ''.join(secrets.choice(alphabet) for _ in range(16))
 
 def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowercase + string.digits):
     names = []
