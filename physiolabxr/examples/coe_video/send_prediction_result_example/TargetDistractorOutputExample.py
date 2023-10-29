@@ -10,9 +10,24 @@ from random import random as rand
 
 from pylsl import StreamInfo, StreamOutlet, local_clock
 from scipy.special import softmax
+import keyboard
+
+target_locked = False
+
+
+def on_key_event(event):
+    if event.event_type == keyboard.KEY_DOWN:
+        print(f"Key {event.name} was pressed")
+        if event.name == 'q':
+            global target_locked
+            target_locked = True
+            print('Target locked')
+
+
 
 def main(argv):
-    srate = 10
+    keyboard.hook(on_key_event)
+    srate = 20
     name = 'Target vs Distractor Prediction'
     print('Stream name is ' + name)
     type = 'EEG'
@@ -49,7 +64,10 @@ def main(argv):
         for sample_ix in range(required_samples):
             # make a new random n_channels sample; this is converted into a
             # pylsl.vectorf (the data type that is expected by push_sample)
-            prediction_result = [0.0001, 2]
+            if target_locked==False:
+                prediction_result = [random.random(), random.random()]
+            else:
+                prediction_result = [1+0.2*random.random(), 0.2*random.random()]
             prediction_result = softmax(prediction_result)
             mysample = prediction_result
             # now send it
