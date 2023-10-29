@@ -17,6 +17,7 @@ from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
+from physiolabxr.ui.NotificationPane import NotificationPane
 from physiolabxr.ui.ScriptingTab import ScriptingTab
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.ui.VideoWidget import VideoWidget
@@ -140,6 +141,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close_dialog = None
         self.close_event = None
         self.is_already_closed = False
+
+        # notification pane
+        self.notification_pane = NotificationPane(self)
+
 
         # # fmri widget
         # # TODO: FMRI WIDGET
