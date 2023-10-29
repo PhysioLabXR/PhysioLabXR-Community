@@ -433,7 +433,7 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         from matplotlib import pyplot as plt
         plt.scatter(test_variables, means)
         plt.plot(test_variables, means)
-        plt.title(f"Rena Benchmark: single stream {measure} across number of channels. {notes}")
+        plt.title(f"Benchmark: single stream {measure} across number of channels. {notes}")
         plt.xlabel(axis_name)
         plt.ylabel(f'{measure} (seconds)')
         plt.show()
