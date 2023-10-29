@@ -22,12 +22,16 @@ def on_key_event(event):
             global target_locked
             target_locked = True
             print('Target locked')
+        if event.name == 'w':
+            global target_locked
+            target_locked = False
+            print('Target unlocked')
 
 
 
 def main(argv):
     keyboard.hook(on_key_event)
-    srate = 20
+    srate = 3
     name = 'Target vs Distractor Prediction'
     print('Stream name is ' + name)
     type = 'EEG'
