@@ -8,10 +8,11 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
+from physiolabxr.examples.fmri_experiment_example.FMRIWidgetNew import FMRIWidget
 from physiolabxr.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
 from physiolabxr.configs import config
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.presets.Presets import Presets
+from physiolabxr.presets.Presets import Presets, FMRIPreset
 from physiolabxr.presets.PresetEnums import PresetType, DataType
 from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
@@ -141,18 +142,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close_event = None
         self.is_already_closed = False
 
-        # # fmri widget
-        # # TODO: FMRI WIDGET
-        # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
-        #                          data_shape=(240,240,186),
-        #                          normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
-        # _presets().stream_presets[fmri_preset.stream_name] = fmri_preset
-        # self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
-        #                               stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
-        #                               insert_position=None)
-        #
-        # self.fmri_widget.setObjectName("FMRIWidget")
-        # self.fmri_widget.show()
+        # fmri widget
+        # TODO: FMRI WIDGET
+        fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
+                                 data_shape=(240,240,186),
+                                 normalize=True, alignment=True, threshold=0.5, nominal_sampling_rate=2, mri_file_path='')
+        Presets().stream_presets[fmri_preset.stream_name] = fmri_preset
+        self.fmri_widget = FMRIWidget(parent_widget=self, parent_layout=self.streamsHorizontalLayout,
+                                      stream_name=fmri_preset.stream_name, data_type=fmri_preset.data_type, worker=None,
+                                      insert_position=None)
+
+        self.fmri_widget.setObjectName("FMRIWidget")
+        self.fmri_widget.show()
 
     def add_btn_clicked(self):
         """

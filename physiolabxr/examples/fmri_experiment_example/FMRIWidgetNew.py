@@ -39,7 +39,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
 
-        self.ui = uic.loadUi("examples/fmri_experiment_example/FMRIWidgetNew._ui", self)
+        self.ui = uic.loadUi("physiolabxr/examples/fmri_experiment_example/FMRIWidgetNew.ui", self)
         self.setWindowTitle('fMRI Viewer')
 
         self.create_visualization_component()
@@ -57,8 +57,8 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
 
         self.StreamNameLabel.setText(stream_name)
         self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
-        self.OptionsBtn.setIcon(AppConfigs._icon_options)
-        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove_stream)
+        self.OptionsBtn.setIcon(AppConfigs()._icon_options)
+        self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
 
         self.is_stream_available = False
         self.in_error_state = False  # an error state to prevent ticking when is set to true
@@ -187,7 +187,7 @@ class FMRIWidget(Poppable, QtWidgets.QWidget):
         # self.volume_view_plot.addItem(g)
 
         _, self.mri_volume_data = load_nii_gz_file(
-            'D:/HaowenWei/Rena/RenaLabApp/physiolabxr/examples/fmri_experiment_example/structural.nii.gz', zoomed=True)
+            'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\examples/fmri_experiment_example\structural.nii', zoomed=True)
         self.gl_volume_item = volume_to_gl_volume_item(self.mri_volume_data, non_linear_interpolation_factor=2)
         self.volume_view_plot.addItem(self.gl_volume_item)
         self.set_mri_view_slider_range()
