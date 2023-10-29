@@ -121,8 +121,7 @@ extensive APIs to shape the platform according to their needs.
 data stream and communicate processed results with built-in I/O modules. This flexibility allows users to design 
 closed-loop systems, including deploying ML models and sending predictions to and from *PhysioLabXR*.
 
-*PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity],  
-PsychoPy [@peirce2007psychopy] and other analysis software, including MATLAB [@matlab]. For experiments already 
+*PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity], PsychoPy [@peirce2007psychopy] and other analysis software, including MATLAB [@matlab]. For experiments already 
 utilizing LSL and ZMQ for data transfer, the software provides convenient network stream 
 connectivity with these two widely-used data middleware. As its name implies, *PhysioLabXR* has extensive support for XR, including headset-based VR and AR. 
 This builds on our previous work, where we developed an environment to support neuroscience experiments that utilize 
@@ -207,8 +206,7 @@ data source, the GUI thread forks a data worker and a visualization thread. More
 server processes, including replay and scripting. User commands such as *StartStreaming*, *StartReplay*, 
 and *StopRecording* are passed from the main GUI to the corresponding threads or processes.](PhysioLabXR%20Sequence%20Diagram.png)
 
-The architecture of *PhysioLabXR* follows rigorous software design patterns, minimizing maintenance efforts while maximizing. 
-scalability. Unit testing is at the core of our development process; each software feature, backend, and GUI frontend,
+The architecture of *PhysioLabXR* follows rigorous software design patterns, minimizing maintenance efforts while maximizing scalability. Unit testing is at the core of our development process; each software feature, backend, and GUI frontend,
 is tested on both 
 functionality and performance. The software is built using continuous integration: each
 commit to the main branch triggers a full test routine to ensure compatibility.
@@ -219,9 +217,8 @@ commit to the main branch triggers a full test routine to ensure compatibility.
 *PhysioLabXR* aims to be a versatile platform for real-time experiments, primarily for, but not limited to, HCI and neuroscience.
 It is designed to be a community-driven project, with our core team of developers maintaining architectural integrity and functional correctness.
 At the same time, we welcome contributions from researchers and practitioners in related fields to build on this scaffolding and expand its capabilities.
-Although the platform supports any device whose data can be streamed via LSL or ZMQ, 
-for hardware lacking such network support, we are currently working on adding native plugins for more devices such as fMRI and TMS (transcranial magnetic stimulation).
-We are also adding processing modules for additional data types, such as real-time source localization 
+While the stream interface supports data sent through LSL or ZMQ, we are currently developing native plugins for sensors that lack network support. These plugins will enable the use of certain brands of fMRI, TMS (transcranial magnetic stimulation), and invasive neuroimaging devices (e.g., Neuropixels [@neuropixels]).
+We are also adding processing modules for more data types, such as real-time source localization 
 for EEG and speech recognition from audio. Moreover, the current scripting interface is designed to be extensible, thus requiring users to implement pipelines from code. 
 In coming releases, we plan to make scripting in the platform more accessible to users with less programming experience by providing a graphical programming interface
 and code generation for maximum flexibility.
