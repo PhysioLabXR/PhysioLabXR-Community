@@ -140,7 +140,10 @@ class MotorImageryBalanceBall(RenaScript):
                                                                    events_of_interest=[Events.left_trial.value, Events.right_trial.value],
                                                                    tmin=self.decoder_tmin, tmax=self.decoder_tmax, srate=self.srate, return_last_event_time=True, verbose=1)
         # TODO check the shape of the event locked data, how long is it. does it equal decode_t_len
-        self.inputs.clear_up_to(last_event_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
+
+        train_end_index = np.argwhere(self.inputs[event_marker_stream_name][0][0] == - Events.train_start.value).item()
+        train_end_time = self.inputs[event_marker_stream_name][1][train_end_index]
+        self.inputs.clear_up_to(train_end_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
 
         # build the classifier, ref https://mne.tools/dev/auto_examples/decoding/decoding_csp_eeg.html
         labels = np.ravel([[events] * len(data) for events, data in event_locked_data.items()])
