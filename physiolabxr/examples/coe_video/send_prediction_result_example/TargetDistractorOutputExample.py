@@ -14,16 +14,14 @@ import keyboard
 
 target_locked = False
 
-
 def on_key_event(event):
+    global target_locked
     if event.event_type == keyboard.KEY_DOWN:
         print(f"Key {event.name} was pressed")
         if event.name == 'q':
-            global target_locked
             target_locked = True
             print('Target locked')
         if event.name == 'w':
-            global target_locked
             target_locked = False
             print('Target unlocked')
 
