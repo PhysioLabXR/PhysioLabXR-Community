@@ -2,19 +2,13 @@ from enum import Enum
 
 import mne
 import numpy as np
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.model_selection import ShuffleSplit, cross_val_score
-from sklearn.pipeline import Pipeline
-
-from mne import Epochs, events_from_annotations, pick_types, create_info
-from mne.channels import make_standard_montage
-from mne.datasets import eegbci
+from mne import create_info
 from mne.decoding import CSP
-from mne.io import concatenate_raws, read_raw_edf
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.pipeline import Pipeline
 
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.physio.epochs import get_event_locked_data
-from physiolabxr.utils.buffers import DataBuffer
 
 event_marker_stream_name = 'EventMarker_BallGame'
 class GameStates(Enum):
@@ -58,6 +52,7 @@ class MotorImageryBalanceBall(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
+        self.cur_state = 'idle'
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -86,9 +81,8 @@ class MotorImageryBalanceBall(RenaScript):
             # keep collecting data
             # print("In training")
         elif self.cur_state == GameStates.eval:
-            # make predictions
             self.decode()
-            pass
+            # print("In evaluation")
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
@@ -118,6 +112,7 @@ class MotorImageryBalanceBall(RenaScript):
                     self.cur_state = GameStates.eval
                     print('Entering evaluation block')
                     last_processed_marker_index = i
+
 
                 elif event_marker == -Events.eval_start.value:
                     self.cur_state = GameStates.idle
