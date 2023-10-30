@@ -10,6 +10,7 @@ from physiolabxr.configs.configs import AppConfigs, LinechartVizMode, RecordingF
 from physiolabxr.presets.Presets import Presets, _load_video_device_presets, _load_audio_device_presets
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.startup.startup import load_settings
+from physiolabxr.threadings.ScreenCaptureWorker import get_screen_capture_size
 from physiolabxr.threadings.WaitThreads import start_wait_process
 from physiolabxr.utils.Validators import NoCommaIntValidator
 from physiolabxr.utils.ui_utils import stream_stylesheet
@@ -87,7 +88,9 @@ class SettingsWidget(QtWidgets.QWidget):
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
         Presets().remove_video_presets()
-        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+
+        screen_cap_height, screen_cap_width = get_screen_capture_size()
+        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0, width=screen_cap_width, height=screen_cap_height, nchannels=3)  # always add the monitor 0 preset
         GlobalSignals().stream_presets_entry_changed_signal.emit()
 
         print("settings widget: creating reload video thread")
