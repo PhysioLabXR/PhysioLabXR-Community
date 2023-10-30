@@ -9,6 +9,7 @@ from sklearn.pipeline import Pipeline
 
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.physio.epochs import get_event_locked_data
+from physiolabxr.utils.buffers import flatten
 
 event_marker_stream_name = 'EventMarker_BallGame'
 class GameStates(Enum):
@@ -113,7 +114,6 @@ class MotorImageryBalanceBall(RenaScript):
                     print('Entering evaluation block')
                     last_processed_marker_index = i
 
-
                 elif event_marker == -Events.eval_start.value:
                     self.cur_state = GameStates.idle
                     print('Exiting evaluation block')
@@ -140,10 +140,13 @@ class MotorImageryBalanceBall(RenaScript):
                                                                    events_of_interest=[Events.left_trial.value, Events.right_trial.value],
                                                                    tmin=self.decoder_tmin, tmax=self.decoder_tmax, srate=self.srate, return_last_event_time=True, verbose=1)
         # TODO check the shape of the event locked data, how long is it. does it equal decode_t_len
-        self.inputs.clear_up_to(last_event_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
+
+        train_end_index = np.argwhere(self.inputs[event_marker_stream_name][0][0] == - Events.train_start.value).item()
+        train_end_time = self.inputs[event_marker_stream_name][1][train_end_index]
+        self.inputs.clear_up_to(train_end_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
 
         # build the classifier, ref https://mne.tools/dev/auto_examples/decoding/decoding_csp_eeg.html
-        labels = np.ravel([[events] * len(data) for events, data in event_locked_data.items()])
+        labels = flatten([[events] * len(data) for events, data in event_locked_data.items()])
         labels = np.array([self.label_mapping[label] for label in labels])
         epochs_data = np.concatenate(list(event_locked_data.values()), axis=0)
         info = create_info(ch_names=self.eeg_channels, sfreq=self.srate, ch_types='eeg')
@@ -161,6 +164,9 @@ class MotorImageryBalanceBall(RenaScript):
     def decode(self):
         data = self.inputs["OpenBCICyton8Channels"][0][None, :, -self.decode_t_len:]
         y_pred = self.decoder.transform(data)[0]  # only one sample in batch
+        # normalize y_pred from -10 to 10 to 0 to 1
+        y_pred = sigmoid(y_pred)
+
         self.outputs["MotorImageryInference"] = y_pred
 
 
