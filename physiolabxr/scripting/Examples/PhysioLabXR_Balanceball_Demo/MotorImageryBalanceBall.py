@@ -47,6 +47,19 @@ class CSPDecoder:
 def sigmoid(z):
     return 1/(1 + np.exp(-z))
 
+class MovingAverage:
+    def __init__(self, window_size=10):
+        self.window_size = window_size
+        self.buffer = []
+
+    def update(self, value):
+        self.buffer.append(value)
+        if len(self.buffer) > self.window_size:
+            self.buffer.pop(0)
+
+    def get(self):
+        return np.mean(self.buffer)
+
 class MotorImageryBalanceBall(RenaScript):
     def __init__(self, *args, **kwargs):
         """
@@ -68,6 +81,7 @@ class MotorImageryBalanceBall(RenaScript):
         self.decode_t_len = int((self.decoder_tmax - self.decoder_tmin) * self.srate)
         self.label_mapping = {2: 0, 3: 1}
         self.decoder = None
+        self.moving_average = MovingAverage(window_size=3)
 
         # loop is called <Run Frequency> times per second
     def loop(self):
@@ -162,11 +176,14 @@ class MotorImageryBalanceBall(RenaScript):
         self.decoder.csp.plot_patterns(info, ch_type="eeg", units="Patterns (AU)", size=1.5)
 
     def decode(self):
+        if "ma_window" in self.params and self.moving_average.window_size != self.params["ma_window"]:
+            self.moving_average = MovingAverage(window_size=self.params["ma_window"])
         data = self.inputs["OpenBCICyton8Channels"][0][None, :, -self.decode_t_len:]
         y_pred = self.decoder.transform(data)[0]  # only one sample in batch
         # normalize y_pred from -10 to 10 to 0 to 1
         y_pred = sigmoid(y_pred)
-
-        self.outputs["MotorImageryInference"] = y_pred
+        # apply moving average
+        self.moving_average.update(y_pred[0])
+        self.outputs["MotorImageryInference"] = [self.moving_average.get()]
 
 
