@@ -16,6 +16,8 @@ jobs:
       - name: checkout repo
         uses: actions/checkout@v3
       - uses: tlambert03/setup-qt-libs@v1
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
