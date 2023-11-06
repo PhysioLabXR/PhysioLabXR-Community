@@ -17,7 +17,7 @@ from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, \
     ContextBot, get_random_test_stream_names
 
-
+print("here")
 @pytest.fixture
 def app_main_window(qtbot):
     print("here")
