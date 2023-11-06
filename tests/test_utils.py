@@ -129,7 +129,7 @@ class ContextBot:
     def cleanup(self):
         pass
 
-    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int):
+    def create_add_start_stream(self, stream_name: str, num_channels: int, srate:int, start_stream=True):
         """
         start a stream as a separate process, add it to the app's streams, and start it once it becomes
         available
@@ -140,6 +140,7 @@ class ContextBot:
             raise ValueError(f"Stream name {stream_name} is in keys for send_data_processes")
         p = Process(target=LSLTestStream, args=(stream_name, num_channels, srate))
         p.start()
+
         self.send_data_processes[stream_name] = p
         from physiolabxr.presets.PresetEnums import PresetType
         self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels, nominal_sample_rate=srate)  # add a default preset
@@ -150,8 +151,9 @@ class ContextBot:
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
-        self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
-        self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+        if start_stream:
+            self.qtbot.waitUntil(lambda: stream_is_available(app=self.app, test_stream_name=stream_name), timeout=self.stream_availability_timeout)  # wait until the LSL stream becomes available
+            self.qtbot.mouseClick(self.app.stream_widgets[stream_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     def add_and_start_stream(self, stream_name: str, num_channels:int, interface_type=PresetType.LSL, port=None, dtype: DataType=None, *args, **kwargs):
         self.add_stream(stream_name, interface_type, port, dtype, *args, **kwargs)
@@ -317,7 +319,7 @@ class ContextBot:
         self.clean_up()
 
 def secrets_random_choice(alphabet):
-    return ''.join(secrets.choice(alphabet) for _ in range(8))
+    return ''.join(secrets.choice(alphabet) for _ in range(16))
 
 def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowercase + string.digits):
     names = []
@@ -338,7 +340,8 @@ def get_random_test_stream_names(num_names: int, alphabet = string.ascii_lowerca
     # else:
     #     raise Exception('update_test_cwd: RenaLabApp test must be run from either <project_root>/physiolabxr/tests or <project_root>. Instead cwd is', os.getcwd())
 
-def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test, sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False):
+def run_visualization_benchmark(app_main_window, test_context, test_stream_names, num_streams_to_test, num_channels_to_test,
+                                sampling_rates_to_test, test_time_second_per_stream, metrics, is_reocrding=False, test_axes=None, result_fn=None):
     from physiolabxr.utils.buffers import flatten
 
     results = defaultdict(defaultdict(dict).copy)  # use .copy for pickle friendly one-liner
@@ -347,7 +350,13 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
         print(f"Testing #channels {num_channels} and srate {sampling_rate} with random stream name(s) {stream_names}...", end='')
         start_time = time.perf_counter()
         for s_name in stream_names:
-            test_context.create_add_start_stream(s_name, num_channels, sampling_rate)
+            test_context.create_add_start_stream(s_name, num_channels, sampling_rate, start_stream=False)
+
+        # wait some time for streams to become available
+        test_context.qtbot.wait(int(4 * 1e3))
+        for s_name in stream_names:
+            test_context.start_a_stream(s_name, num_channels, thread_timer_second=4)
+
         if is_reocrding:
             app_main_window.settings_widget.set_recording_file_location(os.getcwd())  # set recording file location (not through the system's file dialog)
             test_context.qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
@@ -386,6 +395,8 @@ def run_visualization_benchmark(app_main_window, test_context, test_stream_names
         for s_name in stream_names:
             test_context.remove_stream(s_name)
         print(f"Took {time.perf_counter() - start_time}.", end='')
+        pickle.dump({'results_without_recording': results, 'test_axes': test_axes},  open(result_fn, 'wb'))
+
 
     return results
 
@@ -405,8 +416,12 @@ def plot_viz_benchmark_results(results, test_axes, metrics, notes=''):
     num_channels_to_test = test_axes["number of channels"]
     num_streams_to_test = test_axes["number of streams"]
 
+    metric_values = {metric_name: [value_dict[metric_name] for test_combo, value_dict in result_dict.items() ] for metric_name, result_dict in results.items()}
+    metric_vmin_max = {metric_name: (np.min(values), np.max(values)) for metric_name, values in metric_values.items()}
+
     for n_streams in num_streams_to_test:
-        visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes)
+
+        visualize_metrics_across_num_chan_sampling_rate(results, metrics, n_streams, sampling_rates_to_test, num_channels_to_test, notes=notes, metric_vmin_max=metric_vmin_max)
 
 def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test_variables, metrics, notes=''):
     for measure in metrics:
@@ -418,7 +433,7 @@ def visualize_metric_across_test_space_axis(results, axis_index, axis_name, test
         from matplotlib import pyplot as plt
         plt.scatter(test_variables, means)
         plt.plot(test_variables, means)
-        plt.title(f"Rena Benchmark: single stream {measure} across number of channels. {notes}")
+        plt.title(f"Benchmark: single stream {measure} across number of channels. {notes}")
         plt.xlabel(axis_name)
         plt.ylabel(f'{measure} (seconds)')
         plt.show()

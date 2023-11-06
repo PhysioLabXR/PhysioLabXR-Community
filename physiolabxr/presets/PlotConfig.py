@@ -31,6 +31,9 @@ class ImageConfig(metaclass=SubPreset):
 
     width: int = 0
     height: int = 0
+    rotation_clockwise_degree: int = 0
+    # horizontal_flip: bool = False
+    # vertical_flip: bool = False
     scaling_percentage: float = 100
 
     cmap: Cmap = Cmap.VIRIDIS

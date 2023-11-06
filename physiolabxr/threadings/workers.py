@@ -140,6 +140,7 @@ class OpenBCIDeviceWorker(QObject):
 
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
+
     def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
         super(OpenBCIDeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
