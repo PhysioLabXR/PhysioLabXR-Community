@@ -14,10 +14,9 @@ from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
 from tests.TestStream import LSLTestStream
-from tests.test_utils import app_fixture, \
-    ContextBot, get_random_test_stream_names
+from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_names
 
-print("here")
+
 @pytest.fixture
 def app_main_window(qtbot):
     print("here")
@@ -37,21 +36,3 @@ def context_bot(app_main_window, qtbot):
 
 
 
-
-def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
-    '''
-    Adding inactive stream
-    :param app:
-    :param qtbot:
-    :return:
-    '''
-    test_stream_name = 'TestStreamName'
-
-    app_main_window.ui.tabWidget.setCurrentWidget(app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
-    # qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    # qtbot.keyPress(app_main_window.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
-    # qtbot.keyClicks(app_main_window.addStreamWidget.stream_name_combo_box, test_stream_name)
-    # assert app_main_window.addStreamWidget.add_btn.isEnabled()
-    # qtbot.mouseClick(app_main_window.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    #
-    # assert test_stream_name in app_main_window.get_added_stream_names()
