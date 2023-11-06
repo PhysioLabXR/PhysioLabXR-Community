@@ -58,7 +58,7 @@ cd tests
 for module in "${test_modules[@]}"
 do
     echo "Running test: $module"
-    pytest $module.py
+    pytest $module.py -s
 done
 
 ## Wait for the user to press Enter before exiting
