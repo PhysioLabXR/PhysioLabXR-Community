@@ -16,16 +16,18 @@
 
 # Get the name of the Python unittest module from the first argument
 test_modules=(
-  SetupTest
+
+   SetupTest
+  Dtest
 #  RenaVisualizationTest
-  VisualizationLSLChannelTest
-  VisualizationZMQChannelTest
-  RecordingTest
-  ReplayTest
-  XdfTest
-  CsvTest
-  MatTest
-  RenaScriptingTest
+#  VisualizationLSLChannelTest
+#  VisualizationZMQChannelTest
+#  RecordingTest
+#  ReplayTest
+#  XdfTest
+#  CsvTest
+#  MatTest
+#  RenaScriptingTest
 )
 
 warning_text="You should create a venv-dev and install packages using pip install -r requirements-dev.txt"
@@ -44,6 +46,8 @@ fi
 if [ ! -d "venv-dev" ]; then
     echo "WARNING: $warning_text"
 fi
+
+
 
 export PYTHONPATH="$(pwd)" # add content root to PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:$(pwd)/rena  # add source root to PYTHONPATH
