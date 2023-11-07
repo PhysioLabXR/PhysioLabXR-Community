@@ -32,6 +32,8 @@ jobs:
       - name: Test with pytest
         uses: coactions/setup-xvfb@v1
         with:
+          env:
+            QT_DEBUG_PLUGINS:1
           run: |
             ./tests/test.sh
            
