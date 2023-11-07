@@ -20,7 +20,7 @@ from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_nam
 
 def app_main_window(qtbot):
 
-
+    print("here")
     app, test_renalabapp_main_window = app_fixture(qtbot)
     faulthandler.disable()  # disable the faulthandler to avoid the error message
     yield test_renalabapp_main_window
