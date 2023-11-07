@@ -34,5 +34,6 @@ jobs:
         uses: coactions/setup-xvfb@v1
         with:
           run: |
+            echo "Running tests..."
             ./tests/test.sh
            
