@@ -36,5 +36,5 @@ jobs:
           env:
             QT_DEBUG_PLUGINS:1
           run: |
-            sudo catchsegv xvfb-run ./tests/test.sh
+            sudo xvfb-run ./tests/test.sh
            
