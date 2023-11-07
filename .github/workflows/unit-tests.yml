@@ -40,7 +40,7 @@ jobs:
           python -m pip install codecov coverage flake8 pytest
       - name: Start application and print version
         run: |
-          QT_DEBUG_PLUGINS=1 python -m --version
+          QT_DEBUG_PLUGINS=1
       - name: Test with pytest
         run: |
          ./tests/test.sh
