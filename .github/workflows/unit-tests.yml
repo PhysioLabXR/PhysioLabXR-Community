@@ -27,7 +27,7 @@ jobs:
           sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
           pip install wheel
           pip install -r requirements.dev.txt
-          pip uninstall opencv-python
+          pip uninstall opencv-python -y
           pip install opencv-python-headless
       - name: Test with pytest
         uses: coactions/setup-xvfb@v1
