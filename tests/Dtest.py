@@ -15,9 +15,11 @@ from physiolabxr.configs.configs import AppConfigs
 
 from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_names
+import pytest
 
 
 
+@pytest.fixture
 def app_main_window(qtbot):
 
     print("here")
@@ -33,6 +35,12 @@ def context_bot(app_main_window, qtbot):
     test_context = ContextBot(app=app_main_window, qtbot=qtbot)
     yield test_context
     test_context.clean_up()
+
+
+def test_button_click(qtbot,app_main_window):
+    print("here")
+
+
 
 def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
     '''
