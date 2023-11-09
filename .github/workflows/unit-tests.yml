@@ -33,10 +33,10 @@ jobs:
           pip install -r requirements.dev.txt
           pip uninstall opencv-python -y
           pip install opencv-python-headless
-          sudo pip install PyQt6
-          sudo pip install pytest
-          sudo pip install pytest-qt
-          pip install pyscreeze
+          pip install PyQt6
+          pip install pytest
+          pip install pytest-qt
+          pip install PyScreeze
 
       - name: Check job values
         run: |
