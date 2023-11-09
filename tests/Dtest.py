@@ -16,14 +16,14 @@ AppConfigs(_reset=True)  # create the singleton app configs object
 from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_names
 
-print(QtCore.PYQT_VERSION_STR)
+
 
 
 
 @pytest.fixture
 def app_main_window(qtbot):
 
-    print("here")
+    print(QtCore.PYQT_VERSION_STR)
     app, test_renalabapp_main_window = app_fixture(qtbot)
     faulthandler.disable()  # disable the faulthandler to avoid the error message
     yield test_renalabapp_main_window
@@ -39,7 +39,7 @@ def context_bot(app_main_window, qtbot):
 
 
 def test_button_click(qtbot,app_main_window):
-    print("here")
+    print(QtCore.PYQT_VERSION_STR)
 
 
 
