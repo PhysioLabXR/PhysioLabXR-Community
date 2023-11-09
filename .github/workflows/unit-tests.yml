@@ -29,14 +29,13 @@ jobs:
           python -m pip install --upgrade pip
           sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
           sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-          pip install wheel
-          pip install -r requirements.dev.txt
-          pip uninstall opencv-python -y
+          sudo pip install wheel
+          sudo pip install -r requirements.dev.txt
+          sudo pip uninstall opencv-python -y
           pip install opencv-python-headless
-          pip install pyside2 pytest coverage pytest-qt
-          python -m pip install coverage pytest
-          pip install PyQt6
-          pip install pytest-xvfb
+          sudo pip install PyQt6
+          sudo pip install pytest
+          sudo pip install pytest-qt
 
       - name: Check job values
         run: |
