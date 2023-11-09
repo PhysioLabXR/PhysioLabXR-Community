@@ -38,32 +38,13 @@ jobs:
           python -m pip install coverage pytest
           pip install PyQt6
           pip install pytest-xvfb
+
       - name: Check job values
         run: |
-          echo "---- General setup"
-          echo "OS:" ${{ matrix.os }}
-          echo "PYTHON_VERSION:" ${{ env.PYTHON_VERSION }}
-          echo "---- PyQt"
-          echo "PYQT_EXTRAS:" ${{ env.PYQT_EXTRAS }}
-          echo "---- PyQt5"
-          echo "SKIP_PYQT5:" ${{ matrix.skip-pyqt5 }}
-          echo "PYQT5_VERSION:" ${{ env.PYQT5_VERSION }}
-          echo "PYQT5_QT_VERSION:" ${{ env.PYQT5_QT_VERSION }}
-          echo "QSCINTILLA_VERSION:" ${{ env.QSCINTILLA_VERSION }}
-          echo "---- PyQt6"
-          echo "SKIP_PYQT6:" ${{ matrix.skip-pyqt6 }}
-          echo "PYQT6_VERSION:" ${{ env.PYQT6_VERSION }}
-          echo "PYQT6_QT_VERSION:" ${{ env.PYQT6_QT_VERSION }}
-          echo "---- PySide2"
-          echo "SKIP_PYSIDE2:" ${{ matrix.skip-pyside2 }}
-          echo "PYSIDE2_VERSION:" ${{ env.PYSIDE2_VERSION }}
-          echo "PYSIDE2_QT_VERSION:" ${{ env.PYSIDE2_QT_VERSION }}
-          echo "---- PySide6"
-          echo "SKIP_PYSIDE6:" ${{ matrix.skip-pyside6 }}
-          echo "PYSIDE6_VERSION:" ${{ env.PYSIDE6_VERSION }}
-          echo "PYSIDE6_QT_VERSION:" ${{ env.PYSIDE6_QT_VERSION }}
-          echo "---- Other"
-          echo "SKIP_PIP_CHECK:" ${{ env.SKIP_PIP_CHECK }}
+            apt list PyQt6 --installed
+            qtdiag
+            QT_SELECT=qt6
+            qtdiag
       - name: Test with pytest
         run: |
          xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1920x1200x24 -ac +extension GLX" ./tests/test.sh
