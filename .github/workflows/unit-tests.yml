@@ -32,7 +32,7 @@ jobs:
           sudo pip install wheel
           sudo pip install -r requirements.dev.txt
           sudo pip uninstall opencv-python -y
-          pip install opencv-python-headless
+          sudo pip install opencv-python-headless
           sudo pip install PyQt6
           sudo pip install pytest
           sudo pip install pytest-qt

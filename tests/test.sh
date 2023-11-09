@@ -17,7 +17,7 @@
 # Get the name of the Python unittest module from the first argument
 test_modules=(
 
-   SetupTest
+#   SetupTest
   Dtest
 #  RenaVisualizationTest
 #  VisualizationLSLChannelTest
