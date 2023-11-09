@@ -30,9 +30,9 @@ jobs:
           sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
           sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
           sudo pip install wheel
-          sudo pip install -r requirements.dev.txt
-          sudo pip uninstall opencv-python -y
-          sudo pip install opencv-python-headless
+          pip install -r requirements.dev.txt
+          pip uninstall opencv-python -y
+          pip install opencv-python-headless
           sudo pip install PyQt6
           sudo pip install pytest
           sudo pip install pytest-qt
