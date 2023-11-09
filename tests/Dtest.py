@@ -16,6 +16,7 @@ AppConfigs(_reset=True)  # create the singleton app configs object
 from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_names
 
+print(QtCore.PYQT_VERSION_STR)
 
 
 
