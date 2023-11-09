@@ -40,7 +40,6 @@ jobs:
 
       - name: Check job values
         run: |
-            qmake --version
             QT_SELECT=qt6
 
       - name: Test with pytest
