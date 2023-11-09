@@ -34,8 +34,8 @@ jobs:
           pip uninstall opencv-python -y
           pip install opencv-python-headless
           pip install PyQt6
-          pip install pytest
-          pip install pytest-qt
+          sudo pip install pytest
+          sudo pip install pytest-qt
           pip install PyScreeze
 
       - name: Check job values
