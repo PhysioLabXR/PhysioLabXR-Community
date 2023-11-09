@@ -36,6 +36,7 @@ jobs:
           pip install opencv-python-headless
           pip install pyside2 pytest coverage pytest-qt
           python -m pip install coverage pytest
+          pip install PyQt6
           pip install pytest-xvfb
 
       - name: Test with pytest
