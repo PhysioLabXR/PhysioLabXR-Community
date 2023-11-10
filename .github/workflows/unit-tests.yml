@@ -33,10 +33,9 @@ jobs:
           python -m pip install -r requirements.dev.txt
           python -m pip uninstall opencv-python -y
           python -m pip install opencv-python-headless
-          python -m pip install PyQt6
-          python -m pip install pytest
-          python -m pip install pytest-qt
-          pip install tox
+          sudo pip install PyQt6
+          sudo -m pip install pytest
+          sudo -m pip install pytest-qt
 
       - name: Check job values
         run: |
