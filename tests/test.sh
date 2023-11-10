@@ -58,8 +58,8 @@ cd tests
 for module in "${test_modules[@]}"
 do
     echo "Running test: $module"
-    pytest -sv $module.py -s
+    pytest -svv $module.py -s
 done
 
 ## Wait for the user to press Enter before exiting
-read -p "Press Enter to exit"
+# read -p "Press Enter to exit"
