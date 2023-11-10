@@ -36,6 +36,7 @@ jobs:
           pip install PyQt6
           pip install pytest
           pip install pytest-qt
+          sudo apt install gnome-screenshot
 
       - name: Check job values
         run: |
