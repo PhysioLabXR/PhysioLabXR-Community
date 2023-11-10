@@ -29,13 +29,13 @@ jobs:
           python -m pip install --upgrade pip
           sudo apt install -y xvfb x11-utils libxkbcommon-x11-0
           sudo apt-get install '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
-          sudo python -m pip install wheel
-          sudo python -m pip install -r requirements.dev.txt
+          python -m pip install wheel
+          python -m pip install -r requirements.dev.txt
           python -m pip uninstall opencv-python -y
           python -m pip install opencv-python-headless
-          sudo pip install PyQt6
-          sudo pip install pytest
-          sudo pip install pytest-qt
+          pip install PyQt6
+          pip install pytest
+          pip install pytest-qt
 
       - name: Check job values
         run: |
@@ -43,5 +43,5 @@ jobs:
 
       - name: Test with pytest
         run: |
-         sudo xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1920x1200x24 -ac +extension GLX" ./tests/test.sh -s 
+         xvfb-run --auto-servernum --server-num=1 --server-args="-screen 1 1920x1200x24 -ac +extension GLX" ./tests/test.sh -s 
          
