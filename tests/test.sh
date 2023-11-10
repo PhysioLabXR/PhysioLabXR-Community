@@ -18,8 +18,8 @@
 test_modules=(
 
    SetupTest
-#  Dtest
-    RenaVisualizationTest
+   Dtest
+#  RenaVisualizationTest
 #  VisualizationLSLChannelTest
 #  VisualizationZMQChannelTest
 #  RecordingTest
