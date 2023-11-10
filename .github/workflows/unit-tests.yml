@@ -34,8 +34,8 @@ jobs:
           python -m pip uninstall opencv-python -y
           python -m pip install opencv-python-headless
           sudo pip install PyQt6
-          sudo -m pip install pytest
-          sudo -m pip install pytest-qt
+          sudo pip install pytest
+          sudo pip install pytest-qt
 
       - name: Check job values
         run: |
