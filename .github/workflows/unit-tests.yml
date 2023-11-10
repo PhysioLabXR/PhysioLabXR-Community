@@ -36,6 +36,7 @@ jobs:
           sudo python -m pip install PyQt6
           sudo python -m pip install pytest
           sudo python -m pip install pytest-qt
+          pip install tox
 
       - name: Check job values
         run: |
