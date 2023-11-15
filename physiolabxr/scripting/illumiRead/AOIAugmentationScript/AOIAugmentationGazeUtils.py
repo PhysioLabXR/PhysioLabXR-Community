@@ -1,5 +1,5 @@
 import enum
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import TobiiProFusionChannel
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import TobiiProFusionChannel
 from physiolabxr.utils.dsp_utils.dsp_modules import DataProcessor
 import numpy as np
 import matplotlib.pyplot as plt

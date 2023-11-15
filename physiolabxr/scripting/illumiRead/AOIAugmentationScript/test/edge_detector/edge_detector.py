@@ -36,7 +36,7 @@ from eidl.utils.model_utils import get_trained_model, load_image_preprocess
 import cv2
 
 # replace the image path to yours
-image_path = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\test\edge_detector\images\02_8981_OS_2021_widefield_report.png'
+image_path = r'/physiolabxr/scripting/illumiRead/AOIAugmentationScript/test/edge_detector/images/02_8981_OS_2021_widefield_report.png'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

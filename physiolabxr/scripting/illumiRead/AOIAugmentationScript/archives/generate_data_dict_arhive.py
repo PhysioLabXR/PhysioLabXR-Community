@@ -5,7 +5,7 @@ from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import
     tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.AOIAugmentationScript import AOIAugmentationConfig
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
 from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo
 import numpy as np
@@ -45,7 +45,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
                                                                                      model_param='num-patch-32_image-size-1024-512')
 
 # note: we have to perform the global normalization on the image before feeding it to the model
-image_path = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\test\edge_detector\images\02_8981_OS_2021_widefield_report.png'
+image_path = r'../test/edge_detector/images/02_8981_OS_2021_widefield_report.png'
 image_normalized, image = load_image_preprocess(image_path, image_size, image_mean, image_std)
 
 # get the prediction

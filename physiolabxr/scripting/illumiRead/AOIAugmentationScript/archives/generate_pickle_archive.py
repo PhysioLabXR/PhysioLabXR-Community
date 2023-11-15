@@ -5,7 +5,7 @@ from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationGazeUtils import
     tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.AOIAugmentationScript import AOIAugmentationConfig
-from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationUtils import *
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
 from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo
 import numpy as np
@@ -38,7 +38,7 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 ##########################################################################
 
 
-root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned\G'
+root_dir = r'../data/reports_cleaned/G'
 image_names = [file for file in os.listdir(root_dir) if file.endswith('.png')]
 
 

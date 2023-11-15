@@ -52,7 +52,7 @@ def overlay_contour(original, heatmap, image_size, threshold=0.5, interpolation=
 
 
 
-target_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\report_cleaned_attention_vis'
+target_dir = r'/physiolabxr/scripting/illumiRead/AOIAugmentationScript/data/report_cleaned_attention_vis'
 
 
 

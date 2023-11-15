@@ -48,8 +48,8 @@ model, image_mean, image_std, image_size, compound_label_encoder = get_trained_m
 
 
 # root_dir = r'D:\HaowenWei\UnityProject\PerceptualAOIAugmentation\Assets\Prefabs\ExperimentImages\Practice'
-root_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\reports_cleaned\S'
-target_dir = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\report_cleand_attention_vis\S'
+root_dir = r'../data/reports_cleaned/S'
+target_dir = r'/physiolabxr/scripting/illumiRead/AOIAugmentationScript/data\report_cleand_attention_vis\S'
 
 y_true = 'S'
 

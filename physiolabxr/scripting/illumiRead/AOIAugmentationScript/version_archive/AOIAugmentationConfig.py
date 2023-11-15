@@ -12,8 +12,8 @@ import pickle
 
 ################################## Read the practice/test pickle file #################################################
 
-practice_image_info_file_path = 'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info\practice'
-test_image_info_file_path = 'D:/HaowenWei/PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_image_info/test'
+practice_image_info_file_path = '/physiolabxr/scripting/illumiRead/AOIAugmentationScript/data/experiment_image_info/practice'
+test_image_info_file_path = '/physiolabxr/scripting/illumiRead/AOIAugmentationScript/data/experiment_image_info/test'
 
 assert os.path.exists(practice_image_info_file_path)
 assert os.path.exists(test_image_info_file_path)
