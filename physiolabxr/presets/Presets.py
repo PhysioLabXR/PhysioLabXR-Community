@@ -155,7 +155,12 @@ class VideoPreset(metaclass=SubPreset):
     stream_name: str
     preset_type: PresetType
     video_id: int
+    height: int
+    width: int
+    nchannels: int
 
+    num_channels: int = None
+    nominal_sampling_rate: int = 30
     video_scale: float = 1.0
     channel_order: VideoDeviceChannelOrder = VideoDeviceChannelOrder.RGB
 
@@ -166,6 +171,7 @@ class VideoPreset(metaclass=SubPreset):
         """
         # convert any enum attribute loaded as string to the corresponding enum value
         reload_enums(self)
+        self.num_channels = int(self.height * self.width * self.nchannels)
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class AudioPreset(metaclass=SubPreset):
@@ -309,11 +315,10 @@ def _load_video_device_presets():
     try:
         print('Loading available cameras')
         rtn = []
-        _, working_camera_ports, _ = get_working_camera_ports()
-        working_cameras_stream_names = [f'Camera {x}' for x in working_camera_ports]
+        _, working_cameras, _ = get_working_camera_ports()
 
-        for camera_id, camera_stream_name in zip(working_camera_ports, working_cameras_stream_names):
-            rtn.append(VideoPreset(camera_stream_name, PresetType.WEBCAM, camera_id))
+        for cam_args in working_cameras:
+            rtn.append(VideoPreset(preset_type=PresetType.WEBCAM, **cam_args))
         print("finished loading available cameras")
         return rtn
     except KeyboardInterrupt:
@@ -547,8 +552,8 @@ class Presets(metaclass=Singleton):
         stream_preset = StreamPreset(**stream_preset_dict)
         self.stream_presets[stream_preset.stream_name] = stream_preset
 
-    def add_video_preset_by_fields(self, stream_name, video_type, video_id):
-        video_preset = VideoPreset(stream_name, video_type, video_id)
+    def add_video_preset_by_fields(self, stream_name, video_type, video_id, width, height, nchannels):
+        video_preset = VideoPreset(stream_name, video_type, video_id, width=width, height=height, nchannels=nchannels)
         self.stream_presets[video_preset.stream_name] = video_preset
 
     def add_video_presets(self, video_presets: List[VideoPreset]):

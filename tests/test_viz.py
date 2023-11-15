@@ -36,13 +36,16 @@ def plot_replay_benchmark_results(results, test_axes, metrics, notes=''):
         plt.show()
 
 
-def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes=''):
+def visualize_metrics_across_num_chan_sampling_rate(results, metrics, number_of_streams, sampling_rates_to_test, num_channels_to_test, notes='', metric_vmin_max=None):
     for measure in metrics:
         result_matrix = np.zeros((len(sampling_rates_to_test), len(num_channels_to_test), 2))  # last dimension is mean and std
         for i, num_channels in enumerate(num_channels_to_test):
             for j, sampling_rate in enumerate(sampling_rates_to_test):
                 result_matrix[i, j] = results[measure][number_of_streams, num_channels, sampling_rate][measure]
-        plt.imshow(result_matrix[:, :, 0], cmap='plasma')
+        if metric_vmin_max is None:
+            plt.imshow(result_matrix[:, :, 0], cmap='plasma')
+        else:
+            plt.imshow(result_matrix[:, :, 0], cmap='plasma', vmin=metric_vmin_max[measure][0], vmax=metric_vmin_max[measure][1])
         plt.xticks(ticks=list(range(len(sampling_rates_to_test))), labels=sampling_rates_to_test)
         plt.yticks(ticks=list(range(len(num_channels_to_test))), labels=num_channels_to_test)
         plt.xlabel("Sampling Rate (Hz)")

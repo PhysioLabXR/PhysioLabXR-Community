@@ -633,7 +633,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.check_can_add_output()
 
     def send_input(self, data_dict):
-        if np.any(np.array(data_dict["timestamps"])< 100):
+        if np.any(np.array(data_dict["timestamps"]) < 100):
             print('skipping input with timestamp < 100')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)
