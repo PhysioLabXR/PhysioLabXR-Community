@@ -15,7 +15,7 @@ from physiolabxr.presets.presets_utils import get_stream_a_group_info, \
     set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max, set_image_levels_max, \
     set_image_levels_min, get_valid_image_levels, set_image_cmap, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
-    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels
+    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.Validators import NoCommaIntValidator
 
@@ -94,6 +94,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             self.imageHeightLineEdit.textChanged.disconnect()
             self.image_display_scaling_percentile_slider.valueChanged.disconnect()
             self.imageFormatComboBox.currentTextChanged.disconnect()
+            self.image_rotation_clockwise_degree_combobox.currentTextChanged.disconnect()
             self.channelFormatCombobox.currentTextChanged.disconnect()
             self.combobox_image_cmap.currentTextChanged.disconnect()
 
@@ -120,6 +121,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentage)
 
         self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
+        self.image_rotation_clockwise_degree_combobox.setCurrentText(str(this_group_entry.plot_configs.image_config.rotation_clockwise_degree))
         self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)
 
         valid_levels = get_valid_image_levels(self.stream_name, group_name)
@@ -161,6 +163,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageHeightLineEdit.textChanged.connect(self.image_w_h_scaling_percentile_on_change)
         self.image_display_scaling_percentile_slider.valueChanged.connect(self.image_scaling_percentile_on_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
+        self.image_rotation_clockwise_degree_combobox.currentTextChanged.connect(self.image_rotation_clockwise_degree_change)
         self.channelFormatCombobox.currentTextChanged.connect(self.image_channel_format_change)
 
         # barplot ###############################################################
@@ -245,6 +248,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             self.pixelmap_display_options.setVisible(True)
         self.image_changed()
 
+    def image_rotation_clockwise_degree_change(self):
+        rotation_clockwise_degree = self.get_image_rotation_clockwise_degree()
+        set_group_image_rotation_clockwise_degree(self.stream_name, self.group_name, rotation_clockwise_degree=rotation_clockwise_degree)
+        self.image_changed()
+
     def image_channel_format_change(self):
         image_channel_format = self.get_image_channel_format()
         set_group_image_channel_format(self.stream_name, self.group_name, channel_format=image_channel_format)
@@ -309,6 +317,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         current_format = self.imageFormatComboBox.currentText()
         # image_channel_num = image_depth_dict(current_format)
         return ImageFormat.__members__[current_format]
+
+    def get_image_rotation_clockwise_degree(self):
+        current_degree = self.image_rotation_clockwise_degree_combobox.currentText()
+        return int(current_degree)
 
     def get_image_channel_format(self):
         current_format = self.channelFormatCombobox.currentText()

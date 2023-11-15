@@ -99,6 +99,8 @@ Download the latest release exe from [here](https://github.com/PhysioLabXR/Physi
 
 ### Install with pip
 
+PhysioLabXR currently supports Python 3.9, 3.10, and 3.11. Support for Python 3.12 is coming soon.
+
 Install PhysioLabXR's [PYPI distribution](https://pypi.org/project/physiolabxr/) with
 
   ```sh

@@ -4,7 +4,8 @@ from typing import Type
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import QFile, QTextStream
-from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QGraphicsView, QGraphicsScene, QScrollArea, QApplication
+from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QGraphicsView, QGraphicsScene, QScrollArea, QApplication, \
+    QStyleFactory
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from physiolabxr.configs.config_ui import button_style_classic
@@ -292,3 +293,19 @@ def show_label_movie(label: QLabel, is_show: bool):
     else:
         label.movie().stop()
 
+def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
+    """
+    Get the int value from a line edit. Set the lineedit to red if the value is not an int.
+    This function also connects the line edit to a function that will set the line edit back to normal when the text is changed.
+    @param line_edit:
+    @return:
+    """
+    try:
+        return int(line_edit.text())
+    except ValueError:
+        line_edit.setStyleSheet("border: 2px solid red;")
+        def set_back():
+            line_edit.setStyleSheet("")
+            line_edit.textChanged.disconnect(set_back)
+        line_edit.textChanged.connect(set_back)
+        raise RenaError(f'{name} must be an integer')

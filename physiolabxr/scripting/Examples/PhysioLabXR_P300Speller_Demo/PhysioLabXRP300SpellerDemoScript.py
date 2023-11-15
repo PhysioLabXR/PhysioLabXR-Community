@@ -1,14 +1,28 @@
+# This is a demo script for the PhysioLabXR P300 Speller Game
+
 import numpy as np
-from physiolabxr.scripting.Examples.PhysioLabXR_P300Speller_Demo.PhysioLabXRP300SpellerDemoConfig import *
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.utils.buffers import DataBuffer
-import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 from sklearn import metrics
-import seaborn as sns
+
+# import the config file
+from physiolabxr.scripting.Examples.PhysioLabXR_P300Speller_Demo.PhysioLabXRP300SpellerDemoConfig import *
+
+
+# matplotlib and seaborn are not installed in PhysioLabXR by default, so we need to check if they are installed before importing them
+# If you want to use matplotlib and seaborn in your script, please install them in the PhysioLabXR environment following the instructions in the PhysioLabXR documentation
+Plot = True
+try:
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+except:
+    Plot = False
+    print("Seaborn and Matplotlib not installed. Skip Plot.")
+
 
 class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -24,9 +38,6 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
 
         self.train_state_x = []
         self.train_state_y = []
-
-        # self.test_state_x = []
-        # self.test_state_y = []
 
         self.StateEnterExitMarker = 0
         self.FlashBlockStartEndMarker = 0
@@ -205,15 +216,19 @@ class PhysioLabXRGameP300SpellerDemoScript(RenaScript):
         probability_matrix = probability_matrix / len(flashing_item_indices/24)
 
 
-
-        print(probability_matrix)
-        plt.imshow(probability_matrix, cmap='hot', interpolation='nearest')
-        plt.show()
-
         self.set_output(PREDICTION_PROBABILITY_CHANNEL_NAME, probability_matrix.flatten())
         print("Prediction Probability Sent")
 
         self.data_buffer.clear_buffer_data()
+
+
+        print(probability_matrix)
+
+        # plot the probability matrix
+        if Plot:
+            plt.imshow(probability_matrix, cmap='hot', interpolation='nearest')
+            plt.show()
+
 
 
     # cleanup is called when the stop button is hit
@@ -259,7 +274,8 @@ def train_logistic_regression(X, y, model, test_size=0.2):
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
 
-    # Print the confusion matrix
+    # plot the confusion matrix
+
     confusion_matrix(y_test, y_pred)
 
 def confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray) -> None:
@@ -283,16 +299,20 @@ def confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray) -> None:
 
     # Calculate the confusion matrix and f1 score
     cm = metrics.confusion_matrix(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(cm)
     score = f1_score(y_test, y_pred, average='macro')
+    print("F1 Score (Macro): {:.2f}".format(score))
 
-    # Create a heatmap of the confusion matrix
-    plt.figure(figsize=(9, 9))
-    sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square=True, cmap='Blues_r')
-    plt.ylabel('Actual label')
-    plt.xlabel('Predicted label')
-    all_sample_title = 'Accuracy Score: {0}'.format(score)
-    plt.title(all_sample_title, size=15)
-    plt.show()
+    if Plot:
+        # Create a heatmap of the confusion matrix
+        plt.figure(figsize=(9, 9))
+        sns.heatmap(cm, annot=True, fmt=".3f", linewidths=.5, square=True, cmap='Blues_r')
+        plt.ylabel('Actual label')
+        plt.xlabel('Predicted label')
+        all_sample_title = 'Accuracy Score: {0}'.format(score)
+        plt.title(all_sample_title, size=15)
+        plt.show()
 
 def rebalance_classes(x, y, by_channel=False):
     """

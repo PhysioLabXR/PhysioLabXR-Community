@@ -30,11 +30,6 @@ EEG_CHANNEL_NAMES = [
     "O1"
 ]
 
-# # prediction lsl outlet configuration
-# PREDICTION_STREAM_NAME = 'PhysioLabXRP300SpellerDemoPrediction'
-# PREDICTION_STREAM_TYPE = 'Prediction'
-# PREDICTION_STREAM_CHANNEL_NUM = 36
-
 
 class IndexClass(int, Enum):
     pass
