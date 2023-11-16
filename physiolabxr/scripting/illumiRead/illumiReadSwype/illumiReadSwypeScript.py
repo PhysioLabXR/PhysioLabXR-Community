@@ -13,9 +13,11 @@ import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo
+from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
+from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT
 
 
-class AOIAugmentationScript(RenaScript):
+class IllumiReadSwypeScript(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
@@ -34,6 +36,11 @@ class AOIAugmentationScript(RenaScript):
 
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
+
+        self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
+
+
+
     def init(self):
         pass
 
@@ -45,6 +52,15 @@ class AOIAugmentationScript(RenaScript):
             return
         # print("process event marker call start")
         self.process_event_markers()
+
+        self.process_gaze_data()
+
+        # gaze callback
+        # if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState or \
+        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState or \
+        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState or \
+        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
+        #     self.process_gaze_data()
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -185,4 +201,25 @@ class AOIAugmentationScript(RenaScript):
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = None
+
+    def process_gaze_data(self):
+
+        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+
+            gaze_data = VarjoGazeData()
+            gaze_data.construct_gaze_data_varjo(gaze_data_t)
+            gaze_data = self.ivt_filter.process_sample(gaze_data)
+            print(gaze_data.get_gaze_type())
+
+        self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+
+
+
+
+
+
+
+
+
+
 

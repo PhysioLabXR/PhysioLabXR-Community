@@ -19,7 +19,7 @@ class GazeDataLSLStreamInfo:
     StreamName = "VarjoEyeTrackingLSL"
     StreamType = "GazeData"
     StreamID = "2"
-    ChannelNum = 35
+    ChannelNum = 39
     NominalSamplingRate = 200
 
 
