@@ -31,6 +31,7 @@ def window_slice(data, window_size, stride, channel_mode='channel_last'):
 
 
 def plot_stream(stream, timestamps):
+    import matplotlib.pyplot as plt
     timestamps = timestamps - timestamps[0]  # baseline the timestamps
     plt.plot(timestamps, stream)
     plt.xlabel('Time (sec)')

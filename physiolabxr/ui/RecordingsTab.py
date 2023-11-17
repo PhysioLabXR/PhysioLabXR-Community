@@ -20,6 +20,9 @@ from physiolabxr.utils.RNStream import RNStream
 from physiolabxr.ui.dialogs import dialog_popup
 import subprocess
 
+from physiolabxr.utils.buffers import DataBuffer
+
+
 class RecordingsTab(QtWidgets.QWidget):
     def __init__(self, parent):
         """
@@ -30,7 +33,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_RecordingsTab, self)
         self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
-        self.recording_buffer = {}
+        self.recording_buffer = DataBuffer()
 
         self.is_recording = False
 
@@ -66,7 +69,7 @@ class RecordingsTab(QtWidgets.QWidget):
             return
         self.save_path = self.generate_save_path()  # get a new save path
         self.save_stream = RNStream(self.save_path)
-        self.recording_buffer = {}  # clear buffer
+        self.recording_buffer.clear_buffer()  # clear buffer
         self.is_recording = True
         self.recording_byte_count = 0
         self.StartStopRecordingBtn.setText(stop_recording_text)
@@ -107,34 +110,11 @@ class RecordingsTab(QtWidgets.QWidget):
     def update_recording_buffer(self, data_dict: dict):
         # TODO: change lsl_data_type to stream_name?
         if self.is_recording:
-            lsl_data_type = data_dict['stream_name']  # get the type of the newly-come data
-
-            if lsl_data_type not in self.recording_buffer.keys():
-                self.recording_buffer[lsl_data_type] = [np.empty(shape=(data_dict['frames'].shape[0], 0)),
-                                                        np.empty(shape=(0,))]  # data first, timestamps second
-
-            buffered_data = self.recording_buffer[data_dict['stream_name']][0]
-            buffered_timestamps = self.recording_buffer[data_dict['stream_name']][1]
-
-            self.recording_buffer[lsl_data_type][0] = np.concatenate([buffered_data, data_dict['frames']], axis=-1)
-            self.recording_buffer[lsl_data_type][1] = np.concatenate([buffered_timestamps, data_dict['timestamps']])
-            pass
+            self.recording_buffer.update_buffer(data_dict)
 
     def update_camera_screen_buffer(self, cam_id, new_frame, timestamp):
         if self.is_recording:
-            if cam_id not in self.recording_buffer.keys():  # note array data type is uint8 0~255
-                self.recording_buffer[cam_id] = [np.empty(shape=new_frame.shape + (0,), dtype=np.uint8),
-                                                 np.empty(shape=(0,)), np.empty(shape=(0,))]
-
-            _new_frame = np.expand_dims(new_frame, axis=-1)
-            buffered_data = self.recording_buffer[cam_id][0]
-            buffered_timestamps = self.recording_buffer[cam_id][1]
-
-            self.recording_buffer[cam_id][0] = np.concatenate([buffered_data, _new_frame.astype(np.uint8)], axis=-1)
-            self.recording_buffer[cam_id][1] = np.concatenate([buffered_timestamps, [timestamp]])
-            self.recording_buffer[cam_id][2] = np.concatenate([self.recording_buffer[cam_id][2], [time.time()]])
-
-            pass
+            self.recording_buffer.update_buffer({'stream_name': cam_id, 'frames': new_frame.reshape(-1)[:, None], 'timestamps': [timestamp]})
 
     def update_ui_save_file(self):
         if AppConfigs().recording_file_format == RecordingFileFormat.csv:
@@ -159,8 +139,8 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def evict_buffer(self):
         # print(self.recording_buffer)
-        self.recording_byte_count += self.save_stream.stream_out(self.recording_buffer)
-        self.recording_buffer = {}
+        self.recording_byte_count += self.save_stream.stream_out(self.recording_buffer.buffer)
+        self.recording_buffer.clear_buffer()
         self.update_file_size_label()
 
     def update_file_size_label(self):
@@ -183,6 +163,3 @@ class RecordingsTab(QtWidgets.QWidget):
         recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
         recordingConversionDialog.show()
         return recordingConversionDialog
-
-
-
