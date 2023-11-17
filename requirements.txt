@@ -12,7 +12,6 @@ opencv-python
 pyzmq
 setuptools
 psutil
-pytest-qt
 numba
 PyOpenGL
 PyOpenGL_accelerate
