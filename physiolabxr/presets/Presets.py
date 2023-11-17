@@ -424,6 +424,7 @@ class Presets(metaclass=Singleton):
     """
     _preset_root: str = None
     _reset: bool = False
+    _save_after_init: bool = True
 
     _lsl_preset_root: str = 'LSLPresets'
     _zmq_preset_root: str = 'ZMQPresets'
@@ -492,7 +493,8 @@ class Presets(metaclass=Singleton):
 
         _load_stream_presets(self, dirty_presets)
         SplashLoadingTextNotifier().set_loading_text('Loading video devices...You may notice webcam flashing.')
-        self.save(is_async=False)
+        if self._save_after_init:
+            self.save(is_async=False)
         SplashLoadingTextNotifier().set_loading_text("_presets instance successfully initialized")
 
     def _get_all_presets(self):

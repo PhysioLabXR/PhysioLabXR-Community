@@ -96,7 +96,11 @@ class ReplayServer(threading.Thread):
                             self.send_string(shared.FAIL_INFO + f'Failed to load file {e}')
                             self.reset_replay()
                             continue
-                    self.original_stream_data = {f're-{k}': v for k, v in self.original_stream_data.items()}
+                    # from physiolabxr.presets.Presets import Presets
+                    # from physiolabxr.configs.configs import AppConfigs
+                    # preset_root = AppConfigs()._preset_path
+                    # presets = Presets(_preset_root=preset_root, _reset=False, _save_after_init=False)  # create the singleton presets object
+                    # self.original_stream_data = {f're-{s_name}': v for s_name, v in self.original_stream_data.items() if not presets[s_name].preset_type.is_lsl_zmq_custom_preset()}
 
                     self.previous_file_loc = file_location
                     self.send_string(shared.LOAD_SUCCESS_INFO + str(self.total_time))
