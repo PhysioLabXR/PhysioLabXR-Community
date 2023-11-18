@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import QDialogButtonBox
 from physiolabxr.ui import ui_shared
 from physiolabxr.configs.config import settings
 from physiolabxr.configs.configs import AppConfigs, RecordingFileFormat
-from physiolabxr.ui.RecordingConversionDialog import RecordingConversionDialog
+from physiolabxr.ui.RecordingConversionDialog import RecordingPostProcessDialog
 from physiolabxr.ui.ui_shared import stop_recording_text, start_recording_text
 from physiolabxr.utils.RNStream import RNStream
 from physiolabxr.ui.dialogs import dialog_popup
@@ -94,10 +94,11 @@ class RecordingsTab(QtWidgets.QWidget):
         self.update_file_size_label()
 
         # convert file format
-        if AppConfigs().recording_file_format != RecordingFileFormat.dats:
-            self.conversion_dialog = self.convert_file_format(self.save_path, AppConfigs().recording_file_format )
-        else:
-            dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok, main_parent=self.parent)
+        # if AppConfigs().recording_file_format != RecordingFileFormat.dats:
+        self.postprocess_dialog = self.postprocess_recording(self.save_path, AppConfigs().recording_file_format, self.parent.fire_action_show_recordings)
+        # else:
+        #     dialog_popup('Saved to {0}'.format(self.save_path), title='Info', mode='modeless', buttons=QDialogButtonBox.StandardButton.Ok,
+        #                  main_parent=self.parent, additional_buttons={'Show in directory': self.parent.fire_action_show_recordings})
 
         self.StartStopRecordingBtn.setText(start_recording_text)
         self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
@@ -114,7 +115,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def update_camera_screen_buffer(self, cam_id, new_frame, timestamp):
         if self.is_recording:
-            self.recording_buffer.update_buffer({'stream_name': cam_id, 'frames': new_frame.reshape(-1)[:, None], 'timestamps': [timestamp]})
+            self.recording_buffer.update_buffer({'stream_name': cam_id, 'frames': np.expand_dims(new_frame, axis=-1), 'timestamps': [timestamp]})
 
     def update_ui_save_file(self):
         if AppConfigs().recording_file_format == RecordingFileFormat.csv:
@@ -158,8 +159,8 @@ class RecordingsTab(QtWidgets.QWidget):
             self.parent.current_dialog = dialog_popup(msg="Recording directory does not exist. "
                              "Please use a valid directory in the Recording Tab.", title="Error")
 
-    def convert_file_format(self, file_path, file_format: RecordingFileFormat):
+    def postprocess_recording(self, file_path, file_format: RecordingFileFormat, open_directory_func):
         #first load the .dats back
-        recordingConversionDialog = RecordingConversionDialog(file_path, file_format)
-        recordingConversionDialog.show()
-        return recordingConversionDialog
+        recording_postprocess_dialog = RecordingPostProcessDialog(file_path, file_format, open_directory_func)
+        recording_postprocess_dialog.show()
+        return recording_postprocess_dialog
