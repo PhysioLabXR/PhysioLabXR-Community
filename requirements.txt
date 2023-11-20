@@ -1,10 +1,10 @@
 brainflow
-numpy >= 1.26.0
+numpy ~= 1.26.0
 PyQt6
 pyserial
 pylsl
 scikit-learn
-scipy~=1.9.1
+scipy~=1.11.0
 pyqtgraph
 pyxdf
 pyscreeze
@@ -12,7 +12,6 @@ opencv-python
 pyzmq
 setuptools
 psutil
-pytest-qt
 numba
 PyOpenGL
 PyOpenGL_accelerate

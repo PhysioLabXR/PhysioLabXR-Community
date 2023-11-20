@@ -152,3 +152,12 @@ class PlotConfigs(metaclass=SubPreset):
                 raise TypeError(f"Unexpected type for {attr}: {type(getattr(self, attr))}")
 
 
+    def set_config(self, config):
+        """
+        set the config to the given config
+        :param config: PlotConfigs
+        :return: None
+        """
+        for config_name, config_dict in config.items():
+            for key, value in config_dict.items():
+                self.__getattribute__(config_name).__setattr__(key, value)

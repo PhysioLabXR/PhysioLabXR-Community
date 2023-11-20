@@ -300,3 +300,14 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.is_auto_level_image = True
         elif levels is not None:
             self.is_auto_level_image = False
+
+    def auto_fit(self):
+        selected_plot_format = self.get_selected_format()
+        if selected_plot_format == 0:
+            self.linechart_widget.autoRange()
+        elif selected_plot_format == 1:
+            self.plot_widget.autoRange()
+        elif selected_plot_format == 2:
+            self.barchart_widget.autoRange()
+        elif selected_plot_format == 3:
+            self.spectrogram_widget.autoRange()
