@@ -9,6 +9,7 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from physiolabxr.configs import config_ui
+from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.configs.configs import AppConfigs, LinechartVizMode
 from physiolabxr.presets.load_user_preset import create_default_group_entry
 from physiolabxr.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
@@ -167,7 +168,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
+                GlobalSignals().show_notification_signal.emit({'title': 'Stream lost', 'body': 'Lost connection to {0}'.format(self.stream_name)})
         else:
             # is the stream is not available
             if is_stream_available:

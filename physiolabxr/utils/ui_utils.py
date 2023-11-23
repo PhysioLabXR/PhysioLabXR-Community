@@ -8,7 +8,9 @@ from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QGraphicsView, QGraphicsScen
     QStyleFactory
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from physiolabxr.configs import config
 from physiolabxr.configs.config_ui import button_style_classic
+from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.exceptions.exceptions import RenaError
 from physiolabxr.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 from physiolabxr.scripting.script_utils import validate_python_script_class
@@ -172,6 +174,10 @@ def stream_stylesheet(stylesheet_url):
     stylesheet.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
     stream = QTextStream(stylesheet)
     QApplication.instance().setStyleSheet(stream.readAll())
+
+# def apply_stylesheet(widget):
+#     theme = config.settings.value('theme')
+#     widget.setStyleSheet(AppConfigs()._style_sheets[theme])
 
 def add_presets_to_combobox(combobox: QComboBox):
     for i in get_all_preset_names():

@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.is_already_closed = False
 
         # notification pane
-        self.notification_pane = NotificationPane(self)
+        self.notification_panel = NotificationPane(self)
 
 
         # # fmri widget
@@ -494,3 +494,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def auto_scale_stream_viz(self):
         for stream_name, stream_widget in self.stream_widgets.items():
             stream_widget.auto_scale_viz_components()
+
+    def resizeEvent(self, a0):
+        # always put the notification pane at bottom right
+        self.adjust_notification_panel_location()
+
+    def adjust_notification_panel_location(self):
+        self.notification_panel.move(self.width() - self.notification_panel.width(), self.height() - int(self.notification_panel.height()))
