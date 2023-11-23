@@ -17,6 +17,7 @@ from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
+from physiolabxr.ui.NotificationPane import NotificationPane
 from physiolabxr.ui.ScriptingTab import ScriptingTab
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.ui.VideoWidget import VideoWidget
@@ -140,6 +141,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close_dialog = None
         self.close_event = None
         self.is_already_closed = False
+
+        # notification pane
+        self.notification_panel = NotificationPane(self)
+
 
         # # fmri widget
         # # TODO: FMRI WIDGET
@@ -489,3 +494,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def auto_scale_stream_viz(self):
         for stream_name, stream_widget in self.stream_widgets.items():
             stream_widget.auto_scale_viz_components()
+
+    def resizeEvent(self, a0):
+        # always put the notification pane at bottom right
+        self.adjust_notification_panel_location()
+
+    def adjust_notification_panel_location(self):
+        self.notification_panel.move(self.width() - self.notification_panel.width(), self.height() - int(self.notification_panel.height()))

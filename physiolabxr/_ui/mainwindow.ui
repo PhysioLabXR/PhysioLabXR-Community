@@ -100,11 +100,6 @@
                  </layout>
                 </widget>
                </item>
-               <item>
-                <widget class="QWidget" name="camWidget" native="true">
-                 <layout class="QHBoxLayout" name="camHorizontalLayout"/>
-                </widget>
-               </item>
               </layout>
              </widget>
             </widget>
