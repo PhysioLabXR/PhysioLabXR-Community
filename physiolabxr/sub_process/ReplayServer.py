@@ -83,7 +83,7 @@ class ReplayServer(threading.Thread):
                             if file_location.endswith('.dats'):
                                 rns_stream = RNStream(file_location)
                                 # self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
-                                self.original_stream_data = rns_stream.stream_in()
+                                self.original_stream_data = rns_stream.stream_in(jitter_removal=False)
                             elif file_location.endswith('.p'):
                                 self.original_stream_data = pickle.load(open(file_location, 'rb'))
                                 # if '0' in self.stream_data.keys(): self.stream_data.pop('0')
@@ -96,6 +96,11 @@ class ReplayServer(threading.Thread):
                             self.send_string(shared.FAIL_INFO + f'Failed to load file {e}')
                             self.reset_replay()
                             continue
+                    # from physiolabxr.presets.Presets import Presets
+                    # from physiolabxr.configs.configs import AppConfigs
+                    # preset_root = AppConfigs()._preset_path
+                    # presets = Presets(_preset_root=preset_root, _reset=False, _save_after_init=False)  # create the singleton presets object
+                    # self.original_stream_data = {f're-{s_name}': v for s_name, v in self.original_stream_data.items() if not presets[s_name].preset_type.is_lsl_zmq_custom_preset()}
 
                     self.previous_file_loc = file_location
                     self.send_string(shared.LOAD_SUCCESS_INFO + str(self.total_time))

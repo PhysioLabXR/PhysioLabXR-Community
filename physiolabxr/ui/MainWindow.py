@@ -259,13 +259,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
-            create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+            create_default_lsl_preset(stream_name, num_channels=num_channels, nominal_sample_rate=nominal_sample_rate, data_type=data_type, **kwargs)  # create the preset
         elif preset_type == PresetType.ZMQ:
             try:
                 assert 'port' in kwargs.keys()
             except AssertionError:
                 raise ValueError("Port number must be specified for ZMQ preset")
-            create_default_zmq_preset(stream_name, kwargs['port'], num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+            create_default_zmq_preset(stream_name, num_channels=num_channels, nominal_sample_rate=nominal_sample_rate, data_type=data_type, **kwargs)  # create the preset
         elif preset_type == PresetType.CUSTOM:
             raise NotImplementedError
         else:
@@ -490,3 +490,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if stream_widget.preset_type == preset_type:
         #         stream_widget.try_close()
 
+
+    def auto_scale_stream_viz(self):
+        for stream_name, stream_widget in self.stream_widgets.items():
+            stream_widget.auto_scale_viz_components()

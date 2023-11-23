@@ -124,7 +124,7 @@ def test_mat_store_load(app_main_window, qtbot) -> None:
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
     print("recording stopped")
     def conversion_complete():
-        assert app_main_window.recording_tab.conversion_dialog.is_conversion_complete
+        assert app_main_window.recording_tab.postprocess_dialog.is_conversion_complete
 
     qtbot.waitUntil(conversion_complete, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
