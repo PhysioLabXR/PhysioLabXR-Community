@@ -126,6 +126,32 @@ class DataType(Enum):
         else:
             raise ValueError(f"Data type {self} is not supported by LSL.")
 
+    def get_struct_format(self):
+        if self == DataType.uint8:
+            return 'B'
+        elif self == DataType.uint16:
+            return 'H'
+        elif self == DataType.uint32:
+            return 'I'
+        elif self == DataType.uint64:
+            return 'Q'
+        elif self == DataType.int8:
+            return 'b'
+        elif self == DataType.int16:
+            return 'h'
+        elif self == DataType.int32:
+            return 'i'
+        elif self == DataType.int64:
+            return 'q'
+        elif self == DataType.float16:
+            return 'e'
+        elif self == DataType.float32:
+            return 'f'
+        elif self == DataType.float64:
+            return 'd'
+        else:
+            raise ValueError(f"Data type {self} is not supported by struct module.")
+
     @classmethod
     def get_lsl_supported_types(cls):
         return [cls.int8, cls.int16, cls.int32, cls.int64, cls.float32, cls.float64]
@@ -133,6 +159,7 @@ class DataType(Enum):
     @classmethod
     def get_lsl_supported_names(cls):
         return [dtype.name for dtype in cls.get_lsl_supported_types()]
+
 
 class VideoDeviceChannelOrder(Enum):
     RGB = 0

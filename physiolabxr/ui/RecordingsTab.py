@@ -34,7 +34,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
         self.recording_buffer = DataBuffer()
-
+        self.postprocess_dialog = None
         self.is_recording = False
 
         self.StartStopRecordingBtn.clicked.connect(self.start_stop_recording_pressed)
