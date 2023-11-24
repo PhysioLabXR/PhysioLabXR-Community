@@ -145,7 +145,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.update_file_size_label()
 
     def update_file_size_label(self):
-        self.parent.recordingFileSizeLabel. \
+        self.parent.recording_file_size_label. \
             setText('    Recording file size: {0} Mb'.format(str(round(self.recording_byte_count / 10 ** 6, 2))))
 
     def open_recording_directory(self):
