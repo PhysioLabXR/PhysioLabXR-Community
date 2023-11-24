@@ -500,4 +500,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.adjust_notification_panel_location()
 
     def adjust_notification_panel_location(self):
-        self.notification_panel.move(self.width() - self.notification_panel.width(), self.height() - int(self.notification_panel.height()))
+        self.notification_panel.move(self.width() - self.notification_panel.width(), self.height() - self.notification_panel.height() + self.recording_file_size_label.height())  # add 64 to account for the bottom info bar
