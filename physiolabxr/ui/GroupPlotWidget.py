@@ -13,7 +13,7 @@ from physiolabxr.presets.presets_utils import get_stream_preset_info, get_is_gro
     get_group_channel_indices, get_group_image_valid, get_group_image_config, spectrogram_time_second_per_segment, \
     spectrogram_time_second_overlap, get_spectrogram_cmap_lut, get_spectrogram_percentile_level_max, \
     get_spectrogram_percentile_level_min, get_image_cmap_lut, get_valid_image_levels, \
-    get_group_channel_indices_start_end, get_is_channels_show
+    get_group_channel_indices_start_end, get_is_channels_show, get_group_linechart_config
 from physiolabxr.utils.image_utils import process_image, rotate_image
 from physiolabxr.utils.ui_utils import get_distinct_colors
 
@@ -189,12 +189,16 @@ class GroupPlotWidget(QtWidgets.QWidget):
         if data.shape[1] != len(self.viz_time_vector):  # num_points_to_plot has been updated
             self.viz_time_vector = self.get_viz_time_vector()
         if selected_plot_format == 0:  # linechart
+            linechart_config = get_group_linechart_config(self.stream_name, self.group_name)
+            # if line_chat_config.channels_constant_offset!=0:
+            #     data = data +
+
 
             time_vector = np.linspace(0., duration, data.shape[1])
             for index_in_group, channel_index in enumerate(channel_indices):
                 plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
                 if plot_data_item.isVisible():
-                    plot_data_item.setData(time_vector, data[channel_index, :])
+                    plot_data_item.setData(time_vector, data[channel_index, :]+linechart_config.channels_constant_offset*index_in_group)
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)

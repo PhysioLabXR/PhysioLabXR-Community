@@ -15,7 +15,8 @@ from physiolabxr.presets.presets_utils import get_stream_a_group_info, \
     set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max, set_image_levels_max, \
     set_image_levels_min, get_valid_image_levels, set_image_cmap, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
-    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree
+    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree, \
+    set_time_series_channels_constant_offset
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.Validators import NoCommaIntValidator
 
@@ -39,6 +40,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_tab_changed)
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+
+
+        # time series ###############################################################
+        self.timeSeriesChannelsConstantOffsetLineEdit.setValidator(QDoubleValidator())
+        self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
 
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
@@ -224,6 +230,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def plot_format_tab_changed(self, info_dict):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
             self._set_to_group(self.group_name)
+
+
+    def time_series_channels_constant_offset_line_edit_changed(self):
+        value = self.timeSeriesChannelsConstantOffsetLineEdit.text()
+        if value == '':
+            value = 0
+        else:
+            value = float(value)
+        set_time_series_channels_constant_offset(self.stream_name, self.group_name, value)
 
     def image_w_h_scaling_percentile_on_change(self):
         width = self.get_image_width()
