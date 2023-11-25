@@ -100,11 +100,6 @@
                  </layout>
                 </widget>
                </item>
-               <item>
-                <widget class="QWidget" name="camWidget" native="true">
-                 <layout class="QHBoxLayout" name="camHorizontalLayout"/>
-                </widget>
-               </item>
               </layout>
              </widget>
             </widget>
@@ -135,7 +130,7 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="infobar_layout">
       <property name="leftMargin">
        <number>9</number>
       </property>
@@ -282,7 +277,7 @@
        </spacer>
       </item>
       <item alignment="Qt::AlignRight">
-       <widget class="QLabel" name="recordingFileSizeLabel">
+       <widget class="QLabel" name="recording_file_size_label">
         <property name="text">
          <string>    Recording file size: </string>
         </property>

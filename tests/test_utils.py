@@ -288,8 +288,7 @@ class ContextBot:
         # t.start()
         self.qtbot.mouseClick(self.app.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # start the recording
         # t.join()  # wait until the dialog is closed
-        ok_button = self.app.current_dialog.buttonBox.button(QtWidgets.QDialogButtonBox.StandardButton.Ok)
-        self.qtbot.mouseClick(ok_button, QtCore.Qt.MouseButton.LeftButton)
+        self.qtbot.mouseClick(self.app.recording_tab.postprocess_dialog.finish_button, QtCore.Qt.MouseButton.LeftButton)
 
     def start_recording(self):
         if self.app.recording_tab.is_recording:

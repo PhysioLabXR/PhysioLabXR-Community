@@ -5,7 +5,7 @@ import warnings
 from dataclasses import dataclass, fields
 from enum import Enum
 
-from PyQt6.QtCore import QStandardPaths
+from PyQt6.QtCore import QStandardPaths, QFile, QTextStream
 from PyQt6.QtGui import QIcon
 
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
@@ -73,8 +73,13 @@ class AppConfigs(metaclass=Singleton):
     _reset: bool = False
     _file_name = 'AppConfigs.json'
     _app_data_name: str = 'RenaLabApp'
+
     app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), _app_data_name)
 
+    # appearance configs
+    theme: str = 'dark'  # TODO: refactor this to an enum, replace config.value
+
+    # viz configs
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
 
     # recording configs
@@ -114,6 +119,7 @@ class AppConfigs(metaclass=Singleton):
     _ui_file_tree_depth = 3
     _preset_path = 'physiolabxr/_presets'
     _rena_base_script = "physiolabxr/scripting/BaseRenaScript.py"
+    _style_sheets = {"dark": "physiolabxr/_ui/stylesheet/dark.qss", "light": "physiolabxr/_ui/stylesheet/light.qss"}
 
     def __post_init__(self):
         # change the cwd to root folder
@@ -157,6 +163,13 @@ class AppConfigs(metaclass=Singleton):
         except NotImplementedError as e:
             self.is_monitor_available = False
             self.monitor_error_message = str(e)
+
+        # load style sheets
+        for theme, style_sheet_path in self._style_sheets.items():
+            stylesheet = QFile(style_sheet_path)
+            stylesheet.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
+            stream = QTextStream(stylesheet)
+            self._style_sheets[theme] = stream.readAll()
 
     def __del__(self):
         """

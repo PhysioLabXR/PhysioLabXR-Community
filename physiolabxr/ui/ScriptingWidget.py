@@ -426,7 +426,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             print(str(e))
             return
         self.inputLayout.addWidget(input_widget)
-        self.inputLayout.setAlignment(input_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.inputLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.inputLayout.removeWidget(input_widget)
@@ -448,7 +448,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_output(self, stream_name, num_channels, port_number, data_type, interface_type):
         output_widget = ScriptingOutputWidget(self, stream_name, num_channels, port_number=port_number, data_type=data_type, interface_type=interface_type)
         self.outputLayout.addWidget(output_widget)
-        self.outputLayout.setAlignment(output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.outputLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.outputLayout.removeWidget(output_widget)
@@ -470,7 +470,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_param(self, param_name, param_type=ParamType.bool, value=None):
         param_widget = ParamWidget(self, param_name, param_type=param_type, value=value)
         self.paramsLayout.addWidget(param_widget)
-        self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.paramsLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.paramsLayout.removeWidget(param_widget)
