@@ -16,3 +16,5 @@ numba
 PyOpenGL
 PyOpenGL_accelerate
 soundfile
+matplotlib
+imblearn

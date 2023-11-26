@@ -165,6 +165,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
 
+        self.info_worker.timer = self.info_timer
+
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
         self.run_signal_timer.setInterval(int(forward_interval))
         self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
