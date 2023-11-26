@@ -273,7 +273,7 @@ class IllumiReadSwypeScript(RenaScript):
 
                 # now, we map the fixations to the keyboard keys
                 user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
-                use_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
+                user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
 
                 for group in grouped_list:
                     if group[0].gaze_type == GazeType.FIXATION:
@@ -281,8 +281,9 @@ class IllumiReadSwypeScript(RenaScript):
                         fixation_end_time = group[-1].timestamp
 
                         # find the user input data that is closest to the fixation
-                        fixation_start_user_input_index = np.searchsorted(use_input_timestamp, [fixation_start_time], side='right')
-                        fixation_end_user_input_index = np.searchsorted(use_input_timestamp, [fixation_end_time], side='left')
+                        fixation_start_user_input_index = np.searchsorted(user_input_timestamp, [fixation_start_time], side='right')
+                        fixation_end_user_input_index = np.searchsorted(user_input_timestamp, [fixation_end_time], side='left')
+
                         pass
 
                 # reset
