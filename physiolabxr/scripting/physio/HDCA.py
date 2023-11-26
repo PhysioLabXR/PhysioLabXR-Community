@@ -2,10 +2,8 @@ import os
 
 # analysis parameters ######################################################################################
 import matplotlib.pyplot as plt
-import mne
 import numpy as np
 from imblearn.over_sampling import SMOTE
-from mne.viz import plot_topomap
 from numpy.lib.stride_tricks import sliding_window_view
 from sklearn import metrics
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -147,6 +145,8 @@ def z_norm_projection(x_train, x_test):
 
 
 def plot_forward(activation, event_names, split_window, num_windows, exg_srate, eeg_montage, notes):
+    import mne
+    from mne.viz import plot_topomap
     eeg_channel_names = eeg_montage.ch_names
     info = mne.create_info(
         eeg_channel_names,
@@ -203,7 +203,7 @@ class HDCA():
         self.num_eeg_windows = None
         self.num_pupil_windows = None
 
-    def fit(self, x_eeg, x_eeg_pca_ica, x_pupil, y, is_plots=False, notes="", num_folds=10, exg_srate=200, split_window_eeg=100e-3, split_window_pupil=500e-3, eyetracking_srate=20, random_seed=None, verbose=0, *args, **kwargs):
+    def fit(self, x_eeg, x_eeg_pca_ica, x_pupil, y, is_plots=False, notes="", num_folds=10, exg_srate=200, split_window_eeg=100e-3, split_window_pupil=500e-3, eyetracking_srate=20, random_seed=None, verbose=0, eeg_montage=None, *args, **kwargs):
         self._use_pupil = x_pupil is not None
         label_encoder = LabelEncoder()
         label_encoder.fit(y)
@@ -313,7 +313,8 @@ class HDCA():
             tpr_folds_eeg.append(tpr_eeg)
             # print(f'Fold {i}, auc is {roc_auc_folds[i]}')
 
-        plot_forward(np.mean(activations_folds, axis=0), self.event_names, split_window_eeg, self.num_windows_eeg, exg_srate=exg_srate, notes=f"{notes} Average over {num_folds}-fold's test set", *args, **kwargs)
+        if eeg_montage is not None:
+            plot_forward(np.mean(activations_folds, axis=0), self.event_names, split_window_eeg, self.num_windows_eeg, exg_srate=exg_srate, notes=f"{notes} Average over {num_folds}-fold's test set", *args, **kwargs)
 
         if verbose:
             print(f"Mean EEG cross ROC-AUC is {np.mean(roc_auc_folds_eeg)}")
@@ -376,7 +377,7 @@ class HDCA():
 
         return roc_auc_combined, roc_auc_eeg, roc_auc_pupil
 
-    def eval(self, x_eeg, x_eeg_pca_ica, x_pupil, y, notes="", *args, **kwargs):
+    def eval(self, x_eeg, x_eeg_pca_ica, x_pupil, y, notes="", eeg_montage=None, *args, **kwargs):
         y = self._encoder(np.copy(y))
 
         x_eeg_transformed_windowed = self._split_by_window(x_eeg_pca_ica, self.split_size_eeg)  # shape = #trials, #channels, #windows, #time points per window
@@ -401,7 +402,8 @@ class HDCA():
         else:
             roc_auc_combined, roc_auc_pupil = None, None
             y_pred = y_pred_eeg
-        plot_forward(activation, self.event_names, self.split_window_eeg, self.num_windows_eeg,exg_srate=self.exg_srate, notes=f"{notes} Forward model activation", *args, **kwargs)
+        if eeg_montage is not None:
+            plot_forward(activation, self.event_names, self.split_window_eeg, self.num_windows_eeg,exg_srate=self.exg_srate, notes=f"{notes} Forward model activation", eeg_montage=eeg_montage, *args, **kwargs)
         return y_pred, roc_auc_combined, roc_auc_eeg, roc_auc_pupil
 
     def _split_by_window(self, data, window_shape):
