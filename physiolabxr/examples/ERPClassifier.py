@@ -1,7 +1,7 @@
 import time
 
-import mne
 import numpy as np
+import scipy
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from physiolabxr.scripting.RenaScript import RenaScript
@@ -36,8 +36,6 @@ class ERPClassifier(RenaScript):
 
         self.eeg_midlines = ['Fpz', 'AFz', 'Fz', 'FCz', 'Cz', 'CPz', 'Pz', 'POz', 'Oz', 'Iz']  # List of midline EEG channels
         self.eeg_picks = {self.eeg_channels.index(channel): channel for channel in self.eeg_midlines}  # Indices of the midline EEG channels, used for visualization
-
-        self.eeg_montage = mne.channels.make_standard_montage('biosemi64')
 
         self.eye_channels = self.get_stream_info('Example-Eyetracking-Pupil', 'ChannelNames')  # List of eye tracking channels
         self.eye_srate = self.get_stream_info('Example-Eyetracking-Pupil', 'NominalSamplingRate')  # Sampling rate of the eye tracking data in Hz
@@ -99,7 +97,7 @@ class ERPClassifier(RenaScript):
                                                                      self.eye_baseline_time,
                                                                      self.eye_srate)
             # downsample eye tracking data   # TODO do not use MNE
-            baselined_resampled_pupil_epochs = {e: mne.filter.resample(x, down=10, npad='auto', n_jobs=1) for e, x in baselined_pupil_epochs.items()}
+            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, len(x) // 10) for e, x in baselined_pupil_epochs.items()}
             visualize_epochs(baselined_resampled_pupil_epochs)
 
             if self.block_count >= self.start_training_at_block:
