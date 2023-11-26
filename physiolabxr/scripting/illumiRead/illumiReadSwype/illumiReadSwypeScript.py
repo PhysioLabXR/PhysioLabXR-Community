@@ -251,15 +251,11 @@ class IllumiReadSwypeScript(RenaScript):
         for user_input_data_t in self.inputs[UserInputLSLStreamInfo.StreamName][0].T:
             user_input_button_1 = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex] # swyping invoker
 
-
-
             if not self.illumiReadSwyping and user_input_button_1:
                 # start swyping
                 self.illumiReadSwyping = True
                 print("start swyping")
                 # start
-
-
 
             if self.illumiReadSwyping and not user_input_button_1:
                 # end swyping
@@ -287,20 +283,7 @@ class IllumiReadSwypeScript(RenaScript):
                         # find the user input data that is closest to the fixation
                         fixation_start_user_input_index = np.searchsorted(use_input_timestamp, [fixation_start_time], side='right')
                         fixation_end_user_input_index = np.searchsorted(use_input_timestamp, [fixation_end_time], side='left')
-
-
-
-
-
-
                         pass
-
-
-
-
-
-
-
 
                 # reset
                 self.illumiReadSwyping = False
