@@ -300,10 +300,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         widget_name = video_device_name + '_widget'
         widget = VideoWidget(parent_widget=self,
-                           parent_layout=self.camHorizontalLayout,
+                           parent_layout=self.streamsHorizontalLayout,
                              video_preset_type=video_preset_type,
                            video_device_name=video_device_name,
-                           insert_position=self.camHorizontalLayout.count() - 1)
+                           insert_position=self.streamsHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 

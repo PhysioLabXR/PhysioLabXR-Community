@@ -40,7 +40,7 @@ class ERPExtraction(RenaScript):
             if len(event_locked_data) > 0:  # if there's new data
                 if self.params['ChannelToPlot'] in self.eeg_channels:  # check if the channel to plot chosen in the params is valid
                     channel_index = self.eeg_channels.index(self.params['ChannelToPlot'])  # Get the index of the chosen EEG channel from the list
-                    baselined_data = get_baselined_event_locked_data(self.event_locked_data_buffer, channel_index, self.baseline_time, self.srate)  # Obtain baselined event-locked data for the chosen channel
+                    baselined_data = get_baselined_event_locked_data(self.event_locked_data_buffer, self.baseline_time, self.srate, pick=channel_index)  # Obtain baselined event-locked data for the chosen channel
                     erp_viz_data = np.zeros((self.erp_length, 2))  # Create a visualization data array for ERP
 
                     # Populate the visualization data with ERP values from different events (if available)
