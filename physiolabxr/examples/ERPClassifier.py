@@ -99,14 +99,13 @@ class ERPClassifier(RenaScript):
                                                                      self.eye_baseline_time,
                                                                      self.eye_srate)
             # downsample eye tracking data   # TODO do not use MNE
-            pupil_data = {e: mne.filter.resample(x, down=10, npad='auto', n_jobs=1) for e, x in baselined_pupil_epochs.items()}
-            visualize_epochs(pupil_data)
+            baselined_resampled_pupil_epochs = {e: mne.filter.resample(x, down=10, npad='auto', n_jobs=1) for e, x in baselined_pupil_epochs.items()}
+            visualize_epochs(baselined_resampled_pupil_epochs)
 
             if self.block_count >= self.start_training_at_block:
                 # build classifier
-                x_eeg = np.concatenate([x['eeg'] for x in self.event_locked_data_buffer.values()], axis=0)
-                x_pupil = np.concatenate([x['eye'][:, 4:] for x in self.event_locked_data_buffer.values()], axis=0)
-                x_pupil = mne.filter.resample(x_pupil, down=10, npad='auto', n_jobs=1)
+                x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
+                x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
 
                 x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, pca, ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20)
 
