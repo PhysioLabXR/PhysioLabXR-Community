@@ -7,14 +7,18 @@ import os
 import pickle
 import sys
 import matplotlib.pyplot as plt
+from itertools import groupby
 from physiolabxr.scripting.RenaScript import RenaScript
 from pylsl import StreamInfo, StreamOutlet, cf_float32
 import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
-    GazeDataLSLStreamInfo
+    GazeDataLSLStreamInfo, UserInputLSLStreamInfo
+from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
-from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT
+from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
+from physiolabxr.utils.buffers import DataBuffer
+
 
 
 class IllumiReadSwypeScript(RenaScript):
@@ -29,6 +33,12 @@ class IllumiReadSwypeScript(RenaScript):
 
         self.currentBlock: illumiReadSwypeConfig.ExperimentBlock = \
             illumiReadSwypeConfig.ExperimentBlock.InitBlock
+
+        self.illumiReadSwyping = False
+
+        self.data_buffer = DataBuffer()
+        self.gaze_data_sequence = list()
+        self.user_input_sequence = list()
 
         self.device = torch.device('cpu')
 
@@ -48,19 +58,24 @@ class IllumiReadSwypeScript(RenaScript):
     def loop(self):
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
-                GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+                GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()) or (
+                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
         # print("process event marker call start")
         self.process_event_markers()
 
-        self.process_gaze_data()
+
+        # self.process_gaze_data()
 
         # gaze callback
+
+        self.state_callbacks()
+
         # if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState or \
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState or \
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState or \
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
-        #     self.process_gaze_data()
+            # self.process_gaze_data()
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -81,6 +96,8 @@ class IllumiReadSwypeScript(RenaScript):
                 if block_marker > 0:
                     self.enter_block(block_marker)
                     print(self.currentBlock)
+
+
                 else:
                     self.exit_block(block_marker)
                     print("Exit Current Block")
@@ -88,6 +105,9 @@ class IllumiReadSwypeScript(RenaScript):
             if state_marker:
                 if state_marker > 0:
                     self.enter_state(state_marker)
+                    # clear the gaze data buffer before decoding the next state
+                    self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+
                     print(self.currentExperimentState)
                 else:
                     self.exit_state(state_marker)
@@ -103,10 +123,9 @@ class IllumiReadSwypeScript(RenaScript):
             #
             #         print("state change")
 
-            print("process event marker call end")
+            # print("process event marker call end")
 
-    def no_aoi_augmentation_state_init_callback(self):
-        pass
+
 
     def enter_block(self, block_marker):
 
@@ -202,16 +221,189 @@ class IllumiReadSwypeScript(RenaScript):
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = None
 
-    def process_gaze_data(self):
 
-        for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+    def state_callbacks(self):
+        if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState:
+            self.keyboard_click_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState:
+            self.keyboard_dewelltime_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState:
+            self.keyboard_illumireadswype_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
+            self.keyboard_freeswitch_state_callback()
 
-            gaze_data = VarjoGazeData()
-            gaze_data.construct_gaze_data_varjo(gaze_data_t)
-            gaze_data = self.ivt_filter.process_sample(gaze_data)
-            print(gaze_data.get_gaze_type())
+    def keyboard_click_state_callback(self):
+        print("keyboard click state")
 
+        pass
+
+
+    def keyboard_dewelltime_state_callback(self):
+        print("keyboard dewell time state")
+
+        pass
+
+
+    def keyboard_illumireadswype_state_callback(self):
+        # print("keyboard illumiread swype state")
+
+        # get the user input data
+        for user_input_data_t in self.inputs[UserInputLSLStreamInfo.StreamName][0].T:
+            user_input_button_1 = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex] # swyping invoker
+
+
+
+            if not self.illumiReadSwyping and user_input_button_1:
+                # start swyping
+                self.illumiReadSwyping = True
+                print("start swyping")
+                # start
+
+
+
+            if self.illumiReadSwyping and not user_input_button_1:
+                # end swyping
+
+                print("start decoding swype path")
+
+                # merge fixations
+
+                grouped_list = [list(group) for key, group in groupby(self.gaze_data_sequence, key = lambda x: x.gaze_type)]
+
+                # TODO: merge fixations that are too close to each other
+
+                # TODO: discard fixations that are too short < 90ms
+
+
+                # now, we map the fixations to the keyboard keys
+                user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
+                use_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
+
+                for group in grouped_list:
+                    if group[0].gaze_type == GazeType.FIXATION:
+                        fixation_start_time = group[0].timestamp
+                        fixation_end_time = group[-1].timestamp
+
+                        # find the user input data that is closest to the fixation
+                        fixation_start_user_input_index = np.searchsorted(use_input_timestamp, [fixation_start_time], side='right')
+                        fixation_end_user_input_index = np.searchsorted(use_input_timestamp, [fixation_end_time], side='left')
+
+
+
+
+
+
+                        pass
+
+
+
+
+
+
+
+
+                # reset
+                self.illumiReadSwyping = False
+                self.gaze_data_sequence = []
+                self.data_buffer = DataBuffer()
+                self.ivt_filter.reset_data_processor()
+
+
+        if self.illumiReadSwyping:
+            print("update_buffer")
+            # swyping, save the gaze data and user input data
+            # self.data_buffer.update_buffer(
+
+            for gaze_data_t, timestamp in (
+                    zip(self.inputs[GazeDataLSLStreamInfo.StreamName][0].T,
+                        self.inputs[GazeDataLSLStreamInfo.StreamName][1])):
+
+                gaze_data = VarjoGazeData()
+                gaze_data.construct_gaze_data_varjo(gaze_data_t, timestamp)
+                gaze_data = self.ivt_filter.process_sample(gaze_data)
+                self.gaze_data_sequence.append(gaze_data)
+
+            for user_input_t, timestamp in (
+                    zip(self.inputs[UserInputLSLStreamInfo.StreamName][0].T,
+                        self.inputs[UserInputLSLStreamInfo.StreamName][1])):
+                gaze_hit_keyboard_background = user_input_data_t[
+                    illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyboardBackgroundChannelIndex]
+                keyboard_background_hit_point_local = [
+                    user_input_data_t[
+                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalXChannelIndex],
+                    user_input_data_t[
+                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalYChannelIndex],
+                    user_input_data_t[
+                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalZChannelIndex]
+                ]
+
+                gaze_hit_key = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyChannelIndex]
+                key_hit_point_local = [
+                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalXChannelIndex],
+                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalYChannelIndex],
+                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalZChannelIndex]
+                ]
+
+                key_hit_index = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitIndexChannelIndex]
+
+                user_input_button_1 = user_input_data_t[
+                    illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex]  # swyping invoker
+                user_input_button_2 = user_input_data_t[
+                    illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]
+
+                user_input = illumiReadSwypeUserInput(
+                    gaze_hit_keyboard_background,
+                    keyboard_background_hit_point_local,
+                    gaze_hit_key,
+                    key_hit_point_local,
+                    key_hit_index,
+                    user_input_button_1,
+                    user_input_button_2,
+                    timestamp
+                )
+
+                self.user_input_sequence.append(user_input)
+
+
+
+
+
+
+
+
+
+
+            self.data_buffer.update_buffers(self.inputs.buffer)
+
+
+
+
+        # clear the processed user input data and gaze data
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
+        self.inputs.clear_stream_buffer_data(UserInputLSLStreamInfo.StreamName)
+
+
+
+
+
+    def keyboard_freeswitch_state_callback(self):
+        print("keyboard free switch state")
+
+
+        pass
+
+
+    # def process_gaze_data(self):
+    #
+    #     for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+    #
+    #         gaze_data = VarjoGazeData()
+    #         gaze_data.construct_gaze_data_varjo(gaze_data_t)
+    #         gaze_data = self.ivt_filter.process_sample(gaze_data)
+    #         print(gaze_data.get_gaze_type())
+    #
+    #
+    #     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
 
 
 

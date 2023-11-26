@@ -22,6 +22,30 @@ class GazeDataLSLStreamInfo:
     ChannelNum = 39
     NominalSamplingRate = 200
 
+class UserInputLSLStreamInfo:
+    StreamName = "illumiReadSwypeUserInputLSL"
+    StreamType = "UserInput"
+    StreamID = "3"
+    ChannelNum = 11
+    NominalSamplingRate = 80
+
+    GazeHitKeyboardBackgroundChannelIndex = 0
+    KeyboardBackgroundHitPointLocalXChannelIndex = 1
+    KeyboardBackgroundHitPointLocalYChannelIndex = 2
+    KeyboardBackgroundHitPointLocalZChannelIndex = 3
+    GazeHitKeyChannelIndex = 4
+    KeyHitPointLocalXChannelIndex = 5
+    KeyHitPointLocalYChannelIndex = 6
+    KeyHitPointLocalZChannelIndex = 7
+    KeyHitIndexChannelIndex = 8
+    UserInputButton1ChannelIndex = 9
+    UserInputButton2ChannelIndex = 10
+
+
+
+
+
+
 
 class ExperimentState(Enum):
     InitState = 0

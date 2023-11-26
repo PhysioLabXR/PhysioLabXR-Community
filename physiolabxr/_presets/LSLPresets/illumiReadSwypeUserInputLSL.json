@@ -1,4 +1,4 @@
-{ "StreamName":"illumiReadSwypeVarjoGazeOnKeyboardLSL",
+{ "StreamName":"illumiReadSwypeUserInputLSL",
   "ChannelNames":[
     "GazeHitKeyboardBackground",
     "KeyboardBackgroundHitPointLocalX",

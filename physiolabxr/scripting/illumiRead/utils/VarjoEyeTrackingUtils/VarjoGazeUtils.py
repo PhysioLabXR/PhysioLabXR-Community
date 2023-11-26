@@ -3,13 +3,7 @@ import enum
 import numpy as np
 
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeConfig import VarjoLSLChannelInfo
-from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeData
-
-
-class GazeType(enum.Enum):
-    SACCADE = 1
-    FIXATION = 2
-    UNDETERMINED = 0
+from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeData, GazeType
 
 
 class VarjoGazeData(GazeData):
@@ -85,7 +79,7 @@ class VarjoGazeData(GazeData):
         self.gaze_type = GazeType.UNDETERMINED
         self.timestamp = 0
 
-    def construct_gaze_data_varjo(self, gaze_data_t):
+    def construct_gaze_data_varjo(self, gaze_data_t, timestamp):
         self.frame_number = gaze_data_t[VarjoLSLChannelInfo.FrameNumber]
 
         self.capture_time = gaze_data_t[VarjoLSLChannelInfo.CaptureTime]
@@ -143,6 +137,8 @@ class VarjoGazeData(GazeData):
         self.focus_distance = gaze_data_t[VarjoLSLChannelInfo.FocusDistance]
         self.focus_stability = gaze_data_t[VarjoLSLChannelInfo.FocusStability]
 
+        self.timestamp = timestamp
+
     def get_combined_eye_gaze_data_valid(self):
         return self.combined_gaze_valid
 
@@ -150,7 +146,7 @@ class VarjoGazeData(GazeData):
         return self.combined_gaze_forward
 
     def get_timestamp(self):
-        return self.capture_time
+        return self.timestamp
 
     def set_gaze_type(self, gaze_type):
         self.gaze_type = gaze_type

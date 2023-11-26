@@ -1,2 +1,2 @@
 {"ExperimentName": "illumiReadSwype",
-  "PresetStreamNames": ["illumiReadSwypeEventMarkerLSL", "illumiReadSwypeVarjoGazeOnKeyboardLSL", "VarjoEyeTrackingLSL"]}
+  "PresetStreamNames": ["illumiReadSwypeEventMarkerLSL", "illumiReadSwypeUserInputLSL", "VarjoEyeTrackingLSL"]}
