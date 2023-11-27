@@ -82,6 +82,9 @@ class AppConfigs(metaclass=Singleton):
     # viz configs
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
 
+    # replay configs
+    start_streams_on_replay: bool = True
+
     # recording configs
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000

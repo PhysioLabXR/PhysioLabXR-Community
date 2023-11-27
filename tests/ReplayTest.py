@@ -49,6 +49,10 @@ def context_bot(app_main_window, qtbot):
 #     p.kill()  # stop the dummy LSL process
 
 
+def test_start_stream_automatically_after_start_replay(app_main_window, qtbot) -> None:
+    pass
+
+
 def test_replay_multi_streams(app_main_window, qtbot) -> None:
     '''
     Adding active stream
@@ -150,8 +154,10 @@ def test_replay_multi_streams(app_main_window, qtbot) -> None:
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)  # wait until the streams becomes available from replay
 
     # start the streams from replay and record them ################################################
-    for ts_name in test_stream_names:
-        qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
+
+    if not AppConfigs().start_streams_on_replay:
+        for ts_name in test_stream_names:
+            qtbot.mouseClick(app_main_window.stream_widgets[ts_name].StartStopStreamBtn, QtCore.Qt.MouseButton.LeftButton)
 
     # change the recording file name
     qtbot.mouseClick(app_main_window.recording_tab.sessionTagTextEdit, QtCore.Qt.MouseButton.LeftButton)

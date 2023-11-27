@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import time
+import warnings
 from collections import deque
 from typing import Callable
 
@@ -150,6 +151,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.data_worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
         self.set_start_stop_button_icon()
+
+    def start_stream(self, warning_if_already_started: bool=True):
+        if self.start_when_available or self.is_streaming():
+            if warning_if_already_started:
+                warnings.warn(f'Stream {self.stream_name} is already started')
+            return
+        self._start_stop_btn_clicked()
 
     def _start_stop_btn_clicked(self):
         if self.start_when_available:  # if already waiting for stream availability, then stop waiting
