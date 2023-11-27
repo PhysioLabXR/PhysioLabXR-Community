@@ -96,8 +96,8 @@ class ERPClassifier(RenaScript):
             baselined_pupil_epochs = get_baselined_event_locked_data(pupil_epochs,
                                                                      self.eye_baseline_time,
                                                                      self.eye_srate)
-            # downsample eye tracking data   # TODO do not use MNE
-            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, len(x) // 10) for e, x in baselined_pupil_epochs.items()}
+            # downsample eye tracking data
+            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, x.shape[-1] // 10, axis=-1) for e, x in baselined_pupil_epochs.items()}
             visualize_epochs(baselined_resampled_pupil_epochs)
 
             if self.block_count >= self.start_training_at_block:
@@ -105,32 +105,33 @@ class ERPClassifier(RenaScript):
                 x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
                 x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
 
+                # preprocess the data, compute pca and ica for eeg
                 x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, pca, ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20)
 
                 y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in self.event_locked_data_buffer.items()], axis=0)
-                # adjust the labels's value
+                # adjust the labels's value to from 1, 2 to 0, 1
                 y = y - 1
                 # count the target ratio
                 print(f"target: {np.sum(y)}. distractor {np.sum(y==0)}. target ratio: {np.sum(y == 1) / len(y)}")
 
+                # split the data into train and test, we only do one split as we are not doing cross validation here
                 skf = StratifiedShuffleSplit(n_splits=1, random_state=self.random_seed, test_size=0.2)
                 train, test = [(train, test) for train, test in skf.split(x_eeg, y)][0]
                 x_eeg_train, x_eeg_pca_ica_train = x_eeg_znormed[train], x_eeg_pca_ica[train]
                 x_eeg_test, x_eeg_pca_ica_test = x_eeg_znormed[test], x_eeg_pca_ica[test]
                 x_pupil_train, x_pupil_test = x_pupil_znormed[train], x_pupil_znormed[test]
-
                 y_train, y_test = y[train], y[test]
 
                 hdca_model = HDCA(["Distractor", "Target"])
-                roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = hdca_model.fit(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", eeg_montage=self.eeg_montage, verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
-                y_pred, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}", eeg_montage=self.eeg_montage)
+                roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = hdca_model.fit(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
+                y_pred, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
                 # report the results
                 print(f"Block ID {self.block_count}: train: combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
                 print(f"Block ID {self.block_count}: test:  combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
 
         if self.event_marker_name in self.inputs.keys():
             block_ids = self.inputs[self.event_marker_name][0][1:2, :]
-            if (block_end_index := get_indices_when(block_ids, lambda x: x < 0)) is not None:
+            if (block_end_index := get_indices_when(block_ids, lambda x: x < 0)) is not None:  # if we received the block end event, which is a negative block ID
                 self.block_end_time = self.inputs[self.event_marker_name][1][block_end_index]
                 self.process_next_look = True
                 time.sleep(self.tmax_eye * 1.2)  # wait for the last pupil epoch to be received

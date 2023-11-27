@@ -18,4 +18,4 @@ PyOpenGL
 PyOpenGL_accelerate
 soundfile
 matplotlib
-scipy
+imblearn

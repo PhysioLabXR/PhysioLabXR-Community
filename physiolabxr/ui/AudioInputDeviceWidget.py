@@ -26,7 +26,7 @@ class AudioInputDeviceWidget(BaseStreamWidget):
 
         audio_input_device_worker = physiolabxr.threadings.AudioWorkers.AudioInputDeviceWorker(self.stream_name)
         self.connect_worker(audio_input_device_worker, False)
-        self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
+        # self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):

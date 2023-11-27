@@ -64,7 +64,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def start_recording_btn_pressed(self):
         if not self.parent.is_any_streaming():
-            self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
+            self.parent.current_dialog = dialog_popup('You need at least one stream to be streaming to start recording.',
                                                       title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
