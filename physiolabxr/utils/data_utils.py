@@ -412,7 +412,7 @@ def convert_dict_keys_to_snake_case(d: dict) -> dict:
 class CsvStoreLoad:
     def __init__(self):
         self.path = None
-    def store_csv(self, data, file_path):
+    def save_csv(self, data, file_path):
         if not os.path.exists(file_path.replace('.dats', '')):
             newfile_path = file_path.replace('.dats', '')
             os.mkdir(newfile_path)

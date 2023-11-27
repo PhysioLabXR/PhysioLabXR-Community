@@ -15,7 +15,8 @@ from physiolabxr.presets.presets_utils import get_stream_a_group_info, \
     set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max, set_image_levels_max, \
     set_image_levels_min, get_valid_image_levels, set_image_cmap, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
-    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree
+    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree, \
+    set_time_series_channels_constant_offset
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.Validators import NoCommaIntValidator
 
@@ -26,8 +27,20 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def __init__(self, parent, stream_widget, stream_name, plot_format_changed_signal):
         super().__init__()
         """
+        [TODO expand this in doc] Do not connect field changed signal in init for any plot format widgets. They will be 
+        connected in set_to_group.
+        
+        For example,
+            the time series constant offset line edit is connected in set_to_group:
+            self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
+            the above line should not be called in init
+            
+            instead, it should be called in set_to_group, after the value of the line edit has been set to the corresponding value from that group.
+            it's disconnect should be called in _set_to_group, in the if clause "if self.group_name is not None:" 
+            
+        For example, 
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
-        :rtype: object
+        :rtype: the attribute 
         """
         # self.setWindowTitle('Options')
         self.ui = uic.loadUi(AppConfigs()._ui_OptionsWindowPlotFormatWidget, self)
@@ -39,6 +52,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_tab_changed)
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+
+
+        # time series ###############################################################
+        self.timeSeriesChannelsConstantOffsetLineEdit.setValidator(QDoubleValidator())
+        # self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
 
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
@@ -85,6 +103,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         if self.group_name is not None:
+            # linechart ###############################################################
+            self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.disconnect()
+
             # barplot ###############################################################
             self.barPlotYMaxLineEdit.textChanged.disconnect()
             self.barPlotYMinLineEdit.textChanged.disconnect()
@@ -114,6 +135,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
             self.slider_spectrogram_percentile_min.valueChanged.disconnect(self.spectrogram_percentile_min_changed)  # only disconnect this one, as there are other signals connected to the same slot
             self.slider_spectrogram_percentile_max.valueChanged.disconnect(self.spectrogram_percentile_max_changed)
+
+        # linechart ###############################################################
+        self.timeSeriesChannelsConstantOffsetLineEdit.setText(str(this_group_entry.plot_configs.time_series_config.channels_constant_offset))
+        self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
 
         # image ###############################################################
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
@@ -224,6 +249,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def plot_format_tab_changed(self, info_dict):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
             self._set_to_group(self.group_name)
+
+
+    def time_series_channels_constant_offset_line_edit_changed(self):
+        value = self.timeSeriesChannelsConstantOffsetLineEdit.text()
+        if value == '':
+            value = 0
+        else:
+            value = float(value)
+        set_time_series_channels_constant_offset(self.stream_name, self.group_name, value)
 
     def image_w_h_scaling_percentile_on_change(self):
         width = self.get_image_width()

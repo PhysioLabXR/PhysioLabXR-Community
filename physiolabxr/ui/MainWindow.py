@@ -17,6 +17,7 @@ from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
+from physiolabxr.ui.NotificationPane import NotificationPane
 from physiolabxr.ui.ScriptingTab import ScriptingTab
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.ui.VideoWidget import VideoWidget
@@ -141,6 +142,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close_event = None
         self.is_already_closed = False
 
+        # notification pane
+        self.notification_panel = NotificationPane(self)
+
+
         # # fmri widget
         # # TODO: FMRI WIDGET
         # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
@@ -249,6 +254,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
                 self.process_add(stream_name, *get_stream_meta_info(stream_name))
 
+            if AppConfigs().start_streams_on_replay:
+                self.stream_widgets[stream_name].start_stream(warning_if_already_started=False)
+
         if is_new_preset_added:
             GlobalSignals().stream_presets_entry_changed_signal.emit()
 
@@ -295,10 +303,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         widget_name = video_device_name + '_widget'
         widget = VideoWidget(parent_widget=self,
-                           parent_layout=self.camHorizontalLayout,
+                           parent_layout=self.streamsHorizontalLayout,
                              video_preset_type=video_preset_type,
                            video_device_name=video_device_name,
-                           insert_position=self.camHorizontalLayout.count() - 1)
+                           insert_position=self.streamsHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 
@@ -489,3 +497,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def auto_scale_stream_viz(self):
         for stream_name, stream_widget in self.stream_widgets.items():
             stream_widget.auto_scale_viz_components()
+
+    def resizeEvent(self, a0):
+        # always put the notification pane at bottom right
+        self.adjust_notification_panel_location()
+
+    def adjust_notification_panel_location(self):
+        self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_file_size_label.height() - 12)  # substract 64 to account for margin

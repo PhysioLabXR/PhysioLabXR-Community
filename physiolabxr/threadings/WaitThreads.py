@@ -4,7 +4,7 @@ import typing
 import zmq
 from PyQt6 import QtCore
 from PyQt6.QtCore import QThread, pyqtSignal, QObject, QTimer
-
+from physiolabxr.threadings.Interfaces import QWorker
 
 class ProcessWithQueue(multiprocessing.Process):
     def __init__(self, target, args=(), kwargs=()):
@@ -55,7 +55,7 @@ def start_wait_process(target: typing.Callable, args=(), finish_call_back: typin
     return wait_process_worker, wait_process_thread
 
 
-class WaitForResponseWorker(QObject):
+class WaitForResponseWorker(QWorker):
     result_available = pyqtSignal()
     run_tick = pyqtSignal()
 
@@ -65,7 +65,6 @@ class WaitForResponseWorker(QObject):
         self.poll_interval = poll_interval
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
-        self.timer = None
         self.run_tick.connect(self.run)
         self.is_stop = False
 
@@ -81,13 +80,6 @@ class WaitForResponseWorker(QObject):
                 self.result_available.emit()
         else:
             self._exit()
-
-    def _exit(self):
-        self.timer.stop()
-        current_thread = QThread.currentThread()
-        current_thread.quit()
-        current_thread.wait()
-        print("WaitForResponseWorker thread exited")
 
     def stop(self):
         self.is_stop = True

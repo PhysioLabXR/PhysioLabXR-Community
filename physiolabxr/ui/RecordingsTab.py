@@ -34,7 +34,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.settings = QSettings('TeamRena', 'RenaLabApp')  # load the user settings
 
         self.recording_buffer = DataBuffer()
-
+        self.postprocess_dialog = None
         self.is_recording = False
 
         self.StartStopRecordingBtn.clicked.connect(self.start_stop_recording_pressed)
@@ -64,7 +64,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def start_recording_btn_pressed(self):
         if not self.parent.is_any_streaming():
-            self.parent.current_dialog = dialog_popup('You need at least one stream opened to start recording.',
+            self.parent.current_dialog = dialog_popup('You need at least one stream to be streaming to start recording.',
                                                       title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
@@ -145,7 +145,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.update_file_size_label()
 
     def update_file_size_label(self):
-        self.parent.recordingFileSizeLabel. \
+        self.parent.recording_file_size_label. \
             setText('    Recording file size: {0} Mb'.format(str(round(self.recording_byte_count / 10 ** 6, 2))))
 
     def open_recording_directory(self):

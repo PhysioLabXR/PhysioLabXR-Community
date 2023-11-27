@@ -12,7 +12,7 @@ from physiolabxr.configs.configs import RecordingFileFormat, AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.utils.data_utils import CsvStoreLoad
 from physiolabxr.utils.RNStream import RNStream
-from physiolabxr.utils.xdf_utils import create_xml_string, XDF
+from physiolabxr.utils.xdf_utils import create_xml_string, save_xdf
 
 
 class RecordingPostProcessDialog(QtWidgets.QWidget):
@@ -121,41 +121,10 @@ class RecordingConversionWorker(QObject):
             pickle.dump(buffer, open(newfile_path, 'wb'))
         elif self.file_format == RecordingFileFormat.csv:
             csv_store = CsvStoreLoad()
-            csv_store.store_csv(buffer, self.file_path)
+            csv_store.save_csv(buffer, self.file_path)
         elif self.file_format == RecordingFileFormat.xdf:
             newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
-            file_header_info = {'name': 'Test', 'user': 'ixi'}
-            file_header_xml = create_xml_string(file_header_info)
-            stream_headers = {}
-            stream_footers = {}
-            idx = 0
-            for stream_label, data_ts_array in buffer.items():
-                if stream_label == 'monitor 0':
-                    stream_header_info = {'name': stream_label, 'nominal_srate': str(
-                        len(data_ts_array[1])/(data_ts_array[1][-1]-data_ts_array[1][0])),
-                                          'channel_count': str(data_ts_array[0].shape[0] * data_ts_array[0].shape[1] * data_ts_array[0].shape[2]),
-                                          'channel_format': 'int8'}
-                    stream_header_xml = create_xml_string(stream_header_info)
-                    stream_headers[stream_label] = stream_header_xml
-                    stream_footer_info = {'first_timestamp': str(data_ts_array[1][0]),
-                                          'last_timestamp': str(data_ts_array[1][-1]),
-                                          'sample_count': str(len(data_ts_array[1])), 'stream_name': stream_label,
-                                          'stream_id': idx,
-                                          'frame_dimension': data_ts_array[0].shape[0:3]}
-                    stream_footers[stream_label] = stream_footer_info
-                    idx += 1
-                else:
-                    stream_header_info = {'name': stream_label, 'nominal_srate': str(Presets().stream_presets[stream_label].nominal_sampling_rate),
-                                          'channel_count': str(data_ts_array[0].shape[0]), 'channel_format': 'double64' if Presets().stream_presets[stream_label].data_type.value == 'float64' else Presets().stream_presets[stream_label].data_type.value}
-                    stream_header_xml = create_xml_string(stream_header_info)
-                    stream_headers[stream_label] = stream_header_xml
-                    stream_footer_info = {'first_timestamp': str(data_ts_array[1][0]), 'last_timestamp': str(data_ts_array[1][-1]), 'sample_count': str(len(data_ts_array[1])), 'stream_name': stream_label, 'stream_id': idx}
-                    # stream_footer_xml = create_xml_string(stream_footer_info)
-                    stream_footers[stream_label] = stream_footer_info
-                    idx += 1
-
-            xdffile = XDF(file_header_xml, stream_headers, stream_footers)
-            xdffile.store_xdf(newfile_path, buffer)
+            save_xdf(newfile_path, buffer)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)

@@ -1,9 +1,52 @@
 import copy
+import os
+from typing import Union, Dict, List
 
 import numpy as np
+import scipy
 
 
-def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, verbose=None):
+def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, verbose=None, event_channel=0):
+    """
+    this function is used to get event locked data from a single modality or multiple modalities
+
+    @param event_marker: tuple of event marker and its timestamps
+    @param data: tuple of data and its timestamps, can be a dictionary of multiple modalities
+    @param events_of_interest: iterable of event markers with which to get event aligned data
+    @param tmin: time before event marker to include in the epoch
+    @param tmax: time after event marker to include in the epoch
+    @param srate: sampling rate of the datar
+    @param return_last_event_time: whether to return the time of the last found in the data
+    @param verbose: whether to print out the number of events found for each event marker
+
+    @return: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+            if return_last_event_time is True, return the time of the last found event is also returned
+    """
+    # check if data is multi-modal
+    if isinstance(data, dict):
+        assert len(data) > 0, 'data must be a non-empty dictionary'
+        assert set(data.keys()) == set(tmin.keys()) == set(tmax.keys()) == set(srate.keys()), 'data, tmin, and tmax must have the same keys'
+        locked_data_modalities = {}
+        for modality, v in data.items():
+            _tmin = tmin[modality]
+            _tmax = tmax[modality]
+            _data = v
+            _srate = srate[modality]
+            args = (event_marker, event_channel, _data, events_of_interest, _tmin, _tmax, _srate, True, verbose)
+            _locked_data, latest_event_start_time = _get_event_locked_data(*args)
+            locked_data_modalities[modality] = _locked_data
+
+        # make the modalities be the secondary keys and the event markers be the primary keys
+        rtn = {e: {m: locked_data_modalities[m][e] for m in locked_data_modalities.keys() if e in locked_data_modalities[m]} for e in events_of_interest}
+        if return_last_event_time:
+            return rtn, latest_event_start_time
+        else:
+            return rtn
+    else:
+        return _get_event_locked_data(event_marker, event_channel, data, events_of_interest, tmin, tmax, srate, return_last_event_time, verbose)
+
+
+def _get_event_locked_data(event_marker, event_channel, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, verbose=None):
     """
     @param event_marker: tuple of event marker and its timestamps
     @param data: tuple of data and its timestamps
@@ -14,7 +57,7 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
     """
     assert tmin < tmax, 'tmin must be less than tmax'
     event_marker, event_marker_time = event_marker
-    event_marker = event_marker[0]
+    event_marker = event_marker[event_channel]
     data, data_time = data
     events_of_interest = [e for e in events_of_interest if e in event_marker]
     rtn = {e: [] for e in events_of_interest}
@@ -38,12 +81,36 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
         return rtn
 
 
-def buffer_event_locked_data(event_locked_data, buffer: dict):
+def buffer_event_locked_data(event_locked_data: dict, buffer: dict):
     """
-    @param event_locked_data: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+    @param event_locked_data: can be either single-modal or multi-modal:
+        single-modal: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+        multi-modal
     @param buffer: dictionary of event marker and its corresponding buffer. The keys are the event markers
     @return: dictionary of event marker and its corresponding event locked data. The keys are the event markers
     """
+    # check if is multi-modal
+    rtn = copy.deepcopy(buffer)
+    if isinstance(event_locked_data[list(event_locked_data.keys())[0]], dict):
+        assert len(event_locked_data) > 0, 'data must be a non-empty dictionary'
+        for event_name, modality_data in event_locked_data.items():
+            if event_name in rtn and type(rtn[event_name]) is not dict:
+                raise ValueError(f"modality_data must be a dictionary, got {type(modality_data)}. "
+                                 f"Did you call buffer_event_locked_data with a single-modal event_locked_data?")
+            for modality, v in modality_data.items():
+                if event_name in rtn:
+                    if modality in rtn[event_name]:
+                        rtn[event_name][modality] = np.concatenate([rtn[event_name][modality], v], axis=0)
+                    else:
+                        rtn[event_name][modality] = v
+                else:
+                    rtn[event_name] = {modality: v}
+        return rtn
+    else:
+        return _buffer_event_locked_data(event_locked_data, rtn)
+
+
+def _buffer_event_locked_data(event_locked_data: dict, buffer: dict):
     rtn = copy.deepcopy(buffer)
     for k, v in event_locked_data.items():
         if k in buffer:
@@ -54,11 +121,73 @@ def buffer_event_locked_data(event_locked_data, buffer: dict):
     return rtn
 
 
-def get_baselined_event_locked_data(event_locked_data, pick: int, baseline_t, srate):
+def get_baselined_event_locked_data(event_locked_data, baseline_t, srate, pick: int = None):
+    """
+    @param event_locked_data: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+    """
     rtn = {}
-    pick = [pick] if isinstance(pick, int) else pick
+    pick = [pick] if isinstance(pick, int) else list(range(event_locked_data[list(event_locked_data.keys())[0]].shape[1])) if pick is None else pick
     for k, v in event_locked_data.items():
         d = v[:, pick]
         d = d - np.mean(d[:, :, :int(baseline_t * srate)], axis=2, keepdims=True)
         rtn[k] = d
     return rtn
+
+
+
+def visualize_epochs(epochs, colors=None, picks: Union[List, Dict]=None, title='', out_dir=None, fig_size=(12.8, 7.2), tmin=-0.1, tmax=0.8):
+    """
+    Plot the event locked epochs.
+
+    @param epochs: dictionary of event marker and its corresponding event locked data. The keys are the event markers
+        The values are (n_epochs, n_channels, n_times)
+    @param colors:
+    @param picks:
+    @param title:
+    @param verbose:
+    @param fig_size:
+    @param is_plot_timeseries:
+    @param tmin:
+    @param tmax:
+    @return:
+    """
+    import matplotlib
+    import matplotlib.pyplot as plt
+    # Set the figure size for the plot
+    plt.rcParams["figure.figsize"] = fig_size
+    events = list(epochs.keys())
+
+    if colors is None:
+        # get distinct color for each unique y
+        colors = {e: c for e, c in zip(events, matplotlib.cm.tab10(range(len(events))))}
+
+    if picks is None:
+        picks = {i: f'channel {i}' for i in range(epochs[events[0]].shape[1])}
+    elif type(picks) is list:
+        picks = {i: f'channel {i}' for i in picks}
+
+    # Plot each EEG channel for each event type
+    for ch_index, ch_name in picks.items():
+        for e in events:
+            x = epochs[e]
+            x_mean = np.mean(x[:, ch_index], axis=0)
+            x1 = x_mean + scipy.stats.sem(x[:, ch_index], axis=0)  # this is the upper envelope
+            x2 = x_mean - scipy.stats.sem(x[:, ch_index], axis=0)
+            time_vector = np.linspace(tmin, tmax, x.shape[-1])
+            # Plot the EEG data as a shaded area
+            plt.fill_between(time_vector, x1, x2, where=x2 <= x1, facecolor=colors[e], interpolate=True, alpha=0.5)
+            plt.plot(time_vector, x_mean, c=colors[e], label=f'{e}, N={x.shape[0]}')
+
+            # Set the labels and title for the plot
+        plt.xlabel('Time (sec)')
+        plt.ylabel(f'{ch_name}, shades are SEM')
+        plt.legend()
+        title_text = f"{ch_name}{'-' + title if len(title) > 0 else ''}"
+        plt.title(title_text)
+
+        # Save or show the plot
+        if out_dir:
+            plt.savefig(os.path.join(out_dir, f'{title_text}.png'))
+            plt.clf()
+        else:
+            plt.show()

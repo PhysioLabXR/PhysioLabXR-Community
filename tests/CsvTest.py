@@ -83,7 +83,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
             assert app_main_window.stream_widgets[ts_name].is_stream_available
     def stream_is_unavailable():
         for ts_name in test_stream_names:
-            assert not app_main_window.stream_widgets[ts_name].is_stream_available()
+            assert not app_main_window.stream_widgets[ts_name].is_stream_available
 
     qtbot.waitUntil(stream_is_available, timeout=stream_availability_timeout)
     # time.sleep(0.5)
@@ -127,7 +127,7 @@ def test_csv_store_load(app_main_window, qtbot) -> None:
     qtbot.mouseClick(app_main_window.recording_tab.StartStopRecordingBtn, QtCore.Qt.MouseButton.LeftButton)  # stop the recording
     print("recording stopped")
     def conversion_complete():
-        assert app_main_window.recording_tab.conversion_dialog.is_conversion_complete
+        assert app_main_window.recording_tab.postprocess_dialog.is_conversion_complete
 
     qtbot.waitUntil(conversion_complete, timeout=stream_availability_timeout)  # wait until the lsl processes are closed
 
