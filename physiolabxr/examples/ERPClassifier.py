@@ -97,7 +97,7 @@ class ERPClassifier(RenaScript):
                                                                      self.eye_baseline_time,
                                                                      self.eye_srate)
             # downsample eye tracking data
-            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, len(x) // 10) for e, x in baselined_pupil_epochs.items()}
+            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, x.shape[-1] // 10, axis=-1) for e, x in baselined_pupil_epochs.items()}
             visualize_epochs(baselined_resampled_pupil_epochs)
 
             if self.block_count >= self.start_training_at_block:
@@ -131,7 +131,7 @@ class ERPClassifier(RenaScript):
 
         if self.event_marker_name in self.inputs.keys():
             block_ids = self.inputs[self.event_marker_name][0][1:2, :]
-            if (block_end_index := get_indices_when(block_ids, lambda x: x < 0)) is not None:
+            if (block_end_index := get_indices_when(block_ids, lambda x: x < 0)) is not None:  # if we received the block end event, which is a negative block ID
                 self.block_end_time = self.inputs[self.event_marker_name][1][block_end_index]
                 self.process_next_look = True
                 time.sleep(self.tmax_eye * 1.2)  # wait for the last pupil epoch to be received
