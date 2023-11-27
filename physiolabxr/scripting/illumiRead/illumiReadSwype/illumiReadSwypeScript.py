@@ -272,17 +272,50 @@ class IllumiReadSwypeScript(RenaScript):
 
 
                 # now, we map the fixations to the keyboard keys
-                user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
-                user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
+                # user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
+                # user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
+
+                character_sequence = []
 
                 for group in grouped_list:
                     if group[0].gaze_type == GazeType.FIXATION:
+
                         fixation_start_time = group[0].timestamp
                         fixation_end_time = group[-1].timestamp
 
                         # find the user input data that is closest to the fixation
-                        fixation_start_user_input_index = np.searchsorted(user_input_timestamp, [fixation_start_time], side='right')
-                        fixation_end_user_input_index = np.searchsorted(user_input_timestamp, [fixation_end_time], side='left')
+                        user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
+
+                        user_input_sequence = []
+                        for user_input, timestamp in zip(user_input_during_fixation_data.T, user_input_during_fixation_timestamps):
+                            user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
+
+                        # check if the fixation consists of only one user input
+                        user_input_dict = {}
+                        for user_input in user_input_sequence:
+                            if user_input.key_hit_index in user_input_dict:
+                                user_input_dict[user_input.key_hit_index] += 1
+                            else:
+                                user_input_dict[user_input.key_hit_index] = 1
+
+                        # find the most frequent user input
+                        most_frequent_user_input = max(user_input_dict, key=user_input_dict.get)
+                        print("most frequent user input: ", most_frequent_user_input)
+
+
+
+
+
+
+
+                        # TODO: decoding method
+
+
+
+
+
+                        # fixation_start_user_input_index = np.searchsorted(user_input_timestamp, [fixation_start_time], side='right')
+                        # fixation_end_user_input_index = np.searchsorted(user_input_timestamp, [fixation_end_time], side='left')
 
                         pass
 
@@ -307,47 +340,47 @@ class IllumiReadSwypeScript(RenaScript):
                 gaze_data = self.ivt_filter.process_sample(gaze_data)
                 self.gaze_data_sequence.append(gaze_data)
 
-            for user_input_t, timestamp in (
-                    zip(self.inputs[UserInputLSLStreamInfo.StreamName][0].T,
-                        self.inputs[UserInputLSLStreamInfo.StreamName][1])):
-                gaze_hit_keyboard_background = user_input_data_t[
-                    illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyboardBackgroundChannelIndex]
-                keyboard_background_hit_point_local = [
-                    user_input_data_t[
-                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalXChannelIndex],
-                    user_input_data_t[
-                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalYChannelIndex],
-                    user_input_data_t[
-                        illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalZChannelIndex]
-                ]
-
-                gaze_hit_key = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyChannelIndex]
-                key_hit_point_local = [
-                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalXChannelIndex],
-                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalYChannelIndex],
-                    user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalZChannelIndex]
-                ]
-
-                key_hit_index = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitIndexChannelIndex]
-
-                user_input_button_1 = user_input_data_t[
-                    illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex]  # swyping invoker
-                user_input_button_2 = user_input_data_t[
-                    illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]
-
-                user_input = illumiReadSwypeUserInput(
-                    gaze_hit_keyboard_background,
-                    keyboard_background_hit_point_local,
-                    gaze_hit_key,
-                    key_hit_point_local,
-                    key_hit_index,
-                    user_input_button_1,
-                    user_input_button_2,
-                    timestamp
-                )
-
-                self.user_input_sequence.append(user_input)
-
+            # for user_input_t, timestamp in (
+            #         zip(self.inputs[UserInputLSLStreamInfo.StreamName][0].T,
+            #             self.inputs[UserInputLSLStreamInfo.StreamName][1])):
+            #     gaze_hit_keyboard_background = user_input_data_t[
+            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyboardBackgroundChannelIndex]
+            #     keyboard_background_hit_point_local = [
+            #         user_input_data_t[
+            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalXChannelIndex],
+            #         user_input_data_t[
+            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalYChannelIndex],
+            #         user_input_data_t[
+            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalZChannelIndex]
+            #     ]
+            #
+            #     gaze_hit_key = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyChannelIndex]
+            #     key_hit_point_local = [
+            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalXChannelIndex],
+            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalYChannelIndex],
+            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalZChannelIndex]
+            #     ]
+            #
+            #     key_hit_index = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitIndexChannelIndex]
+            #
+            #     user_input_button_1 = user_input_data_t[
+            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex]  # swyping invoker
+            #     user_input_button_2 = user_input_data_t[
+            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]
+            #
+            #     user_input = illumiReadSwypeUserInput(
+            #         gaze_hit_keyboard_background,
+            #         keyboard_background_hit_point_local,
+            #         gaze_hit_key,
+            #         key_hit_point_local,
+            #         key_hit_index,
+            #         user_input_button_1,
+            #         user_input_button_2,
+            #         timestamp
+            #     )
+            #
+            #     self.user_input_sequence.append(user_input)
+            #
 
 
 

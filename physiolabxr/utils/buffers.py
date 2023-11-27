@@ -214,10 +214,10 @@ class DataBuffer():
         stream_data = self.buffer[stream_name][0]
         stream_timestamps = self.buffer[stream_name][1]
 
-        start_index = np.searchsorted(stream_timestamps, [start_time], side='right')
-        end_index = np.searchsorted(stream_timestamps, [end_time], side='left')
+        start_index = np.searchsorted(stream_timestamps, [start_time], side='left')[0]
+        end_index = np.searchsorted(stream_timestamps, [end_time], side='right')[0]
 
-        return [stream_data[:, start_index:end_index+1], stream_timestamps[start_index:end_index+1]]
+        return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
 
     def get_stream_in_index_range(self, stream_name, start_index, end_index):
 
@@ -230,7 +230,7 @@ class DataBuffer():
         stream_data = self.buffer[stream_name][0]
         stream_timestamps = self.buffer[stream_name][1]
 
-        return [stream_data[:, start_index:end_index+1], stream_timestamps[start_index:end_index+1]]
+        return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
 
 
 
