@@ -38,6 +38,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         pull_data_timer and viz v_timer are initialized and started here. Class extending this class will be responsible
         for starting the timers.
 
+        if a stream class inheriting this class implements stream availability, it must
+        * emit signal_stream_availability_tick
+
         @param parent_widget: the MainWindow class
         @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
         @param stream_name: the name of the stream
@@ -45,6 +48,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
+
         self.ui = uic.loadUi(AppConfigs()._ui_StreamWidget, self)
         self.set_pop_button(self.PopWindowBtn)
         self.StreamNameLabel.setText(stream_name)
@@ -66,6 +70,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.actualSamplingRate = 0
         self.current_timestamp = 0
         self.is_stream_available = False
+        self.start_when_available = False
+        self.start_stop_callback = None
+        self.StartStopStreamBtn.clicked.connect(self._start_stop_btn_clicked)
+        self.add_stream_availability = None
+        self.worker_thread = None
+        self.data_worker = None
+
         self.in_error_state = False  # an error state to prevent ticking when is set to true
 
         # visualization timer
@@ -136,8 +147,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
         self.set_start_stop_button_icon()
 
-    def connect_start_stop_btn(self, start_stop_callback: Callable):
-        self.StartStopStreamBtn.clicked.connect(start_stop_callback)
+    def _start_stop_btn_clicked(self):
+        # if self.add_stream_availability:
+        self.start_stop_stream_btn_clicked()
 
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
@@ -169,21 +181,18 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
                 GlobalSignals().show_notification_signal.emit({'title': 'Stream lost', 'body': 'Lost connection to {0}'.format(self.stream_name)})
-        else:
-            # is the stream is not available
-            if is_stream_available:
+        else:  # if the data worker is not streaming
+            if is_stream_available:  # is the stream is not available
                 self.set_stream_available()
             else:
                 self.set_stream_unavailable()
         self.main_parent.update_active_streams()
 
     def set_stream_unavailable(self):
-        self.StartStopStreamBtn.setEnabled(False)
         self.StreamAvailablilityLabel.setPixmap(self.stream_unavailable_pixmap)
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is not available".format(self.stream_name))
 
     def set_stream_available(self):
-        self.StartStopStreamBtn.setEnabled(True)
         self.StreamAvailablilityLabel.setPixmap(self.stream_available_pixmap)
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
@@ -325,8 +334,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.actualSamplingRate = data_dict['sampling_rate']
             self.current_timestamp = data_dict['timestamps'][-1]
 
-
-
             # if data_dict['frames'].shape[
             #     -1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             #     self.run_data_processor(data_dict)
@@ -343,15 +350,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             #     self.main_parent.recording_tab.update_recording_buffer(data_dict)
             #     self.main_parent.scripting_tab.forward_data(data_dict)
             #     # scripting tab
-
-    def stream_settings_changed(self, change):
-        self.setting_update_viz_mutex.lock()
-        # resolve the
-        if change[0] == "nominal_sampling_rate":
-            pass  # TODO
-        # TODO add other changes such as plot format, plot order, etc...
-
-        self.setting_update_viz_mutex.unlock()
 
     def visualize(self):
         '''

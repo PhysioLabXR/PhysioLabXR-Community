@@ -26,7 +26,7 @@ class LSLWidget(BaseStreamWidget):
         num_channels = get_stream_preset_info(self.stream_name, 'num_channels')
         lsl_worker = workers.LSLInletWorker(self.stream_name, num_channels, RenaTCPInterface=None)
         self.connect_worker(lsl_worker, True)
-        self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
+        # self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):
