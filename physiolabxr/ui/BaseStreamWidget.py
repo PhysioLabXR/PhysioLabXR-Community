@@ -5,7 +5,7 @@ from typing import Callable
 
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QMovie
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from physiolabxr.configs import config_ui
@@ -23,7 +23,7 @@ from physiolabxr.ui.VizComponents import VizComponents
 from physiolabxr.utils.buffers import DataBufferSingleStream
 from physiolabxr.utils.dsp_utils.dsp_modules import run_data_processors
 from physiolabxr.utils.performance_utils import timeit
-from physiolabxr.utils.ui_utils import clear_widget
+from physiolabxr.utils.ui_utils import clear_widget, show_label_movie
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -76,6 +76,10 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.add_stream_availability = None
         self.worker_thread = None
         self.data_worker = None
+        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.waiting_label.setMovie(self.loading_movie)
+        show_label_movie(self.waiting_label, False)
+        self.StartStopStreamBtn.setToolTip("Start streaming {0}".format(self.stream_name))
 
         self.in_error_state = False  # an error state to prevent ticking when is set to true
 
@@ -148,14 +152,42 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.set_start_stop_button_icon()
 
     def _start_stop_btn_clicked(self):
-        # if self.add_stream_availability:
+        if self.start_when_available:  # if already waiting for stream availability, then stop waiting
+            # this clause is only reachable if the stream is not available and the user click the start button
+            # , in which case self.start_when_available is set to True
+            self.start_when_available = False
+            self.data_worker.signal_stream_availability.disconnect(self._start_stream_when_available)
+            show_label_movie(self.waiting_label, False)
+            self._set_start_stop_button_icon(False)
+            self.StartStopStreamBtn.setToolTip("Start streaming {0}".format(self.stream_name))
+            return
+        if self.add_stream_availability and not self.is_stream_available:
+            # this clause is only reachable if stream implements stream availability and the stream is not available when
+            # the user click the start button
+            # connect the available signal to the start stop button
+            self.start_when_available = True
+            self.data_worker.signal_stream_availability.connect(self._start_stream_when_available)
+            # set the icon to waiting
+            show_label_movie(self.waiting_label, True)
+            self._set_start_stop_button_icon(True)
+            # set the hint text for the start stop button
+            self.StartStopStreamBtn.setToolTip("Stop waiting for stream {0} to be available".format(self.stream_name))
+            return
+
         self.start_stop_stream_btn_clicked()
+
+    def _start_stream_when_available(self, is_stream_available):
+        if is_stream_available:
+            self.start_when_available = False
+            self.data_worker.signal_stream_availability.disconnect(self._start_stream_when_available)
+            show_label_movie(self.waiting_label, False)
+            self.start_stop_stream_btn_clicked()
 
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
             self.data_worker.stop_stream()
             if not self.data_worker.is_streaming and self.add_stream_availability:
-                self.update_stream_availability(self.data_worker.is_stream_available)
+                self.update_stream_availability(self.data_worker.is_stream_available())
         else:
             self.data_worker.start_stream()
         self.set_button_icons()
@@ -209,6 +241,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
     def set_start_stop_button_icon(self):
         if not self.is_streaming():
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
+        else:
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
+
+
+    def _set_start_stop_button_icon(self, is_start: bool):
+        if not is_start:
             self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
         else:
             self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
