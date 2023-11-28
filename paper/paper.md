@@ -227,7 +227,7 @@ and code generation for maximum flexibility.
 # Acknowledgments
 
 This project was partly funded by the Columbia/ARL Human-Guided Intelligent Systems (HGIS) Program ( W911NF-23-2-0067), a Vannevar Bush Faculty Fellowship from the US Department of Defense (N00014-20-1-2027) and a Center of Excellence grant from the Air Force Office of Scientific Research (FA9550-22-1-0337).
-
+This work was also supported by the Army Research Laboratory STRONG Program (W911NF-19-2-0135).
 We would like to express our gratitude for the support from our colleagues at the Laboratory for Intelligent Imaging and Neural Computing (LIINC), the Computer Graphics and User Interfaces (CGUI) Lab and the Artificial Intelligence for Vision Science (AI4VS) Lab at Columbia University, and Human-Computer Interaction (HCI) Lab at Worcester Polytechnic Institute. We would also like to thank all the community members who have contributed to *PhysioLabXR*.
 
 # Licensing and Availability
