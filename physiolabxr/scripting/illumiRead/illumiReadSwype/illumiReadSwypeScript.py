@@ -14,7 +14,8 @@ import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
-from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput
+from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput, \
+    word_candidate_list_to_lvt
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
 from physiolabxr.utils.buffers import DataBuffer
@@ -275,7 +276,7 @@ class IllumiReadSwypeScript(RenaScript):
                 # user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
                 # user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
 
-                character_sequence = []
+                fixation_character_sequence = []
 
                 for group in grouped_list:
                     if group[0].gaze_type == GazeType.FIXATION:
@@ -299,8 +300,19 @@ class IllumiReadSwypeScript(RenaScript):
                                 user_input_dict[user_input.key_hit_index] = 1
 
                         # find the most frequent user input
-                        most_frequent_user_input = max(user_input_dict, key=user_input_dict.get)
-                        print("most frequent user input: ", most_frequent_user_input)
+                        if len(user_input_dict) > 0:
+                            most_frequent_user_input_index = max(user_input_dict, key=user_input_dict.get)
+                            print("most frequent user input index: ", most_frequent_user_input_index)
+                            user_input = illumiReadSwypeConfig.KeyIDIndexDict[most_frequent_user_input_index]
+                            print("most frequent user input: ", user_input)
+                            fixation_character_sequence.append(user_input)
+
+                        else:
+                            print("no user input detected")
+
+
+
+                        # update the character sequence
 
 
 
@@ -325,9 +337,20 @@ class IllumiReadSwypeScript(RenaScript):
                 self.data_buffer = DataBuffer()
                 self.ivt_filter.reset_data_processor()
 
+                # send the character sequence to the keyboard
+                print(fixation_character_sequence)
+                # use the spell correction algorithm to correct the character sequence
+
+                word_candidate_list = ["hello", "world", "how", "are", "you"]
+                # send the top n words to the feedback state
+                word_candidate_lvt = word_candidate_list_to_lvt(word_candidate_list)
+                
+
+
+
 
         if self.illumiReadSwyping:
-            print("update_buffer")
+            # print("update_buffer")
             # swyping, save the gaze data and user input data
             # self.data_buffer.update_buffer(
 

@@ -35,3 +35,17 @@ class illumiReadSwypeUserInput:
             illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]
 
         self.timestamp = timestamp
+
+
+def word_candidate_list_to_lvt(words_list, max_length=1024):
+    """
+    Convert a words sequence to a list of integers representing the characters
+    """
+    lvt = [0]
+
+
+
+
+
+
+    pass
