@@ -2,25 +2,25 @@
 If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
-print("importing faulthandler")
+# print("importing faulthandler")
 import faulthandler
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
-print("importing multiprocessing")
+# print("importing multiprocessing")
 from multiprocessing import Process
 
-print("importing pytest")
+# print("importing pytest")
 import pytest
 
-print("from PyQt6 import QtCore")
+# print("from PyQt6 import QtCore")
 from PyQt6 import QtCore
 
-print("from PyQt6.QtCore import Qt")
+# print("from PyQt6.QtCore import Qt")
 from PyQt6.QtCore import Qt
 
-print("from PyQt6.QtWidgets import QWidget")
+# print("from PyQt6.QtWidgets import QWidget")
 from PyQt6.QtWidgets import QWidget
 
-print("from physiolabxr.configs.configs import AppConfigs")
+# print("from physiolabxr.configs.configs import AppConfigs")
 from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
 
