@@ -4,6 +4,16 @@ from physiolabxr.scripting.physio.utils import interpolate_array_nan, time_to_in
 
 
 def gap_fill(gaze_xyz, gaze_status, valid_status, gaze_timestamps, max_gap_time=0.075, verbose=True):
+    """
+
+    @param gaze_xyz: ndarray of shape (3, timesteps): x, y, z are the 3D gaze vector given by your eyetracker, with z pointing out of the eye straight ahead
+    @param gaze_status: ndarray of shape (timesteps, ): the validity of the gaze sample
+    @param valid_status: any: the value of the valid status, the valid value should be in the gaze_status array
+    @param gaze_timestamps: (timestamps, ): the timestamps of the gaze samples (in seconds)
+    @param max_gap_time:
+    @param verbose:
+    @return:
+    """
     valid_diff = np.diff(np.concatenate([[valid_status], gaze_status, [valid_status]]))
     gap_start_indices = np.where(valid_diff < 0)[0]
     gap_end_indices = np.where(valid_diff > 0)[0]
