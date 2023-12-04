@@ -15,7 +15,8 @@ from physiolabxr.presets.presets_utils import get_stream_a_group_info, \
     set_spectrogram_percentile_level_min, set_spectrogram_percentile_level_max, set_image_levels_max, \
     set_image_levels_min, get_valid_image_levels, set_image_cmap, \
     set_image_levels_rmin, set_image_levels_bmax, set_image_levels_bmin, set_image_levels_gmax, set_image_levels_gmin, \
-    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels
+    set_image_levels_rmax, set_image_scaling_percentile, get_image_levels, set_group_image_rotation_clockwise_degree, \
+    set_time_series_channels_constant_offset
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.Validators import NoCommaIntValidator
 
@@ -26,8 +27,20 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
     def __init__(self, parent, stream_widget, stream_name, plot_format_changed_signal):
         super().__init__()
         """
+        [TODO expand this in doc] Do not connect field changed signal in init for any plot format widgets. They will be 
+        connected in set_to_group.
+        
+        For example,
+            the time series constant offset line edit is connected in set_to_group:
+            self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
+            the above line should not be called in init
+            
+            instead, it should be called in set_to_group, after the value of the line edit has been set to the corresponding value from that group.
+            it's disconnect should be called in _set_to_group, in the if clause "if self.group_name is not None:" 
+            
+        For example, 
         :param lsl_data_buffer: dict, passed by reference. Do not modify, as modifying it makes a copy.
-        :rtype: object
+        :rtype: the attribute 
         """
         # self.setWindowTitle('Options')
         self.ui = uic.loadUi(AppConfigs()._ui_OptionsWindowPlotFormatWidget, self)
@@ -39,6 +52,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.plot_format_changed_signal.connect(self.plot_format_tab_changed)
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
+
+
+        # time series ###############################################################
+        self.timeSeriesChannelsConstantOffsetLineEdit.setValidator(QDoubleValidator())
+        # self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
 
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
@@ -85,6 +103,9 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # self.plot_format_changed_signal.connect(self.plot_format_changed)
 
         if self.group_name is not None:
+            # linechart ###############################################################
+            self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.disconnect()
+
             # barplot ###############################################################
             self.barPlotYMaxLineEdit.textChanged.disconnect()
             self.barPlotYMinLineEdit.textChanged.disconnect()
@@ -94,6 +115,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             self.imageHeightLineEdit.textChanged.disconnect()
             self.image_display_scaling_percentile_slider.valueChanged.disconnect()
             self.imageFormatComboBox.currentTextChanged.disconnect()
+            self.image_rotation_clockwise_degree_combobox.currentTextChanged.disconnect()
             self.channelFormatCombobox.currentTextChanged.disconnect()
             self.combobox_image_cmap.currentTextChanged.disconnect()
 
@@ -114,12 +136,17 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
             self.slider_spectrogram_percentile_min.valueChanged.disconnect(self.spectrogram_percentile_min_changed)  # only disconnect this one, as there are other signals connected to the same slot
             self.slider_spectrogram_percentile_max.valueChanged.disconnect(self.spectrogram_percentile_max_changed)
 
+        # linechart ###############################################################
+        self.timeSeriesChannelsConstantOffsetLineEdit.setText(str(this_group_entry.plot_configs.time_series_config.channels_constant_offset))
+        self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
+
         # image ###############################################################
         self.imageWidthLineEdit.setText(str(this_group_entry.plot_configs.image_config.width))
         self.imageHeightLineEdit.setText(str(this_group_entry.plot_configs.image_config.height))
         self.image_display_scaling_percentile_slider.setValue(this_group_entry.plot_configs.image_config.scaling_percentage)
 
         self.imageFormatComboBox.setCurrentText(this_group_entry.plot_configs.image_config.image_format.name)
+        self.image_rotation_clockwise_degree_combobox.setCurrentText(str(this_group_entry.plot_configs.image_config.rotation_clockwise_degree))
         self.channelFormatCombobox.setCurrentText(this_group_entry.plot_configs.image_config.channel_format.name)
 
         valid_levels = get_valid_image_levels(self.stream_name, group_name)
@@ -161,6 +188,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.imageHeightLineEdit.textChanged.connect(self.image_w_h_scaling_percentile_on_change)
         self.image_display_scaling_percentile_slider.valueChanged.connect(self.image_scaling_percentile_on_change)
         self.imageFormatComboBox.currentTextChanged.connect(self.image_format_change)
+        self.image_rotation_clockwise_degree_combobox.currentTextChanged.connect(self.image_rotation_clockwise_degree_change)
         self.channelFormatCombobox.currentTextChanged.connect(self.image_channel_format_change)
 
         # barplot ###############################################################
@@ -222,6 +250,15 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         if self.group_name == info_dict['group_name']:  # if current selected group is the plot-format-changed group
             self._set_to_group(self.group_name)
 
+
+    def time_series_channels_constant_offset_line_edit_changed(self):
+        value = self.timeSeriesChannelsConstantOffsetLineEdit.text()
+        if value == '':
+            value = 0
+        else:
+            value = float(value)
+        set_time_series_channels_constant_offset(self.stream_name, self.group_name, value)
+
     def image_w_h_scaling_percentile_on_change(self):
         width = self.get_image_width()
         height = self.get_image_height()
@@ -243,6 +280,11 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         elif image_format == ImageFormat.pixelmap:
             self.rgb_display_options.setVisible(False)
             self.pixelmap_display_options.setVisible(True)
+        self.image_changed()
+
+    def image_rotation_clockwise_degree_change(self):
+        rotation_clockwise_degree = self.get_image_rotation_clockwise_degree()
+        set_group_image_rotation_clockwise_degree(self.stream_name, self.group_name, rotation_clockwise_degree=rotation_clockwise_degree)
         self.image_changed()
 
     def image_channel_format_change(self):
@@ -309,6 +351,10 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         current_format = self.imageFormatComboBox.currentText()
         # image_channel_num = image_depth_dict(current_format)
         return ImageFormat.__members__[current_format]
+
+    def get_image_rotation_clockwise_degree(self):
+        current_degree = self.image_rotation_clockwise_degree_combobox.currentText()
+        return int(current_degree)
 
     def get_image_channel_format(self):
         current_format = self.channelFormatCombobox.currentText()

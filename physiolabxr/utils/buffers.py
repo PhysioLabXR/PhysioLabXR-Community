@@ -92,10 +92,19 @@ class DataBuffer():
         self.stream_name_buffer_sizes[stream_name] = size
 
     def _update_buffer(self, stream_name, frames, timestamps):
-
+        """
+        frames: channels x time
+        """
         if stream_name not in self.buffer.keys():
-            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0), dtype=frames.dtype),
+            self.buffer[stream_name] = [np.empty(shape=(*frames.shape[:-1], 0), dtype=frames.dtype),
                                       np.empty(shape=(0,))]  # data first, timestamps second
+
+        # check if the new frame's number of channels matches that of the buffered data
+        if frames.shape[0] != self.buffer[stream_name][0].shape[0]:
+            # reset the buffer with the new frame channels
+            self.buffer[stream_name] = [np.empty(shape=(frames.shape[0], 0), dtype=frames.dtype),
+                                        np.empty(shape=(0,))]
+
         buffered_data = self.buffer[stream_name][0]
         buffered_timestamps = self.buffer[stream_name][1]
 

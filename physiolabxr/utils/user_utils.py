@@ -36,4 +36,4 @@ def stream_in(file_path):
         elif file_extension == '.xdf':
             return load_xdf(file_path)
         else:
-            raise Exception('Unknown file extension: {}'.format(file_extension))
+            raise Exception(f"Unknown file extension: {file_extension} {'are you trying to load a directory of CSVs?' if file_extension == '.csv' else ''}")

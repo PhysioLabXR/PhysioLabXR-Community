@@ -10,6 +10,10 @@ from physiolabxr.threadings.workers import RenaWorker
 from physiolabxr.utils.image_utils import process_image
 from physiolabxr.utils.time_utils import get_clock_time
 
+def get_screen_capture_size():
+    img = pyscreeze.screenshot()
+    frame = np.array(img)
+    return frame.shape[0], frame.shape[1]
 
 class ScreenCaptureWorker(QObject, RenaWorker):
 

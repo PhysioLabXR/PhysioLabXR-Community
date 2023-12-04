@@ -39,7 +39,7 @@ from physiolabxr.presets.presets_utils import get_stream_preset_names, get_exper
     get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
 from physiolabxr.utils.ui_utils import add_presets_to_combobox, \
-    another_window, update_presets_to_combobox, validate_script_path, show_label_movie
+    another_window, update_presets_to_combobox, validate_script_path, show_label_movie, get_int_from_line_edit
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -103,7 +103,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stopping_label.setVisible(False)
         self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
         self.stopping_label.setMovie(self.loading_movie)
-        self.wait_for_response_worker, self.wait_response_thread = None, None
+
+        # self.lineedit_style_sheet = self.frequencyLineEdit.styleSheet()
+        # self.error_lineedit_style_sheet = self.frequencyLineEdit + "border: 1px solid red;"
+
         # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
         self.script_console_log = ScriptConsoleLog()
@@ -115,7 +118,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stdout_worker_thread = None
         self.create_stdout_worker()  # setup stdout worker
 
-        # Fields readin information from the script process, including timing performance and check for abnormal termination
+        # Fields reading information from the script process, including timing performance and check for abnormal termination
+        self.wait_for_response_worker, self.wait_response_thread = None, None
         self.info_socket_interface = None
         self.info_thread = None
         self.info_worker = None
@@ -160,6 +164,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.info_timer.setInterval(SCRIPTING_UPDATE_REFRESH_INTERVAL)
         self.info_timer.timeout.connect(self.info_worker.tick_signal.emit)
         self.info_timer.start()
+
+        self.info_worker.timer = self.info_timer
 
     def setup_forward_input(self, forward_interval, internal_buffer_sizes):
         self.run_signal_timer.setInterval(int(forward_interval))
@@ -422,7 +428,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             print(str(e))
             return
         self.inputLayout.addWidget(input_widget)
-        self.inputLayout.setAlignment(input_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.inputLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.inputLayout.removeWidget(input_widget)
@@ -444,7 +450,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_output(self, stream_name, num_channels, port_number, data_type, interface_type):
         output_widget = ScriptingOutputWidget(self, stream_name, num_channels, port_number=port_number, data_type=data_type, interface_type=interface_type)
         self.outputLayout.addWidget(output_widget)
-        self.outputLayout.setAlignment(output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.outputLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.outputLayout.removeWidget(output_widget)
@@ -466,7 +472,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def process_add_param(self, param_name, param_type=ParamType.bool, value=None):
         param_widget = ParamWidget(self, param_name, param_type=param_type, value=value)
         self.paramsLayout.addWidget(param_widget)
-        self.paramsLayout.setAlignment(param_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+        self.paramsLayout.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
 
         def remove_btn_clicked():
             self.paramsLayout.removeWidget(param_widget)
@@ -563,11 +569,20 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.addParam_btn.setEnabled(True)
 
     def on_time_window_change(self):
+        try:
+            get_int_from_line_edit(self.timeWindowLineEdit, "Input buffer duration")
+        except RenaError:
+            return
         self.update_input_info()
         self.export_script_args_to_settings()
 
     def on_frequency_change(self):
+        try:
+            get_int_from_line_edit(self.frequencyLineEdit, "Run frequency")
+        except RenaError:
+            return
         self.export_script_args_to_settings()
+
 
     def update_input_info(self):
         """
@@ -620,7 +635,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.check_can_add_output()
 
     def send_input(self, data_dict):
-        if np.any(np.array(data_dict["timestamps"])< 100):
+        if np.any(np.array(data_dict["timestamps"]) < 100):
             print('skipping input with timestamp < 100')
         self.internal_data_buffer.update_buffer(data_dict)
         # send_data_dict(data_dict, self.forward_input_socket_interface)
@@ -644,15 +659,19 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)
 
     def get_verify_script_args(self):
+        time_window = get_int_from_line_edit(self.timeWindowLineEdit, "Input buffer duration")
+        run_frequency = get_int_from_line_edit(self.frequencyLineEdit, "Run frequency")
+
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
+
         rtn = {'inputs': self.get_inputs(),
                 'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_output_presets(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
-                'run_frequency': int(self.frequencyLineEdit.text()),
-                'time_window': int(self.timeWindowLineEdit.text()),
+                'run_frequency': run_frequency,
+                'time_window': time_window,
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked(),
                 'presets': Presets()}
@@ -712,3 +731,4 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             return AppConfigs().output_stream_starting_port
         else:
             return max(existing_ports) + 1
+

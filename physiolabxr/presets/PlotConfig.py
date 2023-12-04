@@ -31,6 +31,9 @@ class ImageConfig(metaclass=SubPreset):
 
     width: int = 0
     height: int = 0
+    rotation_clockwise_degree: int = 0
+    # horizontal_flip: bool = False
+    # vertical_flip: bool = False
     scaling_percentage: float = 100
 
     cmap: Cmap = Cmap.VIRIDIS
@@ -100,6 +103,10 @@ class TimeSeriesConfig(metaclass=SubPreset):
     y_min: float = 0
     y_max: float = 1
 
+    channels_constant_offset: float = 0
+
+
+
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class SpectrogramConfig(metaclass=SubPreset):
     """
@@ -149,3 +156,12 @@ class PlotConfigs(metaclass=SubPreset):
                 raise TypeError(f"Unexpected type for {attr}: {type(getattr(self, attr))}")
 
 
+    def set_config(self, config):
+        """
+        set the config to the given config
+        :param config: PlotConfigs
+        :return: None
+        """
+        for config_name, config_dict in config.items():
+            for key, value in config_dict.items():
+                self.__getattribute__(config_name).__setattr__(key, value)

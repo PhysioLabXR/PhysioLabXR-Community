@@ -23,6 +23,7 @@ from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
 from physiolabxr.utils.networking_utils import recv_string
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from physiolabxr.utils.time_utils import get_clock_time
+from physiolabxr.threadings.Interfaces import QWorker
 
 
 class RenaWorkerMeta(type(QtCore.QObject), abc.ABCMeta):
@@ -140,6 +141,7 @@ class OpenBCIDeviceWorker(QObject):
 
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
+
     def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
         super(OpenBCIDeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
@@ -474,7 +476,7 @@ class ScriptingStdoutWorker(QObject):
             elif prefix == SCRIPT_STDERR_MSG_PREFIX:
                 self.std_signal.emit(('error', msg))
 
-class ScriptInfoWorker(QObject):
+class ScriptInfoWorker(QWorker):
     abnormal_termination_signal = pyqtSignal()
     tick_signal = pyqtSignal()
     realtime_info_signal = pyqtSignal(list)
@@ -513,7 +515,6 @@ class ScriptInfoWorker(QObject):
 
     def deactivate(self):
         self.script_process_active = False
-
 
 # class ScriptCommandWorker(QObject):
 #     command_signal = pyqtSignal(str)

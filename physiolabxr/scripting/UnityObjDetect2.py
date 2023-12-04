@@ -21,37 +21,8 @@ def get_class_names(class_file):
     return class_name
 
 
-def process_depth_image(depthROI):
-    near = 0.1
-    far = 20.0
-    max16bitval = 65535
-    min16bitval = 0
-    filtered_depthROI = depthROI[depthROI != 0]
-    # scale from 0-65535 to 0-1 value range
-    scale = 1.0 / (max16bitval - min16bitval)
-    compressed = filtered_depthROI * scale
-    # decompress values by 0.25 compression factor
-    decompressed = np.power(compressed, 4)
-    # remove non valid 0 depth values
-    valid_decompressed = decompressed[decompressed != 0]
-    # scale from eye to far rather than near to far (still linear 0-1 range)
-    scaled_eye_far = -(valid_decompressed - 1) / (1 + near / far) + near / far
-    scaled_eye_far = scaled_eye_far[scaled_eye_far != 0]
-
-    # remove noisy outliers (there seem to be higher depth values than there should be)
-    mean = np.mean(scaled_eye_far)
-    standard_deviation = np.std(scaled_eye_far)
-    distance_from_mean = abs(scaled_eye_far - mean)
-    max_deviations = 2
-    not_outlier = distance_from_mean < max_deviations * standard_deviation
-    no_outliers = scaled_eye_far[not_outlier]
-    if len(no_outliers) == 0:
-       return None
-    return np.min(no_outliers), np.max(no_outliers), np.average(no_outliers)
-
 
 def process_received_camera_images(image_data, net, class_names, image_shape, threshold=0.45, nms_threshold=0.2):
-    depth_img = depth_image_data.reshape(image_shape).astype(np.uint8)
     color_img = image_data.reshape(image_shape).astype(np.uint8)
 
     classIds, confs, bbox = net.detect(color_img, confThreshold=threshold)
@@ -106,9 +77,11 @@ class BaseRenaScript(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        if "CamCapture" in self.inputs and "DepthCamCapture" in self.inputs:
+        if "CamCapture" in self.inputs:
             image_data = self.inputs["CamCapture"][0][:, -1]
-            detected_pos, img_w_bbx = process_received_camera_images(image_data, self.ob_model, self.class_names, self.image_shape)
+            n_channels = 400 * 400 * 3
+            image_color = image_data[:n_channels]
+            detected_pos, img_w_bbx = process_received_camera_images(image_color, self.ob_model, self.class_names, self.image_shape)
             self.outputs["OutputImg"] = img_w_bbx.reshape(-1)
             self.inputs.clear_buffer()
 
