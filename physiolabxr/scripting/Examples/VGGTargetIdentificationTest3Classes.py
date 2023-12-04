@@ -30,17 +30,8 @@ label = pickle.load(open('../../../image_labels.p', 'rb'))
 #     plt.show()
 
 data = np.transpose(np.stack(data), (0, 3, 1, 2))
+label_index = np.unique(np.array(label, dtype=int))
 
-# change all novel labels to non-target
-label_mapping = {1: 0, 2: 1, 3: 0}
-label = [label_mapping[x] for x in label]
-
-unique_labels = np.unique(np.array(label, dtype=int))
-
-for i, (l, image) in enumerate(zip(label, data)):
-    plt.imshow(np.swapaxes(image, 0, -1))
-    plt.title(f"{l}")
-    plt.savefig(f'C:/data/image_{i}.png')
 
 # Load the VGG16 model
 vgg16 = models.vgg16(pretrained=True)
@@ -50,14 +41,16 @@ for param in vgg16.features.parameters():
     param.requires_grad = False
 
 # Replace the last fully connected layer with a new one
-vgg16.classifier[-1] = nn.Linear(4096, 1)
+vgg16.classifier[-1] = nn.Linear(4096, len(label_index))
 
 # Define the loss function and optimizer
-criterion = nn.BCEWithLogitsLoss()
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(vgg16.classifier.parameters())
 
 
+
 # Create DataLoaders for train, validation, and test sets
+batch_size = 64
 shuffle = True  # Set to True if you want to shuffle the data
 
 # Load the dataset
@@ -83,16 +76,15 @@ for epoch in range(200):
 
     for i, data in enumerate(train_loader, 0):
         inputs, labels = data
+        labels = labels - 1
         optimizer.zero_grad()
 
         outputs = vgg16(inputs)
-        # _, predicted = torch.max(outputs.data, 1)
-        predicted = torch.round(torch.sigmoid(outputs.data))
-
+        _, predicted = torch.max(outputs.data, 1)
         train_total += labels.size(0)
         train_correct += (predicted == labels).sum().item()
 
-        loss = criterion(outputs[:, 0], torch.tensor(labels, dtype=torch.float32))
+        loss = criterion(outputs, torch.tensor(labels, dtype=torch.long))
         l2_reg = torch.tensor(0.)
         for param in vgg16.parameters():
             l2_reg += torch.norm(param)
