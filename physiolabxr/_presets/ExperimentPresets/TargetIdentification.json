@@ -1,0 +1,2 @@
+{"ExperimentName": "TargetIdentification",
+  "PresetStreamNames": ["CamCapture", "GazePosition", "Unity.ReNa.EventMarkers", "Unity.ReNa.ItemMarkers"]}
