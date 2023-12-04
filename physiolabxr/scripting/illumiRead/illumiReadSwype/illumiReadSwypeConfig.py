@@ -22,6 +22,7 @@ class GazeDataLSLStreamInfo:
     ChannelNum = 39
     NominalSamplingRate = 200
 
+
 class UserInputLSLStreamInfo:
     StreamName = "illumiReadSwypeUserInputLSL"
     StreamType = "UserInput"
@@ -40,6 +41,15 @@ class UserInputLSLStreamInfo:
     KeyHitIndexChannelIndex = 8
     UserInputButton1ChannelIndex = 9
     UserInputButton2ChannelIndex = 10
+    UserInputButton3ChannelIndex = 11
+
+
+class illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo:
+    StreamName = "illumiReadSwypeKeyboardSuggestionStripLSL"
+    StreamType = "KeyboardSuggestionStrip"
+    StreamID = "4"
+    ChannelNum = 1024
+    NominalSamplingRate = 1
 
 
 KeyIDIndexDict = {
@@ -71,12 +81,43 @@ KeyIDIndexDict = {
     25: "Y",
     26: "Z",
 
+    27: "'",
+    28: "."
+
 }
 
+KeyIndexIDDict = {
+    None: 0,
+    "A": 1,
+    "B": 2,
+    "C": 3,
+    "D": 4,
+    "E": 5,
+    "F": 6,
+    "G": 7,
+    "H": 8,
+    "I": 9,
+    "J": 10,
+    "K": 11,
+    "L": 12,
+    "M": 13,
+    "N": 14,
+    "O": 15,
+    "P": 16,
+    "Q": 17,
+    "R": 18,
+    "S": 19,
+    "T": 20,
+    "U": 21,
+    "V": 22,
+    "W": 23,
+    "X": 24,
+    "Y": 25,
+    "Z": 26,
 
-
-
-
+    "'": 27,
+    ".": 28
+}
 
 
 class ExperimentState(Enum):
@@ -112,8 +153,10 @@ class ExperimentBlock(Enum):
     TestBlock = 5
     EndBlock = 6
 
+
 class UserInputTypes(Enum):
     ButtonPress = 1
+
 
 from enum import Enum
 

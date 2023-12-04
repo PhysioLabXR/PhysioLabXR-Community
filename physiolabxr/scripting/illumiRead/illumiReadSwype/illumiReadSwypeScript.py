@@ -18,8 +18,8 @@ from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils impor
     word_candidate_list_to_lvt
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
+from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
-
 
 
 class IllumiReadSwypeScript(RenaScript):
@@ -47,9 +47,21 @@ class IllumiReadSwypeScript(RenaScript):
 
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
-
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
+        # spelling correction
+        self.spell_corrector = SpellCorrector()
+        self.spell_corrector.correct_string("WHAT")
+
+        # create stream outlets
+        illumireadswype_keyboard_suggestion_strip_lsl_stream_info = StreamInfo(
+            illumiReadSwypeConfig.illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo.StreamName,
+            illumiReadSwypeConfig.illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo.StreamType,
+            illumiReadSwypeConfig.illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo.ChannelNum,
+            illumiReadSwypeConfig.illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo.NominalSamplingRate,
+            channel_format=cf_float32)
+
+        self.illumireadswype_keyboard_suggestion_strip_lsl_outlet = StreamOutlet(illumireadswype_keyboard_suggestion_strip_lsl_stream_info)  # shape: (1024, 1)
 
 
     def init(self):
@@ -60,11 +72,10 @@ class IllumiReadSwypeScript(RenaScript):
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()) or (
-                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()): # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
         # print("process event marker call start")
         self.process_event_markers()
-
 
         # self.process_gaze_data()
 
@@ -76,7 +87,7 @@ class IllumiReadSwypeScript(RenaScript):
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState or \
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState or \
         #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
-            # self.process_gaze_data()
+        # self.process_gaze_data()
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -125,8 +136,6 @@ class IllumiReadSwypeScript(RenaScript):
             #         print("state change")
 
             # print("process event marker call end")
-
-
 
     def enter_block(self, block_marker):
 
@@ -222,7 +231,6 @@ class IllumiReadSwypeScript(RenaScript):
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = None
 
-
     def state_callbacks(self):
         if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState:
             self.keyboard_click_state_callback()
@@ -238,39 +246,38 @@ class IllumiReadSwypeScript(RenaScript):
 
         pass
 
-
     def keyboard_dewelltime_state_callback(self):
         print("keyboard dewell time state")
 
         pass
-
 
     def keyboard_illumireadswype_state_callback(self):
         # print("keyboard illumiread swype state")
 
         # get the user input data
         for user_input_data_t in self.inputs[UserInputLSLStreamInfo.StreamName][0].T:
-            user_input_button_1 = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex] # swyping invoker
+            user_input_button_2 = user_input_data_t[
+                illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]  # swyping invoker
 
-            if not self.illumiReadSwyping and user_input_button_1:
+            if not self.illumiReadSwyping and user_input_button_2:
                 # start swyping
                 self.illumiReadSwyping = True
                 print("start swyping")
                 # start
 
-            if self.illumiReadSwyping and not user_input_button_1:
+            if self.illumiReadSwyping and not user_input_button_2:
                 # end swyping
 
                 print("start decoding swype path")
 
                 # merge fixations
 
-                grouped_list = [list(group) for key, group in groupby(self.gaze_data_sequence, key = lambda x: x.gaze_type)]
+                grouped_list = [list(group) for key, group in
+                                groupby(self.gaze_data_sequence, key=lambda x: x.gaze_type)]
 
                 # TODO: merge fixations that are too close to each other
 
                 # TODO: discard fixations that are too short < 90ms
-
 
                 # now, we map the fixations to the keyboard keys
                 # user_input_data = self.data_buffer[UserInputLSLStreamInfo.StreamName][0]
@@ -285,10 +292,12 @@ class IllumiReadSwypeScript(RenaScript):
                         fixation_end_time = group[-1].timestamp
 
                         # find the user input data that is closest to the fixation
-                        user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
+                        user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(
+                            UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
 
                         user_input_sequence = []
-                        for user_input, timestamp in zip(user_input_during_fixation_data.T, user_input_during_fixation_timestamps):
+                        for user_input, timestamp in zip(user_input_during_fixation_data.T,
+                                                         user_input_during_fixation_timestamps):
                             user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
 
                         # check if the fixation consists of only one user input
@@ -310,21 +319,9 @@ class IllumiReadSwypeScript(RenaScript):
                         else:
                             print("no user input detected")
 
-
-
                         # update the character sequence
 
-
-
-
-
-
-
                         # TODO: decoding method
-
-
-
-
 
                         # fixation_start_user_input_index = np.searchsorted(user_input_timestamp, [fixation_start_time], side='right')
                         # fixation_end_user_input_index = np.searchsorted(user_input_timestamp, [fixation_end_time], side='left')
@@ -341,13 +338,25 @@ class IllumiReadSwypeScript(RenaScript):
                 print(fixation_character_sequence)
                 # use the spell correction algorithm to correct the character sequence
 
-                word_candidate_list = ["hello", "world", "how", "are", "you"]
+                # word_candidate_list = ["hello", "world", "how", "are"]
+
+                # ['W', 'H', 'W', 'R', 'S', 'Y', 'E']
+
+                # remove the None character
+                fixation_character_sequence = [x for x in fixation_character_sequence if x is not None]
+
+
+
+                fixation_character_string = "".join(fixation_character_sequence).lower()
+
+                word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list
+                word_candidate_list = np.array(word_candidate_list).flatten().tolist()
+                print(word_candidate_list)
+
                 # send the top n words to the feedback state
-                word_candidate_lvt = word_candidate_list_to_lvt(word_candidate_list)
-                
+                lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
 
-
-
+                self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
 
         if self.illumiReadSwyping:
             # print("update_buffer")
@@ -357,7 +366,6 @@ class IllumiReadSwypeScript(RenaScript):
             for gaze_data_t, timestamp in (
                     zip(self.inputs[GazeDataLSLStreamInfo.StreamName][0].T,
                         self.inputs[GazeDataLSLStreamInfo.StreamName][1])):
-
                 gaze_data = VarjoGazeData()
                 gaze_data.construct_gaze_data_varjo(gaze_data_t, timestamp)
                 gaze_data = self.ivt_filter.process_sample(gaze_data)
@@ -405,33 +413,16 @@ class IllumiReadSwypeScript(RenaScript):
             #     self.user_input_sequence.append(user_input)
             #
 
-
-
-
-
-
-
-
-
             self.data_buffer.update_buffers(self.inputs.buffer)
-
-
-
 
         # clear the processed user input data and gaze data
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
         self.inputs.clear_stream_buffer_data(UserInputLSLStreamInfo.StreamName)
 
-
-
-
-
     def keyboard_freeswitch_state_callback(self):
         print("keyboard free switch state")
 
-
         pass
-
 
     # def process_gaze_data(self):
     #
@@ -444,14 +435,3 @@ class IllumiReadSwypeScript(RenaScript):
     #
     #
     #     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
-
-
-
-
-
-
-
-
-
-
-
