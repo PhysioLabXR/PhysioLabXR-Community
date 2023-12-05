@@ -348,15 +348,16 @@ class IllumiReadSwypeScript(RenaScript):
 
 
                 fixation_character_string = "".join(fixation_character_sequence).lower()
+                if len(fixation_character_string) > 0:
 
-                word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list
-                word_candidate_list = np.array(word_candidate_list).flatten().tolist()
-                print(word_candidate_list)
+                    word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list
+                    word_candidate_list = np.array(word_candidate_list).flatten().tolist()
+                    print(word_candidate_list)
 
-                # send the top n words to the feedback state
-                lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
+                    # send the top n words to the feedback state
+                    lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
 
-                self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
+                    self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
 
         if self.illumiReadSwyping:
             # print("update_buffer")
