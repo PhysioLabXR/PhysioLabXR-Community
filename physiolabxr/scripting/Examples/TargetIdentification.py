@@ -1,3 +1,5 @@
+from datetime import datetime
+import os
 import pickle
 import warnings
 from enum import Enum
@@ -8,6 +10,8 @@ import numpy as np
 
 from physiolabxr.scripting.RenaScript import RenaScript
 
+
+data_output_dir = r'C:\TargetIdentification'
 item_marker_stream_name = 'Unity.ReNa.ItemMarkers'
 event_marker_stream_name = 'Unity.ReNa.EventMarkers'
 gaze_pos_stream_name = 'GazePosition'
@@ -21,6 +25,9 @@ n_chan_per_item = 10
 subimage_size = 128, 128
 # capture_size = 1920, 1080
 capture_size = 720, 480
+target_identification_cond = 'ts'
+
+# end of user parameters ##################################################
 
 class Events(Enum):
     vs = 3
@@ -29,24 +36,35 @@ class Events(Enum):
 
 class States(Enum):
     idle = 0  # script isn't doing anything
-    vs = 1  # inside of a visual search block
+    identifying = 1  # inside of a visual search block
 
 class DTN(Enum):
     distractor = 1
     target = 2
     novelty = 3
 
+target_identification_cond = Events[target_identification_cond]
+
+
 class TargetIdentification(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
         """
+        global data_output_dir
+
         super().__init__(*args, **kwargs)
         self.cur_state = States.idle
         self.next_state = States.idle
         self.cur_block_id = None
         self.image_data = []
         self.image_labels = []
+
+        # tell the user where the data will be saved
+        current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        data_output_dir = os.path.join(data_output_dir, current_datetime)
+        print(f"TargetIdentification: data will be saved to {data_output_dir}")
+        os.makedirs(data_output_dir)
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -80,13 +98,13 @@ class TargetIdentification(RenaScript):
                 self.next_state = States.idle
                 print(f"found IPD marker, entering {self.next_state}")
 
-            if len(event_indices := self.get_event_indices(Events.vs.value)) > 0:
+            if len(event_indices := self.get_event_indices(target_identification_cond.value)) > 0:
                 assert len(event_indices) == 1, "process_eventmarker: there should only be one vs marker"
                 found_event_index = event_indices[0]
 
                 # remember the current block id, we will use it to find when the current block concludes
                 self.cur_block_id = block_ids[event_indices[0]]
-                self.next_state = States.vs
+                self.next_state = States.identifying
                 print(f"found VS marker, entering {self.next_state}, block id is {self.cur_block_id}")
 
             if len(event_indices := np.squeeze(np.argwhere(block_ids < 0), axis=1)) > 0:
@@ -159,5 +177,5 @@ class TargetIdentification(RenaScript):
             self.image_labels.append(label)
             plt.imsave(f'gaze{i}.png', subimage)
 
-        pickle.dump(self.image_data, open('image_data.p', 'wb'))
-        pickle.dump(self.image_labels, open('image_labels.p', 'wb'))
+        pickle.dump(self.image_data, open(os.path.join(data_output_dir, 'image_data.p'), 'wb'))
+        pickle.dump(self.image_labels, open(os.path.join(data_output_dir, 'image_labels.p'), 'wb'))
