@@ -3,6 +3,8 @@ import time
 import numpy as np
 import scipy
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn import svm
+from sklearn.metrics import classification_report
 
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.events.utils import get_indices_when
@@ -11,6 +13,7 @@ from physiolabxr.scripting.physio.epochs import get_event_locked_data, buffer_ev
     get_baselined_event_locked_data, visualize_epochs
 from physiolabxr.scripting.physio.interpolation import interpolate_zeros
 from physiolabxr.scripting.physio.preprocess import preprocess_samples_eeg_pupil
+from physiolabxr.scripting.physio.utils import rebalance_classes
 
 
 class ERPClassifier(RenaScript):
@@ -102,17 +105,25 @@ class ERPClassifier(RenaScript):
 
             if self.block_count >= self.start_training_at_block:
                 # build classifier
-                x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
-                x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
-
-                # preprocess the data, compute pca and ica for eeg
-                x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, pca, ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20)
-
                 y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in self.event_locked_data_buffer.items()], axis=0)
                 # adjust the labels's value to from 1, 2 to 0, 1
                 y = y - 1
                 # count the target ratio
                 print(f"target: {np.sum(y)}. distractor {np.sum(y==0)}. target ratio: {np.sum(y == 1) / len(y)}")
+
+
+                x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
+                x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
+
+                # rebalance the dataset
+                x_eeg, y_eeg = rebalance_classes(x_eeg, y, by_channel=True, random_seed=42)
+                x_pupil, y_pupil = rebalance_classes(x_pupil, y, by_channel=True, random_seed=42)
+
+                assert np.all(y_eeg == y_pupil)
+                y = y_eeg
+
+                # preprocess the data, compute pca and ica for eeg
+                x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, pca, ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20)
 
                 # split the data into train and test, we only do one split as we are not doing cross validation here
                 skf = StratifiedShuffleSplit(n_splits=1, random_state=self.random_seed, test_size=0.2)
@@ -122,12 +133,33 @@ class ERPClassifier(RenaScript):
                 x_pupil_train, x_pupil_test = x_pupil_znormed[train], x_pupil_znormed[test]
                 y_train, y_test = y[train], y[test]
 
-                hdca_model = HDCA(["Distractor", "Target"])
+                target_names = ['distractor', 'target']
+
+                # hdca classifier
+
+                hdca_model = HDCA(target_names)
                 roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = hdca_model.fit(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
                 y_pred, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
                 # report the results
                 print(f"Block ID {self.block_count}: train: combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
                 print(f"Block ID {self.block_count}: test:  combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
+
+                # svm classifier
+                clf = svm.SVC()
+                # concate eeg p/ica and pupil
+                x_train = np.concatenate([x_eeg_pca_ica_train.reshape(x_eeg_pca_ica_train.shape[0], -1),
+                                          x_pupil_train.reshape(x_eeg_pca_ica_train.shape[0], -1)], axis=1)
+                clf.fit(x_train, y_train)
+                y_train_test = clf.predict(x_train)
+                print('Test performance: \n' + classification_report(y_train, y_train_test, target_names=target_names))
+
+                # report the results on test data
+                x_test = np.concatenate([x_eeg_pca_ica_test.reshape(x_eeg_pca_ica_test.shape[0], -1),
+                                          x_pupil_test.reshape(x_pupil_test.shape[0], -1)], axis=1)
+
+                y_pred_test = clf.predict(x_test)
+                print('Test performance: \n' + classification_report(y_test, y_pred_test, target_names=target_names))
+
 
         if self.event_marker_name in self.inputs.keys():
             block_ids = self.inputs[self.event_marker_name][0][1:2, :]
