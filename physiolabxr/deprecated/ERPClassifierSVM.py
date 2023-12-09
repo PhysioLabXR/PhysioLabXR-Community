@@ -139,19 +139,29 @@ class ERPClassifier(RenaScript):
 
                 hdca_model = HDCA(target_names)
                 roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = hdca_model.fit(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
-                y_pred_train, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, notes=f"Block ID {self.block_count}")
-                y_pred_test, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
+                y_pred, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = hdca_model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
                 # report the results
+                print(f"Block ID {self.block_count}: train: combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
+                print(f"Block ID {self.block_count}: test:  combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
 
-                print(f"Block ID {self.block_count}:\n")
-                print('Train performance: \n' + classification_report(y_train, y_pred_train, target_names=target_names))
-                print(f"combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
+                # svm classifier
+                clf = svm.SVC()
+                # concate eeg p/ica and pupil
+                x_train = np.concatenate([x_eeg_pca_ica_train.reshape(x_eeg_pca_ica_train.shape[0], -1),
+                                          x_pupil_train.reshape(x_eeg_pca_ica_train.shape[0], -1)], axis=1)
+                clf.fit(x_train, y_train)
+                y_train_test = clf.predict(x_train)
+                print('Test performance: \n' + classification_report(y_train, y_train_test, target_names=target_names))
 
+                # report the results on test data
+                x_test = np.concatenate([x_eeg_pca_ica_test.reshape(x_eeg_pca_ica_test.shape[0], -1),
+                                          x_pupil_test.reshape(x_pupil_test.shape[0], -1)], axis=1)
+
+                y_pred_test = clf.predict(x_test)
                 print('Test performance: \n' + classification_report(y_test, y_pred_test, target_names=target_names))
-                print(f"combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
 
-                # TODO add single trial decoding, after a certain number of blocks start single trial decoding
-                # TODO also include the camera data, visualize the decoder results on the camera image
+
+                # TODO add single trial decoding
 
         if self.event_marker_name in self.inputs.keys():
             block_ids = self.inputs[self.event_marker_name][0][1:2, :]
