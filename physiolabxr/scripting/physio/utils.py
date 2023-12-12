@@ -1,5 +1,4 @@
 import numpy as np
-from imblearn.over_sampling import SMOTE
 from scipy.interpolate import interp1d
 
 
@@ -41,6 +40,7 @@ def rebalance_classes(x, y, by_channel=False, random_seed=None):
     Returns:
         tuple: A tuple containing the resampled input data and target labels as numpy arrays.
     """
+    from imblearn.over_sampling import SMOTE
     epoch_shape = x.shape[1:]
 
     if by_channel:
