@@ -19,6 +19,7 @@ from physiolabxr.presets.presets_utils import get_stream_a_group_info, \
     set_time_series_channels_constant_offset
 from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
 from physiolabxr.utils.Validators import NoCommaIntValidator
+from physiolabxr.utils.ui_utils import add_items
 
 
 class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
@@ -53,7 +54,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
 
-
         # time series ###############################################################
         self.timeSeriesChannelsConstantOffsetLineEdit.setValidator(QDoubleValidator())
         # self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
@@ -61,12 +61,12 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
         self.imageHeightLineEdit.setValidator(NoCommaIntValidator())
-        self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
-        self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
+        add_items(self.imageFormatComboBox, [f.name for f in ImageFormat])
+        add_items(self.channelFormatCombobox, [f.name for f in ChannelFormat])
 
         self.image_level_min_line_edit.setValidator(QDoubleValidator())
         self.image_level_max_line_edit.setValidator(QDoubleValidator())
-        self.combobox_image_cmap.addItems([name for name, member in Cmap.__members__.items()])
+        add_items(self.combobox_image_cmap, [name for name, member in Cmap.__members__.items()])
         self.image_levels_invalid = False
         self.image_display_scaling_percentile_slider = SliderWithValueLabel(minimum=1, maximum=100, value=100)
         self.display_scaling_widget.layout().addWidget(self.image_display_scaling_percentile_slider)
@@ -84,7 +84,7 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         self.slider_spectrogram_percentile_min = SliderWithValueLabel(minimum=0, maximum=99, value=1)
         self.spectrogram_gridLayout.addWidget(self.slider_spectrogram_percentile_max, 6, 1)
         self.spectrogram_gridLayout.addWidget(self.slider_spectrogram_percentile_min, 5, 1)
-        self.comboBox_spectrogram_cmap.addItems([name for name, member in Cmap.__members__.items()])
+        add_items(self.comboBox_spectrogram_cmap, [name for name, member in Cmap.__members__.items()])
 
         self.last_time_per_segment = None
         self.last_time_overlap = None

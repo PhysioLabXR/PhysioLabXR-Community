@@ -124,6 +124,8 @@ class AppConfigs(metaclass=Singleton):
     _rena_base_script = "physiolabxr/scripting/BaseRenaScript.py"
     _style_sheets = {"dark": "physiolabxr/_ui/stylesheet/dark.qss", "light": "physiolabxr/_ui/stylesheet/light.qss"}
 
+    _placeholder_text = 'placeholder'
+
     def __post_init__(self):
         # change the cwd to root folder
         os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

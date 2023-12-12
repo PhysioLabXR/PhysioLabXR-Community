@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Type
+from typing import Type, Iterable
 
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
@@ -315,3 +315,15 @@ def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
             line_edit.textChanged.disconnect(set_back)
         line_edit.textChanged.connect(set_back)
         raise RenaError(f'{name} must be an integer')
+
+def add_items(combobox: QComboBox, items: Iterable):
+    """
+    call addItems on a combobox
+    remove placeholder if there's any
+    """
+    combobox.addItems(items)
+    # remove the placeholder item from the combobox if it exists
+    placeholder_index = combobox.findText(AppConfigs()._placeholder_text)
+    if placeholder_index != -1:
+        combobox.removeItem(placeholder_index)
+
