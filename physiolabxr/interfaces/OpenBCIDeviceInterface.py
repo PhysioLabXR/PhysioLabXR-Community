@@ -1,14 +1,10 @@
 import time
 import warnings
 
-import brainflow
-from brainflow.board_shim import BoardShim, BrainFlowInputParams
 try:
     from pylsl import StreamInfo, StreamOutlet
 except:
     warnings.warn("OpenBCIDeviceInterface: pylsl is not installed, LSL interface will not work.")
-
-from physiolabxr.utils.realtime_DSP import RealtimeNotch, RealtimeButterBandpass, RealtimeVrms
 
 
 class OpenBCIDeviceInterface:
@@ -16,6 +12,8 @@ class OpenBCIDeviceInterface:
     def __init__(self, stream_name, stream_type='EEG', serial_port='COM5', board_id="0",
                  log='store_true', streamer_params='',
                  ring_buffer_size=45000):  # default board_id 2 for Cyton
+        import brainflow
+        from brainflow.board_shim import BoardShim, BrainFlowInputParams
         self.params = BrainFlowInputParams()
         self.params.serial_port = serial_port
         self.params.ip_port = 0
@@ -46,6 +44,8 @@ class OpenBCIDeviceInterface:
 
     def start_sensor(self):
         # tell the sensor to start sending frames
+        import brainflow
+
         try:
             self._board.prepare_session()
         except brainflow.board_shim.BrainFlowError:
@@ -81,6 +81,7 @@ class OpenBCIDeviceInterface:
         return frames
 
     def stop_sensor(self):
+        import brainflow
         try:
             self._board.stop_stream()
             print('OpenBCIInterface: stopped streaming.')

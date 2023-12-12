@@ -78,7 +78,7 @@ def test_script_single_lsl_input_output(context_bot, qtbot):
     srate = 2048
     dtype = DataType.float64
 
-    sent_samples = context_bot.create_add_start_predefined_stream(test_stream_name, n_channels, srate, recording_time_second, dtype)
+    sent_samples = context_bot.create_add_start_predefined_stream(test_stream_name, n_channels, srate, recording_time_second * 3, dtype)
 
     class_name = 'ScriptTest'
     script_path = os.path.join(os.getcwd(), class_name + '.py')

@@ -1,3 +1,4 @@
+import warnings
 from enum import Enum
 from typing import Type, Iterable
 
@@ -284,7 +285,7 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
 
 def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_selected_in_gui: list=None):
     if can_be_selected_in_gui is None:
-        combobox.addItems([name for name, member in enum.__members__.items()])
+        add_items(combobox, [name for name, member in enum.__members__.items()])
     else:
         for name, member in enum.__members__.items():
             combobox.addItem(name)
@@ -321,9 +322,13 @@ def add_items(combobox: QComboBox, items: Iterable):
     call addItems on a combobox
     remove placeholder if there's any
     """
+    placeholder_index = combobox.findText(AppConfigs()._placeholder_text)
+    if placeholder_index == -1:
+        warnings.warn(f"combobox {combobox.objectName()} has no placeholder, may subject to NSException.")
     combobox.addItems(items)
     # remove the placeholder item from the combobox if it exists
-    placeholder_index = combobox.findText(AppConfigs()._placeholder_text)
     if placeholder_index != -1:
         combobox.removeItem(placeholder_index)
+
+
 

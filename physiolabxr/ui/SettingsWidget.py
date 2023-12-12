@@ -13,7 +13,7 @@ from physiolabxr.startup.startup import load_settings
 from physiolabxr.threadings.ScreenCaptureWorker import get_screen_capture_size
 from physiolabxr.threadings.WaitThreads import start_wait_process
 from physiolabxr.utils.Validators import NoCommaIntValidator
-from physiolabxr.utils.ui_utils import stream_stylesheet
+from physiolabxr.utils.ui_utils import stream_stylesheet, add_items
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -36,7 +36,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.start_stream_on_replay_checkbox.stateChanged.connect(self.on_replay_start_stream_on_replay_changed)
 
         # resolve recording file format
-        self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
+        add_items(self.saveFormatComboBox, [member.value for member in RecordingFileFormat.__members__.values()])
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
 
         self.reset_default_button.clicked.connect(self.reset_default)
@@ -48,7 +48,7 @@ class SettingsWidget(QtWidgets.QWidget):
         self.plot_fps_lineedit.setValidator(onlyInt)
         self.plot_fps_lineedit.setText(str(int(1e3 / int(float(AppConfigs().visualization_refresh_interval)))))
 
-        self.linechart_viz_mode_combobox.addItems([member.value for member in LinechartVizMode.__members__.values()])
+        add_items(self.linechart_viz_mode_combobox, [member.value for member in LinechartVizMode.__members__.values()])
         self.linechart_viz_mode_combobox.activated.connect(self.on_linechart_viz_mode_changed)
 
         self.load_settings_to_ui()
