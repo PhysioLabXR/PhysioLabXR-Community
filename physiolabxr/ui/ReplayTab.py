@@ -108,8 +108,6 @@ class ReplayTab(QtWidgets.QWidget):
 
         self.parent = parent
 
-        self.file_loc = config.DEFAULT_DATA_DIR
-        self.ReplayFileLoc.setText('')
         self.stream_info = {}
         self.stream_list_items = {}
 
@@ -127,6 +125,9 @@ class ReplayTab(QtWidgets.QWidget):
         self._create_playback_widget()
         self.replay_server_process = Process(target=start_replay_server, args=(self.replay_port, ))
         self.replay_server_process.start()
+
+        if AppConfigs().last_replayed_file_path is not None:
+            self.select_file(AppConfigs().last_replayed_file_path)
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -148,17 +149,15 @@ class ReplayTab(QtWidgets.QWidget):
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
-        selected_file = QFileDialog.getOpenFileName(self.BottomWidget, "Select File")[0]
-        self.select_file(selected_file)
+        response = QFileDialog.getOpenFileName(self.BottomWidget, "Select File")
+        if response[0] != '':
+            self.select_file(response[0])
 
     def select_file(self, selected_file):
-        if selected_file != '':
-            self.file_loc = selected_file
+        self.replay_file_path_lineedit.setText(selected_file)
+        print("Selected file: ", selected_file)
 
         # self.file_loc = self.file_loc + 'data.dats'
-
-        print("Selected file: ", self.file_loc)
-        self.ReplayFileLoc.setText(self.file_loc + '/')
 
         # start loading the replay file
         self.SelectDataDirBtn.setEnabled(False)
@@ -167,7 +166,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.StartStopReplayBtn.setVisible(False)
         self.playback_window.hide()
 
-        self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
+        self.command_info_interface.send_string(shared.LOAD_COMMAND + selected_file)
         self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
         self.wait_worker.result_available.connect(self.process_reply_from_load_command)
 
@@ -216,6 +215,7 @@ class ReplayTab(QtWidgets.QWidget):
             self.SelectDataDirBtn.setEnabled(True)
             self.stream_list_widget.setVisible(True)
             show_label_movie(self.loading_label, False)
+            AppConfigs().last_replayed_file_path = self.replay_file_path_lineedit.toPlainText()
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
 
