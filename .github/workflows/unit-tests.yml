@@ -34,6 +34,7 @@ jobs:
           python -m pip install -r requirements.dev.txt
           python -m pip uninstall opencv-python -y
           python -m pip install opencv-python-headless
+          sudo apt install python3-qtpy
           pip install PyQt6
           pip install pytest
           pip install pytest-qt
