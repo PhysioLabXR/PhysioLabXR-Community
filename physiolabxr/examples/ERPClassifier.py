@@ -68,7 +68,8 @@ class ERPClassifier(RenaScript):
         self.indicator_separation = int(self.video_shape[0] // 30)
 
     def loop(self):
-        if self.process_next_look:
+        # wait until we have received the last pupil block
+        if self.process_next_look and self.inputs['Example-Eyetracking-Pupil'][1][-1] - 3 > self.block_end_time:
             self.process_next_look = False
             self.block_count += 1
             # we need to interpolate the pupil data to remove the blinks when pupil size will be zeroes
@@ -158,9 +159,6 @@ class ERPClassifier(RenaScript):
                 print('Test performance: \n' + classification_report(y_test, y_pred_test, target_names=target_names))
                 print(f"combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
 
-                # TODO add single trial decoding, after a certain number of blocks start single trial decoding
-                # TODO also include the camera data, visualize the decoder results on the camera image
-
         if self.event_marker_name in self.inputs.keys():
             event_markers = self.inputs[self.event_marker_name][0]
             event_times = self.inputs[self.event_marker_name][1]
@@ -172,15 +170,16 @@ class ERPClassifier(RenaScript):
                 # clear the event and prediction indicators at the end of each block
                 self.event_indicators = []
                 self.prediction_indicators = []
-                time.sleep(self.tmax_eye * 1.5)  # wait for the last pupil epoch to be received
 
             # check if any DTN (distractor, target, or novelty) event is received
             dtns = event_markers[0, :][event_times > self.last_dtn_time]
+            dtns_times = event_times[event_times > self.last_dtn_time]
             dtn_indices, found_dtns = get_indices_when(dtns, lambda x: np.isin(x, self.dtn_events), return_data=True)
             if dtn_indices is not None:  # if we received the block end event, which is a negative block ID
-                self.last_dtn_time = event_times[dtn_indices[-1]]
+                self.last_dtn_time = dtns_times[dtn_indices[-1]]
                 # add the dtn events to the event indicators, so they can be visualized on the video
                 self.event_indicators += found_dtns[:, 0].tolist()
+                print(f"Found {len(dtn_indices)} DTN events, event indicator length {len(self.event_indicators)}, content: {self.event_indicators}")
 
         if self.video_input_name in self.inputs.keys():
             video_frame = self.inputs[self.video_input_name][0][:, -1].reshape(self.video_shape).copy()  # get the video frames
