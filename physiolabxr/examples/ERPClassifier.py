@@ -13,7 +13,7 @@ from physiolabxr.scripting.physio.HDCA import HDCA
 from physiolabxr.scripting.physio.epochs import get_event_locked_data, buffer_event_locked_data, \
     get_baselined_event_locked_data, visualize_epochs
 from physiolabxr.scripting.physio.interpolation import interpolate_zeros
-from physiolabxr.scripting.physio.preprocess import preprocess_samples_eeg_pupil
+from physiolabxr.scripting.physio.preprocess import preprocess_samples_eeg_pupil, Preprocessor
 from physiolabxr.scripting.physio.utils import rebalance_classes
 
 
@@ -57,107 +57,56 @@ class ERPClassifier(RenaScript):
         self.process_next_look = False
         self.block_end_time = None
         self.block_count = 0
-        self.start_training_at_block = 1
 
         self.random_seed = 42
 
         self.model = None
-        self.event_indicators = []
-        self.prediction_indicators = []
+        self.eeg_pca = None
+        self.eeg_ica = None
+        self.event_indicators = {}
         self.indicator_radius = int(0.5 * 0.9 * self.video_shape[0] // 30)  # 0.5 for the radius, 0.9 for the margins, 30 for the number items per block
         self.indicator_separation = int(self.video_shape[0] // 30)
 
     def loop(self):
         # wait until we have received the last pupil block
-        if self.process_next_look and self.inputs['Example-Eyetracking-Pupil'][1][-1] - 3 > self.block_end_time:
+        # the following line gets the last pupil time, this is used to check if we have received the last pupil epoch, which is 3 seconds after the event
+        last_pupil_time = self.inputs['Example-Eyetracking-Pupil'][1][-1] if 'Example-Eyetracking-Pupil' in self.inputs.keys() else 0
+        if self.process_next_look and last_pupil_time - 3 > self.block_end_time:
             self.process_next_look = False
             self.block_count += 1
-            # we need to interpolate the pupil data to remove the blinks when pupil size will be zeroes
-            left_pupil = self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Left Pupil Size")]
-            right_pupil = self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Right Pupil Size")]
-            self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Left Pupil Size")] = interpolate_zeros(left_pupil)
-            self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Right Pupil Size")] = interpolate_zeros(right_pupil)
 
-            # filter the eeg data
-            # self.inputs['Example-BioSemi-64Chan'][0] = mne.filter.filter_data(self.inputs['Example-BioSemi-64Chan'][0], sfreq=self.eeg_srate, l_freq=1, h_freq=50, n_jobs=1)
-
-            # get the event-locked EEG data
-            # get the event-locked eeg and eye (pupil) data
-            event_locked_data, last_event_time = get_event_locked_data(event_marker=self.inputs[self.event_marker_name],
-                                                                       data={'eeg': self.inputs['Example-BioSemi-64Chan'],
-                                                                             'eye': self.inputs['Example-Eyetracking-Pupil']},
-                                                                       events_of_interest=self.dtn_events,
-                                                                       tmin={'eeg': self.tmin_eeg, 'eye': self.tmin_eye},
-                                                                       tmax={'eeg': self.tmax_eeg, 'eye': self.tmax_eye},
-                                                                       srate={'eeg': self.eeg_srate, 'eye': self.eye_srate},
-                                                                       return_last_event_time=True, verbose=1)
+            event_locked_data, last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y\
+                = self.process_data(self.inputs[self.event_marker_name], is_rebalance=True)
 
             self.inputs.clear_up_to(self.block_end_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
             self.event_locked_data_buffer = buffer_event_locked_data(event_locked_data, self.event_locked_data_buffer)  # Buffer the event-locked data for further processing
 
-            # visualize eeg and pupil separately
-            eeg_epochs = {event: data['eeg'] for event, data in self.event_locked_data_buffer.items()}
-            baselined_eeg_epochs = get_baselined_event_locked_data(eeg_epochs,
-                                                                   self.eeg_baseline_time,
-                                                                   self.eeg_srate)  # Obtain baselined event-locked data for the chosen channel
-
             visualize_epochs(baselined_eeg_epochs, picks=self.eeg_picks)
-
-            pupil_epochs = {event: data['eye'][:, 4:] for event, data in self.event_locked_data_buffer.items()}
-
-            baselined_pupil_epochs = get_baselined_event_locked_data(pupil_epochs,
-                                                                     self.eye_baseline_time,
-                                                                     self.eye_srate)
-            # downsample eye tracking data
-            baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, x.shape[-1] // 10, axis=-1) for e, x in baselined_pupil_epochs.items()}
             visualize_epochs(baselined_resampled_pupil_epochs)
 
-            if self.block_count >= self.start_training_at_block:
-                # build classifier
-                y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in self.event_locked_data_buffer.items()], axis=0)
-                # adjust the labels's value to from 1, 2 to 0, 1
-                y = y - 1
-                # count the target ratio
-                print(f"target: {np.sum(y)}. distractor {np.sum(y==0)}. target ratio: {np.sum(y == 1) / len(y)}")
+            # split the data into train and test, we only do one split as we are not doing cross validation here
+            skf = StratifiedShuffleSplit(n_splits=1, random_state=self.random_seed, test_size=0.2)
+            train, test = [(train, test) for train, test in skf.split(x_eeg_znormed, y)][0]
+            x_eeg_znormed_train, x_eeg_pca_ica_train = x_eeg_znormed[train], x_eeg_pca_ica[train]
+            x_eeg_znormed_test, x_eeg_pca_ica_test = x_eeg_znormed[test], x_eeg_pca_ica[test]
+            x_pupil_train, x_pupil_test = x_pupil_znormed[train], x_pupil_znormed[test]
+            y_train, y_test = y[train], y[test]
 
+            target_names = ['distractor', 'target']
 
-                x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
-                x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
+            # hdca classifier
+            self.model = HDCA(target_names)
+            roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = self.model.fit(x_eeg_znormed_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
+            y_pred_train, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = self.model.eval(x_eeg_znormed_train, x_eeg_pca_ica_train, x_pupil_train, y_train, notes=f"Block ID {self.block_count}")
+            y_pred_test, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = self.model.eval(x_eeg_znormed_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
 
-                # rebalance the dataset
-                x_eeg, y_eeg = rebalance_classes(x_eeg, y, by_channel=True, random_seed=42)
-                x_pupil, y_pupil = rebalance_classes(x_pupil, y, by_channel=True, random_seed=42)
+            # report the results
+            print(f"Block ID {self.block_count}:\n")
+            print('Train performance: \n' + classification_report(y_train, y_pred_train, target_names=target_names))
+            print(f"combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
 
-                assert np.all(y_eeg == y_pupil)
-                y = y_eeg
-
-                # preprocess the data, compute pca and ica for eeg
-                x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, pca, ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20)
-
-                # split the data into train and test, we only do one split as we are not doing cross validation here
-                skf = StratifiedShuffleSplit(n_splits=1, random_state=self.random_seed, test_size=0.2)
-                train, test = [(train, test) for train, test in skf.split(x_eeg, y)][0]
-                x_eeg_train, x_eeg_pca_ica_train = x_eeg_znormed[train], x_eeg_pca_ica[train]
-                x_eeg_test, x_eeg_pca_ica_test = x_eeg_znormed[test], x_eeg_pca_ica[test]
-                x_pupil_train, x_pupil_test = x_pupil_znormed[train], x_pupil_znormed[test]
-                y_train, y_test = y[train], y[test]
-
-                target_names = ['distractor', 'target']
-
-                # hdca classifier
-
-                self.model = HDCA(target_names)
-                roc_auc_combined_train, roc_auc_eeg_train, roc_auc_pupil_train = self.model.fit(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, num_folds=1, is_plots=True, exg_srate=self.eeg_srate, notes=f"Block ID {self.block_count}", verbose=0, random_seed=self.random_seed)  # give the original eeg data, no need to apply HDCA again
-                y_pred_train, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = self.model.eval(x_eeg_train, x_eeg_pca_ica_train, x_pupil_train, y_train, notes=f"Block ID {self.block_count}")
-                y_pred_test, roc_auc_eeg_pupil_test, roc_auc_eeg_test, roc_auc_pupil_test = self.model.eval(x_eeg_test, x_eeg_pca_ica_test, x_pupil_test, y_test, notes=f"Block ID {self.block_count}")
-
-                # report the results
-                print(f"Block ID {self.block_count}:\n")
-                print('Train performance: \n' + classification_report(y_train, y_pred_train, target_names=target_names))
-                print(f"combined ROC {roc_auc_combined_train}, ROC EEG {roc_auc_eeg_train}, ROC pupil {roc_auc_pupil_train}")
-
-                print('Test performance: \n' + classification_report(y_test, y_pred_test, target_names=target_names))
-                print(f"combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
+            print('Test performance: \n' + classification_report(y_test, y_pred_test, target_names=target_names))
+            print(f"combined ROC {roc_auc_eeg_pupil_test}, ROC EEG {roc_auc_eeg_test}, ROC pupil {roc_auc_pupil_test}")
 
         if self.event_marker_name in self.inputs.keys():
             event_markers = self.inputs[self.event_marker_name][0]
@@ -178,8 +127,18 @@ class ERPClassifier(RenaScript):
             if dtn_indices is not None:  # if we received the block end event, which is a negative block ID
                 self.last_dtn_time = dtns_times[dtn_indices[-1]]
                 # add the dtn events to the event indicators, so they can be visualized on the video
-                self.event_indicators += found_dtns[:, 0].tolist()
+                new_dtn_events = [{'time': t, 'type': event_type} for t, event_type in zip(dtns_times, found_dtns[:, 0])]
+                self.event_indicators += new_dtn_events
                 print(f"Found {len(dtn_indices)} DTN events, event indicator length {len(self.event_indicators)}, content: {self.event_indicators}")
+
+                # check if any dtn has its pupil epoch ready (3 seconds has elapsed since the event), if so, make a prediction
+                # for event in self.event_indicators:
+                #     # if this event have not been predicted yet
+                #     if last_pupil_time - 3 > event['time'] and 'pred' not in event:
+                #         # baseline, resample, znorm, pca, ica
+                #         _, _, _, _, _, x_eeg_pca_ica, x_pupil_znormed, _ = self.process_data(((event['type'], ), (event['time'],)), is_rebalance=False)
+                #         y_pred = self.model.transform(x_eeg_pca_ica, x_pupil_znormed)
+                #         event['pred'] = y_pred[0]
 
         if self.video_input_name in self.inputs.keys():
             video_frame = self.inputs[self.video_input_name][0][:, -1].reshape(self.video_shape).copy()  # get the video frames
@@ -189,6 +148,50 @@ class ERPClassifier(RenaScript):
                     cv2.circle(video_frame, (self.video_shape[0] - 10, i * self.indicator_separation), self.indicator_radius, (0, 0, 255) if event_indicator == 1 else (255, 0, 0), 1)
             # send the video frame to the output
             self.outputs[self.video_output_name] = video_frame.reshape(-1)
+
+    def process_data(self, event_markers, is_rebalance=True):
+
+        # we need to interpolate the pupil data to remove the blinks when pupil size will be zeroes
+        left_pupil = self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Left Pupil Size")]
+        right_pupil = self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Right Pupil Size")]
+        self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Left Pupil Size")] = interpolate_zeros(left_pupil)
+        self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Right Pupil Size")] = interpolate_zeros(right_pupil)
+
+        event_locked_data, last_event_time = get_event_locked_data(event_marker=event_markers,
+                                                       data={'eeg': self.inputs['Example-BioSemi-64Chan'],
+                                                             'eye': self.inputs['Example-Eyetracking-Pupil']},
+                                                       events_of_interest=self.dtn_events,
+                                                       tmin={'eeg': self.tmin_eeg, 'eye': self.tmin_eye},
+                                                       tmax={'eeg': self.tmax_eeg, 'eye': self.tmax_eye},
+                                                       srate={'eeg': self.eeg_srate, 'eye': self.eye_srate},
+                                                       return_last_event_time=True, verbose=1)
+
+        eeg_epochs = {event: data['eeg'] for event, data in self.event_locked_data_buffer.items()}
+        baselined_eeg_epochs = get_baselined_event_locked_data(eeg_epochs, self.eeg_baseline_time,self.eeg_srate)  # Obtain baselined event-locked data for the chosen channel
+        pupil_epochs = {event: data['eye'][:, 4:] for event, data in self.event_locked_data_buffer.items()}
+        baselined_pupil_epochs = get_baselined_event_locked_data(pupil_epochs, self.eye_baseline_time, self.eye_srate)
+        baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, x.shape[-1] // 10, axis=-1) for e, x in baselined_pupil_epochs.items()}
+
+        y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in self.event_locked_data_buffer.items()], axis=0)
+        # adjust the labels's value to from 1, 2 to 0, 1
+        y = y - 1
+        print(f"target: {np.sum(y)}. distractor {np.sum(y == 0)}. target ratio: {np.sum(y == 1) / len(y)}")
+        x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
+        x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
+
+        if is_rebalance:
+            # rebalance the dataset
+            x_eeg, y_eeg = rebalance_classes(x_eeg, y, by_channel=True, random_seed=42)
+            x_pupil, y_pupil = rebalance_classes(x_pupil, y, by_channel=True, random_seed=42)
+            assert np.all(y_eeg == y_pupil)
+            y = y_eeg
+
+        # preprocess the data, compute pca and ica for eeg
+        x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, self.eeg_pca, self.eeg_ica = preprocess_samples_eeg_pupil(x_eeg,  x_pupil,20)
+
+        return event_locked_data, last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y
+
+
 
     # cleanup is called when the stop button is hit
     def cleanup(self):

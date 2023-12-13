@@ -406,6 +406,24 @@ class HDCA():
             plot_forward(activation, self.event_names, self.split_window_eeg, self.num_windows_eeg,exg_srate=self.exg_srate, notes=f"{notes} Forward model activation", eeg_montage=eeg_montage, *args, **kwargs)
         return y_pred, roc_auc_combined, roc_auc_eeg, roc_auc_pupil
 
+
+    def transform(self, x_eeg_pca_ica, x_pupil=None):
+        x_eeg_transformed_windowed = self._split_by_window(x_eeg_pca_ica, self.split_size_eeg)  # shape = #trials, #channels, #windows, #time points per window
+
+        lda_projections_eeg = _compute_window_lda_projections(x_eeg_transformed_windowed, self.window_eeg_ldas)
+        projection_eeg = z_norm_hdca(lda_projections_eeg, self.eeg_mean, self.eeg_std)
+
+        if self._use_pupil:
+            x_pupil_windowed = self._split_by_window(x_pupil, self.split_size_pupil)  # shape = #trials, #channels, #windows, #time points per window
+            lda_projections_pupil = _compute_window_lda_projections(x_pupil_windowed, self.window_pupil_ldas)
+            projection_pupil = z_norm_hdca(lda_projections_pupil, self.pupil_mean, self.pupil_std)
+            projection_combined = np.concatenate([projection_eeg, projection_pupil], axis=1)
+            y_pred = self.crossbin_model_combined.predict(projection_combined)
+        else:
+            y_pred = self.crossbin_model_eeg.predict(projection_eeg)
+        return y_pred
+
+
     def _split_by_window(self, data, window_shape):
         return  sliding_window_view(data, window_shape=window_shape, axis=2)[:, :,0::window_shape, :]  # shape = #trials, #channels, #windows, #time points per window
 
