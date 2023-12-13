@@ -28,7 +28,7 @@ class ReplayStreamHeader(QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
 
 class ReplayStreamListItem(QWidget):
-    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True, stream_interface=PresetType.LSL):
+    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True):
         """
 
         @param stream_name:
@@ -47,8 +47,11 @@ class ReplayStreamListItem(QWidget):
 
         if AppConfigs().is_lsl_available(): self.interface_combobox.addItem(PresetType.LSL.value)
         self.interface_combobox.addItem(PresetType.ZMQ.value)
-        # select the current interface
-        self.interface_combobox.setCurrentText(stream_interface.value)
+        # check the number of channels, if exceeds the max, change the type to ZMQ
+        if (AppConfigs().auto_select_zmq_if_exceed_n_channels and stream_shape[0] > AppConfigs().auto_select_zmq_n_channels) or not AppConfigs().is_lsl_available():
+            self.interface_combobox.setCurrentText(PresetType.ZMQ.value)
+        else:
+            self.interface_combobox.setCurrentText(PresetType.LSL.value)
         # add on change listener
         self.interface_combobox.currentTextChanged.connect(self.interface_combobox_changed)
         self.set_zmq_port_line_edit()

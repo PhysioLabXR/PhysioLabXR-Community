@@ -20,7 +20,7 @@
       <item>
        <widget class="QTabWidget" name="settings_tabs">
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="settings_appearance_tab">
          <attribute name="title">
@@ -141,6 +141,50 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QWidget" name="widget_5" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QCheckBox" name="auto_set_zmq_checkbox">
+               <property name="toolTip">
+                <string>Automatically set the stream interface to ZMQ when a stream's number of channels exceeds a certain number.</string>
+               </property>
+               <property name="text">
+                <string>Auto set to ZMQ</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QWidget" name="auto_set_zmq_widget" native="true">
+               <layout class="QHBoxLayout" name="horizontalLayout_8">
+                <item>
+                 <widget class="QLabel" name="label_2">
+                  <property name="text">
+                   <string> when number of channels exceeds</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="auto_set_zmq_lineedit"/>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="settings_video_device_tab">
@@ -199,8 +243,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QComboBox" name="linechart_viz_mode_combobox">
-                 </widget>
+                 <widget class="QComboBox" name="linechart_viz_mode_combobox"/>
                 </item>
                </layout>
               </widget>
