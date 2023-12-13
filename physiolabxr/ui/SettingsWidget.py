@@ -31,6 +31,16 @@ class SettingsWidget(QtWidgets.QWidget):
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
         self.set_recording_file_location(config.settings.value('recording_file_location'))
 
+        # resolve replay settings
+        self.start_stream_on_replay_checkbox.setChecked(AppConfigs().start_streams_on_replay)
+        self.start_stream_on_replay_checkbox.stateChanged.connect(self.on_replay_start_stream_on_replay_changed)
+        self.auto_set_zmq_checkbox.setChecked(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_lineedit.setText(str(AppConfigs().auto_select_zmq_n_channels))
+        self.auto_set_zmq_lineedit.setValidator(NoCommaIntValidator())
+        self.auto_set_zmq_lineedit.textChanged.connect(self.on_auto_set_zmq_lineedit_changed)
+        self.auto_set_zmq_checkbox.stateChanged.connect(self.on_auto_set_zmq_checkbox_changed)
+
         # resolve recording file format
         self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
         self.saveFormatComboBox.activated.connect(self.recording_file_format_change)
@@ -79,7 +89,6 @@ class SettingsWidget(QtWidgets.QWidget):
         this function will start a separate process look for video devices.
         an outside qthread must monitor the return of this process and call _presets().add_video_presets(rtn), where
         rtn is the return of the process _presets()._load_video_device_process.
-
 
         """
         self.parent.remove_stream_widget_with_preset_type(PresetType.WEBCAM)
@@ -228,6 +237,10 @@ class SettingsWidget(QtWidgets.QWidget):
         AppConfigs().linechart_viz_mode = LinechartVizMode(self.linechart_viz_mode_combobox.currentText())
         print(f'Linechart viz mode changed to {AppConfigs().linechart_viz_mode}')
 
+    def on_replay_start_stream_on_replay_changed(self):
+        AppConfigs().start_streams_on_replay = self.start_stream_on_replay_checkbox.isChecked()
+        print(f'start_streams_on_replay changed to {AppConfigs().start_streams_on_replay}')
+
     def reload_stream_presets(self):
         if self.parent.is_any_stream_widget_added():
             dialog_popup('Please remove all stream widgets before reloading stream presets', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
@@ -245,3 +258,13 @@ class SettingsWidget(QtWidgets.QWidget):
             self._load_audio_device_process.terminate()
         self.wait_load_audio_device_process_thread.quit()
 
+    def on_auto_set_zmq_lineedit_changed(self):
+        if self.auto_set_zmq_lineedit.text() != '':
+            new_value = int(self.auto_set_zmq_lineedit.text())
+            AppConfigs().auto_select_zmq_n_channels = new_value
+            print(f'Set auto_select_zmq_n_channels to {new_value}')
+
+    def on_auto_set_zmq_checkbox_changed(self):
+        AppConfigs().auto_select_zmq_if_exceed_n_channels = self.auto_set_zmq_checkbox.isChecked()
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        print(f'auto_select_zmq_if_exceed_n_channels changed to {AppConfigs().auto_select_zmq_if_exceed_n_channels}')

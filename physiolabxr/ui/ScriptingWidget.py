@@ -694,9 +694,18 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
     def import_script_args(self, script_preset: ScriptPreset):
         self.process_locate_script(script_preset.script_path)
 
+        # disconnect the signal to avoid triggering the callbacks
+        self.frequencyLineEdit.textChanged.disconnect()
+        self.timeWindowLineEdit.textChanged.disconnect()
+        self.simulateCheckbox.stateChanged.disconnect()
+
         self.frequencyLineEdit.setText(script_preset.run_frequency)
         self.timeWindowLineEdit.setText(script_preset.time_window)
         self.simulateCheckbox.setChecked(script_preset.is_simulate)  # is checked?
+
+        self.timeWindowLineEdit.textChanged.connect(self.on_time_window_change)
+        self.frequencyLineEdit.textChanged.connect(self.on_frequency_change)
+        self.simulateCheckbox.stateChanged.connect(self.onSimulationCheckboxChanged)
 
         for input_preset_name in script_preset.inputs:
             self.process_add_input(input_preset_name)

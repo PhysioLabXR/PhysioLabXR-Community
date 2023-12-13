@@ -68,6 +68,8 @@ def get_stream_group_info(stream_name) -> dict[str, GroupEntry]:
 def get_stream_a_group_info(stream_name, group_name) -> GroupEntry:
     return Presets().stream_presets[stream_name].group_info[group_name]
 
+def get_group_linechart_config(stream_name, group_name):
+    return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.time_series_config
 
 def get_group_image_config(stream_name, group_name):
     return Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config
@@ -97,6 +99,8 @@ def set_stream_a_group_selected_plot_format(stream_name, group_name, plot_format
     Presets().stream_presets[stream_name].group_info[group_name].selected_plot_format = plot_format
     return plot_format
 
+def set_time_series_channels_constant_offset(stream_name, group_name, channels_constant_offset):
+    Presets().stream_presets[stream_name].group_info[group_name].plot_configs.time_series_config.channels_constant_offset = channels_constant_offset
 
 def set_stream_a_group_selected_img_h_w(stream_name, group_name, height, width):
     Presets().stream_presets[stream_name].group_info[group_name].plot_configs.image_config.height = height

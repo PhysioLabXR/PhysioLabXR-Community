@@ -28,7 +28,7 @@ class ReplayStreamHeader(QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
 
 class ReplayStreamListItem(QWidget):
-    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True, stream_interface=PresetType.LSL):
+    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True):
         """
 
         @param stream_name:
@@ -47,8 +47,11 @@ class ReplayStreamListItem(QWidget):
 
         if AppConfigs().is_lsl_available(): self.interface_combobox.addItem(PresetType.LSL.value)
         self.interface_combobox.addItem(PresetType.ZMQ.value)
-        # select the current interface
-        self.interface_combobox.setCurrentText(stream_interface.value)
+        # check the number of channels, if exceeds the max, change the type to ZMQ
+        if (AppConfigs().auto_select_zmq_if_exceed_n_channels and stream_shape[0] > AppConfigs().auto_select_zmq_n_channels) or not AppConfigs().is_lsl_available():
+            self.interface_combobox.setCurrentText(PresetType.ZMQ.value)
+        else:
+            self.interface_combobox.setCurrentText(PresetType.LSL.value)
         # add on change listener
         self.interface_combobox.currentTextChanged.connect(self.interface_combobox_changed)
         self.set_zmq_port_line_edit()
@@ -247,7 +250,7 @@ class ReplayTab(QtWidgets.QWidget):
                 self.StartStopReplayBtn.setText('Start Replay')
                 return
 
-            self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
+            self.command_info_interface.send_string(shared.SETUP_STREAM_COMMAND)
             self.command_info_interface.send_string(json.dumps(replay_stream_info, cls=PresetsEncoder))  # use PresetsEncoder to encode enums
             # receive the new timing info
             reply = self.command_info_interface.recv_string()
@@ -257,9 +260,9 @@ class ReplayTab(QtWidgets.QWidget):
                 self.StartStopReplayBtn.setText('Start Replay')
                 return
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(self.command_info_interface.socket.recv())
-
-            self.parent.add_streams_from_replay(replay_stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+            # add streams to MainWindow
+            self.parent.add_streams_from_replay(replay_stream_info)
 
             # this is the official start of replay
             self.set_enable_stream_list_editable_fields(False)
@@ -271,6 +274,9 @@ class ReplayTab(QtWidgets.QWidget):
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
+
+            # send START REPLAY COMMAND to replay server
+            self.command_info_interface.send_string(shared.START_REPLAY_COMMAND)
 
             # self.loading_canceled = False  # TODO implement canceling loading of replay file
             # self.loading_replay_dialog = dialog_popup('Loading replay file...', title='Starting Replay', mode='modeless', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Cancel)

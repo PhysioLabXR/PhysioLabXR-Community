@@ -82,6 +82,11 @@ class AppConfigs(metaclass=Singleton):
     # viz configs
     linechart_viz_mode: LinechartVizMode = LinechartVizMode.INPLACE
 
+    # replay configs
+    start_streams_on_replay: bool = True
+    auto_select_zmq_if_exceed_n_channels: bool = True
+    auto_select_zmq_n_channels: int = int(2 ** 9)
+
     # recording configs
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000
@@ -120,6 +125,8 @@ class AppConfigs(metaclass=Singleton):
     _preset_path = 'physiolabxr/_presets'
     _rena_base_script = "physiolabxr/scripting/BaseRenaScript.py"
     _style_sheets = {"dark": "physiolabxr/_ui/stylesheet/dark.qss", "light": "physiolabxr/_ui/stylesheet/light.qss"}
+
+    _placeholder_text = 'placeholder'
 
     def __post_init__(self):
         # change the cwd to root folder

@@ -254,6 +254,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
                 self.process_add(stream_name, *get_stream_meta_info(stream_name))
 
+            if AppConfigs().start_streams_on_replay:
+                self.stream_widgets[stream_name].start_stream(warning_if_already_started=False)
+
         if is_new_preset_added:
             GlobalSignals().stream_presets_entry_changed_signal.emit()
 

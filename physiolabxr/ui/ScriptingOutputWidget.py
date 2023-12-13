@@ -27,8 +27,8 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
         self.label.setText(stream_name)
 
         self.numChan_lineEdit.setValidator(NoCommaIntValidator())
-        self.numChan_lineEdit.textChanged.connect(self.on_channel_num_changed)
         self.set_output_num_channels(num_channels)
+        self.numChan_lineEdit.textChanged.connect(self.on_channel_num_changed)
 
         self.port_lineEdit.setValidator(NoCommaIntValidator())
         self.port_lineEdit.setText(str(port_number))
@@ -39,8 +39,8 @@ class ScriptingOutputWidget(QtWidgets.QWidget):
 
         interface_types = [PresetType.LSL.name, PresetType.ZMQ.name] if AppConfigs().is_lsl_available() else [PresetType.ZMQ.name]
         self.interface_type_comboBox.addItems(interface_types)
-        self.interface_type_comboBox.currentTextChanged.connect(self.on_interface_type_changed)
         self.interface_type_comboBox.setCurrentText(interface_type.name)
+        self.interface_type_comboBox.currentTextChanged.connect(self.on_interface_type_changed)
 
         self.button.setIcon(AppConfigs()._icon_minus)
         self.on_channel_num_changed(export_to_settings=False)

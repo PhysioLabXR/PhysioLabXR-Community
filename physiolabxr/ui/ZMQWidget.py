@@ -28,7 +28,7 @@ class ZMQWidget(BaseStreamWidget):
 
         zmq_worker = workers.ZMQWorker(port_number=port_number, subtopic=topic_name, data_type=data_type)
         self.connect_worker(zmq_worker, False)
-        self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
+        # self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
 
     def start_stop_stream_btn_clicked(self):

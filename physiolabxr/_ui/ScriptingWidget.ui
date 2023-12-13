@@ -372,6 +372,9 @@
                     <property name="editable">
                      <bool>true</bool>
                     </property>
+                    <property name="placeholderText">
+                     <string>Stream name</string>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -433,8 +436,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>232</width>
-                       <height>102</height>
+                       <width>249</width>
+                       <height>47</height>
                       </rect>
                      </property>
                      <layout class="QVBoxLayout" name="inputLayout"/>
@@ -574,8 +577,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>233</width>
-                       <height>102</height>
+                       <width>198</width>
+                       <height>52</height>
                       </rect>
                      </property>
                      <layout class="QVBoxLayout" name="outputLayout"/>
@@ -736,8 +739,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>232</width>
-                       <height>102</height>
+                       <width>215</width>
+                       <height>58</height>
                       </rect>
                      </property>
                      <property name="sizePolicy">
