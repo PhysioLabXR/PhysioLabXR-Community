@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 import mne
@@ -68,8 +69,14 @@ class MotorImageryBalanceBall(RenaScript):
         super().__init__(*args, **kwargs)
         self.cur_state = 'idle'
 
+
     # Start will be called once when the run button is hit.
     def init(self):
+        """
+
+        Note on script params:
+
+        """
         # self.train_data_buffer = DataBuffer()
         # self.eval_data_buffer = DataBuffer()
         self.cur_state = 'idle'
@@ -82,6 +89,18 @@ class MotorImageryBalanceBall(RenaScript):
         self.label_mapping = {2: 0, 3: 1}
         self.decoder = None
         self.moving_average = MovingAverage(window_size=3)
+
+        self.use_aggregated_data = False
+        if "participant_name" in self.params and type(self.params["participant_name"]) is str and self.params["participant_name"] != "" and \
+            "participants_data_dir" in self.params and type(self.params["participants_data_dir"]) is str and os.path.exists(self.params["participants_data_dir"]):
+            self.use_aggregated_data = True
+            print("Will use aggregated data. To not use aggregated data, remove participant_name or participant_data_dir from the parameters tab. Or"
+                  "set participant_name to empty string or participant_data_dir to a non-existing directory.")
+        else:
+            self.use_aggregated_data = False
+            print("Will not use aggregated data. To use aggregated data, please set participant_name and participant_data_dir in the parameters tab."
+                  "and participant_name is not empty string and participant_data_dir exists.")
+
 
         # loop is called <Run Frequency> times per second
     def loop(self):
@@ -166,6 +185,21 @@ class MotorImageryBalanceBall(RenaScript):
         info = create_info(ch_names=self.eeg_channels, sfreq=self.srate, ch_types='eeg')
         montage = mne.channels.make_standard_montage("biosemi64")
         info.set_montage(montage)
+
+        if self.use_aggregated_data:
+            participant_dir = os.path.join(self.params["participants_data_dir"], self.params["participant_name"])
+            if os.path.exists(participant_dir): # use aggregated data
+                loaded_epochs = np.load(os.path.join(participant_dir, "epochs_data.npy"))
+                epochs_data = np.concatenate((epochs_data, loaded_epochs))
+                labels = np.concatenate((labels, np.load(os.path.join(participant_dir, "labels.npy"))))
+                print(f"Post-train: Loaded {len(loaded_epochs)} for participant {self.params['participant_name']}. Concatenated with current data. Total data size: {epochs_data.shape}")
+            else:  # if this is a new participant, create the directory
+                os.makedirs(participant_dir)
+                print(f"Post-train: New participant: {self.params['participant_name']} Created directory {os.path.join(self.params['participants_data_dir'], self.params['participant_name'])}")
+            # save the data
+            np.save(os.path.join(self.params["participants_data_dir"], self.params["participant_name"], "epochs_data.npy"), epochs_data)
+            np.save(os.path.join(self.params["participants_data_dir"], self.params["participant_name"], "labels.npy"), labels)
+            print(f"Post-train: Saved {len(epochs_data)} for participant {self.params['participant_name']}")
 
         self.decoder = CSPDecoder(n_components=4)
         self.decoder.fit(epochs_data, labels)
