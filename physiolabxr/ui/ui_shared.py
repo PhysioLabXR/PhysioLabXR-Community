@@ -39,7 +39,7 @@ start_recording_text = 'Start Recording'
 stop_recording_text = 'Stop Recording'
 
 # Scripting Widget
-script_realtime_info_text = 'Loop (with overheads) per second {0}    Average loop call runtime {1}'
+script_realtime_info_text = 'Loop (with overheads) per second {:.3f}    Average loop call running time {:.3f}    Max loop call running time {:.3f}'
 
 # Scripting Widget Tooltips
 scripting_input_widget_shape_label_tooltip = 'The expected shape of this input data at every loop. \n' \
