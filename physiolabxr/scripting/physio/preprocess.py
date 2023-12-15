@@ -24,11 +24,6 @@ def compute_pca_ica(X, n_components=20, pca=None, ica=None):
     @param n_components:
     @return:
     """
-    print("applying pca followed by ica")
-    # ev = mne.EvokedArray(np.mean(X, axis=0),
-    #                      mne.create_info(64, exg_resample_srate,
-    #                                      ch_types='eeg'), tmin=-0.1)
-    # ev.plot(window_title="original", time_unit='s')
     if pca is None:
         pca = UnsupervisedSpatialFilter(PCA(n_components), average=False)
         pca_data = pca.fit_transform(X)

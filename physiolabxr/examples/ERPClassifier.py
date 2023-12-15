@@ -1,10 +1,7 @@
-import time
-
 import cv2
 import numpy as np
 import scipy
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn import svm
 from sklearn.metrics import classification_report
 
 from physiolabxr.scripting.RenaScript import RenaScript
@@ -13,7 +10,7 @@ from physiolabxr.scripting.physio.HDCA import HDCA
 from physiolabxr.scripting.physio.epochs import get_event_locked_data, buffer_event_locked_data, \
     get_baselined_event_locked_data, visualize_epochs
 from physiolabxr.scripting.physio.interpolation import interpolate_zeros
-from physiolabxr.scripting.physio.preprocess import preprocess_samples_eeg_pupil, Preprocessor
+from physiolabxr.scripting.physio.preprocess import preprocess_samples_eeg_pupil
 from physiolabxr.scripting.physio.utils import rebalance_classes
 
 
@@ -63,9 +60,10 @@ class ERPClassifier(RenaScript):
         self.model = None
         self.eeg_pca = None
         self.eeg_ica = None
-        self.event_indicators = {}
+        self.event_indicators = []
         self.indicator_radius = int(0.5 * 0.9 * self.video_shape[0] // 30)  # 0.5 for the radius, 0.9 for the margins, 30 for the number items per block
-        self.indicator_separation = int(self.video_shape[0] // 30)
+        self.indicator_separation = int(1.1 * self.video_shape[0] // 30)
+        self.horizontal_offset = 5
 
     def loop(self):
         # wait until we have received the last pupil block
@@ -75,14 +73,13 @@ class ERPClassifier(RenaScript):
             self.process_next_look = False
             self.block_count += 1
 
-            event_locked_data, last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y\
+            last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y\
                 = self.process_data(self.inputs[self.event_marker_name], is_rebalance=True)
 
             self.inputs.clear_up_to(self.block_end_time)  # Clear the input buffer up to the last event time to avoid processing duplicate data
-            self.event_locked_data_buffer = buffer_event_locked_data(event_locked_data, self.event_locked_data_buffer)  # Buffer the event-locked data for further processing
 
-            visualize_epochs(baselined_eeg_epochs, picks=self.eeg_picks)
-            visualize_epochs(baselined_resampled_pupil_epochs)
+            visualize_epochs(baselined_eeg_epochs, picks=self.eeg_picks, tmin=self.tmin_eeg, tmax=self.tmax_eeg, title='EEG')
+            visualize_epochs(baselined_resampled_pupil_epochs, tmin=self.tmin_eye, tmax=self.tmax_eye, title='Pupil Size')
 
             # split the data into train and test, we only do one split as we are not doing cross validation here
             skf = StratifiedShuffleSplit(n_splits=1, random_state=self.random_seed, test_size=0.2)
@@ -129,27 +126,33 @@ class ERPClassifier(RenaScript):
                 # add the dtn events to the event indicators, so they can be visualized on the video
                 new_dtn_events = [{'time': t, 'type': event_type} for t, event_type in zip(dtns_times, found_dtns[:, 0])]
                 self.event_indicators += new_dtn_events
-                print(f"Found {len(dtn_indices)} DTN events, event indicator length {len(self.event_indicators)}, content: {self.event_indicators}")
+                # print(f"Found {len(dtn_indices)} DTN events, event indicator length {len(self.event_indicators)}")
 
                 # check if any dtn has its pupil epoch ready (3 seconds has elapsed since the event), if so, make a prediction
-                # for event in self.event_indicators:
-                #     # if this event have not been predicted yet
-                #     if last_pupil_time - 3 > event['time'] and 'pred' not in event:
-                #         # baseline, resample, znorm, pca, ica
-                #         _, _, _, _, _, x_eeg_pca_ica, x_pupil_znormed, _ = self.process_data(((event['type'], ), (event['time'],)), is_rebalance=False)
-                #         y_pred = self.model.transform(x_eeg_pca_ica, x_pupil_znormed)
-                #         event['pred'] = y_pred[0]
+                if self.model is not None:
+                    for event in self.event_indicators:
+                        # if this event have not been predicted yet
+                        if last_pupil_time - 3 > event['time'] and 'pred' not in event:
+                            # baseline, resample, znorm, pca, ica
+                            # event needs to be a 2D array as in [[event['type']]]
+                            this_event_marker = (np.array([[event['type']]]), np.array([event['time']]))
+                            _, _, _, _, x_eeg_pca_ica, x_pupil_znormed, _ = self.process_data(this_event_marker, is_rebalance=False, use_buffer_data=False, use_previous_pca_ica=True, verbose=None)
+                            y_pred = self.model.transform(x_eeg_pca_ica, x_pupil_znormed)
+                            event['pred'] = y_pred[0]
 
         if self.video_input_name in self.inputs.keys():
             video_frame = self.inputs[self.video_input_name][0][:, -1].reshape(self.video_shape).copy()  # get the video frames
             if len(self.event_indicators) > 0:
                 # draw event indicator as blue (distractor) and red (target) on the bottom part of the video frame
-                for i, event_indicator in enumerate(self.event_indicators):
-                    cv2.circle(video_frame, (self.video_shape[0] - 10, i * self.indicator_separation), self.indicator_radius, (0, 0, 255) if event_indicator == 1 else (255, 0, 0), 1)
+                for i, event in enumerate(self.event_indicators):
+                    cv2.circle(video_frame, (self.video_shape[0] - self.indicator_separation, self.horizontal_offset + i * self.indicator_separation), self.indicator_radius, (0, 0, 255) if event['type'] == 2 else (255, 0, 0), 2)
+                    if 'pred' in event:
+                        # 1 is target in the model
+                        cv2.circle(video_frame, (self.video_shape[0] - self.indicator_separation * 2, self.horizontal_offset + i * self.indicator_separation), self.indicator_radius, (0, 0, 235) if event['pred'] == 1 else (235, 0, 0), 2)
             # send the video frame to the output
             self.outputs[self.video_output_name] = video_frame.reshape(-1)
 
-    def process_data(self, event_markers, is_rebalance=True):
+    def process_data(self, event_markers, use_buffer_data=True, is_rebalance=True, use_previous_pca_ica=False, verbose=True):
 
         # we need to interpolate the pupil data to remove the blinks when pupil size will be zeroes
         left_pupil = self.inputs['Example-Eyetracking-Pupil'][0][self.eye_channels.index("Left Pupil Size")]
@@ -164,18 +167,21 @@ class ERPClassifier(RenaScript):
                                                        tmin={'eeg': self.tmin_eeg, 'eye': self.tmin_eye},
                                                        tmax={'eeg': self.tmax_eeg, 'eye': self.tmax_eye},
                                                        srate={'eeg': self.eeg_srate, 'eye': self.eye_srate},
-                                                       return_last_event_time=True, verbose=1)
+                                                       return_last_event_time=True, verbose=verbose)
+        if use_buffer_data:
+            self.event_locked_data_buffer = buffer_event_locked_data(event_locked_data, self.event_locked_data_buffer)  # Buffer the event-locked data for further processing
+            event_locked_data = self.event_locked_data_buffer
 
-        eeg_epochs = {event: data['eeg'] for event, data in self.event_locked_data_buffer.items()}
-        baselined_eeg_epochs = get_baselined_event_locked_data(eeg_epochs, self.eeg_baseline_time,self.eeg_srate)  # Obtain baselined event-locked data for the chosen channel
-        pupil_epochs = {event: data['eye'][:, 4:] for event, data in self.event_locked_data_buffer.items()}
+        eeg_epochs = {event: data['eeg'] for event, data in event_locked_data.items() if 'eeg' in data}
+        baselined_eeg_epochs = get_baselined_event_locked_data(eeg_epochs, self.eeg_baseline_time, self.eeg_srate)  # Obtain baselined event-locked data for the chosen channel
+        pupil_epochs = {event: data['eye'][:, 4:] for event, data in event_locked_data.items() if 'eye' in data}
         baselined_pupil_epochs = get_baselined_event_locked_data(pupil_epochs, self.eye_baseline_time, self.eye_srate)
         baselined_resampled_pupil_epochs = {e: scipy.signal.resample(x, x.shape[-1] // 10, axis=-1) for e, x in baselined_pupil_epochs.items()}
 
-        y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in self.event_locked_data_buffer.items()], axis=0)
+        y = np.concatenate([np.ones(x['eeg'].shape[0]) * e for e, x in event_locked_data.items() if 'eeg' in x], axis=0)
         # adjust the labels's value to from 1, 2 to 0, 1
         y = y - 1
-        print(f"target: {np.sum(y)}. distractor {np.sum(y == 0)}. target ratio: {np.sum(y == 1) / len(y)}")
+        if verbose: print(f"target: {np.sum(y)}. distractor {np.sum(y == 0)}. target ratio: {np.sum(y == 1) / len(y)}")
         x_eeg = np.concatenate([x for e, x in baselined_eeg_epochs.items()], axis=0)
         x_pupil = np.concatenate([x for e, x in baselined_resampled_pupil_epochs.items()], axis=0)
 
@@ -187,13 +193,13 @@ class ERPClassifier(RenaScript):
             y = y_eeg
 
         # preprocess the data, compute pca and ica for eeg
-        x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, self.eeg_pca, self.eeg_ica = preprocess_samples_eeg_pupil(x_eeg,  x_pupil,20)
+        if not use_previous_pca_ica:
+            x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, self.eeg_pca, self.eeg_ica = preprocess_samples_eeg_pupil(x_eeg, x_pupil,20)
+        else:
+            x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, _, _ = preprocess_samples_eeg_pupil(x_eeg, x_pupil, 20, pca=self.eeg_pca, ica=self.eeg_ica)
 
-        return event_locked_data, last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y
+        return last_event_time, baselined_eeg_epochs, baselined_resampled_pupil_epochs, x_eeg_znormed, x_eeg_pca_ica, x_pupil_znormed, y
 
-
-
-    # cleanup is called when the stop button is hit
     def cleanup(self):
         print('Cleanup function is called')
 
