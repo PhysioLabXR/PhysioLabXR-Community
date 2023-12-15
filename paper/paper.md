@@ -212,16 +212,31 @@ functionality and performance. The software is built using continuous integratio
 commit to the main branch triggers a full test routine to ensure compatibility.
 
 
-# Future Scope
+# Limitation and Future Scope
 
 *PhysioLabXR* aims to be a versatile platform for real-time experiments, primarily for, but not limited to, HCI and neuroscience.
 It is designed to be a community-driven project, with our core team of developers maintaining architectural integrity and functional correctness.
 At the same time, we welcome contributions from researchers and practitioners in related fields to build on this scaffolding and expand its capabilities.
-While the stream interface supports data sent through LSL or ZMQ, we are currently developing native plugins for sensors that lack network support. These plugins will enable the use of certain brands of fMRI, TMS (transcranial magnetic stimulation), and invasive neuroimaging devices (e.g., Neuropixels [@neuropixels]).
-We are also adding processing modules for more data types, such as real-time source localization 
-for EEG and speech recognition from audio. Moreover, the current scripting interface is designed to be extensible, thus requiring users to implement pipelines from code. 
-In coming releases, we plan to make scripting in the platform more accessible to users with less programming experience by providing a graphical programming interface
-and code generation for maximum flexibility.
+While the stream interface supports data sent through LSL or ZMQ, we are currently developing native plugins for sensors that lack network support. 
+These plugins will enable the use of certain brands of fMRI, TMS (transcranial magnetic stimulation), and invasive neuroimaging 
+devices (e.g., Neuropixels [@neuropixels]).
+We are also adding real-time analysis and processing modules for more modalities, such as real-time source localization 
+for EEG and speech recognition for audio. Moreover, the current scripting interface is designed to provide maximum flexibility, thus 
+requiring users to write Python code for their pipelines. 
+In coming releases, we plan to make the scripting features more accessible to users with less programming experience by 
+providing a visual programming interface
+and code generation.
+
+# Conclusion
+
+*PhysioLabXR* is a pioneering tool in the era of spatial and physiological computing, addressing the increasing demand 
+for a comprehensive software platform that drives multi-modal data integration and close-loop interaction. *PhysioLabXR* 
+offers an array of interconnected functionalities, including visualization, recording, replay, real-time DSP modules, 
+and a scripting interface. These all empower researchers
+and practitioners to explore novel experiment paradigms and design intricate feedback loops. With its Python-based 
+frontend and C++-powered backend, the framework is built with scalability in mind while 
+having optimized performance. The continued development of *PhysioLabXR* will be driven by the community and
+aims to fuel research insights into the intersection between the brain, behavior, and human-computer interaction.
 
 
 # Acknowledgments
