@@ -123,7 +123,18 @@ closed-loop systems, including deploying ML models and sending predictions to an
 
 *PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity], PsychoPy [@peirce2007psychopy] and other analysis software, including MATLAB [@matlab]. For experiments already 
 utilizing LSL and ZMQ for data transfer, the software provides convenient network stream 
-connectivity with these two widely-used data middleware. As its name implies, *PhysioLabXR* has extensive support for XR, including headset-based VR and AR. 
+connectivity with these two widely-used data middleware.
+Parts of PhysioLabXR do resemble Octopus-sensing [@saffaryazdi2022octopus]. 
+Nevertheless, *PhysioLabXR* seeks to offer a different user experience by managing the streams, 
+built-in data DSP modules, and *PhysioLabXR’s* scripting interface through a GUI.
+[//]: # (Apart from native support for a number of sensors, cameras, audio devices, screen capture, )
+[//]: # (*PhysioLabXR* additionally supports LSL or ZMQ for data transfer. ) Do we need this?
+For non-native devices, similar to the Device abstract class in Octopus-sensing, 
+users can use the scripting interface to create customized data sources, 
+but the scope of the scripting feature is not limited to new data sources, 
+extending beyond a device driver. Its potential lies in the real-time analysis of data streams, 
+with scalable i/o ports, real-time parameter adjustments for fine tuning an experiment.
+As its name implies, *PhysioLabXR* has extensive support for XR, including headset-based VR and AR. 
 This builds on our previous work, where we developed an environment to support neuroscience experiments that utilize 
 Unity and other advanced stimulus paradigms [@jangraw2014nede]. 
 
