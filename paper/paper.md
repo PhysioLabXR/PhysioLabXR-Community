@@ -94,11 +94,17 @@ real-time. This can be a crucial feature for many experiments, particularly thos
 promptly to sensor failures and prevents wasting valuable participant time.
 
 Device-independent tools, including popular platforms, such as OpenVibe [@renard2010openvibe], 
-MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@iMotion], support real-time visualization. However, they are primarily written in statically compiled languages, limiting customization, and some are closed-source commercial products, such as NeuroPype and iMotion. Python's rise in popularity as a programming 
-language [@srinath2017python] has made it an obvious choice for developing new device-independent tools that allow customization through rapid prototyping. However, using Python as a backbone language for high-precision and high-throughput data
-necessitates significant optimization to match the performance level of a compiled language.
+MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@iMotion], support real-time visualization. 
+However, they are primarily written in statically compiled languages, limiting customization, and some are closed-source 
+commercial products, such as NeuroPype and iMotion. Python's rise in popularity as a programming 
+language [@srinath2017python] has made it an obvious choice for developing new device-independent tools that allow 
+customization through rapid prototyping. However, using Python as a backbone language for high-precision and high-throughput data
+necessitates significant optimization to match the performance level of a compiled language. Octopus-sensing [@saffaryazdi2022octopus] 
+is an example of a Python-based platform that supports the acquisition and visualization of multi-modal data. 
 
-Consequently, there is a need for an open-source platform that supports multi-modal data visualization, and rapid prototyping for developing experiment paradigms in complex XR environments, while addressing the optimization challenges of using an interpreted language.
+Nevertheless, there remains a gap for an all-in-one open-source platform that supports multi-modal data visualization, and rapid 
+prototyping for developing experiment pipelines in complex XR environments, while addressing the optimization challenges 
+of basing on an interpreted language such as Python.
 
 # Benefits
 
@@ -124,16 +130,6 @@ closed-loop systems, including deploying ML models and sending predictions to an
 *PhysioLabXR* can be used with popular stimulus-presentation software such as Unity [@Unity], PsychoPy [@peirce2007psychopy] and other analysis software, including MATLAB [@matlab]. For experiments already 
 utilizing LSL and ZMQ for data transfer, the software provides convenient network stream 
 connectivity with these two widely-used data middleware.
-Parts of PhysioLabXR do resemble Octopus-sensing [@saffaryazdi2022octopus]. 
-Nevertheless, *PhysioLabXR* seeks to offer a different user experience by managing the streams, 
-built-in data DSP modules, and *PhysioLabXR’s* scripting interface through a GUI.
-[//]: # (Apart from native support for a number of sensors, cameras, audio devices, screen capture, )
-[//]: # (*PhysioLabXR* additionally supports LSL or ZMQ for data transfer. ) Do we need this?
-For non-native devices, similar to the Device abstract class in Octopus-sensing, 
-users can use the scripting interface to create customized data sources, 
-but the scope of the scripting feature is not limited to new data sources, 
-extending beyond a device driver. Its potential lies in the real-time analysis of data streams, 
-with scalable i/o ports, real-time parameter adjustments for fine tuning an experiment.
 As its name implies, *PhysioLabXR* has extensive support for XR, including headset-based VR and AR. 
 This builds on our previous work, where we developed an environment to support neuroscience experiments that utilize 
 Unity and other advanced stimulus paradigms [@jangraw2014nede]. 
