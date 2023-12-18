@@ -339,6 +339,9 @@ class IllumiReadSwypeScript(RenaScript):
                 # use the spell correction algorithm to correct the character sequence
 
                 # word_candidate_list = ["hello", "world", "how", "are"]
+                #
+                # lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
+                # self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
 
                 # ['W', 'H', 'W', 'R', 'S', 'Y', 'E']
 
