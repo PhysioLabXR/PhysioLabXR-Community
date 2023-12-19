@@ -242,12 +242,12 @@ class IllumiReadSwypeScript(RenaScript):
             self.keyboard_freeswitch_state_callback()
 
     def keyboard_click_state_callback(self):
-        print("keyboard click state")
+        # print("keyboard click state")
 
         pass
 
     def keyboard_dewelltime_state_callback(self):
-        print("keyboard dewell time state")
+        # print("keyboard dewell time state")
 
         pass
 
