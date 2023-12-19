@@ -7,7 +7,7 @@ from random import random as rand
 stream_name = 'stream'
 stream_type = 'LSL'
 
-n_channels = 500
+n_channels = 8
 # using the local_clock() to track elapsed time
 start_time = local_clock()
 # track how many samples we have sent
