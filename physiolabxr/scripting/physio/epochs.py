@@ -8,8 +8,7 @@ import scipy
 from scipy.signal import spectrogram
 
 
-def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False,
-                          verbose=None, event_channel=0, reject=None):
+def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, event_channel=0, verbose=None, **kwargs):
     """
     this function is used to get event locked data from a single modality or multiple modalities
 
@@ -36,8 +35,9 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
             _tmax = tmax[modality]
             _data = v
             _srate = srate[modality]
-            args = (event_marker, event_channel, _data, events_of_interest, _tmin, _tmax, _srate, True, verbose, reject)
-            _locked_data, latest_event_start_time = _get_event_locked_data(*args)
+            args = {'event_marker': event_marker, 'event_channel': event_channel, 'data': _data,
+                    'tmin': _tmin, 'tmax': _tmax, 'srate': _srate, 'return_last_event_time': True}
+            _locked_data, latest_event_start_time = _get_event_locked_data(**{**args, **kwargs})
             locked_data_modalities[modality] = _locked_data
 
         # make the modalities be the secondary keys and the event markers be the primary keys
