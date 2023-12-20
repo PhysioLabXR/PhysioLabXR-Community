@@ -47,7 +47,9 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
         else:
             return rtn
     else:
-        return _get_event_locked_data(event_marker, event_channel, data, events_of_interest, tmin, tmax, srate, return_last_event_time, verbose)
+        args = {'event_marker': event_marker, 'event_channel': event_channel, 'data': data,
+                'tmin': tmin, 'tmax': tmax, 'srate': srate, 'return_last_event_time': True}
+        return _get_event_locked_data(**{**args, **kwargs})
 
 
 def _get_event_locked_data(event_marker, event_channel, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, verbose=None, reject=None):
