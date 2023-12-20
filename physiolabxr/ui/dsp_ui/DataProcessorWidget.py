@@ -106,12 +106,16 @@ class DataProcessorWidget(QtWidgets.QWidget):
         print(self.data_processor.data_processor_valid, self.data_processor.data_processor_activated)
         if not self.data_processor.data_processor_valid:
             self.DataProcessorStateLabel.setPixmap(self.data_processor_invalid_pixmap)
+            self.DataProcessorStateLabel.setToolTip('Data Processor InValid')
         elif self.data_processor.data_processor_valid and self.data_processor.data_processor_activated:
             self.DataProcessorStateLabel.setPixmap(self.data_processor_activated_pixmap)
+            self.DataProcessorStateLabel.setToolTip('Data Processor Activated')
         elif self.data_processor.data_processor_valid:
             self.DataProcessorStateLabel.setPixmap(self.data_processor_valid_pixmap)
+            self.DataProcessorStateLabel.setToolTip('Data Processor Valid')
         else:
             self.DataProcessorStateLabel.setPixmap(self.data_processor_invalid_pixmap)
+            self.DataProcessorStateLabel.setToolTip('Data Processor Invalid')
 
     def init_data_processor(self):
         # create corresponding data processor if data processor is None and fill with the default parameters
