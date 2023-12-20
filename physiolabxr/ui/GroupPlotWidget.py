@@ -115,11 +115,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             # channel_plot_item.setClipToView(True)
             # channel_plot_item.setSkipFiniteCheck(True)
             # self.channel_plot_item_dict[channel_name] = channel_plot_item
-        channel_plot_item = self.linechart_widget.plot([], [], pen=pens, name=names)
+        group_plot_item = self.linechart_widget.plot([], [], pen=pens, name=names)
         downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
-        channel_plot_item.setDownsampling(auto=True, method=downsample_method)
+        group_plot_item.setDownsampling(auto=True, method=downsample_method)
         # channel_plot_item.setClipToView(True)
-        channel_plot_item.setSkipFiniteCheck(True)
+        group_plot_item.setSkipFiniteCheck(True)
         # self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
@@ -291,9 +291,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def change_channel_name(self, new_ch_name, old_ch_name, lsl_index):
         # change_plot_label(self.linechart_widget, self.channel_plot_item_dict[old_ch_name], new_ch_name)
-        self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
-        self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
-
+        # self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
+        # self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
         # self.channel_plot_item_dict[old_ch_name].legend.setText(new_ch_name)
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
         index_in_group = channel_indices.index(lsl_index)
