@@ -205,19 +205,15 @@ def visualize_epochs(epochs, colors=None, picks: Union[List, Dict]=None, title='
 
 
 def visualize_erd(epochs, tmin, tmax, srate, colors=None, picks: Union[List, Dict]=None, title='', out_dir=None, fig_size=(12.8, 7.2),
-                     nperseg=128, noverlap_denom=2, nfft=512):
+                     nperseg=128, noverlap_denom=2, nfft=512, freq_min=7, freq_max=13):
     """
 
     nfft: Number of FFT points
     """
-    import matplotlib
     import matplotlib.pyplot as plt
     plt.rcParams["figure.figsize"] = fig_size
     events = list(epochs.keys())
-
     noverlap = nperseg // noverlap_denom  # Overlap between segments
-    freq_min = 1
-    freq_max = 30
 
     if picks is None:
         picks = [f'channel {i}' for i in range(epochs[events[0]].shape[1])]
@@ -228,14 +224,6 @@ def visualize_erd(epochs, tmin, tmax, srate, colors=None, picks: Union[List, Dic
     for ch_index, ch_name in enumerate(picks):
         for e in events:
             x = epochs[e]
-            # x_mean = np.mean(x[:, ch_index], axis=0)
-            # x1 = x_mean + scipy.stats.sem(x[:, ch_index], axis=0)  # this is the upper envelope
-            # x2 = x_mean - scipy.stats.sem(x[:, ch_index], axis=0)
-            # time_vector = np.linspace(tmin, tmax, x.shape[-1])
-            # Plot the EEG data as a shaded area
-            # plt.fill_between(time_vector, x1, x2, where=x2 <= x1, facecolor=colors[e], interpolate=True, alpha=0.5)
-            # plt.plot(time_vector, x_mean, c=colors[e], label=f'{e}, N={x.shape[0]}')
-
             spectrograms = []
             frequencies = []
             for i in range(len(x)):  # iterate over the epochs
@@ -250,7 +238,7 @@ def visualize_erd(epochs, tmin, tmax, srate, colors=None, picks: Union[List, Dic
     max_freq_index = np.argmin(np.abs(freqs - freq_max))
 
     for ch_index, ch_name in enumerate(picks):
-        all_mean_spectrograms = np.stack([v[1] for k, v in all_spectrograms.items() if ch_name in k])
+        all_mean_spectrograms = np.stack([v for k, v in all_spectrograms.items() if ch_name in k])
         vmax = np.max(all_mean_spectrograms)
         vmin = np.min(all_mean_spectrograms)
 
@@ -272,7 +260,4 @@ def visualize_erd(epochs, tmin, tmax, srate, colors=None, picks: Union[List, Dic
                 plt.clf()
             else:
                 plt.show()
-
-
-
 
