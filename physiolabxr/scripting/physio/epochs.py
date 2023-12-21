@@ -35,7 +35,7 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
             _tmax = tmax[modality]
             _data = v
             _srate = srate[modality]
-            args = {'event_marker': event_marker, 'event_channel': event_channel, 'data': _data,
+            args = {'event_marker': event_marker, 'events_of_interest': events_of_interest, 'event_channel': event_channel, 'data': _data,
                     'tmin': _tmin, 'tmax': _tmax, 'srate': _srate, 'return_last_event_time': True}
             _locked_data, latest_event_start_time = _get_event_locked_data(**{**args, **kwargs})
             locked_data_modalities[modality] = _locked_data
@@ -47,7 +47,7 @@ def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, sr
         else:
             return rtn
     else:
-        args = {'event_marker': event_marker, 'event_channel': event_channel, 'data': data,
+        args = {'event_marker': event_marker, 'events_of_interest': events_of_interest, 'event_channel': event_channel, 'data': data,
                 'tmin': tmin, 'tmax': tmax, 'srate': srate, 'return_last_event_time': True}
         return _get_event_locked_data(**{**args, **kwargs})
 
