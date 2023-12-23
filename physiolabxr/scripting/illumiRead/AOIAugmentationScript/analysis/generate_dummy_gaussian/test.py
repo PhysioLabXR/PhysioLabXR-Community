@@ -3,10 +3,10 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import os
 
-
-file_path = 'images/Sample 0 in test set, original image.png'
-image = cv2.imread('images/Sample 0 in test set, original image.png')
+file_path = 'images/Sample 2 in test set, original image.png'
+image = cv2.imread(file_path)
 
 
 def overlay_heatmap(original, heatmap, image_size, alpha=.5, interpolation=cv2.INTER_NEAREST, cmap=cv2.COLORMAP_JET, normalize=False):
@@ -21,8 +21,8 @@ def overlay_heatmap(original, heatmap, image_size, alpha=.5, interpolation=cv2.I
 
 
 center = np.array([861,2893]) # 0
-# center = np.array([699,2685]) # 0
-# center = np.array([776,3994]) # 0
+center = np.array([699,2685]) # 0
+center = np.array([776,3994]) # 0
 
 
 
@@ -57,6 +57,6 @@ axes[1].set_title(f'Attention Map', fontsize=50)
 plt.show()
 
 
-with open(file_path, 'wb') as file:
+with open(os.path.basename(file_path), 'wb') as file:
     # Dump the data into the file
     pickle.dump(gaze_attention, file)
