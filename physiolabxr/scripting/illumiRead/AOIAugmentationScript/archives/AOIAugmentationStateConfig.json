@@ -1,0 +1,14 @@
+{
+  "CalibrationState": 1,
+  "StartState": 2,
+  "IntroductionInstructionState": 3,
+  "PracticeInstructionState": 4,
+  "NoAOIAugmentationInstructionState": 5,
+  "NoAOIAugmentationState": 6,
+  "StaticAOIAugmentationInstructionState": 7,
+  "StaticAOIAugmentationState": 8,
+  "InteractiveAOIAugmentationInstructionState": 9,
+  "InteractiveAOIAugmentationState": 10,
+  "FeedbackState": 11,
+  "EndState": 12
+}
