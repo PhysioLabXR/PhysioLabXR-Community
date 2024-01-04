@@ -3,8 +3,9 @@
     "Block Marker",
     "State Marker",
     "Report Label Marker",
-    "User Input Marker"
+    "Update Visual Cue Marker",
+    "Toggle Visual Cue Visibility Marker"
   ],
   "NominalSamplingRate":  10,
-  "GroupInfo":  [1,2,3],
+  "GroupInfo":  [1,2,3,4],
   "DataType": "float32"}
