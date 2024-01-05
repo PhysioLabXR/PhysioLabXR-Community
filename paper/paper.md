@@ -1,5 +1,5 @@
 ---
-title: 'PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments"'
+title: 'PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments'
 tags:
   - Python
   - neuroscience
@@ -191,8 +191,8 @@ and monitor performance.
 These attributes include defining the streams to use as inputs,
 setting input buffer duration, controlling run frequency, creating outputs to visualize pipeline results or communicate with other programs,
 and utilizing exposed parameters 
-that allow variable adjustments during runtime. A script in *PhysioLabXR* consists of three abstract methods—$init$, $loop$, and 
-$cleanup$—which users can override to specify behavior. Built-in scripts support commonly
+that allow variable adjustments during runtime. A script in *PhysioLabXR* consists of three abstract methods—`init`, `loop`, and
+`cleanup`—which users can override to specify behavior. Built-in scripts support commonly
 used algorithms such as fixation detection and band-power computation and connection to popular devices such as Tobii eye trackers [@tobii] and
 OpenBCI EEG caps [@OpenBCI].
 
@@ -203,7 +203,7 @@ For example, filters can first be applied to EEG data, and the user can visualiz
 ## Software Design Principles
 
 Creating an efficient runtime experience is a significant challenge for large-scale Python software when dealing with high-throughput 
-data, complex graphics, and frequent i/o operation from serialization, given the interpreted nature of the language.
+data, complex graphics, and frequent I/O operation from serialization, given the interpreted nature of the language.
 To make this possible, *PhysioLabXR* is optimized through a combination of concurrency, parallelism, and a modular software architecture.
 
 ![Sequence diagram showing the information exchange between *PhysioLabXR*'s threads and processes. The main process contains 
