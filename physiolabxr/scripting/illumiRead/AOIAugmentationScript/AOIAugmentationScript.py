@@ -8,19 +8,19 @@ import pickle
 import sys
 import matplotlib.pyplot as plt
 import torch
-
+from eidl.utils.model_utils import get_subimage_model
 from pylsl import StreamInfo, StreamOutlet, cf_float32
 
-
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, GazeFilterFixationDetectionIVT, \
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, \
+    GazeFilterFixationDetectionIVT, \
     tobii_gaze_on_display_area_to_image_matrix_index, GazeType, gaze_point_on_image_valid
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.IntegrateAttention import integrate_attention
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript import AOIAugmentationConfig
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, GazeDataLSLStreamInfo
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
+    GazeDataLSLStreamInfo
 import torch
-
 
 
 class AOIAugmentationScript(RenaScript):
@@ -38,9 +38,7 @@ class AOIAugmentationScript(RenaScript):
 
         self.device = torch.device('cpu')
 
-
         self.current_image_name = None
-
 
         # self.vit_attention_matrix = ViTAttentionMatrix()
 
@@ -48,16 +46,24 @@ class AOIAugmentationScript(RenaScript):
 
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
-        self.report_cleaned_image_info_dict = get_report_cleaned_image_info_dict(AOIAugmentationConfig.ReportCleanedImageInfoFilePath, merge_dict=True)
+        # self.report_cleaned_image_info_dict = get_report_cleaned_image_info_dict(AOIAugmentationConfig.ReportCleanedImageInfoFilePath, merge_dict=True)
+
+        if os.path.exists(AOIAugmentationConfig.SubImgaeHandlerFilePath):
+            with open(AOIAugmentationConfig.SubImgaeHandlerFilePath, 'rb') as f:
+                self.subimage_handler = pickle.load(f)
+        else:
+            self.subimage_handler = get_subimage_model()
+
+
+        self.current_image_info = ImageInfo()
 
         self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
 
         # prevent null pointer in if statement been compiled before run
-        self.gaze_attention_matrix.set_image_shape(np.array([512,1024]))
-        self.gaze_attention_matrix.set_attention_patch_shape(np.array([16,32]))
-        test = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
+        # self.gaze_attention_matrix.set_image_shape(np.array([512, 1024]))
+        # self.gaze_attention_matrix.set_attention_patch_shape(np.array([16, 32]))
+        # test = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
 
-        self.current_image_info = ImageInfo()
         self.update_cue_now = False
 
         print("Experiment started")
@@ -65,7 +71,6 @@ class AOIAugmentationScript(RenaScript):
 
         # self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
         # self.ivt_filter.evoke_data_processor()
-
 
         # ################################################################################################################
         gaze_attention_map_lsl_outlet_info = StreamInfo(
@@ -79,7 +84,6 @@ class AOIAugmentationScript(RenaScript):
         #
         # ################################################################################################################
 
-
         # ################################################################################################################
         aoi_augmentation_attention_contour_lsl_outlet_info = StreamInfo(
             AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.StreamName,
@@ -88,20 +92,30 @@ class AOIAugmentationScript(RenaScript):
             AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.NominalSamplingRate,
             channel_format=cf_float32)
 
-        self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024,)
+        self.aoi_augmentation_attention_contour_lsl_outlet = StreamOutlet(
+            aoi_augmentation_attention_contour_lsl_outlet_info)  # shape: (1024,)
         # ################################################################################################################
+        aoi_augmentation_attention_heatmap_lsl_outlet_info = StreamInfo(
+            AOIAugmentationConfig.AOIAugmentationAttentionHeatmapLSLStreamInfo.StreamName,
+            AOIAugmentationConfig.AOIAugmentationAttentionHeatmapLSLStreamInfo.StreamType,
+            AOIAugmentationConfig.AOIAugmentationAttentionHeatmapLSLStreamInfo.ChannelNum,
+            AOIAugmentationConfig.AOIAugmentationAttentionHeatmapLSLStreamInfo.NominalSamplingRate,
+            channel_format=cf_float32)
+
+        self.aoi_augmentation_attention_heatmap_lsl_outlet = StreamOutlet(
+            aoi_augmentation_attention_heatmap_lsl_outlet_info)
+
+        # ################################################################################################################
+
 
         # self.cur_attention_human = None
         # Start will be called once when the run button is hit.
-
 
     def init(self):
         pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-
-
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
@@ -155,24 +169,46 @@ class AOIAugmentationScript(RenaScript):
 
                     print("current report name: {}".format(self.current_image_name))
 
-                    if self.current_image_name in self.report_cleaned_image_info_dict.keys():
-                        current_image_info_dict = self.report_cleaned_image_info_dict[self.current_image_name]
-                        self.current_image_info = ImageInfo(**current_image_info_dict)
+                    if self.current_image_name in self.subimage_handler.image_data_dict.keys():
+                        current_image_info_dict = self.subimage_handler.image_data_dict[self.current_image_name]
+                        current_image_attention = self.subimage_handler.compute_perceptual_attention(
+                            self.current_image_name, is_plot_results=False, discard_ratio=0.0)
 
-                        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-                        self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
-                        self.gaze_attention_matrix.set_image_shape(self.current_image_info.model_image_shape)
-                        self.gaze_attention_matrix.set_attention_patch_shape(self.current_image_info.patch_shape)
+                        # merge two dict4
+                        image_info_dict = {**current_image_info_dict, **current_image_attention}
+                        self.current_image_info = ImageInfo(**image_info_dict)
 
-                        # get image on screen pixel shape
                         image_on_screen_shape = get_image_on_screen_shape(
                             original_image_width=self.current_image_info.original_image.shape[1],
                             original_image_height=self.current_image_info.original_image.shape[0],
-                            image_width=AOIAugmentationConfig.image_on_screen_width,
-                            image_height=AOIAugmentationConfig.image_on_screen_height,
+                            image_width=AOIAugmentationConfig.image_on_screen_max_width,
+                            image_height=AOIAugmentationConfig.image_on_screen_max_height,
                         )
 
                         self.current_image_info.image_on_screen_shape = image_on_screen_shape
+
+
+
+
+
+
+
+                        # self.current_image_info = ImageInfo(**current_image_info_dict)
+                        #
+                        # self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+                        # self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
+                        # self.gaze_attention_matrix.set_image_shape(self.current_image_info.model_image_shape)
+                        # self.gaze_attention_matrix.set_attention_patch_shape(self.current_image_info.patch_shape)
+                        #
+                        # # get image on screen pixel shape
+                        # image_on_screen_shape = get_image_on_screen_shape(
+                        #     original_image_width=self.current_image_info.original_image.shape[1],
+                        #     original_image_height=self.current_image_info.original_image.shape[0],
+                        #     image_width=AOIAugmentationConfig.image_on_screen_max_width,
+                        #     image_height=AOIAugmentationConfig.image_on_screen_max_height,
+                        # )
+                        #
+                        # self.current_image_info.image_on_screen_shape = image_on_screen_shape
 
                     else:
                         self.current_image_info = None
@@ -186,7 +222,7 @@ class AOIAugmentationScript(RenaScript):
                     elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
                         self.interactive_aoi_augmentation_state_init_callback()
 
-#################################################################################################################
+                    #################################################################################################################
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
@@ -196,68 +232,84 @@ class AOIAugmentationScript(RenaScript):
                 self.update_cue_now = True
                 print("Update Attention Contours")
 
-
-
-
     def no_aoi_augmentation_state_init_callback(self):
         pass
 
     def static_aoi_augmentation_state_init_callback(self):
-        # register the image on screen shape
-        start = time.time()
 
-        # calculate the contour
-        heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
-                                       dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
-                                       interpolation=cv2.INTER_NEAREST)
-        ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
-        # apply erosion to threshold image
-        kernel = np.ones((5, 5), np.uint8)
+        # image_attention_on_screen = cv2.resize(self.current_image_info.original_image_attention,
+        #                                         dsize=(self.current_image_info.image_on_screen_shape[1],
+        #                                                self.current_image_info.image_on_screen_shape[0]),
+        #                                         interpolation=cv2.INTER_NEAREST)
 
-        thresh = cv2.erode(thresh, kernel, iterations=1)
-        contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        ######################################################### generate heatmap lvt for subimages #########################################################
+        # sub_image_attention_heatmap_lvt = self.subimage_handler()
+        sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=True, plot_results=True)
 
-        # convert contours coordinate to image on screen coordinate
 
-        # compile the contour information to lvt
+        print("Done generating sub images")
 
-        contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-                                                      max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+        ######################################################### generate heatmap lvt for subimages #########################################################
+
+
+        # send attention matrix to unity
+
+        # # register the image on screen shape
+        # start = time.time()
+        #
+        # # calculate the contour
+        # heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
+        #                                dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
+        #                                interpolation=cv2.INTER_NEAREST)
+        # ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
+        # # apply erosion to threshold image
+        # kernel = np.ones((5, 5), np.uint8)
+        #
+        # thresh = cv2.erode(thresh, kernel, iterations=1)
+        # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        #
+        # # convert contours coordinate to image on screen coordinate
+        #
+        # # compile the contour information to lvt
+        #
+        # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
+        #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+        # # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+        #
+        # # TODO: send the contour information to Unity
         # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-
-        # TODO: send the contour information to Unity
-        self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        print("time for contour: {}".format(time.time() - start))
-
-    def interactive_aoi_augmentation_state_init_callback(self):
-        # register the image on screen shape
-        start = time.time()
-
-        # calculate the contour
-        heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
-                                       dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
-                                       interpolation=cv2.INTER_NEAREST)
-        ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
-        # apply erosion to threshold image
-        kernel = np.ones((5,5), np.uint8)
-
-        thresh = cv2.erode(thresh, kernel, iterations=1)
-        contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        # convert contours coordinate to image on screen coordinate
-
-        # compile the contour information to lvt
-
-        contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-                                                      max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-        # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-
-        # TODO: send the contour information to Unity
-        self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        print("time for contour: {}".format(time.time() - start))
+        # print("time for contour: {}".format(time.time() - start))
 
         pass
 
+    def interactive_aoi_augmentation_state_init_callback(self):
+        # # register the image on screen shape
+        # start = time.time()
+        #
+        # # calculate the contour
+        # heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
+        #                                dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
+        #                                interpolation=cv2.INTER_NEAREST)
+        # ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
+        # # apply erosion to threshold image
+        # kernel = np.ones((5,5), np.uint8)
+        #
+        # thresh = cv2.erode(thresh, kernel, iterations=1)
+        # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        #
+        # # convert contours coordinate to image on screen coordinate
+        #
+        # # compile the contour information to lvt
+        #
+        # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
+        #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+        # # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+        #
+        # # TODO: send the contour information to Unity
+        # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+        # print("time for contour: {}".format(time.time() - start))
+
+        pass
 
     def enter_block(self, block_marker):
         if block_marker == AOIAugmentationConfig.ExperimentBlock.InitBlock.value:
@@ -326,42 +378,43 @@ class AOIAugmentationScript(RenaScript):
             # print(gaze_data.gaze_type)
 
             if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
+                pass
 
-                gaze_point_on_screen_image_index = tobii_gaze_on_display_area_to_image_matrix_index(
-                    image_center_x=AOIAugmentationConfig.image_center_x,
-                    image_center_y=AOIAugmentationConfig.image_center_y,
-
-                    image_width=self.current_image_info.image_on_screen_shape[1],
-                    image_height=self.current_image_info.image_on_screen_shape[0],
-
-                    screen_width=AOIAugmentationConfig.screen_width,
-                    screen_height=AOIAugmentationConfig.screen_height,
-
-                    gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
-                    gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
-                )
-
-
-                # check if on the image
-                gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
-                    matrix_shape=self.current_image_info.image_on_screen_shape,
-                    coordinate=gaze_point_on_screen_image_index)
-
-                if gaze_point_is_in_screen_image_boundary:
-                    gaze_point_on_model_coordinate = coordinate_transformation(
-                        original_image_shape=self.current_image_info.image_on_screen_shape,
-                        target_image_shape = self.current_image_info.model_image_shape,
-                        coordinate_on_original_image=gaze_point_on_screen_image_index
-                    )
-
-                    gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
-                    gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
-
-                    self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.995)
-
-                    gaze_attention_grid_map = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-
-                    self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_grid_map)
+                # gaze_point_on_screen_image_index = tobii_gaze_on_display_area_to_image_matrix_index(
+                #     image_center_x=AOIAugmentationConfig.image_center_x,
+                #     image_center_y=AOIAugmentationConfig.image_center_y,
+                #
+                #     image_width=self.current_image_info.image_on_screen_shape[1],
+                #     image_height=self.current_image_info.image_on_screen_shape[0],
+                #
+                #     screen_width=AOIAugmentationConfig.screen_width,
+                #     screen_height=AOIAugmentationConfig.screen_height,
+                #
+                #     gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
+                #     gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
+                # )
+                #
+                #
+                # # check if on the image
+                # gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
+                #     matrix_shape=self.current_image_info.image_on_screen_shape,
+                #     coordinate=gaze_point_on_screen_image_index)
+                #
+                # if gaze_point_is_in_screen_image_boundary:
+                #     gaze_point_on_model_coordinate = coordinate_transformation(
+                #         original_image_shape=self.current_image_info.image_on_screen_shape,
+                #         target_image_shape = self.current_image_info.model_image_shape,
+                #         coordinate_on_original_image=gaze_point_on_screen_image_index
+                #     )
+                #
+                #     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
+                #     gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
+                #
+                #     self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.995)
+                #
+                #     gaze_attention_grid_map = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
+                #
+                #     self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_grid_map)
 
                 # gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
                 #     image_center_
@@ -372,51 +425,49 @@ class AOIAugmentationScript(RenaScript):
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
 
         if self.update_cue_now:
-            current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
-            attention_matrix = self.current_image_info.raw_attention_matrix
-            integrated_attention = integrate_attention(attention_human=current_gaze_attention.reshape(-1), attention_vit=attention_matrix).reshape(32, 32)
-            integrated_attention -= integrated_attention.min()
-            integrated_attention /= integrated_attention.max() - integrated_attention.min()
+            print("update cue now")
 
-            integrated_attention_resized = cv2.resize(integrated_attention,
-                                           dsize=(self.current_image_info.image_on_screen_shape[1],
-                                                  self.current_image_info.image_on_screen_shape[0]),
-                                           interpolation=cv2.INTER_NEAREST)
-
-            ret, thresh = cv2.threshold(integrated_attention_resized, self.params['cue_threshold'], 1, 0)
-            # apply erosion to threshold image
-            kernel = np.ones((5,5), np.uint8)
-
-            thresh = cv2.erode(thresh, kernel, iterations=1)
-            contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-            # convert contours coordinate to image on screen coordinate
-
-            # compile the contour information to lvt
-
-            contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-                                                          max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-
-            # TODO: send the contour information to Unity
-            self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-
-            self.update_cue_now = False
+            # current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
+            # attention_matrix = self.current_image_info.raw_attention_matrix
+            # integrated_attention = integrate_attention(attention_human=current_gaze_attention.reshape(-1), attention_vit=attention_matrix).reshape(32, 32)
+            # integrated_attention -= integrated_attention.min()
+            # integrated_attention /= integrated_attention.max() - integrated_attention.min()
+            #
+            # integrated_attention_resized = cv2.resize(integrated_attention,
+            #                                dsize=(self.current_image_info.image_on_screen_shape[1],
+            #                                       self.current_image_info.image_on_screen_shape[0]),
+            #                                interpolation=cv2.INTER_NEAREST)
+            #
+            # ret, thresh = cv2.threshold(integrated_attention_resized, self.params['cue_threshold'], 1, 0)
+            # # apply erosion to threshold image
+            # kernel = np.ones((5,5), np.uint8)
+            #
+            # thresh = cv2.erode(thresh, kernel, iterations=1)
+            # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            #
+            # # convert contours coordinate to image on screen coordinate
+            #
+            # # compile the contour information to lvt
+            #
+            # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
+            #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
+            #
+            # # TODO: send the contour information to Unity
+            # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
+            #
+            # self.update_cue_now = False
 
         pass
 
         # self.interactive_attention_callback()
         # pass
 
-
-
-
-##########################################################################
+    ##########################################################################
     def no_attention_callback(self):
         pass
 
     def static_attention_callback(self):
         pass
-
 
     def interactive_attention_callback(self):
         pass

@@ -9,25 +9,26 @@ import pickle
 
 ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
 #ReportCleanedImageInfoFilePath = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
+SubImgaeHandlerFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\illumiRead\AOIAugmentationScript\data\subimage_handler.pkl'
 
 screen_width = 1920
 screen_height = 1080
 
-image_on_screen_width = 1800
-image_on_screen_height = 900
+image_on_screen_max_width = 1800
+image_on_screen_max_height = 900
 
 image_center_x = 0
 image_center_y = 0
 
 #########################################################################################
 
-PracticeBlockImages = ["9175_OS_2021_widefield_report.png",
-                       "9172_OD_2021_widefield_report.png",
-                       "RLS_023_OS_TC.jpg"]
+PracticeBlockImages = ["9025_OD_2021_widefield_report",
+                       "9071_OD_2021_widefield_report",
+                       "RLS_006_OD_TC"]
 
-TestBlockImages = ["9061_OS_2021_widefield_report.png",
-                   "RLS_064_OS_TC.jpg",
-                   "RLS_078_OS_TC.jpg"]
+TestBlockImages = ["RLS_023_OD_TC",
+                   "RLS_025_OD_TC",
+                   "RLS_045_OD_TC"]
 
 
 
@@ -94,6 +95,14 @@ class AOIAugmentationGazeAttentionMapLSLStreamInfo:
 class AOIAugmentationAttentionContourLSLStreamInfo:
     StreamName = "AOIAugmentationAttentionContourStream"
     StreamType = "AOIContour"
+    StreamID = "3"
+    ChannelNum = 1024
+    NominalSamplingRate = 1
+
+
+class AOIAugmentationAttentionHeatmapLSLStreamInfo:
+    StreamName = "AOIAugmentationAttentionHeatmapLSLStreamStream"
+    StreamType = "AOIHeatmap"
     StreamID = "3"
     ChannelNum = 1024
     NominalSamplingRate = 1
