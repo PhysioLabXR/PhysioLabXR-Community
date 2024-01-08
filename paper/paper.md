@@ -18,6 +18,7 @@ authors:
     equal-contrib: true 
     affiliation: 1
   - name: Ziwen Xie
+    orcid: 0009-0006-2304-7591
     affiliation: 1
   - name: Yunxiang Peng
     orcid: 0009-0000-1824-970X
