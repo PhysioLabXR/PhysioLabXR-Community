@@ -258,7 +258,7 @@ to meet their specific needs and share their modifications with the community. W
 
 - **Website:** The official *PhysioLabXR* website serves as a central hub for its information and updates. It can be accessed at [https://www.physiolabxr.org](https://www.physiolabxr.org).
 
-- **Documentation:** The documentation includes tutorials for its features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html).
+- **Documentation:** The documentation includes tutorials for its features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html). For testing and demonstration purposes, the documentation links to (otherwise unpublished) example recordings performed on co-authors of this manuscript.
 
 - **GitHub Repository:** Users can access the repository at [https://github.com/PhysioLabXR/PhysioLabXR](https://github.com/PhysioLabXR/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
 
