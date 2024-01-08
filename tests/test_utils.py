@@ -29,13 +29,21 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     print(os.getcwd())
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
+    print('!!!complete app = QtWidgets.QApplication(sys.argv)')
     from physiolabxr.startup.startup import load_settings
+    print('!!!from physiolabxr.startup.startup import load_settings')
     load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
+    print('!!!load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)')
     from physiolabxr.ui.MainWindow import MainWindow
+    print('!!!from physiolabxr.ui.MainWindow import MainWindow')
     test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)  # close without asking so we don't pend on human input at the end of each function test fixatire
+    print('!!!test_renalabapp_main_window = MainWindow(app=app, ask_to_close=False)')
     if show_window:
         test_renalabapp_main_window.show()
+    print('!!!if show_window:')
     qtbot.addWidget(test_renalabapp_main_window)
+    print('!!!qtbot.addWidget(test_renalabapp_main_window)')
+
 
     return app, test_renalabapp_main_window
 
