@@ -2,7 +2,7 @@ print("!!! importing os.path")
 import os.path
 
 print("!!! importing pyqtgraph")
-import pyqtgraph
+#import pyqtgraph
 
 print("!!! from PyQt6 import QtCore")
 from PyQt6.QtCore import Qt
@@ -62,7 +62,7 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     # instantiate the GlabalSignals singleton object
     GlobalSignals()
     print("!!!GlobalSignals()")
-    pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=False)
+    #pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=False)
     print("!!!pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)")
 
 def load_ui_shared():
