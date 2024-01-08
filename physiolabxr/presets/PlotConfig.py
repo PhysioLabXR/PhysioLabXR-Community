@@ -1,8 +1,14 @@
 from dataclasses import dataclass, asdict
 from enum import Enum
 
+
+print("!!! from physiolabxr.presets.Cmap import Cmap")
 from physiolabxr.presets.Cmap import Cmap
+
+print("!!! from physiolabxr.presets.preset_class_helpers import SubPreset")
 from physiolabxr.presets.preset_class_helpers import SubPreset
+
+print("!!! from physiolabxr.utils.ConfigPresetUtils import reload_enums")
 from physiolabxr.utils.ConfigPresetUtils import reload_enums
 
 
