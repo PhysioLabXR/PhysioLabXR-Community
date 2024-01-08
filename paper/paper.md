@@ -1,5 +1,5 @@
 ---
-title: 'PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments"'
+title: 'PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments'
 tags:
   - Python
   - neuroscience
@@ -25,6 +25,7 @@ authors:
   - name: June Pyo Suh
     affiliation: 1
   - name: Steven Feiner
+    orcid: 0000-0001-9978-7090 
     affiliation: 1
   - name: Paul Sajda
     orcid: 0000-0002-9738-1342
@@ -44,15 +45,15 @@ signal processing modules, support for recording and replaying experiments, and 
 
 
 
-*PhysioLabXR* is a Python-based open-source software platform for developing experiments for 
+*PhysioLabXR* is a Python-based open-source software platform for developing experiments for
 neuroscience and human–computer interaction (HCI)
 that involve real-time and multi-modal
-physiological data processing and interactive interfaces. *PhysioLabXR* provides native support for data sources such as electrophysiological sensors (e.g., EEG, EMG, and EOG), fNIRS, eye trackers, cameras, microphones, and screen capture, and implements the popular data transfer protocols Lab Streaming Layer (LSL) [@kothe2014labstreaminglayer] and ZeroMQ (ZMQ) [@zeromq]. It features multi-stream visualization methods, real-time digital signal 
-processing (DSP) modules, support for recording and replay experiments, and a Python-based scripting interface 
-for creating custom pipelines. 
+physiological data processing and interactive interfaces. *PhysioLabXR* provides native support for data sources such as electrophysiological sensors (e.g., EEG, EMG, and EOG), fNIRS, eye trackers, cameras, microphones, and screen capture, and implements the popular data transfer protocols Lab Streaming Layer [LSL\; @kothe2014labstreaminglayer] and ZeroMQ [ZMQ\; @zeromq]. It features multi-stream visualization methods, real-time digital signal
+processing (DSP) modules, support for recording and replay experiments, and a Python-based scripting interface
+for creating custom pipelines.
 
 *PhysioLabXR* has an architecture optimized through concurrency and parallelism to ensure efficient performance. We provide a set of detailed tutorials covering all features and example applications, such as a P300 speller with a Unity frontend [@Unity] and a mental arithmetic experiment interfacing with PsychoPy [@peirce2007psychopy]. An accompanying set of benchmarks demonstrates the ability of *PhysioLabXR* to handle high-throughput and
-multi-stream data reliably and efficiently. Published use cases show its versatility for VR and screen-based experiments [@lapborisuth2023pupil] [@koorathota2023multimodal] and sensor fusion studies  [@wei2022indexpen] [^1].
+multi-stream data reliably and efficiently. Published use cases show its versatility for VR and screen-based experiments [@lapborisuth2023pupil; @koorathota2023multimodal] and sensor fusion studies  [@wei2022indexpen] [^1].
 <!--
 The software reduces research cycle overhead and provides researchers with complete flexibility to build 
 customized systems. It represents an extensible framework to tackle the complexity of modern experiments at the intersection 
@@ -69,16 +70,16 @@ Recent years have seen a growing interest in multi-modal experiments, often invo
 Many emerging paradigms have found new roots in extended reality (XR) environments, including virtual reality (VR) and augmented reality (AR).
 Such experiments are increasingly fusing multiple modalities and combining different physiological measurements. For example, one sensor can generate events to extract
 meaningful data intervals from other sensors, such as fixation-related potential (FRP) studies in which EEG epochs are locked to visual fixations from eye trackers [@nikolaev2016combining]. Multiple physiological signals can also be combined to enhance their predictive
-power for use in applications ranging from emotion recognition [@koelstra2011deap] [@he2020advances] to movement actuation
+power for use in applications ranging from emotion recognition [@koelstra2011deap; @he2020advances] to movement actuation
 via sensorimotor rhythms [@sollfrank2016effect]. Further, multi-modal paradigms can facilitate the exploration of how different physiological systems interact; for example,
-pupil dilation can be used as a proxy for the locus coeruleus activity as measured via functional magnetic resonance imaging (fMRI) [@murphy2014pupil].
+pupil dilation can be used as a proxy for the locus coeruleus activity as measured via functional magnetic resonance imaging [fMRI\; @murphy2014pupil].
 
 <!--
 Many analysis methods and computational modeling frameworks have been proposed specifically for multi-modal data, including the
 analytical approach of FRP deconvolution [@dimigen2021regression] and the data-driven multi-modal deep learning (DL) models
-[@wang2022husformer] [@nie20163d]. 
+[@wang2022husformer;@nie20163d].
 More recent efforts have focused on designing real-time interactive systems (e.g., BCIs)
-using multi-modal data [@ahn2017multi], and the required supporting software [@kothe2014labstreaminglayer] [@razavi2022opensync]. 
+using multi-modal data [@ahn2017multi], and the required supporting software [@kothe2014labstreaminglayer;@razavi2022opensync].
 Much of this supporting software is networking protocols focusing
 on timestamp synchronization across different modalities. We aim to provide researchers with an open-source, community-driven software tool to address the increasing needs in multi-modal experiments. 
 -->
@@ -86,24 +87,23 @@ on timestamp synchronization across different modalities. We aim to provide rese
 Despite the prevalence of these experiments, software tools for real-time physiological data handling are surprisingly few and far between. 
 They can be categorized into two groups: device-specific tools and device-independent tools.
 Device-specific tools, which are typically proprietary, offer data visualization 
-and analysis [@nirx] [@tobii] [@luhrs2017turbo]  for the hardware to which they are tied. However, they often lack support for multi-modal experiments. 
-To address this, researchers have created custom data pipelines aided by third-party data transfer protocols 
-such as LSL and ZMQ [@kothe2014labstreaminglayer] [@wang2023scoping] [@michalareas2022scalable] [@macinnes2020pyneal] 
-[@baltruvsaitis2016openface]. This approach is typically time-consuming and requires substantial effort to adapt to new experiments. In addition, the data transfer middleware typically does not allow researchers to visually inspect data streams in 
-real-time. This can be a crucial feature for many experiments, particularly those involving devices prone to failure and artifacts during operation, such as in EEG and fNIRS. Real-time visualization allows experimenters to react 
+and analysis [@nirx;@tobii; @luhrs2017turbo]  for the hardware to which they are tied. However, they often lack support for multi-modal experiments.
+To address this, researchers have created custom data pipelines aided by third-party data transfer protocols
+such as LSL and ZMQ [@kothe2014labstreaminglayer; @wang2023scoping;@michalareas2022scalable;@macinnes2020pyneal; @baltruvsaitis2016openface]. This approach is typically time-consuming and requires substantial effort to adapt to new experiments. In addition, the data transfer middleware typically does not allow researchers to visually inspect data streams in
+real-time. This can be a crucial feature for many experiments, particularly those involving devices prone to failure and artifacts during operation, such as in EEG and fNIRS. Real-time visualization allows experimenters to react
 promptly to sensor failures and prevents wasting valuable participant time.
 
 Device-independent tools, including popular platforms, such as OpenVibe [@renard2010openvibe], 
-MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@iMotion], support real-time visualization. 
-However, they are primarily written in statically compiled languages, limiting customization, and some are closed-source 
-commercial products, such as NeuroPype and iMotion. Python's rise in popularity as a programming 
-language [@srinath2017python] has made it an obvious choice for developing new device-independent tools that allow 
+MNE Scan [@esch2018mne], NeuroPype [@neuropype], and iMotion [@iMotion], support real-time visualization.
+However, they are primarily written in statically compiled languages, limiting customization, and some are closed-source
+commercial products, such as NeuroPype and iMotion. Python's rise in popularity as a programming
+language [@srinath2017python] has made it an obvious choice for developing new device-independent tools that allow
 customization through rapid prototyping. However, using Python as a backbone language for high-precision and high-throughput data
-necessitates significant optimization to match the performance level of a compiled language. Octopus-sensing [@saffaryazdi2022octopus] 
-is an example of a Python-based platform that supports the acquisition and visualization of multi-modal data. 
+necessitates significant optimization to match the performance level of a compiled language. Octopus-sensing [@saffaryazdi2022octopus]
+is an example of a Python-based platform that supports the acquisition and visualization of multi-modal data.
 
-Nevertheless, there remains a gap for an all-in-one open-source platform that supports multi-modal data visualization, and rapid 
-prototyping for developing experiment pipelines in complex XR environments, while addressing the optimization challenges 
+Nevertheless, there remains a gap for an all-in-one open-source platform that supports multi-modal data visualization, and rapid
+prototyping for developing experiment pipelines in complex XR environments, while addressing the optimization challenges
 of basing on an interpreted language such as Python.
 
 # Benefits
@@ -184,7 +184,7 @@ the fixation and makes a prediction. A loop call is completed by writing the pre
 The scripting interface allows researchers to build diverse experiment paradigms. 
 It enables the execution of user-defined Python scripts, empowering users to create and deploy custom data processing 
 pipelines. With Python's versatility and open-source libraries encouraging exploration of novel applications such as closed-loop 
-neurofeedback, users can train and run ML models in real-time, using PyTorch [@paszke2019pytorch], scikit-learn [pedregosa2011scikit], and other libraries.
+neurofeedback, users can train and run ML models in real-time, using PyTorch [@paszke2019pytorch], scikit-learn [@pedregosa2011scikit], and other libraries.
 Users can communicate results from scripts to
 external applications using built-in networking APIs, including LSL and ZMQ. The script widget 
 offers a straightforward way to add and run scripts, adjust attributes that influence the data processing pipeline's behavior, 
@@ -192,8 +192,8 @@ and monitor performance.
 These attributes include defining the streams to use as inputs,
 setting input buffer duration, controlling run frequency, creating outputs to visualize pipeline results or communicate with other programs,
 and utilizing exposed parameters 
-that allow variable adjustments during runtime. A script in *PhysioLabXR* consists of three abstract methods—$init$, $loop$, and 
-$cleanup$—which users can override to specify behavior. Built-in scripts support commonly
+that allow variable adjustments during runtime. A script in *PhysioLabXR* consists of three abstract methods—`init`, `loop`, and
+`cleanup`—which users can override to specify behavior. Built-in scripts support commonly
 used algorithms such as fixation detection and band-power computation and connection to popular devices such as Tobii eye trackers [@tobii] and
 OpenBCI EEG caps [@OpenBCI].
 
@@ -204,7 +204,7 @@ For example, filters can first be applied to EEG data, and the user can visualiz
 ## Software Design Principles
 
 Creating an efficient runtime experience is a significant challenge for large-scale Python software when dealing with high-throughput 
-data, complex graphics, and frequent i/o operation from serialization, given the interpreted nature of the language.
+data, complex graphics, and frequent I/O operation from serialization, given the interpreted nature of the language.
 To make this possible, *PhysioLabXR* is optimized through a combination of concurrency, parallelism, and a modular software architecture.
 
 ![Sequence diagram showing the information exchange between *PhysioLabXR*'s threads and processes. The main process contains 
@@ -226,7 +226,7 @@ It is designed to be a community-driven project, with our core team of developer
 At the same time, we welcome contributions from researchers and practitioners in related fields to build on this scaffolding and expand its capabilities.
 While the stream interface supports data sent through LSL or ZMQ, we are currently developing native plugins for sensors that lack network support. 
 These plugins will enable the use of certain brands of fMRI, TMS (transcranial magnetic stimulation), and invasive neuroimaging 
-devices (e.g., Neuropixels [@neuropixels]).
+devices [e.g., Neuropixels, @neuropixels].
 We are also adding real-time analysis and processing modules for more modalities, such as real-time source localization 
 for EEG and speech recognition for audio. Moreover, the current scripting interface is designed to provide maximum flexibility, thus 
 requiring users to write Python code for their pipelines. 
@@ -258,7 +258,7 @@ to meet their specific needs and share their modifications with the community. W
 
 - **Website:** The official *PhysioLabXR* website serves as a central hub for its information and updates. It can be accessed at [https://www.physiolabxr.org](https://www.physiolabxr.org).
 
-- **Documentation:** The documentation includes tutorials for its features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html).
+- **Documentation:** The documentation includes tutorials for its features, tutorials, example use cases, and developer guides. It is hosted at [https://physiolabxrdocs.readthedocs.io/en/latest/index.html](https://physiolabxrdocs.readthedocs.io/en/latest/index.html). For testing and demonstration purposes, the documentation links to (otherwise unpublished) example recordings performed on co-authors of this manuscript.
 
 - **GitHub Repository:** Users can access the repository at [https://github.com/PhysioLabXR/PhysioLabXR](https://github.com/PhysioLabXR/PhysioLabXR). Users can submit bug reports and feature requests through the GitHub issue tracker.
 
