@@ -51,9 +51,13 @@ def context_bot(app_main_window, qtbot):
 
 def test_button_click(qtbot,app_main_window):
     print(QtCore.PYQT_VERSION_STR)
+    print(QtCore.PYQT_VERSION_STR)
     print("here")
-
-
+    app_main_window.ui.tabWidget.setCurrentWidget(
+        app_main_window.ui.tabWidget.findChild(QWidget, 'visualization_tab'))  # switch to the visualization widget
+    qtbot.mouseClick(app_main_window.addStreamWidget.stream_name_combo_box,
+                     QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+    print(QtCore.PYQT_VERSION_STR)
 
 def test_add_inactive_unknown_stream_in_added_stream_widgets(app_main_window, qtbot) -> None:
     '''
