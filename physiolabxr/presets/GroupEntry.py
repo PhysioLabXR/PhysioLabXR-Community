@@ -1,14 +1,29 @@
+print("!!! from dataclasses import dataclass")
 from dataclasses import dataclass
 from enum import Enum
+
+print("!!! from typing import List")
 from typing import List
 
 from physiolabxr.configs import config
+
+print("!!! from physiolabxr.configs.configs import AppConfigs")
 from physiolabxr.configs.configs import AppConfigs
+
+print("!!! from physiolabxr.presets.PlotConfig import PlotConfigs")
 from physiolabxr.presets.PlotConfig import PlotConfigs
+
+print("!!! from physiolabxr.presets.preset_class_helpers import SubPreset")
 from physiolabxr.presets.preset_class_helpers import SubPreset
+
+print("!!! from physiolabxr.utils.ConfigPresetUtils import reload_enums, target_to_enum")
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, target_to_enum
+
+print("!!! from dataclasses import field")
 from dataclasses import field
 
+
+print("!!! from physiolabxr.utils.dsp_utils.dsp_modules import *")
 from physiolabxr.utils.dsp_utils.dsp_modules import *
 
 
@@ -24,6 +39,8 @@ class GroupEntry(metaclass=SubPreset):
     Group entry defines a group of channels to be shown in the same plot.
     Group entry is contained in the group_info dictionary of StreamPreset.
     """
+
+    print("!!! enter groupentry")
     group_name: str
     is_channels_shown: List[bool] = None
     is_group_shown: bool = True
