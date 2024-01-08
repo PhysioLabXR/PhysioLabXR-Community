@@ -14,25 +14,36 @@ from physiolabxr.ui.dialogs import dialog_popup
 
 default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
+    print("!!!SplashLoadingTextNotifier().set_loading_text('Loading presets...')")
     SplashLoadingTextNotifier().set_loading_text('Loading presets...')
     print("Settings are stored at {0}".format(config.settings.fileName()))
+    print("!!!SplashLoadingTextNotifier().set_loading_text('Loading settings...')")
     if revert_to_default:
         config.settings.setValue('theme', config_ui.default_theme)
+        print("!!!config.settings.setValue('theme', config_ui.default_theme)")
         load_default_recording_file_location()
+        print("!!!load_default_recording_file_location()")
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
+            print("!!!config.settings.setValue('theme', config_ui.default_theme)"
         if not config.settings.contains('recording_file_location') or config.settings.value('recording_file_location') is None:
             load_default_recording_file_location()
+            print("!!!load_default_recording_file_location()")
     config.settings.sync()
+    print("!!!config.settings.sync()")
     # load the presets, reload from local directory the default LSL, device and experiment presets
     preset_root = AppConfigs()._preset_path
+    print("!!!preset_root = AppConfigs()._preset_path")
 
     Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
+    print("!!!Presets(_preset_root=preset_root, _reset=reload_presets)")
 
     # instantiate the GlabalSignals singleton object
     GlobalSignals()
+    print("!!!GlobalSignals()")
     pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)
+    print("!!!pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)")
 
 def load_ui_shared():
     global stream_unavailable_pixmap

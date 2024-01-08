@@ -30,9 +30,9 @@ def app_fixture(qtbot, show_window=True, revert_to_default=True, reload_presets=
     # ignore the splash screen and tree icon
     app = QtWidgets.QApplication(sys.argv)
     print('!!!complete app = QtWidgets.QApplication(sys.argv)')
-    #from physiolabxr.startup.startup import load_settings
+    from physiolabxr.startup.startup import load_settings
     print('!!!from physiolabxr.startup.startup import load_settings')
-    #load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
+    load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)  # load the default settings
     print('!!!load_settings(revert_to_default=revert_to_default, reload_presets=reload_presets)')
     from physiolabxr.ui.MainWindow import MainWindow
     print('!!!from physiolabxr.ui.MainWindow import MainWindow')
