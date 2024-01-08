@@ -83,7 +83,12 @@ def get_lsl_binary():
     #     print(f"LSL binary is not needed for MacOS")
 
     import site
-    site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x][0]
+    site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x]
+
+    if len(site_packages_path) == 0:
+        warnings.warn(f"Cannot find site-packages path. PyLSL will not be available.")
+        return
+    site_packages_path = site_packages_path[0]
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     pylsl_lib_path = None
     if platform.system() == "Darwin":
