@@ -34,7 +34,7 @@ TestBlockImages = ["RLS_023_OD_TC",
 
 
 class EventMarkerLSLStreamInfo:
-    StreamName = "AOIAugmentationEventMarkerLSLOutlet"
+    StreamName = "AOIAugmentationEventMarkerLSL"
     StreamType = "EventMarker"
     StreamID = "1"
     ChannelNum = 4
@@ -42,11 +42,12 @@ class EventMarkerLSLStreamInfo:
     BlockChannelIndex = 0
     ExperimentStateChannelIndex = 1
     ImageIndexChannelIndex = 2
-    UserInputsChannelIndex = 3
+    UpdateVisualCueMarker = 3
+    ToggleVisualCueVisibilityMarker = 4
 
 
 class GazeDataLSLStreamInfo:
-    StreamName = "TobiiProFusionUnityLSLOutlet"
+    StreamName = "TobiiProFusionUnityLSL"
     StreamType = "GazeData"
     StreamID = "2"
     ChannelNum = 51

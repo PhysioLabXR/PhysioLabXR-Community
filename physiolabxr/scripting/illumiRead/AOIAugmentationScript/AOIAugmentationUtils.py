@@ -31,7 +31,7 @@ class ImageInfo():
 
         self.image_on_screen_shape = None
 
-    def get_sub_images_rgba(self, normalized = False, alpha_threshold = 0.75, plot_results = False, colormap = 'plasma'):
+    def get_sub_images_rgba(self, normalized = False, alpha_threshold = 0.9, plot_results = False, colormap = 'plasma'):
 
         sub_images_rgba = []
 
@@ -54,7 +54,6 @@ class ImageInfo():
 
         return sub_images_rgba
 
-    def get_sub_images_rgba_on_screen
 
 
 
@@ -143,6 +142,26 @@ def contours_to_lvt(contours, hierarchy, max_length=1024):
         contours_lvt[0] = 1
 
     return contours_lvt, overflow_flag
+
+
+def images_to_zmq_multipart(rgba_images, image_positions):
+
+    item_list = []
+    item_list.append(np.array(len(rgba_images)))
+    for rgba_image, image_position in zip(rgba_images, image_positions):
+        # convert from rgba to bgra
+        image = (rgba_image*255).astype(np.uint8)
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+
+        # convert image to png format
+        _, image_encoded = cv2.imencode('.png', image)
+        image_encoded = image_encoded.tobytes()
+        item_list.append(np.array(image_position))
+        item_list.append(image_encoded)
+
+
+    return item_list
+
 
 
 def get_image_on_screen_shape(original_image_width, original_image_height, image_width, image_height,
@@ -330,79 +349,79 @@ class GazeAttentionMatrix():
     def __init__(self, device):
 
         self.device = device
-        self.sigma = 10
+        self.sigma = 60
 
-        self.image_shape = None
+        self.maximum_image_shape = None
         self._filter_size = None
         self._filter_map_center_location = None
         self.filter_map = None
 
-        self._attention_patch_average_kernel = None
-        self.attention_patch_shape = None
-        self.attention_grid_shape = None
-        self.gaze_attention_grid_map_buffer = None
+        # self._attention_patch_average_kernel = None
+        # self.attention_patch_shape = None
+        # self.attention_grid_shape = None
+        self.gaze_attention_pixel_map_buffer = None
 
-    def set_image_shape(self, image_shape):
-        self.image_shape = image_shape
+    def set_maximum_image_shape(self, image_shape):
+        self.maximum_image_shape = image_shape
 
-        self._filter_size = self.image_shape * 2 - 1
-        self._filter_map_center_location = self.image_shape - 1
+        self._filter_size = self.maximum_image_shape * 2 - 1
+        self._filter_map_center_location = self.maximum_image_shape - 1
 
         self._filter_map = torch.tensor(
             gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=self.sigma,
                             normalized=True), device=self.device)
 
-    def set_attention_patch_shape(self, attention_patch_shape):
-        self.attention_patch_shape = attention_patch_shape
-        self._attention_patch_average_kernel = torch.tensor(
-            np.ones(shape=self.attention_patch_shape) /
-            (self.attention_patch_shape[0] * self.attention_patch_shape[1]), device=self.device)
+    # def set_attention_patch_shape(self, attention_patch_shape):
+    #     self.attention_patch_shape = attention_patch_shape
+    #     self._attention_patch_average_kernel = torch.tensor(
+    #         np.ones(shape=self.attention_patch_shape) /
+    #         (self.attention_patch_shape[0] * self.attention_patch_shape[1]), device=self.device)
+    #
+    #     self.attention_grid_shape = np.array([int(self.image_shape[0] / self.attention_patch_shape[0]),
+    #                                           int(self.image_shape[1] / self.attention_patch_shape[1])])
+    #     self.gaze_attention_grid_map_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape),
+    #                                                        device=self.device)
 
-        self.attention_grid_shape = np.array([int(self.image_shape[0] / self.attention_patch_shape[0]),
-                                              int(self.image_shape[1] / self.attention_patch_shape[1])])
-        self.gaze_attention_grid_map_buffer = torch.tensor(np.zeros(shape=self.attention_grid_shape),
-                                                           device=self.device)
-
-    def get_gaze_on_image_attention_map(self, attention_center_location):
+    def get_gaze_on_image_attention_map(self, attention_center_location, image_shape):
 
         x_offset_min = self._filter_map_center_location[0] - attention_center_location[0]
-        x_offset_max = x_offset_min + self.image_shape[0]
+        x_offset_max = x_offset_min + image_shape[0]
 
         y_offset_min = self._filter_map_center_location[1] - attention_center_location[1]
-        y_offset_max = y_offset_min + self.image_shape[1]
+        y_offset_max = y_offset_min + image_shape[1]
 
         gaze_on_image_attention_map = self._filter_map[x_offset_min: x_offset_max,
                                       y_offset_min:y_offset_max].clone()  # this is a copy!!!
 
         return gaze_on_image_attention_map
 
-    def get_patch_attention_map(self, gaze_on_image_attention_map):
-        gaze_on_grid_attention_map = F.conv2d(
-            input=gaze_on_image_attention_map.view(1, 1, gaze_on_image_attention_map.shape[0],
-                                                   gaze_on_image_attention_map.shape[1]),
-            weight=self._attention_patch_average_kernel.view(1, 1, self._attention_patch_average_kernel.shape[0],
-                                                             self._attention_patch_average_kernel.shape[1]),
-            stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1])).view(
-            (self.attention_grid_shape[0], self.attention_grid_shape[1]))
-
-        return gaze_on_grid_attention_map
-
-    def gaze_attention_grid_map_clutter_removal(self, gaze_on_grid_attention_map, attention_clutter_ratio=0.1):
-        self.gaze_attention_grid_map_buffer = attention_clutter_ratio * self.gaze_attention_grid_map_buffer + (
+    # def get_patch_attention_map(self, gaze_on_image_attention_map):
+    #     gaze_on_grid_attention_map = F.conv2d(
+    #         input=gaze_on_image_attention_map.view(1, 1, gaze_on_image_attention_map.shape[0],
+    #                                                gaze_on_image_attention_map.shape[1]),
+    #         weight=self._attention_patch_average_kernel.view(1, 1, self._attention_patch_average_kernel.shape[0],
+    #                                                          self._attention_patch_average_kernel.shape[1]),
+    #         stride=(self._attention_patch_average_kernel.shape[0], self._attention_patch_average_kernel.shape[1])).view(
+    #         (self.attention_grid_shape[0], self.attention_grid_shape[1]))
+    #
+    #     return gaze_on_grid_attention_map
+    #
+    def gaze_attention_pixel_map_clutter_removal(self, gaze_on_grid_attention_map, attention_clutter_ratio=0.1):
+        self.gaze_attention_pixel_map_buffer = attention_clutter_ratio * self.gaze_attention_pixel_map_buffer + (
                 1 - attention_clutter_ratio) * gaze_on_grid_attention_map
-
-    def get_gaze_attention_grid_map(self, flatten=True):
-        gaze_attention_grid_map = self.gaze_attention_grid_map_buffer.cpu().numpy()
-        if flatten:
-            return gaze_attention_grid_map.flatten()
-        else:
-            return gaze_attention_grid_map
-
-        # def accumulate_gaze_attention_grid(self, attention_center_location):
-        #     gaze_on_image_attention_map = self.get_gaze_on_image_attention_map(attention_center_location)
-        #     gaze_on_grid_attention_map = self.get_patch_attention_map(gaze_on_image_attention_map)
-
-        pass
+    #
+    # def get_gaze_attention_grid_map(self, flatten=True):
+    #     gaze_attention_grid_map = self.gaze_attention_grid_map_buffer.cpu().numpy()
+    #     if flatten:
+    #         return gaze_attention_grid_map.flatten()
+    #     else:
+    #         return gaze_attention_grid_map
+    #
+    #     # def accumulate_gaze_attention_grid(self, attention_center_location):
+    #     #     gaze_on_image_attention_map = self.get_gaze_on_image_attention_map(attention_center_location)
+    #     #     gaze_on_grid_attention_map = self.get_patch_attention_map(gaze_on_image_attention_map)
+    #
+    #     pass
 
 
 class ViTAttentionMatrix():

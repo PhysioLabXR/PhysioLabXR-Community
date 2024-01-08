@@ -26,7 +26,7 @@ LSL."""
 
 def main(argv):
     srate = 250
-    name = 'TobiiProFusionUnityLSLOutlet'
+    name = 'TobiiProFusionUnityLSL'
     print('Stream name is ' + name)
     type = 'EEG'
     n_channels = gaze_data.shape[0]

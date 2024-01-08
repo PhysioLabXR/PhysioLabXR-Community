@@ -1,12 +1,14 @@
 import time
 from collections import deque
 import cv2
+import numpy
 import numpy as np
 import time
 import os
 import pickle
 import sys
 import matplotlib.pyplot as plt
+import pylsl
 import torch
 from eidl.utils.model_utils import get_subimage_model
 from pylsl import StreamInfo, StreamOutlet, cf_float32
@@ -21,7 +23,8 @@ from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo
 import torch
-
+import zmq
+from PIL import Image
 
 class AOIAugmentationScript(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -60,7 +63,7 @@ class AOIAugmentationScript(RenaScript):
         self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
 
         # prevent null pointer in if statement been compiled before run
-        # self.gaze_attention_matrix.set_image_shape(np.array([512, 1024]))
+        self.gaze_attention_matrix.set_maximum_image_shape(np.array([3000, 6000]))
         # self.gaze_attention_matrix.set_attention_patch_shape(np.array([16, 32]))
         # test = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
 
@@ -106,8 +109,14 @@ class AOIAugmentationScript(RenaScript):
             aoi_augmentation_attention_heatmap_lsl_outlet_info)
 
         # ################################################################################################################
+        # init heatmap zmq
+        self.aoi_augmentation_attention_heatmap_zmq_context = zmq.Context()
+        self.aoi_augmentation_attention_heatmap_zmq_socket = self.aoi_augmentation_attention_heatmap_zmq_context.socket(zmq.PUB)
+        self.aoi_augmentation_attention_heatmap_zmq_socket.bind("tcp://*:5557")
 
 
+
+        # ################################################################################################################
         # self.cur_attention_human = None
         # Start will be called once when the run button is hit.
 
@@ -144,7 +153,8 @@ class AOIAugmentationScript(RenaScript):
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             image_index_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
-            user_inputs_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UserInputsChannelIndex]
+            update_visual_cue_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UpdateVisualCueMarker]
+            toggle_visual_cue_visibility_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ToggleVisualCueVisibilityMarker]
 
             # ignore the block_marker <0 and state_marker <0 those means exit the current state
             if block_marker and block_marker > 0:  # evoke block change
@@ -188,6 +198,11 @@ class AOIAugmentationScript(RenaScript):
                         self.current_image_info.image_on_screen_shape = image_on_screen_shape
 
 
+                        # set image gaze attention matrix buffer
+                        self.gaze_attention_matrix.gaze_attention_pixel_map_buffer = torch.tensor(np.zeros(shape=self.current_image_info.original_image.shape[:2]),
+                                                                                                  device=self.device)
+
+
 
 
 
@@ -226,7 +241,7 @@ class AOIAugmentationScript(RenaScript):
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
-            if user_inputs_marker == AOIAugmentationConfig.UserInputTypes.AOIAugmentationInteractionStateUpdateCueKeyPressed.value:
+            if update_visual_cue_marker:
                 # current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
                 # attention_matrix = self.current_image_info.raw_attention_matrix
                 self.update_cue_now = True
@@ -244,7 +259,19 @@ class AOIAugmentationScript(RenaScript):
 
         ######################################################### generate heatmap lvt for subimages #########################################################
         # sub_image_attention_heatmap_lvt = self.subimage_handler()
-        sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=True, plot_results=True)
+        sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=True, plot_results=False)
+
+        heatmap_multipart = images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
+        heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'), np.array(pylsl.local_clock())] + heatmap_multipart
+        self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
+
+
+
+
+
+
+
+
 
 
         print("Done generating sub images")
@@ -283,6 +310,16 @@ class AOIAugmentationScript(RenaScript):
         pass
 
     def interactive_aoi_augmentation_state_init_callback(self):
+
+        sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=True, plot_results=False)
+
+        heatmap_multipart = images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
+        heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'), np.array(pylsl.local_clock())] + heatmap_multipart
+        self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
+
+
+
+
         # # register the image on screen shape
         # start = time.time()
         #
@@ -378,34 +415,54 @@ class AOIAugmentationScript(RenaScript):
             # print(gaze_data.gaze_type)
 
             if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
-                pass
 
-                # gaze_point_on_screen_image_index = tobii_gaze_on_display_area_to_image_matrix_index(
-                #     image_center_x=AOIAugmentationConfig.image_center_x,
-                #     image_center_y=AOIAugmentationConfig.image_center_y,
-                #
-                #     image_width=self.current_image_info.image_on_screen_shape[1],
-                #     image_height=self.current_image_info.image_on_screen_shape[0],
-                #
-                #     screen_width=AOIAugmentationConfig.screen_width,
-                #     screen_height=AOIAugmentationConfig.screen_height,
-                #
-                #     gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
-                #     gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
-                # )
+
+                gaze_point_on_screen_image_index = tobii_gaze_on_display_area_to_image_matrix_index(
+                    image_center_x=AOIAugmentationConfig.image_center_x,
+                    image_center_y=AOIAugmentationConfig.image_center_y,
+
+                    image_width=self.current_image_info.image_on_screen_shape[1],
+                    image_height=self.current_image_info.image_on_screen_shape[0],
+
+                    screen_width=AOIAugmentationConfig.screen_width,
+                    screen_height=AOIAugmentationConfig.screen_height,
+
+                    gaze_on_display_area_x=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[0],
+                    gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
+                )
                 #
                 #
                 # # check if on the image
-                # gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
-                #     matrix_shape=self.current_image_info.image_on_screen_shape,
-                #     coordinate=gaze_point_on_screen_image_index)
+                gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
+                    matrix_shape=self.current_image_info.image_on_screen_shape,
+                    coordinate=gaze_point_on_screen_image_index)
                 #
-                # if gaze_point_is_in_screen_image_boundary:
-                #     gaze_point_on_model_coordinate = coordinate_transformation(
-                #         original_image_shape=self.current_image_info.image_on_screen_shape,
-                #         target_image_shape = self.current_image_info.model_image_shape,
-                #         coordinate_on_original_image=gaze_point_on_screen_image_index
-                #     )
+                if gaze_point_is_in_screen_image_boundary:
+
+                    gaze_point_on_raw_image_coordinate = coordinate_transformation(
+                        original_image_shape=self.current_image_info.image_on_screen_shape,
+                        target_image_shape = self.current_image_info.original_image.shape[:2],
+                        coordinate_on_original_image=gaze_point_on_screen_image_index
+                    )
+
+                    gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(
+                        gaze_point_on_raw_image_coordinate, self.current_image_info.original_image.shape) # the gaze attention map on the original image
+
+                    self.gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=0.995)
+
+
+
+
+
+
+
+
+
+                    # gaze_point_on_model_coordinate = coordinate_transformation(
+                    #     original_image_shape=self.current_image_info.image_on_screen_shape,
+                    #     target_image_shape = self.current_image_info.model_image_shape,
+                    #     coordinate_on_original_image=gaze_point_on_screen_image_index
+                    # )
                 #
                 #     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
                 #     gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
