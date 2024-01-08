@@ -26,7 +26,7 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     else:
         if not config.settings.contains('theme') or config.settings.value('theme') is None:
             config.settings.setValue('theme', config_ui.default_theme)
-            print("!!!config.settings.setValue('theme', config_ui.default_theme)"
+            print("!!!config.settings.setValue('theme', config_ui.default_theme)")
         if not config.settings.contains('recording_file_location') or config.settings.value('recording_file_location') is None:
             load_default_recording_file_location()
             print("!!!load_default_recording_file_location()")
