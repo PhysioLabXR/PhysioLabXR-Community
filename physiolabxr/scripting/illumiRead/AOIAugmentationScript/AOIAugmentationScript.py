@@ -39,7 +39,8 @@ class AOIAugmentationScript(RenaScript):
         self.currentBlock: AOIAugmentationConfig.ExperimentBlock = \
             AOIAugmentationConfig.ExperimentBlock.StartBlock
 
-        self.device = torch.device('cpu')
+
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         self.current_image_name = None
 
@@ -407,6 +408,9 @@ class AOIAugmentationScript(RenaScript):
     def interactive_aoi_augmentation_state_callback(self):
 
         for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
+
+            time_start = time.time()
+
             gaze_data = GazeData()
             gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
 
@@ -450,6 +454,9 @@ class AOIAugmentationScript(RenaScript):
 
                     self.gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=0.995)
 
+            time_end = time.time()
+
+            # print("time cost: ", time_end - time_start)
 
 
 
@@ -483,6 +490,29 @@ class AOIAugmentationScript(RenaScript):
 
         if self.update_cue_now:
             print("update cue now")
+            image_attention_map = self.gaze_attention_matrix.gaze_attention_pixel_map_buffer.detach().cpu().numpy()
+            plt.imshow(image_attention_map)
+            plt.colorbar()
+            plt.show()
+            image_attention_map_normalized = image_attention_map / np.max(image_attention_map)
+            perceptual_interaction_dict = self.subimage_handler.compute_perceptual_attention(self.current_image_name,
+                                                                                             source_attention= image_attention_map_normalized,
+                                                                                             is_plot_results=False,
+                                                                                             discard_ratio=0.0)
+
+
+
+
+
+
+
+
+            # self.subimage_handler.image_data_dict.keys():
+            # current_image_info_dict = self.subimage_handler.image_data_dict[self.current_image_name]
+            # current_image_attention =
+            #
+            # self.subimage_handler.compute_perceptual_attention(
+            #     self.current_image_name, is_plot_results=False, discard_ratio=0.0)
 
             # current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
             # attention_matrix = self.current_image_info.raw_attention_matrix
@@ -512,7 +542,7 @@ class AOIAugmentationScript(RenaScript):
             # # TODO: send the contour information to Unity
             # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
             #
-            # self.update_cue_now = False
+            self.update_cue_now = False
 
         pass
 
