@@ -8,21 +8,47 @@ from typing import Dict, Any, List, Union
 
 import numpy as np
 
-print("!!! importing os.path")
+print("!!! from physiolabxr.configs import config")
 from physiolabxr.configs import config
+
+print("!!! from physiolabxr.configs.config import default_group_name")
 from physiolabxr.configs.config import default_group_name
+
+print("!!! from physiolabxr.configs.configs import AppConfigs")
 from physiolabxr.configs.configs import AppConfigs
+
+print("!!! from physiolabxr.presets.GroupEntry import GroupEntry")
 from physiolabxr.presets.GroupEntry import GroupEntry
+
+print("!!! from physiolabxr.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType")
 from physiolabxr.presets.PresetEnums import PresetType, DataType, VideoDeviceChannelOrder, AudioInputDataType
+
+print("!!! from physiolabxr.presets.ScriptPresets import ScriptPreset, ScriptParam")
 from physiolabxr.presets.ScriptPresets import ScriptPreset, ScriptParam
+
+print("!!! from physiolabxr.presets.preset_class_helpers import SubPreset")
 from physiolabxr.presets.preset_class_helpers import SubPreset
+
+print("!!! from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier")
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
+
+print("!!! from physiolabxr.utils.ConfigPresetUtils import reload_enums")
 from physiolabxr.utils.ConfigPresetUtils import reload_enums
+
+print("!!! from physiolabxr.utils.Singleton import Singleton")
 from physiolabxr.utils.Singleton import Singleton
+
+print("!!! from physiolabxr.utils.dsp_utils.dsp_modules import DataProcessor")
 from physiolabxr.utils.dsp_utils.dsp_modules import DataProcessor
+
+print("!!! from physiolabxr.utils.fs_utils import get_file_changes_multiple_dir")
 from physiolabxr.utils.fs_utils import get_file_changes_multiple_dir
+
+print("!!! from physiolabxr.utils.preset_utils import create_default_audio_preset")
 from physiolabxr.presets.load_user_preset import process_plot_group_json_preset, validate_preset_json_preset, \
     create_default_group_info
+
+print("!!! from physiolabxr.utils.video_capture_utils import get_working_camera_ports")
 from physiolabxr.utils.video_capture_utils import get_working_camera_ports
 
 
