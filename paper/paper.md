@@ -25,6 +25,7 @@ authors:
   - name: June Pyo Suh
     affiliation: 1
   - name: Steven Feiner
+    orcid: 0000-0001-9978-7090 
     affiliation: 1
   - name: Paul Sajda
     orcid: 0000-0002-9738-1342
