@@ -40,8 +40,8 @@ jobs:
           pip install pytest
           pip install pytest-qt
           sudo apt install gnome-screenshot
-      - uses: actions/checkout@v2
-      - uses: openrndr/setup-opengl@v1.1
+          sudo apt install libopengl0 -y
+
       - name: Check job values
         run: |
            export QT_SELECT=qt6
