@@ -41,6 +41,7 @@ jobs:
           pip install pytest-qt
           sudo apt install gnome-screenshot
           sudo apt install libopengl0 -y
+          sudo apt install libxcb-cursor0
 
       - name: Check job values
         run: |
