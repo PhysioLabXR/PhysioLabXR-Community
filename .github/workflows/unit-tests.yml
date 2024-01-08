@@ -42,6 +42,7 @@ jobs:
           sudo apt install gnome-screenshot
           sudo apt install libopengl0 -y
           sudo apt install libxcb-cursor0
+          sudo apt-get install freeglut3 freeglut3-dev
 
       - name: Check job values
         run: |
