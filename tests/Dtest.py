@@ -51,6 +51,7 @@ def context_bot(app_main_window, qtbot):
 
 def test_button_click(qtbot,app_main_window):
     print(QtCore.PYQT_VERSION_STR)
+    print("here")
 
 
 
