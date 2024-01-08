@@ -3,7 +3,7 @@ from enum import Enum
 
 
 print("!!! from physiolabxr.presets.Cmap import Cmap")
-from physiolabxr.presets.Cmap import Cmap
+#from physiolabxr.presets.Cmap import Cmap
 
 print("!!! from physiolabxr.presets.preset_class_helpers import SubPreset")
 from physiolabxr.presets.preset_class_helpers import SubPreset
@@ -39,7 +39,7 @@ class ImageConfig(metaclass=SubPreset):
     height: int = 0
     scaling_percentage: float = 100
 
-    cmap: Cmap = Cmap.VIRIDIS
+    #cmap: Cmap = Cmap.VIRIDIS
 
     vmin: float = None
     vmax: float = None
@@ -113,7 +113,7 @@ class SpectrogramConfig(metaclass=SubPreset):
     """
     time_per_segment_second: float = 1/4
     time_overlap_second: float = 1/8
-    cmap: Cmap = Cmap.VIRIDIS
+    #cmap: Cmap = Cmap.VIRIDIS
     percentile_level_min: float = 5
     percentile_level_max: float = 95
 
