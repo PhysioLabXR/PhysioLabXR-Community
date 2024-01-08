@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Union
 
 import numpy as np
 
+print("!!! importing os.path")
 from physiolabxr.configs import config
 from physiolabxr.configs.config import default_group_name
 from physiolabxr.configs.configs import AppConfigs
@@ -417,9 +418,11 @@ class Presets(metaclass=Singleton):
 
     Note: presets must not have multiprocessing.Process in the dataclass attributes. This will cause the program to crash.
     """
+    print("!!! _preset_root: str = None")
     _preset_root: str = None
     _reset: bool = False
 
+    print("!!! _lsl_preset_root: str = 'LSLPresets'")
     _lsl_preset_root: str = 'LSLPresets'
     _zmq_preset_root: str = 'ZMQPresets'
     _device_preset_root: str = 'DevicePresets'
