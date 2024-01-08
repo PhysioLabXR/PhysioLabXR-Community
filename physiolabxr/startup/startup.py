@@ -1,17 +1,37 @@
+print("!!! importing os.path")
 import os.path
 
+print("!!! importing pyqtgraph")
 import pyqtgraph
+
+print("!!! from PyQt6 import QtCore")
 from PyQt6.QtCore import Qt
+
+print("!!! from PyQt6.QtGui import QPixmap")
 from PyQt6.QtGui import QPixmap
+
+print("!!! from PyQt6.QtWidgets import QLabel")
 from PyQt6.QtWidgets import QLabel
 
+print("!!! from physiolabxr.configs.configs import GlobalSignals")
 from physiolabxr.configs.GlobalSignals import GlobalSignals
+
+print("!!! from physiolabxr.configs.configs import AppConfigs")
 from physiolabxr.configs.configs import AppConfigs
+
+print("!!! from from physiolabxr.presets.Presets import Presets")
 from physiolabxr.presets.Presets import Presets
+
+print("!!! from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier")
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
+
+print("!!! from physiolabxr.configs import config_ui, config")
 from physiolabxr.configs import config_ui, config
+
+print("!!! from physiolabxr.ui.dialogs import dialog_popup")
 from physiolabxr.ui.dialogs import dialog_popup
 
+print("!!!SplashLoadingTextNotifier().set_loading_text('Loading presets...')")
 default_settings_dict = {'theme': config_ui.default_theme}
 def load_settings(revert_to_default=True, reload_presets=True, reload_configs=True):
     print("!!!SplashLoadingTextNotifier().set_loading_text('Loading presets...')")
