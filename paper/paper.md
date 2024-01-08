@@ -183,7 +183,7 @@ the fixation and makes a prediction. A loop call is completed by writing the pre
 The scripting interface allows researchers to build diverse experiment paradigms. 
 It enables the execution of user-defined Python scripts, empowering users to create and deploy custom data processing 
 pipelines. With Python's versatility and open-source libraries encouraging exploration of novel applications such as closed-loop 
-neurofeedback, users can train and run ML models in real-time, using PyTorch [@paszke2019pytorch], scikit-learn [pedregosa2011scikit], and other libraries.
+neurofeedback, users can train and run ML models in real-time, using PyTorch [@paszke2019pytorch], scikit-learn [@pedregosa2011scikit], and other libraries.
 Users can communicate results from scripts to
 external applications using built-in networking APIs, including LSL and ZMQ. The script widget 
 offers a straightforward way to add and run scripts, adjust attributes that influence the data processing pipeline's behavior, 
