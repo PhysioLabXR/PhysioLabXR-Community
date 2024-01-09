@@ -500,7 +500,16 @@ class AOIAugmentationScript(RenaScript):
                                                                                              is_plot_results=False,
                                                                                              discard_ratio=0.0)
 
+            self.current_image_info.update_perceptual_image_info(**perceptual_interaction_dict)
 
+
+########################################################################################################################
+            sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=False, plot_results=False)
+            heatmap_multipart = images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
+            heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'),
+                                 np.array(pylsl.local_clock())] + heatmap_multipart
+            self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
+########################################################################################################################
 
 
 

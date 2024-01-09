@@ -54,6 +54,11 @@ class ImageInfo():
 
         return sub_images_rgba
 
+    def update_perceptual_image_info(self, original_image_attention, subimage_attention, subimage_position):
+        self.original_image_attention = original_image_attention
+        self.subimage_attention = subimage_attention
+        self.subimage_position = subimage_position
+
 
 
 
