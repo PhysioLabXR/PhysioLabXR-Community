@@ -32,6 +32,12 @@ TestBlockImages = ["RLS_023_OD_TC",
 
 
 
+class AOIAugmentationScriptParams:
+    AOIAugmentationInteractiveStateSubImagePlotWhenUpdate = "AOIAugmentationInteractiveStateSubImagePlotWhenUpdate"
+    AOIAugmentationInteractiveStateNormalizeSubImage = "AOIAugmentationInteractiveStateNormalizeSubImage"
+
+
+
 
 class EventMarkerLSLStreamInfo:
     StreamName = "AOIAugmentationEventMarkerLSL"

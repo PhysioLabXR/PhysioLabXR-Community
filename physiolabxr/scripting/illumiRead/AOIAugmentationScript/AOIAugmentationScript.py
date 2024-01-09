@@ -21,7 +21,7 @@ from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript import AOIAugmentationConfig
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
-    GazeDataLSLStreamInfo
+    GazeDataLSLStreamInfo, AOIAugmentationScriptParams
 import torch
 import zmq
 from PIL import Image
@@ -497,14 +497,15 @@ class AOIAugmentationScript(RenaScript):
             image_attention_map_normalized = image_attention_map / np.max(image_attention_map)
             perceptual_interaction_dict = self.subimage_handler.compute_perceptual_attention(self.current_image_name,
                                                                                              source_attention= image_attention_map_normalized,
-                                                                                             is_plot_results=False,
+                                                                                             is_plot_results=self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
                                                                                              discard_ratio=0.0)
 
             self.current_image_info.update_perceptual_image_info(**perceptual_interaction_dict)
 
 
 ########################################################################################################################
-            sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=False, plot_results=False)
+            sub_images_rgba = self.current_image_info.get_sub_images_rgba(normalized=self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeSubImage],
+                                                                          plot_results=False)
             heatmap_multipart = images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
             heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'),
                                  np.array(pylsl.local_clock())] + heatmap_multipart
