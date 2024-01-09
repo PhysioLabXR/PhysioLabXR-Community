@@ -24,6 +24,7 @@ authors:
     orcid: 0009-0000-1824-970X
     affiliation: 1
   - name: June Pyo Suh
+    orcid: 0009-0005-1211-6101
     affiliation: 1
   - name: Steven Feiner
     orcid: 0000-0001-9978-7090 
