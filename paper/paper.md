@@ -33,7 +33,7 @@ authors:
     orcid: 0000-0002-9738-1342
     affiliation: 1
 affiliations:
- - name: Columbia University, USA
+ - name: Columbia University, New York, New York, United States of America
    index: 1
 date: 8 September 2023
 bibliography: paper.bib
