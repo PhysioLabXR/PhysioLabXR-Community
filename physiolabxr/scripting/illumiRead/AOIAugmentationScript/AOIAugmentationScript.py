@@ -179,11 +179,11 @@ class AOIAugmentationScript(RenaScript):
                         self.current_image_name = AOIAugmentationConfig.TestBlockImages[current_image_index]
 
                     print("current report name: {}".format(self.current_image_name))
-
+##########################################################################################################################################################################
                     if self.current_image_name in self.subimage_handler.image_data_dict.keys():
                         current_image_info_dict = self.subimage_handler.image_data_dict[self.current_image_name]
                         current_image_attention = self.subimage_handler.compute_perceptual_attention(
-                            self.current_image_name, is_plot_results=False, discard_ratio=0.0)
+                            self.current_image_name, is_plot_results=False, discard_ratio=0.0, model_name="inception")
 
                         # merge two dict4
                         image_info_dict = {**current_image_info_dict, **current_image_attention}
@@ -203,7 +203,7 @@ class AOIAugmentationScript(RenaScript):
                         self.gaze_attention_matrix.gaze_attention_pixel_map_buffer = torch.tensor(np.zeros(shape=self.current_image_info.original_image.shape[:2]),
                                                                                                   device=self.device)
 
-
+##########################################################################################################################################################################
 
 
 

@@ -48,6 +48,7 @@ class ImageInfo():
             sub_image_rgba = cm.plasma(subimage_attention_unpadded, alpha=alpha_threshold * subimage_attention_unpadded/np.max(subimage_attention_unpadded))
             if plot_results:
                 plt.imshow(sub_image_rgba)
+                plt.colorbar()
                 plt.show()
 
             sub_images_rgba.append(sub_image_rgba)
