@@ -83,7 +83,12 @@ def get_lsl_binary():
     #     print(f"LSL binary is not needed for MacOS")
 
     import site
-    site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x][0]
+    site_packages_path = [x for x in site.getsitepackages() if "site-packages" in x]
+
+    if len(site_packages_path) == 0:
+        warnings.warn(f"Cannot find site-packages path. PyLSL will not be available.")
+        return
+    site_packages_path = site_packages_path[0]
     pylsl_path = os.path.join(site_packages_path, 'pylsl')
     pylsl_lib_path = None
     if platform.system() == "Darwin":
@@ -125,6 +130,13 @@ def install_lsl_binary():
         get_lsl_binary()
 
 
+def is_package_installed(package_name):
+    try:
+        subprocess.check_output(["dpkg", "-s", package_name], stderr=subprocess.STDOUT, text=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 def install_pyaudio():
     # check if we are on mac
     try:
@@ -142,9 +154,24 @@ def install_pyaudio():
             # need to brew install portaudio
             print("Brew installing portaudio ...")
             subprocess.run(["brew", "install", "portaudio"])
+        elif platform.system() == "Linux":
+            # need to apt install portaudio
+            if not is_package_installed("portaudio19-dev") or not is_package_installed("python3-dev"):
+                from PyQt6.QtWidgets import QDialogButtonBox
+                dialog_popup("To use audio streams on Linux, you need to install portaudio, a dependency of pyaudio.\n"
+                             "To do so, please run the following two commands in your terminal: \n"
+                             "sudo apt-get install portaudio19-dev\n"
+                             "sudo apt install python3-dev\n"
+                             "Then restart the app if you need audio streams.",
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                return
         # pip install pyaudio
         print("pip installing pyaudio ...")
-        subprocess.run(["pip", "install", "pyaudio"])
+        pip_install = subprocess.run(["pip", "install", "pyaudio"])
+        if pip_install.returncode == 0:
+            print("PyAudio has been successfully installed.")
+        else:
+            print("Error installing PyAudio:", pip_install.stderr)
 
 
 def run_setup_check():

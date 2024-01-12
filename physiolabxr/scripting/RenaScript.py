@@ -86,6 +86,7 @@ class RenaScript(ABC, threading.Thread):
 
         # set up measuring realtime performance
         self.loop_durations = deque(maxlen=run_frequency * 2)
+        self.max_loop_duration = 0
         self.run_while_start_times = deque(maxlen=run_frequency * 2)
         # setup inputs and outputs
         self.input_names = inputs
@@ -161,14 +162,16 @@ class RenaScript(ABC, threading.Thread):
                 traceback.print_exc()
                 # print(traceback.format_exc())
                 self.redirect_stderr.send_buffered_messages()
-            self.loop_durations.append(time.time() - loop_start_time)
+            this_loop_outputs = time.time() - loop_start_time
+            self.loop_durations.append(this_loop_outputs)
+            self.max_loop_duration = max(this_loop_outputs, self.max_loop_duration)
             self.run_while_start_times.append(loop_start_time)
             # receive info request from main process
             info_msg_routing_id = recv_string_router(self.info_socket_interface, is_block=False)
             if info_msg_routing_id is not None:
                 request = info_msg_routing_id[0]
                 if request == SCRIPT_INFO_REQUEST:
-                    send_router(np.array([get_fps(self.run_while_start_times), np.mean(self.loop_durations)]),
+                    send_router(np.array([get_fps(self.run_while_start_times), np.mean(self.loop_durations), self.max_loop_duration]),
                                 self.info_routing_id, self.info_socket_interface)
                 else:
                     print('unknown info request: ' + request)

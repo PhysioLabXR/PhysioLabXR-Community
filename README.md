@@ -76,6 +76,11 @@ running experiments. It works best with multi-modal (e.g., combining EEG and eye
 [//]: # (<p align="right">&#40;<a href="#readme-top">back to top</a>&#41;</p>)
 
 
+Check out the paper on [Journal of Open Source Software](https://doi.org/10.21105/joss.05854): [![DOI](https://joss.theoj.org/papers/10.21105/joss.05854/status.svg)](https://doi.org/10.21105/joss.05854). Cite:
+
+```
+@article{Li2024, doi = {10.21105/joss.05854}, url = {https://doi.org/10.21105/joss.05854}, year = {2024}, publisher = {The Open Journal}, volume = {9}, number = {93}, pages = {5854}, author = {Ziheng 'Leo' Li and Haowen 'John' Wei and Ziwen Xie and Yunxiang Peng and June Pyo Suh and Steven Feiner and Paul Sajda}, title = {PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments}, journal = {Journal of Open Source Software} }
+```
 
 ### Built With
 

@@ -11,6 +11,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 
+from physiolabxr.scripting.fs_utils import show_figure
+
 
 def z_norm_hdca(x, _mean=None, _std=None):
     if _mean is None or _std is None:
@@ -203,7 +205,7 @@ class HDCA():
         self.num_eeg_windows = None
         self.num_pupil_windows = None
 
-    def fit(self, x_eeg, x_eeg_pca_ica, x_pupil, y, is_plots=False, notes="", num_folds=10, exg_srate=200, split_window_eeg=100e-3, split_window_pupil=500e-3, eyetracking_srate=20, random_seed=None, verbose=0, eeg_montage=None, *args, **kwargs):
+    def fit(self, x_eeg, x_eeg_pca_ica, x_pupil, y, is_plots=False, notes="", num_folds=10, exg_srate=200, split_window_eeg=100e-3, split_window_pupil=500e-3, eyetracking_srate=20, random_seed=None, verbose=0, eeg_montage=None, out_dir=None, *args, **kwargs):
         self._use_pupil = x_pupil is not None
         label_encoder = LabelEncoder()
         label_encoder.fit(y)
@@ -329,8 +331,9 @@ class HDCA():
             fig = plt.figure(figsize=(10, 10))
             display.plot(ax=plt.gca(), name='ROC')
             plt.tight_layout()
-            plt.title(f"{notes} EEG ROC of the best cross-val fold")
-            plt.show()
+            title = f"{notes} EEG ROC of the best cross-val fold"
+            plt.title(title)
+            show_figure(fig, title, out_dir=out_dir)
 
             if self._use_pupil:
                 best_fold_i = np.argmax(roc_auc_folds_pupil)
@@ -340,8 +343,9 @@ class HDCA():
                 fig = plt.figure(figsize=(10, 10))
                 display.plot(ax=plt.gca(), name='ROC')
                 plt.tight_layout()
-                plt.title(f"{notes} Pupil ROC of the best cross-val fold")
-                plt.show()
+                title = f"{notes} Pupil ROC of the best cross-val fold"
+                plt.title(title)
+                show_figure(fig, title, out_dir=out_dir)
 
             fig = plt.figure(figsize=(15, 10))
             plt.boxplot(cw_weights_eeg_folds)
@@ -353,10 +357,11 @@ class HDCA():
             plt.xticks(ticks=x_ticks, labels=x_labels)
             plt.xlabel("100 ms windowed bins")
             plt.ylabel("Cross-bin weights")
-            plt.title(f'{notes} Cross-bin weights, {num_folds}-fold cross validation')
             plt.legend()
             plt.tight_layout()
-            plt.show()
+            title = f'{notes} EEG cross-bin weights, {num_folds}-fold cross validation'
+            plt.title(title)
+            show_figure(fig, title, out_dir=out_dir)
 
             if self._use_pupil:
                 fig = plt.figure(figsize=(15, 10))
@@ -370,10 +375,12 @@ class HDCA():
                 plt.xticks(ticks=x_ticks, labels=x_labels)
                 plt.xlabel("500 ms windowed bins")
                 plt.ylabel("Cross-bin weights")
-                plt.title(f'{notes} Cross-bin weights, {num_folds}-fold cross validation')
                 plt.legend()
                 plt.tight_layout()
-                plt.show()
+
+                title = f'{notes} Pupil cross-bin weights, {num_folds}-fold cross validation'
+                plt.title(title)
+                show_figure(fig, title, out_dir=out_dir)
 
         return roc_auc_combined, roc_auc_eeg, roc_auc_pupil
 
@@ -405,6 +412,24 @@ class HDCA():
         if eeg_montage is not None:
             plot_forward(activation, self.event_names, self.split_window_eeg, self.num_windows_eeg,exg_srate=self.exg_srate, notes=f"{notes} Forward model activation", eeg_montage=eeg_montage, *args, **kwargs)
         return y_pred, roc_auc_combined, roc_auc_eeg, roc_auc_pupil
+
+
+    def transform(self, x_eeg_pca_ica, x_pupil=None):
+        x_eeg_transformed_windowed = self._split_by_window(x_eeg_pca_ica, self.split_size_eeg)  # shape = #trials, #channels, #windows, #time points per window
+
+        lda_projections_eeg = _compute_window_lda_projections(x_eeg_transformed_windowed, self.window_eeg_ldas)
+        projection_eeg = z_norm_hdca(lda_projections_eeg, self.eeg_mean, self.eeg_std)
+
+        if self._use_pupil:
+            x_pupil_windowed = self._split_by_window(x_pupil, self.split_size_pupil)  # shape = #trials, #channels, #windows, #time points per window
+            lda_projections_pupil = _compute_window_lda_projections(x_pupil_windowed, self.window_pupil_ldas)
+            projection_pupil = z_norm_hdca(lda_projections_pupil, self.pupil_mean, self.pupil_std)
+            projection_combined = np.concatenate([projection_eeg, projection_pupil], axis=1)
+            y_pred = self.crossbin_model_combined.predict(projection_combined)
+        else:
+            y_pred = self.crossbin_model_eeg.predict(projection_eeg)
+        return y_pred
+
 
     def _split_by_window(self, data, window_shape):
         return  sliding_window_view(data, window_shape=window_shape, axis=2)[:, :,0::window_shape, :]  # shape = #trials, #channels, #windows, #time points per window
