@@ -183,7 +183,7 @@ class AOIAugmentationScript(RenaScript):
                     if self.current_image_name in self.subimage_handler.image_data_dict.keys():
                         current_image_info_dict = self.subimage_handler.image_data_dict[self.current_image_name]
                         current_image_attention = self.subimage_handler.compute_perceptual_attention(
-                            self.current_image_name, is_plot_results=False, discard_ratio=0.0, model_name="inception")
+                            self.current_image_name, is_plot_results=False, discard_ratio=0.0, model_name="vit")
 
                         # merge two dict4
                         image_info_dict = {**current_image_info_dict, **current_image_attention}
