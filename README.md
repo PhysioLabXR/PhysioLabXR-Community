@@ -23,7 +23,7 @@
     <a href="https://physiolabxrdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apocalyvec/physiolabxr">View Demo</a>
+    <a href="https://physiolabxr.org">Official website</a>
     ·
     <a href="https://github.com/apocalyvec/physiolabxr/issues">Report Bug</a>
     ·
