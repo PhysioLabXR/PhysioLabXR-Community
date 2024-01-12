@@ -22,13 +22,43 @@ image_center_y = 0
 
 #########################################################################################
 
-PracticeBlockImages = ["9025_OD_2021_widefield_report",
-                       "9071_OD_2021_widefield_report",
-                       "RLS_006_OD_TC"]
+PracticeBlockImages = ["9071_OD_2021_widefield_report"]
 
-TestBlockImages = ["RLS_023_OD_TC",
-                   "RLS_025_OD_TC",
-                   "RLS_045_OD_TC"]
+TestBlockImages = [
+    "RLS_097_OD_TC",
+    "RLS_006_OD_TC",
+    "RLS_043_OD_TC",
+    "RLS_083_OD_TC",
+    "8918_OS_2021_widefield_report",
+    "RLS_073_OD_TC",
+    "RLS_033_OS_TC",
+    "RLS_096_OS_TC",
+    "8981_OS_2021_widefield_report",
+    "RLS_073_OS_TC",
+    "RLS_086_OS_TC",
+    "RLS_060_OS_TC",
+    "RLS_085_OS_TC",
+    "RLS_079_OD_TC",
+    "RLS_082_OD_TC",
+    "9025_OD_2021_widefield_report",
+
+    "RLS_083_OD_TC",
+    "RLS_086_OS_TC",
+    "RLS_045_OD_TC",
+    "RLS_006_OD_TC",
+    "RLS_092_OS_TC",
+    "8918_OS_2021_widefield_report",
+    "RLS_079_OD_TC",
+    "RLS_097_OD_TC",
+    "RLS_085_OS_TC",
+    "RLS_082_OD_TC",
+    "RLS_023_OD_TC",
+    "RLS_092_OS_TC",
+    "RLS_036_OS_TC",
+    "RLS_006_OD_TC",
+    "RLS_073_OD_TC",
+    "9025_OD_2021_widefield_report"
+]
 
 
 
