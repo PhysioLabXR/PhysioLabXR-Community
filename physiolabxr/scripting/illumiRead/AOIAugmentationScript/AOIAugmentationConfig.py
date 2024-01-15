@@ -14,7 +14,7 @@ SubImgaeHandlerFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr
 screen_width = 1920
 screen_height = 1080
 
-image_on_screen_max_width = 1500
+image_on_screen_max_width = 1400
 image_on_screen_max_height = 750
 
 image_center_x = 0
