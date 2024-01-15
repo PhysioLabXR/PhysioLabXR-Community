@@ -193,7 +193,7 @@ class GazeFilterFixationDetectionIVT(DataProcessor):
 '''
 
 
-def tobii_gaze_on_display_area_to_image_matrix_index(
+def tobii_gaze_on_display_area_to_image_matrix_index_when_rect_transform_pivot_centralized(
         image_center_x,
         image_center_y,
 
@@ -225,5 +225,20 @@ def gaze_point_on_image_valid(matrix_shape, coordinate):
     if coordinate[1] < 0 or coordinate[1] > matrix_shape[1]-1:
         return False
     return True
+
+
+def tobii_gaze_on_display_area_pixel_coordinate(
+    screen_width,
+    screen_height,
+    gaze_on_display_area_x,
+    gaze_on_display_area_y,
+):
+    gaze_on_display_area_x_coordinate = screen_width * (gaze_on_display_area_x)
+    gaze_on_display_area_y_coordinate = screen_height * (gaze_on_display_area_y)
+
+    return np.array([gaze_on_display_area_y_coordinate, gaze_on_display_area_x_coordinate], dtype=np.int_)
+
+
+
 
 

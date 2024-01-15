@@ -8,12 +8,15 @@ import cv2
 import pickle
 
 from matplotlib import cm
+from pylsl import pylsl
+
 
 # from physiolabxr.scripting.AOIAugmentationScript.AOIAugmentationConfig import IMAGE_FORMAT
 
 
 class ImageInfo():
     def __init__(self,
+                 image_name = None,
                  original_image=None,
                  sub_images=None,
                  label=None,
@@ -21,6 +24,7 @@ class ImageInfo():
                  subimage_attention=None,
                  subimage_position=None,
                  ):
+        self.image_name = image_name
         self.original_image = original_image
         self.sub_images = sub_images
         self.label = label
@@ -31,7 +35,7 @@ class ImageInfo():
 
         self.image_on_screen_shape = None
 
-    def get_sub_images_rgba(self, normalized = False, alpha_threshold = 0.9, plot_results = False, colormap = 'plasma'):
+    def get_sub_images_attention_rgba(self, normalized = False, alpha_threshold = 0.9, plot_results = False, colormap ='plasma'):
 
         sub_images_rgba = []
 
@@ -55,11 +59,51 @@ class ImageInfo():
 
         return sub_images_rgba
 
+    def get_original_image_rgba(self):
+        return cv2.cvtColor(self.original_image, cv2.COLOR_BGR2RGBA)
+
     def update_perceptual_image_info(self, original_image_attention, subimage_attention, subimage_position):
         self.original_image_attention = original_image_attention
         self.subimage_attention = subimage_attention
         self.subimage_position = subimage_position
 
+    # def get_original_image_attention(self, normalize_by_subimages = False):
+    #
+    #     # # if normalize_by_subimages:
+    #     # #     # make a copy of the original image attention
+    #     # #     original_image_attention = self.original_image_attention.copy()
+    #     # #     for subimage_attention, subimage_position in zip(self.subimage_attention, self.subimage_position):
+    #     # #
+    #     # #         subimage_attention_unpadded = subimage_attention[
+    #     # #                             0:subimage_position[2][1]-subimage_position[0][1],
+    #     # #                             0:subimage_position[2][0]-subimage_position[0][0]
+    #     # #                             ]
+    #     # #
+    #     # #         subimage_attention_unpadded = subimage_attention_unpadded / subimage_attention_unpadded.max()
+    #     # #
+    #     # #         original_image_attention[
+    #     # #         subimage_position[0][0]:subimage_position[2][0],
+    #     # #         subimage_position[0][1]:subimage_position[2][1]
+    #     # #         ] = subimage_attention_unpadded
+    #     # #
+    #     # #
+    #     # #     return original_image_attention
+    #     # #
+    #     # #
+    #     # # else:
+    #     #     return self.original_image_attention
+
+
+def gray_image_to_rgba(image, normalize, alpha_threshold, uint8=False):
+
+    if normalize:
+        image = image / image.max()
+    image_rgba= cm.plasma(image, alpha=alpha_threshold * image / np.max(image))
+
+    if uint8:
+        image_rgba = (image_rgba * 255).astype(np.uint8)
+
+    return image_rgba
 
 
 
@@ -150,7 +194,7 @@ def contours_to_lvt(contours, hierarchy, max_length=1024):
     return contours_lvt, overflow_flag
 
 
-def images_to_zmq_multipart(rgba_images, image_positions):
+def sub_images_to_zmq_multipart(rgba_images, image_positions):
 
     item_list = []
     item_list.append(np.array(len(rgba_images)))
@@ -167,6 +211,34 @@ def images_to_zmq_multipart(rgba_images, image_positions):
 
 
     return item_list
+
+
+def aoi_augmentation_zmq_multipart(topic, images_rgba):
+    item_list = []
+    item_list.append(bytes(topic, encoding='utf-8'))
+    item_list.append(np.array(pylsl.local_clock()))
+
+    for image in images_rgba:
+        # convert from rgba to bgra
+        # image = (image*255).astype(np.uint8)
+        # assume the image is in range [0,255]
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+
+        # convert image to png format
+        _, image_encoded = cv2.imencode('.png', image)
+        image_encoded = image_encoded.tobytes()
+        item_list.append(image_encoded)
+
+    return item_list
+
+# def static_aoi_augmentation_to_zmq_multipart(topic, original_image, heatmap_overlay):
+#     item_list = []
+#     item_list.append(bytes(topic, encoding='utf-8'))
+#     item_list.append(np.array(pylsl.local_clock()))
+
+
+
+
 
 
 
@@ -223,7 +295,7 @@ def gaussian_filter(shape, center, sigma=1.0, normalized=True):
     return gaussian
 
 
-def coordinate_transformation(original_image_shape, target_image_shape, coordinate_on_original_image):
+def image_coordinate_transformation(original_image_shape, target_image_shape, coordinate_on_original_image):
     """
     Transform the index on the original image to the target image using linear scaling.
 
