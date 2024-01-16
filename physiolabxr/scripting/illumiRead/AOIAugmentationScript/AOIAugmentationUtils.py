@@ -18,6 +18,7 @@ class ImageInfo():
     def __init__(self,
                  image_name = None,
                  original_image=None,
+                 unrepaired_image = None,
                  sub_images=None,
                  label=None,
                  original_image_attention=None,
@@ -26,6 +27,7 @@ class ImageInfo():
                  ):
         self.image_name = image_name
         self.original_image = original_image
+        self.unrepaired_image = unrepaired_image
         self.sub_images = sub_images
         self.label = label
         self.original_image_attention = original_image_attention

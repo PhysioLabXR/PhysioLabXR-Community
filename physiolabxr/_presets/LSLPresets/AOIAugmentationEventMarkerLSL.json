@@ -8,5 +8,5 @@
     "Visual Cue History Selected Marker"
   ],
   "NominalSamplingRate":  10,
-  "GroupInfo":  [1,2,3,4],
+  "GroupInfo":  [1,2,3,4,5],
   "DataType": "float32"}

@@ -159,8 +159,12 @@ class ExperimentState(Enum):
     StaticAOIAugmentationState = 9
     InteractiveAOIAugmentationInstructionState = 10
     InteractiveAOIAugmentationState = 11
-    FeedbackState = 12
-    EndState = 13
+
+    StaticGradCamAOIAugmentationInstructionState = 12
+    StaticGradCamAOIAugmentationState = 13
+
+    FeedbackState = 14
+    EndState = 15
 
 
 class ExperimentBlock(Enum):
