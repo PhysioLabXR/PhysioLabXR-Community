@@ -4,7 +4,8 @@
     "State Marker",
     "Report Label Marker",
     "Update Visual Cue Marker",
-    "Toggle Visual Cue Visibility Marker"
+    "Toggle Visual Cue Visibility Marker",
+    "Visual Cue History Selected Marker"
   ],
   "NominalSamplingRate":  10,
   "GroupInfo":  [1,2,3,4],

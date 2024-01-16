@@ -157,6 +157,7 @@ class AOIAugmentationScript(RenaScript):
             image_index_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
             update_visual_cue_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UpdateVisualCueMarker]
             toggle_visual_cue_visibility_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ToggleVisualCueVisibilityMarker]
+            visual_cue_history_selected_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.VisualCueHistorySelectedMarker]
 
             # ignore the block_marker <0 and state_marker <0 those means exit the current state
             if block_marker and block_marker > 0:  # evoke block change
