@@ -248,6 +248,14 @@ class AOIAugmentationScript(RenaScript):
                 # print("Update Attention Contours")
 
     def no_aoi_augmentation_state_init_callback(self):
+
+        original_image_rgba = self.current_image_info.get_original_image_rgba()
+        aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
+                                                                    image_name=self.current_image_name,
+                                                                    image_label=self.current_image_info.label,
+                                                                    images_rgba=[original_image_rgba])
+        self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
+
         pass
 
     def static_aoi_augmentation_state_init_callback(self):
@@ -280,7 +288,9 @@ class AOIAugmentationScript(RenaScript):
         original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True, alpha_threshold=0.9, uint8=True)
 
         aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
-                                                                           images_rgba=[original_image_rgba, original_image_attention_rgba])
+                                                                    image_name=self.current_image_name,
+                                                                    image_label=self.current_image_info.label,
+                                                                    images_rgba=[original_image_rgba, original_image_attention_rgba])
         self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
 ##########################################################################################################################################################################
 
@@ -354,7 +364,9 @@ class AOIAugmentationScript(RenaScript):
         original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True, alpha_threshold=0.9, uint8=True)
 
         aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
-                                                                           images_rgba=[original_image_rgba, original_image_attention_rgba])
+                                                                    image_name=self.current_image_name,
+                                                                    image_label=self.current_image_info.label,
+                                                                    images_rgba=[original_image_rgba, original_image_attention_rgba])
         self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
         ##########################################################################################################################################################################
 
@@ -565,6 +577,8 @@ class AOIAugmentationScript(RenaScript):
 
             aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(
                 topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
+                image_name=self.current_image_name,
+                image_label=self.current_image_info.label,
                 images_rgba=[original_image_rgba, original_image_attention_rgba, gaze_attention_map_rgba])
             self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
 
@@ -653,5 +667,35 @@ class AOIAugmentationScript(RenaScript):
 
     def interactive_attention_callback(self):
         pass
+
+
+    # def send_zmq_info(self, model_name="vit"):
+    #     current_image_attention = self.subimage_handler.compute_perceptual_attention(
+    #         self.current_image_name,
+    #         is_plot_results=self.params[
+    #             AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
+    #         discard_ratio=0.0,
+    #         model_name=model_name,
+    #         normalize_by_subimage=
+    #         self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeSubImage]
+    #     )
+    #
+    #     self.current_image_info.update_perceptual_image_info(**current_image_attention)
+    #
+    #     original_image_rgba = self.current_image_info.get_original_image_rgba()
+    #
+    #     original_image_attention = self.current_image_info.original_image_attention
+    #     original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True,
+    #                                                        alpha_threshold=0.9, uint8=True)
+    #
+    #     aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(
+    #         topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
+    #         image_name=self.current_image_name,
+    #         image_label=self.current_image_info.label,
+    #         images_rgba=[original_image_rgba, original_image_attention_rgba])
+    #
+    #     self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
+
+
 
 ##########################################################################

@@ -73,13 +73,15 @@ class EventMarkerLSLStreamInfo:
     StreamName = "AOIAugmentationEventMarkerLSL"
     StreamType = "EventMarker"
     StreamID = "1"
-    ChannelNum = 4
+    ChannelNum = 6
     NominalSamplingRate = 1
+
     BlockChannelIndex = 0
     ExperimentStateChannelIndex = 1
     ImageIndexChannelIndex = 2
     UpdateVisualCueMarker = 3
     ToggleVisualCueVisibilityMarker = 4
+    VisualCueHistorySelectedMarker = 5
 
 
 class GazeDataLSLStreamInfo:

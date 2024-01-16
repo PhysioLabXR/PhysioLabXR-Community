@@ -213,10 +213,13 @@ def sub_images_to_zmq_multipart(rgba_images, image_positions):
     return item_list
 
 
-def aoi_augmentation_zmq_multipart(topic, images_rgba):
+def aoi_augmentation_zmq_multipart(topic, image_name, image_label, images_rgba):
     item_list = []
     item_list.append(bytes(topic, encoding='utf-8'))
     item_list.append(np.array(pylsl.local_clock()))
+
+    item_list.append(bytes(image_name, encoding='utf-8'))
+    item_list.append(bytes(image_label, encoding='utf-8'))
 
     for image in images_rgba:
         # convert from rgba to bgra
