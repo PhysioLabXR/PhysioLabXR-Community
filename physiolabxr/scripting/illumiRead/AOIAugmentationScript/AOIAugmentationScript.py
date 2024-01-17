@@ -155,8 +155,9 @@ class AOIAugmentationScript(RenaScript):
             block_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             image_index_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ImageIndexChannelIndex]
-            update_visual_cue_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UpdateVisualCueMarker]
+            aoi_augmentation_interaction_start_end_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.AOIAugmentationInteractionStartEndMarker]
             toggle_visual_cue_visibility_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.ToggleVisualCueVisibilityMarker]
+            update_visual_cue_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.UpdateVisualCueMarker]
             visual_cue_history_selected_marker = event_marker[AOIAugmentationConfig.EventMarkerLSLStreamInfo.VisualCueHistorySelectedMarker]
 
             # ignore the block_marker <0 and state_marker <0 those means exit the current state
@@ -206,26 +207,6 @@ class AOIAugmentationScript(RenaScript):
 ##########################################################################################################################################################################
 
 
-
-
-
-                        # self.current_image_info = ImageInfo(**current_image_info_dict)
-                        #
-                        # self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-                        # self.gaze_attention_matrix = GazeAttentionMatrix(device=self.device)
-                        # self.gaze_attention_matrix.set_image_shape(self.current_image_info.model_image_shape)
-                        # self.gaze_attention_matrix.set_attention_patch_shape(self.current_image_info.patch_shape)
-                        #
-                        # # get image on screen pixel shape
-                        # image_on_screen_shape = get_image_on_screen_shape(
-                        #     original_image_width=self.current_image_info.original_image.shape[1],
-                        #     original_image_height=self.current_image_info.original_image.shape[0],
-                        #     image_width=AOIAugmentationConfig.image_on_screen_max_width,
-                        #     image_height=AOIAugmentationConfig.image_on_screen_max_height,
-                        # )
-                        #
-                        # self.current_image_info.image_on_screen_shape = image_on_screen_shape
-
                     else:
                         self.current_image_info = None
                         print("image info not found in dict")
@@ -242,7 +223,7 @@ class AOIAugmentationScript(RenaScript):
 
                     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)  # clear gaze data
 
-            if update_visual_cue_marker:
+            if update_visual_cue_marker==1: # 1 is request received, -1 is request already been updated on the Unity side
                 # current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
                 # attention_matrix = self.current_image_info.raw_attention_matrix
                 self.update_cue_now = True
@@ -250,7 +231,7 @@ class AOIAugmentationScript(RenaScript):
 
     def no_aoi_augmentation_state_init_callback(self):
 
-        original_image_rgba = self.current_image_info.get_original_image_rgba()
+        original_image_rgba = self.current_image_info.get_unreparied_rgba()
         aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
                                                                     image_name=self.current_image_name,
                                                                     image_label=self.current_image_info.label,
@@ -260,14 +241,6 @@ class AOIAugmentationScript(RenaScript):
         pass
 
     def static_aoi_augmentation_state_init_callback(self):
-
-        # image_attention_on_screen = cv2.resize(self.current_image_info.original_image_attention,
-        #                                         dsize=(self.current_image_info.image_on_screen_shape[1],
-        #                                                self.current_image_info.image_on_screen_shape[0]),
-        #                                         interpolation=cv2.INTER_NEAREST)
-
-        ######################################################### generate heatmap lvt for subimages #########################################################
-        # sub_image_attention_heatmap_lvt = self.subimage_handler()
 
 
 ##########################################################################################################################################################################
@@ -283,7 +256,7 @@ class AOIAugmentationScript(RenaScript):
 
         self.current_image_info.update_perceptual_image_info(**current_image_attention)
 
-        original_image_rgba = self.current_image_info.get_original_image_rgba()
+        original_image_rgba = self.current_image_info.get_unreparied_rgba()
 
         original_image_attention = self.current_image_info.original_image_attention
         original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True, alpha_threshold=0.9, uint8=True)
@@ -294,52 +267,10 @@ class AOIAugmentationScript(RenaScript):
                                                                     images_rgba=[original_image_rgba, original_image_attention_rgba])
         self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
 ##########################################################################################################################################################################
+        print("Visualization Sent")
 
-        # heatmap_multipart = sub_images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
-        # heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'), np.array(pylsl.local_clock())] + heatmap_multipart
-        # self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
+        # print("Done generating sub images")
 
-
-
-
-
-
-
-
-
-
-        print("Done generating sub images")
-
-        ######################################################### generate heatmap lvt for subimages #########################################################
-
-
-        # send attention matrix to unity
-
-        # # register the image on screen shape
-        # start = time.time()
-        #
-        # # calculate the contour
-        # heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
-        #                                dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
-        #                                interpolation=cv2.INTER_NEAREST)
-        # ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
-        # # apply erosion to threshold image
-        # kernel = np.ones((5, 5), np.uint8)
-        #
-        # thresh = cv2.erode(thresh, kernel, iterations=1)
-        # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        #
-        # # convert contours coordinate to image on screen coordinate
-        #
-        # # compile the contour information to lvt
-        #
-        # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-        #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-        # # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        #
-        # # TODO: send the contour information to Unity
-        # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        # print("time for contour: {}".format(time.time() - start))
 
         pass
 
@@ -359,7 +290,7 @@ class AOIAugmentationScript(RenaScript):
 
         self.current_image_info.update_perceptual_image_info(**current_image_attention)
 
-        original_image_rgba = self.current_image_info.get_original_image_rgba()
+        original_image_rgba = self.current_image_info.get_unreparied_rgba()
 
         original_image_attention = self.current_image_info.original_image_attention
         original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True, alpha_threshold=0.9, uint8=True)
@@ -370,41 +301,6 @@ class AOIAugmentationScript(RenaScript):
                                                                     images_rgba=[original_image_rgba, original_image_attention_rgba])
         self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
         ##########################################################################################################################################################################
-
-        # sub_images_rgba = self.current_image_info.get_sub_images_attention_rgba(normalized=True, plot_results=False)
-        #
-        # heatmap_multipart = sub_images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
-        # heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'), np.array(pylsl.local_clock())] + heatmap_multipart
-        # self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
-
-
-
-
-        # # register the image on screen shape
-        # start = time.time()
-        #
-        # # calculate the contour
-        # heatmap_processed = cv2.resize(self.current_image_info.rollout_attention_matrix,
-        #                                dsize=(self.current_image_info.image_on_screen_shape[1], self.current_image_info.image_on_screen_shape[0]),
-        #                                interpolation=cv2.INTER_NEAREST)
-        # ret, thresh = cv2.threshold(heatmap_processed, 0.5, 1, 0)
-        # # apply erosion to threshold image
-        # kernel = np.ones((5,5), np.uint8)
-        #
-        # thresh = cv2.erode(thresh, kernel, iterations=1)
-        # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        #
-        # # convert contours coordinate to image on screen coordinate
-        #
-        # # compile the contour information to lvt
-        #
-        # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-        #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-        # # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        #
-        # # TODO: send the contour information to Unity
-        # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-        # print("time for contour: {}".format(time.time() - start))
 
         pass
 
@@ -510,36 +406,6 @@ class AOIAugmentationScript(RenaScript):
 
             time_end = time.time()
 
-            # print("time cost: ", time_end - time_start)
-
-
-
-
-
-
-
-
-                    # gaze_point_on_model_coordinate = coordinate_transformation(
-                    #     original_image_shape=self.current_image_info.image_on_screen_shape,
-                    #     target_image_shape = self.current_image_info.model_image_shape,
-                    #     coordinate_on_original_image=gaze_point_on_screen_image_index
-                    # )
-                #
-                #     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(gaze_point_on_model_coordinate)
-                #     gaze_on_grid_attention_map = self.gaze_attention_matrix.get_patch_attention_map(gaze_on_image_attention_map)
-                #
-                #     self.gaze_attention_matrix.gaze_attention_grid_map_clutter_removal(gaze_on_grid_attention_map, attention_clutter_ratio=0.995)
-                #
-                #     gaze_attention_grid_map = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=True)
-                #
-                #     self.gaze_attention_map_lsl_outlet.push_sample(gaze_attention_grid_map)
-
-                # gaze_point_on_screen_image = tobii_gaze_on_display_area_to_image_matrix_index(
-                #     image_center_
-                # )
-
-        # self.cur_attention_human = gaze_attention_grid_map
-
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
 
         if self.update_cue_now:
@@ -567,7 +433,7 @@ class AOIAugmentationScript(RenaScript):
 
             self.current_image_info.update_perceptual_image_info(**current_image_attention)
 
-            original_image_rgba = self.current_image_info.get_original_image_rgba()
+            original_image_rgba = self.current_image_info.get_unreparied_rgba()
 
             original_image_attention = self.current_image_info.original_image_attention
             original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True,
@@ -586,80 +452,11 @@ class AOIAugmentationScript(RenaScript):
 
             self.update_cue_now = False
 
-            # perceptual_interaction_dict = self.subimage_handler.compute_perceptual_attention(self.current_image_name,
-            #                                                                                  source_attention= image_attention_map_normalized,
-            #                                                                                  is_plot_results=self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
-            #                                                                                  discard_ratio=0.0
-            #
-            #                                                                                  )
-
-#             perceptual_interaction_dict = self.subimage_handler.compute_perceptual_attention(self.current_image_name,
-#                                                                                              source_attention= image_attention_map_normalized,
-#                                                                                              is_plot_results=self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
-#                                                                                              discard_ratio=0.0
-#
-#                                                                                              )
-#
-#             self.current_image_info.update_perceptual_image_info(**perceptual_interaction_dict)
-#
-#
-# ########################################################################################################################
-#             sub_images_rgba = self.current_image_info.get_sub_images_attention_rgba(normalized=self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeSubImage],
-#                                                                                     plot_results=False)
-#             heatmap_multipart = sub_images_to_zmq_multipart(sub_images_rgba, self.current_image_info.subimage_position)
-#             heatmap_multipart = [bytes("AOIAugmentationAttentionHeatmapStreamZMQInlet", encoding='utf-8'),
-#                                  np.array(pylsl.local_clock())] + heatmap_multipart
-#             self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(heatmap_multipart)
-########################################################################################################################
-
-
-
-
-
-
-            # self.subimage_handler.image_data_dict.keys():
-            # current_image_info_dict = self.subimage_handler.image_data_dict[self.current_image_name]
-            # current_image_attention =
-            #
-            # self.subimage_handler.compute_perceptual_attention(
-            #     self.current_image_name, is_plot_results=False, discard_ratio=0.0)
-
-            # current_gaze_attention = self.gaze_attention_matrix.get_gaze_attention_grid_map(flatten=False)
-            # attention_matrix = self.current_image_info.raw_attention_matrix
-            # integrated_attention = integrate_attention(attention_human=current_gaze_attention.reshape(-1), attention_vit=attention_matrix).reshape(32, 32)
-            # integrated_attention -= integrated_attention.min()
-            # integrated_attention /= integrated_attention.max() - integrated_attention.min()
-            #
-            # integrated_attention_resized = cv2.resize(integrated_attention,
-            #                                dsize=(self.current_image_info.image_on_screen_shape[1],
-            #                                       self.current_image_info.image_on_screen_shape[0]),
-            #                                interpolation=cv2.INTER_NEAREST)
-            #
-            # ret, thresh = cv2.threshold(integrated_attention_resized, self.params['cue_threshold'], 1, 0)
-            # # apply erosion to threshold image
-            # kernel = np.ones((5,5), np.uint8)
-            #
-            # thresh = cv2.erode(thresh, kernel, iterations=1)
-            # contours, hierarchy = cv2.findContours(thresh.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            #
-            # # convert contours coordinate to image on screen coordinate
-            #
-            # # compile the contour information to lvt
-            #
-            # contours_lvt, overflow_flag = contours_to_lvt(contours, hierarchy,
-            #                                               max_length=AOIAugmentationConfig.AOIAugmentationAttentionContourLSLStreamInfo.ChannelNum)
-            #
-            # # TODO: send the contour information to Unity
-            # self.aoi_augmentation_attention_contour_lsl_outlet.push_sample(contours_lvt)
-            #
 
 
         pass
 
-        # self.interactive_attention_callback()
-        # pass
 
-    ##########################################################################
     def no_attention_callback(self):
         pass
 

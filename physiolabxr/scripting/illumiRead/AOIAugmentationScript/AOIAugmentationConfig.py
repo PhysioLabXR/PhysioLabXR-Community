@@ -79,9 +79,10 @@ class EventMarkerLSLStreamInfo:
     BlockChannelIndex = 0
     ExperimentStateChannelIndex = 1
     ImageIndexChannelIndex = 2
-    UpdateVisualCueMarker = 3
+    AOIAugmentationInteractionStartEndMarker = 3
     ToggleVisualCueVisibilityMarker = 4
-    VisualCueHistorySelectedMarker = 5
+    UpdateVisualCueMarker = 5
+    VisualCueHistorySelectedMarker = 6
 
 
 class GazeDataLSLStreamInfo:

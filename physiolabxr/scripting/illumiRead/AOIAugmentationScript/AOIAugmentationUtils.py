@@ -61,8 +61,8 @@ class ImageInfo():
 
         return sub_images_rgba
 
-    def get_original_image_rgba(self):
-        return cv2.cvtColor(self.original_image, cv2.COLOR_BGR2RGBA)
+    def get_unreparied_rgba(self):
+        return cv2.cvtColor(self.unrepaired_image, cv2.COLOR_BGR2RGBA)
 
     def update_perceptual_image_info(self, original_image_attention, subimage_attention, subimage_position):
         self.original_image_attention = original_image_attention
