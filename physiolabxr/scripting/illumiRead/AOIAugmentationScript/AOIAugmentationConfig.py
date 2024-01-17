@@ -161,10 +161,10 @@ class ExperimentState(Enum):
     InteractiveAOIAugmentationInstructionState = 10
     InteractiveAOIAugmentationState = 11
 
-    StaticGradCamAOIAugmentationInstructionState = 12
-    StaticGradCamAOIAugmentationState = 13
+    ResNetAOIAugmentationInstructionState = 12
+    ResNetAOIAugmentationState = 13
 
-    FeedbackState = 14
+    FeedbackState = 14  # not used anymore
     EndState = 15
 
 
