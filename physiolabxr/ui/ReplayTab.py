@@ -97,7 +97,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
         self.loading_label.setVisible(False)
-        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_square_48px)
         self.loading_label.setMovie(self.loading_movie)
 
         self.stream_list_widget.setVisible(False)
