@@ -457,7 +457,8 @@ class AOIAugmentationScript(RenaScript):
             plt.imshow(gaze_attention_map)
             plt.colorbar()
             plt.show()
-            gaze_attention_map_normalized = gaze_attention_map / np.max(gaze_attention_map)
+            if self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeGazeAttention]:
+                gaze_attention_map = gaze_attention_map / np.max(gaze_attention_map)
 
 
 
@@ -465,7 +466,7 @@ class AOIAugmentationScript(RenaScript):
 
             current_image_attention = self.subimage_handler.compute_perceptual_attention(
                 self.current_image_name,
-                source_attention= gaze_attention_map_normalized,
+                source_attention= gaze_attention_map,
                 is_plot_results=self.params[
                 AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
                 discard_ratio=0.0,
@@ -482,7 +483,7 @@ class AOIAugmentationScript(RenaScript):
             original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True,
                                                                alpha_threshold=0.9, uint8=True)
 
-            gaze_attention_map_rgba = gray_image_to_rgba(gaze_attention_map_normalized, normalize=True,
+            gaze_attention_map_rgba = gray_image_to_rgba(gaze_attention_map, normalize=True,
                                                                 alpha_threshold=0.9, uint8=True)
 
             aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(

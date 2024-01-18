@@ -51,6 +51,7 @@ TestBlockImages = [
 
 
 class AOIAugmentationScriptParams:
+    AOIAugmentationInteractiveStateNormalizeGazeAttention = "AOIAugmentationInteractiveStateNormalizeGazeAttention"
     AOIAugmentationInteractiveStateSubImagePlotWhenUpdate = "AOIAugmentationInteractiveStateSubImagePlotWhenUpdate"
     AOIAugmentationInteractiveStateNormalizeSubImage = "AOIAugmentationInteractiveStateNormalizeSubImage"
 
