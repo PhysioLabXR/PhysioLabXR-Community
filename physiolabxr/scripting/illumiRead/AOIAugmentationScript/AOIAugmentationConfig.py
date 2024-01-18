@@ -25,39 +25,27 @@ image_center_y = 0
 PracticeBlockImages = ["9071_OD_2021_widefield_report"]
 
 TestBlockImages = [
-    "RLS_097_OD_TC",
-    "RLS_006_OD_TC",
-    "RLS_043_OD_TC",
-    # "RLS_083_OD_TC",
-    # "8918_OS_2021_widefield_report",
-    # "RLS_073_OD_TC",
-    # "RLS_033_OS_TC",
-    # "RLS_096_OS_TC",
-    # "8981_OS_2021_widefield_report",
-    # "RLS_073_OS_TC",
-    # "RLS_086_OS_TC",
-    # "RLS_060_OS_TC",
-    # "RLS_085_OS_TC",
-    # "RLS_079_OD_TC",
-    # "RLS_082_OD_TC",
-    # "9025_OD_2021_widefield_report",
-
-    "RLS_083_OD_TC",
-    "RLS_086_OS_TC",
+    "9025_OD_2021_widefield_report",
+    "RLS_079_OD_TC",
+    "RLS_036_OS_TC",
     "RLS_045_OD_TC",
-    # "RLS_006_OD_TC",
-    # "RLS_092_OS_TC",
-    # "8918_OS_2021_widefield_report",
-    # "RLS_079_OD_TC",
-    # "RLS_097_OD_TC",
-    # "RLS_085_OS_TC",
-    # "RLS_082_OD_TC",
-    # "RLS_023_OD_TC",
-    # "RLS_092_OS_TC",
-    # "RLS_036_OS_TC",
-    # "RLS_006_OD_TC",
-    # "RLS_073_OD_TC",
-    # "9025_OD_2021_widefield_report"
+    "RLS_060_OS_TC",
+    "RLS_097_OD_TC",
+    "9140_OD_2021_widefield_report",
+    "RLS_092_OS_TC",
+    "RLS_083_OD_TC",
+    "RLS_086_OS_TC", # only for user study 2 Static vs Dynamic
+
+    "RLS_078_OS_TC",
+    "RLS_064_OS_TC",
+    "RLS_051_OS_TC",
+    "RLS_081_OD_TC",
+    "8962_OS_2021_widefield_report",
+    "9005_OS_2021_widefield_report",
+    "RLS_038_OD_TC",
+    "RLS_053_OD_TC",
+    "RLS_148_OD_TC",
+    "RLS_148_OS_TC" # only for user study 2 Static vs Dynamic
 ]
 
 
@@ -161,8 +149,8 @@ class ExperimentState(Enum):
     InteractiveAOIAugmentationInstructionState = 10
     InteractiveAOIAugmentationState = 11
 
-    ResNetAOIAugmentationInstructionState = 12
-    ResNetAOIAugmentationState = 13
+    ResnetAOIAugmentationInstructionState = 12
+    ResnetAOIAugmentationState = 13
 
     FeedbackState = 14  # not used anymore
     EndState = 15

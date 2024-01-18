@@ -141,6 +141,8 @@ class AOIAugmentationScript(RenaScript):
             self.static_aoi_augmentation_state_callback()
         elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
             self.interactive_aoi_augmentation_state_callback()
+        elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationState:
+            self.resnet_aoi_augmentation_state_callback()
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -170,7 +172,8 @@ class AOIAugmentationScript(RenaScript):
                 print(self.currentExperimentState)
                 if state_marker == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState.value or \
                         state_marker == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState.value or \
-                        state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
+                        state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value or \
+                        state_marker == AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationState.value:
 
                     # # switch to new interaction state
                     current_image_index = int(image_index_marker)
@@ -218,6 +221,8 @@ class AOIAugmentationScript(RenaScript):
                         self.static_aoi_augmentation_state_init_callback()
                     elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState:
                         self.interactive_aoi_augmentation_state_init_callback()
+                    elif self.currentExperimentState == AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationState:
+                        self.resnet_aoi_augmentation_state_init_callback()
 
                     #################################################################################################################
 
@@ -304,6 +309,40 @@ class AOIAugmentationScript(RenaScript):
 
         pass
 
+    def resnet_aoi_augmentation_state_init_callback(self):
+        ##########################################################################################################################################################################
+
+        current_image_attention = self.subimage_handler.compute_perceptual_attention(
+            self.current_image_name,
+            is_plot_results=self.params[
+                AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
+            discard_ratio=0.0,
+            model_name="resnet",
+            normalize_by_subimage=
+            self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeSubImage]
+        )
+
+        self.current_image_info.update_perceptual_image_info(**current_image_attention)
+
+        original_image_rgba = self.current_image_info.get_unreparied_rgba()
+
+        original_image_attention = self.current_image_info.original_image_attention
+        original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True,
+                                                           alpha_threshold=0.9, uint8=True)
+
+        aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(
+            topic="AOIAugmentationAttentionHeatmapStreamZMQInlet",
+            image_name=self.current_image_name,
+            image_label=self.current_image_info.label,
+            images_rgba=[original_image_rgba, original_image_attention_rgba])
+        self.aoi_augmentation_attention_heatmap_zmq_socket.send_multipart(aoi_augmentation_multipart)
+        ##########################################################################################################################################################################
+        print("Visualization Sent")
+
+        # print("Done generating sub images")
+
+        pass
+
     def enter_block(self, block_marker):
         if block_marker == AOIAugmentationConfig.ExperimentBlock.InitBlock.value:
             self.currentBlock = AOIAugmentationConfig.ExperimentBlock.InitBlock
@@ -344,6 +383,10 @@ class AOIAugmentationScript(RenaScript):
             self.currentExperimentState = AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationInstructionState
         elif state_marker == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.value:
             self.currentExperimentState = AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState
+        elif state_marker == AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationInstructionState.value:
+            self.currentExperimentState = AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationInstructionState
+        elif state_marker == AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationState.value:
+            self.currentExperimentState = AOIAugmentationConfig.ExperimentState.ResnetAOIAugmentationState
         elif state_marker == AOIAugmentationConfig.ExperimentState.FeedbackState.value:
             self.currentExperimentState = AOIAugmentationConfig.ExperimentState.FeedbackState
         elif state_marker == AOIAugmentationConfig.ExperimentState.EndState.value:
@@ -455,6 +498,13 @@ class AOIAugmentationScript(RenaScript):
 
 
         pass
+
+    def resnet_aoi_augmentation_state_callback(self):
+        pass
+
+
+
+
 
 
     def no_attention_callback(self):
