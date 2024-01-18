@@ -13,6 +13,7 @@ import torch
 from eidl.utils.model_utils import get_subimage_model
 from pylsl import StreamInfo, StreamOutlet, cf_float32
 
+from physiolabxr.scripting.fs_utils import get_datetime_str
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, \
     GazeFilterFixationDetectionIVT, \
     tobii_gaze_on_display_area_to_image_matrix_index_when_rect_transform_pivot_centralized, GazeType, \
@@ -121,6 +122,11 @@ class AOIAugmentationScript(RenaScript):
         # ################################################################################################################
         # self.cur_attention_human = None
         # Start will be called once when the run button is hit.
+
+        self.interactive_aoi_augmentation_log = {
+            'fixation_sequence': [],
+            'gaze_attention_map': None,
+        }
 
     def init(self):
         pass
@@ -442,6 +448,9 @@ class AOIAugmentationScript(RenaScript):
                         coordinate_on_original_image=gaze_point_on_screen_image_index
                     )
 
+                    # save log
+                    self.interactive_aoi_augmentation_log['fixation_sequence'].append(gaze_point_on_raw_image_coordinate)
+
                     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(
                         gaze_point_on_raw_image_coordinate, self.current_image_info.original_image.shape) # the gaze attention map on the original image
                     # plt.imshow(gaze_on_image_attention_map.detach().cpu().numpy())
@@ -458,15 +467,15 @@ class AOIAugmentationScript(RenaScript):
             plt.colorbar()
             plt.show()
             if self.params[AOIAugmentationScriptParams.AOIAugmentationInteractiveStateNormalizeGazeAttention]:
-                gaze_attention_map = gaze_attention_map / np.max(gaze_attention_map)
-
-
+                gaze_attention_map_processed = gaze_attention_map / np.max(gaze_attention_map)
+            else:
+                gaze_attention_map_processed = gaze_attention_map
 
 
 
             current_image_attention = self.subimage_handler.compute_perceptual_attention(
                 self.current_image_name,
-                source_attention= gaze_attention_map,
+                source_attention= gaze_attention_map_processed,
                 is_plot_results=self.params[
                 AOIAugmentationScriptParams.AOIAugmentationInteractiveStateSubImagePlotWhenUpdate],
                 discard_ratio=0.0,
@@ -483,7 +492,7 @@ class AOIAugmentationScript(RenaScript):
             original_image_attention_rgba = gray_image_to_rgba(original_image_attention, normalize=True,
                                                                alpha_threshold=0.9, uint8=True)
 
-            gaze_attention_map_rgba = gray_image_to_rgba(gaze_attention_map, normalize=True,
+            gaze_attention_map_rgba = gray_image_to_rgba(gaze_attention_map_processed, normalize=True,
                                                                 alpha_threshold=0.9, uint8=True)
 
             aoi_augmentation_multipart = aoi_augmentation_zmq_multipart(
@@ -496,8 +505,20 @@ class AOIAugmentationScript(RenaScript):
 
             self.update_cue_now = False
 
+            ##############################################################
+            # save log
+            self.interactive_aoi_augmentation_log['gaze_attention_map'] = gaze_attention_map
+            self.interactive_aoi_augmentation_log['image_info'] = self.current_image_info
+
+            pickle.dump(self.interactive_aoi_augmentation_log, open(f'{self.current_image_name}_{get_datetime_str()}_source-attention-info.p', 'wb'))
+
+            self.interactive_aoi_augmentation_log = {
+                'fixation_sequence': [],
+                'gaze_attention_map': None,
+            }
 
 
+            ##############################################################
         pass
 
     def resnet_aoi_augmentation_state_callback(self):
