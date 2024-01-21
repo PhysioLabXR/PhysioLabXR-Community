@@ -7,14 +7,14 @@ from random import random as rand
 
 from pylsl import StreamInfo, StreamOutlet, local_clock
 
-file_path = 'TobiiGazeData.pickle'
+file_path = 'TobiiProFusionUnityLSLOutlet_01.pickle'
 # Open the file in binary mode
 with open(file_path, 'rb') as file:
     # Load the data from the file
     gaze_raw = pickle.load(file)
 
-gaze_data = gaze_raw['TobiiProFusionUnityLSLOutlet'][0]
-timestamps = gaze_raw['TobiiProFusionUnityLSLOutlet'][1]
+gaze_data = gaze_raw[0]
+timestamps = gaze_raw[1]
 
 print(gaze_data.shape)
 

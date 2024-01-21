@@ -79,6 +79,8 @@ recording_data_buffer.buffer = rn_stream_data
 # # practice_block_end_timestamp
 # # 610862.7931719
 #
+
+
 # practice_block_start_timestamp, practice_block_end_timestamp = get_block_start_end_timestamp(recording_data_buffer, AOIAugmentationConfig.ExperimentBlock.PracticeBlock)
 #
 # test_block_start_timestamp, test_block_end_timestamp = get_block_start_end_timestamp(recording_data_buffer, AOIAugmentationConfig.ExperimentBlock.TestBlock)
@@ -94,6 +96,35 @@ recording_data_buffer.buffer = rn_stream_data
 #
 #
 # # find all conditions
+
+
+
+
+# event_marker_stream = rn_stream_data[AOIAugmentationConfig.EventMarkerLSLStreamInfo.StreamName]
+#
+# block_events = event_marker_stream[0][AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex, :]
+#
+# practice_block_start_index = np.where(block_events == AOIAugmentationConfig.ExperimentBlock.PracticeBlock.value)[0][0]
+#
+# practice_block_end_index = np.where(block_events == -AOIAugmentationConfig.ExperimentBlock.PracticeBlock.value)[0][0]
+#
+# practice_block_start_timestamp = event_marker_stream[1][practice_block_start_index]
+# practice_block_end_timestamp = event_marker_stream[1][practice_block_end_index]
+
+
+
+# load subimage_handler from pickle
+
+# if os.path.exists(AOIAugmentationConfig.SubImgaeHandlerFilePath):
+#     with open(AOIAugmentationConfig.SubImgaeHandlerFilePath, 'rb') as f:
+#         subimage_handler = pickle.load(f)
+# else:
+#     subimage_handler = get_subimage_model()
+
+
+
+
+
 
 def event_filter(data_buffer: DataBuffer, stream_name, channel_index, event_start_marker, event_end_marker):
     data_buffer_list = []
@@ -132,32 +163,6 @@ test_block_data = event_filter(
 
 
 
-
-
-
-
-
-
-# event_marker_stream = rn_stream_data[AOIAugmentationConfig.EventMarkerLSLStreamInfo.StreamName]
-#
-# block_events = event_marker_stream[0][AOIAugmentationConfig.EventMarkerLSLStreamInfo.BlockChannelIndex, :]
-#
-# practice_block_start_index = np.where(block_events == AOIAugmentationConfig.ExperimentBlock.PracticeBlock.value)[0][0]
-#
-# practice_block_end_index = np.where(block_events == -AOIAugmentationConfig.ExperimentBlock.PracticeBlock.value)[0][0]
-#
-# practice_block_start_timestamp = event_marker_stream[1][practice_block_start_index]
-# practice_block_end_timestamp = event_marker_stream[1][practice_block_end_index]
-
-
-
-# load subimage_handler from pickle
-
-# if os.path.exists(AOIAugmentationConfig.SubImgaeHandlerFilePath):
-#     with open(AOIAugmentationConfig.SubImgaeHandlerFilePath, 'rb') as f:
-#         subimage_handler = pickle.load(f)
-# else:
-#     subimage_handler = get_subimage_model()
 
 
 
