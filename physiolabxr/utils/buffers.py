@@ -235,7 +235,9 @@ class DataBuffer():
             # use get_stream_in_time_range to get the data
             all_streams[stream_name] = self.get_stream_in_time_range(stream_name, start_time, end_time)
 
-        return all_streams
+        data_buffer = DataBuffer()
+        data_buffer.buffer = all_streams
+        return data_buffer
 
     def get_stream_in_index_range(self, stream_name, start_index, end_index):
 

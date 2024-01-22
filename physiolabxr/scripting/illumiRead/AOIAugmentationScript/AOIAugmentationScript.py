@@ -425,7 +425,7 @@ class AOIAugmentationScript(RenaScript):
             if gaze_data.combined_eye_gaze_data.gaze_point_valid and gaze_data.gaze_type == GazeType.FIXATION:
 
 
-                gaze_point_on_screen_image_index = tobii_gaze_on_display_area_pixel_coordinate(
+                gaze_point_on_screen_pixel_index = tobii_gaze_on_display_area_pixel_coordinate(
 
                     screen_width=AOIAugmentationConfig.screen_width,
                     screen_height=AOIAugmentationConfig.screen_height,
@@ -438,14 +438,14 @@ class AOIAugmentationScript(RenaScript):
                 # # check if on the image
                 gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
                     matrix_shape=self.current_image_info.image_on_screen_shape,
-                    coordinate=gaze_point_on_screen_image_index)
+                    coordinate=gaze_point_on_screen_pixel_index)
                 #
                 if gaze_point_is_in_screen_image_boundary:
 
                     gaze_point_on_raw_image_coordinate = image_coordinate_transformation(
                         original_image_shape=self.current_image_info.image_on_screen_shape,
                         target_image_shape = self.current_image_info.original_image.shape[:2],
-                        coordinate_on_original_image=gaze_point_on_screen_image_index
+                        coordinate_on_original_image=gaze_point_on_screen_pixel_index
                     )
 
                     # save log
