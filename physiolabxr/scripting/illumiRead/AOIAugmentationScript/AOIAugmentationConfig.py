@@ -9,7 +9,7 @@ import pickle
 
 ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
 #ReportCleanedImageInfoFilePath = r'D:\HaowenWei\Rena\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
-SubImgaeHandlerFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\illumiRead\AOIAugmentationScript\data\subimage_handler.pkl'
+SubImgaeHandlerFilePath = r'C:\Users\HaowenJohnWei\AppData\Local\Temp\eidl\subimage_handler\subimage_handler_0.0.22.pkl'
 
 screen_width = 1920
 screen_height = 1080

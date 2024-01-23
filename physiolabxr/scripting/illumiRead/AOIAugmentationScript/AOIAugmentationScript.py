@@ -56,6 +56,7 @@ class AOIAugmentationScript(RenaScript):
 
         if os.path.exists(AOIAugmentationConfig.SubImgaeHandlerFilePath):
             with open(AOIAugmentationConfig.SubImgaeHandlerFilePath, 'rb') as f:
+                print("Loading subimage handler from pickle")
                 self.subimage_handler = pickle.load(f)
         else:
             self.subimage_handler = get_subimage_model()
