@@ -60,6 +60,6 @@ from eidl.utils.model_utils import get_subimage_model
 
 
 if __name__ == '__main__':
-    subimage_handler = get_subimage_model(n_jobs=20, precompute=['vit', 'resnet'])
+    subimage_handler = get_subimage_model(n_jobs=20)
     with open('subimage_handler_0.0.22.pkl', 'wb') as f:
         pickle.dump(subimage_handler, f)
