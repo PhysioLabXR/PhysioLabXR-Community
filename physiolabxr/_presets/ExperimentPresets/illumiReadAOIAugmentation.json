@@ -2,5 +2,6 @@
   "PresetStreamNames": [
     "AOIAugmentationEventMarkerLSL",
     "TobiiProFusionUnityLSL",
-    "AOIAugmentationTargetImageInfoLSL"
+    "AOIAugmentationTargetImageInfoLSL",
+    "AOIAugmentationHeatmapOverlayImageInfoLSL"
   ]}
