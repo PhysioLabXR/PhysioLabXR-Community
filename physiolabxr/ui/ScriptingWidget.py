@@ -101,7 +101,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # _ui elements #####################
         self.stopping_label.setVisible(False)
-        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_square_48px)
         self.stopping_label.setMovie(self.loading_movie)
 
         # self.lineedit_style_sheet = self.frequencyLineEdit.styleSheet()
