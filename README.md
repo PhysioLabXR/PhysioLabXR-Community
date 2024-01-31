@@ -161,6 +161,8 @@ More are coming soon!
 
 Distributed under the 3-Clause BSD License. See `LICENSE.txt` for more information.
 
+© 2023 The Trustees of Columbia University in the City of New York.  This work may be reproduced, distributed, and otherwise exploited for academic non-commercial purposes only.  To obtain a license to this work for commercial purposes, please contact Columbia Technology Ventures at techventures@columbia.edu.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
