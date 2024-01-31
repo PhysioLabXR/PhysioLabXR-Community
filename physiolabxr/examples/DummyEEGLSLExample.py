@@ -4,7 +4,7 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 from random import random as rand
 
 
-def generate_eeg_data(num_channels=8, noise_level=0.5, primary_frequency=12, t=0):
+def generate_eeg_data(num_channels=8, noise_level=0.5, primary_eeg_frequency=12, t=0.0):
     """
     Simulates EEG (Electroencephalography) data by generating sinusoidal signals with specified properties.
 
@@ -20,14 +20,11 @@ def generate_eeg_data(num_channels=8, noise_level=0.5, primary_frequency=12, t=0
     Returns:
     - eeg_signals_with_noise (ndarray): An array of shape (num_channels,) containing the simulated EEG data for each channel, with noise added.
 
-    Example:
-    >>> generate_eeg_data(num_channels=4, noise_level=0.2, primary_frequency=10, t=np.linspace(0, 1, 500))
-    array([...])  # Returns a (4,) array with the simulated EEG data for 4 channels
     """
 
     # Generate a sinusoidal signal to simulate brainwave activity
 
-    eeg_signals = np.array([np.sin(2 * np.pi * primary_frequency * t) for i in range(num_channels)])
+    eeg_signals = np.array([np.sin(2 * np.pi * primary_eeg_frequency * t) for i in range(num_channels)])
 
     # Add random noise to the signal
     noise = noise_level * np.random.randn(num_channels)
@@ -50,7 +47,7 @@ start_time = local_clock()
 sent_samples = 0
 
 # recursively send this data to LSL
-timestamp = 0
+timestamp = 0.0
 
 stream_name = 'Dummy-EEG'
 info = StreamInfo(stream_name, 'my_stream_type', num_channels, sampling_rate, 'float32',
@@ -62,7 +59,7 @@ while True:
     required_samples = int(sampling_rate * elapsed_time) - sent_samples
 
     for sample_ix in range(required_samples):
-        eeg_frame = generate_eeg_data(num_channels, sampling_rate, noise_level, primary_frequency, timestamp)
+        eeg_frame = generate_eeg_data(num_channels, noise_level, primary_frequency, timestamp)
         outlet.push_sample(eeg_frame.flatten(), timestamp=timestamp)
         timestamp += 1 / sampling_rate
     sent_samples += required_samples
