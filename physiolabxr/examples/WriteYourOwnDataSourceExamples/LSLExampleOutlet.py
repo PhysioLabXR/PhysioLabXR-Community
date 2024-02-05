@@ -14,7 +14,7 @@ sent_samples = 0
 # set the sampling rate to 100 Hz
 nominal_sampling_rate = 100
 
-info = StreamInfo('stream_name', 'my_stream_type', n_channels, nominal_sampling_rate, 'float32',
+info = StreamInfo(stream_name, 'my_stream_type', n_channels, nominal_sampling_rate, 'float32',
                   'my_stream_id')
 outlet = StreamOutlet(info)
 

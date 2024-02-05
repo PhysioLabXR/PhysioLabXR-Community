@@ -57,7 +57,7 @@ class AudioInputInterface(DeviceInterface):
     def process_frames(self):
         # read all data from the buffer
         # try:
-        frames = self.stream.read(self.stream.get_read_available())
+        frames = self.stream.read(self.stream.get_read_available(), exception_on_overflow=False)
         # except IOError as e:
         #     if e[1] != pyaudio.paInputOverflowed:
         #         raise

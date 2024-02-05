@@ -39,7 +39,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QTextEdit" name="ReplayFileLoc">
+          <widget class="QTextEdit" name="replay_file_path_lineedit">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
              <horstretch>0</horstretch>

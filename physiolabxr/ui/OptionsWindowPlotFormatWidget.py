@@ -53,7 +53,6 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
 
         self.plotFormatTabWidget.currentChanged.connect(self.plot_format_tab_selection_changed)
 
-
         # time series ###############################################################
         self.timeSeriesChannelsConstantOffsetLineEdit.setValidator(QDoubleValidator())
         # self.timeSeriesChannelsConstantOffsetLineEdit.textChanged.connect(self.time_series_channels_constant_offset_line_edit_changed)
@@ -61,8 +60,8 @@ class OptionsWindowPlotFormatWidget(QtWidgets.QWidget):
         # image ###############################################################
         self.imageWidthLineEdit.setValidator(NoCommaIntValidator())
         self.imageHeightLineEdit.setValidator(NoCommaIntValidator())
-        self.imageFormatComboBox.addItems([format.name for format in ImageFormat])
-        self.channelFormatCombobox.addItems([format.name for format in ChannelFormat])
+        self.imageFormatComboBox.addItems([f.name for f in ImageFormat])
+        self.channelFormatCombobox.addItems([f.name for f in ChannelFormat])
 
         self.image_level_min_line_edit.setValidator(QDoubleValidator())
         self.image_level_max_line_edit.setValidator(QDoubleValidator())
