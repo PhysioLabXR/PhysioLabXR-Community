@@ -372,6 +372,11 @@ class MainWindow(QtWidgets.QMainWindow):
             worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
             config.settings.endGroup()
             self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+        if device_name not in self.device_workers.keys() and device_type == 'UnicornHybridBlack':
+            board_id = config.settings.value('_Board_id')
+            worker = workers.UnicornHybridBlackDeviceWorker(device_name, board_id)
+            config.settings.endGroup()
+            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
         else:
             dialog_popup('We are not supporting this Device or the Device has been added')
         config.settings.endGroup()
