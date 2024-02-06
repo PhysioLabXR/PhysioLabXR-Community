@@ -19,3 +19,4 @@ PyOpenGL_accelerate
 soundfile
 matplotlib
 imblearn
+git+https://github.com/pybluez/pybluez.git#egg=pybluez
