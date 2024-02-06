@@ -27,7 +27,7 @@ def find_unicorn():
         raise Exception('Multiple Unicorns found!')
     return unicorn[0]
 
-class uhb_brainflow_jacetest(RenaScript):
+class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
@@ -58,11 +58,11 @@ class uhb_brainflow_jacetest(RenaScript):
         battery_channel = self.board.get_battery_channel(self.board_id)
         eeg_channels = self.board.get_eeg_channels(self.board_id)
         
-        print(f"Timestamp channel: {timestamp_channel}")
-        print(f"EEG channels: {eeg_channels}")
-        print(f"Accelerometer channels: {accelerometer_channels}")
-        print(f"Gyroscope channels: {gyroscope_channels}")
-        print(f"Battery channel: {battery_channel}")
+        # print(f"Timestamp channel: {timestamp_channel}")
+        # print(f"EEG channels: {eeg_channels}")
+        # print(f"Accelerometer channels: {accelerometer_channels}")
+        # print(f"Gyroscope channels: {gyroscope_channels}")
+        # print(f"Battery channel: {battery_channel}")
         
         data = self.board.get_board_data()
         timestamps = data[timestamp_channel]
@@ -74,8 +74,8 @@ class uhb_brainflow_jacetest(RenaScript):
         absolute_time_to_lsl_time_offset = time.time() - pylsl.local_clock()
         timestamps = timestamps - absolute_time_to_lsl_time_offset
         
-        self.set_output(stream_name = "Unicorn Hybrid Black", data = data, timestamp = timestamps)
-        print('Data sent to LSL!')
+        self.set_output(stream_name = "Unicorn_Hybrid_Black_LSL", data = data, timestamp = timestamps)
+        # print('Data sent to LSL!')
         
     # cleanup is called when the stop button is hit
     def cleanup(self):
