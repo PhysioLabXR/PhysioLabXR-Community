@@ -74,7 +74,7 @@ class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
         absolute_time_to_lsl_time_offset = time.time() - pylsl.local_clock()
         timestamps = timestamps - absolute_time_to_lsl_time_offset
         
-        self.set_output(stream_name = "Unicorn_Hybrid_Black_LSL", data = data, timestamp = timestamps)
+        self.set_output(stream_name = "UnicornHybridBlackLSL", data = data, timestamp = timestamps)
         # print('Data sent to LSL!')
         
     # cleanup is called when the stop button is hit
