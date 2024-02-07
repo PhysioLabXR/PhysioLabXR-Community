@@ -7,7 +7,7 @@
     "Counter",
     "Validation Indicator",
     "Timestamp",
-    "Temperature"
+    "Marker"
   ],
   "NominalSamplingRate":  250,
   "GroupInfo":  [8, 11, 14, 15, 16, 17, 18]}
