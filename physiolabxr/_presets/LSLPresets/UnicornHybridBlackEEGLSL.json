@@ -1,0 +1,6 @@
+{ "StreamName":"UnicornHybridBlackEEGLSL",
+  "ChannelNames":[
+    "EEG1", "EEG2", "EEG3", "EEG4", "EEG5", "EEG6", "EEG7", "EEG8"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [8]}
