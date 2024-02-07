@@ -86,6 +86,7 @@ class AppConfigs(metaclass=Singleton):
     start_streams_on_replay: bool = True
     auto_select_zmq_if_exceed_n_channels: bool = True
     auto_select_zmq_n_channels: int = int(2 ** 9)
+    last_replayed_file_path: str = None
 
     # recording configs
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
