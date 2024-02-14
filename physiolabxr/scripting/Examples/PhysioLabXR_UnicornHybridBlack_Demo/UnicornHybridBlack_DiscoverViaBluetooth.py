@@ -19,12 +19,15 @@ import pylsl
 from physiolabxr.scripting.RenaScript import RenaScript
 
 def find_unicorn():
-    bt_devices = bluetooth.discover_devices(duration = 1, lookup_names = True, lookup_class = True)
-    unicorn = list(filter(lambda d: re.search(r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
-    if len(unicorn) == 0:
-        raise Exception('No Unicorns found!')
-    if len(unicorn) > 1:
-        raise Exception('Multiple Unicorns found!')
+    while(True):
+        bt_devices = bluetooth.discover_devices(duration = 1, lookup_names = True, lookup_class = True)
+        unicorn = list(filter(lambda d: re.search(r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
+        if len(unicorn) == 1:
+            break
+        if len(unicorn) == 0:
+            print('No Unicorns found!')
+        if len(unicorn) > 1:
+            print('Multiple Unicorns found!')
     return unicorn[0]
 
 class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
