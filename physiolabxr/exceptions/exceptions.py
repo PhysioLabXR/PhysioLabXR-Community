@@ -227,3 +227,12 @@ class InvalidZMQMessageError(RenaError):
 
     def __str__(self):
         return f"Invalid ZMQ Message. Please refer to the documentation page 'Using the ZMQ Interface' for more information. \n{self.error}"
+
+class CustomDeviceNotFoundError(RenaError):
+    """Raised when the zmq port is not valid"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f"Invalid Custom Device: {self.error}"

@@ -48,6 +48,7 @@ class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
         self.board.prepare_session()
         self.board.start_stream(45000, '')
         print('BrainFlow board initialized! Stream started!')
+
         
 
     # loop is called <Run Frequency> times per second

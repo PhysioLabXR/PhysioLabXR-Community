@@ -5,30 +5,43 @@ import re
 import time
 import warnings
 
+from physiolabxr.exceptions.exceptions import CustomDeviceNotFoundError
+from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
+import pylsl
+
 try:
     from pylsl import StreamInfo, StreamOutlet
 except:
     warnings.warn("UnicornHybridBlackDeviceInterface: pylsl is not installed, LSL interface will not work.")
 
-class UnicornHybridBlackDeviceInterface:
-    def find_unicorn():
+class UnicornHybridBlackDeviceInterface(DeviceInterface):
+    def find_unicorn(self):
         bt_devices = bluetooth.discover_devices(duration = 1, lookup_names = True, lookup_class = True)
         unicorn = list(filter(lambda d: re.search(r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
         if len(unicorn) == 0:
-            raise Exception('No Unicorns found!')
+            raise CustomDeviceNotFoundError('Unicorn Not Found!')
         if len(unicorn) > 1:
-            raise Exception('Multiple Unicorns found!')
+            raise CustomDeviceNotFoundError('Multiple Unicorns found!')
         return unicorn[0]
     
-    def __init__(self, stream_name, stream_type='EEG', board_id="8",
-                 log='store_true', streamer_params='',
+    def __init__(self,
+                 _device_name='UnicornHybridBlackBluetooth',
+                 _device_type='UnicornHybridBlack',
+                 _device_nominal_sampling_rate=250,
+                 board_id="8",
+                 log='store_true',
+                 streamer_params='',
                  ring_buffer_size=45000):  # default board_id 8 for UnicornHybridBlack
+        super(UnicornHybridBlackDeviceInterface, self).__init__(_device_name=_device_name,
+                                                                _device_type=_device_type,
+                                                                device_nominal_sampling_rate=_device_nominal_sampling_rate)
+
         unicorn = self.find_unicorn()
         self.params = BrainFlowInputParams()
         self.params.serial_number = unicorn[1]
 
-        self.stream_name = stream_name
-        self.stream_type = stream_type
+        self.stream_name = _device_name
+        self.stream_type = _device_type
         self.board_id = int(board_id)
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
@@ -44,7 +57,8 @@ class UnicornHybridBlackDeviceInterface:
         except brainflow.board_shim.BrainFlowError:
             print('Cannot connect to board')
 
-    def start_sensor(self):
+    def start_stream(self):
+
         # tell the sensor to start sending frames
         try:
             self._board.prepare_session()
@@ -61,10 +75,15 @@ class UnicornHybridBlackDeviceInterface:
     def process_frames(self):
         # return one or more frames of the sensor
         frames = self._board.get_board_data()
+        timestamp_channel = self._board.get_timestamp_channel(self.board_id)
+        timestamps = frames[timestamp_channel]
 
-        return frames
+        absolute_time_to_lsl_time_offset = time.time() - pylsl.local_clock()
+        timestamps = timestamps - absolute_time_to_lsl_time_offset
 
-    def stop_sensor(self):
+        return frames, timestamps
+
+    def stop_stream(self):
         try:
             self._board.stop_stream()
             print('UnicornHybridBlackDeviceInterface: stopped streaming.')
@@ -73,6 +92,9 @@ class UnicornHybridBlackDeviceInterface:
         except brainflow.board_shim.BrainFlowError as e:
             print(e)
 
+    def is_stream_available(self):
+        # unicorn = self.find_unicorn()
+        return True
 
     def info_print(self):
         print("Board Information:")
@@ -89,3 +111,17 @@ class UnicornHybridBlackDeviceInterface:
 
     def get_sampling_rate(self):
         return self._board.get_sampling_rate(self.board_id)
+
+def create_custom_device_interface(stream_name):
+    if stream_name == 'UnicornHybridBlackBluetooth':
+        interface = UnicornHybridBlackDeviceInterface()
+        return interface
+
+
+
+    # interface = UnicornHybridBlackDeviceInterface()
+    # return interface
+
+# def create_unicorn_hybrid_black_interface():
+#     interface = UnicornHybridBlackDeviceInterface()
+#     return interface

@@ -7,7 +7,7 @@ import numpy as np
 
 from physiolabxr.exceptions.exceptions import ChannelMismatchError
 from physiolabxr.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
-from physiolabxr.interfaces.UnicornHybridBlackDeviceInterface import UnicornHybridBlackDeviceInterface
+from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import UnicornHybridBlackDeviceInterface
 from physiolabxr.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
@@ -36,9 +36,9 @@ def process_preset_create_openBCI_interface_startsensor(device_name, serial_port
 
 def process_preset_create_UnicornHybridBlack_interface_startsensor(device_name, board_id):
     try:
-        interface = UnicornHybridBlackDeviceInterface(stream_name=device_name,
-                                        board_id=board_id,
-                                        log='store_false', )
+        interface = UnicornHybridBlackDeviceInterface(_device_name=device_name,
+                                                      board_id=board_id,
+                                                      log='store_false', )
     except AssertionError as e:
         raise AssertionError(e)
 
