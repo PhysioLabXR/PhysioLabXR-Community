@@ -189,6 +189,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.channel_plot_item_dict[channel_name] = channel_plot_item
 
 
+
+
     def update_group_shown(self):
         # assuming group info is update to date with in the persistent settings
         # check if there's active channels in this group
@@ -296,16 +298,18 @@ class GroupPlotWidget(QtWidgets.QWidget):
             time_vector = np.linspace(0., duration, data.shape[1])
             for index_in_group, channel_index in enumerate(channel_indices):
                 plot_data_item = self.stemplot_widget.plotItem.curves[index_in_group]
-                plot_data_item2 = self.stemplot_widget.plotItem.curves[index_in_group]
+
+
                 # self.stemplot_widget.PlotCurveItem(time_vector, data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group, pen='r')
                 if plot_data_item.isVisible():
                     # plot_data_item.setData(time_vector, data[channel_index,
                     #                                     :] + stemplot_config.channels_constant_offset * index_in_group, pen=None, symbol='o', symbolSize=10, symbolBrush=('r'))
                     dta= data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group
-                    time_vector2 = [item for item in time_vector for _ in range(3)]
+                    time_vector_duplicate = [item for item in time_vector for _ in range(3)]
                     dta2 = np.dstack((np.zeros(dta.shape[0]), dta, np.zeros(dta.shape[0]))).flatten()
-                    plot_data_item.setData(time_vector2, dta2, connect='pairs')
-                    # plot_data_item2.setData(time_vector, dta, symbol='o')
+                    plot_data_item.setData(time_vector_duplicate, dta2, connect='pairs')
+                    self.stemplot_widget.plot(time_vector, dta, pen=None, symbol='o', connect=False)
+                    # plot_data_item2.setData(time_vector, dta, pen=None, symbol='o', connect=False)
 
 
 
