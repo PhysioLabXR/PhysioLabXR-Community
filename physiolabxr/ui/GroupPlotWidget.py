@@ -46,6 +46,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
         self.spectrogram_widget = None
         self.spectrogram_img = None
 
+        self.stemplot_widget = None
+
         self.is_auto_level_image = False
 
         if not is_group_image_only(self.stream_name, group_name):  # a stream will be image only only when it has too many channels
@@ -53,11 +55,13 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.init_image()
             self.init_bar_chart()
             self.init_spectrogram()
+            self.init_stem_plot()
         else:
             self.init_image()
             self.plot_tabs.setTabEnabled(0, False)
             self.plot_tabs.setTabEnabled(2, False)
             self.plot_tabs.setTabEnabled(3, False)
+            self.plot_tabs.setTabEnabled(4, False)
             assert get_selected_plot_format(self.stream_name, group_name) == PlotFormat.IMAGE
         self.viz_time_vector = self.get_viz_time_vector()
 
@@ -157,6 +161,33 @@ class GroupPlotWidget(QtWidgets.QWidget):
         y = np.array([0] * len(self.channel_names))
         bars = pg.BarGraphItem(x=x, height=y, width=1, brush='r')
         self.barchart_widget.addItem(bars)
+
+    def init_stem_plot(self):
+        self.stemplot_widget = pg.PlotWidget()
+        self.stemplot_layout.addWidget(self.stemplot_widget)
+        self.stemplot_widget.setXRange(0, get_stream_preset_info(self.stream_name, 'display_duration'))
+
+        channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
+        is_channels_shown = get_is_channels_show(self.stream_name, self.group_name)
+
+        distinct_colors = get_distinct_colors(len(channel_indices))
+        self.legends = self.stemplot_widget.addLegend()
+        # self.linechart_widget.enableAutoRange(enable=False)
+        for channel_index_in_group, (channel_index, channel_name) in enumerate(
+                zip(channel_indices, self.channel_names)):
+            is_channel_shown = is_channels_shown[channel_index_in_group]
+            channel_plot_item = self.stemplot_widget.plot([], [],
+                                                           pen=pg.mkPen(color=distinct_colors[channel_index_in_group]),
+                                                           name=channel_name)
+            self.channel_index_channel_dict[int(channel_index)] = channel_plot_item
+            if not is_channel_shown:
+                channel_plot_item.hide()  # TODO does disable do what it should do: uncheck from the plots
+            downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
+            channel_plot_item.setDownsampling(auto=True, method=downsample_method)
+            channel_plot_item.setClipToView(True)
+            channel_plot_item.setSkipFiniteCheck(True)
+            self.channel_plot_item_dict[channel_name] = channel_plot_item
+
 
     def update_group_shown(self):
         # assuming group info is update to date with in the persistent settings
@@ -260,17 +291,37 @@ class GroupPlotWidget(QtWidgets.QWidget):
             # Sxx = resize(Sxx, (fs/2, Sxx.shape[-1]))
             self.spectrogram_img.setImage(Sxx.T, autoLevels=False)  # average across channels
             self.spectrogram_img.setRect((0, 0, duration, fs/2))
+        elif selected_plot_format == 4:
+            stemplot_config = get_group_linechart_config(self.stream_name, self.group_name)
+            time_vector = np.linspace(0., duration, data.shape[1])
+            for index_in_group, channel_index in enumerate(channel_indices):
+                plot_data_item = self.stemplot_widget.plotItem.curves[index_in_group]
+                plot_data_item2 = self.stemplot_widget.plotItem.curves[index_in_group]
+                # self.stemplot_widget.PlotCurveItem(time_vector, data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group, pen='r')
+                if plot_data_item.isVisible():
+                    # plot_data_item.setData(time_vector, data[channel_index,
+                    #                                     :] + stemplot_config.channels_constant_offset * index_in_group, pen=None, symbol='o', symbolSize=10, symbolBrush=('r'))
+                    dta= data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group
+                    time_vector2 = [item for item in time_vector for _ in range(3)]
+                    dta2 = np.dstack((np.zeros(dta.shape[0]), dta, np.zeros(dta.shape[0]))).flatten()
+                    plot_data_item.setData(time_vector2, dta2, connect='pairs')
+                    # plot_data_item2.setData(time_vector, dta, symbol='o')
+
+
+
+                    # plot_data_item.setData(x=np.repeat(time_vector,2), y=np.dstack((np.zeros(dta.shape[0]), dta).flatten(), connect='pairs'))
+
 
     def update_bar_chart_range(self):
-        if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
-            barchart_min, barchat_max = get_bar_chart_max_min_range(self.stream_name, self.group_name)
-            self.barchart_widget.setYRange(min=barchart_min, max=barchat_max)
+            if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
+                barchart_min, barchat_max = get_bar_chart_max_min_range(self.stream_name, self.group_name)
+                self.barchart_widget.setYRange(min=barchart_min, max=barchat_max)
 
-    # def on_plot_format_change(self):
-    #     '''
-    #     emit selected group and changed to the stream widget, and to the stream options
-    #     '''
-    #     pass
+        # def on_plot_format_change(self):
+        #     '''
+        #     emit selected group and changed to the stream widget, and to the stream options
+        #     '''
+        #     pass
 
     def change_group_name(self, new_group_name):
         self.update_group_name(new_group_name)
@@ -315,3 +366,5 @@ class GroupPlotWidget(QtWidgets.QWidget):
             self.barchart_widget.autoRange()
         elif selected_plot_format == 3:
             self.spectrogram_widget.autoRange()
+        elif selected_plot_format == 4:
+            self.stemplot_widget.autoRange()

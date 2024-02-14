@@ -230,6 +230,14 @@
          </attribute>
          <layout class="QVBoxLayout" name="spectrogram_layout"/>
         </widget>
+
+         <widget class="QWidget" name="stemplot_tab">
+         <attribute name="title">
+          <string>Stem plot</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="stemplot_layout"/>
+        </widget>
+
        </widget>
       </item>
      </layout>

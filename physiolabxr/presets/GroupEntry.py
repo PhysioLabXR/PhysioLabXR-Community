@@ -17,6 +17,7 @@ class PlotFormat(Enum):
     IMAGE = 1
     BARCHART = 2
     SPECTROGRAM = 3
+    STEMPLOT = 4
 
 @dataclass(init=True, repr=True, eq=True, order=False, unsafe_hash=False, frozen=False)
 class GroupEntry(metaclass=SubPreset):
