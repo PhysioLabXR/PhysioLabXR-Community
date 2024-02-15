@@ -15,7 +15,7 @@ except:
     warnings.warn("UnicornHybridBlackDeviceInterface: pylsl is not installed, LSL interface will not work.")
 
 class UnicornHybridBlackDeviceInterface(DeviceInterface):
-    def find_unicorn():
+    def find_unicorn(self):
         while (True):
             bt_devices = bluetooth.discover_devices(
                 duration=1, lookup_names=True, lookup_class=True)
