@@ -15,15 +15,19 @@ except:
     warnings.warn("UnicornHybridBlackDeviceInterface: pylsl is not installed, LSL interface will not work.")
 
 class UnicornHybridBlackDeviceInterface(DeviceInterface):
-    def find_unicorn(self):
-        bt_devices = bluetooth.discover_devices(duration = 1, lookup_names = True, lookup_class = True)
-        unicorn = list(filter(lambda d: re.search(r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
-        if len(unicorn) == 0:
-            raise CustomDeviceNotFoundError('Unicorn Not Found!')
-        if len(unicorn) > 1:
-            raise CustomDeviceNotFoundError('Multiple Unicorns found!')
-        return unicorn[0]
-    
+    def find_unicorn():
+        while (True):
+            bt_devices = bluetooth.discover_devices(
+                duration=1, lookup_names=True, lookup_class=True)
+            unicorn = list(filter(lambda d: re.search(
+                r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
+            if len(unicorn) == 0:
+                print('No Unicorns found!')
+            elif len(unicorn) > 1:
+                print('Multiple Unicorns found!')
+            elif len(unicorn) == 1:
+                return unicorn[0]
+
     def __init__(self,
                  _device_name='UnicornHybridBlackBluetooth',
                  _device_type='UnicornHybridBlack',
@@ -36,10 +40,6 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
                                                                 _device_type=_device_type,
                                                                 device_nominal_sampling_rate=_device_nominal_sampling_rate)
 
-        unicorn = self.find_unicorn()
-        self.params = BrainFlowInputParams()
-        self.params.serial_number = unicorn[1]
-
         self.stream_name = _device_name
         self.stream_type = _device_type
         self.board_id = int(board_id)
@@ -51,13 +51,15 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
         else:
             BoardShim.disable_board_logger()
 
+    def start_stream(self):
+        unicorn = self.find_unicorn()
+        self.params = BrainFlowInputParams()
+        self.params.serial_number = unicorn[1]
         try:
             self._board = BoardShim(self.board_id, self.params)
             self.info_print()
         except brainflow.board_shim.BrainFlowError:
             print('Cannot connect to board')
-
-    def start_stream(self):
 
         # tell the sensor to start sending frames
         try:
@@ -116,8 +118,6 @@ def create_custom_device_interface(stream_name):
     if stream_name == 'UnicornHybridBlackBluetooth':
         interface = UnicornHybridBlackDeviceInterface()
         return interface
-
-
 
     # interface = UnicornHybridBlackDeviceInterface()
     # return interface
