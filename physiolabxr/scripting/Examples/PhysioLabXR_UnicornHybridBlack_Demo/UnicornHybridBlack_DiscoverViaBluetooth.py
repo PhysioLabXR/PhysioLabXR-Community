@@ -1,5 +1,5 @@
 # PhysioLabXR Unicorn Hybrid Black Script Example
-# Feb 2024, Jace Li, Columbia University (yl4862@columbia.edu)
+# Feb 2024, Jace Li & Haowen 'John' Wei, Columbia University (yl4862@columbia.edu, hw2892@columbia.edu)
 
 # This is an example script for PhysiolabXR for the g.tec Unicorn Hybrid Black.
 # First, it searches for connected Unicorns via Bluetooth.
@@ -13,24 +13,25 @@ import re
 import time
 
 import bluetooth
+from brainflow import BrainFlowError
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 import pylsl
-
+import warnings
 from physiolabxr.scripting.RenaScript import RenaScript
 
 
-def find_unicorn():
-    while (True):
-        bt_devices = bluetooth.discover_devices(
-            duration=1, lookup_names=True, lookup_class=True)
-        unicorn = list(filter(lambda d: re.search(
-            r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
-        if len(unicorn) == 0:
-            print('No Unicorns found!')
-        elif len(unicorn) > 1:
-            print('Multiple Unicorns found!')
-        elif len(unicorn) == 1:
-            return unicorn[0]
+# def find_unicorn():
+#     while (True):
+#         bt_devices = bluetooth.discover_devices(
+#             duration=1, lookup_names=True, lookup_class=True)
+#         unicorn = list(filter(lambda d: re.search(
+#             r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
+#         if len(unicorn) == 0:
+#             print('No Unicorns found!')
+#         elif len(unicorn) > 1:
+#             print('Multiple Unicorns found!')
+#         elif len(unicorn) == 1:
+#             return unicorn[0]
 
 
 class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
@@ -42,16 +43,35 @@ class UnicornHybridBlackBluetoothDataStreamScript(RenaScript):
 
     # Start will be called once when the run button is hit.
     def init(self):
-        print("init() called, searching for Unicorn...")
-        unicorn = find_unicorn()
-        print('Connected to Unicorn! SN: ' + unicorn[1])
 
-        print('Initializing BrainFlow board...')
-        self.brainflow_input_params = BrainFlowInputParams()
-        self.brainflow_input_params.serial_number = unicorn[1]
-        self.board_id = BoardIds.UNICORN_BOARD.value
-        self.board = BoardShim(self.board_id, self.brainflow_input_params)
-        self.board.prepare_session()
+
+        print("init() called, searching for Unicorn...")
+        while (True):
+            bt_devices = bluetooth.discover_devices(
+                duration=1, lookup_names=True, lookup_class=True)
+            unicorns = list(filter(lambda d: re.search(
+                r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
+            if len(unicorns) == 0:
+                print('No Unicorns found!')
+                continue
+            elif len(unicorns) > 1:
+                print('Multiple Unicorns found!')
+                continue
+            elif len(unicorns) == 1:
+                unicorn = unicorns[0]
+                print('Connected to Unicorn! SN: ' + unicorn[1])
+                print('Initializing BrainFlow board...')
+                self.brainflow_input_params = BrainFlowInputParams()
+                self.brainflow_input_params.serial_number = unicorn[1]
+                self.board_id = BoardIds.UNICORN_BOARD.value
+                self.board = BoardShim(self.board_id, self.brainflow_input_params)
+                try:
+                    self.board.prepare_session()
+                    break
+                except BrainFlowError as e:
+                    # print error message
+                    print(e)
+                    continue
         self.board.start_stream(45000, '')
         print('BrainFlow board initialized! Stream started!')
 
