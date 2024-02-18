@@ -265,6 +265,7 @@ class CustomDeviceWorker(QObject, RenaWorker):
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
         self._custom_device_interface: DeviceInterface = create_custom_device_interface(stream_name)
+        self._custom_device_interface.device_worker = self
 
         self.is_streaming = False
         self.timestamp_queue = deque(maxlen=1024)
@@ -292,7 +293,6 @@ class CustomDeviceWorker(QObject, RenaWorker):
                 sampling_rate = np.nan
 
             self.interface_mutex.unlock()
-
             if frames.shape[-1] == 0:
                 return
 

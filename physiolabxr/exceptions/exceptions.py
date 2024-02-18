@@ -245,3 +245,12 @@ class CustomDeviceStartStreamError(RenaError):
 
     def __str__(self):
         return f"Failed to start stream for Custom Device: {self.error}"
+    
+class CustomDeviceStreamInterruptedError(RenaError):
+    """Raised when an active connection and stream is severed unexpectedly."""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f"Stream interrupted for Custom Device: {self.error}"
