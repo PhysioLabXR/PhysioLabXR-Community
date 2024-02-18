@@ -236,3 +236,12 @@ class CustomDeviceNotFoundError(RenaError):
 
     def __str__(self):
         return f"Invalid Custom Device: {self.error}"
+
+class CustomDeviceStartStreamError(RenaError):
+    """Raised when the device is not found or more than one device is found"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f"Failed to start stream for Custom Device: {self.error}"
