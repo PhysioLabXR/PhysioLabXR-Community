@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 try:
     from pylsl import local_clock
@@ -11,3 +12,7 @@ def get_clock_time():
         return local_clock()
     else:
         return time.monotonic()
+
+
+def get_datetime_str():
+    return datetime.now().strftime("%m_%d_%Y_%H_%M_%S")

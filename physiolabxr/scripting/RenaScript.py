@@ -1,6 +1,5 @@
 import json
 import os
-import pickle
 import sys
 import threading
 import time
@@ -8,12 +7,13 @@ import traceback
 import warnings
 from abc import ABC, abstractmethod
 from collections import deque
-from pydoc import locate
 from typing import List, Dict, Union
 
+import grpc
 import numpy as np
 import zmq
 
+from physiolabxr.rpc.utils import create_rpc_server
 from physiolabxr.utils.time_utils import get_clock_time
 
 try:
@@ -52,6 +52,8 @@ class RenaScript(ABC, threading.Thread):
         """
         super().__init__()
         self.sim_clock = time.time()
+        self.script_path = script_path
+
         print('RenaScript: RenaScript Thread started on process {0}'.format(os.getpid()))
         try:
             self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
@@ -117,6 +119,8 @@ class RenaScript(ABC, threading.Thread):
 
         # set up the presets
         self.presets = presets
+
+        self.rpc_server: grpc.Server = None
 
         print('RenaScript: Script init completed')
 
@@ -237,6 +241,7 @@ class RenaScript(ABC, threading.Thread):
         except Exception as e:
             traceback.print_exc()
             self.redirect_stderr.send_buffered_messages()
+        self.rpc_server.stop(None)
         print('Sending stop success')
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 
@@ -316,6 +321,12 @@ class RenaScript(ABC, threading.Thread):
             if it is a list/tuple/numpy array, the length of the timestamp must match the number of frames in data
         """
         self.outputs[stream_name] = {'data': data, 'timestamp': timestamp}
+
+    # def start_rpc_server(self):
+    #     server_thread = threading.Thread(target=self.run_rpc_server)
+    #     server_thread.start()
+
+
 
 class RedirectStdout(object):
     def __init__(self, socket_interface, routing_id):
