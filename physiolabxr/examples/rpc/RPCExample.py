@@ -24,9 +24,9 @@ class RPCExample(RenaScript):
         print('Cleanup function is called')
 
     @rpc
-    def PredictFromInput(self, request: str) -> int:
+    def PredictFromInput(self, request: str) -> str:
         """
         it is conventional to use camal case for RPC methods
         """
-
-        return 1
+        # return int(self.inputs["stream"][0][0, 0])
+        return "Hello from RPCExample! received input: " + request
