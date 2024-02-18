@@ -38,7 +38,8 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
                  ring_buffer_size=45000):  # default board_id 8 for UnicornHybridBlack
         super(UnicornHybridBlackDeviceInterface, self).__init__(_device_name=_device_name,
                                                                 _device_type=_device_type,
-                                                                device_nominal_sampling_rate=_device_nominal_sampling_rate)
+                                                                device_nominal_sampling_rate=_device_nominal_sampling_rate,
+                                                                device_available=False)
 
         self.stream_name = _device_name
         self.stream_type = _device_type
@@ -96,7 +97,7 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
 
     def is_stream_available(self):
         # unicorn = self.find_unicorn()
-        return True
+        return self.device_available
 
     def info_print(self):
         print("Board Information:")
