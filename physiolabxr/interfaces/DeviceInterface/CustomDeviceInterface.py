@@ -97,7 +97,7 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
     def process_frames(self):
         # return one or more frames of the sensor
         frames = self._board.get_board_data()
-        print(frames)
+        # print(frames)
         if not self.data_started and frames.size != 0:
             print('UnicornHybridBlackDeviceInterface: data started')
             self.data_started = True
