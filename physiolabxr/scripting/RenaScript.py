@@ -102,7 +102,7 @@ class RenaScript(ABC, threading.Thread):
             self._create_output_streams()
         except RenaError as e:
             traceback.print_exc()
-            logging.critical('Error setting up output streams: {0}'.format(e))
+            logging.error('Error setting up output streams: {0}'.format(e))
 
         # set up the parameters
         self.params = params
@@ -196,7 +196,7 @@ class RenaScript(ABC, threading.Thread):
             # send the output if they are updated in the loop
             for stream_name, data in self.outputs.items():
                 if stream_name not in self.output_outlets:
-                    logging.critical(f'RenaScript: output stream with name {stream_name} not found')
+                    logging.error(f'RenaScript: output stream with name {stream_name} not found')
                     continue
                 outlet = self.output_outlets[stream_name]
                 if data is not None:
@@ -225,9 +225,9 @@ class RenaScript(ABC, threading.Thread):
                                 outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(_timestamp), _data])
                     except Exception as e:
                         if type(e) == BadOutputError:
-                            logging.critical('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
+                            logging.error('Bad output data is given to stream {0}: {1}'.format(stream_name, str(e)))
                         else:
-                            logging.critical('Unknown error occurred when trying to send output data: {0}'.format(str(e)))
+                            logging.error('Unknown error occurred when trying to send output data: {0}'.format(str(e)))
                         traceback.print_exc()
         # exiting the script loop
         try:
@@ -294,7 +294,7 @@ class RenaScript(ABC, threading.Thread):
                 try:
                     socket.bind("tcp://*:%s" % o_preset.port_number)
                 except zmq.error.ZMQError:
-                    logging.critical('Error when binding to port {0} for stream {1}'.format(o_preset.port_number, stream_name))
+                    logging.warning('Error when binding to port {0} for stream {1}'.format(o_preset.port_number, stream_name))
                     raise ZMQPortOccupiedError(o_preset.port_number)
                 self.output_outlets[stream_name] = socket
 
