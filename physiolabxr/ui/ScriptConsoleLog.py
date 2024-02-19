@@ -48,6 +48,8 @@ class ScriptConsoleLog(QtWidgets.QWidget):
             error_style = '<font color="red">{}</font>'.format(msg)
             msg_with_links = self.add_hyperlinks_to_traceback(error_style)
             self.message_text_browser.append(msg_with_links)
+        elif msg_type == 'warning':
+            self.message_text_browser.append('<font color="orange">{}</font>'.format(msg))
         else:
             self.message_text_browser.append(msg)
 

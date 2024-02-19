@@ -14,9 +14,9 @@ from physiolabxr.exceptions.exceptions import DataPortNotOpenError, InvalidZMQMe
 from physiolabxr.configs import config_signal, shared
 from physiolabxr.configs.config import REQUEST_REALTIME_INFO_TIMEOUT
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.configs.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
+from physiolabxr.configs.shared import SCRIPT_INFO_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
 from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
@@ -469,11 +469,13 @@ class ScriptingStdoutWorker(QObject):
     def process_std(self):
         msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
         if msg:  # if received is a message
-            prefix = msg[:len(SCRIPT_STDOUT_MSG_PREFIX)]
-            msg = msg[len(SCRIPT_STDOUT_MSG_PREFIX):]
-            if prefix == SCRIPT_STDOUT_MSG_PREFIX:  # if received is a message
+            prefix = msg[:len(SCRIPT_INFO_PREFIX)]
+            msg = msg[len(SCRIPT_INFO_PREFIX):]
+            if prefix == SCRIPT_INFO_PREFIX:  # if received is a message
                 self.std_signal.emit(('out', msg))  # send message if it's not None
-            elif prefix == SCRIPT_STDERR_MSG_PREFIX:
+            elif prefix == SCRIPT_WARNING_PREFIX:
+                self.std_signal.emit(('warning', msg))  # send message if it's not None
+            elif prefix == SCRIPT_ERR_PREFIX:
                 self.std_signal.emit(('error', msg))
 
 class ScriptInfoWorker(QWorker):

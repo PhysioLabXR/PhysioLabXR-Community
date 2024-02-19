@@ -63,36 +63,6 @@ def generate_proto_from_script_class(cls):
                     response_fields.append(f"  {protobuf_type} message = 1;")
                 messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
 
-            # Generate request message
-            # request_fields = []
-            # response_fields = ["  string message = 1;"]  # Example response field, adjust as needed
-            # type_hints = get_type_hints(method)
-            # for i, (arg_name, arg_type) in enumerate(type_hints.items(), start=1):
-            #     if arg_name == "return":
-            #         continue  # Skip return type
-            #     protobuf_type = python_type_to_proto_type(arg_type)
-            #     request_fields.append(f"  {protobuf_type} {arg_name} = {i};")
-            #
-            # messages.append(f"message {request_name} {{\n" + "\n".join(request_fields) + "\n}")
-            # messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
-
-            # for i, (arg_name, arg_type) in enumerate(type_hints.items(), start=1):
-            #     if arg_name == "return":
-            #         # Handle multiple return types represented by Union
-            #         if hasattr(arg_type, "__origin__") and arg_type.__origin__ is Union:
-            #             for j, union_arg_type in enumerate(arg_type.__args__, start=1):
-            #                 protobuf_type = python_type_to_proto_type(union_arg_type)
-            #                 response_fields.append(f"  {protobuf_type} message{j - 1} = {j};")
-            #         else:
-            #             protobuf_type = python_type_to_proto_type(arg_type)
-            #             response_fields.append(f"  {protobuf_type} message = 1;")
-            #     else:
-            #         protobuf_type = python_type_to_proto_type(arg_type)
-            #         request_fields.append(f"  {protobuf_type} {arg_name} = {i};")
-            #
-            # messages.append(f"message {request_name} {{\n" + "\n".join(request_fields) + "\n}")
-            # messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
-
     proto_lines.append("service MyService {")
     proto_lines.extend(service_methods)
     proto_lines.append("}")
