@@ -6,7 +6,8 @@ import time
 import warnings
 from physiolabxr.configs.GlobalSignals import GlobalSignals
 
-from physiolabxr.exceptions.exceptions import CustomDeviceNotFoundError, CustomDeviceStartStreamError, CustomDeviceStreamInterruptedError
+from physiolabxr.exceptions.exceptions import CustomDeviceNotFoundError, CustomDeviceStartStreamError, \
+    CustomDeviceStreamInterruptedError
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 import pylsl
 
@@ -15,19 +16,20 @@ try:
 except:
     warnings.warn("UnicornHybridBlackDeviceInterface: pylsl is not installed, LSL interface will not work.")
 
+
 class UnicornHybridBlackDeviceInterface(DeviceInterface):
-    def find_unicorn(self):
-        while (True):
-            bt_devices = bluetooth.discover_devices(
-                duration=1, lookup_names=True, lookup_class=True)
-            unicorn = list(filter(lambda d: re.search(
-                r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
-            if len(unicorn) == 0:
-                print('No Unicorns found!')
-            elif len(unicorn) > 1:
-                print('Multiple Unicorns found!')
-            elif len(unicorn) == 1:
-                return unicorn[0]
+    # def find_unicorn(self):
+    #     while (True):
+    #         bt_devices = bluetooth.discover_devices(
+    #             duration=1, lookup_names=True, lookup_class=True)
+    #         unicorn = list(filter(lambda d: re.search(
+    #             r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
+    #         if len(unicorn) == 0:
+    #             print('No Unicorns found!')
+    #         elif len(unicorn) > 1:
+    #             print('Multiple Unicorns found!')
+    #         elif len(unicorn) == 1:
+    #             return unicorn[0]
 
     def __init__(self,
                  _device_name='UnicornHybridBlackBluetooth',
@@ -61,13 +63,13 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
         elif len(unicorns) > 1:
             raise CustomDeviceStartStreamError('Multiple Unicorns found! Please ensure only one is connected!')
         elif len(unicorns) == 1:
-            unicorn = unicorns[0] # Unpack list into list[3]
-            
+            unicorn = unicorns[0]  # Unpack list into list[3]
+
         self.params = BrainFlowInputParams()
         self.params.serial_number = unicorn[1]
         try:
             self._board = BoardShim(self.board_id, self.params)
-            #self.info_print()
+            # self.info_print()
         except brainflow.board_shim.BrainFlowError:
             raise CustomDeviceStartStreamError('BoardShim constructor error. Check connection.')
 
@@ -84,8 +86,9 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
         try:
             self._board.start_stream(self.ring_buffer_size, self.streamer_params)
         except brainflow.board_shim.BrainFlowError:
-            raise CustomDeviceStartStreamError('Unable to connect start stream: please check the sensor connection or bluetooth stability.')
-        
+            raise CustomDeviceStartStreamError(
+                'Unable to connect start stream: please check the sensor connection or bluetooth stability.')
+
         # Successful connection
         self.device_available = True
         self.data_started = False
@@ -98,7 +101,7 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
         if not self.data_started and frames.size != 0:
             print('UnicornHybridBlackDeviceInterface: data started')
             self.data_started = True
-            
+
         # If connection interrupted, get_board_data() returns []
         if self.data_started and frames.size == 0:
             print('Unicorn connection interrupted, stopping stream automatically!')
@@ -110,7 +113,7 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
                 'body': 'Lost connection to {0}'
                 .format(self.params.serial_number)
             })
-            
+
         timestamp_channel = self._board.get_timestamp_channel(self.board_id)
         timestamps = frames[timestamp_channel]
 
@@ -150,6 +153,7 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
 
     def get_sampling_rate(self):
         return self._board.get_sampling_rate(self.board_id)
+
 
 def create_custom_device_interface(stream_name):
     if stream_name == 'UnicornHybridBlackBluetooth':
