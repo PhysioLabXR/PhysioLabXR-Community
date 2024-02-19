@@ -6,7 +6,7 @@ from multiprocessing import Process
 
 import grpc
 
-from physiolabxr.configs.shared import SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, SCRIPT_INFO_PREFIX
+from physiolabxr.configs.shared import SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, SCRIPT_INFO_PREFIX, SCRIPT_FATAL_PREFIX
 from physiolabxr.rpc.compiler import compile_rpc
 from physiolabxr.rpc.utils import create_rpc_server
 from physiolabxr.scripting.script_utils import get_script_class, debugging
@@ -20,6 +20,8 @@ def start_script_server(script_path, script_args):
 
     It starts the thread on which the RenaScrip lives, and also start the rpc server, whose wait functions
     spins on the main thread.
+
+    Note that any call to logging.fatal will terminate the script process.
     """
     # redirect stdout
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
@@ -45,10 +47,20 @@ def start_script_server(script_path, script_args):
 
     logging.info("Starting script thread")
     target_class = get_script_class(script_path)
-    replay_client_thread = target_class(**script_args)
+
+    try:
+        replay_client_thread = target_class(**script_args)
+    except Exception as e:
+        logging.fatal(f"Error creating script class: {e}")
+        return
 
     # compile the rpc
-    include_rpc = compile_rpc(script_path)
+    try:
+        include_rpc = compile_rpc(script_path, target_class)
+    except Exception as e:
+        # notify the main app that the script has failed to start
+        logging.fatal(f"Error compiling rpc, : {e}")
+        return
 
     # also start the rpc
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -71,7 +83,10 @@ class SocketLoggingHandler(logging.Handler):
     def emit(self, record):
         try:
             msg = self.format(record)  # Format the log record to a string
-            if record.levelno >= logging.ERROR:
+            # capture the fatal
+            if record.levelno >= logging.FATAL:
+                prefix = SCRIPT_FATAL_PREFIX
+            elif record.levelno >= logging.ERROR:
                 prefix = SCRIPT_ERR_PREFIX  # Use a different prefix for errors
             elif record.levelno >= logging.WARNING:
                 prefix = SCRIPT_WARNING_PREFIX

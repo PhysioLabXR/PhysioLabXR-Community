@@ -110,7 +110,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
-        self.script_console_log = ScriptConsoleLog()
+        self.script_console_log = ScriptConsoleLog(self)
         self.script_console_log_window = another_window('Console Log')
         self.script_console_log_window.get_layout().addWidget(self.script_console_log)
         self.script_console_log_window.hide()
@@ -288,7 +288,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             self.clean_up_after_stop()
 
-    def kill_script_process(self):
+    def kill_script_process(self, *args, **kwargs):
         """
         This function is called from
         * when the stop button is clicked, it calls notify_script_to_stop, which sends a message to the script process,
@@ -310,9 +310,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.wait_response_thread.wait()
         if psutil.pid_exists(self.script_pid):
             self.script_process.kill()
-        self.clean_up_after_stop()
+        self.clean_up_after_stop(*args, **kwargs)
 
-    def clean_up_after_stop(self):
+    def clean_up_after_stop(self, close_console=True):
         """
         this is the final step of stopping the script process
         @return:
@@ -321,7 +321,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stop_run_signal_forward_input()
         self.close_info_interface()
         del self.info_socket_interface
-        self.script_console_log_window.hide()
+        if close_console:
+            self.script_console_log_window.hide()
         self.is_running = False
         self.change_ui_on_run_stop(self.is_running)
         self.runBtn.clicked.disconnect()
@@ -329,7 +330,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         show_label_movie(self.stopping_label, False)
         self.wait_for_response_worker, self.wait_response_thread = None, None
         if self.needs_to_close:  # this is set to true when try_close is called
-            self.finish_close()
+            self.finish_close(close_console=close_console)
 
     # def process_command_return(self, command_return):
     #     command, is_success = command_return
@@ -616,11 +617,12 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             self.finish_close()
 
-    def finish_close(self):
+    def finish_close(self, close_console=True, *args, **kwargs):
         self.close_stdout()
         if self.is_popped:
             self.delete_window()
-        self.script_console_log_window.close()
+        if close_console:
+            self.script_console_log_window.close()
         self.deleteLater()
         print('Script widget closed')
         self.parent.remove_script_widget(self)

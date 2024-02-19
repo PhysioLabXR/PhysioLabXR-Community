@@ -9,6 +9,14 @@ class RenaError(Exception):
     pass
 
 
+class CompileRPCError(RenaError):
+    """
+    Raised when an error occurs while compiling RPC methods
+    """
+    def __init__(self, message):
+        super().__init__(message)
+    def __str__(self):
+        return 'Failed to compile RPC method: ' + self.message
 
 
 class DataPortNotOpenError(RenaError):
@@ -114,6 +122,7 @@ class InvalidPresetErrorChannelNameOrNumChannel(RenaError):
     def __str__(self):
         return 'The preset {0} does is not valid. Must have either ChannelNames or NumChannels defined\n'.format(self.message)
 
+
 class InvalidScriptPathError(RenaError):
     def __init__(self, script_path, error):
         super().__init__(error)
@@ -122,6 +131,7 @@ class InvalidScriptPathError(RenaError):
 
     def __str__(self):
         return 'Unable to load custom script: Invalid script path {0}. \nError: {1}\n'.format(self.script_path, self.error)
+
 
 class ScriptMissingModuleError(RenaError):
     def __init__(self, script_path, error):
@@ -149,6 +159,7 @@ class ScriptSyntaxError(RenaError):
     def __str__(self):
         return 'Script has syntax errors: ' + str(self.error) + '\n' + self.error.text
 
+
 class MissingPresetError(RenaError):
     def __init__(self, error):
         super().__init__(error)
@@ -164,7 +175,6 @@ class DataProcessorEvokeFailedError(RenaError):
 
     def __str__(self):
         return 'DataProcessorEvokeFailedError: ' + self.error
-
 
 
 class DaProcessorNotchFilterInvalidQError(DataProcessorEvokeFailedError):
@@ -227,3 +237,13 @@ class InvalidZMQMessageError(RenaError):
 
     def __str__(self):
         return f"Invalid ZMQ Message. Please refer to the documentation page 'Using the ZMQ Interface' for more information. \n{self.error}"
+
+
+class ScriptSetupError(RenaError):
+    """Raised when the script setup fails"""
+    def __init__(self, error):
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self):
+        return f"Script Setup Error: {self.error}"

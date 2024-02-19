@@ -6,6 +6,8 @@ import subprocess
 
 from typing import get_type_hints, Union
 
+from physiolabxr.exceptions.exceptions import CompileRPCError
+
 
 def python_type_to_proto_type(python_type):
     # Simplistic mapping, expand according to your needs
@@ -32,6 +34,13 @@ def generate_proto_from_script_class(cls):
             type_hints = get_type_hints(method)
             # get rid of the self argument
             type_hints = {k: v for k, v in type_hints.items() if k != "self"}
+
+            all_args = [arg for arg in inspect.signature(method).parameters if arg != "self"]
+            # Check for missing type hints
+            missing_type_hints = [arg for arg in all_args if arg not in type_hints]
+            if missing_type_hints:
+                message = f"Missing type hints for argument(s): {', '.join(missing_type_hints)}"
+                raise CompileRPCError(message)
 
             # get in input args that are not returns
             input_args = {k: v for k, v in type_hints.items() if k != "return"}

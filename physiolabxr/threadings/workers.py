@@ -16,7 +16,8 @@ from physiolabxr.configs.config import REQUEST_REALTIME_INFO_TIMEOUT
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.configs.shared import SCRIPT_INFO_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX
+    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, \
+    SCRIPT_FATAL_PREFIX
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
 from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
@@ -477,6 +478,8 @@ class ScriptingStdoutWorker(QObject):
                 self.std_signal.emit(('warning', msg))  # send message if it's not None
             elif prefix == SCRIPT_ERR_PREFIX:
                 self.std_signal.emit(('error', msg))
+            elif prefix == SCRIPT_FATAL_PREFIX:
+                self.std_signal.emit(('fatal', msg))
 
 class ScriptInfoWorker(QWorker):
     abnormal_termination_signal = pyqtSignal()
