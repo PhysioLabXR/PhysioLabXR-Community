@@ -62,15 +62,15 @@ def start_script_server(script_path, script_args):
         logging.fatal(f"Error compiling rpc, : {e}")
         return
 
-    # also start the rpc
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    rpc_server = create_rpc_server(script_path, replay_client_thread, server, "50051")
-    rpc_server.start()
-    replay_client_thread.rpc_server = rpc_server
+    if include_rpc is not None:
+        # also start the rpc
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+        rpc_server = create_rpc_server(script_path, replay_client_thread, server, "50051")
+        rpc_server.start()
+        replay_client_thread.rpc_server = rpc_server
 
+        rpc_server.wait_for_termination()
     replay_client_thread.start()
-    rpc_server.wait_for_termination()
-
     logging.info('Script process terminated.')
 
 

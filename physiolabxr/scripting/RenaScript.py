@@ -235,7 +235,7 @@ class RenaScript(ABC, threading.Thread):
         except Exception as e:
             traceback.print_exc()
             self.redirect_stderr.send_buffered_messages()
-        self.rpc_server.stop(None)
+        if self.rpc_server is not None: self.rpc_server.stop(None)
         logging.info('RenaScript: sending stop success to main app')
         send_string_router(SCRIPT_STOP_SUCCESS, self.command_routing_id, self.command_socket_interface)
 
