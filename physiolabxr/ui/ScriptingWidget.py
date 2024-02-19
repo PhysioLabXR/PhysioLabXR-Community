@@ -20,7 +20,8 @@ from physiolabxr.presets.PresetEnums import DataType, PresetType
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.presets.ScriptPresets import ScriptPreset, ScriptOutput
 from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.scripting.script_utils import start_rena_script, get_script_class_name
+from physiolabxr.scripting.script_utils import get_script_class_name
+from physiolabxr.scripting.script_process import start_rena_script
 from physiolabxr.scripting.scripting_enums import ParamChange, ParamType
 from physiolabxr.configs.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface

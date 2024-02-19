@@ -1,9 +1,9 @@
 import inspect
+import logging
 import os
 import shutil
 import subprocess
 
-from physiolabxr.scripting.script_utils import get_script_class
 from typing import get_type_hints, Union
 
 
@@ -62,6 +62,7 @@ def generate_proto_from_script_class(cls):
                     protobuf_type = python_type_to_proto_type(type_hints["return"])
                     response_fields.append(f"  {protobuf_type} message = 1;")
                 messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
+            logging.info(f"Generated RPC method {name} with request fields {request_fields} and response type {response_fields}")
 
     proto_lines.append("service MyService {")
     proto_lines.extend(service_methods)
@@ -75,6 +76,7 @@ def compile_rpc(script_path, script_class=None):
     assert os.path.exists(script_path)
     assert script_path.endswith('.py'), "File name must end with .py"
     if script_class is None:
+        from physiolabxr.scripting.script_utils import get_script_class
         script_class = get_script_class(script_path)
     script_directory_path = os.path.dirname(script_path)
 
