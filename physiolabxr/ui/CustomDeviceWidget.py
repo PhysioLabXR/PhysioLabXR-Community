@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import physiolabxr.threadings.AudioWorkers
-from physiolabxr.exceptions.exceptions import ChannelMismatchError, UnsupportedErrorTypeError, LSLStreamNotFoundError
+from physiolabxr.exceptions.exceptions import ChannelMismatchError, CustomDeviceStartStreamError, CustomDeviceStreamInterruptedError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
@@ -25,6 +25,7 @@ class CustomDeviceWidget(BaseStreamWidget):
                          insert_position=insert_position)
 
         custom_device_worker = workers.CustomDeviceWorker(self.stream_name)
+        custom_device_worker.device_widget = self
         self.connect_worker(custom_device_worker, False)
         # self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
@@ -32,7 +33,10 @@ class CustomDeviceWidget(BaseStreamWidget):
     def start_stop_stream_btn_clicked(self):
         try:
             super().start_stop_stream_btn_clicked()
-        except LSLStreamNotFoundError as e:
+        except CustomDeviceStartStreamError as e:
+            self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
+            return
+        except CustomDeviceStreamInterruptedError as e:
             self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
             return
         except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data

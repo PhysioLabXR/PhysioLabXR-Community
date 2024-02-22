@@ -349,7 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_custom_device(self, stream_name):
         widget_name = stream_name + '_widget'
-        from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
+        # from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
         # create the worker for this device
         # worker = workers.UnicornHybridBlackDeviceWorker(stream_name)
 
