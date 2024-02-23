@@ -142,6 +142,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         # self.data_buffer = None
         self.forward_input_socket_interface = None
 
+        # rpc fields
+        self.rpc_port = None
+
         # loading from script preset from the persistent sittings ######################################################
         if script_preset is not None:
             self.id = script_preset.id
@@ -274,6 +277,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             if bool(is_rpc):
                 # change the rpc button text to display the port number
                 self.RPC_button.setText('RPC listening on: {}'.format(self.port + 4))
+                self.rpc_port = self.port + 4
         else:
             self.info_worker.deactivate()
             show_label_movie(self.stopping_label, True)

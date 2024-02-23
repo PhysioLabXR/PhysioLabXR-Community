@@ -3,7 +3,9 @@ If you have get file not found error, make sure you set the working directory to
 Otherwise, you will get either import error or file not found error
 """
 import os
+import sys
 
+import grpc
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
 
 import pytest
@@ -97,7 +99,14 @@ def test_rpc_calls(context_bot, qtbot):
     check_generated_files(script_path)
 
     # call the rpc method
-
+    channel = grpc.insecure_channel(f'localhost:{scripting_widget.rpc_port}')
+    # import the rpc pb from the generated file
+    # add the script path to the sys path so that the generated pb2_grpc can find the module named pb2
+    sys.path.append(os.path.dirname(script_path))
+    import RPCTest_pb2_grpc, RPCTest_pb2
+    stub = RPCTest_pb2_grpc.RPCTestStub(channel)
+    response = stub.TestRPCOneArgOneReturn(RPCTest_pb2.TestRPCOneArgOneReturnRequest(input0='test'))
+    assert response.message == 'Received input: test'
 
 
 def test_rpc_with_unsupported_typehint():

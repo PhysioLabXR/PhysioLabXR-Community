@@ -31,7 +31,7 @@ class RPCTest(RenaScript):
         it is conventional to use camal case for RPC methods
         """
         # return int(self.inputs["stream"][0][0, 0])
-        return "Hello from RPCExample! received input: " + input0
+        return f"Received input: {input0}"
 
     @rpc
     def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> Union[str, int]:
