@@ -42,7 +42,8 @@ class RenaScript(ABC, threading.Thread):
     """
 
     def __init__(self, inputs, input_shapes, buffer_sizes, outputs: List[ScriptOutput], params: dict, port, run_frequency, time_window,
-                 script_path, is_simulate, presets, redirect_stdout, redirect_stderr, stdout_socket_interface, *args, **kwargs):
+                 script_path, is_simulate, presets, redirect_stdout, redirect_stderr,
+                 stdout_socket_interface, info_socket_interface, info_routing_id, *args, **kwargs):
         """
 
         :param inputs:
@@ -59,10 +60,6 @@ class RenaScript(ABC, threading.Thread):
 
         logging.info('RenaScript: RenaScript Thread started on process {0}'.format(os.getpid()))
         try:
-            self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                                          port_id=port + 1,  # starts with +1 because the first port is taken by stdout
-                                                          identity='server',
-                                                          pattern='router-dealer')
             self.input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
                                                            port_id=port + 2,
                                                            identity='server',
@@ -74,9 +71,8 @@ class RenaScript(ABC, threading.Thread):
         except zmq.error.ZMQError as e:
             raise ScriptSetupError("script failed to set up sockets {0}".format(e))
 
-        # send_string_router_dealer(str(os.getpid()), self.stdout_routing_id, self.stdout_socket_interface)
-        logging.info('RenaScript: Waiting for info routing ID from main app for info socket')
-        _, self.info_routing_id = recv_string_router(self.info_socket_interface, True)
+        self.info_socket_interface = info_socket_interface
+        self.info_routing_id = info_routing_id
         logging.info('RenaScript: Waiting for command routing ID from main app for command socket')
         _, self.command_routing_id = recv_string_router(self.command_socket_interface, True)
 

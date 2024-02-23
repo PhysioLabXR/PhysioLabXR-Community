@@ -72,10 +72,11 @@ def generate_proto_from_script_class(cls):
             messages.append(f"message {request_name} {{\n" + "\n".join(request_fields) + "\n}")
 
         if has_return:
-            if hasattr(type_hints["return"], "__origin__") and type_hints["return"].__origin__ is Union:
-                for j, union_arg_type in enumerate(type_hints["return"].__args__, start=1):
-                    protobuf_type = python_type_to_proto_type(union_arg_type)
-                    response_fields.append(f"  {protobuf_type} message{j-1} = {j};")
+            # if hasattr(type_hints["return"], '__iter__'):
+            if isinstance(type_hints["return"], tuple) or isinstance(type_hints["return"], list):
+                for j, arg_type in enumerate(type_hints["return"]):
+                    protobuf_type = python_type_to_proto_type(arg_type)
+                    response_fields.append(f"  {protobuf_type} message{j} = {j+1};")
             else:
                 protobuf_type = python_type_to_proto_type(type_hints["return"])
                 response_fields.append(f"  {protobuf_type} message = 1;")

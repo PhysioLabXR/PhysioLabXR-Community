@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 from physiolabxr.rpc.decorator import rpc
@@ -30,16 +28,14 @@ class RPCTest(RenaScript):
         """
         it is conventional to use camal case for RPC methods
         """
-        # return int(self.inputs["stream"][0][0, 0])
         return f"Received input: {input0}"
 
     @rpc
-    def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> Union[str, int]:
+    def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> (str, int):
         """
         it is conventional to use camal case for RPC methods
         """
-        # return int(self.inputs["stream"][0][0, 0])
-        return "Hello from RPCExample! received input: " + input0
+        return f"received {input0}", input1
 
     @rpc
     def TestRPCNoInputNoReturn(self):

@@ -11,6 +11,7 @@ import grpc
 import pytest
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget
+from google.protobuf.json_format import MessageToDict
 
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.rpc.compiler import generate_proto_from_script_class, compile_rpc
@@ -108,9 +109,28 @@ def test_rpc_calls(context_bot, qtbot):
     response = stub.TestRPCOneArgOneReturn(RPCTest_pb2.TestRPCOneArgOneReturnRequest(input0='test'))
     assert response.message == 'Received input: test'
 
+    response = stub.TestRPCTwoArgTwoReturn(RPCTest_pb2.TestRPCTwoArgTwoReturnRequest(input0='test', input1=1))
+    assert response.message0 == 'received test'
+    assert response.message1 == 1
 
-def test_rpc_with_unsupported_typehint():
+
+def test_rpc_with_unsupported_typehint_args():
     """
     TODO an error should be raised if the method has unsupported type hints for its arguments
+    """
+    pass
+
+def test_rpc_with_unsupported_typehint_return():
+    """
+    TODO an error should be raised if the method has unsupported type hints for its return
+
+    return has to be list, tuple, etc.
+    """
+    pass
+
+def test_rpc_failed_compile():
+    """
+    TODO an error should be raised if the method has unsupported type hints for its arguments
+    the main app should not stuck if the rpc compilation fails
     """
     pass

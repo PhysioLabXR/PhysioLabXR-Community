@@ -30,14 +30,26 @@ def start_script_server(script_path, script_args):
                                                port_id=port,
                                                identity='server',
                                                pattern='router-dealer')
+    info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
+                                                  port_id=port + 1,
+                                                  # starts with +1 because the first port is taken by stdout
+                                                  identity='server',
+                                                  pattern='router-dealer')
+
     logging.info('Waiting for stdout routing ID from main app for stdout socket')
     _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
+    logging.info('Waiting for info routing ID from main app for info socket')
+    _, info_routing_id = recv_string_router(info_socket_interface, True)
+
     sys.stdout = redirect_stdout = RedirectStdout(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
     sys.stderr = redirect_stderr = RedirectStderr(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
 
     script_args['redirect_stdout'] = redirect_stdout
     script_args['redirect_stderr'] = redirect_stderr
+
     script_args['stdout_socket_interface'] = stdout_socket_interface
+    script_args['info_socket_interface'] = info_socket_interface
+    script_args['info_routing_id'] = info_routing_id
 
     # redirect logging
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -54,6 +66,7 @@ def start_script_server(script_path, script_args):
         replay_client_thread = target_class(**script_args)
     except Exception as e:
         logging.fatal(f"Error creating script class: {e}")
+        send_router(np.array([False]), info_routing_id, info_socket_interface)
         return
 
     # compile the rpc
@@ -62,6 +75,7 @@ def start_script_server(script_path, script_args):
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc, : {e}")
+        send_router(np.array([False]), info_routing_id, info_socket_interface)
         return
     if include_rpc is not None:
         # also start the rpc
