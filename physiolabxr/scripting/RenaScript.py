@@ -316,9 +316,6 @@ class RenaScript(ABC, threading.Thread):
         """
         self.outputs[stream_name] = {'data': data, 'timestamp': timestamp}
 
-    # def start_rpc_server(self):
-    #     server_thread = threading.Thread(target=self.run_rpc_server)
-    #     server_thread.start()
 
 
 

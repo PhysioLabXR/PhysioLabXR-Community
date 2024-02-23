@@ -61,17 +61,21 @@ def start_script_server(script_path, script_args):
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc, : {e}")
         return
-
     if include_rpc is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         rpc_server = create_rpc_server(script_path, replay_client_thread, server, "50051")
         rpc_server.start()
         replay_client_thread.rpc_server = rpc_server
+    else:
+        rpc_server = None
 
-        rpc_server.wait_for_termination()
     replay_client_thread.start()
+    if include_rpc is not None:
+        rpc_server.wait_for_termination()
     logging.info('Script process terminated.')
+
+
 
 
 class SocketLoggingHandler(logging.Handler):

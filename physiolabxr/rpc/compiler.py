@@ -24,7 +24,7 @@ def generate_proto_from_script_class(cls):
     proto_lines = ["syntax = \"proto3\";", 'import "google/protobuf/empty.proto";']
     service_methods = []
     messages = []
-
+    cls_name = cls.__name__
     # get the name/methods that are rpc
     rpc_methods = [(name, method) for name, method in inspect.getmembers(cls, predicate=inspect.isfunction) if hasattr(method, "is_rpc_method")]
     if len(rpc_methods) == 0:
@@ -84,7 +84,7 @@ def generate_proto_from_script_class(cls):
             logging.info(f"No return type for RPC method {name}, if this is intentional, ignore this message.")
         logging.info(f"Generated RPC method {name} with request fields {request_fields} and response type {response_fields}")
 
-    proto_lines.append("service MyService {")
+    proto_lines.append(f"service {cls_name} {{")
     proto_lines.extend(service_methods)
     proto_lines.append("}")
     proto_lines.extend(messages)
@@ -100,14 +100,17 @@ def compile_rpc(script_path, script_class=None):
         script_class = get_script_class(script_path)
     script_directory_path = os.path.dirname(script_path)
 
+    logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
     proto_content = generate_proto_from_script_class(script_class)
     if proto_content is None:
+        logging.info(f"No RPC methods found in {script_class.__name__}, skipping compilation")
         return None
     # save the proto content to the same directory as the script
     script_name = os.path.basename(script_path)[:-3]
     proto_file_path = os.path.join(os.path.dirname(script_path), f"{script_name}.proto")
     with open(proto_file_path, "w") as f:
         f.write(proto_content)
+    logging.info(f"Succesfully generated proto file {proto_file_path} from {script_class.__name__}, saved to {proto_file_path}")
 
     # call grpc compile on the proto content
     command = [
@@ -117,11 +120,16 @@ def compile_rpc(script_path, script_class=None):
         f'--grpc_python_out=.',  # Output directory for generated gRPC code.
         os.path.basename(proto_file_path)  # The .proto file to compile.
     ]
+
+    logging.info(f"Compiling {proto_file_path} with command: {' '.join(command)}")
     result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
     if result.returncode != 0:
-        raise RuntimeError("Error compiling .proto file:", result.stderr)
+        message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
+        raise CompileRPCError(message)
     else:
-        print(f"{proto_file_path} file compiled successfully.")
+        logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")
 
     # generate the server code
-    return 1
+
+
+    return True

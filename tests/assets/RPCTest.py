@@ -19,7 +19,7 @@ class RPCTest(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        print(f'Loop: rpc server {self.rpc_server}')
+        print(f'Loop: rpc server')
 
     # cleanup is called when the stop button is hit
     def cleanup(self):

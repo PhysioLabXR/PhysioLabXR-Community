@@ -349,6 +349,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
         if script_path == '':
             return
+        self.locate_script(script_path)
+
+    def locate_script(self, script_path):
         self.process_locate_script(script_path)
         self.export_script_args_to_settings()
 
