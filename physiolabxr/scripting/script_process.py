@@ -5,13 +5,14 @@ from concurrent import futures
 from multiprocessing import Process
 
 import grpc
+import numpy as np
 
 from physiolabxr.configs.shared import SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, SCRIPT_INFO_PREFIX, SCRIPT_FATAL_PREFIX
 from physiolabxr.rpc.compiler import compile_rpc
 from physiolabxr.rpc.utils import create_rpc_server
 from physiolabxr.scripting.script_utils import get_script_class, debugging
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
-from physiolabxr.utils.networking_utils import recv_string_router, send_string_router
+from physiolabxr.utils.networking_utils import recv_string_router, send_string_router, send_router
 
 
 def start_script_server(script_path, script_args):
@@ -24,8 +25,9 @@ def start_script_server(script_path, script_args):
     Note that any call to logging.fatal will terminate the script process.
     """
     # redirect stdout
+    port = script_args['port']
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                               port_id=script_args['port'],
+                                               port_id=port,
                                                identity='server',
                                                pattern='router-dealer')
     logging.info('Waiting for stdout routing ID from main app for stdout socket')
@@ -64,11 +66,15 @@ def start_script_server(script_path, script_args):
     if include_rpc is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        rpc_server = create_rpc_server(script_path, replay_client_thread, server, "50051")
+        rpc_server = create_rpc_server(script_path, replay_client_thread, server, port + 4)
+        logging.info(f"Starting rpc server listening for calls on {port + 4}")
         rpc_server.start()
         replay_client_thread.rpc_server = rpc_server
+        send_router(np.array([True]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
     else:
         rpc_server = None
+        send_router(np.array([False]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
+
 
     replay_client_thread.start()
     if include_rpc is not None:

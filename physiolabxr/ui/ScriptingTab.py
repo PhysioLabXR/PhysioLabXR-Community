@@ -41,7 +41,7 @@ class ScriptingTab(QtWidgets.QWidget):
         self.add_script_widget()
 
     def add_script_widget(self, script_preset=None):
-        script_widget = ScriptingWidget(self, self.parent, port=config.scripting_port + 4 * len(self.script_widgets), script_preset=script_preset, layout=self.ScriptingWidgetScrollLayout)  # reverse three ports for each scripting widget
+        script_widget = ScriptingWidget(self, self.parent, port=AppConfigs().scripting_port + 5 * len(self.script_widgets), script_preset=script_preset, layout=self.ScriptingWidgetScrollLayout)  # reverse three ports for each scripting widget
         self.script_widgets[script_widget.id] = script_widget
         self.ScriptingWidgetScrollLayout.addWidget(script_widget)
 

@@ -113,6 +113,7 @@ class AppConfigs(metaclass=Singleton):
     main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
     # ZMQ ports
+    scripting_port = 8000
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000

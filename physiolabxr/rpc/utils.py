@@ -28,7 +28,7 @@ def create_rpc_server(script_path, script_instance, server, port):
     server_instance.script_instance = script_instance
 
     add_server_func(server_instance, server)
-    server.add_insecure_port("[::]:" + port)
+    server.add_insecure_port(f"[::]:{port}")
     return server
 
 def run_rpc_server(script_path, script_instance, server, port):

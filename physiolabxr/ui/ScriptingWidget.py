@@ -45,6 +45,15 @@ from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
+    """
+
+    Sockets that are used in this class:
+    1. stdout_socket_interface: used to receive stdout from the script process,             using port
+    2. info_socket_interface: used to receive information from the script process,          using port + 1
+    3. forward_input_socket_interface: used to forward input data to the script process,    using port + 2
+    4. command_socket_interface: used to send command to the script process,                using port + 3
+    5. rpc port:                                                                            using port + 4
+    """
 
     def __init__(self, parent_widget: QtWidgets, main_window, port, script_preset: ScriptPreset, layout: QLayout):
         super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
@@ -248,6 +257,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
             self.script_process = start_rena_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
+            # request to see if the rpc is included
+
             print('MainApp: User script started on process with PID {}'.format(self.script_pid))
             self.setup_info_worker(self.script_pid)
             self.setup_command_interface()
@@ -258,6 +269,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.is_simulating = self.simulateCheckbox.isChecked()
             self.change_ui_on_run_stop(self.is_running)
             self.input_shape_dict = self.get_input_shape_dict()
+
+            is_rpc = self.info_socket_interface.socket.recv()
+            if bool(is_rpc):
+                # change the rpc button text to display the port number
+                self.RPC_button.setText('RPC listening on: {}'.format(self.port + 4))
         else:
             self.info_worker.deactivate()
             show_label_movie(self.stopping_label, True)
@@ -409,6 +425,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.widget_script_basic_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
+        # change the text of the rpc button to not display the port number
+        self.RPC_button.setText('RPC inactive')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
