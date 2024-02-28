@@ -12,6 +12,7 @@ import pytest
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QWidget
 from google.protobuf.json_format import MessageToDict
+from google.protobuf import empty_pb2
 
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.rpc.compiler import generate_proto_from_script_class, compile_rpc
@@ -119,6 +120,15 @@ def test_rpc_calls(context_bot, qtbot):
     response = stub.TestRPCTwoArgTwoReturn(RPCTest_pb2.TestRPCTwoArgTwoReturnRequest(input0='test', input1=1))
     assert response.message0 == 'received test'
     assert response.message1 == 1
+
+    response = stub.TestRPCNoInputNoReturn(empty_pb2.Empty())
+    assert response == empty_pb2.Empty()
+
+    response = stub.TestRPCNoReturn(RPCTest_pb2.TestRPCNoReturnRequest(input0=1))
+    assert response == empty_pb2.Empty()
+
+    response = stub.TestRPCNoArgs(empty_pb2.Empty())
+    assert response.message == 'No Args'
 
 
 def test_rpc_with_unsupported_typehint_args():

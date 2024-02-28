@@ -58,4 +58,4 @@ class RPCTest(RenaScript):
         # this rpc does not return anything
         """
         # return int(self.inputs["stream"][0][0, 0])
-        return "Hello from RPCExample! received input: "
+        return "No Args"
