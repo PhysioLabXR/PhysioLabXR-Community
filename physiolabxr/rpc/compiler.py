@@ -20,6 +20,36 @@ def python_type_to_proto_type(python_type):
     }
     return mapping.get(python_type, "string")  # Default to string if type not found
 
+def get_args_return_from_type_hints(name, method):
+    type_hints = get_type_hints(method)
+
+    # warn if the self argument is is typehinted
+    if "self" in type_hints:
+        logging.warning(f"RPC method {name} has a type hint for self, this is not necessary")
+
+    # get rid of the self argument
+    type_hints = {k: v for k, v in type_hints.items() if k != "self"}
+
+    all_args = [arg for arg in inspect.signature(method).parameters if arg != "self"]
+    # Check for missing type hints
+    missing_type_hints = [arg for arg in all_args if arg not in type_hints]
+
+    if missing_type_hints:
+        message = f"RPC method {name} is missing type hints for argument(s): {', '.join(missing_type_hints)}"
+        raise CompileRPCError(message)
+
+    # get in input args that are not returns
+    input_args = {k: v for k, v in type_hints.items() if k != "return"}
+    if "return" in type_hints and type_hints["return"] is not None:
+        returns = type_hints["return"]
+        has_return = True
+    else:
+        returns = None
+        has_return = False
+    has_args = len(input_args) > 0  # Excluding self and potentially return
+
+    return input_args, returns, has_return, has_args
+
 def generate_proto_from_script_class(cls):
     proto_lines = ["syntax = \"proto3\";", 'import "google/protobuf/empty.proto";']
     service_methods = []
@@ -34,30 +64,10 @@ def generate_proto_from_script_class(cls):
         request_name = f"{name}Request"
         response_name = f"{name}Response"
 
-        type_hints = get_type_hints(method)
-
-        # warn if the self argument is is typehinted
-        if "self" in type_hints:
-            logging.warning(f"RPC method {name} has a type hint for self, this is not necessary")
-
-        # get rid of the self argument
-        type_hints = {k: v for k, v in type_hints.items() if k != "self"}
-
-        all_args = [arg for arg in inspect.signature(method).parameters if arg != "self"]
-        # Check for missing type hints
-        missing_type_hints = [arg for arg in all_args if arg not in type_hints]
-
-        if missing_type_hints:
-            message = f"RPC method {name} is missing type hints for argument(s): {', '.join(missing_type_hints)}"
-            raise CompileRPCError(message)
-
-        # get in input args that are not returns
-        input_args = {k: v for k, v in type_hints.items() if k != "return"}
+        input_args, returns, has_return, has_args = get_args_return_from_type_hints(name, method)
 
         request_fields = []
         response_fields = []
-        has_return = "return" in type_hints and type_hints["return"] is not None
-        has_args = len(input_args) > 0  # Excluding self and potentially return
 
         # Handle no input scenario
         request_type = request_name if has_args else "google.protobuf.Empty"
@@ -73,12 +83,12 @@ def generate_proto_from_script_class(cls):
 
         if has_return:
             # if hasattr(type_hints["return"], '__iter__'):
-            if isinstance(type_hints["return"], tuple) or isinstance(type_hints["return"], list):
-                for j, arg_type in enumerate(type_hints["return"]):
+            if isinstance(returns, tuple) or isinstance(returns, list):
+                for j, arg_type in enumerate(returns):
                     protobuf_type = python_type_to_proto_type(arg_type)
                     response_fields.append(f"  {protobuf_type} message{j} = {j+1};")
             else:
-                protobuf_type = python_type_to_proto_type(type_hints["return"])
+                protobuf_type = python_type_to_proto_type(returns)
                 response_fields.append(f"  {protobuf_type} message = 1;")
             messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
         else:
@@ -91,6 +101,47 @@ def generate_proto_from_script_class(cls):
     proto_lines.extend(messages)
 
     return "\n".join(proto_lines)
+
+def generate_server_code(script_path, script_class):
+    script_directory_path = os.path.dirname(script_path)
+    script_name = os.path.basename(script_path)[:-3]
+    server_file_path = os.path.join(script_directory_path, f"{script_name}Server.py")
+
+    # Start generating server code
+    server_code = ["from google.protobuf import empty_pb2",
+                   "from google.protobuf.json_format import MessageToDict",
+                   f"import {script_name}_pb2_grpc, {script_name}_pb2",
+                   "",
+                   f"class {script_class.__name__}Server({script_name}_pb2_grpc.{script_class.__name__}Servicer):",
+                   "    script_instance = None"]
+
+    # Iterate over RPC methods to add to server class
+    for name, method in inspect.getmembers(script_class, predicate=inspect.isfunction):
+        if hasattr(method, "is_rpc_method"):
+            server_code.append(f"    def {name}(self, request, context):")
+            input_args, returns, has_return, has_args = get_args_return_from_type_hints(name, method)
+
+            if has_args:
+                server_code.append(f"        result = self.script_instance.{name}(**MessageToDict(request))")
+            else:
+                server_code.append(f"        result = self.script_instance.{name}()")
+
+            if has_return:
+                if isinstance(returns, tuple) or isinstance(returns, list):
+                    return_arg_string = ", ".join([f"message{j}=result[{j}]" for j in range(len(returns))])
+                    server_code.append(f"        return {script_name}_pb2.{name}Response({return_arg_string})")
+                else:
+                    server_code.append(f"        return {script_name}_pb2.{name}Response(message=result)")
+            else:
+                server_code.append("        return empty_pb2.Empty()")
+
+            server_code.append("")
+
+    # Write the server code to a file
+    with open(server_file_path, 'w') as server_file:
+        server_file.write("\n".join(server_code))
+
+    logging.info(f"Server code generated at {server_file_path}")
 
 
 def compile_rpc(script_path, script_class=None):
@@ -130,7 +181,8 @@ def compile_rpc(script_path, script_class=None):
     else:
         logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")
 
-    # generate the server code
+    # generate the server code #############################################
+    generate_server_code(script_path, script_class)
 
 
     return True

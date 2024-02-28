@@ -42,8 +42,7 @@ class RPCTest(RenaScript):
         """
         # this rpc does not return nor does it take any input
         """
-        # return int(self.inputs["stream"][0][0, 0])
-        return "Hello from RPCExample! received input: "
+        return "No input no return RPC called"
 
     @rpc
     def TestRPCNoReturn(self, input0: float):

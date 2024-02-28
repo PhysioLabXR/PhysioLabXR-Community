@@ -47,6 +47,13 @@ def check_generated_files(script_path):
     assert os.path.exists(os.path.join(script_dir, pb2_grpc_file))
     assert os.path.exists(os.path.join(script_dir, server_file))
 
+    # compare with the golden file for RPCTest.proto and RPCTestServer.py
+    with open(os.path.join(script_dir, proto_file), 'r') as f:
+        assert f.read() == open(f"tests/assets/{proto_file}", 'r').read()
+    with open(os.path.join(script_dir, server_file), 'r') as f:
+        assert f.read() == open(f"tests/assets/{server_file}", 'r').read()
+
+
 def remove_generated_files(script_path):
     script_class = get_script_class(script_path)
     proto_file = f"{script_class.__name__}.proto"
