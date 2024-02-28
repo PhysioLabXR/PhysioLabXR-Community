@@ -56,11 +56,13 @@ class CortexType(RenaScript):
     def loop(self):
 
         # get all the flashing events
-        event_marker_stream = self.inputs.clear_buffer_data()
 
 
 
         print('Loop function is called')
+
+
+
 
 
 
