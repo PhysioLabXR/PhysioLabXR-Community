@@ -1,0 +1,13 @@
+{
+  "StreamName": "CortexTypeP300SpellerEventMarkerLSL",
+  "ChannelNames": [
+    "FlashingBlockMarker",
+    "FlashingMarker",
+    "FlashingRowOrColumnMarker",
+    "FlashingRowOrColumnIndexMarker",
+    "FlashingTargetMarker"
+  ],
+
+  "NominalSamplingRate": 5,
+  "GroupInfo":  [1, 2, 3, 4]
+}
