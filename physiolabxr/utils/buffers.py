@@ -7,7 +7,6 @@ import numpy as np
 
 from physiolabxr.exceptions.exceptions import ChannelMismatchError
 from physiolabxr.interfaces.OpenBCIDeviceInterface import OpenBCIDeviceInterface
-from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import UnicornHybridBlackDeviceInterface
 from physiolabxr.interfaces.MmWaveSensorLSLInterface import MmWaveSensorLSLInterface
 
 
@@ -34,15 +33,6 @@ def process_preset_create_openBCI_interface_startsensor(device_name, serial_port
 
     return interface
 
-def process_preset_create_UnicornHybridBlack_interface_startsensor(device_name, board_id):
-    try:
-        interface = UnicornHybridBlackDeviceInterface(_device_name=device_name,
-                                                      board_id=board_id,
-                                                      log='store_false', )
-    except AssertionError as e:
-        raise AssertionError(e)
-
-    return interface
 
 def process_preset_create_TImmWave_interface_startsensor(num_range_bin, Dport, Uport, config_path):
     # create interface
@@ -214,6 +204,35 @@ class DataBuffer():
 
     def get_data(self, stream_name):
         return self.buffer[stream_name][0]
+
+    def get_stream_in_time_range(self, stream_name, start_time, end_time):
+
+        # start time must be smaller than end time
+        if start_time > end_time:
+            raise ValueError('start_time must be smaller than end_time')
+
+        stream_data = self.buffer[stream_name][0]
+        stream_timestamps = self.buffer[stream_name][1]
+
+        start_index = np.searchsorted(stream_timestamps, [start_time], side='left')[0]
+        end_index = np.searchsorted(stream_timestamps, [end_time], side='right')[0]
+
+        return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
+
+    def get_stream_in_index_range(self, stream_name, start_index, end_index):
+
+        if start_index < 0 or end_index < 0:
+            raise ValueError('start_index and end_index must be positive')
+
+        if start_index > end_index:
+            raise ValueError('start_index must be smaller than end_index')
+
+        stream_data = self.buffer[stream_name][0]
+        stream_timestamps = self.buffer[stream_name][1]
+
+        return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
+
+
 
     def get_timestamps(self, stream_name):
         return self.buffer[stream_name][1]
