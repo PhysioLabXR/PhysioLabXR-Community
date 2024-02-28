@@ -3,10 +3,11 @@ from physiolabxr.utils.ConfigPresetUtils import DeviceType
 
 class DeviceInterface:
 
-    def __init__(self, _device_name, _device_type, device_nominal_sampling_rate=100):
+    def __init__(self, _device_name, _device_type, device_nominal_sampling_rate=100, device_available=True):
         self._device_name = _device_name
         self._device_type = _device_type
         self.device_nominal_sampling_rate = device_nominal_sampling_rate
+        self.device_available = device_available
 
     def start_stream(self):
         pass
@@ -22,4 +23,4 @@ class DeviceInterface:
         return self.device_nominal_sampling_rate
 
     def is_stream_available(self):
-        return True
+        return self.device_available

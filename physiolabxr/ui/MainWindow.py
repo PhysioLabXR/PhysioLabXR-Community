@@ -12,7 +12,7 @@ from physiolabxr.exceptions.exceptions import RenaError, InvalidStreamMetaInfoEr
 from physiolabxr.configs import config
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
-from physiolabxr.presets.PresetEnums import PresetType, DataType
+from physiolabxr.presets.PresetEnums import PresetType, DataType, CustomPresetType
 from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
@@ -205,9 +205,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.init_audio_input_device(stream_name)
             elif preset_type == PresetType.MONITOR:
                 self.init_video_device(stream_name, video_preset_type=preset_type)
-            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
-                raise NotImplementedError
-                # self.init_device(selected_text)  # add device stream
             elif preset_type == PresetType.LSL:
                 self.init_LSL_streaming(stream_name)  # add lsl stream
             elif preset_type == PresetType.ZMQ:
@@ -215,6 +212,13 @@ class MainWindow(QtWidgets.QMainWindow):
             elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
                 streams_for_experiment = get_experiment_preset_streams(stream_name)
                 self.add_streams_from_experiment_preset(streams_for_experiment)
+            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
+                # check if stream_name is a custom device
+                if stream_name == CustomPresetType.UnicornHybridBlackBluetooth.value:
+                    self.init_custom_device(stream_name)
+                else:
+                    raise NotImplementedError
+                # self.init_device(selected_text)  # add device stream
             else:
                 raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
@@ -343,6 +347,21 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
 
+    def init_custom_device(self, stream_name):
+        widget_name = stream_name + '_widget'
+        # from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
+        # create the worker for this device
+        # worker = workers.UnicornHybridBlackDeviceWorker(stream_name)
+
+
+        from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
+        stream_widget = CustomDeviceWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
+
     def update_meta_data(self):
         # get the stream viz fps
         fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()]])
@@ -361,20 +380,25 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
 
-    def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
-        device_type = config.settings.value('DeviceType')
-
-        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
-            serial_port = config.settings.value('_SerialPort')
-            board_id = config.settings.value('_Board_id')
-            # create and start this device's worker thread
-            worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
-            config.settings.endGroup()
-            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
-        else:
-            dialog_popup('We are not supporting this Device or the Device has been added')
-        config.settings.endGroup()
+    # def init_device(self, device_name):
+    #     config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
+    #     device_type = config.settings.value('DeviceType')
+    #
+    #     if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
+    #         serial_port = config.settings.value('_SerialPort')
+    #         board_id = config.settings.value('_Board_id')
+    #         # create and start this device's worker thread
+    #         worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
+    #         config.settings.endGroup()
+    #         self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+    #     if device_name not in self.device_workers.keys() and device_type == 'UnicornHybridBlack':
+    #         board_id = config.settings.value('_Board_id')
+    #         worker = workers.UnicornHybridBlackDeviceWorker(device_name, board_id)
+    #         config.settings.endGroup()
+    #         self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+    #     else:
+    #         dialog_popup('We are not supporting this Device or the Device has been added')
+    #     config.settings.endGroup()
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
