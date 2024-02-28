@@ -10,15 +10,20 @@ from physiolabxr.exceptions.exceptions import CompileRPCError
 
 
 def python_type_to_proto_type(python_type):
-    # Simplistic mapping, expand according to your needs
+    """
+    Convert a python type to a proto type
+    """
     mapping = {
         int: "int32",
         float: "float",
         str: "string",
         bool: "bool"
-        # Add more mappings as necessary
     }
-    return mapping.get(python_type, "string")  # Default to string if type not found
+    # raise an error if the type is not in the mapping
+    try:
+        return mapping[python_type]
+    except KeyError:
+        raise CompileRPCError(f"Unsupported type {python_type} in RPC method")
 
 def get_args_return_from_type_hints(name, method):
     type_hints = get_type_hints(method)

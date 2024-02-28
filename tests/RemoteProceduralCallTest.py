@@ -135,6 +135,7 @@ def test_rpc_with_unsupported_typehint_args():
     """
     TODO an error should be raised if the method has unsupported type hints for its arguments
     """
+
     pass
 
 def test_rpc_with_unsupported_typehint_return():
