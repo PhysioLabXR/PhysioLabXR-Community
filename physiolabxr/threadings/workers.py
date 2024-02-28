@@ -17,8 +17,7 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.configs.shared import SCRIPT_INFO_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, \
-    SCRIPT_FATAL_PREFIX
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
+    SCRIPT_FATAL_PREFIX, PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
 from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import create_custom_device_interface
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
