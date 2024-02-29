@@ -123,3 +123,6 @@ class ScriptConsoleLog(QtWidgets.QWidget):
                     hyperlink = '<a href="file://{}#L{}">{}</a>'.format(filename, lineno, line)
                     lines[i] = hyperlink
         return '<br>'.join(lines)
+
+    def _check_message_exits(self, message):
+        return message in self.message_text_browser.toPlainText()

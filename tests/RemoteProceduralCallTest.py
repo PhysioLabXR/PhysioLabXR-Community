@@ -131,24 +131,38 @@ def test_rpc_calls(context_bot, qtbot):
     assert response.message == 'No Args'
 
 
-def test_rpc_with_unsupported_typehint_args():
-    """
-    TODO an error should be raised if the method has unsupported type hints for its arguments
-    """
-
-    pass
-
-def test_rpc_with_unsupported_typehint_return():
+def test_rpc_with_unsupported_typehint_args(context_bot, qtbot):
     """
     TODO an error should be raised if the method has unsupported type hints for its return
-
-    return has to be list, tuple, etc.
-    """
-    pass
-
-def test_rpc_failed_compile():
-    """
-    TODO an error should be raised if the method has unsupported type hints for its arguments
     the main app should not stuck if the rpc compilation fails
     """
-    pass
+    script_path = "tests/assets/RPCTestUnsupportedArgType.py"
+    remove_generated_files(script_path)
+
+    context_bot.app.ui.tabWidget.setCurrentWidget( context_bot.app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
+    scripting_widget = context_bot.add_existing_script(script_path)
+
+    qtbot.mouseClick(scripting_widget.runBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+
+    # wait five seconds for the rpc server to start
+    qtbot.wait(5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits('RPC method TestUnsupportedArgType has unsupported type hint for argument input1'), timeout=5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits("Unsupported type 'set' in RPC method"), timeout=5000)
+
+def test_rpc_with_unsupported_typehint_return(context_bot, qtbot):
+    """
+    TODO an error should be raised if the method has unsupported type hints for its return
+    the main app should not stuck if the rpc compilation fails
+    """
+    script_path = "tests/assets/RPCTestUnsupportedReturnType.py"
+    remove_generated_files(script_path)
+
+    context_bot.app.ui.tabWidget.setCurrentWidget( context_bot.app.ui.tabWidget.findChild(QWidget, 'scripting_tab'))  # switch to the visualization widget
+    scripting_widget = context_bot.add_existing_script(script_path)
+
+    qtbot.mouseClick(scripting_widget.runBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+
+    # check for the build failed message
+    qtbot.wait(5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits('RPC method TestUnsupportedReturnType has unsupported type hint for its return'), timeout=5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits("Unsupported type 'set' in RPC method"), timeout=5000)

@@ -74,7 +74,7 @@ def start_script_server(script_path, script_args):
         include_rpc = compile_rpc(script_path, target_class)
     except Exception as e:
         # notify the main app that the script has failed to start
-        logging.fatal(f"Error compiling rpc, : {e}")
+        logging.fatal(f"Error compiling rpc: {e}")
         send_router(np.array([False]), info_routing_id, info_socket_interface)
         return
     if include_rpc is not None:

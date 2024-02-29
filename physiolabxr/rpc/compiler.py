@@ -23,7 +23,7 @@ def python_type_to_proto_type(python_type):
     try:
         return mapping[python_type]
     except KeyError:
-        raise CompileRPCError(f"Unsupported type {python_type} in RPC method")
+        raise CompileRPCError(f"Unsupported type '{python_type.__name__}' in RPC method")
 
 def get_args_return_from_type_hints(name, method):
     type_hints = get_type_hints(method)
@@ -82,20 +82,29 @@ def generate_proto_from_script_class(cls):
         # Generate request and response messages if necessary
         if has_args:
             for i, (arg_name, arg_type) in enumerate(input_args.items(), start=1):
-                protobuf_type = python_type_to_proto_type(arg_type)
+                try:
+                    protobuf_type = python_type_to_proto_type(arg_type)
+                except CompileRPCError as e:
+                    logging.error(f"RPC method {name} has unsupported type hint for argument {arg_name}")
+                    raise e
                 request_fields.append(f"  {protobuf_type} {arg_name} = {i};")
             messages.append(f"message {request_name} {{\n" + "\n".join(request_fields) + "\n}")
 
         if has_return:
             # if hasattr(type_hints["return"], '__iter__'):
-            if isinstance(returns, tuple) or isinstance(returns, list):
-                for j, arg_type in enumerate(returns):
-                    protobuf_type = python_type_to_proto_type(arg_type)
-                    response_fields.append(f"  {protobuf_type} message{j} = {j+1};")
-            else:
-                protobuf_type = python_type_to_proto_type(returns)
-                response_fields.append(f"  {protobuf_type} message = 1;")
-            messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
+            try:
+
+                if isinstance(returns, tuple) or isinstance(returns, list):
+                    for j, arg_type in enumerate(returns):
+                        protobuf_type = python_type_to_proto_type(arg_type)
+                        response_fields.append(f"  {protobuf_type} message{j} = {j+1};")
+                else:
+                    protobuf_type = python_type_to_proto_type(returns)
+                    response_fields.append(f"  {protobuf_type} message = 1;")
+                messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
+            except CompileRPCError as e:
+                logging.error(f"RPC method {name} has unsupported type hint for its return")
+                raise e
         else:
             logging.info(f"No return type for RPC method {name}, if this is intentional, ignore this message.")
         logging.info(f"Generated RPC method {name} with request fields {request_fields} and response type {response_fields}")
@@ -188,6 +197,5 @@ def compile_rpc(script_path, script_class=None):
 
     # generate the server code #############################################
     generate_server_code(script_path, script_class)
-
 
     return True
