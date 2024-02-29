@@ -308,3 +308,5 @@ def confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray) -> None:
         all_sample_title = 'Accuracy Score: {0}'.format(score)
         plt.title(all_sample_title, size=15)
         plt.show()
+
+
