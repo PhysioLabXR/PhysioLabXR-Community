@@ -519,9 +519,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def eventFilter(self, source, event):
         if event.type() == QKeyEvent.Type.KeyRelease:
             if event.key() == Qt.Key.Key_Alt:
-                print(len(self.stream_widgets))
                 for widget in self.stream_widgets.values():
-                    print(widget.objectName())
                     if widget.show_border:
                         widget.show_border = False
                         widget.update()
@@ -545,7 +543,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     widgests[index].show_border = True
                     widgests[index].update()
                     widgests[index].setFocus()
-                    print("current",widgests[index].objectName(), widgests[index].show_border, widgests[index].hasFocus())
                 case ShortCutType.delete:
                     if widgests[index].hasFocus():
                         widgests[index].try_close()
