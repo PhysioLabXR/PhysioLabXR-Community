@@ -32,7 +32,7 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
 
     # instantiate the GlabalSignals singleton object
     GlobalSignals()
-    pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)
+    pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True, enableExperimental=True)
 
 def load_ui_shared():
     global stream_unavailable_pixmap

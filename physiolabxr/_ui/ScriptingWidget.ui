@@ -372,6 +372,9 @@
                     <property name="editable">
                      <bool>true</bool>
                     </property>
+                    <property name="placeholderText">
+                     <string>Stream name</string>
+                    </property>
                    </widget>
                   </item>
                   <item>
@@ -924,8 +927,11 @@
           <height>36</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Loop (with overheads) per second: the number of &lt;span style=&quot; font-weight:700;&quot;&gt;loop&lt;/span&gt; calls made per second, overhead include the time it takes for the input data to be transferred from the main process to the script process. &lt;/p&gt;&lt;p&gt;Average loop call running time: the average time it takes to complete a loop call, excluding overheads.&lt;/p&gt;&lt;p&gt;Max loop call running time: the running time of the longest loop call seen so far.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
-         <string>Loop (with overheads) per second -    Average loop call runtime -</string>
+         <string>Loop (with overheads) per second -    Average loop call running time -    Max loop call running time -</string>
         </property>
        </widget>
       </item>

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QSplashScreen, QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt, QTimer, QObject, pyqtSignal, QCoreApplication
 
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.version.version import VERSION
+from physiolabxr.version.version import get_project_version
 
 
 class SplashScreenSingleton:
@@ -60,7 +60,7 @@ class SplashScreen(QSplashScreen):
         self.loading_label .setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.loading_label)
 
-        version_label = QLabel(f"<i>Physiological Laboratory for Mixed Reality v{VERSION}</i>", self)
+        version_label = QLabel(f"<i>Physiological Laboratory for Mixed Reality v{get_project_version()}</i>", self)
         version_label .setAlignment(Qt.AlignmentFlag.AlignRight)
         version_label.setGeometry(180, 120, 320, 20)  # Set the x, y, width, and height values as desired
 

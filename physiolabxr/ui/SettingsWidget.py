@@ -34,6 +34,12 @@ class SettingsWidget(QtWidgets.QWidget):
         # resolve replay settings
         self.start_stream_on_replay_checkbox.setChecked(AppConfigs().start_streams_on_replay)
         self.start_stream_on_replay_checkbox.stateChanged.connect(self.on_replay_start_stream_on_replay_changed)
+        self.auto_set_zmq_checkbox.setChecked(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_lineedit.setText(str(AppConfigs().auto_select_zmq_n_channels))
+        self.auto_set_zmq_lineedit.setValidator(NoCommaIntValidator())
+        self.auto_set_zmq_lineedit.textChanged.connect(self.on_auto_set_zmq_lineedit_changed)
+        self.auto_set_zmq_checkbox.stateChanged.connect(self.on_auto_set_zmq_checkbox_changed)
 
         # resolve recording file format
         self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
@@ -252,3 +258,13 @@ class SettingsWidget(QtWidgets.QWidget):
             self._load_audio_device_process.terminate()
         self.wait_load_audio_device_process_thread.quit()
 
+    def on_auto_set_zmq_lineedit_changed(self):
+        if self.auto_set_zmq_lineedit.text() != '':
+            new_value = int(self.auto_set_zmq_lineedit.text())
+            AppConfigs().auto_select_zmq_n_channels = new_value
+            print(f'Set auto_select_zmq_n_channels to {new_value}')
+
+    def on_auto_set_zmq_checkbox_changed(self):
+        AppConfigs().auto_select_zmq_if_exceed_n_channels = self.auto_set_zmq_checkbox.isChecked()
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        print(f'auto_select_zmq_if_exceed_n_channels changed to {AppConfigs().auto_select_zmq_if_exceed_n_channels}')

@@ -102,8 +102,7 @@ class GroupPlotWidget(QtWidgets.QWidget):
         # self.linechart_widget.enableAutoRange(enable=False)
         pens = []
         names = []
-        for channel_index_in_group, (channel_index, channel_name) in enumerate(
-                zip(channel_indices, self.channel_names)):
+        for channel_index_in_group, (channel_index, channel_name) in enumerate(zip(channel_indices, self.channel_names)):
             # is_channel_shown = is_channels_shown[channel_index_in_group]
             pens.append(pg.mkPen(color=distinct_colors[channel_index_in_group]))
             names.append(channel_name)
@@ -116,11 +115,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             # channel_plot_item.setClipToView(True)
             # channel_plot_item.setSkipFiniteCheck(True)
             # self.channel_plot_item_dict[channel_name] = channel_plot_item
-        channel_plot_item = self.linechart_widget.plot([], [], pen=pens, name=names)
+        group_plot_item = self.linechart_widget.plot([], [], pen=pens, name=names)
         downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
-        channel_plot_item.setDownsampling(auto=True, method=downsample_method)
+        group_plot_item.setDownsampling(auto=True, method=downsample_method)
         # channel_plot_item.setClipToView(True)
-        channel_plot_item.setSkipFiniteCheck(True)
+        group_plot_item.setSkipFiniteCheck(True)
         # self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
@@ -204,11 +203,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             #     data = data +
 
             time_vector = np.linspace(0., duration, data.shape[1])
-            y_vals = np.zeros((len(channel_indices), time_vector.shape[0]))
-            for index_in_group, channel_index in enumerate(channel_indices):
-                y_vals[channel_index] = data[channel_index, :]+linechart_config.channels_constant_offset*index_in_group
-            plot_data_item = self.linechart_widget.plotItem.curves[0]
-            plot_data_item.setData(time_vector, y_vals)
+
+            y_vals = data[channel_indices]
+            channel_offsets = np.arange(y_vals.shape[0]) * linechart_config.channels_constant_offset
+            y_vals = y_vals + channel_offsets.reshape(-1, 1)
+            self.linechart_widget.plotItem.curves[0].setData(time_vector, y_vals)
                 # plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
                 # if plot_data_item.isVisible():
                 #     print('plotting channel', channel_index, 'in group', self.group_name)
@@ -292,9 +291,8 @@ class GroupPlotWidget(QtWidgets.QWidget):
 
     def change_channel_name(self, new_ch_name, old_ch_name, lsl_index):
         # change_plot_label(self.linechart_widget, self.channel_plot_item_dict[old_ch_name], new_ch_name)
-        self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
-        self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
-
+        # self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
+        # self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
         # self.channel_plot_item_dict[old_ch_name].legend.setText(new_ch_name)
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
         index_in_group = channel_indices.index(lsl_index)

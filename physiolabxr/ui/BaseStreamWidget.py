@@ -77,7 +77,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.add_stream_availability = None
         self.worker_thread = None
         self.data_worker = None
-        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_square_48px)
         self.waiting_label.setMovie(self.loading_movie)
         show_label_movie(self.waiting_label, False)
         self.StartStopStreamBtn.setToolTip("Start streaming {0}".format(self.stream_name))

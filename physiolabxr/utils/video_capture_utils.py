@@ -38,7 +38,7 @@ def get_working_camera_ports():
             # SplashLoadingTextNotifier().set_loading_text("Video port %s is not working." %dev_port)
         else:
             is_reading, img = camera.read()
-            if is_reading:
+            if is_reading and img is not None:
                 h, w, ch = img.shape
                 # SplashLoadingTextNotifier().set_loading_text("Video port %s is working and reads images (%s x %s)" %(dev_port,h,w))
                 working_cams.append({'stream_name': f"Camera {dev_port}", 'width': w, 'height': h, 'nchannels': ch, 'video_id': dev_port})

@@ -1,5 +1,6 @@
+import warnings
 from enum import Enum
-from typing import Type
+from typing import Type, Iterable
 
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
@@ -180,8 +181,7 @@ def stream_stylesheet(stylesheet_url):
 #     widget.setStyleSheet(AppConfigs()._style_sheets[theme])
 
 def add_presets_to_combobox(combobox: QComboBox):
-    for i in get_all_preset_names():
-        combobox.addItem(i)
+    combobox.addItems([i for i in get_all_preset_names()])
 
 def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also call this when new preset is added
     combobox.clear()
@@ -189,8 +189,7 @@ def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also 
         combobox.addItem(i)
 
 def add_stream_presets_to_combobox(combobox):
-    for i in get_stream_preset_names():
-        combobox.addItem(i)
+    combobox.addItems([i for i in get_stream_preset_names()])
 
 class AnotherWindow(QWidget):
     """
@@ -315,9 +314,21 @@ def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
             line_edit.textChanged.disconnect(set_back)
         line_edit.textChanged.connect(set_back)
         raise RenaError(f'{name} must be an integer')
-
 class ShortCutType(Enum):
     switch = 1
     delete = 2
     start = 3
     pop = 4
+
+# def add_items(combobox: QComboBox, items: Iterable):
+#     """
+#     call addItems on a combobox
+#     remove placeholder if there's any
+#     """
+#     placeholder_index = combobox.findText(AppConfigs()._placeholder_text)
+#     if placeholder_index == -1:
+#         warnings.warn(f"combobox {combobox.objectName()} has no placeholder, may subject to NSException.")
+#     combobox.addItems(items)
+#     # remove the placeholder item from the combobox if it exists
+#     if placeholder_index != -1:
+#         combobox.removeItem(placeholder_index)
