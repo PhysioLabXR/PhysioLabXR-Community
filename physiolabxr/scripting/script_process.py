@@ -7,7 +7,8 @@ from multiprocessing import Process
 import grpc
 import numpy as np
 
-from physiolabxr.configs.shared import SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, SCRIPT_INFO_PREFIX, SCRIPT_FATAL_PREFIX
+from physiolabxr.configs.shared import SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, SCRIPT_INFO_PREFIX, \
+    SCRIPT_FATAL_PREFIX, SCRIPT_SETUP_FAILED, INCLUDE_RPC, EXCLUDE_RPC
 from physiolabxr.rpc.compiler import compile_rpc
 from physiolabxr.rpc.utils import create_rpc_server
 from physiolabxr.scripting.script_utils import get_script_class, debugging
@@ -62,21 +63,22 @@ def start_script_server(script_path, script_args):
     logging.info("Starting script thread")
     target_class = get_script_class(script_path)
 
-    try:
-        replay_client_thread = target_class(**script_args)
-    except Exception as e:
-        logging.fatal(f"Error creating script class: {e}")
-        send_router(np.array([False]), info_routing_id, info_socket_interface)
-        return
-
-    # compile the rpc
+    # compile the rpc first
     try:
         include_rpc = compile_rpc(script_path, target_class)
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
-        send_router(np.array([False]), info_routing_id, info_socket_interface)
+        send_router(np.array([SCRIPT_SETUP_FAILED]), info_routing_id, info_socket_interface)
         return
+
+    try:
+        replay_client_thread = target_class(**script_args)
+    except Exception as e:
+        logging.fatal(f"Error creating script class: {e}")
+        send_router(np.array([SCRIPT_SETUP_FAILED]), info_routing_id, info_socket_interface)
+        return
+
     if include_rpc is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -84,10 +86,10 @@ def start_script_server(script_path, script_args):
         logging.info(f"Starting rpc server listening for calls on {port + 4}")
         rpc_server.start()
         replay_client_thread.rpc_server = rpc_server
-        send_router(np.array([True]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
+        send_router(np.array([INCLUDE_RPC]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
     else:
         rpc_server = None
-        send_router(np.array([False]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
+        send_router(np.array([EXCLUDE_RPC]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
 
 
     replay_client_thread.start()

@@ -35,6 +35,9 @@ SCRIPT_STOP_SUCCESS = 'stopsuccess'
 SCRIPT_INFO_REQUEST = 'i'
 DATA_BUFFER_PREFIX = 'd'.encode('utf-8')
 SCRIPT_PARAM_CHANGE = 'p'
+INCLUDE_RPC = 1
+EXCLUDE_RPC = 2
+SCRIPT_SETUP_FAILED = 3
 
 # try:
 #     rena_base_script = open("scripting/BaseRenaScript.py", "r").read()
