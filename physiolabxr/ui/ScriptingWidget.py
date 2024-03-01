@@ -264,6 +264,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.script_process = start_rena_script(script_path, script_args)
             self.script_pid = self.script_process.pid  # receive the PID
             self.setup_info_worker(self.script_pid)
+            self.setup_command_interface()
+
             script_status = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)
             if script_status == INCLUDE_RPC:
                 # change the rpc button text to display the port number
@@ -292,7 +294,6 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         # request to see if the rpc is included
 
         print('MainApp: User script started on process with PID {}'.format(self.script_pid))
-        self.setup_command_interface()
 
         internal_buffer_size = dict([(name, size * 2) for name, size in buffer_sizes.items()])
         forward_interval = 1e3 / float(self.frequencyLineEdit.text())
