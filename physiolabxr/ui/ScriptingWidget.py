@@ -29,6 +29,7 @@ from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.threadings import workers
 from physiolabxr.threadings.WaitThreads import start_wait_for_response
 from physiolabxr.ui.PoppableWidget import Poppable
+from physiolabxr.ui.RPCWidget import RPCWidget
 from physiolabxr.ui.ScriptConsoleLog import ScriptConsoleLog
 from physiolabxr.ui.ScriptingInputWidget import ScriptingInputWidget
 from physiolabxr.ui.ScriptingOutputWidget import ScriptingOutputWidget
@@ -147,6 +148,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # rpc fields
         self.rpc_port = None
+        self.rpc_widget = RPCWidget(self)
+        self.rpc_window = another_window('Settings')
+        self.rpc_window.get_layout().addWidget(self.rpc_widget)
+        self.rpc_window.hide()
+        self.RPC_button.clicked.connect(self.on_rpc_button_clicked)
 
         # loading from script preset from the persistent sittings ######################################################
         if script_preset is not None:
@@ -160,6 +166,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # global signals
         GlobalSignals().stream_preset_nominal_srate_changed.connect(self.on_stream_nominal_sampling_rate_change)
+
+    def on_rpc_button_clicked(self):
+        if self.rpc_window.isVisible():
+            self.rpc_window.hide()
+        else:
+            self.rpc_window.show()
+            self.rpc_window.activateWindow()
 
     def setup_info_worker(self, script_pid):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
@@ -269,10 +282,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             script_status = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)
             if script_status == INCLUDE_RPC:
                 # change the rpc button text to display the port number
-                self.RPC_button.setText('RPC listening on: {}'.format(self.port + 4))
+                self.RPC_button.setText('RPC Options ({})'.format(self.port + 4))
                 self.rpc_port = self.port + 4
             elif script_status == EXCLUDE_RPC:
-                self.RPC_button.setText('RPC inactive')
+                self.RPC_button.setText('RPC Options')
             elif script_status == SCRIPT_SETUP_FAILED:
                 self.clean_up_after_stop(close_console=False)
                 return
@@ -442,7 +455,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.simulateCheckbox.setEnabled(not is_run)
         # change the text of the rpc button to not display the port number
         if not is_run:
-            self.RPC_button.setText('RPC inactive')
+            self.RPC_button.setText('RPC Options')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()

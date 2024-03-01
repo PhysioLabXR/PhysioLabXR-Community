@@ -168,3 +168,23 @@ class DataType(Enum):
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
+
+class RPCLanguage(Enum):
+    Python = 'Python'
+    # MATLAB = 'MATLAB'
+    # CPP = 'CPP'
+    # JAVA = 'JAVA'
+    CSharp = 'C# (Unity)'
+    # JS = 'JS'
+    # GO = 'GO'
+    # RUBY = 'RUBY'
+    # PHP = 'PHP'
+    # SWIFT = 'SWIFT'
+    # KOTLIN = 'KOTLIN'
+    # DART = 'DART'
+    # RUST = 'RUST'
+    # SCALA = 'SCALA'
+    # JULIA = 'JULIA'
+    # HASKELL = 'HASKELL'
+    # C = 'C'
+    # CPLUSPLUS = 'CPLUSPLUS

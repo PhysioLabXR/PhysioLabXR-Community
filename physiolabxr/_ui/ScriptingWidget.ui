@@ -957,7 +957,7 @@
          <item alignment="Qt::AlignRight">
           <widget class="QPushButton" name="RPC_button">
            <property name="text">
-            <string>RPC Inactive</string>
+            <string>RPC Options</string>
            </property>
           </widget>
          </item>
