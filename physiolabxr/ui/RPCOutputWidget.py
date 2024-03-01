@@ -10,7 +10,7 @@ from physiolabxr.utils.ui_utils import add_enum_values_to_combobox
 
 
 class RPCOutputWidget(QtWidgets.QWidget):
-    def __init__(self, scripting_widget, rpc_language=RPCLanguage.Python):
+    def __init__(self, scripting_widget, rpc_language, output_location):
         """
 
 
@@ -31,6 +31,8 @@ class RPCOutputWidget(QtWidgets.QWidget):
         add_enum_values_to_combobox(self.language_combobox, RPCLanguage)
         self.language_combobox.setCurrentText(rpc_language.name)
         self.language_combobox.currentTextChanged.connect(self.on_language_changed)
+
+        self.output_location_lineEdit.setText(output_location)
 
     def on_language_changed(self):
         pass

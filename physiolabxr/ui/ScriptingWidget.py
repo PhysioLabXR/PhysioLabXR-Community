@@ -270,6 +270,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 dialog_popup(str(e), title='Error', main_parent=self.main_window)
                 return
 
+            # check if the script has at leats one output, if not, add the default
+            if AppConfigs().add_default_rpc_output:
+                self.rpc_widget.check_add_default_output()
 
             self.script_console_log_window.show()
             self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
@@ -673,6 +676,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.delete_window()
         if close_console:
             self.script_console_log_window.close()
+
+        self.rpc_window.close()
+
         self.deleteLater()
         print('Script widget closed')
         self.parent.remove_script_widget(self)
@@ -794,3 +800,5 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             return max(existing_ports) + 1
 
+    def get_script_path(self):
+        return self.scriptPathLineEdit.text()

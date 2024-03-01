@@ -120,6 +120,9 @@ class AppConfigs(metaclass=Singleton):
     replay_port_range = 9980, 9990
     zmq_lost_connection_timeout = 4000  # in milliseconds
 
+    # scripting
+    add_default_rpc_output = True
+
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']
     _ui_path = 'physiolabxr/_ui'

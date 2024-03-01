@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+import os
 
 import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic, QtCore
@@ -8,7 +9,7 @@ from physiolabxr.configs import config
 from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
 from physiolabxr.presets.Presets import Presets, _load_video_device_presets, _load_audio_device_presets
-from physiolabxr.presets.PresetEnums import PresetType
+from physiolabxr.presets.PresetEnums import PresetType, RPCLanguage
 from physiolabxr.startup.startup import load_settings
 from physiolabxr.threadings.ScreenCaptureWorker import get_screen_capture_size
 from physiolabxr.threadings.WaitThreads import start_wait_process
@@ -31,10 +32,38 @@ class RPCWidget(QtWidgets.QWidget):
 
 
     def add_to_list_button_clicked(self):
-        rpc_output_widget = RPCOutputWidget(self.scripting_widget)
-        self.list_content_frame_widget.layout().insertWidget(self.list_content_frame_widget.layout().count() - 2, rpc_output_widget)
+        self._add_rpc_output()
+
+    def _add_rpc_output(self, output_location="", rpc_language=RPCLanguage.Python):
+        if output_location == "":
+            output_location = os.path.dirname(self.scripting_widget.get_script_path())
+        rpc_output_widget = RPCOutputWidget(self.scripting_widget, rpc_language, output_location)
+        self.list_content_frame_widget.layout().insertWidget(self.list_content_frame_widget.layout().count() - 2,
+                                                             rpc_output_widget)
         self.list_content_frame_widget.layout().setAlignment(rpc_output_widget, QtCore.Qt.AlignmentFlag.AlignTop)
+
         def remove_btn_clicked():
             self.list_content_frame_widget.layout().removeWidget(rpc_output_widget)
             rpc_output_widget.deleteLater()
+
         rpc_output_widget.set_remove_button_callback(remove_btn_clicked)
+
+    def get_output_info(self):
+        output_info = []
+        for i in range(0, self.list_content_frame_widget.layout().count() - 2):
+            output_widget = self.list_content_frame_widget.layout().itemAt(i).widget()
+            if os.path.exists(output_widget.output_location_lineEdit.text()):
+                output_info.append({'language': output_widget.language_combobox.currentText(), 'location': output_widget.output_location_lineEdit.text()})
+            else:
+                GlobalSignals().show_notification_signal.emit({'title': 'Invalid RPC Output Location',
+                                                               'body': f"RPC Output location '{output_widget.output_location_lineEdit.text()}' does not exist. Ignored."})
+        return output_info
+
+    def check_add_default_output(self):
+        output_info = self.get_output_info()
+        if len(output_info) == 0:
+            GlobalSignals().show_notification_signal.emit({'title': 'No RPC Output add in RPC options',
+                                                           'body': f'A default python output will be added to script directory '
+                                                                   f'{os.path.dirname(self.scripting_widget.get_script_path())}. You may disable this '
+                                                                   f'from the settings.'})
+            self._add_rpc_output()
