@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 
 from typing import get_type_hints, Union
 
@@ -176,11 +177,11 @@ def compile_rpc(script_path, script_class=None):
     proto_file_path = os.path.join(os.path.dirname(script_path), f"{script_name}.proto")
     with open(proto_file_path, "w") as f:
         f.write(proto_content)
-    logging.info(f"Succesfully generated proto file {proto_file_path} from {script_class.__name__}, saved to {proto_file_path}")
+    logging.info(f"Successfully generated proto file {proto_file_path} from {script_class.__name__}, saved to {proto_file_path}")
 
     # call grpc compile on the proto content
     command = [
-        'python', '-m', 'grpc_tools.protoc',
+        sys.executable, '-m', 'grpc_tools.protoc',
         '-I.',  # Include the current directory in the search path.
         f'--python_out=.',  # Output directory for generated Python code.
         f'--grpc_python_out=.',  # Output directory for generated gRPC code.
@@ -189,7 +190,7 @@ def compile_rpc(script_path, script_class=None):
 
     logging.info(f"Compiling {proto_file_path} with command: {' '.join(command)}")
     result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
-    if result.returncode != 0:
+    if result.returncode != 0 or len(result.stderr) > 0:
         message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
         raise CompileRPCError(message)
     else:
