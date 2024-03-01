@@ -441,7 +441,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
         # change the text of the rpc button to not display the port number
-        self.RPC_button.setText('RPC inactive')
+        if not is_run:
+            self.RPC_button.setText('RPC inactive')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()

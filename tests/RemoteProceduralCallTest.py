@@ -90,7 +90,9 @@ def test_rpc_compile_from_app(context_bot, qtbot):
     scripting_widget = context_bot.add_existing_script(script_path)
 
     qtbot.mouseClick(scripting_widget.runBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    qtbot.wait_until(lambda: scripting_widget.script_console_log.get_most_recent_msg() == 'Loop: rpc server', timeout=5000)
+
+    qtbot.wait(5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits('Loop: rpc server'), timeout=5000)
     check_generated_files(script_path)
 
 
@@ -104,7 +106,8 @@ def test_rpc_calls(context_bot, qtbot):
     scripting_widget = context_bot.add_existing_script(script_path)
 
     qtbot.mouseClick(scripting_widget.runBtn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
-    qtbot.wait_until(lambda: scripting_widget.script_console_log.get_most_recent_msg() == 'Loop: rpc server', timeout=10000)  # wait till the compile finishes and the loop is called
+    qtbot.wait(5000)
+    qtbot.wait_until(lambda: scripting_widget.script_console_log._check_message_exits('Loop: rpc server'), timeout=10000)  # wait till the compile finishes and the loop is called
     check_generated_files(script_path)
 
     # call the rpc method

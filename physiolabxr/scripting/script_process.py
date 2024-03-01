@@ -73,7 +73,7 @@ def start_script_server(script_path, script_args):
         return
 
     try:
-        replay_client_thread = target_class(**script_args)
+        rena_script_thread = target_class(**script_args)
     except Exception as e:
         logging.fatal(f"Error creating script class: {e}")
         send_router(np.array([SCRIPT_SETUP_FAILED]), info_routing_id, info_socket_interface)
@@ -82,17 +82,16 @@ def start_script_server(script_path, script_args):
     if include_rpc is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        rpc_server = create_rpc_server(script_path, replay_client_thread, server, port + 4)
+        rpc_server = create_rpc_server(script_path, rena_script_thread, server, port + 4)
         logging.info(f"Starting rpc server listening for calls on {port + 4}")
         rpc_server.start()
-        replay_client_thread.rpc_server = rpc_server
-        send_router(np.array([INCLUDE_RPC]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
+        rena_script_thread.rpc_server = rpc_server
+        send_router(np.array([INCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
     else:
         rpc_server = None
-        send_router(np.array([EXCLUDE_RPC]), replay_client_thread.info_routing_id, replay_client_thread.info_socket_interface)
+        send_router(np.array([EXCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
 
-
-    replay_client_thread.start()
+    rena_script_thread.start()
     if include_rpc is not None:
         rpc_server.wait_for_termination()
     logging.info('Script process terminated.')
