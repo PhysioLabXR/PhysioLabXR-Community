@@ -147,7 +147,37 @@ class CortexType(RenaScript):
         self.inputs.clear_buffer_data()
 
     def train_epochs(self):
+        """
+           Trains a logistic regression model on EEG epoch data for a classification task. The process involves preparing
+           the training data, splitting it into training and testing sets, rebalancing the classes to address any imbalance,
+           reshaping the data to fit the logistic regression model, training the model on the training set, and evaluating
+           its performance on the testing set using a confusion matrix.
 
+           Steps involved in the training process:
+           1. Converts the training inputs and labels into numpy arrays for compatibility with machine learning libraries.
+           2. Splits the data into training and testing sets, with a portion of the data specified by `test_size` reserved
+              for testing.
+           3. Optionally rebalances the classes in the training set to ensure equal representation of all classes,
+              particularly useful in cases where some classes are underrepresented.
+           4. Reshapes the training and testing input data by flattening the input over the channel axis, making it suitable
+              for logistic regression which expects 2D input.
+           5. Trains the logistic regression model on the reshaped training data.
+           6. Predicts the labels for the testing set using the trained model.
+           7. Prints the confusion matrix to evaluate the model's performance, showing how the model's predictions compare to
+              the actual labels.
+
+           Note:
+               - The function assumes `self.train_x` and `self.train_y` are populated with the EEG epoch data and their
+                 corresponding labels, respectively.
+               - It uses `train_test_split` from sklearn to split the data, assumes the presence of a `rebalance_classes`
+                 function to handle class imbalance, and requires a `self.model` attribute that supports the `fit` and
+                 `predict` methods.
+               - The performance evaluation is done through a confusion matrix, which helps in understanding the model's
+                 classification accuracy across different classes.
+
+           This function does not return any value but modifies the model in place and prints the confusion matrix for
+           immediate evaluation of the model's performance.
+           """
         # convert the train data to numpy array
         X = np.array(self.train_x)
         y = np.array(self.train_y)
@@ -174,10 +204,37 @@ class CortexType(RenaScript):
         # print the confusion matrix
         confusion_matrix(y_test, y_pred)
 
-
-
     def predict(self):
+        """
+        Predicts the most likely target letter from a series of EEG (electroencephalogram) signal epochs associated with
+        flashing events in a P300 speller matrix. The function processes EEG data and event markers to compute a
+        probability matrix indicating the likelihood of each cell in the speller matrix being the target. The method involves
+        identifying EEG epochs corresponding to flashing events, extracting features, applying a pre-trained model to
+        predict the probability of each event corresponding to the target, and accumulating these probabilities across
+        rows and columns based on the nature of the flashing event (row or column flash). The cell in the speller matrix
+        with the highest accumulated probability is determined to be the target, and its associated letter is predicted.
 
+        Steps involved in the prediction process:
+        1. Initializes a probability matrix corresponding to the layout of the P300 speller matrix.
+        2. Retrieves the event markers and their timestamps to identify flashing target events.
+        3. For each flashing event, finds the corresponding EEG epoch using the event timestamp.
+        4. Flattens the EEG epoch data and uses a pre-trained model to predict the probability of the target for the epoch.
+        5. Accumulates these probabilities in the probability matrix based on whether the flash was for a row or column.
+        6. Identifies the cell with the maximum probability as the predicted target and retrieves its associated letter.
+
+        The function clears the buffer data after each prediction to prepare for the next set of inputs.
+
+        Returns:
+            predicted_letter (str): The letter from the P300 speller matrix predicted to be the target based on the
+                                    accumulated probabilities.
+
+        Note:
+            - This function assumes the existence of a pre-trained model and appropriate methods for data retrieval and
+              buffer clearing (`self.inputs.get_data`, `self.inputs.get_timestamps`, `self.inputs.clear_buffer_data`).
+            - The function relies on several global variables and constants, such as `Board`, `EventMarkerChannelInfo`,
+              `eeg_stream_name`, `event_marker_stream_name`, `eeg_channel_index`, `sample_before_epoch`, and
+              `sample_after_epoch`, which should be defined and properly configured in the surrounding context.
+        """
         probability_matrix = np.zeros(shape=np.array(Board).shape)
 
         # get the trail events
@@ -224,7 +281,7 @@ class CortexType(RenaScript):
         return predicted_letter
 
     def clear_train_data_buffer(self):
-
+        # clear the buffer data. This is important to avoid counting the same epochs again
         self.train_x = []
         self.train_y = []
 
@@ -308,5 +365,3 @@ def confusion_matrix(y_test: np.ndarray, y_pred: np.ndarray) -> None:
         all_sample_title = 'Accuracy Score: {0}'.format(score)
         plt.title(all_sample_title, size=15)
         plt.show()
-
-
