@@ -27,6 +27,7 @@ def start_script_server(script_path, script_args):
     """
     # redirect stdout
     port = script_args['port']
+    rpc_outputs = script_args['rpc_outputs']
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
                                                port_id=port,
                                                identity='server',
@@ -65,7 +66,7 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        include_rpc = compile_rpc(script_path, target_class)
+        include_rpc = compile_rpc(script_path, target_class, rpc_outputs)
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")

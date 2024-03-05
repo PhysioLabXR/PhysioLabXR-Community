@@ -34,7 +34,7 @@ class RPCWidget(QtWidgets.QWidget):
     def add_to_list_button_clicked(self):
         self._add_rpc_output()
 
-    def _add_rpc_output(self, output_location="", rpc_language=RPCLanguage.Python):
+    def _add_rpc_output(self, output_location="", rpc_language=RPCLanguage.PYTHON):
         if output_location == "":
             output_location = os.path.dirname(self.scripting_widget.get_script_path())
         rpc_output_widget = RPCOutputWidget(self.scripting_widget, rpc_language, output_location)
@@ -60,10 +60,12 @@ class RPCWidget(QtWidgets.QWidget):
         return output_info
 
     def check_add_default_output(self):
-        output_info = self.get_output_info()
-        if len(output_info) == 0:
+        if self.list_content_frame_widget.layout().count() - 2 == 0:
             GlobalSignals().show_notification_signal.emit({'title': 'No RPC Output add in RPC options',
                                                            'body': f'A default python output will be added to script directory '
                                                                    f'{os.path.dirname(self.scripting_widget.get_script_path())}. You may disable this '
                                                                    f'from the settings.'})
             self._add_rpc_output()
+
+    def get_output_count(self):
+        return self.list_content_frame_widget.layout().count() - 2

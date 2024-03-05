@@ -8,6 +8,7 @@ import sys
 from typing import get_type_hints, Union
 
 from physiolabxr.exceptions.exceptions import CompileRPCError
+from physiolabxr.presets.PresetEnums import RPCLanguage
 
 
 def python_type_to_proto_type(python_type):
@@ -159,13 +160,17 @@ def generate_server_code(script_path, script_class):
     logging.info(f"Server code generated at {server_file_path}")
 
 
-def compile_rpc(script_path, script_class=None):
+def compile_rpc(script_path, script_class=None, rpc_outputs=None):
     assert os.path.exists(script_path)
     assert script_path.endswith('.py'), "File name must end with .py"
     if script_class is None:
         from physiolabxr.scripting.script_utils import get_script_class
         script_class = get_script_class(script_path)
+
     script_directory_path = os.path.dirname(script_path)
+    if rpc_outputs is None:
+        # default is to add a python output to the script directory
+        rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": os.path.dirname(script_path)}]
 
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
     proto_content = generate_proto_from_script_class(script_class)
@@ -179,22 +184,28 @@ def compile_rpc(script_path, script_class=None):
         f.write(proto_content)
     logging.info(f"Successfully generated proto file {proto_file_path} from {script_class.__name__}, saved to {proto_file_path}")
 
-    # call grpc compile on the proto content
-    command = [
-        sys.executable, '-m', 'grpc_tools.protoc',
-        '-I.',  # Include the current directory in the search path.
-        f'--python_out=.',  # Output directory for generated Python code.
-        f'--grpc_python_out=.',  # Output directory for generated gRPC code.
-        os.path.basename(proto_file_path)  # The .proto file to compile.
-    ]
+    if len(rpc_outputs) == 0:
+        logging.warning("")
 
-    logging.info(f"Compiling {proto_file_path} with command: {' '.join(command)}")
-    result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
-    if result.returncode != 0 or len(result.stderr) > 0:
-        message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
-        raise CompileRPCError(message)
-    else:
-        logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")
+    # call grpc compile on the proto content
+    for rpc_output in rpc_outputs:
+        language = rpc_output["language"]
+        location = rpc_output["location"]
+        command = [
+            sys.executable, '-m', 'grpc_tools.protoc',
+            '-I.',  # Include the current directory in the search path.
+            f'--{language.get_command_str()}_out={location}',  # Output directory for generated Python code.
+            f'--grpc_{language.get_command_str()}_out={location}',  # Output directory for generated gRPC code.
+            os.path.basename(proto_file_path)  # The .proto file to compile.
+        ]
+
+        logging.info(f"Compiling {proto_file_path} with command: {' '.join(command)}")
+        result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
+        if result.returncode != 0 or len(result.stderr) > 0:
+            message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
+            raise CompileRPCError(message)
+        else:
+            logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")
 
     # generate the server code #############################################
     generate_server_code(script_path, script_class)

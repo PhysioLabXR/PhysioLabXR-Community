@@ -264,15 +264,16 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
             if not validate_script_path(script_path, RenaScript): return
+
+            # check if the script has at least one output, if not, add the default
+            if AppConfigs().add_default_rpc_output:
+                self.rpc_widget.check_add_default_output()
+
             try:
                 script_args = self.get_verify_script_args()
             except RenaError as e:
                 dialog_popup(str(e), title='Error', main_parent=self.main_window)
                 return
-
-            # check if the script has at leats one output, if not, add the default
-            if AppConfigs().add_default_rpc_output:
-                self.rpc_widget.check_add_default_output()
 
             self.script_console_log_window.show()
             self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
@@ -724,6 +725,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
 
+        # get the rpc args
+        rpc_outputs = self.rpc_widget.get_output_info()
+
         rtn = {'inputs': self.get_inputs(),
                 'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
@@ -733,7 +737,8 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'time_window': time_window,
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked(),
-                'presets': Presets()}
+                'presets': Presets(),
+                'rpc_outputs': rpc_outputs}
         lsl_supported_types = DataType.get_lsl_supported_types()
         lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
         for output_name, dtype in lsl_output_data_types:
