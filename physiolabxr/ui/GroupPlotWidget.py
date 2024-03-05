@@ -104,18 +104,28 @@ class GroupPlotWidget(QtWidgets.QWidget):
         distinct_colors = get_distinct_colors(len(channel_indices))
         self.legends = self.linechart_widget.addLegend()
         # self.linechart_widget.enableAutoRange(enable=False)
+        pens = []
+        names = []
         for channel_index_in_group, (channel_index, channel_name) in enumerate(
                 zip(channel_indices, self.channel_names)):
-            is_channel_shown = is_channels_shown[channel_index_in_group]
-            channel_plot_item = self.linechart_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name)
-            self.channel_index_channel_dict[int(channel_index)] = channel_plot_item
-            if not is_channel_shown:
-                channel_plot_item.hide()  # TODO does disable do what it should do: uncheck from the plots
-            downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
-            channel_plot_item.setDownsampling(auto=True, method=downsample_method)
-            channel_plot_item.setClipToView(True)
-            channel_plot_item.setSkipFiniteCheck(True)
-            self.channel_plot_item_dict[channel_name] = channel_plot_item
+            # is_channel_shown = is_channels_shown[channel_index_in_group]
+            pens.append(pg.mkPen(color=distinct_colors[channel_index_in_group]))
+            names.append(channel_name)
+            # channel_plot_item = self.linechart_widget.plot([], [], pen=pg.mkPen(color=distinct_colors[channel_index_in_group]), name=channel_name)
+            # self.channel_index_channel_dict[int(channel_index)] = channel_plot_item
+            # if not is_channel_shown:
+            #     channel_plot_item.hide()  # TODO does disable do what it should do: uncheck from the plots
+            # downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
+            # channel_plot_item.setDownsampling(auto=True, method=downsample_method)
+            # channel_plot_item.setClipToView(True)
+            # channel_plot_item.setSkipFiniteCheck(True)
+            # self.channel_plot_item_dict[channel_name] = channel_plot_item
+        group_plot_item = self.linechart_widget.plot([], [], pen=pens, name=names)
+        downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
+        group_plot_item.setDownsampling(auto=True, method=downsample_method)
+        # channel_plot_item.setClipToView(True)
+        group_plot_item.setSkipFiniteCheck(True)
+        # self.channel_plot_item_dict[channel_name] = channel_plot_item
 
     def init_image(self):
         self.plot_widget = pg.PlotWidget()
@@ -187,6 +197,11 @@ class GroupPlotWidget(QtWidgets.QWidget):
             channel_plot_item.setClipToView(True)
             channel_plot_item.setSkipFiniteCheck(True)
             self.channel_plot_item_dict[channel_name] = channel_plot_item
+        channel_plot_item2 = self.stemplot_widget.plot([], [])
+        downsample_method = 'mean' if self.sampling_rate > AppConfigs().downsample_method_mean_sr_threshold else 'subsample'
+        channel_plot_item2.setDownsampling(auto=True, method=downsample_method)
+        channel_plot_item2.setClipToView(True)
+        channel_plot_item2.setSkipFiniteCheck(True)
 
 
 
@@ -226,12 +241,17 @@ class GroupPlotWidget(QtWidgets.QWidget):
             # if line_chat_config.channels_constant_offset!=0:
             #     data = data +
 
-
             time_vector = np.linspace(0., duration, data.shape[1])
-            for index_in_group, channel_index in enumerate(channel_indices):
-                plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
-                if plot_data_item.isVisible():
-                    plot_data_item.setData(time_vector, data[channel_index, :]+linechart_config.channels_constant_offset*index_in_group)
+
+            y_vals = data[channel_indices]
+            channel_offsets = np.arange(y_vals.shape[0]) * linechart_config.channels_constant_offset
+            y_vals = y_vals + channel_offsets.reshape(-1, 1)
+            self.linechart_widget.plotItem.curves[0].setData(time_vector, y_vals)
+            # plot_data_item = self.linechart_widget.plotItem.curves[index_in_group]
+            # if plot_data_item.isVisible():
+            #     print('plotting channel', channel_index, 'in group', self.group_name)
+            #     print(time_vector.shape, data[channel_index, :].shape)
+            #     plot_data_item.setData(time_vector, data[channel_index, :]+linechart_config.channels_constant_offset*index_in_group)
 
         elif selected_plot_format == 1 and get_group_image_valid(self.stream_name, self.group_name):
             image_config = get_group_image_config(self.stream_name, self.group_name)
@@ -296,49 +316,68 @@ class GroupPlotWidget(QtWidgets.QWidget):
         elif selected_plot_format == 4:
             stemplot_config = get_group_linechart_config(self.stream_name, self.group_name)
             time_vector = np.linspace(0., duration, data.shape[1])
+            index_count = 0
+
+            # line_list = [0,1,2,3]
+            # point_list = [4,5,6,7]
+
             for index_in_group, channel_index in enumerate(channel_indices):
+                index_count = index_count + 1
+                print("index_count", index_count)
+                print("channel_index", channel_index)
+                print("index_in_group", index_in_group)
+                print("channel_indices", channel_indices)
                 plot_data_item = self.stemplot_widget.plotItem.curves[index_in_group]
 
+                plot_data_item2 = self.stemplot_widget.plotItem.curves[-1]
 
-                # self.stemplot_widget.PlotCurveItem(time_vector, data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group, pen='r')
+
+
                 if plot_data_item.isVisible():
-                    # plot_data_item.setData(time_vector, data[channel_index,
-                    #                                     :] + stemplot_config.channels_constant_offset * index_in_group, pen=None, symbol='o', symbolSize=10, symbolBrush=('r'))
-                    dta= data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group
+                    dta = data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group
                     time_vector_duplicate = [item for item in time_vector for _ in range(3)]
                     dta2 = np.dstack((np.zeros(dta.shape[0]), dta, np.zeros(dta.shape[0]))).flatten()
+
+
                     plot_data_item.setData(time_vector_duplicate, dta2, connect='pairs')
-                    self.stemplot_widget.plot(time_vector, dta, pen=None, symbol='o', connect=False)
-                    # plot_data_item2.setData(time_vector, dta, pen=None, symbol='o', connect=False)
+                    # self.stemplot_widget.addItem(
+                    #     pg.PlotDataItem(x=time_vector, y=dta, symbol='o', pen=None, symbolBrush='b'))
 
+                    plot_data_item2.setData(time_vector, dta, pen=None, symbol='o', connect=False)
+                # self.stemplot_widget.PlotCurveItem(time_vector, data[channel_index, :] + stemplot_config.channels_constant_offset * index_in_group, pen='r')
 
+                # plot_data_item.setData(time_vector, data[channel_index,
+                #                                     :] + stemplot_config.channels_constant_offset * index_in_group, pen=None, symbol='o', symbolSize=10, symbolBrush=('r'))
 
-                    # plot_data_item.setData(x=np.repeat(time_vector,2), y=np.dstack((np.zeros(dta.shape[0]), dta).flatten(), connect='pairs'))
+                # self.stemplot_widget.plot(time_vector, dta, pen=None, symbol='o', connect=False)
+                # plot_data_item2.setData(time_vector, dta, pen=None, symbol='o', connect=False)
+
+                # plot_data_item.setData(x=np.repeat(time_vector,2), y=np.dstack((np.zeros(dta.shape[0]), dta).flatten(), connect='pairs'))
 
 
     def update_bar_chart_range(self):
-            if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
-                barchart_min, barchat_max = get_bar_chart_max_min_range(self.stream_name, self.group_name)
-                self.barchart_widget.setYRange(min=barchart_min, max=barchat_max)
+                if not is_group_image_only(self.stream_name, self.group_name):  # if barplot exists for this group
+                    barchart_min, barchat_max = get_bar_chart_max_min_range(self.stream_name, self.group_name)
+                    self.barchart_widget.setYRange(min=barchart_min, max=barchat_max)
 
-        # def on_plot_format_change(self):
-        #     '''
-        #     emit selected group and changed to the stream widget, and to the stream options
-        #     '''
-        #     pass
+            # def on_plot_format_change(self):
+            #     '''
+            #     emit selected group and changed to the stream widget, and to the stream options
+            #     '''
+            #     pass
 
     def change_group_name(self, new_group_name):
         self.update_group_name(new_group_name)
 
     def change_channel_name(self, new_ch_name, old_ch_name, lsl_index):
         # change_plot_label(self.linechart_widget, self.channel_plot_item_dict[old_ch_name], new_ch_name)
-        self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
-        self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
-
+        # self.channel_plot_item_dict[old_ch_name].setData(name=new_ch_name)
+        # self.channel_plot_item_dict[new_ch_name] = self.channel_plot_item_dict.pop(old_ch_name)
         # self.channel_plot_item_dict[old_ch_name].legend.setText(new_ch_name)
         channel_indices = get_group_channel_indices(self.stream_name, self.group_name)
         index_in_group = channel_indices.index(lsl_index)
         self.legends.items[index_in_group][1].setText(new_ch_name)
+
 
     def set_spectrogram_cmap(self):
         lut = get_spectrogram_cmap_lut(self.stream_name, self.group_name)
