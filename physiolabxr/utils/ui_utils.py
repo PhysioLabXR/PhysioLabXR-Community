@@ -283,7 +283,7 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
 
 def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_selected_in_gui: list=None):
     if can_be_selected_in_gui is None:
-        combobox.addItems([name for name, member in enum.__members__.items()])
+        combobox.addItems([str(member.value) for name, member in enum.__members__.items()])
     else:
         for name, member in enum.__members__.items():
             combobox.addItem(name)

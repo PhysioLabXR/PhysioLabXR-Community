@@ -173,13 +173,13 @@ class RPCLanguage(Enum):
     PYTHON = 'Python'
     CSHARP = 'C# (Unity)'
 
-    CPP = 'C++'
-    JAVA = 'Java'
-    RUBY = 'Ruby'
-    PHP = 'PHP'
-    GO = 'GO'
-    DART = 'Dart'
-    JS = 'JavaScript'
+    # CPP = 'C++'
+    # JAVA = 'Java'
+    # RUBY = 'Ruby'
+    # PHP = 'PHP'
+    # GO = 'GO'
+    # DART = 'Dart'
+    # JS = 'JavaScript'
 
     def get_command_str(self):
         command_map = {

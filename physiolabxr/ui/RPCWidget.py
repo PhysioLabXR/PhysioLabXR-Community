@@ -53,7 +53,7 @@ class RPCWidget(QtWidgets.QWidget):
         for i in range(0, self.list_content_frame_widget.layout().count() - 2):
             output_widget = self.list_content_frame_widget.layout().itemAt(i).widget()
             if os.path.exists(output_widget.output_location_lineEdit.text()):
-                output_info.append({'language': output_widget.language_combobox.currentText(), 'location': output_widget.output_location_lineEdit.text()})
+                output_info.append({'language': RPCLanguage(output_widget.language_combobox.currentText()), 'location': output_widget.output_location_lineEdit.text()})
             else:
                 GlobalSignals().show_notification_signal.emit({'title': 'Invalid RPC Output Location',
                                                                'body': f"RPC Output location '{output_widget.output_location_lineEdit.text()}' does not exist. Ignored."})

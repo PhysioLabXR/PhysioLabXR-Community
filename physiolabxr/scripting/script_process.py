@@ -66,7 +66,7 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        include_rpc = compile_rpc(script_path, target_class, rpc_outputs)
+        include_rpc = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs)
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
