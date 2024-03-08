@@ -1,4 +1,5 @@
 import numpy as np
+from pylsl import StreamInfo, StreamOutlet
 
 from physiolabxr.scripting.RenaScript import RenaScript
 
@@ -98,6 +99,17 @@ class CortexType(RenaScript):
         self.train_x = []
         self.train_y = []
 
+        ########################
+        # create a lsl stream outlet that to send the index of the predicted letter index to the Unity P300 Speller
+        info = StreamInfo('CortexTypePredictionLSL',
+                          'PredictionIndex',
+                          2, # the number of channels is 2 because we are sending the row and column index of the predicted letter
+                          1,
+                          'float32',
+                          'CortexTypePredictedLetterIndex')
+        self.prediction_letter_index_outlet = StreamOutlet(info)
+        ########################
+
     # Start will be called once when the run button is hit.
     def init(self):
         pass
@@ -106,16 +118,21 @@ class CortexType(RenaScript):
     def loop(self):
         # print('Loop function is called')
 
+        if event_marker_stream_name not in self.inputs.keys() or eeg_stream_name not in self.inputs.keys():
+            print('No EEG stream or no event marker stream, return')
+            self.current_state = CurrentState.IdleState
+            return
+
         event_marker_data = self.inputs.get_data(event_marker_stream_name)
         event_marker_timestamps = self.inputs.get_timestamps(event_marker_stream_name)
 
         for event_index, event_marker_timestamp in enumerate(event_marker_timestamps):
             event_marker = event_marker_data[:, event_index]
             FlashingTrailMarker = event_marker[EventMarkerChannelInfo.FlashingTrailMarker]
-            FlashingMarker = event_marker[EventMarkerChannelInfo.FlashingMarker]
-            FlashingRowOrColumnMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnMarker]
-            FlashingRowOrColumnIndexMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnIndexMarker]
-            FlashingTargetMarker = event_marker[EventMarkerChannelInfo.FlashingTargetMarker]
+            # FlashingMarker = event_marker[EventMarkerChannelInfo.FlashingMarker]
+            # FlashingRowOrColumnMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnMarker]
+            # FlashingRowOrColumnIndexMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnIndexMarker]
+            # FlashingTargetMarker = event_marker[EventMarkerChannelInfo.FlashingTargetMarker]
 
             TrainMarker = event_marker[EventMarkerChannelInfo.TrainMarkerIndex]
             TestMarker = event_marker[EventMarkerChannelInfo.TestMarkerIndex]
@@ -124,25 +141,33 @@ class CortexType(RenaScript):
 
             if FlashingTrailMarker == 1:
                 self.current_state = CurrentState.TrainState
-            elif FlashingMarker == -1:
+            elif FlashingTrailMarker == -1:
                 self.get_train_trail_epochs()
                 self.current_state = CurrentState.IdleState
-            elif FlashingMarker == 2:
+            elif FlashingTrailMarker == 2:
                 self.current_state = CurrentState.TestState
-            elif FlashingMarker == -2:
+            elif FlashingTrailMarker == -2:
                 self.current_state = CurrentState.IdleState
 
             if TrainMarker == 1:
                 self.train_epochs()
                 self.clear_train_data_buffer()
 
+            if InterruptMarker == 1:
+                self.current_state = CurrentState.IdleState
+                self.inputs.clear_buffer_data()
+                self.data_buffer.clear_buffer_data()
+                self.clear_train_data_buffer()
+
+
             if TestMarker == 1:
-                letter = self.predict()
-                print(f"Predicted Letter: {letter}")
-                # TODO: send the letter to the output stream
+                max_probability_letter_index = self.predict()
+
+                self.prediction_letter_index_outlet.push_sample(max_probability_letter_index)
 
         if self.current_state == CurrentState.TrainState or self.current_state == CurrentState.TestState:
             self.data_buffer.update_buffers(self.inputs.buffer)
+            print('Data buffer updated')
 
         self.inputs.clear_buffer_data()
 
@@ -168,6 +193,7 @@ class CortexType(RenaScript):
               Refer to "https://physiolabxrdocs.readthedocs.io/en/latest/DSP.html" for more information on EEG preprocessing and filtering.
         '''
 
+        print('Get train trail epochs')
         # get the trail events
         events = self.data_buffer.get_data(event_marker_stream_name)
         events_timestamps = self.data_buffer.get_timestamps(event_marker_stream_name)
@@ -232,6 +258,8 @@ class CortexType(RenaScript):
            This function does not return any value but modifies the model in place and prints the confusion matrix for
            immediate evaluation of the model's performance.
            """
+
+        print('Train epochs')
         # convert the train data to numpy array
         X = np.array(self.train_x)
         y = np.array(self.train_y)
@@ -289,6 +317,8 @@ class CortexType(RenaScript):
               `eeg_stream_name`, `event_marker_stream_name`, `eeg_channel_index`, `sample_before_epoch`, and
               `sample_after_epoch`, which should be defined and properly configured in the surrounding context.
         """
+
+        print('Predict')
         probability_matrix = np.zeros(shape=np.array(Board).shape)
 
         # get the trail events
@@ -333,7 +363,7 @@ class CortexType(RenaScript):
 
         self.data_buffer.clear_buffer_data()
 
-        return predicted_letter
+        return max_probability_letter_index
 
     def clear_train_data_buffer(self):
         # clear the buffer data. This is important to avoid counting the same epochs again

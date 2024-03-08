@@ -12,6 +12,6 @@
     "InterruptMarkerIndex"
   ],
 
-  "NominalSamplingRate": 5,
+  "NominalSamplingRate": 10,
   "GroupInfo":  [1, 5]
 }
