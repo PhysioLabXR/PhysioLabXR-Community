@@ -64,11 +64,22 @@ class IndexClass(int, Enum):
 
 
 class EventMarkerChannelInfo(IndexClass):
-    FlashingBlockMarker = 0
+    FlashingTrailMarker = 0
     FlashingMarker = 1
     FlashingRowOrColumnMarker = 2
     FlashingRowOrColumnIndexMarker = 3
     FlashingTargetMarker = 4
+
+    TrainMarkerIndex = 5
+    TestMarkerIndex = 6
+
+    InterruptMarkerIndex = 7
+
+
+class CurrentState(IndexClass):
+    IdleState = 0
+    TrainState = 1
+    TestState = 2
 
 
 class CortexType(RenaScript):
@@ -77,11 +88,15 @@ class CortexType(RenaScript):
         Please do not edit this function
         """
         super().__init__(*args, **kwargs)
+
+        self.current_state = CurrentState.IdleState  # the initial state is idle
+
         self.model = LogisticRegression()
+
+        self.data_buffer = DataBuffer()
 
         self.train_x = []
         self.train_y = []
-        self.run_function = False
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -90,14 +105,53 @@ class CortexType(RenaScript):
     # loop is called <Run Frequency> times per second
     def loop(self):
         # print('Loop function is called')
+
+        event_marker_data = self.inputs.get_data(event_marker_stream_name)
+        event_marker_timestamps = self.inputs.get_timestamps(event_marker_stream_name)
+
+        for event_index, event_marker_timestamp in enumerate(event_marker_timestamps):
+            event_marker = event_marker_data[:, event_index]
+            FlashingTrailMarker = event_marker[EventMarkerChannelInfo.FlashingTrailMarker]
+            FlashingMarker = event_marker[EventMarkerChannelInfo.FlashingMarker]
+            FlashingRowOrColumnMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnMarker]
+            FlashingRowOrColumnIndexMarker = event_marker[EventMarkerChannelInfo.FlashingRowOrColumnIndexMarker]
+            FlashingTargetMarker = event_marker[EventMarkerChannelInfo.FlashingTargetMarker]
+
+            TrainMarker = event_marker[EventMarkerChannelInfo.TrainMarkerIndex]
+            TestMarker = event_marker[EventMarkerChannelInfo.TestMarkerIndex]
+
+            InterruptMarker = event_marker[EventMarkerChannelInfo.InterruptMarkerIndex]
+
+            if FlashingTrailMarker == 1:
+                self.current_state = CurrentState.TrainState
+            elif FlashingMarker == -1:
+                self.get_train_trail_epochs()
+                self.current_state = CurrentState.IdleState
+            elif FlashingMarker == 2:
+                self.current_state = CurrentState.TestState
+            elif FlashingMarker == -2:
+                self.current_state = CurrentState.IdleState
+
+            if TrainMarker == 1:
+                self.train_epochs()
+                self.clear_train_data_buffer()
+
+            if TestMarker == 1:
+                letter = self.predict()
+                print(f"Predicted Letter: {letter}")
+                # TODO: send the letter to the output stream
+
+        if self.current_state == CurrentState.TrainState or self.current_state == CurrentState.TestState:
+            self.data_buffer.update_buffers(self.inputs.buffer)
+
+        self.inputs.clear_buffer_data()
+
         pass
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
         print('Cleanup function is called')
         self.inputs.clear_buffer_data()
-
-    # RPC Calls
 
     def get_train_trail_epochs(self):
         '''
@@ -115,11 +169,11 @@ class CortexType(RenaScript):
         '''
 
         # get the trail events
-        events = self.inputs.get_data(event_marker_stream_name)
-        events_timestamps = self.inputs.get_timestamps(event_marker_stream_name)
+        events = self.data_buffer.get_data(event_marker_stream_name)
+        events_timestamps = self.data_buffer.get_timestamps(event_marker_stream_name)
 
-        eeg_timestamps = self.inputs.get_timestamps(eeg_stream_name)
-        eeg_data = self.inputs.get_data(eeg_stream_name)[eeg_channel_index, :]
+        eeg_timestamps = self.data_buffer.get_timestamps(eeg_stream_name)
+        eeg_data = self.data_buffer.get_data(eeg_stream_name)[eeg_channel_index, :]
 
         number_of_epochs = 0
 
@@ -144,7 +198,7 @@ class CortexType(RenaScript):
         print(f"Found {number_of_epochs} epochs")
 
         # clear the buffer data. This is important to avoid counting the same epochs again
-        self.inputs.clear_buffer_data()
+        self.data_buffer.clear_buffer_data()
 
     def train_epochs(self):
         """
@@ -230,7 +284,7 @@ class CortexType(RenaScript):
 
         Note:
             - This function assumes the existence of a pre-trained model and appropriate methods for data retrieval and
-              buffer clearing (`self.inputs.get_data`, `self.inputs.get_timestamps`, `self.inputs.clear_buffer_data`).
+              buffer clearing (`self.data_buffer.get_data`, `self.data_buffer.get_timestamps`, `self.data_buffer.clear_buffer_data`).
             - The function relies on several global variables and constants, such as `Board`, `EventMarkerChannelInfo`,
               `eeg_stream_name`, `event_marker_stream_name`, `eeg_channel_index`, `sample_before_epoch`, and
               `sample_after_epoch`, which should be defined and properly configured in the surrounding context.
@@ -238,11 +292,11 @@ class CortexType(RenaScript):
         probability_matrix = np.zeros(shape=np.array(Board).shape)
 
         # get the trail events
-        events = self.inputs.get_data(event_marker_stream_name)
-        events_timestamps = self.inputs.get_timestamps(event_marker_stream_name)
+        events = self.data_buffer.get_data(event_marker_stream_name)
+        events_timestamps = self.data_buffer.get_timestamps(event_marker_stream_name)
 
-        eeg_timestamps = self.inputs.get_timestamps(eeg_stream_name)
-        eeg_data = self.inputs.get_data(eeg_stream_name)[eeg_channel_index, :]
+        eeg_timestamps = self.data_buffer.get_timestamps(eeg_stream_name)
+        eeg_data = self.data_buffer.get_data(eeg_stream_name)[eeg_channel_index, :]
 
         # get the eeg epoch data for each flashing target event
         for event, events_timestamp in zip(events.T, events_timestamps):
@@ -277,7 +331,8 @@ class CortexType(RenaScript):
         predicted_letter = Board[max_probability_letter_index[0]][max_probability_letter_index[1]]
         print(f"Predicted Letter: {predicted_letter}")
 
-        self.inputs.clear_buffer_data()
+        self.data_buffer.clear_buffer_data()
+
         return predicted_letter
 
     def clear_train_data_buffer(self):
