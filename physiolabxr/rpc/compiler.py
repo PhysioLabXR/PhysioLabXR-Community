@@ -159,6 +159,22 @@ def generate_server_code(script_path, script_class):
 
     logging.info(f"Server code generated at {server_file_path}")
 
+def get_grpc_compile_command(proto_file_path, language, location):
+
+    if language == RPCLanguage.PYTHON:
+        return [
+            sys.executable, '-m', 'grpc_tools.protoc',
+            '-I.',  # Include the current directory in the search path.
+            f'--{language.get_command_str()}_out={location}',  # Output directory for generated Python code.
+            f'--grpc_{language.get_command_str()}_out={location}',  # Output directory for generated gRPC code.
+            os.path.basename(proto_file_path)  # The .proto file to compile.
+        ]
+    elif language == RPCLanguage.CSHARP:  # TODO: Add support for C# compilation
+        return [
+            "protoc", "-I.", f"--{language.get_command_str()}_out={location}", f"--grpc_{language.get_command_str()}_out={location}", os.path.basename(proto_file_path)
+        ]
+    "protoc -I. --csharp_out=. --grpc_csharp_out=. --plugin=protoc-gen-grpc_csharp=/Users/apocalyvec/.nuget/packages/grpc.tools/2.62.0/tools/macosx_x64/grpc_csharp_plugin tests/assets/RPCTest.proto"
+
 
 def compile_rpc(script_path, script_class=None, rpc_outputs=None):
     assert os.path.exists(script_path)

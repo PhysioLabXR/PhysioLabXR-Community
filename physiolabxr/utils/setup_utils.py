@@ -137,6 +137,17 @@ def is_package_installed(package_name):
     except subprocess.CalledProcessError:
         return False
 
+def is_brew_installed():
+    if shutil.which('brew') is None:
+        from PyQt6.QtWidgets import QDialogButtonBox
+        dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
+                     "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
+                     title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+        return False
+    else:
+        return True
+
+
 def install_pyaudio():
     # check if we are on mac
     try:
@@ -144,10 +155,7 @@ def install_pyaudio():
     except ModuleNotFoundError:
         if platform.system() == 'Darwin':
             # check if brew is installed
-            if shutil.which('brew') is None:
-                from PyQt6.QtWidgets import QDialogButtonBox
-                dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
-                                  "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.", title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            if not is_brew_installed():
                 from physiolabxr.configs.configs import AppConfigs
                 AppConfigs().is_audio_interface_available = False
                 return
@@ -172,6 +180,13 @@ def install_pyaudio():
             print("PyAudio has been successfully installed.")
         else:
             print("Error installing PyAudio:", pip_install.stderr)
+
+
+def setup_grpc_csharp_plugin():
+    # based on the os install the proper protobuf compiler
+    if platform.system() == 'Darwin':
+        if not is_brew_installed():
+        subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
 
 
 def run_setup_check():
