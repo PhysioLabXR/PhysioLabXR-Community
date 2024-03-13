@@ -186,7 +186,8 @@ def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
     if platform.system() == 'Darwin':
         if not is_brew_installed():
-        subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
+            subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
+            # TODO complete the  csharp plugin, this include creating the dummy csharp project
 
 
 def run_setup_check():
