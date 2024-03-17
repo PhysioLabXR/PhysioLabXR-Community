@@ -15,6 +15,7 @@ from google.protobuf.json_format import MessageToDict
 from google.protobuf import empty_pb2
 
 from physiolabxr.configs.configs import AppConfigs
+from physiolabxr.presets.PresetEnums import RPCLanguage
 from physiolabxr.rpc.compiler import generate_proto_from_script_class, compile_rpc
 from physiolabxr.scripting.script_utils import get_script_class
 
@@ -39,13 +40,11 @@ def context_bot(app_main_window, qtbot):
 def check_generated_files(script_path):
     script_class = get_script_class(script_path)
     proto_file = f"{script_class.__name__}.proto"
-    pb2_file = f"{script_class.__name__}_pb2.py"
-    pb2_grpc_file = f"{script_class.__name__}_pb2_grpc.py"
+
     server_file = f"{script_class.__name__}Server.py"
     script_dir = os.path.dirname(script_path)
+
     assert os.path.exists(os.path.join(script_dir, proto_file))
-    assert os.path.exists(os.path.join(script_dir, pb2_file))
-    assert os.path.exists(os.path.join(script_dir, pb2_grpc_file))
     assert os.path.exists(os.path.join(script_dir, server_file))
 
     # compare with the golden file for RPCTest.proto and RPCTestServer.py
@@ -53,6 +52,15 @@ def check_generated_files(script_path):
         assert f.read() == open(f"tests/assets/{proto_file}", 'r').read()
     with open(os.path.join(script_dir, server_file), 'r') as f:
         assert f.read() == open(f"tests/assets/{server_file}", 'r').read()
+
+def check_python_generated_files(script_path):
+    script_class = get_script_class(script_path)
+    script_dir = os.path.dirname(script_path)
+
+    pb2_file = f"{script_class.__name__}_pb2.py"
+    pb2_grpc_file = f"{script_class.__name__}_pb2_grpc.py"
+    assert os.path.exists(os.path.join(script_dir, pb2_file))
+    assert os.path.exists(os.path.join(script_dir, pb2_grpc_file))
 
 
 def remove_generated_files(script_path):
@@ -62,6 +70,10 @@ def remove_generated_files(script_path):
     pb2_grpc_file = f"{script_class.__name__}_pb2_grpc.py"
     server_file = f"{script_class.__name__}Server.py"
     script_dir = os.path.dirname(script_path)
+
+    cs_file = f"{script_class.__name__}.cs"
+    cs_grpc_file = f"{script_class.__name__}Grpc.cs"
+
     if os.path.exists(os.path.join(script_dir, proto_file)):
         os.remove(os.path.join(script_dir, proto_file))
     if os.path.exists(os.path.join(script_dir, pb2_file)):
@@ -71,7 +83,12 @@ def remove_generated_files(script_path):
     if os.path.exists(os.path.join(script_dir, server_file)):
         os.remove(os.path.join(script_dir, server_file))
 
-def test_rpc_compiler_standalone():
+    if os.path.exists(os.path.join(script_dir, cs_file)):
+        os.remove(os.path.join(script_dir, cs_file))
+    if os.path.exists(os.path.join(script_dir, cs_grpc_file)):
+        os.remove(os.path.join(script_dir, cs_grpc_file))
+
+def test_rpc_compiler_standalone_python():
     script_path = "tests/assets/RPCTest.py"
 
     # remove everything in the script folder except the script
@@ -79,6 +96,21 @@ def test_rpc_compiler_standalone():
 
     assert compile_rpc(script_path)
     check_generated_files(script_path)
+    check_python_generated_files(script_path)
+
+
+def test_rpc_compiler_standalone_csharp():
+    script_path = "tests/assets/RPCTest.py"
+
+    # remove everything in the script folder except the script
+    remove_generated_files(script_path)
+
+    rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": os.path.dirname(script_path)}]
+    csharp_plugin_path = AppConfigs().csharp_plugin_path
+
+    assert compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs)
+    check_generated_files(script_path)
+
 
 def test_rpc_compile_from_app(context_bot, qtbot):
     """

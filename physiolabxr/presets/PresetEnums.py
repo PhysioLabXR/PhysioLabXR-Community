@@ -186,13 +186,13 @@ class RPCLanguage(Enum):
             RPCLanguage.PYTHON: 'python',
             RPCLanguage.CSHARP: 'csharp',
 
-            RPCLanguage.CPP: 'cpp',
-            RPCLanguage.JAVA: 'java',
-            RPCLanguage.RUBY: 'ruby',
-            RPCLanguage.PHP: 'php',
-            RPCLanguage.GO: 'go',
-            RPCLanguage.DART: 'dart',
-            RPCLanguage.JS: 'js'
+            # RPCLanguage.CPP: 'cpp',
+            # RPCLanguage.JAVA: 'java',
+            # RPCLanguage.RUBY: 'ruby',
+            # RPCLanguage.PHP: 'php',
+            # RPCLanguage.GO: 'go',
+            # RPCLanguage.DART: 'dart',
+            # RPCLanguage.JS: 'js'
         }
 
         # Fetch the command string from the map; return None if the language is not found

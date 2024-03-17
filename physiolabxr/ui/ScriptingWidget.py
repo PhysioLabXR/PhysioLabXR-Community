@@ -738,7 +738,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked(),
                 'presets': Presets(),
-                'rpc_outputs': rpc_outputs}
+                'rpc_outputs': rpc_outputs,
+                'csharp_plugin_path': AppConfigs().csharp_plugin_path,
+               }
         lsl_supported_types = DataType.get_lsl_supported_types()
         lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
         for output_name, dtype in lsl_output_data_types:

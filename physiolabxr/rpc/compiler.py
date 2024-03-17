@@ -159,7 +159,7 @@ def generate_server_code(script_path, script_class):
 
     logging.info(f"Server code generated at {server_file_path}")
 
-def get_grpc_compile_command(proto_file_path, language, location):
+def get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_path):
 
     if language == RPCLanguage.PYTHON:
         return [
@@ -170,13 +170,17 @@ def get_grpc_compile_command(proto_file_path, language, location):
             os.path.basename(proto_file_path)  # The .proto file to compile.
         ]
     elif language == RPCLanguage.CSHARP:  # TODO: Add support for C# compilation
+        assert csharp_plugin_path is not None, "C# plugin path is required for C# compilation"
         return [
-            "protoc", "-I.", f"--{language.get_command_str()}_out={location}", f"--grpc_{language.get_command_str()}_out={location}", os.path.basename(proto_file_path)
+            "protoc", "-I.",
+            f"--{language.get_command_str()}_out={location}",
+            f"--grpc_{language.get_command_str()}_out={location}",
+            f"--plugin=protoc-gen-grpc_csharp={csharp_plugin_path}",
+            os.path.basename(proto_file_path)
         ]
-    "protoc -I. --csharp_out=. --grpc_csharp_out=. --plugin=protoc-gen-grpc_csharp=/Users/apocalyvec/.nuget/packages/grpc.tools/2.62.0/tools/macosx_x64/grpc_csharp_plugin tests/assets/RPCTest.proto"
 
 
-def compile_rpc(script_path, script_class=None, rpc_outputs=None):
+def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_outputs=None):
     assert os.path.exists(script_path)
     assert script_path.endswith('.py'), "File name must end with .py"
     if script_class is None:
@@ -186,7 +190,7 @@ def compile_rpc(script_path, script_class=None, rpc_outputs=None):
     script_directory_path = os.path.dirname(script_path)
     if rpc_outputs is None:
         # default is to add a python output to the script directory
-        rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": os.path.dirname(script_path)}]
+        rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": '.'}]
 
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
     proto_content = generate_proto_from_script_class(script_class)
@@ -207,15 +211,9 @@ def compile_rpc(script_path, script_class=None, rpc_outputs=None):
     for rpc_output in rpc_outputs:
         language = rpc_output["language"]
         location = rpc_output["location"]
-        command = [
-            sys.executable, '-m', 'grpc_tools.protoc',
-            '-I.',  # Include the current directory in the search path.
-            f'--{language.get_command_str()}_out={location}',  # Output directory for generated Python code.
-            f'--grpc_{language.get_command_str()}_out={location}',  # Output directory for generated gRPC code.
-            os.path.basename(proto_file_path)  # The .proto file to compile.
-        ]
 
-        logging.info(f"Compiling {proto_file_path} with command: {' '.join(command)}")
+        command = get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_path)
+
         result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
         if result.returncode != 0 or len(result.stderr) > 0:
             message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
