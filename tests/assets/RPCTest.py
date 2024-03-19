@@ -17,7 +17,8 @@ class RPCTest(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-        print(f'Loop: rpc server')
+        # print(f'Loop: rpc server')
+        pass
 
     # cleanup is called when the stop button is hit
     def cleanup(self):
@@ -28,6 +29,7 @@ class RPCTest(RenaScript):
         """
         it is conventional to use camal case for RPC methods
         """
+        print("called")
         return f"Received input: {input0}"
 
     @rpc

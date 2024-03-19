@@ -63,6 +63,18 @@ def check_python_generated_files(script_path):
     assert os.path.exists(os.path.join(script_dir, pb2_grpc_file))
 
 
+def check_csharp_generated_files(script_path):
+    script_class = get_script_class(script_path)
+    script_dir = os.path.dirname(script_path)
+
+    cs_file = f"{script_class.__name__}.cs"
+    cs_grpc_file = f"{script_class.__name__}Grpc.cs"
+
+    assert os.path.exists(os.path.join(script_dir, cs_file))
+    assert os.path.exists(os.path.join(script_dir, cs_grpc_file))
+
+
+
 def remove_generated_files(script_path):
     script_class = get_script_class(script_path)
     proto_file = f"{script_class.__name__}.proto"
@@ -105,11 +117,12 @@ def test_rpc_compiler_standalone_csharp():
     # remove everything in the script folder except the script
     remove_generated_files(script_path)
 
-    rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": os.path.dirname(script_path)}]
+    rpc_outputs = [{"language": RPCLanguage.CSHARP, "location": '.'}]
     csharp_plugin_path = AppConfigs().csharp_plugin_path
 
     assert compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs)
     check_generated_files(script_path)
+    check_csharp_generated_files(script_path)
 
 
 def test_rpc_compile_from_app(context_bot, qtbot):

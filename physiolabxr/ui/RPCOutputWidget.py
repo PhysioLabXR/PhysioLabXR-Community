@@ -34,6 +34,9 @@ class RPCOutputWidget(QtWidgets.QWidget):
 
         self.output_location_lineEdit.setText(output_location)
 
+        # connect the locate button
+        self.locate_button.clicked.connect(self.on_location_button_pressed)
+
     def on_language_changed(self):
         pass
 
@@ -42,4 +45,4 @@ class RPCOutputWidget(QtWidgets.QWidget):
 
     def on_location_button_pressed(self):
         selected_data_dir = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        self.location_line_edit.setText(selected_data_dir)
+        self.output_location_lineEdit.setText(selected_data_dir)

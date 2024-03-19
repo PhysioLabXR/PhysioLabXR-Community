@@ -139,10 +139,6 @@ def is_package_installed(package_name):
 
 def is_brew_installed():
     if shutil.which('brew') is None:
-        from PyQt6.QtWidgets import QDialogButtonBox
-        dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
-                     "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
-                     title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
         return False
     else:
         return True
@@ -156,6 +152,10 @@ def install_pyaudio():
         if platform.system() == 'Darwin':
             # check if brew is installed
             if not is_brew_installed():
+                from PyQt6.QtWidgets import QDialogButtonBox
+                dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
+                             "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
                 from physiolabxr.configs.configs import AppConfigs
                 AppConfigs().is_audio_interface_available = False
                 return
@@ -181,15 +181,63 @@ def install_pyaudio():
         else:
             print("Error installing PyAudio:", pip_install.stderr)
 
+def locate_csharp_plugin():
+    """Locate the grpc_csharp_plugin in the NuGet package cache."""
+    result = subprocess.run(["dotnet", "nuget", "locals", "global-packages", "--list"], capture_output=True, text=True)
+    nuget_cache_path = result.stdout.strip().split(' ')[-1]
+    tools_path = os.path.join(nuget_cache_path, "grpc.tools")
+    if not os.path.exists(tools_path):
+        print("Grpc.Tools not found in NuGet cache.")
+        return None
+    # Find the highest version of Grpc.Tools
+    versions = sorted(os.listdir(tools_path), reverse=True)
+    if versions:
+        plugin_path = os.path.join(tools_path, versions[0], "tools", "macosx_x64", "grpc_csharp_plugin")
+        if os.path.exists(plugin_path):
+            return plugin_path
+    return None
 
 def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
+    from PyQt6.QtWidgets import QDialogButtonBox
+    from physiolabxr.configs.configs import AppConfigs
+
+    temp_rpc_path = "tmpGrpcTools"
     if platform.system() == 'Darwin':
         if not is_brew_installed():
-            subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
-            # TODO complete the  csharp plugin, this include creating the dummy csharp project
+            dialog_popup("Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
+                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            AppConfigs().is_csharp_plugin_available = False
+            return
+        # install dotnet-sdk if not installed
+        if not shutil.which('dotnet'):
+            print("Brew installing dotnet-sdk ...")
+            subprocess.run(["brew", "install", "--cask", "dotnet-sdk"])
+
+        # check if csharp plugin is available
+        if locate_csharp_plugin() is None:
+            os.mkdir(temp_rpc_path)
+            subprocess.run(["dotnet", "new", "console"], cwd=temp_rpc_path)
+            subprocess.run(["dotnet", "add", "package", "Grpc.Tools"], cwd=temp_rpc_path)
+
+        if (csharp_plugin_path := locate_csharp_plugin()) is None:
+            dialog_popup("Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.", title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            AppConfigs().is_csharp_plugin_available = False
+        else:
+            from physiolabxr.configs.configs import AppConfigs
+            AppConfigs().csharp_plugin_path = csharp_plugin_path
+
+    elif platform.system() == 'Windows':
+        AppConfigs().is_csharp_plugin_available = False
+        warnings.warn("PhysioRPC is not supported on Windows yet.")
+
+    elif platform.system() == 'Linux':
+        AppConfigs().is_csharp_plugin_available = False
+        warnings.warn("PhysioRPC is not supported on Linux yet.")
 
 
 def run_setup_check():
     install_lsl_binary()
     install_pyaudio()
+    setup_grpc_csharp_plugin()

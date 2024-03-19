@@ -29,6 +29,15 @@ def create_rpc_server(script_path, script_instance, server, port):
 
     add_server_func(server_instance, server)
     server.add_insecure_port(f"[::]:{port}")
+
+    # with open("server.crt", "rb") as file:
+    #     server_certificate = file.read()
+    # with open("server.key", "rb") as file:
+    #     private_key = file.read()
+    # server_credentials = grpc.ssl_server_credentials(
+    #     ((private_key, server_certificate,),)
+    # )
+    # server.add_secure_port(f"[::]:{port}", server_credentials)
     return server
 
 def run_rpc_server(script_path, script_instance, server, port):

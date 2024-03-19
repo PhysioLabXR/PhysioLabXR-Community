@@ -7,6 +7,7 @@ import sys
 
 from typing import get_type_hints, Union
 
+from physiolabxr.configs.shared import grpc_deprecation_warning
 from physiolabxr.exceptions.exceptions import CompileRPCError
 from physiolabxr.presets.PresetEnums import RPCLanguage
 
@@ -180,7 +181,7 @@ def get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_
         ]
 
 
-def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_outputs=None):
+def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_outputs: list=None):
     assert os.path.exists(script_path)
     assert script_path.endswith('.py'), "File name must end with .py"
     if script_class is None:
@@ -191,6 +192,13 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
     if rpc_outputs is None:
         # default is to add a python output to the script directory
         rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": '.'}]
+    else:
+        # python output is always needed for the server
+        # add the python and . location to the outputs if it is not already there
+        python_output = {"language": RPCLanguage.PYTHON, "location": '.'}
+        if python_output not in rpc_outputs:
+            rpc_outputs.append(python_output)
+
 
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
     proto_content = generate_proto_from_script_class(script_class)
@@ -213,10 +221,13 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
         location = rpc_output["location"]
 
         command = get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_path)
-
+        logging.info("Compiling proto file with command: " + " ".join(command))
+        logging.info("Current working directory is " + os.getcwd())
+        logging.info("Compile working directory is " + script_directory_path)
         result = subprocess.run(command, cwd=script_directory_path, check=True, capture_output=True)
-        if result.returncode != 0 or len(result.stderr) > 0:
-            message = "Error compiling the proto file: " + result.stderr.decode('utf-8')
+        # error = result.stderr.decode('utf-8').strip(grpc_deprecation_warning)
+        if result.returncode != 0:
+            message = f"Error compiling the proto file. \nstderr: \n{result.stderr.decode('utf-8')} \nstdout: \n{result.stdout.decode('utf-8')}"
             raise CompileRPCError(message)
         else:
             logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")

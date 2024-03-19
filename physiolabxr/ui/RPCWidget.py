@@ -34,9 +34,7 @@ class RPCWidget(QtWidgets.QWidget):
     def add_to_list_button_clicked(self):
         self._add_rpc_output()
 
-    def _add_rpc_output(self, output_location="", rpc_language=RPCLanguage.PYTHON):
-        if output_location == "":
-            output_location = os.path.dirname(self.scripting_widget.get_script_path())
+    def _add_rpc_output(self, output_location=".", rpc_language=RPCLanguage.PYTHON):
         rpc_output_widget = RPCOutputWidget(self.scripting_widget, rpc_language, output_location)
         self.list_content_frame_widget.layout().insertWidget(self.list_content_frame_widget.layout().count() - 2,
                                                              rpc_output_widget)

@@ -135,6 +135,7 @@ class AppConfigs(metaclass=Singleton):
 
     # rpc TODO change this to auto find the path based on OS
     csharp_plugin_path = "/Users/apocalyvec/.nuget/packages/grpc.tools/2.62.0/tools/macosx_x64/grpc_csharp_plugin"
+    is_csharp_plugin_available: bool = True
 
     def __post_init__(self):
         # change the cwd to root folder
