@@ -89,3 +89,4 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 grpc_deprecation_warning = "DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html import pkg_resources"
+temp_rpc_path = "tmpGrpcTools"

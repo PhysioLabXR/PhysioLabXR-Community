@@ -1,10 +1,12 @@
 import os.path
 import platform
+import re
 import urllib.request
 import warnings
 import shutil
 import subprocess
 
+from physiolabxr.configs.shared import temp_rpc_path
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -181,13 +183,20 @@ def install_pyaudio():
         else:
             print("Error installing PyAudio:", pip_install.stderr)
 
-def locate_csharp_plugin():
-    """Locate the grpc_csharp_plugin in the NuGet package cache."""
+
+def locate_grpc_tools():
     result = subprocess.run(["dotnet", "nuget", "locals", "global-packages", "--list"], capture_output=True, text=True)
     nuget_cache_path = result.stdout.strip().split(' ')[-1]
     tools_path = os.path.join(nuget_cache_path, "grpc.tools")
     if not os.path.exists(tools_path):
         print("Grpc.Tools not found in NuGet cache.")
+        return None
+    else:
+        return tools_path
+
+def locate_csharp_plugin():
+    """Locate the grpc_csharp_plugin in the NuGet package cache."""
+    if (tools_path := locate_grpc_tools()) is None:
         return None
     # Find the highest version of Grpc.Tools
     versions = sorted(os.listdir(tools_path), reverse=True)
@@ -197,23 +206,26 @@ def locate_csharp_plugin():
             return plugin_path
     return None
 
+
 def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
     from PyQt6.QtWidgets import QDialogButtonBox
     from physiolabxr.configs.configs import AppConfigs
 
-    temp_rpc_path = "tmpGrpcTools"
     if platform.system() == 'Darwin':
+        # we don't automate home brew installation because it requires sudo access
         if not is_brew_installed():
             dialog_popup("Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
-                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
+                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams."
+                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. Then restart the app if you need compile RPC for C# (Unity). ",
                          title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
             AppConfigs().is_csharp_plugin_available = False
             return
-        # install dotnet-sdk if not installed
+        # we don't automate dotnet-sdk installation because it requires sudo access
         if not shutil.which('dotnet'):
-            print("Brew installing dotnet-sdk ...")
-            subprocess.run(["brew", "install", "--cask", "dotnet-sdk"])
+            dialog_popup("Please brew install dotnet-sdk using 'brew install dotnet-sdk' in your terminal. Then restart the app if you need compile RPC for C# (Unity). ",)
+            AppConfigs().is_csharp_plugin_available = False
+            return
 
         # check if csharp plugin is available
         if locate_csharp_plugin() is None:

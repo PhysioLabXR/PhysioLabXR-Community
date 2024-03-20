@@ -2,8 +2,13 @@
 If you have get file not found error, make sure you set the working directory to .../RealityNavigation/physiolabxr
 Otherwise, you will get either import error or file not found error
 """
+import logging
 import os
+import shutil
+import subprocess
 import sys
+import platform
+import warnings
 
 import grpc
 # reference https://www.youtube.com/watch?v=WjctCBjHvmA
@@ -18,6 +23,8 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import RPCLanguage
 from physiolabxr.rpc.compiler import generate_proto_from_script_class, compile_rpc
 from physiolabxr.scripting.script_utils import get_script_class
+from physiolabxr.utils.setup_utils import is_brew_installed, locate_csharp_plugin, setup_grpc_csharp_plugin, \
+    locate_grpc_tools
 
 AppConfigs(_reset=True)  # create the singleton app configs object
 
@@ -99,6 +106,37 @@ def remove_generated_files(script_path):
         os.remove(os.path.join(script_dir, cs_file))
     if os.path.exists(os.path.join(script_dir, cs_grpc_file)):
         os.remove(os.path.join(script_dir, cs_grpc_file))
+
+
+def remove_csharp_plugin():
+    if platform.system() == "Darwin":
+        # check if dotnet is installed
+        if not is_brew_installed():
+            raise Exception("Unable to test csharp plugin setup. dotnet is not installed. please install brew first from https://brew.sh/.")
+        if shutil.which('dotnet'):
+            if (grpc_tools_path := locate_grpc_tools()) is not None:
+                logging.info("Uninstalling Grpc.Tools package")
+                subprocess.run(["dotnet", "remove", "package", "Grpc.Tools"])  # this removes the reference to the grpc tools
+                # now remove the local grpc tools
+                # navigate csharp_plugin_path to the grpc.tools path
+                if os.path.exists(grpc_tools_path):
+                    shutil.rmtree(grpc_tools_path)
+        else:
+            raise Exception("dotnet is not installed. Please install dotnet first using this command 'brew install --cask dotnet-sdk'")
+        # remove the tmpGrpcTools if it exists
+        if os.path.exists("tmpGrpcTools"):
+            shutil.rmtree("tmpGrpcTools")
+    elif platform.system() == "Windows":
+        pass
+    elif platform.system() == "Linux":
+        pass
+
+def test_setup_csharp_plugin():
+    # TODO add the csharp plugin setup test
+    remove_csharp_plugin()  # remove the plugin if it exists
+    setup_grpc_csharp_plugin()
+    csharp_plugin_path = locate_csharp_plugin()
+    assert csharp_plugin_path is not None
 
 def test_rpc_compiler_standalone_python():
     script_path = "tests/assets/RPCTest.py"
