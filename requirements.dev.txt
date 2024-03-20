@@ -19,5 +19,4 @@ PyOpenGL_accelerate
 soundfile
 matplotlib
 imblearn
-pybluez-updated
 toml
