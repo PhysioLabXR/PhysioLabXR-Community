@@ -144,7 +144,7 @@ def test_rpc_compiler_standalone_python():
     # remove everything in the script folder except the script
     remove_generated_files(script_path)
 
-    assert compile_rpc(script_path)
+    assert compile_rpc(script_path) is not None
     check_generated_files(script_path)
     check_python_generated_files(script_path)
 
@@ -158,7 +158,7 @@ def test_rpc_compiler_standalone_csharp():
     rpc_outputs = [{"language": RPCLanguage.CSHARP, "location": '.'}]
     csharp_plugin_path = AppConfigs().csharp_plugin_path
 
-    assert compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs)
+    assert compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs) is not None
     check_generated_files(script_path)
     check_csharp_generated_files(script_path)
 

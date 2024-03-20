@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
     <widget class="QWidget" name="OutputWidget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -64,8 +64,8 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>523</width>
-              <height>406</height>
+              <width>590</width>
+              <height>360</height>
              </rect>
             </property>
             <property name="sizePolicy">
@@ -141,17 +141,49 @@
         </layout>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QWidget" name="widget" native="true">
-     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>RPCs</string>
-        </property>
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>RPCs</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="rpc_table_widget">
+           <property name="columnCount">
+            <number>5</number>
+           </property>
+           <column>
+            <property name="text">
+             <string>Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Inputs</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Returns</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>#Calls</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Avg. run time</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>

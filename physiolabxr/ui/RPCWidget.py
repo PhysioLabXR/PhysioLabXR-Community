@@ -30,7 +30,6 @@ class RPCWidget(QtWidgets.QWidget):
 
         self.add_to_list_button.clicked.connect(self.add_to_list_button_clicked)
 
-
     def add_to_list_button_clicked(self):
         self._add_rpc_output()
 
@@ -67,3 +66,22 @@ class RPCWidget(QtWidgets.QWidget):
 
     def get_output_count(self):
         return self.list_content_frame_widget.layout().count() - 2
+
+    def write_rpc_table(self, rpcs):
+        """
+        Write the RPCs to the RPC table,
+        each item in rpcs must be a tuple of (name, input, output, #calls, avg.run time)
+        """
+        self.clear_rpc_table()
+        for rpc in rpcs:
+            self.add_rpc_to_table(rpc)
+
+    def clear_rpc_table(self):
+        self.rpc_table_widget.setRowCount(0)
+
+    # @QtCore.Slot()
+    # def update_rpc_table(self, rpcs):
+    #     self.clear_rpc_table()
+    #     for rpc in rpcs:
+    #         self.add_rpc_to_table(rpc)
+

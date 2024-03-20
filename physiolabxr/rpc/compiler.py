@@ -63,11 +63,13 @@ def generate_proto_from_script_class(cls):
     service_methods = []
     messages = []
     cls_name = cls.__name__
+    rpcs = []  # keep track of the rpcs that are found
     # get the name/methods that are rpc
     rpc_methods = [(name, method) for name, method in inspect.getmembers(cls, predicate=inspect.isfunction) if hasattr(method, "is_rpc_method")]
     if len(rpc_methods) == 0:
         return None
     for name, method in rpc_methods:
+        rpc_info = [name, [], []]  # name, input_args, returns
         # Generate RPC service method definition
         request_name = f"{name}Request"
         response_name = f"{name}Response"
@@ -91,33 +93,42 @@ def generate_proto_from_script_class(cls):
                     logging.error(f"RPC method {name} has unsupported type hint for argument {arg_name}")
                     raise e
                 request_fields.append(f"  {protobuf_type} {arg_name} = {i};")
+                rpc_info[1].append(f"{arg_name}: {arg_type.__name__}")
             messages.append(f"message {request_name} {{\n" + "\n".join(request_fields) + "\n}")
+            rpc_info[1] = f"{request_type} [" + ", ".join(rpc_info[1]) + "]"
+        else:
+            rpc_info[1] = f"Empty"
 
         if has_return:
             # if hasattr(type_hints["return"], '__iter__'):
             try:
-
                 if isinstance(returns, tuple) or isinstance(returns, list):
                     for j, arg_type in enumerate(returns):
                         protobuf_type = python_type_to_proto_type(arg_type)
                         response_fields.append(f"  {protobuf_type} message{j} = {j+1};")
+                        rpc_info[2].append((f"message{j}: {arg_type.__name__}"))
+                    rpc_info[2] = f"{response_type} [" + ", ".join(rpc_info[2]) + "]"
                 else:
                     protobuf_type = python_type_to_proto_type(returns)
                     response_fields.append(f"  {protobuf_type} message = 1;")
+                    rpc_info[2] = f"{response_type} [message: {returns.__name__}]"
+
                 messages.append(f"message {response_name} {{\n" + "\n".join(response_fields) + "\n}")
             except CompileRPCError as e:
                 logging.error(f"RPC method {name} has unsupported type hint for its return")
                 raise e
         else:
+            rpc_info[2] = f"Empty"
             logging.info(f"No return type for RPC method {name}, if this is intentional, ignore this message.")
         logging.info(f"Generated RPC method {name} with request fields {request_fields} and response type {response_fields}")
+        rpcs.append(rpc_info)
 
     proto_lines.append(f"service {cls_name} {{")
     proto_lines.extend(service_methods)
     proto_lines.append("}")
     proto_lines.extend(messages)
 
-    return "\n".join(proto_lines)
+    return "\n".join(proto_lines), rpcs
 
 def generate_server_code(script_path, script_class):
     script_directory_path = os.path.dirname(script_path)
@@ -189,6 +200,8 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
         script_class = get_script_class(script_path)
 
     script_directory_path = os.path.dirname(script_path)
+
+    # process the rpc outputs
     if rpc_outputs is None:
         # default is to add a python output to the script directory
         rpc_outputs = [{"language": RPCLanguage.PYTHON, "location": '.'}]
@@ -199,9 +212,8 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
         if python_output not in rpc_outputs:
             rpc_outputs.append(python_output)
 
-
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
-    proto_content = generate_proto_from_script_class(script_class)
+    proto_content, rpc_info = generate_proto_from_script_class(script_class)
     if proto_content is None:
         logging.info(f"No RPC methods found in {script_class.__name__}, skipping compilation")
         return None
@@ -235,4 +247,5 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
     # generate the server code #############################################
     generate_server_code(script_path, script_class)
 
-    return True
+    # return the list of rpcs that were compiled
+    return rpc_info
