@@ -35,10 +35,9 @@ def start_script_server(script_path, script_args):
                                                identity='server',
                                                pattern='router-dealer')
     info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                                  port_id=port + 1,
-                                                  # starts with +1 because the first port is taken by stdout
-                                                  identity='server',
-                                                  pattern='router-dealer')
+                                             port_id=port + 1,  # starts with +1 because the first port is taken by stdout
+                                             identity='server',
+                                             pattern='router-dealer')
 
     logging.info('Waiting for stdout routing ID from main app for stdout socket')
     _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
