@@ -286,8 +286,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             script_status = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)
             if script_status == INCLUDE_RPC:
                 # change the rpc button text to display the port number
+                rpc_info = np.frombuffer(self.info_socket_interface.socket.recv(), dtype='<U61').reshape(-1, 3).tolist()
                 self.RPC_button.setText('RPC Options ({})'.format(self.port + 4))
                 self.rpc_port = self.port + 4
+                self.rpc_widget.write_rpc_table(rpc_info)
             elif script_status == EXCLUDE_RPC:
                 self.RPC_button.setText('RPC Options')
             elif script_status == SCRIPT_SETUP_FAILED:

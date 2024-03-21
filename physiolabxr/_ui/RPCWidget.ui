@@ -154,7 +154,7 @@
          <item>
           <widget class="QTableWidget" name="rpc_table_widget">
            <property name="columnCount">
-            <number>5</number>
+            <number>3</number>
            </property>
            <column>
             <property name="text">
@@ -169,16 +169,6 @@
            <column>
             <property name="text">
              <string>Returns</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>#Calls</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Avg. run time</string>
             </property>
            </column>
           </widget>

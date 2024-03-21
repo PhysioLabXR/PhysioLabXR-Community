@@ -49,11 +49,11 @@ def get_file_changes_multiple_dir(dir_paths, last_mod_times, flatten=False):
     return modified_files, current_mod_times
 
 
-def load_servicer_add_function(script_name, grpc_file_path):
+def load_servicer_add_function(script_class_name, grpc_file_path):
     """
     Dynamically loads the add_<script name>Servicer_to_server function from a gRPC generated file.
 
-    :param script_name: The name of the script (e.g., "MyScript" for MyScript_pb2_grpc.py)
+    :param script_class_name: The name of the script (e.g., "MyScript" for MyScript_pb2_grpc.py)
     :param grpc_file_path: The file path to the *_pb2_grpc.py file.
     :return: The add_<script name>Servicer_to_server function, or None if not found.
     """
@@ -62,7 +62,7 @@ def load_servicer_add_function(script_name, grpc_file_path):
     grpc_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(grpc_module)
 
-    function_name = f"add_{script_name}Servicer_to_server"
+    function_name = f"add_{script_class_name}Servicer_to_server"
 
     # Retrieve the function by name
     add_function = getattr(grpc_module, function_name, None)

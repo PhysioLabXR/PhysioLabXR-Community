@@ -3,7 +3,8 @@ import os
 
 import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox, QTableWidgetItem
 
 from physiolabxr.configs import config
 from physiolabxr.configs.GlobalSignals import GlobalSignals
@@ -67,14 +68,18 @@ class RPCWidget(QtWidgets.QWidget):
     def get_output_count(self):
         return self.list_content_frame_widget.layout().count() - 2
 
-    def write_rpc_table(self, rpcs):
+    def write_rpc_table(self, rpc_info):
         """
         Write the RPCs to the RPC table,
         each item in rpcs must be a tuple of (name, input, output, #calls, avg.run time)
         """
         self.clear_rpc_table()
-        for rpc in rpcs:
-            self.add_rpc_to_table(rpc)
+        self.rpc_table_widget.setRowCount(len(rpc_info))
+        for row, props in enumerate(rpc_info):
+            for col, prop in enumerate(props):
+                item= QTableWidgetItem(prop)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.rpc_table_widget.setItem(row, col, item)
 
     def clear_rpc_table(self):
         self.rpc_table_widget.setRowCount(0)

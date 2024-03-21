@@ -68,7 +68,7 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        include_rpc = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        rpc_info = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
@@ -82,7 +82,7 @@ def start_script_server(script_path, script_args):
         send_router(np.array([SCRIPT_SETUP_FAILED]), info_routing_id, info_socket_interface)
         return
 
-    if include_rpc is not None:
+    if rpc_info is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         rpc_server = create_rpc_server(script_path, rena_script_thread, server, port + 4)
@@ -90,12 +90,13 @@ def start_script_server(script_path, script_args):
         rpc_server.start()
         rena_script_thread.rpc_server = rpc_server
         send_router(np.array([INCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
+        send_router(np.array([rpc_info]).astype('<U61'), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
     else:
         rpc_server = None
         send_router(np.array([EXCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
 
     rena_script_thread.start()
-    if include_rpc is not None:
+    if rpc_info is not None:
         rpc_server.wait_for_termination()
     logging.info('Script process terminated.')
 
