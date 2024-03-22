@@ -110,26 +110,31 @@ def remove_generated_files(script_path):
 
 def remove_csharp_plugin():
     if platform.system() == "Darwin":
-        # check if dotnet is installed
         if not is_brew_installed():
             raise Exception("Unable to test csharp plugin setup. dotnet is not installed. please install brew first from https://brew.sh/.")
-        if shutil.which('dotnet'):
-            if (grpc_tools_path := locate_grpc_tools()) is not None:
-                logging.info("Uninstalling Grpc.Tools package")
-                subprocess.run(["dotnet", "remove", "package", "Grpc.Tools"])  # this removes the reference to the grpc tools
-                # now remove the local grpc tools
-                # navigate csharp_plugin_path to the grpc.tools path
-                if os.path.exists(grpc_tools_path):
-                    shutil.rmtree(grpc_tools_path)
         else:
             raise Exception("dotnet is not installed. Please install dotnet first using this command 'brew install --cask dotnet-sdk'")
-        # remove the tmpGrpcTools if it exists
-        if os.path.exists("tmpGrpcTools"):
-            shutil.rmtree("tmpGrpcTools")
+
     elif platform.system() == "Windows":
-        pass
+        if shutil.which('dotnet') is None:
+            raise Exception("dotnet is not installed. Please install dotnet first from https://dotnet.microsoft.com/download"
+                            " or run the following command 'winget install Microsoft.DotNet.SDK.8'")
     elif platform.system() == "Linux":
-        pass
+        return
+
+    # remove the tmpGrpcTools if it exists
+    if os.path.exists("tmpGrpcTools"):
+        shutil.rmtree("tmpGrpcTools")
+
+    if shutil.which('dotnet'):
+        if (grpc_tools_path := locate_grpc_tools()) is not None:
+            logging.info("Uninstalling Grpc.Tools package")
+            subprocess.run(
+                ["dotnet", "remove", "package", "Grpc.Tools"])  # this removes the reference to the grpc tools
+            # now remove the local grpc tools
+            # navigate csharp_plugin_path to the grpc.tools path
+            if os.path.exists(grpc_tools_path):
+                shutil.rmtree(grpc_tools_path)
 
 def test_setup_csharp_plugin():
     # TODO add the csharp plugin setup test

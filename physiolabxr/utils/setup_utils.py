@@ -207,6 +207,20 @@ def locate_csharp_plugin():
     return None
 
 
+def add_grpc_plugin_with_dummy_project():
+    # create a dummy project
+    if locate_csharp_plugin() is None:
+        os.mkdir(temp_rpc_path)
+        subprocess.run(["dotnet", "new", "console"], cwd=temp_rpc_path)
+        subprocess.run(["dotnet", "add", "package", "Grpc.Tools"], cwd=temp_rpc_path)
+    else:
+        print("Grpc.Tools already installed in NuGet cache.")
+    # check if the plugin is available
+    if (csharp_plugin_path := locate_csharp_plugin()) is None:
+        dialog_popup("Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.", title="Warning")
+        return None
+    return csharp_plugin_path
+
 def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
     from PyQt6.QtWidgets import QDialogButtonBox
@@ -227,26 +241,39 @@ def setup_grpc_csharp_plugin():
             AppConfigs().is_csharp_plugin_available = False
             return
 
-        # check if csharp plugin is available
-        if locate_csharp_plugin() is None:
-            os.mkdir(temp_rpc_path)
-            subprocess.run(["dotnet", "new", "console"], cwd=temp_rpc_path)
-            subprocess.run(["dotnet", "add", "package", "Grpc.Tools"], cwd=temp_rpc_path)
-
-        if (csharp_plugin_path := locate_csharp_plugin()) is None:
-            dialog_popup("Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.", title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
-            AppConfigs().is_csharp_plugin_available = False
-        else:
-            from physiolabxr.configs.configs import AppConfigs
-            AppConfigs().csharp_plugin_path = csharp_plugin_path
-
     elif platform.system() == 'Windows':
-        AppConfigs().is_csharp_plugin_available = False
-        warnings.warn("PhysioRPC is not supported on Windows yet.")
+        if shutil.which('dotnet') is None:
+            result = subprocess.run(["winget", "install", "Microsoft.DotNet.SDK.8", "--accept-source-agreements"])
+
+            if result.returncode == 0:
+                print("Microsoft.DotNet.SDK.8 has been successfully installed.")
+
+                if shutil.which('dotnet') is None:
+                    dialog_popup("DotNet.SDK is installed but dotnet command is not found. Please restart the app if you need to compile RPC for C# (Unity).",
+                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok)
+                    AppConfigs().is_csharp_plugin_available = False
+                    return
+                else:
+                    dialog_popup("Unable to install Microsoft.DotNet.SDK.8 using winget. Please install Microsoft.DotNet.SDK.8 manually from https://learn.microsoft.com/en-us/dotnet/core/install/windows?tabs=net80",
+                                 title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                    AppConfigs().is_csharp_plugin_available = False
 
     elif platform.system() == 'Linux':
         AppConfigs().is_csharp_plugin_available = False
         warnings.warn("PhysioRPC is not supported on Linux yet.")
+
+    # end of setting up dotnet-sdk ###############################################################################
+
+    # check if csharp plugin is available
+    csharp_plugin_path = add_grpc_plugin_with_dummy_project()
+    if csharp_plugin_path is None:
+        dialog_popup(
+            "Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.",
+            title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+        AppConfigs().is_csharp_plugin_available = False
+    else:
+        from physiolabxr.configs.configs import AppConfigs
+        AppConfigs().csharp_plugin_path = csharp_plugin_path
 
 
 def run_setup_check():
