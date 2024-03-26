@@ -4,7 +4,7 @@ from PyQt6.QtGui import QIntValidator
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.presets.PresetEnums import PresetType, DataType, AudioInputDataType
+from physiolabxr.presets.PresetEnums import PresetType, DataType, AudioInputDataType, CustomPresetType
 from physiolabxr.presets.presets_utils import get_preset_type, get_stream_preset_info, get_stream_preset_custom_info, \
     change_stream_preset_port_number, change_stream_preset_type, change_stream_preset_data_type, \
     is_stream_name_in_presets, set_stream_preset_audio_device_frames_per_buffer, \
@@ -57,9 +57,9 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.preset_type_combobox.model().item(index).setEnabled(False)
         self.preset_type_combobox.currentIndexChanged.connect(self.preset_type_selection_changed)
         self.set_preset_type_to_default()
-        # remove CUSTOM type from preset type combobox
-        index = self.preset_type_combobox.findText(PresetType.CUSTOM.value, Qt.MatchFlag.MatchFixedString)
-        self.preset_type_combobox.removeItem(index)
+        # # remove CUSTOM type from preset type combobox
+        # index = self.preset_type_combobox.findText(PresetType.CUSTOM.value, Qt.MatchFlag.MatchFixedString)
+        # self.preset_type_combobox.removeItem(index)
 
         self.update_preset_type_uis()
         self.device_property_fields = {}
@@ -154,11 +154,11 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.data_type_combo_box.setHidden(False)
             self.audio_device_settings_widget.setHidden(True)
             self.add_custom_data_stream_widget.setVisible(False)
-        elif current_type == PresetType.CUSTOM:
-            self.PortLineEdit.setHidden(True)
-            self.data_type_combo_box.setHidden(False)
-            self.audio_device_settings_widget.setHidden(True)
-            self.add_custom_data_stream_widget.setVisible(True)
+        # elif current_type == PresetType.CUSTOM:
+        #     self.PortLineEdit.setHidden(True)
+        #     self.data_type_combo_box.setHidden(False)
+        #     self.audio_device_settings_widget.setHidden(True)
+        #     self.add_custom_data_stream_widget.setVisible(False)
 
     def get_selected_preset_type_str(self):
         return self.preset_type_combobox.currentText()
@@ -211,8 +211,6 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.show_lsl_preset_ui()
         elif selected_type == PresetType.ZMQ:
             self.show_zmq_preset_ui()
-        elif selected_type == PresetType.CUSTOM:
-            self.show_custom_preset_ui(stream_name)
         elif selected_type == PresetType.WEBCAM or selected_type == PresetType.MONITOR:
             self.show_video_uis(selected_type)
         elif selected_type == PresetType.AUDIO:
@@ -221,6 +219,11 @@ class AddStreamWidget(QtWidgets.QWidget):
             self.hide_stream_uis()
         elif selected_type == PresetType.FMRI:
             self.hide_stream_uis()
+        elif selected_type == PresetType.CUSTOM:
+            if stream_name == CustomPresetType.UnicornHybridBlackBluetooth.value:
+                self.hide_stream_uis()
+            # self.show_custom_preset_ui(stream_name)
+
         else: raise Exception("Unknow preset type {}".format(selected_type))
 
     def set_data_type_to_default(self):

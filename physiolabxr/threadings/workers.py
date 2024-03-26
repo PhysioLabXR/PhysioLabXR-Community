@@ -17,8 +17,11 @@ from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.configs.shared import SCRIPT_STDOUT_MSG_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
     PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_STDERR_MSG_PREFIX
+from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import create_custom_device_interface
+from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
-from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
+# from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
+# from physiolabxr.utils.buffers import process_preset_create_UnicornHybridBlack_interface_startsensor
 from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
 from physiolabxr.utils.networking_utils import recv_string
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
@@ -134,64 +137,206 @@ class LSLInletWorker(QObject, RenaWorker):
         return self._lslInlet_interface.is_stream_available()
 
 
-class OpenBCIDeviceWorker(QObject):
-    # for passing data to the gesture tab
-    signal_data = pyqtSignal(dict)
-    signal_data_tick = pyqtSignal()
+# class OpenBCIDeviceWorker(QObject):
+#     # for passing data to the gesture tab
+#     signal_data = pyqtSignal(dict)
+#     signal_data_tick = pyqtSignal()
+#
+#     signal_stream_availability = pyqtSignal(bool)
+#     signal_stream_availability_tick = pyqtSignal()
+#
+#     def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
+#         super(OpenBCIDeviceWorker, self).__init__()
+#         self.signal_data_tick.connect(self.process_on_tick)
+#
+#         self.interface = process_preset_create_openBCI_interface_startsensor(stream_name, serial_port, board_id)
+#         self.is_streaming = False
+#
+#         self.start_time = time.time()
+#
+#         self.timestamps_queue = deque(maxlen=self.interface.get_sampling_rate() * 10)  # TODO move this number to settings
+#
+#     @QtCore.pyqtSlot()
+#     def process_on_tick(self):
+#         if self.is_streaming:
+#             data = self.interface.process_frames()  # get all data and remove it from internal buffer
+#             # notify the eeg data for the radar tab
+#             # to_local_clock = time.time() - local_clock()
+#             # timestamps = data[-2,:] - to_local_clock
+#
+#             timestamps = data[-2, :] - data[-2, :][-1] + get_clock_time() if len(data[-2, :]) > 0 else []
+#             #print("samplee num = ", len(data[-2,:]))
+#
+#             self.timestamps_queue.extend(timestamps)
+#
+#             # sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
+#             sampling_rate = len(self.timestamps_queue) / (self.timestamps_queue[-1] - self.timestamps_queue[0]) if len(self.timestamps_queue) > 1 else 0
+#             # print("openbci sampling rate:", sampling_rate)
+#             data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+#             self.signal_data.emit(data_dict)
+#
+#     def start_stream(self):
+#         self.interface.start_stream()
+#         self.is_streaming = True
+#         self.start_time = time.time()
+#
+#     def stop_stream(self):
+#         self.interface.stop_stream()
+#         self.is_streaming = False
+#         self.end_time = time.time()
+#
+#     def is_streaming(self):
+#         return self.is_streaming
+#
+#     @QtCore.pyqtSlot()
+#     def process_stream_availability(self):
+#         return self.is_stream_available()
+#
+#     def is_stream_available(self):
+#         return True
 
+# class UnicornHybridBlackDeviceWorker(QObject):
+#     # for passing data to the gesture tab
+#     signal_data = pyqtSignal(dict)
+#     signal_data_tick = pyqtSignal()
+#
+#     signal_stream_availability = pyqtSignal(bool)
+#     signal_stream_availability_tick = pyqtSignal()
+#
+#     def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
+#         super(UnicornHybridBlackDeviceWorker, self).__init__()
+#         self.signal_data_tick.connect(self.process_on_tick)
+#
+#         self.interface = process_preset_create_UnicornHybridBlack_interface_startsensor(stream_name, board_id)
+#         self.is_streaming = False
+#
+#         self.start_time = time.time()
+#
+#         self.timestamps_queue = deque(maxlen=self.interface.get_sampling_rate() * 10)  # TODO move this number to settings
+#
+#     @QtCore.pyqtSlot()
+#     def process_on_tick(self):
+#         if self.is_streaming:
+#             data = self.interface.process_frames()  # get all data and remove it from internal buffer
+#             # notify the eeg data for the radar tab
+#             # to_local_clock = time.time() - local_clock()
+#             # timestamps = data[-2,:] - to_local_clock
+#
+#             timestamps = data[-2, :] - data[-2, :][-1] + get_clock_time() if len(data[-2, :]) > 0 else []
+#             #print("samplee num = ", len(data[-2,:]))
+#
+#             self.timestamps_queue.extend(timestamps)
+#
+#             # sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
+#             sampling_rate = len(self.timestamps_queue) / (self.timestamps_queue[-1] - self.timestamps_queue[0]) if len(self.timestamps_queue) > 1 else 0
+#             # print("openbci sampling rate:", sampling_rate)
+#             data_dict = {'stream_name': 'unicornhybridblack', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+#             self.signal_data.emit(data_dict)
+#
+#     def start_stream(self):
+#         self.interface.start_stream()
+#         self.is_streaming = True
+#         self.start_time = time.time()
+#
+#     def stop_stream(self):
+#         self.interface.stop_stream()
+#         self.is_streaming = False
+#         self.end_time = time.time()
+#
+#     def is_streaming(self):
+#         return self.is_streaming
+#
+#     @QtCore.pyqtSlot()
+#     def process_stream_availability(self):
+#         return self.is_stream_available()
+#
+#     def is_stream_available(self):
+#         return True
+
+
+
+class CustomDeviceWorker(QObject, RenaWorker):
     signal_stream_availability = pyqtSignal(bool)
     signal_stream_availability_tick = pyqtSignal()
 
-    def __init__(self, stream_name, serial_port, board_id, *args, **kwargs):
-        super(OpenBCIDeviceWorker, self).__init__()
+    def __init__(self, stream_name,*args, **kwargs):
+        super(CustomDeviceWorker, self).__init__()
         self.signal_data_tick.connect(self.process_on_tick)
+        self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.interface = process_preset_create_openBCI_interface_startsensor(stream_name, serial_port, board_id)
+        self._custom_device_interface: DeviceInterface = create_custom_device_interface(stream_name)
+        self._custom_device_interface.device_worker = self
+
         self.is_streaming = False
+        self.timestamp_queue = deque(maxlen=1024)
 
         self.start_time = time.time()
+        self.num_samples = 0
 
-        self.timestamps_queue = deque(maxlen=self.interface.get_sampling_rate() * 10)  # TODO move this number to settings
+        self.previous_availability = None
+
+        # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
+        self.interface_mutex = QMutex()
 
     @QtCore.pyqtSlot()
     def process_on_tick(self):
+        if QThread.currentThread().isInterruptionRequested():
+            return
         if self.is_streaming:
-            data = self.interface.process_frames()  # get all data and remove it from internal buffer
-            # notify the eeg data for the radar tab
-            # to_local_clock = time.time() - local_clock()
-            # timestamps = data[-2,:] - to_local_clock
+            pull_data_start_time = time.perf_counter()
+            self.interface_mutex.lock()
+            frames, timestamps = self._custom_device_interface.process_frames()  # get all data and remove it from internal buffer
+            self.timestamp_queue.extend(timestamps)
+            if len(self.timestamp_queue) > 1:
+                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+            else:
+                sampling_rate = np.nan
 
-            timestamps = data[-2, :] - data[-2, :][-1] + get_clock_time() if len(data[-2, :]) > 0 else []
-            #print("samplee num = ", len(data[-2,:]))
+            self.interface_mutex.unlock()
+            if frames.shape[-1] == 0:
+                return
 
-            self.timestamps_queue.extend(timestamps)
+            self.num_samples += len(timestamps)
 
-            # sampling_rate = len(timestamps) / (timestamps[-1] - timestamps[0]) if len(timestamps) > 1 else 0
-            sampling_rate = len(self.timestamps_queue) / (self.timestamps_queue[-1] - self.timestamps_queue[0]) if len(self.timestamps_queue) > 1 else 0
-            # print("openbci sampling rate:", sampling_rate)
-            data_dict = {'stream_name': 'openbci', 'timestamps': timestamps, 'frames': data, 'sampling_rate': sampling_rate}
+            data_dict = {'stream_name': self._custom_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
             self.signal_data.emit(data_dict)
-
-    def start_stream(self):
-        self.interface.start_stream()
-        self.is_streaming = True
-        self.start_time = time.time()
-
-    def stop_stream(self):
-        self.interface.stop_stream()
-        self.is_streaming = False
-        self.end_time = time.time()
-
-    def is_streaming(self):
-        return self.is_streaming
+            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
 
     @QtCore.pyqtSlot()
     def process_stream_availability(self):
-        return self.is_stream_available()
+        """
+        only emit when the stream is not available
+        """
+        if QThread.currentThread().isInterruptionRequested():
+            return
+        is_stream_availability = self._custom_device_interface.is_stream_available()
+        if self.previous_availability is None:  # first time running
+            self.previous_availability = is_stream_availability
+            self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())
+        else:
+            if is_stream_availability != self.previous_availability:
+                self.previous_availability = is_stream_availability
+                self.signal_stream_availability.emit(is_stream_availability)
+
+    def reset_interface(self, stream_name, num_channels):
+        self.interface_mutex.lock()
+        self._custom_device_interface = create_custom_device_interface(stream_name)
+        self.interface_mutex.unlock()
+
+    def start_stream(self):
+        self._custom_device_interface.start_stream()
+        self.is_streaming = True
+
+        self.num_samples = 0
+        self.start_time = time.time()
+        self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
+
+    def stop_stream(self):
+        self._custom_device_interface.stop_stream()
+        self.is_streaming = False
 
     def is_stream_available(self):
-        return True
-
+        return self._custom_device_interface.is_stream_available()
 
 
 

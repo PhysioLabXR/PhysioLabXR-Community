@@ -121,6 +121,21 @@ def get_lsl_binary():
         print(f"LSL binary installed successfully to {pylsl_path}")
     return pylsl_lib_path
 
+
+def get_pybluez_library():
+    if platform.system() == 'Windows':
+        subprocess.run(["pip", "install", "pybluez-updated"])
+
+        # check if the installation was successful
+        try:
+            import bluetooth
+        except ImportError:
+            warnings.warn("Pybluez is required for UnicornHybridBlack. \n"
+                          "Follow https://visualstudio.microsoft.com/visual-cpp-build-tools/ "
+                          "to install the required build tools and then run 'pip install pybluez-updated' to install pybluez.")
+    else:
+        print("Unicorn Hybrid Black is not supported on Darwin or Linux. Pybluez will not be installed.")
+
 def install_lsl_binary():
     # try import pylsl check if the lib exist
     try:
@@ -128,6 +143,15 @@ def install_lsl_binary():
     except RuntimeError:
         # the error is LSL binary library file was not found.
         get_lsl_binary()
+
+def install_pybluez():
+    # try import bluetooth check if the lib exist
+    # Note: only windows needs pybluez for UnicornHybridBlack
+    try:
+        import bluetooth
+    except ImportError:
+        get_pybluez_library()
+
 
 
 def is_package_installed(package_name):
@@ -177,3 +201,4 @@ def install_pyaudio():
 def run_setup_check():
     install_lsl_binary()
     install_pyaudio()
+    install_pybluez()

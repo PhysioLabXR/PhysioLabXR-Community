@@ -19,3 +19,4 @@ PyOpenGL_accelerate
 soundfile
 matplotlib
 imblearn
+toml

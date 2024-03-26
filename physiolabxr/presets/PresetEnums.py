@@ -22,6 +22,9 @@ except:
     paInt8 = 16
     paUInt8 = 32
 
+class CustomPresetType(Enum):
+    UnicornHybridBlackBluetooth = 'UnicornHybridBlackBluetooth'
+
 
 class PresetType(Enum):
     WEBCAM = 'WEBCAM'
@@ -54,6 +57,7 @@ class PresetType(Enum):
 
     def is_self_audio_preset(self):
         return self in [self.AUDIO]
+
 
 
 class AudioInputDataType(Enum):

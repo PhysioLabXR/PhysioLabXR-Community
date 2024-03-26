@@ -1,0 +1,13 @@
+{ "StreamName":"UnicornHybridBlackLSL",
+  "ChannelNames":[
+    "EEG1", "EEG2", "EEG3", "EEG4", "EEG5", "EEG6", "EEG7", "EEG8",
+    "Accelerometer X", "Accelerometer Y", "Accelerometer Z",
+    "Gyroscope X", "Gyroscope Y", "Gyroscope Z",
+    "Battery Level",
+    "Counter",
+    "Validation Indicator",
+    "Timestamp",
+    "Marker"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [8, 11, 14]}
