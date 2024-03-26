@@ -20,9 +20,16 @@ from PyQt6.QtCore import Qt
 print("!!! from PyQt6.QtWidgets import QWidget")
 from PyQt6.QtWidgets import QWidget
 
+import logging
+import sys
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+print("!!! logging")
+
 print("!!! from physiolabxr.configs.configs import AppConfigs")
 from physiolabxr.configs.configs import AppConfigs
 AppConfigs(_reset=True)  # create the singleton app configs object
+
+
 
 from tests.TestStream import LSLTestStream
 from tests.test_utils import app_fixture, ContextBot, get_random_test_stream_names
