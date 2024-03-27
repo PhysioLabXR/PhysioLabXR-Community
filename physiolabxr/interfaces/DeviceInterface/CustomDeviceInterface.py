@@ -1,4 +1,9 @@
-import bluetooth
+try:
+    import bluetooth
+except ImportError:
+    print('Bluetooth module is not available')
+    print('Please install the bluetooth module by running "pip install pybluez"')
+
 import brainflow
 from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import re
@@ -44,6 +49,12 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
             BoardShim.disable_board_logger()
 
     def start_stream(self):
+
+        # check if bluetooth module has been imported
+        if 'bluetooth' not in globals():
+            raise CustomDeviceStartStreamError('Bluetooth module is not available. \n'
+                                               'Note: the Pybluez module with g.tec Unicorn only works on Windows.')
+
         bt_devices = bluetooth.discover_devices(duration=1, lookup_names=True, lookup_class=True)
         unicorns = list(filter(lambda d: re.search(r'UN-\d{4}.\d{2}.\d{2}', d[1]), bt_devices))
         if len(unicorns) == 0:

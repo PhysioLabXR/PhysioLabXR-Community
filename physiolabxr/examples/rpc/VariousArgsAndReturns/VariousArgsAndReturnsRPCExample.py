@@ -1,8 +1,5 @@
-import numpy as np
-
 from physiolabxr.rpc.decorator import rpc
 from physiolabxr.scripting.RenaScript import RenaScript
-
 
 class RPCExample(RenaScript):
     def __init__(self, *args, **kwargs):
