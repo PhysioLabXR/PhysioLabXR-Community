@@ -339,8 +339,5 @@ def setup_grpc_csharp_plugin():
 def run_setup_check():
     install_lsl_binary()
     install_pyaudio()
-<<<<<<< HEAD
     setup_grpc_csharp_plugin()
-=======
     install_pybluez()
->>>>>>> 85cd2fb538e4b769a96adad2a3399a68b9a4bf6e
