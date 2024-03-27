@@ -1,6 +1,7 @@
 import os.path
 import platform
 import re
+import sys
 import urllib.request
 import warnings
 import shutil
@@ -218,16 +219,33 @@ def locate_grpc_tools():
     else:
         return tools_path
 
+
 def locate_csharp_plugin():
     """Locate the grpc_csharp_plugin in the NuGet package cache."""
     if (tools_path := locate_grpc_tools()) is None:
         return None
+
+    # Determine the platform and architecture
+    os_name = platform.system().lower()
+    suffix = '.exe' if os_name == 'windows' else ''
+
+    arch = 'x64' if sys.maxsize > 2 ** 32 else 'x86'
+    if os_name == 'linux':
+        os_name = 'linux_' + arch
+    elif os_name == 'darwin':
+        os_name = 'macosx_' + arch
+    elif os_name == 'windows':
+        os_name = 'windows_' + arch
+
+
     # Find the highest version of Grpc.Tools
     versions = sorted(os.listdir(tools_path), reverse=True)
     if versions:
-        plugin_path = os.path.join(tools_path, versions[0], "tools", "macosx_x64", "grpc_csharp_plugin")
-        if os.path.exists(plugin_path):
-            return plugin_path
+        # Attempt to find a plugin for the current platform and architecture
+        for version in versions:
+            plugin_path = os.path.join(tools_path, version, 'tools', os_name, f'grpc_csharp_plugin{suffix}')
+            if os.path.exists(plugin_path):
+                return plugin_path
     return None
 
 
@@ -255,13 +273,13 @@ def setup_grpc_csharp_plugin():
         if not is_brew_installed():
             dialog_popup("Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
                          "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams."
-                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. Then restart the app if you need compile RPC for C# (Unity). ",
+                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. Then restart the app/IDE if you need compile RPC for C# (Unity). ",
                          title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
             AppConfigs().is_csharp_plugin_available = False
             return
         # we don't automate dotnet-sdk installation because it requires sudo access
         if not shutil.which('dotnet'):
-            dialog_popup("Please brew install dotnet-sdk using 'brew install dotnet-sdk' in your terminal. Then restart the app if you need compile RPC for C# (Unity). ",)
+            dialog_popup("Please brew install dotnet-sdk using 'brew install dotnet-sdk' in your terminal. Then restart the app/IDE if you need compile RPC for C# (Unity). ",)
             AppConfigs().is_csharp_plugin_available = False
             return
 
@@ -281,6 +299,24 @@ def setup_grpc_csharp_plugin():
                     dialog_popup("Unable to install Microsoft.DotNet.SDK.8 using winget. Please install Microsoft.DotNet.SDK.8 manually from https://learn.microsoft.com/en-us/dotnet/core/install/windows?tabs=net80",
                                  title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
                     AppConfigs().is_csharp_plugin_available = False
+
+        if shutil.which('protoc') is None:
+            result = subprocess.run(["winget", "install", "protobuf"])
+
+            if result.returncode == 0:
+                print("protobuf has been successfully installed.")
+
+                if shutil.which('protobuf') is None:
+                    dialog_popup("protobuf is installed but protoc command is not found. Please restart the app if you need to compile RPC for C# (Unity).",
+                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok)
+                    AppConfigs().is_csharp_plugin_available = False
+                    return
+                else:
+                    dialog_popup("Unable to install protobuf using winget. Please install from https://github.com/protocolbuffers/protobuf/releases/ and add to PATH manually.",
+                                 title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                    AppConfigs().is_csharp_plugin_available = False
+
+
 
     elif platform.system() == 'Linux':
         AppConfigs().is_csharp_plugin_available = False
