@@ -14,7 +14,6 @@ from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.exceptions.exceptions import CustomDeviceNotFoundError, CustomDeviceStartStreamError, \
     CustomDeviceStreamInterruptedError
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
-import pylsl
 
 try:
     from pylsl import StreamInfo, StreamOutlet
