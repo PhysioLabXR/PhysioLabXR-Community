@@ -30,6 +30,7 @@ def create_rpc_server(script_path, script_instance, server, port):
 
     add_server_func(server_instance, server)
     server.add_insecure_port(f"[::]:{port}")
+    server.add_insecure_port(f"0.0.0.0:{port}")
 
     # with open("server.crt", "rb") as file:
     #     server_certificate = file.read()
