@@ -12,7 +12,14 @@
 import re
 import time
 
-import bluetooth
+try:
+    import bluetooth
+except ImportError:
+    print('Bluetooth module is not available')
+    print('Please install the bluetooth module by running "pip install pybluez"')
+    raise
+
+
 from brainflow import BrainFlowError
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
 import pylsl

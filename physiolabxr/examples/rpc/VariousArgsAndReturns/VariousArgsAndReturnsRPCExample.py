@@ -1,8 +1,5 @@
-import numpy as np
-
 from physiolabxr.rpc.decorator import rpc
 from physiolabxr.scripting.RenaScript import RenaScript
-
 
 class RPCExample(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -34,7 +31,7 @@ class RPCExample(RenaScript):
         Args:
             input0 (str): the input
         """
-        return f"Received input: {input0}"
+        return f"Miaomiaomiao: {input0}"
 
     @rpc
     def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> (str, int):
