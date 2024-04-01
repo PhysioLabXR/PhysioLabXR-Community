@@ -1,66 +1,37 @@
-import enum
+import pickle
 
+import pandas as pd
+from eidl.utils.model_utils import get_subimage_model
+
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript import AOIAugmentationConfig
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, \
-    GazeFilterFixationDetectionIVT
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import GazeAttentionMatrix, ImageInfo
+    GazeFilterFixationDetectionIVT, \
+    GazeType, \
+    gaze_point_on_image_valid, tobii_gaze_on_display_area_pixel_coordinate
+from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
 from physiolabxr.scripting.illumiRead.AOIAugmentationScript.analysis.utils import get_event_data, \
     get_all_event_conditions_data
 from physiolabxr.utils.RNStream import RNStream
-import numpy as np
-import os
-import cv2
-import pickle
-import random
-import pandas as pd
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript import AOIAugmentationConfig
-import torch
-
-import time
-from collections import deque
-import cv2
-import numpy
-import time
-import os
-import pickle
-import sys
-import matplotlib.pyplot as plt
-import pylsl
-import torch
-from eidl.utils.model_utils import get_subimage_model
-from pylsl import StreamInfo, StreamOutlet, cf_float32
-
-from physiolabxr.scripting.fs_utils import get_datetime_str
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationGazeUtils import GazeData, \
-    GazeFilterFixationDetectionIVT, \
-    tobii_gaze_on_display_area_to_image_matrix_index_when_rect_transform_pivot_centralized, GazeType, \
-    gaze_point_on_image_valid, tobii_gaze_on_display_area_pixel_coordinate
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.IntegrateAttention import integrate_attention
-from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript import AOIAugmentationConfig
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationUtils import *
-from physiolabxr.scripting.illumiRead.AOIAugmentationScript.AOIAugmentationConfig import EventMarkerLSLStreamInfo, \
-    GazeDataLSLStreamInfo, AOIAugmentationScriptParams
-import torch
-
 from physiolabxr.utils.buffers import DataBuffer
-from eidl.utils.model_utils import get_subimage_model
 
 participant_id = "01"
 
-sub_image_handler_path = '../data/subimage_handler.pkl'
+# sub_image_handler_path = '../data/subimage_handler.pkl'  # this is where the sub image handler is saved
+sub_image_handler_path = '/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/subimage_handler.p'
+data_root = '/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/Participants'
 
-if os.path.exists(AOIAugmentationConfig.SubImgaeHandlerFilePath):
-    with open(AOIAugmentationConfig.SubImgaeHandlerFilePath, 'rb') as f:
+
+# create a new sub image handler if it does not exist
+if os.path.exists(sub_image_handler_path):
+    with open(sub_image_handler_path, 'rb') as f:
         subimage_handler = pickle.load(f)
 else:
     subimage_handler = get_subimage_model()
-
-
-
+    pickle.dump(subimage_handler, open(sub_image_handler_path, 'wb'))
 
 
 # load the rn stream data
-participant_folder = os.path.join('data', participant_id)
+participant_folder = os.path.join(data_root, participant_id)
 
 assert os.path.exists(participant_folder), "Participant folder does not exist"
 
@@ -68,7 +39,7 @@ assert os.path.exists(participant_folder), "Participant folder does not exist"
 
 rn_stream_file_path = None
 for file in os.listdir(participant_folder):
-    if file.endswith('.dats'):
+    if file.endswith('.p'):
         rn_stream_file_path = os.path.join(participant_folder, file)
         break
 assert rn_stream_file_path is not None, "RN stream file does not exist"
@@ -89,8 +60,7 @@ survey_datafram = pd.read_csv(survey_file_path)
 print("Finish Loading Survey Data")
 
 # load the rn stream data
-rn_stream = RNStream(rn_stream_file_path)
-rn_stream_data = rn_stream.stream_in(jitter_removal=False)
+rn_stream_data = pickle.load(open(rn_stream_file_path, 'rb'))
 
 recording_data_buffer = DataBuffer()
 recording_data_buffer.buffer = rn_stream_data
@@ -166,7 +136,6 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
         image_height=AOIAugmentationConfig.image_on_screen_max_height,
     )
 
-
     current_image_info.image_on_screen_shape = image_on_screen_shape
 
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -176,14 +145,11 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
 
     ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
-
-
     for gaze_data_t, ts in zip(gaze_data_stream.T, gaze_data_ts_stream):
         # construct gaze data
         gaze_data = GazeData()
         gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
         gaze_data_ts_intervel = gaze_data.timestamp-ivt_filter.last_gaze_data.timestamp
-
 
         # filter the gaze data with fixation detection
         gaze_data = ivt_filter.process_sample(gaze_data)
@@ -201,7 +167,7 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
                 gaze_on_display_area_y=gaze_data.combined_eye_gaze_data.gaze_point_on_display_area[1]
             )
 
-            # check if the gaze point is in the image boundary and is valid and is an fixation
+            # check if the gaze point is in the image boundary and is valid and is a fixation
             gaze_point_is_in_screen_image_boundary = gaze_point_on_image_valid(
                 matrix_shape=current_image_info.image_on_screen_shape,
                 coordinate=gaze_point_on_screen_pixel_index)
@@ -214,12 +180,6 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
                     coordinate_on_original_image=gaze_point_on_screen_pixel_index
                 )
                 fixation_on_image_duration += gaze_data_ts_intervel
-
-
-
-
-
-
 
 
 
