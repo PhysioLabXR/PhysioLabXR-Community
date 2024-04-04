@@ -454,6 +454,9 @@ class GazeAttentionMatrix():
             gaussian_filter(shape=self._filter_size, center=self._filter_map_center_location, sigma=self.sigma,
                             normalized=True), device=self.device)
 
+    def setup_gaze_attention_matrix(self, image_shape):
+        self.gaze_attention_pixel_map_buffer = torch.tensor(np.zeros(shape=image_shape),  device=self.device)
+
     # def set_attention_patch_shape(self, attention_patch_shape):
     #     self.attention_patch_shape = attention_patch_shape
     #     self._attention_patch_average_kernel = torch.tensor(
@@ -490,8 +493,12 @@ class GazeAttentionMatrix():
     #     return gaze_on_grid_attention_map
     #
     def gaze_attention_pixel_map_clutter_removal(self, gaze_on_grid_attention_map, attention_clutter_ratio=0.1):
-        self.gaze_attention_pixel_map_buffer = attention_clutter_ratio * self.gaze_attention_pixel_map_buffer + (
-                1 - attention_clutter_ratio) * gaze_on_grid_attention_map
+        if attention_clutter_ratio is None:
+            self.gaze_attention_pixel_map_buffer = self.gaze_attention_pixel_map_buffer + gaze_on_grid_attention_map
+        else:
+            self.gaze_attention_pixel_map_buffer = attention_clutter_ratio * self.gaze_attention_pixel_map_buffer + (
+                    1 - attention_clutter_ratio) * gaze_on_grid_attention_map
+
     #
     # def get_gaze_attention_grid_map(self, flatten=True):
     #     gaze_attention_grid_map = self.gaze_attention_grid_map_buffer.cpu().numpy()

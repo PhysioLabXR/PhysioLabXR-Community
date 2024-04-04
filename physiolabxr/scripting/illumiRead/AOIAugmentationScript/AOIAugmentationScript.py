@@ -455,7 +455,7 @@ class AOIAugmentationScript(RenaScript):
                     gaze_on_image_attention_map = self.gaze_attention_matrix.get_gaze_on_image_attention_map(
                         gaze_point_on_raw_image_coordinate, self.current_image_info.original_image.shape) # the gaze attention map on the original image
                     # plt.imshow(gaze_on_image_attention_map.detach().cpu().numpy())
-                    self.gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=0.995)
+                    self.gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=0.995)  # perform the static clutter removal
 
             time_end = time.time()
 

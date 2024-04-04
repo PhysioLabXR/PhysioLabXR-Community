@@ -4,7 +4,15 @@ import os
 import pickle
 
 
-
+event_channels = [
+    "Block Marker",
+    "State Marker",
+    "Report Label Marker",
+    "AOI Augmentation Start End Marker",
+    "Toggle Visual Cue Visibility Marker",
+    "Update Visual Cue Marker",
+    "Visual Cue History Selected Marker"
+  ]
 
 
 ReportCleanedImageInfoFilePath = r'D:\HaowenWei\PycharmProjects\PhysioLabXR\physiolabxr\scripting\AOIAugmentationScript\data\experiment_data\report_cleaned_image_info.pkl'
@@ -156,6 +164,16 @@ class ExperimentState(Enum):
     FeedbackState = 14  # not used anymore
     EndState = 15
 
+    def get_name(self):
+        if self == ExperimentState.NoAOIAugmentationState:
+            return "No Guidance"
+        elif self == ExperimentState.StaticAOIAugmentationState:
+            return "ViT Static"
+        elif self == ExperimentState.InteractiveAOIAugmentationState:
+            return "ViT Interactive"
+        elif self == ExperimentState.ResnetAOIAugmentationState:
+            return "Resnet Static"
+
 
 class ExperimentBlock(Enum):
     InitBlock = 0
@@ -237,3 +255,6 @@ class TobiiProFusionChannel(IndexClass):
 
     def __int__(self) -> int:
         return int.__int__(self)
+
+study_1_modes = {"NoAOIAugmentationState", "ResnetAOIAugmentationState", "StaticAOIAugmentationState"}
+study_2_modes = {"StaticAOIAugmentationState", "InteractiveAOIAugmentationState"}
