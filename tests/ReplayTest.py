@@ -49,9 +49,9 @@ def context_bot(app_main_window, qtbot):
 #     p.kill()  # stop the dummy LSL process
 
 
-def test_start_stream_automatically_after_start_replay(app_main_window, qtbot) -> None:
-    pass
-    # TODO ensure no data loss after replay
+# def test_start_stream_automatically_after_start_replay(app_main_window, qtbot) -> None:
+#     pass
+#     # TODO ensure no data loss after replay
 
 
 def test_replay_multi_streams(app_main_window, qtbot) -> None:
