@@ -1,10 +1,8 @@
 from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.scripting.WearableSensing.DSI_py3 import *
+from physiolabxr.thirdparty.WearableSensing.DSI_py3 import *
 import numpy as np
 import sys
 from physiolabxr.utils.buffers import DataBuffer
-import time
-import pylsl
 
 #Creating a data buffer with the DataBuffer class
 data_buffer = DataBuffer()
