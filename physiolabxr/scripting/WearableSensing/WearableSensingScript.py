@@ -62,7 +62,7 @@ class DSI24(RenaScript):
         #Retrieves the command line arguments
         args = getattr(sys, 'argv', [''])
         #Set the default port to the first command line argument based on the parameter provided by user
-        default_port = self.params['param1']
+        default_port = self.params['COM Port']
         #Connect the headset
         self.headset.Connect(default_port)
         #Start the data acquisition based on the parameter provided by user
