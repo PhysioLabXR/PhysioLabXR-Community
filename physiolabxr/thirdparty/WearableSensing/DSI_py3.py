@@ -45,6 +45,7 @@ __all__ = [
 # global DSI_* functions from the dylib will be appended to this
 
 import os, sys, ctypes
+import numpy as np
 if sys.version >= '3': unicode = str; basestring = ( bytes, str )  # bytes is already defined, unicode is not
 else: bytes = str # unicode is already defined, bytes is not
 def IfStringThenRawString( x ):
@@ -262,6 +263,7 @@ def ExampleSampleCallback_Signals( headsetPtr, packetTime, userData ):
 	print( ( '%8.3f:   ' % packetTime ) + ', '.join( strings ) )
 	sys.stdout.flush()
 
+
 @SampleCallback
 def ExampleSampleCallback_Impedances( headsetPtr, packetTime, userData ):
 	h = Headset( headsetPtr )
@@ -270,6 +272,7 @@ def ExampleSampleCallback_Impedances( headsetPtr, packetTime, userData ):
 	strings.append( fmt % ( 'CMF @ ' + h.GetFactoryReferenceString(), h.GetImpedanceCMF() ) )
 	print( ( '%8.3f:   ' % packetTime ) + ', '.join( strings ) )
 	sys.stdout.flush()
+
 
 def Test( port, arg='' ):
 	"""
@@ -294,7 +297,7 @@ def Test( port, arg='' ):
 
 if __name__ == '__main__':
 	args = getattr( sys, 'argv', [ '' ] )
-	if sys.platform.lower().startswith( 'win' ): default_port = 'COM4'
+	if sys.platform.lower().startswith( 'win' ): default_port = 'COM3'
 	else:                                        default_port = '/dev/cu.DSI7-0009.BluetoothSeri'
 
 	# first command-line argument: serial port address

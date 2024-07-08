@@ -24,6 +24,8 @@ def ExampleSampleCallback_Signals(headsetPtr, packetTime, userData):
     new_data = np.array(['%+08.2f' % (ch.GetSignal()) for ch in h.Channels()])
     #Reshapes the array into a 24x1 array so that it can be inputted into the data_buffer
     new_data = new_data.reshape(24,1)
+    #Rearrange new_data to fit with desired output format
+    new_data = new_data[[9, 10, 3, 2, 4, 17, 18, 7, 1, 5, 11, 22, 12, 21, 8, 0, 6, 13, 14, 20, 23, 19, 15, 16], :]
     #Get the time of the packet as a temporary solution to timestamps
     t = [packetTime]
     #Create a dictionary with the stream name, data, and timestamps
