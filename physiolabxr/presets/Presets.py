@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from multiprocessing import Process
@@ -285,7 +286,11 @@ class FMRIPreset(metaclass=SubPreset):
 def _load_stream_presets(presets, dirty_presets):
     for category, dirty_preset_paths in dirty_presets.items():
         for dirty_preset_path in dirty_preset_paths:
-            loaded_preset_dict = json.load(open(dirty_preset_path))
+            try:
+                loaded_preset_dict = json.load(open(dirty_preset_path))
+            except json.JSONDecodeError:
+                warnings.warn(f'Failed to load preset {dirty_preset_path}. Ignoring it.')
+                continue
 
             if category == PresetType.LSL.value or category == PresetType.ZMQ.value or category == PresetType.CUSTOM.value:
                 stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
