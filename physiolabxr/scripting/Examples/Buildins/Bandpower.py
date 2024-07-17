@@ -77,6 +77,7 @@ class Bandpower(RenaScript):
             assert all(isinstance(band, list) and len(band) == 2 and isinstance(band[0], numbers.Number)
                        and isinstance(band[1], numbers.Number) for band in self.params['bands']), \
                 "Each item in the 'bands' param should be a list of two numbers"
+            # check for each band range, the first number is bigger than the second
 
             bandpower = []
             # compute up to 5 bands
@@ -85,6 +86,8 @@ class Bandpower(RenaScript):
                 bandpower.append(np.sum(avg_psd[band_idx]))
             # pad to 5 bands if less than 5 bands are specified
             bandpower += [0] * (5 - len(bandpower))
+            # normalize the bandpower
+            bandpower = np.array(bandpower) / np.sum(bandpower)
             self.outputs['bandpower'] = bandpower
         print('Loop function is called')
 
