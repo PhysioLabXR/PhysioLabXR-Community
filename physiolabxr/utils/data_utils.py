@@ -383,9 +383,9 @@ def validate_output(data: Union[Dict, Any], expected_size):
         The number of timestamps must be equal to the number of samples in the data.
     * an iterable containing the data, see docstring for validate_output_data for more details.
 
-
     Notes on timestamp:
-    * If timestamp is not given,
+    * If timestamp is not given, whether the data is a single timepoint for a number of timepoints, the local_clock
+    will be used as timestamps for the data.
 
     """
     if type(data) == dict:  # data will be a dict if output is set using RenaScript.set_output
