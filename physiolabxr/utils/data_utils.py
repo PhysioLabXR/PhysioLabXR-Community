@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import csv
+from typing import Union, Dict, List, Tuple, Any
 
 import numpy as np
 from scipy.signal import resample
@@ -312,7 +313,25 @@ def replace_special(target_str: str, replacement_dict):
 #         pass
 
 
-def validate_output_data(data, expected_size):
+def validate_output_data(data: Union[List, Tuple, np.ndarray], expected_size: int):
+    """Validate the output data set by user in the script.
+
+    This function is called by RenaScript to validate the output data set by the user in the script.
+
+    Expect the data to be one of the following:
+
+    * single/multi-channel single timepoint: a list, tuple, or ndarray of floats or integers, each element is the value of a channel.
+    * single/multi-channel multi timepoint: a list, tuple, or ndarray of lists, tuples, or ndarrays of floats or integers,
+        If is a list or tuple, it should 2d nested list or tuple where the first axis are the channels, and the second axis are the timepoints.
+            For example, this list
+                [[1,2,3],
+                 [4,5,6]]
+            is a two-channel data with three timepoints. The first channel's values are 1, 2, 3.
+            The second channel's values are 4, 5, 6.
+        if is a ndarray, the first dimension is the number of channels and the second dimension is the number of timepoints.
+
+    """
+
     is_chunk = False
 
     if type(data) == list or type(data) == tuple:
@@ -350,7 +369,25 @@ def validate_output_data(data, expected_size):
 
     return data, is_chunk
 
-def validate_output(data, expected_size):
+def validate_output(data: Union[Dict, Any], expected_size):
+    """validate the output set by user in the script.
+
+    This function is called by RenaScript to validate the output set by the user in the script. The function checks
+    if the output data is in the correct format and size.
+
+    Expect the output to be one of the following:
+
+    * a dictionary of the form {'data': data, 'timestamp': timestamp}.
+        For the type of 'data', see docstring for validate_output_data.
+        'timestamp' is a list, tuple or ndarray of timestamps corresponding to the data.
+        The number of timestamps must be equal to the number of samples in the data.
+    * an iterable containing the data, see docstring for validate_output_data for more details.
+
+
+    Notes on timestamp:
+    * If timestamp is not given,
+
+    """
     if type(data) == dict:  # data will be a dict if output is set using RenaScript.set_output
         _data, timestamp = data['data'], data['timestamp']
     else:
