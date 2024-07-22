@@ -8,9 +8,10 @@ from physiolabxr.configs.configs import AppConfigs
 
 class ScriptConsoleLog(QtWidgets.QWidget):
 
-    def __init__(self):
+    def __init__(self, scripting_widget):
         super().__init__()
         self.ui = uic.loadUi(AppConfigs()._ui_ScriptConsoleLog, self)
+        self.scripting_widget = scripting_widget
         self.log_history = ''
         self.add_msg_mutex = QMutex()
 
@@ -48,6 +49,12 @@ class ScriptConsoleLog(QtWidgets.QWidget):
             error_style = '<font color="red">{}</font>'.format(msg)
             msg_with_links = self.add_hyperlinks_to_traceback(error_style)
             self.message_text_browser.append(msg_with_links)
+        elif msg_type == 'warning':
+            self.message_text_browser.append('<font color="orange">{}</font>'.format(msg))
+        elif msg_type == 'fatal': # fatal message should be dark red
+            self.message_text_browser.append('<font color="darkred">{}</font>'.format(msg))
+            self.message_text_browser.append('<font color="darkred">{}</font>'.format("Fatal error occurred, stopping the script."))
+            self.scripting_widget.kill_script_process(close_console=False)
         else:
             self.message_text_browser.append(msg)
 
@@ -116,3 +123,6 @@ class ScriptConsoleLog(QtWidgets.QWidget):
                     hyperlink = '<a href="file://{}#L{}">{}</a>'.format(filename, lineno, line)
                     lines[i] = hyperlink
         return '<br>'.join(lines)
+
+    def _check_message_exits(self, message):
+        return message in self.message_text_browser.toPlainText()

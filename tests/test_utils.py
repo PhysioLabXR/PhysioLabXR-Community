@@ -328,6 +328,16 @@ class ContextBot:
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, self.monitor_stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
 
+    def add_existing_script(self, script_path):
+        """
+        add an existing script to the app's scripting tab
+        """
+        self.qtbot.mouseClick(self.app.scripting_tab.AddScriptBtn,QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        script_ids = list(self.app.scripting_tab.script_widgets.keys())
+        this_scripting_widget = self.app.scripting_tab.script_widgets[script_ids[-1]]
+        this_scripting_widget.locate_script(script_path)
+        return this_scripting_widget
+
     def __del__(self):
         self.clean_up()
 

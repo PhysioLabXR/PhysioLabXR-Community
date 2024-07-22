@@ -113,11 +113,15 @@ class AppConfigs(metaclass=Singleton):
     main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
     # ZMQ ports
+    scripting_port = 8000
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
     replay_port_range = 9980, 9990
     zmq_lost_connection_timeout = 4000  # in milliseconds
+
+    # scripting
+    add_default_rpc_output = True
 
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']
@@ -128,6 +132,10 @@ class AppConfigs(metaclass=Singleton):
     _style_sheets = {"dark": "physiolabxr/_ui/stylesheet/dark.qss", "light": "physiolabxr/_ui/stylesheet/light.qss"}
 
     _placeholder_text = 'placeholder'
+
+    # rpc TODO change this to auto find the path based on OS
+    csharp_plugin_path = "/Users/apocalyvec/.nuget/packages/grpc.tools/2.62.0/tools/macosx_x64/grpc_csharp_plugin"
+    is_csharp_plugin_available: bool = True
 
     def __post_init__(self):
         # change the cwd to root folder

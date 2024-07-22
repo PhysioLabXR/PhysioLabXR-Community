@@ -33,6 +33,22 @@
     <number>9</number>
    </property>
    <item>
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Minimum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>9</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
     <widget class="QFrame" name="frame">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
@@ -436,8 +452,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>232</width>
-                       <height>102</height>
+                       <width>258</width>
+                       <height>25</height>
                       </rect>
                      </property>
                      <layout class="QVBoxLayout" name="inputLayout"/>
@@ -577,8 +593,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>233</width>
-                       <height>102</height>
+                       <width>194</width>
+                       <height>25</height>
                       </rect>
                      </property>
                      <layout class="QVBoxLayout" name="outputLayout"/>
@@ -739,8 +755,8 @@
                       <rect>
                        <x>0</x>
                        <y>0</y>
-                       <width>232</width>
-                       <height>102</height>
+                       <width>210</width>
+                       <height>30</height>
                       </rect>
                      </property>
                      <property name="sizePolicy">
@@ -920,39 +936,36 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="realtimeInfoLabel">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>36</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Loop (with overheads) per second: the number of &lt;span style=&quot; font-weight:700;&quot;&gt;loop&lt;/span&gt; calls made per second, overhead include the time it takes for the input data to be transferred from the main process to the script process. &lt;/p&gt;&lt;p&gt;Average loop call running time: the average time it takes to complete a loop call, excluding overheads.&lt;/p&gt;&lt;p&gt;Max loop call running time: the running time of the longest loop call seen so far.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Loop (with overheads) per second -    Average loop call running time -    Max loop call running time -</string>
-        </property>
+       <widget class="QWidget" name="widget_2" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <item>
+          <widget class="QLabel" name="realtimeInfoLabel">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>36</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Loop (with overheads) per second: the number of &lt;span style=&quot; font-weight:700;&quot;&gt;loop&lt;/span&gt; calls made per second, overhead include the time it takes for the input data to be transferred from the main process to the script process. &lt;/p&gt;&lt;p&gt;Average loop call running time: the average time it takes to complete a loop call, excluding overheads.&lt;/p&gt;&lt;p&gt;Max loop call running time: the running time of the longest loop call seen so far.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>Loop (with overheads) per second -    Average loop call running time -    Max loop call running time -</string>
+           </property>
+          </widget>
+         </item>
+         <item alignment="Qt::AlignRight">
+          <widget class="QPushButton" name="RPC_button">
+           <property name="text">
+            <string>RPC Options</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Minimum</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>9</height>
-      </size>
-     </property>
-    </spacer>
    </item>
    <item>
     <widget class="Line" name="line_2">
