@@ -199,25 +199,25 @@ class RenaScript(ABC, threading.Thread):
                     try:
                         _data, timestamp, is_data_chunk, is_timestamp_chunk = validate_output(data, self.output_num_channels[stream_name])
                         _data = _data.astype(self.output_presets[stream_name].data_type.get_data_type())
+                        clock_time = get_clock_time()
+                        _timestamp = clock_time if timestamp is None else timestamp  # timestamp is not a chunk when data is not chunk
                         if pylsl_imported and isinstance(outlet, StreamOutlet):
                             if is_data_chunk and is_timestamp_chunk:
                                 for i in range(len(_data)):
                                     outlet.push_sample(_data[i].tolist(), timestamp=timestamp[i])  # 0.0 is default value, using it will use the local clock
                             elif is_data_chunk and not is_timestamp_chunk:
-                                outlet.push_chunk(_data.tolist(), timestamp=0.0 if timestamp is None else timestamp)  # timestamp is a number or None if not provided by the user
+                                outlet.push_chunk(_data.tolist(), timestamp=_timestamp)  # timestamp is a number or None if not provided by the user
                             else:
                                 # timestamp will never be a chunk in this case when data is not chunk
-                                outlet.push_sample(_data.tolist(), timestamp=0.0 if timestamp is None else timestamp)  # 0.0 is default value, using it will use the local clock
+                                outlet.push_sample(_data.tolist(), timestamp=_timestamp)  # 0.0 is default value, using it will use the local clock
                         else:  # this is a zmq socket
                             if is_data_chunk and is_timestamp_chunk:
                                 for i in range(len(_data)):
                                     outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(timestamp[i]), np.ascontiguousarray(_data[i])])
                             elif is_data_chunk and not is_timestamp_chunk:
                                 for i in range(len(_data)):
-                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(timestamp), np.ascontiguousarray(_data[i])])
+                                    outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(_timestamp), np.ascontiguousarray(_data[i])])
                             else:
-                                clock_time = get_clock_time()
-                                _timestamp = clock_time if timestamp is None else timestamp  # timestamp is not a chunk when data is not chunk
                                 outlet.send_multipart([bytes(stream_name, "utf-8"), np.array(_timestamp), _data])
                     except Exception as e:
                         if type(e) == BadOutputError:

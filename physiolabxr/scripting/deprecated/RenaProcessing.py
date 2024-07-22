@@ -14,27 +14,25 @@ from collections import defaultdict
 import mne
 import numpy as np
 import torch
-from mne import Epochs, EpochsArray
+from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
 from renaanalysis.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, \
     gaze_event_detection_I_DT
 from renaanalysis.learning.models import EEGPupilCNN
-from renaanalysis.learning.train import train_model_pupil_eeg, train_model_pupil_eeg_no_folds
-from renaanalysis.params.params import conditions, dtnn_types, tmax_pupil, random_seed
+from renaanalysis.learning.train import train_model_pupil_eeg_no_folds
+from renaanalysis.params.params import conditions, tmax_pupil, random_seed
 from renaanalysis.utils.Event import get_events
 from renaanalysis.utils.RenaDataFrame import RenaDataFrame
 from renaanalysis.utils.data_utils import epochs_to_class_samples, compute_pca_ica, reject_combined, \
     binary_classification_metric, _epochs_to_samples_eeg_pupil
-from renaanalysis.utils.utils import get_item_events, visualize_eeg_epochs, visualize_pupil_epochs
+from renaanalysis.utils.utils import get_item_events
 from renaanalysis.utils.viz_utils import visualize_block_gaze_event
 from scipy.stats import stats
-from sklearn.metrics import confusion_matrix
 
-from physiolabxr.scripting.Examples.RenaProcessingParameters import locking_filters, event_names, epoch_margin
+from physiolabxr.scripting.deprecated.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.shared import bcolors
 from physiolabxr.utils.data_utils import get_date_string, mode_by_column
-from physiolabxr.utils.buffers import DataBuffer
 
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
 metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}

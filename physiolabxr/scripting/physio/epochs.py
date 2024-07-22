@@ -9,21 +9,45 @@ from scipy.signal import spectrogram
 
 
 def get_event_locked_data(event_marker, data, events_of_interest, tmin, tmax, srate, return_last_event_time=False, event_channel=0, verbose=None, **kwargs):
-    """
-    this function is used to get event locked data from a single modality or multiple modalities
+    """this function is used to get event locked data from a single modality or multiple modalities.
+    If the data is multi-modal, the data should be a dictionary with the keys being the modalities.
+    The tmin and tmin should also be dictionaries with the same keys as the data.
+    The srate should also be a dictionary.
 
-    @param event_marker: tuple of event marker and its timestamps
-    @param data: tuple of data and its timestamps, can be a dictionary of multiple modalities
-    @param events_of_interest: iterable of event markers with which to get event aligned data
-    @param tmin: time before event marker to include in the epoch
-    @param tmax: time after event marker to include in the epoch
-    @param srate: sampling rate of the datar
-    @param reject: int, reject the epoch with peak-to-peak amplitude greater than this value
-    @param return_last_event_time: whether to return the time of the last found in the data
-    @param verbose: whether to print out the number of events found for each event marker
+    You can set return_last_event_time to True to return the time of the last found event in the data. This is helpful
+    when you want to clear the buffer up to the last event found in the data.
 
-    @return: dictionary of event marker and its corresponding event locked data. The keys are the event markers
-            if return_last_event_time is True, return the time of the last found event is also returned
+    Args:
+        event_marker: tuple of event marker and its timestamps. The event marker should be a 1D array of integers.
+            the timestamps should be a 1D array of floats. The event marker and timestamps should have the same length,
+            with the timestamps representing the time of the event marker.
+
+        data: tuple of data and its timestamps. The data should be a 2D array of shape (n_channels, n_samples).
+            The timestamps should be a 1D array of floats. The timestamps should have the same length as the data.
+
+        events_of_interest: iterable of event markers with which to get event aligned data. The values in the iterable
+            should be integers that are present in the event marker.
+
+        tmim (float or dict[str, float]): time before event marker to include in the epoch.
+            If it is negative, the epoch will start before the event marker.
+            If it is positive, the epoch will start after the event marker.
+            If it is zero, the epoch will start at the event marker.
+
+        tmax: (float or dict[str, float]): time after event marker to include in the epoch.
+            Similar to tmin, if it is negative, the epoch will end before the event marker.
+            If it is positive, the epoch will end after the event marker.
+            If it is zero, the epoch will end at the event marker.
+
+        srate (float or dict[str, float]): sampling rate of the data.
+            If the data is multi-modal, the srate should be a dictionary.
+
+        reject (int): reject the epoch with peak-to-peak amplitude greater than this value.
+
+        return_last_event_time (bool): whether to return the time of the last found in the data.
+
+    Returns:
+        dictionary of event marker and its corresponding event locked data. The keys are the event markers
+        if return_last_event_time is True, return the time of the last found event is also returned
     """
     # check if data is multi-modal
     if isinstance(data, dict):
