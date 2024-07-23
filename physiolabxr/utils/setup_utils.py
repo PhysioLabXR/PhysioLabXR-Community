@@ -237,7 +237,6 @@ def locate_csharp_plugin():
     elif os_name == 'windows':
         os_name = 'windows_' + arch
 
-
     # Find the highest version of Grpc.Tools
     versions = sorted(os.listdir(tools_path), reverse=True)
     if versions:

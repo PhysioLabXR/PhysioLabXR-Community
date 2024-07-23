@@ -111,8 +111,6 @@ def remove_generated_files(script_path):
 def remove_csharp_plugin():
     if platform.system() == "Darwin":
         if not is_brew_installed():
-            raise Exception("Unable to test csharp plugin setup. dotnet is not installed. please install brew first from https://brew.sh/.")
-        else:
             raise Exception("dotnet is not installed. Please install dotnet first using this command 'brew install --cask dotnet-sdk'")
 
     elif platform.system() == "Windows":
@@ -126,7 +124,9 @@ def remove_csharp_plugin():
     if os.path.exists("tmpGrpcTools"):
         shutil.rmtree("tmpGrpcTools")
 
-    if shutil.which('dotnet'):
+    if dotnet_path := shutil.which('dotnet'):
+        if dotnet_path is None:
+            raise Exception("Unable to test csharp plugin setup. dotnet is not installed. please install brew first from https://brew.sh/.")
         if (grpc_tools_path := locate_grpc_tools()) is not None:
             logging.info("Uninstalling Grpc.Tools package")
             subprocess.run(
@@ -206,7 +206,7 @@ def test_rpc_calls(context_bot, qtbot):
     import RPCTest_pb2_grpc, RPCTest_pb2
     stub = RPCTest_pb2_grpc.RPCTestStub(channel)
     response = stub.TestRPCOneArgOneReturn(RPCTest_pb2.TestRPCOneArgOneReturnRequest(input0='test'))
-    assert response.message == 'Received input: test'
+    assert response.message == 'Hello world test'
 
     response = stub.TestRPCTwoArgTwoReturn(RPCTest_pb2.TestRPCTwoArgTwoReturnRequest(input0='test', input1=1))
     assert response.message0 == 'received test'

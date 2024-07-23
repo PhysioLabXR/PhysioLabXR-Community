@@ -10,6 +10,7 @@ from PyQt6.QtGui import QIcon
 
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
+from physiolabxr.utils.setup_utils import locate_csharp_plugin
 
 
 class LinechartVizMode(Enum):
@@ -133,8 +134,7 @@ class AppConfigs(metaclass=Singleton):
 
     _placeholder_text = 'placeholder'
 
-    # rpc TODO change this to auto find the path based on OS
-    csharp_plugin_path = "/Users/apocalyvec/.nuget/packages/grpc.tools/2.62.0/tools/macosx_x64/grpc_csharp_plugin"
+    csharp_plugin_path = None  # the csharp plugin location is set in post init
     is_csharp_plugin_available: bool = True
 
     def __post_init__(self):
@@ -186,6 +186,12 @@ class AppConfigs(metaclass=Singleton):
             stylesheet.open(QFile.OpenModeFlag.ReadOnly | QFile.OpenModeFlag.Text)
             stream = QTextStream(stylesheet)
             self._style_sheets[theme] = stream.readAll()
+
+        # locate the csharp grpc plugin
+        self.csharp_plugin_path = locate_csharp_plugin()
+        if self.csharp_plugin_path is None:
+            self.is_csharp_plugin_available = False
+            warnings.warn("AppConfigs: C# plugin is not found. No RPC will be available for C#")
 
     def __del__(self):
         """
