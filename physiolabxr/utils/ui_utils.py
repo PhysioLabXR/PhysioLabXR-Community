@@ -286,7 +286,7 @@ def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_se
     If can_be_selected_in_gui is not None, only the values in the list are enabled.
 
     Notes:
-        The strings that are added to the combobox are the names of the enum members, not their values.
+        The strings that are added to the combobox are value of the enum, not the name.
         So if you need to call combobox.findText(...), the argument should be enum_var.name, not enum_var.value.
 
     """
