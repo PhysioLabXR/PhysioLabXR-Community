@@ -282,8 +282,16 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
         return True
 
 def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_selected_in_gui: list=None):
+    """Add all the names of an enum to a combobox.
+    If can_be_selected_in_gui is not None, only the values in the list are enabled.
+
+    Notes:
+        The strings that are added to the combobox are value of the enum, not the name.
+        So if you need to call combobox.findText(...), the argument should be enum_var.name, not enum_var.value.
+
+    """
     if can_be_selected_in_gui is None:
-        combobox.addItems([str(member.value) for name, member in enum.__members__.items()])
+        combobox.addItems([name for name, member in enum.__members__.items()])
     else:
         for name, member in enum.__members__.items():
             combobox.addItem(name)
