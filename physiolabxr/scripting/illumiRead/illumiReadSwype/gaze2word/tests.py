@@ -63,7 +63,7 @@ for i, trace in enumerate(trace_list):
     plt.plot(ideal_trace[:, 0], ideal_trace[:, 1], color='red', label='DBSCAN Trace')
 
     start_time = time.perf_counter()
-    top_k = g2w.predict(4, trace, run_dbscan=True, prefix='', verbose=True, filter_by_starting_letter=0.5, njobs=16)
+    top_k = g2w.predict(4, trace, run_dbscan=True, prefix='', verbose=True, filter_by_starting_letter=0.2, njobs=16)
     print(f'Time taken for prediction : {(pred_time := time.perf_counter() - start_time):.2f}s')
 
     plt.legend()

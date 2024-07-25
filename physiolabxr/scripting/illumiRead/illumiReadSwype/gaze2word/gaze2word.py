@@ -204,9 +204,11 @@ class Gaze2Word:
             first_gaze_point = gaze_trace[0]
             possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
             template_traces = {word: trace for letter in possible_letters for word, trace in self.vocab_traces_starting_letter[letter].items()}
+            vocab_list = list(template_traces.keys())
             if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
         else:
             template_traces = self.vocab_traces
+            vocab_list = self.vocab.vocab_list
 
         if njobs == 1:
             distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
@@ -217,8 +219,8 @@ class Gaze2Word:
             distances = [result.distance for result in distances]
 
         if prefix is not None and isinstance(prefix, str):
-            # tops = [(word, distances) for word, distances in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])[:k * 50]]
-            tops = [(word, distances) for word, distances in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])][:k * 10]
+            # tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k * 50]]
+            tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])][:k * 10]
             distance_top_words = [word for word, _ in tops]
             distances = [distance for _, distance in tops]
 
@@ -235,7 +237,7 @@ class Gaze2Word:
 
             return [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
         elif prefix is None:
-            tops = [(w, d) for w, d in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])[:k]]
+            tops = [(w, d) for w, d in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k]]
 
             if return_prob: # turn distance into probs
                 words = [w for w, distance in tops]
