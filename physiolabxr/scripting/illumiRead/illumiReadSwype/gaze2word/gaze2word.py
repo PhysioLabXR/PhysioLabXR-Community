@@ -21,15 +21,19 @@ Known issues:
 * the inference can be slow when the gaze sequence is long. Mostly from the quadratic time complexity of the DTW algorithm.
 
 """
-
+from joblib import Parallel, delayed
 from collections import OrderedDict
 import pickle
+from enum import Enum
+from types import NoneType
+from typing import Union
 
 import pandas as pd
 import numpy as np
 import re
 
 from dtw import dtw
+from sklearn.cluster import DBSCAN
 
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
@@ -39,10 +43,24 @@ def parse_tuple(val):
     # Remove the parentheses and split the string into individual components
     return tuple(map(float, val.strip('()').split()))
 
+
+class PREFIX_OPTIONS(Enum):
+    FREQUENCY = 1
+
+
 class Gaze2Word:
     """Predict word from gaze trace
 
     The probability combines the dtw distance between the gaze trace and the ideal trace of the word, and the ngram model
+
+    Attributes:
+        letter_locations: OrderedDict: the average location of the letters in the gaze data
+        letters: list: the list of letters in the gaze data
+        vocab: Vocab: the vocabulary of the words
+        vocab_traces: OrderedDict[str, ndarray]: the ideal traces of the words in the vocabulary
+        vocab_traces_starting_letter: OrderedDict[str, OrderedDict[str, ndarray]]: the ideal traces of the words in the vocabulary, grouped by the starting letter
+        ngram_model: NGramModel: the ngram model used for prediction
+
 
     Tips for using this module:
     1. First time initialization can take a while as the text copora are downloaded, and processed. It is recommended to
@@ -77,14 +95,14 @@ class Gaze2Word:
 
         # for each unique letter in the letter column, get their KeyGroundTruthLocal put them in a 2d array
         grouped = df.groupby('Letter')['KeyGroundTruthLocal']
-        self.letter_locations = dict()
+        self.letter_locations = OrderedDict()
         for letter, group in grouped:
             # Convert the 'KeyGroundTruthLocal' tuples to a 2D array
             ground_truth_array = np.array(list(group))
             assert np.all(np.std(ground_truth_array, axis=0) < np.array([5e-6,
                                                                          5e-6])), f"std of the groundtruth is not close to zero, letter is {letter}, std is {np.std(ground_truth_array, axis=0)}"
             self.letter_locations[letter] = np.mean(ground_truth_array, axis=0)
-
+        self.letters = list(self.letter_locations.keys())
         # create ideal traces for each word in the vocab
         self.vocab = Vocab()
 
@@ -100,7 +118,18 @@ class Gaze2Word:
             except KeyError:
                 print(f"Ignoring word '{word}' as it contains not a letter")
 
-    def predict(self, k, gaze_trace, prefix=None, ngram_alpha=0.2, ngram_epsilon=1e-8, return_prob=True):
+        # keep a dict of words with starting letter
+        self.vocab_traces_starting_letter = OrderedDict()
+        for l in self.letters:
+            _vocab_traces_starting_letter = {word: trace for word, trace in self.vocab_traces.items() if word[0] == l}
+            self.vocab_traces_starting_letter[l] = _vocab_traces_starting_letter
+
+    def predict(self, k: int, gaze_trace: np.ndarray,
+                prefix: Union[NoneType, str, PREFIX_OPTIONS]=None, ngram_alpha: float=0.2, ngram_epsilon: float=1e-8,
+                run_dbscan: bool=False, dbscan_eps: float= 0.1, dbscan_min_samples: int=3,
+                filter_by_starting_letter: Union[NoneType, float]=None,
+                njobs: int=1,
+                return_prob: float=True, verbose=False) -> list:
         """Predict the top k most likely next word based on the gaze trace from Sweyepe and previous text
 
         Tips:
@@ -108,23 +137,86 @@ class Gaze2Word:
             see example long_gaze_trace.
         2. play around with the parameter ngram_alpha to find an optimal value.
         3. if you have other probabilities that you want to combine with this one, you can set return_prob to True.
+        4. set run_dbscan to True to reduce the number of points in the gaze trace.
 
         Args:
             k: int: top k candidate words
             gaze_trace: list of tuples: gaze trace from Sweyepe
-            prefix: str: previous text, if is not None, the prediction will be based on the previous text.
-                If is None, the prediction will be based on the gaze trace only
+
+            Ngram related parameters:
+            ------------------------
+            prefix: str: previous text, None, or PREFIX_OPTIONS
+
+                If is not None, the prediction will be based on the previous text.
+                    Note that an empty string is also a valid prefix. The ngram will prepend the start token to the prefix,
+                    meaning the prediction will likely to be words that commonly follow the start token/aka the beginning of the sentence.
+
+                If is None, the prediction will be based on the gaze trace only.
+
+                (Not yet implemented) If is PREFIX_OPTIONS.FREQUENCY, the prediction will be based on the frequency of the words in the text.
+                    this is similar to setting the prefix to the empty string, but instead of frequency of the first word,
+                    it's the frequency of the whole text.
+
             ngram_alpha: float: between 0 and 1, the weight of the ngram model in the prediction
+            ngram_epsilon: float: a small value to add to the ngram probabilities to avoid zero probabilities
+
+            Cluster related parameters:
+            ---------------------------
+            run_dbscan: bool: whether to run DBSCAN on the gaze trace before prediction
+            dbscan_eps: float: the maximum distance between two samples for one to be considered as in the neighborhood of the other
+            dbscan_min_samples: int: the number of samples in a neighborhood for a point to be considered as a core point
+
+
             return_prob: bool: whether to return the probabilities of the top choise.
 
         Returns:
             list of str: top k candidate words
         """
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
-        distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                     word, template_trace in g2w.vocab_traces.items()]
 
-        if prefix is not None:
+        if run_dbscan:
+            dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
+            dbscan.fit(gaze_trace)
+            labels = dbscan.labels_
+
+            # Extract the cluster centers (mean of points in each cluster)
+            unique_labels = set(labels)
+            centroids_dbscan = []
+            for label in unique_labels:
+                if label != -1:  # Exclude noise
+                    cluster_points = gaze_trace[labels == label]
+                    centroid = cluster_points.mean(axis=0)
+                    centroids_dbscan.append(centroid)
+            if verbose: print(f"DBSCAN reduced the gaze trace from {len(gaze_trace)} to {len(centroids_dbscan)} points.")
+            gaze_trace = np.array(centroids_dbscan)
+
+        if len(gaze_trace) == 0:
+            return []
+
+        if len(gaze_trace) == 1:
+            gaze_point = gaze_trace[0]
+            # just return the word that is closest to the gaze point
+            distances = [np.linalg.norm(pos - gaze_point) for letter, pos in self.letter_locations.items()]
+            return self.letters[np.argmin(distances)]
+
+        if filter_by_starting_letter is not None:
+            # find the letters in self.letters that are within the filter_by_starting_letter radius
+            first_gaze_point = gaze_trace[0]
+            possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
+            template_traces = {word: trace for letter in possible_letters for word, trace in self.vocab_traces_starting_letter[letter].items()}
+            if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
+        else:
+            template_traces = self.vocab_traces
+
+        if njobs == 1:
+            distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+                         word, template_trace in template_traces.items()]
+        else:
+            distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
+                         word, template_trace in template_traces.items())
+            distances = [result.distance for result in distances]
+
+        if prefix is not None and isinstance(prefix, str):
             # tops = [(word, distances) for word, distances in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])[:k * 50]]
             tops = [(word, distances) for word, distances in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])][:k * 10]
             distance_top_words = [word for word, _ in tops]
@@ -142,7 +234,7 @@ class Gaze2Word:
             combined_prob = (ngram_probs ** ngram_alpha) * (distance_probs ** (1 - ngram_alpha))
 
             return [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
-        else:
+        elif prefix is None:
             tops = [(w, d) for w, d in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])[:k]]
 
             if return_prob: # turn distance into probs
@@ -153,6 +245,10 @@ class Gaze2Word:
                 return [(w, d) for w, d in zip(words, distance_probs)]
             else:
                 return tops
+        elif prefix is PREFIX_OPTIONS.FREQUENCY:
+            raise NotImplementedError("prefix option not implemented")
+        else:
+            raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
 
 if __name__ == '__main__':
