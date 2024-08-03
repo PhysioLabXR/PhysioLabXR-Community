@@ -6,11 +6,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.cluster import DBSCAN
 
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import load_trace_file
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
 
 trace_path = '/Users/apocalyvec/Downloads/good_FixationTrace.csv'
 
-trace = pd.read_csv(trace_path)
+trace_list = load_trace_file(trace_path)
 
 # gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
 # g2w = Gaze2Word(gaze_data_path)
@@ -21,24 +22,6 @@ trace = pd.read_csv(trace_path)
 # load it back
 with open('g2w.pkl', 'rb') as f:
     g2w = pickle.load(f)
-
-# Initialize the list to hold arrays
-trace_list = []
-
-# Temporary list to hold current array
-current_array = []
-
-# Iterate over the rows of the dataframe
-for index, row in trace.iterrows():
-    if pd.isna(row['KeyBoardLocalY']):
-        # If the row contains only one element, start a new array
-        if current_array:
-            trace_list.append(np.array(current_array).astype(float))
-            current_array = []
-    else:
-        # Append the row to the current array
-        current_array.append(row.tolist())
-
 
 # plot the gaze traces in a 2d scatter plot with lines connecting the points
 for i, trace in enumerate(trace_list):

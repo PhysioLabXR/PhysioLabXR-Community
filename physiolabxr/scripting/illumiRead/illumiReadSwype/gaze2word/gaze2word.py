@@ -21,12 +21,14 @@ Known issues:
 * the inference can be slow when the gaze sequence is long. Mostly from the quadratic time complexity of the DTW algorithm.
 
 """
+import warnings
+
 from joblib import Parallel, delayed
 from collections import OrderedDict
 import pickle
 from enum import Enum
 from types import NoneType
-from typing import Union
+from typing import Union, List
 
 import pandas as pd
 import numpy as np
@@ -66,6 +68,9 @@ class Gaze2Word:
     1. First time initialization can take a while as the text copora are downloaded, and processed. It is recommended to
        save the instance using serializer like pickle for future use.
     2. Adjust the parameter ngram_alpha in the predict method to find an optimal value. Read more in the predict method
+
+    IMPORTANT NOTE:
+    1. this class doesn't predict single-character words.
     """
 
     def __init__(self, gaze_data_path, ngram_n=3):
@@ -124,12 +129,52 @@ class Gaze2Word:
             _vocab_traces_starting_letter = {word: trace for word, trace in self.vocab_traces.items() if word[0] == l}
             self.vocab_traces_starting_letter[l] = _vocab_traces_starting_letter
 
+        self.trimmed_vocab_traces_starting_letter = None
+        self.trimmed_vocab_traces = None
+        self.trimmed_vocab_list = None
+
+    def trim_vocab(self, vocab_list: List[str], verbose=True) -> None:
+        """Use a smaller set of vocabs.
+
+        Args:
+            vocab_list: list: the list of words to keep in the vocab
+        """
+        assert len(vocab_list) > 0, "vocab_list should not be empty"
+        # turn the vocabs to lowercase
+        vocab_list = [word.lower() for word in vocab_list]
+        # remove the single-character words as g2w doesn't predict single-character words
+        vocab_list = [word for word in vocab_list if len(word) > 1]
+
+        # check that all words in the vocab_list are in the vocab
+        for word in vocab_list:
+            if word not in self.vocab_traces:
+                raise ValueError(f"In vocab_list, word '{word}' is not in the vocab. Make sure all words in the vocab_list are in the vocab")
+
+        # create a trimmed version of the vocab traces
+        self.trimmed_vocab_traces = {word: trace for word, trace in self.vocab_traces.items() if word in vocab_list}
+
+        assert len(self.trimmed_vocab_traces) > 0, "The trimmed vocab is empty. Make sure the vocab_list is a subset of the original vocab"
+
+        self.trimmed_vocab_list = vocab_list
+
+        # create a trimmed version of the vocab traces
+        _vocab_traces_starting_letter = OrderedDict()
+        for starting_letter, words in self.vocab_traces_starting_letter.items():
+            _vocab_traces_starting_letter[starting_letter] = {word: trace for word, trace in words.items() if word in vocab_list}
+        self.trimmed_vocab_traces_starting_letter = _vocab_traces_starting_letter
+
+        if verbose:
+            print(f"Trimmed the vocab from {len(self.vocab_traces)} to {len(self.trimmed_vocab_traces)} words")
+
+
     def predict(self, k: int, gaze_trace: np.ndarray,
-                prefix: Union[NoneType, str, PREFIX_OPTIONS]=None, ngram_alpha: float=0.2, ngram_epsilon: float=1e-8,
+                prefix: Union[NoneType, str, PREFIX_OPTIONS]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
                 run_dbscan: bool=False, dbscan_eps: float= 0.1, dbscan_min_samples: int=3,
                 filter_by_starting_letter: Union[NoneType, float]=None,
                 njobs: int=1,
-                return_prob: float=True, verbose=False) -> list:
+                return_prob: float=True,
+                use_trimmed_vocab: bool=False,
+                verbose=False) -> list:
         """Predict the top k most likely next word based on the gaze trace from Sweyepe and previous text
 
         Tips:
@@ -166,6 +211,11 @@ class Gaze2Word:
             dbscan_eps: float: the maximum distance between two samples for one to be considered as in the neighborhood of the other
             dbscan_min_samples: int: the number of samples in a neighborhood for a point to be considered as a core point
 
+            Using a smaller vocab:
+            ---------------------
+            use_trimmed_vocab: bool: whether to use a smaller vocab.
+                You need to call the trim_vocab method to use this feature. If not, it will throw a warning and use the full vocab.
+                This is particularly useful when you know your vocabs are drawn from a pool beforehand.
 
             return_prob: bool: whether to return the probabilities of the top choise.
 
@@ -199,16 +249,28 @@ class Gaze2Word:
             distances = [np.linalg.norm(pos - gaze_point) for letter, pos in self.letter_locations.items()]
             return self.letters[np.argmin(distances)]
 
+        # whether to use the trimmed vocab
+        if use_trimmed_vocab and self.trimmed_vocab_traces is not None:
+            vocab_traces_starting_letter = self.trimmed_vocab_traces_starting_letter
+            template_traces = self.trimmed_vocab_traces
+            vocab_list = self.trimmed_vocab_list
+        else:
+            if use_trimmed_vocab and self.trimmed_vocab_traces is None:
+                warnings.warn("Warning: use_trimmed_vocab is set to True, but the trimmed vocab is not set. Using the full vocab instead.")
+            vocab_traces_starting_letter = self.vocab_traces_starting_letter
+            template_traces = self.vocab_traces
+            vocab_list = self.vocab.vocab_list
+
         if filter_by_starting_letter is not None:
             # find the letters in self.letters that are within the filter_by_starting_letter radius
             first_gaze_point = gaze_trace[0]
             possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
-            template_traces = {word: trace for letter in possible_letters for word, trace in self.vocab_traces_starting_letter[letter].items()}
+            template_traces = {word: trace for letter in possible_letters for word, trace in vocab_traces_starting_letter[letter].items()}
             vocab_list = list(template_traces.keys())
             if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
         else:
-            template_traces = self.vocab_traces
-            vocab_list = self.vocab.vocab_list
+            template_traces = template_traces
+            vocab_list = vocab_list
 
         if njobs == 1:
             distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
