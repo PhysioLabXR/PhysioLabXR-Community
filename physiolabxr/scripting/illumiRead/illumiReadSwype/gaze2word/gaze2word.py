@@ -189,10 +189,8 @@ class Gaze2Word:
         """
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
 
-        distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                     word, template_trace in self.vocab_traces.items()]
-
-
+        # distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+        #              word, template_trace in self.vocab_traces.items()]
         if run_dbscan:
             dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
             dbscan.fit(gaze_trace)
