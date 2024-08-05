@@ -21,6 +21,9 @@ from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilter
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
 
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word import gaze2word
+import csv
+
 
 class IllumiReadSwypeScript(RenaScript):
     def __init__(self, *args, **kwargs):
@@ -63,6 +66,56 @@ class IllumiReadSwypeScript(RenaScript):
 
         self.illumireadswype_keyboard_suggestion_strip_lsl_outlet = StreamOutlet(illumireadswype_keyboard_suggestion_strip_lsl_stream_info)  # shape: (1024, 1)
 
+        # create gaze2word object
+        gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+
+        self.g2w = gaze2word.Gaze2Word(gaze_data_path)
+
+        # the csv file path for later use
+        self.csv_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\FixationTrace.csv'
+
+        # the gaze trace path
+        self.ground_truth_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Trace.csv'
+
+        # init the csv files
+        # self.init_csv_file(self.csv_file_path)
+
+        # self.init_csv_file(self.gaze_file_path)
+
+        with open(self.csv_file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
+
+        with open(self.ground_truth_file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
+
+
+
+    # def init_csv_file(self, path):
+    #     self.csv_file_path = csv_file_path
+        
+    #     with open(self.csv_file_path, 'w', newline='') as csvfile:
+    #         pass
+
+    # data writer
+    def write_to_csv(self, data, path=None):
+        if path is not None:
+            with open(path, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+                for row in data:
+                    writer.writerow(row)
+        else:
+            print("CSV file path is not initialized.")
+
+    # string writer
+    def write_string_to_csv(self, string,path=None):
+        if path is not None:
+            with open(path, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([string])
+        else:
+            print("CSV file path is not initialized.")
 
     def init(self):
         pass
@@ -284,8 +337,25 @@ class IllumiReadSwypeScript(RenaScript):
                 # user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
 
                 fixation_character_sequence = []
+                gaze_trace = []
+                fixation_trace = []
 
                 for group in grouped_list:
+                    print(group[0].gaze_type)
+                #     # get the gaze trace data
+                #     user_input_data, user_input_timestamp = self.data_buffer.get_stream_in_time_range(UserInputLSLStreamInfo.StreamName, group[0].timestamp, group[-1].timestamp)
+                    
+                #     gaze_sequence = []
+                #     for user_input, timestamp in zip(user_input_data.T, user_input_timestamp):
+                #         gaze_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
+                    
+                #     for gaze_data in gaze_sequence:
+                #         if not np.array_equal(gaze_data.keyboard_background_hit_point_local, [1,1,1]):
+                #             gaze_trace.append(gaze_data.keyboard_background_hit_point_local[:2])
+
+
+                for group in grouped_list:
+                    # if the gaze is a fixation
                     if group[0].gaze_type == GazeType.FIXATION:
 
                         fixation_start_time = group[0].timestamp
@@ -303,6 +373,10 @@ class IllumiReadSwypeScript(RenaScript):
                         # check if the fixation consists of only one user input
                         user_input_dict = {}
                         for user_input in user_input_sequence:
+                            # gaze trace under fixation mode
+                            if not np.array_equal(user_input.keyboard_background_hit_point_local, [1,1,1]):
+                                fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
+
                             if user_input.key_hit_index in user_input_dict:
                                 user_input_dict[user_input.key_hit_index] += 1
                             else:
@@ -335,7 +409,7 @@ class IllumiReadSwypeScript(RenaScript):
                 self.ivt_filter.reset_data_processor()
 
                 # send the character sequence to the keyboard
-                print(fixation_character_sequence)
+                # print(fixation_character_sequence)
                 # use the spell correction algorithm to correct the character sequence
 
                 # word_candidate_list = ["hello", "world", "how", "are"]
@@ -351,9 +425,33 @@ class IllumiReadSwypeScript(RenaScript):
 
 
                 fixation_character_string = "".join(fixation_character_sequence).lower()
-                if len(fixation_character_string) > 0:
 
-                    word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list
+                print(fixation_character_string)
+                if len(fixation_character_string) > 0:
+                    
+                    trace = []
+                    for i in range(0,len(fixation_character_string)):
+                        trace.append(self.g2w.letter_locations[fixation_character_string[i]].tolist())
+
+                    print(trace)
+
+                    # -------------------------------------------------------------------------
+
+                    # write the entire gaze trace to the csv file
+                    self.write_string_to_csv(fixation_character_string,self.ground_truth_file_path)
+                    self.write_to_csv(trace,self.ground_truth_file_path)
+
+                    # write the fixation trace to the csv file
+                    self.write_string_to_csv(fixation_character_string,self.csv_file_path)
+                    self.write_to_csv(fixation_trace,self.csv_file_path)
+                    
+                    # -------------------------------------------------------------------------
+
+                    cadidate_list = self.g2w.predict(4,trace, prefix = None)
+                    word_candidate_list = [item[0] for item in cadidate_list]
+                    
+
+                    # word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list  
                     word_candidate_list = np.array(word_candidate_list).flatten().tolist()
                     print(word_candidate_list)
 
