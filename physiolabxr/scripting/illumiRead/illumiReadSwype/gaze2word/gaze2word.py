@@ -122,7 +122,7 @@ class Gaze2Word:
         """
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
         distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                     word, template_trace in g2w.vocab_traces.items()]
+                     word, template_trace in self.vocab_traces.items()]
 
         if prefix is not None:
             # tops = [(word, distances) for word, distances in sorted(zip(self.vocab.vocab_list, distances), key=lambda x: x[1])[:k * 50]]
@@ -156,7 +156,9 @@ class Gaze2Word:
 
 
 if __name__ == '__main__':
-    gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
+    # gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
+    gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+
     g2w = Gaze2Word(gaze_data_path)
 
     with open('g2w.pkl', 'wb') as f:
@@ -190,6 +192,8 @@ if __name__ == '__main__':
                                        np.linspace(g2w.letter_locations['r'], g2w.letter_locations['y'], num=2),
                                        np.linspace(g2w.letter_locations['y'], g2w.letter_locations['y'], num=2),
                                        ])
+    
+    print(noisy_gaze_trace)
     print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None)}")
     print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='have a nice')}")
 
