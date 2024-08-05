@@ -37,13 +37,9 @@ import re
 from dtw import dtw
 from sklearn.cluster import DBSCAN
 
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
-
-
-def parse_tuple(val):
-    # Remove the parentheses and split the string into individual components
-    return tuple(map(float, val.strip('()').split()))
 
 
 class PREFIX_OPTIONS(Enum):
@@ -75,38 +71,7 @@ class Gaze2Word:
 
     def __init__(self, gaze_data_path, ngram_n=3):
         # TODO change the gaze data to be downloaded automatically
-
-        letters = []
-        hit_point_local = []
-        key_ground_truth_local = []
-
-        # Read and process the lines
-        with open(gaze_data_path, 'r') as file:
-            header = file.readline()  # Read the header
-            # skip the first line and read the rest
-            for i, line in enumerate(file):
-                if re.match(r'^[a-zA-Z]', line):
-                    parts = line.strip().split(',')
-                    letters.append(parts[0])  # Extract the letter
-                    hit_point_local.append(parse_tuple(parts[2]))
-                    key_ground_truth_local.append(parse_tuple(parts[3]))
-
-        # Create a DataFrame from the extracted data
-        df = pd.DataFrame({
-            'Letter': letters,
-            'HitPointLocal': hit_point_local,
-            'KeyGroundTruthLocal': key_ground_truth_local
-        })
-
-        # for each unique letter in the letter column, get their KeyGroundTruthLocal put them in a 2d array
-        grouped = df.groupby('Letter')['KeyGroundTruthLocal']
-        self.letter_locations = OrderedDict()
-        for letter, group in grouped:
-            # Convert the 'KeyGroundTruthLocal' tuples to a 2D array
-            ground_truth_array = np.array(list(group))
-            assert np.all(np.std(ground_truth_array, axis=0) < np.array([5e-6,
-                                                                         5e-6])), f"std of the groundtruth is not close to zero, letter is {letter}, std is {np.std(ground_truth_array, axis=0)}"
-            self.letter_locations[letter] = np.mean(ground_truth_array, axis=0)
+        self.letter_locations = parse_letter_locations(gaze_data_path)
         self.letters = list(self.letter_locations.keys())
         # create ideal traces for each word in the vocab
         self.vocab = Vocab()
@@ -224,10 +189,8 @@ class Gaze2Word:
         """
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
 
-        distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                     word, template_trace in self.vocab_traces.items()]
-
-
+        # distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+        #              word, template_trace in self.vocab_traces.items()]
         if run_dbscan:
             dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
             dbscan.fit(gaze_trace)
