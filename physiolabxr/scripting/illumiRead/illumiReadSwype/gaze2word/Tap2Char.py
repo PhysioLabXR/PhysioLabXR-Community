@@ -81,7 +81,7 @@ class Tap2Char:
         cov_matrix = np.diag([std_dev_x ** 2, std_dev_y ** 2])
         return multivariate_normal.pdf(distance_vector, mean=[0, 0], cov=cov_matrix)
 
-    def predict(self, tap_position: ndarray, prefix, std_dev_x=0.5, std_dev_y=0.5, alpha=0.2):
+    def predict(self, tap_position: ndarray, prefix, std_dev_x=0.2835, std_dev_y=0.378, alpha=0.2):
         """predicts the character based on the tap position.
 
         Args:
@@ -134,4 +134,5 @@ if __name__ == '__main__':
     tap_position = (t2c.letter_locations['l'] + t2c.letter_locations['k']) / 2  # between 'l' and 'k'
 
     start_time = time.perf_counter()
-    print(t2c.predict(tap_position, 'hel'))
+    print(f"{t2c.predict(tap_position, 'hel') = }")
+    print(f"Time spent predicting: {time.perf_counter() - start_time:.8f}s")
