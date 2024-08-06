@@ -4,6 +4,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from nltk import TreebankWordDetokenizer
+from sklearn.cluster import DBSCAN
 
 
 def parse_tuple(val):
@@ -67,3 +68,24 @@ def parse_letter_locations(gaze_data_path):
         letter_locations[letter] = np.mean(ground_truth_array, axis=0)
 
     return letter_locations
+
+def run_dbscan_on_gaze(gaze_trace, timestamps, dbscan_eps, dbscan_min_samples, verbose):
+    dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
+
+    if timestamps is not None:
+        assert len(timestamps) == len(gaze_trace)
+        dbscan.fit(np.concatenate([gaze_trace, timestamps[..., None]], axis=-1))
+    else:
+        dbscan.fit(gaze_trace)
+    labels = dbscan.labels_
+
+    # Extract the cluster centers (mean of points in each cluster)
+    unique_labels = set(labels)
+    centroids_dbscan = []
+    for label in unique_labels:
+        if label != -1:  # Exclude noise
+            cluster_points = gaze_trace[labels == label]
+            centroid = cluster_points.mean(axis=0)
+            centroids_dbscan.append(centroid)
+    if verbose: print(f"DBSCAN reduced the gaze trace from {len(gaze_trace)} to {len(centroids_dbscan)} points.")
+    return np.array(centroids_dbscan)

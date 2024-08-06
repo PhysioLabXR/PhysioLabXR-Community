@@ -37,7 +37,8 @@ import re
 from dtw import dtw
 from sklearn.cluster import DBSCAN
 
-from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations, \
+    run_dbscan_on_gaze
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
 
@@ -132,7 +133,7 @@ class Gaze2Word:
             print(f"Trimmed the vocab from {len(self.vocab_traces)} to {len(self.trimmed_vocab_traces)} words")
 
 
-    def predict(self, k: int, gaze_trace: np.ndarray,
+    def predict(self, k: int, gaze_trace: np.ndarray, timestamps=None,
                 prefix: Union[NoneType, str, PREFIX_OPTIONS]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
                 run_dbscan: bool=False, dbscan_eps: float= 0.1, dbscan_min_samples: int=3,
                 filter_by_starting_letter: Union[NoneType, float]=None,
@@ -151,7 +152,16 @@ class Gaze2Word:
 
         Args:
             k: int: top k candidate words
-            gaze_trace: list of tuples: gaze trace from Sweyepe
+            gaze_trace: 2d array of shape (t, 2): gaze trace from Sweyepe, the first dimension is time, and the second
+                dimension is x and y.
+                for example, a gaze trace of shape (100, 2) has 100 time points.
+            timestamps: 1d array of shape (t,), or None: timestamps for the gaze_trace.
+                If given, it should be of the same length as the gaze_trace. It will used in computing DBSCAN,
+                such as that DBSCAN takes the order of the points into account.It is highly recommended you
+                supply this argument if you are using DBSCAN to make the prediction more accurate.
+
+                If None, the gaze_trace will be treated as a bunch of points without any order information
+                when computing DBSCAN.
 
             Ngram related parameters:
             ------------------------
@@ -189,23 +199,8 @@ class Gaze2Word:
         """
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
 
-        # distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-        #              word, template_trace in self.vocab_traces.items()]
         if run_dbscan:
-            dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_min_samples)
-            dbscan.fit(gaze_trace)
-            labels = dbscan.labels_
-
-            # Extract the cluster centers (mean of points in each cluster)
-            unique_labels = set(labels)
-            centroids_dbscan = []
-            for label in unique_labels:
-                if label != -1:  # Exclude noise
-                    cluster_points = gaze_trace[labels == label]
-                    centroid = cluster_points.mean(axis=0)
-                    centroids_dbscan.append(centroid)
-            if verbose: print(f"DBSCAN reduced the gaze trace from {len(gaze_trace)} to {len(centroids_dbscan)} points.")
-            gaze_trace = np.array(centroids_dbscan)
+            gaze_trace = run_dbscan_on_gaze(gaze_trace, timestamps, dbscan_eps, dbscan_min_samples, verbose)
 
         if len(gaze_trace) == 0:
             return []
