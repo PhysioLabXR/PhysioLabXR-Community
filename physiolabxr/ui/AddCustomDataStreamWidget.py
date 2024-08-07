@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QFileDialog
 
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.interfaces.DataStreamInterface import DataStreamInterface
-from physiolabxr.scripting.script_utils import get_target_class_name
+from physiolabxr.scripting.script_utils import get_script_class_name
 from physiolabxr.utils.ui_utils import validate_script_path
 
 
@@ -44,7 +44,7 @@ class AddCustomDataStreamWidget(QtWidgets.QWidget):
 
     def load_data_stream_interface_name(self, data_stream_interface_path):
         self.path_line_edit.setText()
-        self.info_label.setText(get_target_class_name(data_stream_interface_path, DataStreamInterface))
+        self.info_label.setText(get_script_class_name(data_stream_interface_path, DataStreamInterface))
 
 
     def on_create_btn_clicked(self):

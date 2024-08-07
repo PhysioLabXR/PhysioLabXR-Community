@@ -1,27 +1,17 @@
 import importlib.util
 import os.path
 import os
-import pickle
 from inspect import isclass
 from typing import Type
 
 from physiolabxr.exceptions.exceptions import InvalidScriptPathError, ScriptSyntaxError, ScriptMissingModuleError
 
-from multiprocessing import Process
-
 from physiolabxr.configs import config
 from physiolabxr.scripting.RenaScript import RenaScript
+from physiolabxr.utils.fs_utils import load_file_classes
 
 debugging = False
 
-
-def start_script_server(script_path, script_args):
-    print("script process, starting script thread")
-    # sys.stdout = Stream(newText=self.on_print)
-
-    target_class = get_target_class(script_path)
-    replay_client_thread = target_class(**script_args)
-    replay_client_thread.start()
 
 def validate_python_script_class(script_path: str, desired_class: Type):
     target_class, target_class_name = validate_python_script(script_path, desired_class)
@@ -49,8 +39,8 @@ def validate_python_script(script_path: str, desired_class: Type):
     except AssertionError:
         raise InvalidScriptPathError(script_path, 'File name must end with .py')
     try:
-        target_class = get_target_class(script_path)
-        target_class_name = get_target_class_name(script_path, desired_class)
+        target_class = get_script_class(script_path)
+        target_class_name = get_script_class_name(script_path, desired_class)
     except IndexError:
         raise InvalidScriptPathError(script_path, 'Script does not have class defined')
     except ModuleNotFoundError as e:
@@ -59,59 +49,27 @@ def validate_python_script(script_path: str, desired_class: Type):
         raise ScriptSyntaxError(e)
     return target_class, target_class_name
 
-def get_target_class(script_path):
-    spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
-    script_module = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(script_module)
-    except ImportError as e:
-        raise ScriptMissingModuleError(script_path, e)
-    classes = [x for x in dir(script_module) if
-               isclass(getattr(script_module, x))]  # all the classes defined in the module
-    classes = [script_module.__getattribute__(x) for x in classes if x != 'RenaScript']  # exclude RenaScript itself
-    classes = [x for x in classes if issubclass(x, RenaScript)]
-    try:
-        assert len(classes) == 1
-    except AssertionError:
-        raise InvalidScriptPathError(script_path, 'Script has more than one classes that extends RenaScript. There can be only one subclass of RenaScript in the script file.')
-    return classes[0]
+
+# def get_servicer_class(script_path):
+#     classes = load_file_classes(script_path)
+#     # return the class that has the suffix Servicer
+#     for c in classes:
+#         if c.__name__.endswith('Servicer'):
+#             return c
+#     raise InvalidScriptPathError(script_path, 'Script does not have a class that ends with Servicer')
 
 
-def get_target_class_name(script_path, desired_class: Type=RenaScript):
-    spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
-    script_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(script_module)
-    class_names = [x for x in dir(script_module) if
-               isclass(getattr(script_module, x))]  # all the classes defined in the module
-    class_names = [x for x in class_names if x != desired_class.__name__]  # exclude RenaScript itself
-    class_names = [x for x in class_names if issubclass(script_module.__getattribute__(x), RenaScript)]
-
-    if len(class_names) == 0:
-        raise InvalidScriptPathError(script_path, f'Script does not have desired class with name {desired_class.__name__} defined')
-    return class_names[0]
-
-
-def start_rena_script(script_path, script_args):
-    print('Script started')
-    if not debugging:
-        script_process = Process(target=start_script_server, args=(script_path, script_args))
-        script_process.start()
-        return script_process
-    else:
-        pickle.dump([script_path, script_args], open('start_script_args.p', 'wb'))
-
-
-if __name__ == '__main__':
-    """
-    Running this script is for debugging
-    """
-    # script_args = {'inputs': None, 'input_shapes': None,
-    #                'outputs': None, 'output_num_channels': None,
-    #                'params': None, 'port': None, 'run_frequency': None,
-    #                'time_window': None}
-    # script_path = '../scripting/IndexPen.py'
-    script_path, script_args = pickle.load(open('start_script_args.p', 'rb'))
-    start_script_server(script_path, script_args)
+# if __name__ == '__main__':
+#     """
+#     Running this script is for debugging
+#     """
+#     # script_args = {'inputs': None, 'input_shapes': None,
+#     #                'outputs': None, 'output_num_channels': None,
+#     #                'params': None, 'port': None, 'run_frequency': None,
+#     #                'time_window': None}
+#     # script_path = '../scripting/IndexPen.py'
+#     script_path, script_args = pickle.load(open('start_script_args.p', 'rb'))
+#     start_script_server(script_path, script_args)
 
 
 def get_script_widgets_args():
@@ -125,4 +83,28 @@ def get_script_widgets_args():
     config.settings.endGroup()
     return rtn
 
+
+def get_script_class_name(script_path, desired_class: Type=RenaScript):
+    spec = importlib.util.spec_from_file_location(os.path.basename(os.path.normpath(script_path)), script_path)
+    script_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script_module)
+    class_names = [x for x in dir(script_module) if
+               isclass(getattr(script_module, x))]  # all the classes defined in the module
+    class_names = [x for x in class_names if x != desired_class.__name__]  # exclude RenaScript itself
+    class_names = [x for x in class_names if issubclass(script_module.__getattribute__(x), RenaScript)]
+
+    if len(class_names) == 0:
+        raise InvalidScriptPathError(script_path, f'Script does not have desired class with name {desired_class.__name__} defined')
+    return class_names[0]
+
+
+def get_script_class(script_path):
+    classes = load_file_classes(script_path)
+    classes = [x for x in classes if issubclass(x, RenaScript)]
+    try:
+        assert len(classes) == 1
+    except AssertionError:
+        raise InvalidScriptPathError(script_path,
+                                     'Script has more than one classes that extends RenaScript. There can be only one subclass of RenaScript in the script file.')
+    return classes[0]
 

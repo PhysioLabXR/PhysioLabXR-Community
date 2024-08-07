@@ -70,3 +70,14 @@ def rebalance_classes(x, y, by_channel=False, random_seed=None):
         x = np.reshape(x, newshape=(len(x),) + epoch_shape)
 
     return x, y
+
+
+def show_figure(figure, title, out_dir=None):
+    """
+    Show a matplotlib figure
+    :param figure: matplotlib figure
+    """
+    if out_dir is not None:
+        figure.savefig(f'{out_dir}/{title}.png')
+    else:
+        figure.show()

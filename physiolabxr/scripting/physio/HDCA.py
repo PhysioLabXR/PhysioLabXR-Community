@@ -11,7 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 
-from physiolabxr.scripting.fs_utils import show_figure
+from physiolabxr.scripting.physio.utils import show_figure
 
 
 def z_norm_hdca(x, _mean=None, _std=None):

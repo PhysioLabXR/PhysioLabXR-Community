@@ -115,7 +115,6 @@ MAX_TS_CHANNEL_NUM = 4000
 
 
 # Scripting
-scripting_port = 8000
 CONSOLE_LOG_MAX_NUM_ROWS = 1000
 script_fps_counter_buffer_size = 10000
 

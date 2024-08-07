@@ -168,3 +168,33 @@ class DataType(Enum):
 class VideoDeviceChannelOrder(Enum):
     RGB = 0
     BGR = 1
+
+class RPCLanguage(Enum):
+    PYTHON = 'Python'
+    CSHARP = 'C# (Unity)'
+
+    # CPP = 'C++'
+    # JAVA = 'Java'
+    # RUBY = 'Ruby'
+    # PHP = 'PHP'
+    # GO = 'GO'
+    # DART = 'Dart'
+    # JS = 'JavaScript'
+
+    def get_command_str(self):
+        command_map = {
+            RPCLanguage.PYTHON: 'python',
+            RPCLanguage.CSHARP: 'csharp',
+
+            # RPCLanguage.CPP: 'cpp',
+            # RPCLanguage.JAVA: 'java',
+            # RPCLanguage.RUBY: 'ruby',
+            # RPCLanguage.PHP: 'php',
+            # RPCLanguage.GO: 'go',
+            # RPCLanguage.DART: 'dart',
+            # RPCLanguage.JS: 'js'
+        }
+
+        # Fetch the command string from the map; return None if the language is not found
+        return command_map.get(self, None)
+
