@@ -9,12 +9,12 @@ import sys
 import matplotlib.pyplot as plt
 from itertools import groupby
 from physiolabxr.scripting.RenaScript import RenaScript
-from pylsl import StreamInfo, StreamOutlet, cf_float32
+from pylsl import StreamInfo, StreamOutlet,StreamInlet, resolve_stream ,cf_float32, LostError
 import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
-from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput, \
+from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput,\
     word_candidate_list_to_lvt
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
@@ -53,8 +53,8 @@ class IllumiReadSwypeScript(RenaScript):
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
         # spelling correction
-        self.spell_corrector = SpellCorrector()
-        self.spell_corrector.correct_string("WHAT")
+        # self.spell_corrector = SpellCorrector()
+        # self.spell_corrector.correct_string("WHAT")
 
         # create stream outlets
         illumireadswype_keyboard_suggestion_strip_lsl_stream_info = StreamInfo(
@@ -77,26 +77,18 @@ class IllumiReadSwypeScript(RenaScript):
         # the gaze trace path
         self.ground_truth_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Trace.csv'
 
-        # init the csv files
-        # self.init_csv_file(self.csv_file_path)
+        # with open(self.csv_file_path, 'w', newline='') as csvfile:
+        #     writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        #     writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
 
-        # self.init_csv_file(self.gaze_file_path)
-
-        with open(self.csv_file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
-
-        with open(self.ground_truth_file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
-
-
-
-    # def init_csv_file(self, path):
-    #     self.csv_file_path = csv_file_path
+        # with open(self.ground_truth_file_path, 'w', newline='') as csvfile:
+        #     writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        #     writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
         
-    #     with open(self.csv_file_path, 'w', newline='') as csvfile:
-    #         pass
+        # self.streams = resolve_stream('name', 'illumiReadSwypeKeyboardContextLSL')
+        
+        # self.context_inlet = StreamInlet(self.streams[0])
+
 
     # data writer
     def write_to_csv(self, data, path=None):
@@ -122,10 +114,23 @@ class IllumiReadSwypeScript(RenaScript):
 
     # loop is called <Run Frequency> times per second
     def loop(self):
+        
+        # try:
+        #     sample, timestamp = self.context_inlet.pull_sample()
+        #     print(timestamp, sample)
+        #     print(len(sample))
+        # except LostError:
+        #     try:
+        #         self.streams = resolve_stream('name', 'illumiReadSwypeKeyboardContextLSL')
+        #         self.context_inlet = StreamInlet(self.streams[0])
+        #     except:
+        #         print("No stream found")
+        #         pass
+            
 
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()) or (
-                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()) :  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
         # print("process event marker call start")
         self.process_event_markers()
@@ -301,7 +306,6 @@ class IllumiReadSwypeScript(RenaScript):
 
     def keyboard_dewelltime_state_callback(self):
         # print("keyboard dewell time state")
-
         pass
 
     def keyboard_illumireadswype_state_callback(self):
@@ -438,12 +442,12 @@ class IllumiReadSwypeScript(RenaScript):
                     # -------------------------------------------------------------------------
 
                     # write the entire gaze trace to the csv file
-                    self.write_string_to_csv(fixation_character_string,self.ground_truth_file_path)
-                    self.write_to_csv(trace,self.ground_truth_file_path)
+                    # self.write_string_to_csv(fixation_character_string,self.ground_truth_file_path)
+                    # self.write_to_csv(trace,self.ground_truth_file_path)
 
                     # write the fixation trace to the csv file
-                    self.write_string_to_csv(fixation_character_string,self.csv_file_path)
-                    self.write_to_csv(fixation_trace,self.csv_file_path)
+                    # self.write_string_to_csv(fixation_character_string,self.csv_file_path)
+                    # self.write_to_csv(fixation_trace,self.csv_file_path)
                     
                     # -------------------------------------------------------------------------
 

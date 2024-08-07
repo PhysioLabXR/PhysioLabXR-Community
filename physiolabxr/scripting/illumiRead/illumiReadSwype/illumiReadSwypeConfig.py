@@ -50,6 +50,15 @@ class illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo:
     StreamID = "4"
     ChannelNum = 1024
     NominalSamplingRate = 1
+    
+# class KeyboardContextLSLStreamInfo:
+#     StreamName = "illumiReadSwypeKeyboardContextLSL"
+#     StreamType = "KeyboardContext"
+#     StreamID = "5"
+#     ChannelNum = 1
+#     NominalSamplingRate = 80
+    
+#     KeyboardContextChannelIndex = 0
 
 
 KeyIDIndexDict = {
