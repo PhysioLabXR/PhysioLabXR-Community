@@ -29,6 +29,7 @@ def start_script_server(script_path, script_args):
     port = script_args['port']
     rpc_outputs = script_args['rpc_outputs']
     csharp_plugin_path = script_args['csharp_plugin_path']
+    reserved_ports = script_args['reserved_ports']
 
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
                                                port_id=port,
@@ -84,11 +85,12 @@ def start_script_server(script_path, script_args):
     if rpc_info is not None:
         # also start the rpc
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        rpc_server = create_rpc_server(script_path, rena_script_thread, server, port + 4)
-        logging.info(f"Starting rpc server listening for calls on {port + 4}")
+        rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+        logging.info(f"Starting rpc server listening for calls on {port}")
         rpc_server.start()
         rena_script_thread.rpc_server = rpc_server
         send_router(np.array([INCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
+        send_router(np.array([port]).astype(int), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
         send_router(np.array([rpc_info]).astype('<U61'), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
     else:
         rpc_server = None

@@ -1,7 +1,7 @@
 import os.path
 import platform
 import pytest
-from physiolabxr.utils.setup_utils import get_lsl_binary
+from physiolabxr.utils.setup_utils import get_lsl_binary, setup_grpc_csharp_plugin
 
 
 def test_download_lsl_binary() -> None:

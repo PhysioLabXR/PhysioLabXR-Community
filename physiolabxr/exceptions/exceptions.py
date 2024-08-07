@@ -274,3 +274,13 @@ class ScriptSetupError(RenaError):
 
     def __str__(self):
         return f"Script Setup Error: {self.error}"
+
+
+class RPCCSharpSetupError(RenaError):
+    """
+    Raised when an error occurs while compiling RPC methods
+    """
+    def __init__(self, message):
+        super().__init__(message)
+    def __str__(self):
+        return 'Failed to set up RPC for C#' + self.message

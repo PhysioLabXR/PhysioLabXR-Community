@@ -1,4 +1,5 @@
 import os.path
+import os.path
 import platform
 import re
 import sys
@@ -8,6 +9,7 @@ import shutil
 import subprocess
 
 from physiolabxr.configs.shared import temp_rpc_path
+from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -100,7 +102,7 @@ def get_lsl_binary():
             dialog_popup("Tried to brew install labstreaminglayer/tap/lsl, necessary for using LSL interface."
                          "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need to use pylsl."
                          "Unexpected behavior may occur if you continue to use the app without brew.",
-                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
             return
         print("Brew installing lsl library ...")
         subprocess.run(["brew", "install", "labstreaminglayer/tap/lsl"])
@@ -182,7 +184,7 @@ def install_pyaudio():
                 from PyQt6.QtWidgets import QDialogButtonBox
                 dialog_popup("Tried to brew install portaudio, a dependency of pyaudio, necessary for audio interface."
                              "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams.",
-                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
                 from physiolabxr.configs.configs import AppConfigs
                 AppConfigs().is_audio_interface_available = False
                 return
@@ -198,7 +200,7 @@ def install_pyaudio():
                              "sudo apt-get install portaudio19-dev\n"
                              "sudo apt install python3-dev\n"
                              "Then restart the app if you need audio streams.",
-                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
                 return
         # pip install pyaudio
         print("pip installing pyaudio ...")
@@ -211,7 +213,8 @@ def install_pyaudio():
 
 def locate_grpc_tools():
     result = subprocess.run(["dotnet", "nuget", "locals", "global-packages", "--list"], capture_output=True, text=True)
-    nuget_cache_path = result.stdout.strip().split(' ')[-1]
+    nuget_cache_path = result.stdout.strip().split(': ')[-1]
+
     tools_path = os.path.join(nuget_cache_path, "grpc.tools")
     if not os.path.exists(tools_path):
         print("Grpc.Tools not found in NuGet cache.")
@@ -251,16 +254,46 @@ def locate_csharp_plugin():
 def add_grpc_plugin_with_dummy_project():
     # create a dummy project
     if locate_csharp_plugin() is None:
-        os.mkdir(temp_rpc_path)
-        subprocess.run(["dotnet", "new", "console"], cwd=temp_rpc_path)
+        os.makedirs(temp_rpc_path, exist_ok=True)
+        subprocess.run(["dotnet", "new", "console", "--force"], cwd=temp_rpc_path)
         subprocess.run(["dotnet", "add", "package", "Grpc.Tools"], cwd=temp_rpc_path)
     else:
         print("Grpc.Tools already installed in NuGet cache.")
     # check if the plugin is available
     if (csharp_plugin_path := locate_csharp_plugin()) is None:
-        dialog_popup("Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.", title="Warning")
+        dialog_popup("When setting up RPC for C#, unable to automatically configure Grpc.Tools in dotnet as a nuget package. "
+                     "Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually."
+                     "You may ignore this if you don't intend to use RPC for C#", title="Warning", enable_dont_show=True)
         return None
     return csharp_plugin_path
+
+def add_to_path(new_path):
+    """Add a new path to the PATH environment variable.
+
+    Please note this function doesn't modify the PATH permanently. It only updates the PATH in the current environment.
+    """
+    # Get the current PATH
+    current_path = os.environ.get('Path', '')
+
+    # Check if the new_path is already in the PATH
+    if new_path in current_path.split(';'):
+        print(f"{new_path} is already in Path")
+    else:
+        # update the PATH in the current environment
+        os.environ['PATH'] = f"{current_path};{new_path}"
+
+def add_protoc_to_path_windows():
+    winget_info = subprocess.run(["winget", "--info"], capture_output=True, text=True).stdout
+    winget_info = winget_info.splitlines()
+    winget_info = [x for x in winget_info if 'Portable Package Root (User)' in x][0]
+    winget_info = re.sub(r'\s+', ' ', winget_info).split(' ')[-1]
+    winget_package_path = os.path.expandvars(winget_info)
+    protobuf_package_dirnames = [x for x in os.listdir(winget_package_path) if 'Google.Protobuf' in x]
+    if len(protobuf_package_dirnames) == 0:
+        raise RPCCSharpSetupError("Google.Protobuf not found in winget package cache.")
+    protobuf_package_dirname = protobuf_package_dirnames[0]
+    protobuf_package_path = os.path.join(winget_package_path, protobuf_package_dirname, 'bin')
+    add_to_path(protobuf_package_path)
 
 def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
@@ -272,63 +305,107 @@ def setup_grpc_csharp_plugin():
         if not is_brew_installed():
             dialog_popup("Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
                          "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams."
-                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. Then restart the app/IDE if you need compile RPC for C# (Unity). ",
-                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. "
+                         "Then restart the app/IDE."
+                         "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
             AppConfigs().is_csharp_plugin_available = False
             return
         # we don't automate dotnet-sdk installation because it requires sudo access
         if not shutil.which('dotnet'):
-            dialog_popup("Please brew install dotnet-sdk using 'brew install dotnet-sdk' in your terminal. Then restart the app/IDE if you need compile RPC for C# (Unity). ",)
+            dialog_popup("Please brew install dotnet-sdk using 'brew install dotnet-sdk' in your terminal."
+                         " Then restart the app/IDE if you need compile RPC for C# (Unity). "
+                         "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
             AppConfigs().is_csharp_plugin_available = False
             return
 
     elif platform.system() == 'Windows':
-        if shutil.which('dotnet') is None:
+        sdk_name = "Microsoft.DotNet.SDK.8"
+        result = subprocess.run(["winget", "list", sdk_name], capture_output=True, text=True)
+
+        if sdk_name not in result.stdout:
             result = subprocess.run(["winget", "install", "Microsoft.DotNet.SDK.8", "--accept-source-agreements"])
 
-            if result.returncode == 0:
+            if result.returncode == 0:  # if the sdk is successfully installed
                 print("Microsoft.DotNet.SDK.8 has been successfully installed.")
 
                 if shutil.which('dotnet') is None:
-                    dialog_popup("DotNet.SDK is installed but dotnet command is not found. Please restart the app if you need to compile RPC for C# (Unity).",
-                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok)
+                    dialog_popup("DotNet.SDK is installed but dotnet command is not found. Please restart the app if you need to compile RPC for C# (Unity)."
+                                 "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
                     AppConfigs().is_csharp_plugin_available = False
                     return
-                else:
-                    dialog_popup("Unable to install Microsoft.DotNet.SDK.8 using winget. Please install Microsoft.DotNet.SDK.8 manually from https://learn.microsoft.com/en-us/dotnet/core/install/windows?tabs=net80",
-                                 title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
-                    AppConfigs().is_csharp_plugin_available = False
 
-        if shutil.which('protoc') is None:
+            else:  # winget install protobuf failed
+                dialog_popup("Unable to install Microsoft.DotNet.SDK.8 using winget. RPC for C# will not be available."
+                             "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
+                AppConfigs().is_csharp_plugin_available = False
+                return
+
+        """
+        the command winget list protobuf require user to interact with the terminal to agree to the license
+        thus it is not suitable for automation
+        
+        protobuf_winget_list_result = subprocess.run(["winget", "list", "protobuf"], capture_output=True, text=True)
+        # first check if protobuf is installed via winget, it may be installed but not in PATH
+        if protobuf_winget_list_result.returncode == 0 and shutil.which('protoc') is not None:
+            # case where protobuf is installed and in PATH :)))
+            pass
+        elif protobuf_winget_list_result.returncode == 0 and shutil.which('protoc') is None:
+            # case where protobuf is installed but not in PATH
+            # try to locate protoc and add it to path
+            add_protoc_to_path()
+        """
+        try:
+            add_protoc_to_path_windows()
+            if shutil.which('protoc') is None:  # if adding to path still not working
+                dialog_popup("When setting up RPC, protoc is already installed but not in PATH. "
+                             "Please add it to PATH manually if you need to compile RPC for C# (Unity)."
+                             "Normally, PhysioLabXR will automatically add it to PATH for you. "
+                             "If you believe this is an error, please submit an issue on GitHub."
+                             "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok,
+                             enable_dont_show=True)
+                AppConfigs().is_csharp_plugin_available = False
+        except RPCCSharpSetupError as e:
+            # protobuf not found in winget package cache, it needs to be installed
             result = subprocess.run(["winget", "install", "protobuf"])
 
-            if result.returncode == 0:
+            if result.returncode == 0 or result.returncode == 0x8A15002B:  # if the protobuf is successfully installed
                 print("protobuf has been successfully installed.")
-
-                if shutil.which('protobuf') is None:
-                    dialog_popup("protobuf is installed but protoc command is not found. Please restart the app if you need to compile RPC for C# (Unity).",
-                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok)
+                # try to locate protoc and add it to path
+                add_protoc_to_path_windows()
+                if shutil.which('protoc') is None:  # if adding to path still not working
+                    dialog_popup("When setting up RPC, protoc is already installed but not in PATH. "
+                                 "Please add it to PATH manually if you need to compile RPC for C# (Unity)."
+                                 "Normally, PhysioLabXR will automatically add it to PATH for you. "
+                                 "If you believe this is an error, please submit an issue on GitHub."
+                                 "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                                 title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
                     AppConfigs().is_csharp_plugin_available = False
                     return
-                else:
-                    dialog_popup("Unable to install protobuf using winget. Please install from https://github.com/protocolbuffers/protobuf/releases/ and add to PATH manually.",
-                                 title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
-                    AppConfigs().is_csharp_plugin_available = False
-
-
+            else:  # winget install protobuf failed
+                dialog_popup("When setting up RPC, Unable to install protobuf using winget. "
+                             "Please install from https://github.com/protocolbuffers/protobuf/releases/ and add to PATH manually if you need to compile RPC for C# (Unity)."
+                             "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                             title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
+                AppConfigs().is_csharp_plugin_available = False
+                return
 
     elif platform.system() == 'Linux':
         AppConfigs().is_csharp_plugin_available = False
         warnings.warn("PhysioRPC is not supported on Linux yet.")
 
     # end of setting up dotnet-sdk ###############################################################################
-
     # check if csharp plugin is available
     csharp_plugin_path = add_grpc_plugin_with_dummy_project()
     if csharp_plugin_path is None:
         dialog_popup(
-            "Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually.",
-            title="Warning", buttons=QDialogButtonBox.StandardButton.Ok)
+            "Unable to automatically configure Grpc.Tools in dotnet as a nuget package. Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually."
+            "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+            title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
         AppConfigs().is_csharp_plugin_available = False
     else:
         from physiolabxr.configs.configs import AppConfigs

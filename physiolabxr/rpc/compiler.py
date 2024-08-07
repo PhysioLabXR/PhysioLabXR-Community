@@ -213,10 +213,11 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
             rpc_outputs.append(python_output)
 
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
-    proto_content, rpc_info = generate_proto_from_script_class(script_class)
-    if proto_content is None:
+    proto_rtn = generate_proto_from_script_class(script_class)
+    if proto_rtn is None:
         logging.info(f"No RPC methods found in {script_class.__name__}, skipping compilation")
         return None
+    proto_content, rpc_info = proto_rtn
     # save the proto content to the same directory as the script
     script_name = os.path.basename(script_path)[:-3]
     proto_file_path = os.path.join(os.path.dirname(script_path), f"{script_name}.proto")

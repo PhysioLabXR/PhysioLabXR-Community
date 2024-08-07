@@ -155,6 +155,7 @@ def test_rpc_compiler_standalone_python():
 
 
 def test_rpc_compiler_standalone_csharp():
+    setup_grpc_csharp_plugin()
     script_path = "tests/assets/RPCTest.py"
 
     # remove everything in the script folder except the script
@@ -171,6 +172,7 @@ def test_rpc_compiler_standalone_csharp():
 def test_rpc_compile_from_app(context_bot, qtbot):
     """
     """
+    os.environ['GRPC_VERBOSITY'] = 'debug'
     script_path = "tests/assets/RPCTest.py"
     remove_generated_files(script_path)
 

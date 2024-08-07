@@ -13,6 +13,7 @@ from PyQt6.QtGui import QMovie
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
+from physiolabxr.configs.NetworkManager import NetworkManager
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.exceptions.exceptions import MissingPresetError, UnsupportedLSLDataTypeError, RenaError
 from physiolabxr.configs.config import SCRIPTING_UPDATE_REFRESH_INTERVAL
@@ -286,9 +287,10 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             script_status = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)
             if script_status == INCLUDE_RPC:
                 # change the rpc button text to display the port number
+                rpc_server_port = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)[0]
                 rpc_info = np.frombuffer(self.info_socket_interface.socket.recv(), dtype='<U61').reshape(-1, 3).tolist()
-                self.RPC_button.setText('RPC Options ({})'.format(self.port + 4))
-                self.rpc_port = self.port + 4
+                self.RPC_button.setText('RPC Options ({})'.format(rpc_server_port))
+                self.rpc_port = rpc_server_port
                 self.rpc_widget.write_rpc_table(rpc_info)
             elif script_status == EXCLUDE_RPC:
                 self.RPC_button.setText('RPC Options')
@@ -731,7 +733,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         rpc_outputs = self.rpc_widget.get_output_info()
 
         rtn = {'inputs': self.get_inputs(),
-                'input_shapes': self.get_input_shape_dict(),
+               'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_output_presets(),
                 'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
@@ -742,7 +744,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'presets': Presets(),
                 'rpc_outputs': rpc_outputs,
                 'csharp_plugin_path': AppConfigs().csharp_plugin_path,
-               }
+                'reserved_ports': NetworkManager()._reserve_ports_queue}
         lsl_supported_types = DataType.get_lsl_supported_types()
         lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
         for output_name, dtype in lsl_output_data_types:
