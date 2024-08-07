@@ -23,6 +23,7 @@ def get_ubuntu_version():
         pass
     return None
 
+
 def download_lsl_binary():
     support_ubuntu_versions = {'bionic', 'focal', 'jammy'}
     # Get the user's operating system
@@ -77,10 +78,12 @@ def download_lsl_binary():
     os.remove(binary_name)
     if user_os == "Windows":
         # move dll from bin to lib
-        if 'lsl.dll' not in os.listdir(lib_path:=os.path.join(output_directory, 'lib')):
+        if 'lsl.dll' not in os.listdir(lib_path := os.path.join(output_directory, 'lib')):
             shutil.move(os.path.join(output_directory, 'bin', 'lsl.dll'), lib_path)
-    downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib') if os.path.exists(os.path.join(output_directory, 'usr')) else os.path.join(output_directory, 'lib')
+    downloaded_lib_path = os.path.join(output_directory, 'usr', 'lib') if os.path.exists(
+        os.path.join(output_directory, 'usr')) else os.path.join(output_directory, 'lib')
     return output_directory, downloaded_lib_path
+
 
 def get_lsl_binary():
     # # mac does not need lsl binary
@@ -141,6 +144,7 @@ def get_pybluez_library():
     else:
         print("Unicorn Hybrid Black is not supported on Darwin or Linux. Pybluez will not be installed.")
 
+
 def install_lsl_binary():
     # try import pylsl check if the lib exist
     try:
@@ -148,6 +152,7 @@ def install_lsl_binary():
     except RuntimeError:
         # the error is LSL binary library file was not found.
         get_lsl_binary()
+
 
 def install_pybluez():
     # try import bluetooth check if the lib exist
@@ -158,13 +163,13 @@ def install_pybluez():
         get_pybluez_library()
 
 
-
 def is_package_installed(package_name):
     try:
         subprocess.check_output(["dpkg", "-s", package_name], stderr=subprocess.STDOUT, text=True)
         return True
     except subprocess.CalledProcessError:
         return False
+
 
 def is_brew_installed():
     if shutil.which('brew') is None:
@@ -261,11 +266,13 @@ def add_grpc_plugin_with_dummy_project():
         print("Grpc.Tools already installed in NuGet cache.")
     # check if the plugin is available
     if (csharp_plugin_path := locate_csharp_plugin()) is None:
-        dialog_popup("When setting up RPC for C#, unable to automatically configure Grpc.Tools in dotnet as a nuget package. "
-                     "Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually."
-                     "You may ignore this if you don't intend to use RPC for C#", title="Warning", enable_dont_show=True)
+        dialog_popup(
+            "When setting up RPC for C#, unable to automatically configure Grpc.Tools in dotnet as a nuget package. "
+            "Grpc.Tools not found in NuGet cache. Please install Grpc.Tools manually."
+            "You may ignore this if you don't intend to use RPC for C#", title="Warning", enable_dont_show=True)
         return None
     return csharp_plugin_path
+
 
 def add_to_path(new_path):
     """Add a new path to the PATH environment variable.
@@ -282,18 +289,23 @@ def add_to_path(new_path):
         # update the PATH in the current environment
         os.environ['PATH'] = f"{current_path};{new_path}"
 
+
 def add_protoc_to_path_windows():
     winget_info = subprocess.run(["winget", "--info"], capture_output=True, text=True).stdout
     winget_info = winget_info.splitlines()
     winget_info = [x for x in winget_info if 'Portable Package Root (User)' in x][0]
     winget_info = re.sub(r'\s+', ' ', winget_info).split(' ')[-1]
     winget_package_path = os.path.expandvars(winget_info)
-    protobuf_package_dirnames = [x for x in os.listdir(winget_package_path) if 'Google.Protobuf' in x]
+    try:
+        protobuf_package_dirnames = [x for x in os.listdir(winget_package_path) if 'Google.Protobuf' in x]
+    except FileNotFoundError:
+        raise RPCCSharpSetupError(f"winget package path: {winget_package_path} doesn't exist.")
     if len(protobuf_package_dirnames) == 0:
         raise RPCCSharpSetupError("Google.Protobuf not found in winget package cache.")
     protobuf_package_dirname = protobuf_package_dirnames[0]
     protobuf_package_path = os.path.join(winget_package_path, protobuf_package_dirname, 'bin')
     add_to_path(protobuf_package_path)
+
 
 def setup_grpc_csharp_plugin():
     # based on the os install the proper protobuf compiler
@@ -303,12 +315,13 @@ def setup_grpc_csharp_plugin():
     if platform.system() == 'Darwin':
         # we don't automate home brew installation because it requires sudo access
         if not is_brew_installed():
-            dialog_popup("Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
-                         "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams."
-                         "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. "
-                         "Then restart the app/IDE."
-                         "You may ignore this if you don't intend to use RPC for C# (Unity). ",
-                         title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
+            dialog_popup(
+                "Tried to brew install dotnet-sdk, necessary for compile remote procedural calls (RPC) for C# (Unity)."
+                "But Brew is not installed, please install brew first from https://brew.sh/. Then restart the app if you need audio streams."
+                "Once brew installed, run 'brew install dotnet-sdk' in your terminal to install dotnet-sdk. "
+                "Then restart the app/IDE."
+                "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                title="Warning", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
             AppConfigs().is_csharp_plugin_available = False
             return
         # we don't automate dotnet-sdk installation because it requires sudo access
@@ -322,7 +335,8 @@ def setup_grpc_csharp_plugin():
 
     elif platform.system() == 'Windows':
         sdk_name = "Microsoft.DotNet.SDK.8"
-        result = subprocess.run(["winget", "list", sdk_name], capture_output=True, text=True)
+        result = subprocess.run(["winget", "list", sdk_name, "--accept-source-agreements"], capture_output=True,
+                                text=True)
 
         if sdk_name not in result.stdout:
             result = subprocess.run(["winget", "install", "Microsoft.DotNet.SDK.8", "--accept-source-agreements"])
@@ -331,9 +345,10 @@ def setup_grpc_csharp_plugin():
                 print("Microsoft.DotNet.SDK.8 has been successfully installed.")
 
                 if shutil.which('dotnet') is None:
-                    dialog_popup("DotNet.SDK is installed but dotnet command is not found. Please restart the app if you need to compile RPC for C# (Unity)."
-                                 "You may ignore this if you don't intend to use RPC for C# (Unity). ",
-                                 title="Info", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
+                    dialog_popup(
+                        "DotNet.SDK is installed but dotnet command is not found. Please restart the app if you need to compile RPC for C# (Unity)."
+                        "You may ignore this if you don't intend to use RPC for C# (Unity). ",
+                        title="Info", buttons=QDialogButtonBox.StandardButton.Ok, enable_dont_show=True)
                     AppConfigs().is_csharp_plugin_available = False
                     return
 
@@ -347,7 +362,7 @@ def setup_grpc_csharp_plugin():
         """
         the command winget list protobuf require user to interact with the terminal to agree to the license
         thus it is not suitable for automation
-        
+
         protobuf_winget_list_result = subprocess.run(["winget", "list", "protobuf"], capture_output=True, text=True)
         # first check if protobuf is installed via winget, it may be installed but not in PATH
         if protobuf_winget_list_result.returncode == 0 and shutil.which('protoc') is not None:
