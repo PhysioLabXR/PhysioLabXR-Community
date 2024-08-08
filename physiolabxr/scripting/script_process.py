@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import pickle
 import sys
@@ -29,6 +30,8 @@ def start_script_server(script_path, script_args):
     port = script_args['port']
     rpc_outputs = script_args['rpc_outputs']
     csharp_plugin_path = script_args['csharp_plugin_path']
+    reserved_ports = script_args['reserved_ports']
+    async_shutdown_event = script_args['async_shutdown_event']
 
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
                                                port_id=port,
@@ -67,7 +70,7 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        rpc_info = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        rpc_info, is_async = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
@@ -81,22 +84,40 @@ def start_script_server(script_path, script_args):
         send_router(np.array([SCRIPT_SETUP_FAILED]), info_routing_id, info_socket_interface)
         return
 
-    if rpc_info is not None:
+    if rpc_info is not None:  # there is rpc methods to be exposed
         # also start the rpc
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        rpc_server = create_rpc_server(script_path, rena_script_thread, server, port + 4)
-        logging.info(f"Starting rpc server listening for calls on {port + 4}")
-        rpc_server.start()
+        if is_async:
+            server = grpc.aio.server()
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            async def check_shutdown_event(server, shutdown_event):
+                while not shutdown_event.is_set():
+                    await asyncio.sleep(1)
+                await server.stop(0)
+            async def async_serve(shutdown_event):
+                await rpc_server.start()
+                await check_shutdown_event(server, shutdown_event)
+        else:
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            logging.info(f"Starting rpc server listening for calls on {port}")
+
         rena_script_thread.rpc_server = rpc_server
         send_router(np.array([INCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
+        send_router(np.array([port]).astype(int), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
         send_router(np.array([rpc_info]).astype('<U61'), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
     else:
         rpc_server = None
         send_router(np.array([EXCLUDE_RPC]), rena_script_thread.info_routing_id, rena_script_thread.info_socket_interface)
 
     rena_script_thread.start()
-    if rpc_info is not None:
-        rpc_server.wait_for_termination()
+    if rpc_info is not None:  # TODO async termination should use await
+        if is_async:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(async_serve(async_shutdown_event))
+            logging.info("Async server stopped")
+        else:
+            rpc_server.start()
+            rpc_server.wait_for_termination()
     logging.info('Script process terminated.')
 
 

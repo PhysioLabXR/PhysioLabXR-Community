@@ -1,15 +1,19 @@
 import json
+import multiprocessing
 import os
 import platform
 import warnings
 from dataclasses import dataclass, fields
 from enum import Enum
+from multiprocessing import Manager
 
 from PyQt6.QtCore import QStandardPaths, QFile, QTextStream
 from PyQt6.QtGui import QIcon
 
+from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
+from physiolabxr.utils.networking_utils import find_available_ports, PortFinderProcess
 from physiolabxr.utils.setup_utils import locate_csharp_plugin
 
 
@@ -114,7 +118,7 @@ class AppConfigs(metaclass=Singleton):
     main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
     # ZMQ ports
-    scripting_port = 8000
+    scripting_port = 13000
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
@@ -199,6 +203,7 @@ class AppConfigs(metaclass=Singleton):
         """
         save_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         save_local(self.app_data_path, save_dict, self._file_name, encoder=AppConfigsEncoder)
+        # kill the port finder process
         print(f"AppConfigs instance successfully deleted with its contents saved to {self._app_config_path}")
 
     def get_app_data_path(self):

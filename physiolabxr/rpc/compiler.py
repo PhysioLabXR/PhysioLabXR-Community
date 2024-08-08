@@ -59,13 +59,14 @@ def get_args_return_from_type_hints(name, method):
     return input_args, returns, has_return, has_args
 
 def generate_proto_from_script_class(cls):
+
     proto_lines = ["syntax = \"proto3\";", 'import "google/protobuf/empty.proto";']
     service_methods = []
     messages = []
     cls_name = cls.__name__
     rpcs = []  # keep track of the rpcs that are found
     # get the name/methods that are rpc
-    rpc_methods = [(name, method) for name, method in inspect.getmembers(cls, predicate=inspect.isfunction) if hasattr(method, "is_rpc_method")]
+    rpc_methods = [(name, method) for name, method in inspect.getmembers(cls, predicate=inspect.isfunction) if hasattr(method, "is_rpc_method") or hasattr(method, "is_async_rpc_method")]
     if len(rpc_methods) == 0:
         return None
     for name, method in rpc_methods:
@@ -131,6 +132,11 @@ def generate_proto_from_script_class(cls):
     return "\n".join(proto_lines), rpcs
 
 def generate_server_code(script_path, script_class):
+    """Generate a proto file from a class with rpc methods
+
+    Returns:
+        is_async: bool: True if the class has an async rpc method, False otherwise
+    """
     script_directory_path = os.path.dirname(script_path)
     script_name = os.path.basename(script_path)[:-3]
     server_file_path = os.path.join(script_directory_path, f"{script_name}Server.py")
@@ -144,9 +150,14 @@ def generate_server_code(script_path, script_class):
                    "    script_instance = None"]
 
     # Iterate over RPC methods to add to server class
+    is_async = False
     for name, method in inspect.getmembers(script_class, predicate=inspect.isfunction):
-        if hasattr(method, "is_rpc_method"):
-            server_code.append(f"    def {name}(self, request, context):")
+        if hasattr(method, "is_rpc_method") or hasattr(method, "is_async_rpc_method"):
+            is_async = hasattr(method, "is_async_rpc_method")
+            if is_async:
+                server_code.append(f"    async def {name}(self, request, context):")
+            else:
+                server_code.append(f"    def {name}(self, request, context):")
             input_args, returns, has_return, has_args = get_args_return_from_type_hints(name, method)
 
             if has_args:
@@ -170,6 +181,7 @@ def generate_server_code(script_path, script_class):
         server_file.write("\n".join(server_code))
 
     logging.info(f"Server code generated at {server_file_path}")
+    return is_async
 
 def get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_path):
 
@@ -193,6 +205,12 @@ def get_grpc_compile_command(proto_file_path, language, location, csharp_plugin_
 
 
 def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_outputs: list=None):
+    """Compile the RPC methods in a script class
+
+    Returns:
+        rpc_info: list: List of RPC methods that were compiled
+        is_async: bool: True if the class has an async rpc method, False otherwise
+    """
     assert os.path.exists(script_path)
     assert script_path.endswith('.py'), "File name must end with .py"
     if script_class is None:
@@ -213,10 +231,11 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
             rpc_outputs.append(python_output)
 
     logging.info(f"Compiling RPC for {script_class.__name__} in {script_path}")
-    proto_content, rpc_info = generate_proto_from_script_class(script_class)
-    if proto_content is None:
+    proto_rtn = generate_proto_from_script_class(script_class)
+    if proto_rtn is None:
         logging.info(f"No RPC methods found in {script_class.__name__}, skipping compilation")
         return None
+    proto_content, rpc_info = proto_rtn
     # save the proto content to the same directory as the script
     script_name = os.path.basename(script_path)[:-3]
     proto_file_path = os.path.join(os.path.dirname(script_path), f"{script_name}.proto")
@@ -245,7 +264,7 @@ def compile_rpc(script_path, csharp_plugin_path=None, script_class=None, rpc_out
             logging.info(f"{proto_file_path} file compiled successfully. Generated files are in {script_directory_path}")
 
     # generate the server code #############################################
-    generate_server_code(script_path, script_class)
+    is_async = generate_server_code(script_path, script_class)
 
     # return the list of rpcs that were compiled
-    return rpc_info
+    return rpc_info, is_async

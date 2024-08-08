@@ -149,12 +149,14 @@ def test_rpc_compiler_standalone_python():
     # remove everything in the script folder except the script
     remove_generated_files(script_path)
 
-    assert compile_rpc(script_path) is not None
+    rpc_methods, _ = compile_rpc(script_path)
+    assert rpc_methods is not None
     check_generated_files(script_path)
     check_python_generated_files(script_path)
 
 
 def test_rpc_compiler_standalone_csharp():
+    setup_grpc_csharp_plugin()
     script_path = "tests/assets/RPCTest.py"
 
     # remove everything in the script folder except the script
@@ -163,7 +165,9 @@ def test_rpc_compiler_standalone_csharp():
     rpc_outputs = [{"language": RPCLanguage.CSHARP, "location": '.'}]
     csharp_plugin_path = AppConfigs().csharp_plugin_path
 
-    assert compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs) is not None
+    rpc_methods, _ = compile_rpc(script_path, csharp_plugin_path=csharp_plugin_path, rpc_outputs=rpc_outputs)
+
+    assert rpc_methods is not None
     check_generated_files(script_path)
     check_csharp_generated_files(script_path)
 
@@ -171,6 +175,7 @@ def test_rpc_compiler_standalone_csharp():
 def test_rpc_compile_from_app(context_bot, qtbot):
     """
     """
+    os.environ['GRPC_VERBOSITY'] = 'debug'
     script_path = "tests/assets/RPCTest.py"
     remove_generated_files(script_path)
 

@@ -6,18 +6,14 @@
 #
 # Usage: ./myscript.sh arg1 arg2
 #
-# Parameters:
 #
-#
-# Author: Rena team
-# Date: 3/31/2023
+# Author: PhysioLabXR
+# Date: 8/7/2024
 # Version: 1.0
 
 
 # Get the name of the Python unittest module from the first argument
 test_modules=(
-  SetupTest
-  VisualizationTest
   VisualizationLSLChannelTest
   VisualizationZMQChannelTest
   RecordingTest
@@ -26,9 +22,10 @@ test_modules=(
   CsvTest
   MatTest
   RenaScriptingTest
+  RemoteProceduralCallTest
 )
 
-warning_text="You should create a venv.dev and install packages using pip install -r requirements-dev.txt"
+warning_text="You should create a venv.dev and install packages using pip install -r requirements.dev.txt"
 
 if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* || "$OSTYPE" == "cygwin" ]]; then
     # Linux, Mac OSX, or Windows with Cygwin

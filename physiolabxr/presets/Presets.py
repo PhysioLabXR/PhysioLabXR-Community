@@ -419,6 +419,8 @@ class Presets(metaclass=Singleton):
     """
     dataclass containing all the presets
 
+    Note that you should not call AppConfigs() in the cls fields, because AppConfigs() is not initialized yet when the class is created.
+
     Attributes:
         stream_presets: dictionary containing all the stream presets. The key is the stream name and the value is the StreamPreset object
         experiment_presets: dictionary containing all the experiment presets. The key is the experiment name and the value is a list of stream names
@@ -440,9 +442,9 @@ class Presets(metaclass=Singleton):
     script_presets: Dict[str, ScriptPreset] = field(default_factory=dict)
     experiment_presets: Dict[str, list] = field(default_factory=dict)
 
-    _app_data_path: str = AppConfigs().app_data_path
-    _last_mod_time_path: str = os.path.join(_app_data_path, 'last_mod_times.json')
-    _preset_path: str = os.path.join(_app_data_path, '_presets.json')
+    _app_data_path: str = None
+    _last_mod_time_path: str = None
+    _preset_path: str = None
 
     def __post_init__(self):
         """
@@ -453,7 +455,9 @@ class Presets(metaclass=Singleton):
         4. check if any presets are dirty and load them
         5. save the presets to the local disk
         """
-        pass
+        self._app_data_path = AppConfigs().app_data_path
+        self._last_mod_time_path: str = os.path.join(self._app_data_path, 'last_mod_times.json')
+        self._preset_path: str = os.path.join(self._app_data_path, '_presets.json')
         if self._preset_root is None:
             raise ValueError('preset root must not be None when first time initializing _presets')
         else:
