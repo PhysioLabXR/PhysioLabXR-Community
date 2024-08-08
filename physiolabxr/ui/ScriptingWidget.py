@@ -2,6 +2,7 @@
 import json
 import os
 import uuid
+from multiprocessing import Event
 from typing import List
 
 import numpy as np
@@ -154,6 +155,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.rpc_window.get_layout().addWidget(self.rpc_widget)
         self.rpc_window.hide()
         self.RPC_button.clicked.connect(self.on_rpc_button_clicked)
+        self.async_shutdown_event = None
 
         # loading from script preset from the persistent sittings ######################################################
         if script_preset is not None:
@@ -383,6 +385,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.wait_for_response_worker, self.wait_response_thread = None, None
         if self.needs_to_close:  # this is set to true when try_close is called
             self.finish_close(close_console=close_console)
+        self.async_shutdown_event = None
 
     # def process_command_return(self, command_return):
     #     command, is_success = command_return
@@ -719,8 +722,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.run_signal()  # run the loop so it can process the stop command
         print("MainApp: waiting for stop success")
 
+        # in case of async stop
+        if self.async_shutdown_event is not None:
+            self.async_shutdown_event.set()
+
         self.wait_for_response_worker, self.wait_response_thread = start_wait_for_response(self.command_socket_interface.socket)
-        self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)
+        self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)  # this will run clean_up_after_stop
+
 
     def get_verify_script_args(self):
         time_window = get_int_from_line_edit(self.timeWindowLineEdit, "Input buffer duration")
@@ -731,6 +739,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # get the rpc args
         rpc_outputs = self.rpc_widget.get_output_info()
+        self.async_shutdown_event = Event()
 
         rtn = {'inputs': self.get_inputs(),
                'input_shapes': self.get_input_shape_dict(),
@@ -743,8 +752,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
                 'is_simulate': self.simulateCheckbox.isChecked(),
                 'presets': Presets(),
                 'rpc_outputs': rpc_outputs,
+                'async_shutdown_event': self.async_shutdown_event,
                 'csharp_plugin_path': AppConfigs().csharp_plugin_path,
-                'reserved_ports': NetworkManager()._reserve_ports_queue}
+                'reserved_ports': NetworkManager()._reserve_ports_queue,}
         lsl_supported_types = DataType.get_lsl_supported_types()
         lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
         for output_name, dtype in lsl_output_data_types:

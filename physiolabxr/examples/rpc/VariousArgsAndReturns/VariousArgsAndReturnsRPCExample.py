@@ -31,7 +31,7 @@ class RPCExample(RenaScript):
         Args:
             input0 (str): the input
         """
-        return f"Miaomiaomiao: {input0}"
+        return f"received: {input0}"
 
     @rpc
     def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> (str, int):
@@ -62,7 +62,7 @@ class RPCExample(RenaScript):
         # this rpc does not return anything
         """
         # return int(self.inputs["stream"][0][0, 0])
-        return f"Hello from RPCExample! received input: {input0}"
+        return f"received input: {input0}"
 
     @rpc
     def TestRPCNoArgs(self) -> str:
