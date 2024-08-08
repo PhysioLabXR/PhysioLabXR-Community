@@ -30,7 +30,7 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
 
     Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
 
-    # instantiate the GlabalSignals singleton object
+    # instantiate the GlobalSignals singleton object
     GlobalSignals()
     pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True, enableExperimental=True)
 

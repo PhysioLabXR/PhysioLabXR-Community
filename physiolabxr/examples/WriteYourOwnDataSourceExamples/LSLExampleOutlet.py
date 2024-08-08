@@ -4,7 +4,8 @@ from random import random as rand
 
 # create a new stream info and outlet
 
-stream_name = 'python_lsl_my_stream_name'
+stream_name = 'stream'
+stream_type = 'LSL'
 
 n_channels = 8
 # using the local_clock() to track elapsed time
@@ -14,7 +15,7 @@ sent_samples = 0
 # set the sampling rate to 100 Hz
 nominal_sampling_rate = 100
 
-info = StreamInfo(stream_name, 'my_stream_type', n_channels, nominal_sampling_rate, 'float32',
+info = StreamInfo(stream_name, stream_type, n_channels, nominal_sampling_rate, 'float32',
                   'my_stream_id')
 outlet = StreamOutlet(info)
 

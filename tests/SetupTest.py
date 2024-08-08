@@ -1,7 +1,7 @@
 import os.path
 import platform
 import pytest
-from physiolabxr.utils.setup_utils import get_lsl_binary
+from physiolabxr.utils.setup_utils import get_lsl_binary, setup_grpc_csharp_plugin
 
 
 def test_download_lsl_binary() -> None:
@@ -12,4 +12,3 @@ def test_download_lsl_binary() -> None:
     import pylsl  # import pylsl to check if the lib exist
     from tests.test_utils import send_data_time
     send_data_time(run_time=3)  # test if data can be sent without erroring out
-

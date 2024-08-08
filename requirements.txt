@@ -5,7 +5,7 @@ pyserial
 pylsl
 scikit-learn
 scipy~=1.11.0
-pyqtgraph
+git+https://github.com/physiolabxr/pyqtgraph.git@physio
 pyxdf
 pyscreeze
 opencv-python
@@ -19,3 +19,6 @@ soundfile
 matplotlib
 imblearn
 toml
+git+https://github.com/pybluez/pybluez.git#egg=pybluez
+grpcio
+grpcio-tools
