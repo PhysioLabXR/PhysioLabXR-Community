@@ -70,7 +70,12 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        rpc_info, is_async = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        compile_rtn = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        if compile_rtn is not None:
+            rpc_info, is_async = compile_rtn
+        else: # no rpc methods to be exposed
+            rpc_info = None
+            is_async = False
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
