@@ -12,6 +12,7 @@ from physiolabxr.scripting.RenaScript import RenaScript
 from pylsl import StreamInfo, StreamOutlet,StreamInlet, resolve_stream ,cf_float32, LostError
 import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput,\
@@ -21,8 +22,10 @@ from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilter
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
 
-from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word import gaze2word
 import csv
+import pandas as pd
+from nltk import RegexpTokenizer
+from physiolabxr.rpc.decorator import rpc
 
 
 class IllumiReadSwypeScript(RenaScript):
@@ -69,13 +72,22 @@ class IllumiReadSwypeScript(RenaScript):
         # create gaze2word object
         gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
 
-        self.g2w = gaze2word.Gaze2Word(gaze_data_path)
+        if os.path.exists('g2w.pkl'):
+            with open('g2w.pkl', 'rb') as f:
+                self.g2w = pickle.load(f)
+        else:
+            print("Instantiating g2w...")
+            self.g2w = Gaze2Word(gaze_data_path)
+            with open('g2w.pkl', 'wb') as f:
+                pickle.dump(self.g2w, f)
+            print("Finished instantiating g2w")
+
 
         # the csv file path for later use
-        self.csv_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\FixationTrace.csv'
+        # self.csv_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\FixationTrace.csv'
 
         # the gaze trace path
-        self.ground_truth_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Trace.csv'
+        # self.ground_truth_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Trace.csv'
 
         # with open(self.csv_file_path, 'w', newline='') as csvfile:
         #     writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
@@ -88,6 +100,22 @@ class IllumiReadSwypeScript(RenaScript):
         # self.streams = resolve_stream('name', 'illumiReadSwypeKeyboardContextLSL')
         
         # self.context_inlet = StreamInlet(self.streams[0])
+        
+        
+        # the current context for the inputfield
+        self.context = ""
+        
+        # trim the vocab
+        file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Short_Long_Sentences.xlsx'
+        df = pd.read_excel(file_path, sheet_name='Sheet1')
+        
+        sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        sentences = [s for s in sentences if isinstance(s, str)]
+        tokenizer = RegexpTokenizer(r'\w+')
+        words = [tokenizer.tokenize(s) for s in sentences]
+        words = [word for sublist in words for word in sublist]  # flatten the list
+        self.g2w.trim_vocab(words)
+        
 
 
     # data writer
@@ -149,6 +177,13 @@ class IllumiReadSwypeScript(RenaScript):
 
     def cleanup(self):
         print('Cleanup function is called')
+        
+    @rpc
+    def ContextRPC(self, input0: str) -> str:
+        # time.sleep(1)
+        self.context = input0.rstrip()
+        return f"Miaomiaomiao: {input0}"
+    
 
     def process_event_markers(self):
         event_markers = self.inputs[EventMarkerLSLStreamInfo.StreamName][0]
@@ -341,11 +376,11 @@ class IllumiReadSwypeScript(RenaScript):
                 # user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
 
                 fixation_character_sequence = []
-                gaze_trace = []
+                # gaze_trace = []
                 fixation_trace = []
 
-                for group in grouped_list:
-                    print(group[0].gaze_type)
+                # for group in grouped_list:
+                #     print(group[0].gaze_type)
                 #     # get the gaze trace data
                 #     user_input_data, user_input_timestamp = self.data_buffer.get_stream_in_time_range(UserInputLSLStreamInfo.StreamName, group[0].timestamp, group[-1].timestamp)
                     
@@ -424,20 +459,26 @@ class IllumiReadSwypeScript(RenaScript):
                 # ['W', 'H', 'W', 'R', 'S', 'Y', 'E']
 
                 # remove the None character
-                fixation_character_sequence = [x for x in fixation_character_sequence if x is not None]
+                # fixation_character_sequence = [x for x in fixation_character_sequence if x is not None]
 
 
 
-                fixation_character_string = "".join(fixation_character_sequence).lower()
+                # fixation_character_string = "".join(fixation_character_sequence).lower()
 
-                print(fixation_character_string)
-                if len(fixation_character_string) > 0:
+                # print(fixation_character_string)
+                # if len(fixation_character_string) > 0:
+                
+                # the fixation trace length should be greater than 1
+                print(fixation_trace)
+                if len(fixation_trace) >= 1:
                     
-                    trace = []
-                    for i in range(0,len(fixation_character_string)):
-                        trace.append(self.g2w.letter_locations[fixation_character_string[i]].tolist())
+                    # use of central point as the ideal gaze point without the use of dbscan 
+                    
+                    # trace = []
+                    # for i in range(0,len(fixation_character_string)):
+                    #     trace.append(self.g2w.letter_locations[fixation_character_string[i]].tolist())
 
-                    print(trace)
+                    # print(trace)
 
                     # -------------------------------------------------------------------------
 
@@ -450,8 +491,11 @@ class IllumiReadSwypeScript(RenaScript):
                     # self.write_to_csv(fixation_trace,self.csv_file_path)
                     
                     # -------------------------------------------------------------------------
-
-                    cadidate_list = self.g2w.predict(4,trace, prefix = None)
+                    
+                    # use the trimmed vocab to predict g2w
+                    fixation_trace = np.array(fixation_trace)
+                    
+                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.45, use_trimmed_vocab=True, njobs=16)
                     word_candidate_list = [item[0] for item in cadidate_list]
                     
 

@@ -296,6 +296,15 @@ class Gaze2Word:
     # with open('g2w.pkl', 'rb') as f:
     #     g2w = pickle.load(f)
 
+    # if os.path.exists('g2w.pkl'):
+    #     with open('g2w.pkl', 'rb') as f:
+    #         g2w = pickle.load(f)
+    # else:
+    #     g2w = Gaze2Word(gaze_data_path)
+    #     with open('g2w.pkl', 'wb') as f:
+    #         pickle.dump(g2w, f)
+
+
     # # simple test ######################################################################################################
     # perfect_gaze_trace = g2w.vocab_traces['hello']
 
