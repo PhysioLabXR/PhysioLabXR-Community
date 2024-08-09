@@ -1,0 +1,19 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+service IllumiReadSwypeScript {
+  rpc ContextRPC(ContextRPCRequest) returns (ContextRPCResponse);
+  rpc Tap2CharRPC(Tap2CharRPCRequest) returns (Tap2CharRPCResponse);
+}
+message ContextRPCRequest {
+  string input0 = 1;
+}
+message ContextRPCResponse {
+  string message = 1;
+}
+message Tap2CharRPCRequest {
+  float input0 = 1;
+  float input1 = 2;
+}
+message Tap2CharRPCResponse {
+  string message = 1;
+}

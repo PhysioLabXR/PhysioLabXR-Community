@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+service AsyncRPCExample {
+  rpc AsyncOneArgOneReturn(AsyncOneArgOneReturnRequest) returns (AsyncOneArgOneReturnResponse);
+}
+message AsyncOneArgOneReturnRequest {
+  string input0 = 1;
+}
+message AsyncOneArgOneReturnResponse {
+  string message = 1;
+}
