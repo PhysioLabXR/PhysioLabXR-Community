@@ -107,7 +107,7 @@ class IllumiReadSwypeScript(RenaScript):
     @async_rpc
     def ContextRPC(self, input0: str) -> str:
         
-        self.context = input0.rstrip()
+        self.context = input0.lower().rstrip()
         
         return f"Sucess:{self.context}"
     
@@ -391,7 +391,7 @@ class IllumiReadSwypeScript(RenaScript):
                     fixation_trace = np.array(fixation_trace)
                     
                     # predict the candidate words
-                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.45, use_trimmed_vocab=True, njobs=16)
+                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
                     word_candidate_list = [item[0] for item in cadidate_list]
                     
                     word_candidate_list = np.array(word_candidate_list).flatten().tolist()
