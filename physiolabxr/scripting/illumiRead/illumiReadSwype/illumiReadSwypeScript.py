@@ -85,8 +85,8 @@ class IllumiReadSwypeScript(RenaScript):
             print("Finished instantiating g2w")
         
         # trim the vocab for g2w
-        file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Short_Long_Sentences.xlsx'
-        df = pd.read_excel(file_path, sheet_name='Sheet1')
+        file_path = self.params['trial_sentences']
+        df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
         
         sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
         sentences = [s for s in sentences if isinstance(s, str)]
@@ -96,8 +96,16 @@ class IllumiReadSwypeScript(RenaScript):
         self.g2w.trim_vocab(words)
         
         # t2c definition
-        self.t2c = Tap2Char(gaze_data_path)
-        
+        if os.path.exists('t2c.pkl'):
+            with open('t2c.pkl', 'rb') as f:
+                self.t2c = pickle.load(f)
+        else:
+            print("Instantiating t2c...")
+            self.t2c = Tap2Char(gaze_data_path)
+            with open('t2c.pkl', 'wb') as f:
+                pickle.dump(self.t2c, f)
+            print("Finished instantiating t2c")
+
         # the current context for the inputfield
         self.context = ""
         self.nextChar = ""
