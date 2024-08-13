@@ -68,6 +68,19 @@ class RecordingsTab(QtWidgets.QWidget):
                                                       title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
+
+        if not os.path.exists(self.save_path):
+            reply = dialog_popup(f'The directory {self.save_path} does not exist. Do you want to create it?', title='Warning',
+                                    main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
+            if reply.result() == 1:
+                try:
+                    os.makedirs(os.path.dirname(self.save_path))
+                except Exception as e:
+                    dialog_popup(f'Error creating directory {self.save_path}: {e}. Recording stopped.', title='Error', main_parent=self.parent)
+                    return
+            else:
+                return
+
         self.save_stream = RNStream(self.save_path)
         self.recording_buffer.clear_buffer()  # clear buffer
         self.is_recording = True
@@ -140,7 +153,18 @@ class RecordingsTab(QtWidgets.QWidget):
 
     def evict_buffer(self):
         # print(self.recording_buffer)
-        self.recording_byte_count += self.save_stream.stream_out(self.recording_buffer.buffer)
+        try:
+            self.recording_byte_count += self.save_stream.stream_out(self.recording_buffer.buffer)
+        except FileNotFoundError:
+            self.parent.current_dialog = dialog_popup(msg=f"Recording directory {self.save_path} does not exist. "
+                             "Recording stopped.", title="Error", main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
+            self.is_recording = False
+            self.StartStopRecordingBtn.setText(start_recording_text)
+            self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
+            self.timer.stop()
+            self.recording_byte_count = 0
+            self.update_file_size_label()
+            return
         self.recording_buffer.clear_buffer()
         self.update_file_size_label()
 
