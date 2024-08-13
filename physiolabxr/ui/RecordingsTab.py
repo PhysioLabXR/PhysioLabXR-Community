@@ -69,14 +69,14 @@ class RecordingsTab(QtWidgets.QWidget):
             return
         self.save_path = self.generate_save_path()  # get a new save path
 
-        if not os.path.exists(self.save_path):
-            reply = dialog_popup(f'The directory {self.save_path} does not exist. Do you want to create it?', title='Warning',
+        if not os.path.exists(os.path.dirname(self.save_path)):
+            reply = dialog_popup(f'The directory {os.path.dirname(self.save_path)} does not exist. Do you want to create it?', title='Warning',
                                     main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Yes | QDialogButtonBox.StandardButton.No)
             if reply.result() == 1:
                 try:
                     os.makedirs(os.path.dirname(self.save_path))
                 except Exception as e:
-                    dialog_popup(f'Error creating directory {self.save_path}: {e}. Recording stopped.', title='Error', main_parent=self.parent)
+                    dialog_popup(f'Error creating directory {os.path.dirname(self.save_path)}: {e}. Recording stopped.', title='Error', main_parent=self.parent)
                     return
             else:
                 return
