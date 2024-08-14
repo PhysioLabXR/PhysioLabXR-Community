@@ -182,10 +182,13 @@ class ReplayTab(QtWidgets.QWidget):
         client_info = self.command_info_interface.recv_string()
 
         if client_info.startswith(shared.FAIL_INFO):
-            dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
+            dialog_popup(client_info.strip(shared.FAIL_INFO), title="WARNING", buttons=QDialogButtonBox.StandardButton.Ok)
+            # clear the text box
+            self.replay_file_path_lineedit.clear()
             self.SelectDataDirBtn.setEnabled(True)
             show_label_movie(self.loading_label, False)
             self.stream_list_widget.setVisible(False)
+            AppConfigs().last_replayed_file_path = None
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(time_info)
@@ -221,6 +224,7 @@ class ReplayTab(QtWidgets.QWidget):
             AppConfigs().last_replayed_file_path = self.replay_file_path_lineedit.toPlainText()
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
+
 
     def cancel_loading_replay(self):
         self.wait_worker.exit()
