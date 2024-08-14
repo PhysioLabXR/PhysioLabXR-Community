@@ -32,26 +32,14 @@ def create_rpc_server(script_path, script_instance, server):
     server_instance.script_instance = script_instance
 
     add_server_func(server_instance, server)
-    server.add_insecure_port(f"[::]:{port}")
     try:
-        server.add_insecure_port(f"0.0.0.0:{port}")
+        port = server.add_insecure_port(f"[::]:0")
     except RuntimeError:
-        print(f"Port {port} is already in use. Trying to find an available port in the reserved ports.")
-        next_available_port = find_available_port_from_list(reserved_ports)
-        if next_available_port is None:
-            logging.warning(f"No available ports in the reserved ports list for RPC to use. RPC will not be available.")
-            return
-        else:
-            port=next_available_port
-            server.add_insecure_port(f"0.0.0.0:{port}")
-    # with open("server.crt", "rb") as file:
-    #     server_certificate = file.read()
-    # with open("server.key", "rb") as file:
-    #     private_key = file.read()
-    # server_credentials = grpc.ssl_server_credentials(
-    #     ((private_key, server_certificate,),)
-    # )
-    # server.add_secure_port(f"[::]:{port}", server_credentials)
+        logging.warning(f"RPC cannot bind to a port. RPC will not be available.")
+        return
+
+    # get which port did the server bind to
+
     return server, port
 
 # def run_rpc_server(script_path, script_instance, server, port):

@@ -29,12 +29,12 @@ def start_script_server(script_path, script_args, conn):
     # redirect stdout
     rpc_outputs = script_args['rpc_outputs']
     csharp_plugin_path = script_args['csharp_plugin_path']
-    reserved_ports = script_args['reserved_ports']
+    stdout_port = script_args['stdout_port']
     async_shutdown_event = script_args['async_shutdown_event']
 
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                               port_id=0,
-                                               identity='server',
+                                               port_id=stdout_port,
+                                               identity='client',
                                                pattern='router-dealer')
     info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
                                              port_id=0,
@@ -59,14 +59,17 @@ def start_script_server(script_path, script_args, conn):
     command_port = command_socket_interface.binded_port
 
     conn.send([stdout_port, info_port, input_port, command_port])
+    conn.close()
 
-    logging.info('Waiting for stdout routing ID from main app for stdout socket')
-    _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
+    logging.info('Sending message to the main app to set up the routing ID')
+    stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+    # _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
+
     logging.info('Waiting for info routing ID from main app for info socket')
     _, info_routing_id = recv_string_router(info_socket_interface, True)
 
-    sys.stdout = redirect_stdout = RedirectStdout(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
-    sys.stderr = redirect_stderr = RedirectStderr(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
+    sys.stdout = redirect_stdout = RedirectStdout(socket_interface=stdout_socket_interface)
+    sys.stderr = redirect_stderr = RedirectStderr(socket_interface=stdout_socket_interface)
 
     script_args['redirect_stdout'] = redirect_stdout
     script_args['redirect_stderr'] = redirect_stderr
@@ -77,7 +80,7 @@ def start_script_server(script_path, script_args, conn):
 
     # redirect logging
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    socket_handler = SocketLoggingHandler(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
+    socket_handler = SocketLoggingHandler(socket_interface=stdout_socket_interface)
     socket_handler.setFormatter(formatter)
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -144,13 +147,10 @@ def start_script_server(script_path, script_args, conn):
     logging.info('Script process terminated.')
 
 
-
-
 class SocketLoggingHandler(logging.Handler):
-    def __init__(self, socket_interface, routing_id, *args, **kwargs):
+    def __init__(self, socket_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.socket_interface = socket_interface
-        self.routing_id = routing_id
 
     def emit(self, record):
         try:
@@ -165,15 +165,15 @@ class SocketLoggingHandler(logging.Handler):
             else:
                 prefix = SCRIPT_INFO_PREFIX  # Default prefix for non-error messages
             # Send the message with the appropriate prefix
-            send_string_router(prefix + msg, self.routing_id, self.socket_interface)
+            # send_string_router(prefix + msg, self.routing_id, self.socket_interface)
+            self.socket_interface.send_string(prefix + msg)
         except Exception:
             self.handleError(record)
 
 
 class RedirectStderr(object):
-    def __init__(self, socket_interface, routing_id):
+    def __init__(self, socket_interface):
         self.terminal = sys.stderr
-        self.routing_id = routing_id
         self.socket_interface = socket_interface
         self.message_buffer = ""
 
@@ -186,19 +186,20 @@ class RedirectStderr(object):
 
     def send_buffered_messages(self):
         if self.message_buffer:
-            send_string_router(SCRIPT_ERR_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
+            self.socket_interface.send_string(SCRIPT_ERR_PREFIX + self.message_buffer)
+            # send_string_router(SCRIPT_ERR_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
             self.message_buffer = ""
 
 
 class RedirectStdout(object):
-    def __init__(self, socket_interface, routing_id):
+    def __init__(self, socket_interface):
         self.terminal = sys.stdout
-        self.routing_id = routing_id
         self.socket_interface = socket_interface
 
     def write(self, message):
         self.terminal.write(message)
-        send_string_router(SCRIPT_INFO_PREFIX + message, self.routing_id, self.socket_interface)
+        # send_string_router(SCRIPT_INFO_PREFIX + message, self.routing_id, self.socket_interface)
+        self.socket_interface.send_string(SCRIPT_INFO_PREFIX + message)
 
     def flush(self):
         pass
