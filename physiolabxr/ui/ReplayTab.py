@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import json
 from collections import defaultdict
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 
 import numpy as np
 from PyQt6 import QtWidgets, uic
@@ -114,17 +114,20 @@ class ReplayTab(QtWidgets.QWidget):
         # start replay client
         self.playback_widget = None
         self.replay_server_process = None
-        self.replay_port = test_port_range(*AppConfigs().replay_port_range)
-        if self.replay_port is None:
-            dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
-            return
+        # self.replay_port = test_port_range(*AppConfigs().replay_port_range)
+        # if self.replay_port is None:
+        #     dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
+        #     return
+        parent_conn, child_conn = Pipe()
+        self.replay_server_process = Process(target=start_replay_server, kwargs={'conn': child_conn})
+        self.replay_server_process.start()
+        self.replay_port = parent_conn.recv()
+
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                       port_id=self.replay_port,
+                                                       port_id=self.replay_port,  # connect to the port that the replay server is publishing to
                                                        identity='client',
                                                        pattern='router-dealer')
         self._create_playback_widget()
-        self.replay_server_process = Process(target=start_replay_server, args=(self.replay_port, ))
-        self.replay_server_process.start()
 
         if AppConfigs().last_replayed_file_path is not None:
             self.select_file(AppConfigs().last_replayed_file_path)
@@ -179,10 +182,13 @@ class ReplayTab(QtWidgets.QWidget):
         client_info = self.command_info_interface.recv_string()
 
         if client_info.startswith(shared.FAIL_INFO):
-            dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
+            dialog_popup(client_info.strip(shared.FAIL_INFO), title="WARNING", buttons=QDialogButtonBox.StandardButton.Ok)
+            # clear the text box
+            self.replay_file_path_lineedit.clear()
             self.SelectDataDirBtn.setEnabled(True)
             show_label_movie(self.loading_label, False)
             self.stream_list_widget.setVisible(False)
+            AppConfigs().last_replayed_file_path = None
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(time_info)
@@ -218,6 +224,7 @@ class ReplayTab(QtWidgets.QWidget):
             AppConfigs().last_replayed_file_path = self.replay_file_path_lineedit.toPlainText()
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
+
 
     def cancel_loading_replay(self):
         self.wait_worker.exit()

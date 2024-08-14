@@ -475,7 +475,7 @@ class Presets(metaclass=Singleton):
         self._preset_roots = [self._lsl_preset_root, self._zmq_preset_root, self._device_preset_root, self._experiment_preset_root]
 
         if os.path.exists(self._preset_path):
-            SplashLoadingTextNotifier().set_loading_text(f'Reloading presets from {self._app_data_path}')
+            SplashLoadingTextNotifier().set_loading_text(f'Reloading presets...')
             with open(self._preset_path, 'r') as f:
                 preset_dict = json.load(f)
                 preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
