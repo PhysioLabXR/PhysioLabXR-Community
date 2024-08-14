@@ -3,7 +3,7 @@ import logging
 import pickle
 import sys
 from concurrent import futures
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 
 import grpc
 import numpy as np
@@ -17,7 +17,7 @@ from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.utils.networking_utils import recv_string_router, send_string_router, send_router
 
 
-def start_script_server(script_path, script_args):
+def start_script_server(script_path, script_args, conn):
     """
     This is the entry point of the script process.
 
@@ -27,20 +27,38 @@ def start_script_server(script_path, script_args):
     Note that any call to logging.fatal will terminate the script process.
     """
     # redirect stdout
-    port = script_args['port']
     rpc_outputs = script_args['rpc_outputs']
     csharp_plugin_path = script_args['csharp_plugin_path']
     reserved_ports = script_args['reserved_ports']
     async_shutdown_event = script_args['async_shutdown_event']
 
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                               port_id=port,
+                                               port_id=0,
                                                identity='server',
                                                pattern='router-dealer')
     info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                             port_id=port + 1,  # starts with +1 because the first port is taken by stdout
+                                             port_id=0,
                                              identity='server',
                                              pattern='router-dealer')
+
+    input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
+                                               port_id=0,
+                                               identity='server',
+                                               pattern='router-dealer')
+    command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
+                                                 port_id=0,
+                                                 identity='server',
+                                                 pattern='router-dealer')
+
+    script_args['input_socket_interface'] = input_socket_interface
+    script_args['command_socket_interface'] = command_socket_interface
+
+    stdout_port = stdout_socket_interface.binded_port
+    info_port = info_socket_interface.binded_port
+    input_port = input_socket_interface.binded_port
+    command_port = command_socket_interface.binded_port
+
+    conn.send([stdout_port, info_port, input_port, command_port])
 
     logging.info('Waiting for stdout routing ID from main app for stdout socket')
     _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
@@ -93,7 +111,7 @@ def start_script_server(script_path, script_args):
         # also start the rpc
         if is_async:
             server = grpc.aio.server()
-            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server)
             async def check_shutdown_event(server, shutdown_event):
                 while not shutdown_event.is_set():
                     await asyncio.sleep(1)
@@ -103,7 +121,7 @@ def start_script_server(script_path, script_args):
                 await check_shutdown_event(server, shutdown_event)
         else:
             server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server)
             logging.info(f"Starting rpc server listening for calls on {port}")
 
         rena_script_thread.rpc_server = rpc_server
@@ -189,8 +207,11 @@ class RedirectStdout(object):
 def start_rena_script(script_path, script_args):
     print('Script started')
     if not debugging:
-        script_process = Process(target=start_script_server, args=(script_path, script_args))
+        parent_conn, child_conn = Pipe()
+        script_process = Process(target=start_script_server, args=(script_path, script_args, child_conn))
         script_process.start()
-        return script_process
+        stdout_port, info_port, input_port, command_port = parent_conn.recv()
+
+        return script_process, stdout_port, info_port, input_port, command_port
     else:
         pickle.dump([script_path, script_args], open('start_script_args.p', 'wb'))

@@ -11,7 +11,7 @@ from physiolabxr.utils.fs_utils import load_servicer_add_function, load_file_cla
 from physiolabxr.utils.networking_utils import find_available_port_from_list
 
 
-def create_rpc_server(script_path, script_instance, server, port, reserved_ports: List[int]):
+def create_rpc_server(script_path, script_instance, server):
     assert script_path.endswith('.py'), 'The server script path must end with .py'
     server_script_path = script_path[:-3] + 'Server.py'
     pb2_path = script_path[:-3] + '_pb2.py'

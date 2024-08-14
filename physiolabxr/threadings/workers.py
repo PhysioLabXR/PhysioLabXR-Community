@@ -610,21 +610,27 @@ class ScriptingStdoutWorker(QObject):
         super().__init__()
         self.tick_signal.connect(self.process_std)
         self.stdout_socket_interface = stdout_socket_interface
+        self.script_process_active = True
 
     @QtCore.pyqtSlot()
     def process_std(self):
-        msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
-        if msg:  # if received is a message
-            prefix = msg[:len(SCRIPT_INFO_PREFIX)]
-            msg = msg[len(SCRIPT_INFO_PREFIX):]
-            if prefix == SCRIPT_INFO_PREFIX:  # if received is a message
-                self.std_signal.emit(('out', msg))  # send message if it's not None
-            elif prefix == SCRIPT_WARNING_PREFIX:
-                self.std_signal.emit(('warning', msg))  # send message if it's not None
-            elif prefix == SCRIPT_ERR_PREFIX:
-                self.std_signal.emit(('error', msg))
-            elif prefix == SCRIPT_FATAL_PREFIX:
-                self.std_signal.emit(('fatal', msg))
+        if self.script_process_active:
+            msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
+            if msg:  # if received is a message
+                prefix = msg[:len(SCRIPT_INFO_PREFIX)]
+                msg = msg[len(SCRIPT_INFO_PREFIX):]
+                if prefix == SCRIPT_INFO_PREFIX:  # if received is a message
+                    self.std_signal.emit(('out', msg))  # send message if it's not None
+                elif prefix == SCRIPT_WARNING_PREFIX:
+                    self.std_signal.emit(('warning', msg))  # send message if it's not None
+                elif prefix == SCRIPT_ERR_PREFIX:
+                    self.std_signal.emit(('error', msg))
+                elif prefix == SCRIPT_FATAL_PREFIX:
+                    self.std_signal.emit(('fatal', msg))
+
+    def deactivate(self):
+        self.script_process_active = False
+
 
 class ScriptInfoWorker(QWorker):
     abnormal_termination_signal = pyqtSignal()
