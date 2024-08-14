@@ -13,7 +13,6 @@ from PyQt6.QtGui import QIcon
 from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
-from physiolabxr.utils.networking_utils import find_available_ports, PortFinderProcess
 from physiolabxr.utils.setup_utils import locate_csharp_plugin
 
 
@@ -122,7 +121,7 @@ class AppConfigs(metaclass=Singleton):
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
-    replay_port_range = 9980, 9990
+    # replay_port_range = 9980, 9990
     zmq_lost_connection_timeout = 4000  # in milliseconds
 
     # scripting

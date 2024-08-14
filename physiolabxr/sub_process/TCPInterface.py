@@ -1,6 +1,7 @@
 from physiolabxr.configs.config import *
 
 from physiolabxr.sub_process.pyzmq_utils import *
+from physiolabxr.utils.networking_utils import parse_port_from_socket
 
 
 class RenaTCPObject:
@@ -68,9 +69,13 @@ class RenaTCPInterface:
             self.socket.setsockopt(zmq.LINGER, 0)  # avoid hanging on context termination
 
         self.address = None
-        if identity == 'server': self.bind_socket()
-        elif identity == 'client': self.connect_socket()
+        if identity == 'server':
+            self.bind_socket()
+
+        elif identity == 'client':
+            self.connect_socket()
         else: raise AttributeError('Unsupported interface identity: {0}'.format(identity))
+        self.binded_port = parse_port_from_socket(self.socket)
 
         # create poller object, so we can poll msg with a timeout
         if add_poller:

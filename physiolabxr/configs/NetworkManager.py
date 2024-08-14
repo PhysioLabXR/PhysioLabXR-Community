@@ -1,7 +1,4 @@
-import multiprocessing
-
 from physiolabxr.utils.Singleton import Singleton
-from physiolabxr.utils.networking_utils import PortFinderProcess
 
 
 class NetworkManager(metaclass=Singleton):
