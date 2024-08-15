@@ -24,7 +24,7 @@ from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 # from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
 # from physiolabxr.utils.buffers import process_preset_create_UnicornHybridBlack_interface_startsensor
 from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
-from physiolabxr.utils.networking_utils import recv_string
+from physiolabxr.utils.networking_utils import recv_string, recv_string_router
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from physiolabxr.utils.time_utils import get_clock_time
 from physiolabxr.threadings.Interfaces import QWorker
@@ -613,8 +613,9 @@ class ScriptingStdoutWorker(QObject):
 
     @QtCore.pyqtSlot()
     def process_std(self):
-        msg: str = recv_string(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
-        if msg:  # if received is a message
+        msg = recv_string_router(self.stdout_socket_interface, is_block=False)  # this must not block otherwise check_pid won't get to run because they are on the same thread, cannot block otherwise the thread cannot exit
+        if msg is not None:  # if received is a message
+            msg, _ = msg
             prefix = msg[:len(SCRIPT_INFO_PREFIX)]
             msg = msg[len(SCRIPT_INFO_PREFIX):]
             if prefix == SCRIPT_INFO_PREFIX:  # if received is a message
@@ -625,6 +626,7 @@ class ScriptingStdoutWorker(QObject):
                 self.std_signal.emit(('error', msg))
             elif prefix == SCRIPT_FATAL_PREFIX:
                 self.std_signal.emit(('fatal', msg))
+
 
 class ScriptInfoWorker(QWorker):
     abnormal_termination_signal = pyqtSignal()

@@ -41,9 +41,11 @@ class RenaScript(ABC, threading.Thread):
     An abstract class for implementing scripting models.
     """
 
-    def __init__(self, inputs, input_shapes, buffer_sizes, outputs: List[ScriptOutput], params: dict, port, run_frequency, time_window,
+    def __init__(self, inputs, input_shapes, buffer_sizes, outputs: List[ScriptOutput], params: dict, run_frequency, time_window,
                  script_path, is_simulate, presets, redirect_stdout, redirect_stderr,
-                 stdout_socket_interface, info_socket_interface, info_routing_id, *args, **kwargs):
+                 stdout_socket_interface, info_socket_interface,
+                 input_socket_interface, command_socket_interface,
+                 info_routing_id, *args, **kwargs):
         """
 
         :param inputs:
@@ -60,14 +62,8 @@ class RenaScript(ABC, threading.Thread):
 
         logging.info('RenaScript: RenaScript Thread started on process {0}'.format(os.getpid()))
         try:
-            self.input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
-                                                           port_id=port + 2,
-                                                           identity='server',
-                                                           pattern='router-dealer')
-            self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
-                                                             port_id=port + 3,
-                                                             identity='server',
-                                                             pattern='router-dealer')
+            self.input_socket_interface = input_socket_interface
+            self.command_socket_interface = command_socket_interface
         except zmq.error.ZMQError as e:
             raise ScriptSetupError("script failed to set up sockets {0}".format(e))
 

@@ -149,6 +149,7 @@ class ScriptTest(RenaScript):
 
     # add and start the output stream
     output_stream_name = this_scripting_widget.get_outputs()[0]
+    # context_bot.app.create_preset(output_stream_name, PresetType.LSL, num_channels=n_channels)  # add a default preset
     context_bot.add_and_start_stream(output_stream_name, n_channels)
 
     # start recording

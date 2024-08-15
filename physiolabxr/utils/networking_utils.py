@@ -123,20 +123,7 @@ def find_available_port_from_list(ports_list):
                 return port
     return None
 
-class PortFinderProcess(multiprocessing.Process):
-    def __init__(self, queue, start_port, num_ports=100):
-        super().__init__()
-        self.queue = queue
-        self.start_port = start_port
-        self.num_ports = num_ports
-
-    def run(self):
-        available_ports = []
-        port = self.start_port
-        while len(available_ports) < self.num_ports:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                result = sock.connect_ex(('localhost', port))
-                if result != 0:  # Port is available
-                    available_ports.append(port)
-                    self.queue.put(available_ports.copy())  # Send the updated list to the queue
-            port += 1
+def parse_port_from_socket(socket):
+    endpoint = socket.getsockopt(zmq.LAST_ENDPOINT).decode('utf-8')
+    _, _, port = endpoint.rpartition(':')
+    return port
