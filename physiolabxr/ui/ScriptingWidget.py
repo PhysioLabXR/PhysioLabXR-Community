@@ -280,7 +280,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def copy_button_clicked(self):
-        QtWidgets.QApplication.clipboard().setText(self.rpc_port)
+        QtWidgets.QApplication.clipboard().setText(str(self.rpc_port))
         self.copied_label.show()
 
     def on_run_btn_clicked(self):
