@@ -6,7 +6,8 @@
     "AOI Augmentation Start End Marker",
     "Toggle Visual Cue Visibility Marker",
     "Update Visual Cue Marker",
-    "Visual Cue History Selected Marker"
+    "Visual Cue History Selected Marker",
+    "B-Scan layer selection"
   ],
   "NominalSamplingRate":  10,
   "GroupInfo":  [1,2,3,4,5,6],
