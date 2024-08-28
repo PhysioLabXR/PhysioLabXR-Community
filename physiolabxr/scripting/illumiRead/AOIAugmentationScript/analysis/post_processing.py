@@ -105,6 +105,7 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
     ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
     # construct the fixation sequence
+    time_looking_at_image = 0
     fixation_sequence = np.zeros_like(gaze_data_ts_stream)  # 0 or 1 depending on if a fixation is made on the image
     fixation_on_image_coordinates = -np.ones((len(gaze_data_ts_stream), 2), dtype=int)  # the fixation coordinates on the image
     for gaze_i, (gaze_data_t, ts) in enumerate(zip(gaze_data_stream.T, gaze_data_ts_stream)):
@@ -135,7 +136,7 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
                 coordinate=gaze_point_on_screen_pixel_index)
 
             if gaze_point_is_in_screen_image_boundary:
-
+                time_looking_at_image += gaze_data_ts_interval
                 gaze_point_on_raw_image_coordinate = image_coordinate_transformation(
                     original_image_shape=current_image_info.image_on_screen_shape,
                     target_image_shape=current_image_info.original_image.shape[:2],
@@ -172,6 +173,7 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
 
     trial_info['divergence'] = user_attention_divergence
     trial_info['image name'] = image_name
+    trial_info['time looking at image'] = time_looking_at_image
 
     # get the number of interaction
     trial_info['cue update count'] = np.sum(trial_data['AOIAugmentationEventMarkerLSL'][0][event_channels.index("Update Visual Cue Marker")])
@@ -300,25 +302,29 @@ def preprocess_text(text):
 
 # start of the main block ######################################################
 if __name__ == "__main__":  # yes no is has experience ?
-    # study_participants = {"04": "Yes",  # # first block no guidance  # STUDY 1
-    #                         "08": "No",  # first block no guidance
-    #                         "09": "No",  # first block no guidance
-    #                         "10": "No",  # first block resnet
-    #                         "12": "No",  # first block no guidance
-    #                         "13": "Yes",  # first block vit
-    #                         "14-1": "Yes",  # first block no guidance
-    #                         "15-1": "Yes"}  # first block resnet
 
-    study_participants = {  # STUDY 2
-                            "06": "No",
-                            "07": "No",
-                            "11": "No",
-                            "14-2": "Yes",
-                            "15-2": "Yes",
-    }
-    # data_root = "/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/"
-    m_data_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation"
-    m_result_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation\UserStudyResults 2"
+    """Select the study participants,"""
+    study_participants = {"04": "Yes",  # # first block no guidance  # STUDY 1
+                            "08": "No",  # first block no guidance
+                            "09": "No",  # first block no guidance
+                            "10": "No",  # first block resnet
+                            "12": "No",  # first block no guidance
+                            "13": "Yes",  # first block vit
+                            "14-1": "Yes",  # first block no guidance
+                            "15-1": "Yes"}  # first block resnet
+
+    # study_participants = { "06": "No",  # STUDY 2
+    #                         "07": "No",
+    #                         "11": "No",
+    #                         "14-2": "Yes",
+    #                         "15-2": "Yes",}
+
+    # m_data_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation"
+    # m_result_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation\UserStudyResults 2"
+
+    m_data_root = r"/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation"
+    m_result_root = r"/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation\UserStudyResults 1"
+
     m_sub_image_handler_path = os.path.join(m_data_root, 'sub_image_handler.p')
     m_data_root = os.path.join(m_data_root, 'Participants')
 
