@@ -13,7 +13,7 @@ authors:
     equal-contrib: true
     corresponding: true
     affiliation: 1
-  - name: Haowen 'John' Wei
+  - name: Haowen Wei
     orcid: 0000-0003-1856-5627
     equal-contrib: true 
     affiliation: 1
