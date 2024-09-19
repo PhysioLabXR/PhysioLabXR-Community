@@ -1,5 +1,4 @@
 from pylsl import local_clock
-
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.thirdparty.WearableSensing.DSI_py3 import *
 import numpy as np
@@ -9,15 +8,13 @@ from physiolabxr.utils.buffers import DataBuffer
 #Creating a data buffer with the DataBuffer class
 data_buffer = DataBuffer()
 
-@MessageCallback
-def ExampleMessageCallback(msg, lvl=0):
-    if lvl <= 3:  # ignore messages at debugging levels higher than 3
-        print("DSI Message (level %d): %s" % (lvl, IfStringThenNormalString(msg)))
-    return 1
-
-
 is_first_time = True
 time_offset = 0  # time offset for the first packet to the local_clock()
+@MessageCallback
+def ExampleMessageCallback( msg, lvl=0 ):
+    if lvl <= 3:  # ignore messages at debugging levels higher than 3
+ 	    print( "DSI Message (level %d): %s" % ( lvl, IfStringThenNormalString( msg ) ) )
+    return 1
 @SampleCallback
 def ExampleSampleCallback_Signals(headsetPtr, packetTime, userData):
     #This is the function that will be called every time a new packet is received
@@ -52,19 +49,6 @@ def ExampleSampleCallback_Signals(headsetPtr, packetTime, userData):
     }
     #Update the data buffer with the new data
     data_buffer.update_buffer(new_data_dict)
-
-
-@SampleCallback
-def ExampleSampleCallback_Impedances(headsetPtr, packetTime, userData):
-    #Not yet used
-    h = Headset(headsetPtr)
-    fmt = '%s = %5.3f'
-    strings = [fmt % (IfStringThenNormalString(src.GetName()), src.GetImpedanceEEG()) for src in h.Sources() if
-               src.IsReferentialEEG() and not src.IsFactoryReference()]
-    strings.append(fmt % ('CMF @ ' + h.GetFactoryReferenceString(), h.GetImpedanceCMF()))
-    print(('%8.3f:   ' % packetTime) + ', '.join(strings))
-    sys.stdout.flush()
-
 class DSI24(RenaScript):
     def __init__(self, *args, **kwargs):
         """

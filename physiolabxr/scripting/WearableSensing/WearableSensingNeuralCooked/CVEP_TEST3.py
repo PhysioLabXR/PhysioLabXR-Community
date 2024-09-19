@@ -84,8 +84,8 @@ class NeuralCooked(RenaScript):
         return 1
 
 
-    @rpc
-    def seq_data(self, sequence_num: int): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
+    @async_rpc
+    def add_seq_data(self, sequence_num: int): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
         if sequence_num == 0:
             self.seq1_data = np.append(self.seq1_data, self.data.get_data('EEG Data')[:,-1500:]) #Every 5 seconds
         elif sequence_num == 1:
@@ -134,7 +134,7 @@ class NeuralCooked(RenaScript):
 
     ##Begin Playing
 #===================================================================================================
-    @rpc
+    @async_rpc
     def decode(self) -> int:
         # Get the choices decoded so far
         choices = self.decoded_choices
@@ -152,7 +152,7 @@ class NeuralCooked(RenaScript):
         self.correlation_coefficients = self.apply_shifting_window_cca(band_data)  # getting the correlation coefficients by applying shifting window CCA
         highest_correlation, detected_choice = self.evaluate_correlation_coefficients(self.correlation_coefficients) # evaluating the correlation coefficients to get the highest correlation and the detected choice
         self.decoded_choices.append[detected_choice]
-def apply_shifting_window_cca(self, band_data):
+    def apply_shifting_window_cca(self, band_data):
         """
         Applies shifting window CCA to the filtered band data.
         """
