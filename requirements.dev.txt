@@ -15,7 +15,6 @@ psutil
 pytest-qt
 numba
 PyOpenGL
-PyOpenGL_accelerate
 soundfile
 matplotlib
 imblearn
