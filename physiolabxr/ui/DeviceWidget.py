@@ -1,5 +1,8 @@
 # This Python file uses the following encoding: utf-8
+from PyQt6.QtWidgets import QDialogButtonBox
+
 import physiolabxr.threadings.AudioWorkers
+import physiolabxr.threadings.DeviceWorker
 from physiolabxr.exceptions.exceptions import ChannelMismatchError, CustomDeviceStartStreamError, CustomDeviceStreamInterruptedError, UnsupportedErrorTypeError, LSLStreamNotFoundError
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import PresetType
@@ -7,30 +10,37 @@ from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.dialogs import dialog_popup
+from physiolabxr.utils.ui_utils import show_label_movie
 
 
-class CustomDeviceWidget(BaseStreamWidget):
+class DeviceWidget(BaseStreamWidget):
 
     def __init__(self, parent_widget, parent_layout, stream_name, insert_position=None):
         """
         BaseStreamWidget is the main interface with plots and a single stream of data.
-        @param parent_widget: the MainWindow class
-        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
-        @param stream_name: the name of the stream
+        Args:
+            parent_widget: the MainWindow class
+            parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
+            stream_name: the name of the stream
+
+        How to add a custom device options UI to a custom device:
         """
 
         # GUI elements
         super().__init__(parent_widget, parent_layout, PresetType.CUSTOM, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
-
-        custom_device_worker = workers.CustomDeviceWorker(self.stream_name)
+        self.DeviceBtn.show()  # the device button is only shown for custom devices
+        custom_device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name)
         custom_device_worker.device_widget = self
         self.connect_worker(custom_device_worker, False)
-        # self.connect_start_stop_btn(self.start_stop_stream_btn_clicked)
         self.start_timers()
+        self.first_frame_received = False
 
     def start_stop_stream_btn_clicked(self):
+        if not self.is_streaming():
+            self.first_frame_received = False
+            show_label_movie(self.waiting_label, True)
         try:
             super().start_stop_stream_btn_clicked()
         except CustomDeviceStartStreamError as e:
@@ -57,3 +67,19 @@ class CustomDeviceWidget(BaseStreamWidget):
                 return
         except Exception as e:
             raise UnsupportedErrorTypeError(str(e))
+
+    def process_stream_data(self, data_dict):
+        """
+
+        If the data_dict contains an error message, a dialog popup will be shown and the stream will be stopped.
+        """
+        # check if there is an error decoding the zmq message
+        if 'e' in data_dict:
+            dialog_popup(msg=f"{self.stream_name} streaming interrupted \n {data_dict['e']}", title='Error', mode='modal', main_parent=self.main_parent, buttons=QDialogButtonBox.StandardButton.Ok)
+            show_label_movie(self.waiting_label, False)
+            self.start_stop_stream_btn_clicked()  # stop streaming
+            return
+        if not self.first_frame_received and 'frames' in data_dict and len(data_dict['frames']) > 0:
+            self.first_frame_received = True
+            show_label_movie(self.waiting_label, False)
+        super().process_stream_data(data_dict)
