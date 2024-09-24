@@ -11,7 +11,7 @@ def create_custom_device_interface(stream_name):
         from physiolabxr.interfaces.DeviceInterface.UnicornHybridBlackDeviceInterface import UnicornHybridBlackDeviceInterface
         interface = UnicornHybridBlackDeviceInterface()
         return interface
-    elif stream_name == 'DSI-24':
+    elif stream_name == 'DSI24':
         from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24Interface import DSI24Interface
         interface = DSI24Interface()
         return interface

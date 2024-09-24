@@ -137,7 +137,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
-
         # close dialog
         self.close_dialog = None
         self.close_event = None

@@ -14,9 +14,20 @@ dsi24_data_socket = None
 
 @MessageCallback
 def example_message_callback( msg, lvl=0 ):
-	if lvl <= 3:  # ignore messages at debugging levels higher than 3
-		print( "DSI Message (level %d): %s" % ( lvl, IfStringThenNormalString( msg ) ) )
-	return 1
+    global dsi24_data_socket
+    if lvl <= 3:  # ignore messages at debugging levels higher than 3
+        msg_str = IfStringThenNormalString(msg)
+        print( "DSI Message (level %d): %s" % ( lvl, msg_str ) )
+        new_data_dict = {
+            't': 'i',  # 'd' for data, 'i' for info, 'e' for error
+            'message': msg_str
+        }
+        # Send data via ZMQ socket to the main process
+        try:
+            dsi24_data_socket.send_json(new_data_dict)
+        except zmq.error.ZMQError:
+            print("Socket already closed.")
+    return 1
 
 @SampleCallback
 def example_sample_callback_signals(headsetPtr, packetTime, userData):

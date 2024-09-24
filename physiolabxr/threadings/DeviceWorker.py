@@ -5,7 +5,7 @@ import numpy as np
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, QMutex, QThread
 
-from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import create_custom_device_interface
+from physiolabxr.interfaces.DeviceInterface.utils import create_custom_device_interface
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.threadings.workers import RenaWorker
 
@@ -21,6 +21,9 @@ class DeviceWorker(QObject, RenaWorker):
 
         self._custom_device_interface: DeviceInterface = create_custom_device_interface(stream_name)
         self._custom_device_interface.device_worker = self
+
+        # check if an Options class exists for the custom device
+        # first check if a fil
 
         self.is_streaming = False
         self.interrupted = False
@@ -43,29 +46,39 @@ class DeviceWorker(QObject, RenaWorker):
         if QThread.currentThread().isInterruptionRequested():
             return
         if self.is_streaming and not self.interrupted:
+            frames, timestamps, messages = [], [], []
             error_message = None
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
             try:
-                frames, timestamps = self._custom_device_interface.process_frames()  # get all data and remove it from internal buffer
+                frames, timestamps, messages = self._custom_device_interface.process_frames()  # get all data and remove it from internal buffer
             except Exception as e:
                 error_message = str(e)
                 self.interrupted = True
 
             self.interface_mutex.unlock()
+
+            if len(messages) > 0:  # first emit all the messages
+                for message in messages:
+                    self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'i': message})
             if error_message is None:
-                frames = np.array(frames) # convert to numpy array in case it is not
-                self.timestamp_queue.extend(timestamps)
-                if len(self.timestamp_queue) > 1:
-                    sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-                else:
-                    sampling_rate = np.nan
-                if frames.shape[-1] == 0:
-                    return
-                self.num_samples += len(timestamps)
-                data_dict = {'stream_name': self._custom_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
-                self.signal_data.emit(data_dict)
-                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+                try:
+                    if len(frames) == 0:
+                        return # no data available
+                    frames = np.array(frames) # convert to numpy array in case it is not
+                    self.timestamp_queue.extend(timestamps)
+                    if len(self.timestamp_queue) > 1:  # compute the sampling rate
+                        sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+                    else:
+                        sampling_rate = np.nan
+                    self.num_samples += len(timestamps)
+                    data_dict = {'stream_name': self._custom_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+                    self.signal_data.emit(data_dict)
+                    self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+                except Exception as e:  # in case there's something wrong with the frames or timestamps
+                    error_message = str(e)
+                    self.interrupted = True
+                    self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
             else:
                 self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
 

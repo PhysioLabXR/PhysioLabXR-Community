@@ -1,4 +1,4 @@
-{ "StreamName":"DSI-24",
+{ "StreamName":"DSI24",
   "NominalSamplingRate":  300,
   "ChannelNames":  [
     "FP1",

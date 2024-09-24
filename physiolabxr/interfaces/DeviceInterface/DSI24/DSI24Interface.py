@@ -1,13 +1,9 @@
-import os
-import signal
 from multiprocessing import Process, Event
 
 import zmq
-import numpy as np
 
 from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24Process import DSI24_process
 from physiolabxr.third_party.WearableSensing.DSI_py3 import *
-from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 
 def run_dsi24_headset_process(port, com_port):
@@ -19,7 +15,7 @@ def run_dsi24_headset_process(port, com_port):
 class DSI24Interface(DeviceInterface):
     def __init__(self,
                  _device_name='DSI24',
-                 _device_type='DSI24',
+                 _device_type='eeg',
                  _device_nominal_sampling_rate=300):
         super(DSI24Interface, self).__init__(_device_name=_device_name,
                                              _device_type=_device_type,
@@ -40,18 +36,14 @@ class DSI24Interface(DeviceInterface):
         self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, "COM6")
 
     def process_frames(self):
-        frames, timestamps = [], []
+        frames, timestamps, messages = [], [], []
         while True:  # get all available data
             try:
                 data = self.socket.recv_json(flags=zmq.NOBLOCK)
                 if data['t'] == 'i':
-                    raise NotImplemented
+                    messages.append(data['message'])
                 elif data['t'] == 'e':
                     raise DSIException(data['message']) # this will cause stop_stream to be called
-                    # GlobalSignals().show_notification_signal.emit({
-                    #     'title': 'DSI24 Connection Lost',
-                    #     'body': ''
-                    # })
                 elif data['t'] == 'd':
                     frames.append(data['frame'])
                     timestamps.append(data['timestamp'])
@@ -61,7 +53,7 @@ class DSI24Interface(DeviceInterface):
         if len(frames) > 0:
             return np.array(frames).transpose(2, 1, 0)[0], np.array(timestamps)[:, 0]
         else:
-            return frames, timestamps
+            return frames, timestamps, messages
 
     def stop_stream(self):
         self.terminate_event.set()
