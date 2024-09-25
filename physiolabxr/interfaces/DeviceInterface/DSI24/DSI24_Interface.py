@@ -2,7 +2,7 @@ from multiprocessing import Process, Event
 
 import zmq
 
-from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24Process import DSI24_process
+from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24_Process import DSI24_process
 from physiolabxr.third_party.WearableSensing.DSI_py3 import *
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 
@@ -12,15 +12,15 @@ def run_dsi24_headset_process(port, com_port):
     headset_process.start()
     return headset_process, terminate_event
 
-class DSI24Interface(DeviceInterface):
+class DSI24_Interface(DeviceInterface):
     def __init__(self,
                  _device_name='DSI24',
                  _device_type='eeg',
                  _device_nominal_sampling_rate=300):
-        super(DSI24Interface, self).__init__(_device_name=_device_name,
-                                             _device_type=_device_type,
-                                             device_nominal_sampling_rate=_device_nominal_sampling_rate,
-                                             device_available=False)
+        super(DSI24_Interface, self).__init__(_device_name=_device_name,
+                                              _device_type=_device_type,
+                                              device_nominal_sampling_rate=_device_nominal_sampling_rate,
+                                              is_supports_device_availability=False)
         self.stream_name = _device_name
         self.stream_type = _device_type
         self.device_nominal_sampling_rate = _device_nominal_sampling_rate

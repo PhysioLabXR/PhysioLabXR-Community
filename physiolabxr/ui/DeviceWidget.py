@@ -31,9 +31,9 @@ class DeviceWidget(BaseStreamWidget):
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
         self.DeviceBtn.show()  # the device button is only shown for custom devices
-        custom_device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name)
-        custom_device_worker.device_widget = self
-        self.connect_worker(custom_device_worker, False)
+        device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name, device_widget=self)
+        device_worker.device_widget = self
+        self.connect_worker(device_worker, False)
         self.start_timers()
         self.first_frame_received = False
 

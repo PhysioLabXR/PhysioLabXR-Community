@@ -1,20 +1,49 @@
-from physiolabxr.exceptions.exceptions import FailToSetupDevice
+import importlib
 
 
-def create_custom_device_interface(stream_name):
-    if stream_name == 'UnicornHybridBlackBluetooth':
-        try:
-            import bluetooth
-        except ImportError:
-            raise FailToSetupDevice('Bluetooth module is not available.'
-                            'Please install the bluetooth module by running "pip install pybluez"')
-        from physiolabxr.interfaces.DeviceInterface.UnicornHybridBlackDeviceInterface import UnicornHybridBlackDeviceInterface
-        interface = UnicornHybridBlackDeviceInterface()
-        return interface
-    elif stream_name == 'DSI24':
-        from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24Interface import DSI24Interface
-        interface = DSI24Interface()
-        return interface
-    else:
-        raise NotImplementedError(f"CustomDeviceInterface: {stream_name} is not implemented")
+def create_custom_device_classes(device_widget, device_worker, device_name):
+    """Dynamically imports and creates a custom device interface based on the stream name.
+
+    The call stack should be
+                DeviceWidget.__init__() -> DeviceWorker.__init() -> this function
+
+    Assumes that:
+    - Device plugins are located in physiolabxr/interfaces/DeviceInterface/<DeviceName>/
+    - The plugin should include
+        - interface class extending DeviceInterface class: <DeviceName>_Interface in the file physiolabxr/interfaces/DeviceInterface/<DeviceName>/<DeviceName>_Interface.py.
+        - options class extending QWidget: <DeviceName>_Options in the file physiolabxr/interfaces/DeviceInterface/<DeviceName>/<DeviceName>_Options.py.
+
+    Args:
+        stream_widget (QWidget): The widget that will contain the device interface.
+        stream_name (str): The name of the device stream.
+
+    Returns:
+        An instance of the relevant device interface class.
+        An instance of the relevant device options class, if it is defined. This will be None if the options class is not defined.
+    """
+    module_name = f"physiolabxr.interfaces.DeviceInterface.{device_name}"
+    try:
+        # Define the path to the device's module based on the stream_name
+        # Dynamically import the module containing the interface class
+        module = importlib.import_module(module_name)
+        # Dynamically get the class from the module
+        device_interface_class = getattr(module, f"{device_name}_Interface")
+    except ModuleNotFoundError as e:
+        raise NotImplementedError(
+            f"create_custom_device_classes: DeviceInterface class is "
+            f"{device_name}_Interface is not implemented under {module_name}") from e
+    # Instantiate and return the interface object
+    try:
+        interface_instance = device_interface_class()
+    except Exception as e:
+        raise Exception(f"Error creating device interface for {device_name}") from e
+
+    try:
+        options_class = getattr(module, f"{device_name}_Options")
+        options_instance = options_class(device_widget, device_worker)
+    except ModuleNotFoundError as e:
+        options_instance = None
+        print(f"Options class not found for {device_name}, will not have options UI for this device.")
+
+    return interface_instance, options_instance
 

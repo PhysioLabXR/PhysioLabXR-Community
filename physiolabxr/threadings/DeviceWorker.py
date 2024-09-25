@@ -5,7 +5,7 @@ import numpy as np
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, QMutex, QThread
 
-from physiolabxr.interfaces.DeviceInterface.utils import create_custom_device_interface
+from physiolabxr.interfaces.DeviceInterface.utils import create_custom_device_classes
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.threadings.workers import RenaWorker
 
@@ -16,11 +16,17 @@ class DeviceWorker(QObject, RenaWorker):
 
     def __init__(self, stream_name, *args, **kwargs):
         super(DeviceWorker, self).__init__()
+        device_widget = kwargs.get('device_widget', None)
+
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self._custom_device_interface: DeviceInterface = create_custom_device_interface(stream_name)
-        self._custom_device_interface.device_worker = self
+        self.device_interface, device_options_widget = create_custom_device_classes(device_widget, device_worker=self, device_name=stream_name)
+        self.device_interface.device_worker = self
+
+        if device_options_widget is not None:
+            self.device_options_widget = device_options_widget
+            self.DeviceBtn.clicked.connect(self.device_options_widget.show)
 
         # check if an Options class exists for the custom device
         # first check if a fil
@@ -51,7 +57,7 @@ class DeviceWorker(QObject, RenaWorker):
             pull_data_start_time = time.perf_counter()
             self.interface_mutex.lock()
             try:
-                frames, timestamps, messages = self._custom_device_interface.process_frames()  # get all data and remove it from internal buffer
+                frames, timestamps, messages = self.device_interface.process_frames()  # get all data and remove it from internal buffer
             except Exception as e:
                 error_message = str(e)
                 self.interrupted = True
@@ -72,7 +78,7 @@ class DeviceWorker(QObject, RenaWorker):
                     else:
                         sampling_rate = np.nan
                     self.num_samples += len(timestamps)
-                    data_dict = {'stream_name': self._custom_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+                    data_dict = {'stream_name': self.device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
                     self.signal_data.emit(data_dict)
                     self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 except Exception as e:  # in case there's something wrong with the frames or timestamps
@@ -88,10 +94,10 @@ class DeviceWorker(QObject, RenaWorker):
         """
         if QThread.currentThread().isInterruptionRequested():
             return
-        is_stream_availability = self._custom_device_interface.is_stream_available()
+        is_stream_availability = self.device_interface.is_stream_available()
         if self.previous_availability is None:  # first time running
             self.previous_availability = is_stream_availability
-            self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())
+            self.signal_stream_availability.emit(self.device_interface.is_stream_available())
         else:
             if is_stream_availability != self.previous_availability:
                 self.previous_availability = is_stream_availability
@@ -99,21 +105,21 @@ class DeviceWorker(QObject, RenaWorker):
 
     def reset_interface(self, stream_name, num_channels):
         self.interface_mutex.lock()
-        self._custom_device_interface = create_custom_device_interface(stream_name)
+        self.device_interface = create_custom_device_classes(stream_name)
         self.interface_mutex.unlock()
 
     def start_stream(self):
-        self._custom_device_interface.start_stream()
+        self.device_interface.start_stream()
         self.is_streaming = True
         self.interrupted = False
 
         self.num_samples = 0
         self.start_time = time.time()
-        self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
+        self.signal_stream_availability.emit(self.device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
 
     def stop_stream(self):
-        self._custom_device_interface.stop_stream()
+        self.device_interface.stop_stream()
         self.is_streaming = False
 
     def is_stream_available(self):
-        return self._custom_device_interface.is_stream_available()
+        return self.device_interface.is_stream_available()

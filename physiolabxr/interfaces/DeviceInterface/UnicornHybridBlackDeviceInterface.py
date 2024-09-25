@@ -1,9 +1,18 @@
+from physiolabxr.exceptions.exceptions import FailToSetupDevice
+
+try:
+    import bluetooth
+except ImportError:
+    raise FailToSetupDevice('Bluetooth module is not available.'
+                            'Please install the bluetooth module by running "pip install pybluez"')
+
 import re
 import time
 
 import bluetooth
 import brainflow
 from brainflow import BoardShim, BrainFlowInputParams
+
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.exceptions.exceptions import CustomDeviceStartStreamError
