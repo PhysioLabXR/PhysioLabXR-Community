@@ -21,10 +21,6 @@ class DSI24_Interface(DeviceInterface):
                                               _device_type=_device_type,
                                               device_nominal_sampling_rate=_device_nominal_sampling_rate,
                                               is_supports_device_availability=False)
-        self.stream_name = _device_name
-        self.stream_type = _device_type
-        self.device_nominal_sampling_rate = _device_nominal_sampling_rate
-
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PULL)
         self.socket.bind("tcp://localhost:0")  # Bind to port 0 for an available random port
