@@ -83,7 +83,7 @@ class ReplayServer(threading.Thread):
                             if file_location.endswith('.dats'):
                                 rns_stream = RNStream(file_location)
                                 # self.stream_data = rns_stream.stream_in(ignore_stream=['0', 'monitor1'])  # TODO ignore replaying image data for now
-                                self.original_stream_data = rns_stream.stream_in()
+                                self.original_stream_data = rns_stream.stream_in(jitter_removal=False)
                             elif file_location.endswith('.p'):
                                 self.original_stream_data = pickle.load(open(file_location, 'rb'))
                                 # if '0' in self.stream_data.keys(): self.stream_data.pop('0')
@@ -96,6 +96,11 @@ class ReplayServer(threading.Thread):
                             self.send_string(shared.FAIL_INFO + f'Failed to load file {e}')
                             self.reset_replay()
                             continue
+                    # from physiolabxr.presets.Presets import Presets
+                    # from physiolabxr.configs.configs import AppConfigs
+                    # preset_root = AppConfigs()._preset_path
+                    # presets = Presets(_preset_root=preset_root, _reset=False, _save_after_init=False)  # create the singleton presets object
+                    # self.original_stream_data = {f're-{s_name}': v for s_name, v in self.original_stream_data.items() if not presets[s_name].preset_type.is_lsl_zmq_custom_preset()}
 
                     self.previous_file_loc = file_location
                     self.send_string(shared.LOAD_SUCCESS_INFO + str(self.total_time))
@@ -111,7 +116,7 @@ class ReplayServer(threading.Thread):
                         stream_info[stream_name]['srate'] = stream_info[stream_name]['n_timepoints'] / (timestamps[-1] - timestamps[0])
                         stream_info[stream_name]['data_type'] = str(data.dtype)
                     self.send_string(json.dumps(stream_info))
-                elif command == shared.GO_AHEAD_COMMAND:
+                elif command == shared.SETUP_STREAM_COMMAND:
                     # go ahead and open the streams
                     # outlets are not created in setup before receiving the go-ahead from the main process because the
                     # main process need to check if there're duplicate stream names with the streams being replayed
@@ -138,8 +143,18 @@ class ReplayServer(threading.Thread):
                         continue
                     self.send_string(shared.SUCCESS_INFO)
                     self.send(np.array([self.start_time, self.end_time, self.total_time, self.virtual_clock_offset]))  # send the timing info
-                    print(f"replay started for streams: {list(self.stream_data)}")
-                    self.is_replaying = True  # this is the only entry point of the replay loop
+
+                    # hold on for the start replay command
+                    # replay tab needs to tell MainWindow to add the stream widgets, it may take a while
+                    wait_start_time = time.time()
+                    command = self.recv_string(is_block=True)
+                    if command == shared.START_REPLAY_COMMAND:
+                        print(f"After waiting main process for {time.time() - wait_start_time} seconds, replay started for streams: {list(self.stream_data)}")
+                        self.is_replaying = True  # this is the only entry point of the replay loop
+                    else:
+                        print(f"ReplayServer: unexpected command received: {command}, resetting replay")
+                        self.reset_replay()
+                        continue
                 elif command == shared.PERFORMANCE_REQUEST_COMMAND:
                     self.send(self.get_average_loop_time())
                 elif command == shared.TERMINATE_COMMAND:
@@ -463,18 +478,24 @@ class ReplayServer(threading.Thread):
             return 0
 
 
-def start_replay_server(replay_port):
+def start_replay_server(conn=None):
     print("Replay Server Started")
     # TODO connect to a different port if this port is already in use
-    try:
-        command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                  port_id=replay_port,
-                                                  identity='server',
-                                                  pattern='router-dealer')
-    except zmq.error.ZMQError as e:
-        warnings.warn("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
-        warnings.warn("Replay Server exiting...No replay will be available for this session")
-        return
+    # try:
+    #     command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
+    #                                               port_id=replay_port,
+    #                                               identity='server',
+    #                                               pattern='router-dealer')
+    # except zmq.error.ZMQError as e:
+    #     warnings.warn("ReplayServer: encounter error setting up ZMQ interface: " + str(e))
+    #     warnings.warn("Replay Server exiting...No replay will be available for this session")
+    #     return
+    command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
+                                              port_id=0,  # use the first available port
+                                              identity='server',
+                                              pattern='router-dealer')
+    conn.send(command_info_interface.binded_port)
+    conn.close()
     replay_server_thread = ReplayServer(command_info_interface)
     replay_server_thread.start()
 

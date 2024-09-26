@@ -12,13 +12,11 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
 def main(argv):
-    letters = string.digits
-
-    srate = 128
-    name = 'Dummy-8Chan2'
+    srate = 250
+    name = 'OpenBCICyton8Channels'
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 12
+    n_channels = 8
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])
@@ -37,12 +35,6 @@ def main(argv):
             name = arg
         elif opt in ("-t", "--type"):
             type = arg
-
-    # first create a new stream info (here we set the name to BioSemi,
-    # the content-type to EEG, 8 channels, 100 Hz, and float-valued data) The
-    # last value would be the serial number of the device or some other more or
-    # less locally unique identifier for the stream as far as available (you
-    # could also omit it but interrupted connections wouldn't auto-recover)
     info = StreamInfo(name, type, n_channels, srate, 'float32', 'someuuid1234')
 
     # next make an outlet
@@ -57,7 +49,7 @@ def main(argv):
         for sample_ix in range(required_samples):
             # make a new random n_channels sample; this is converted into a
             # pylsl.vectorf (the data type that is expected by push_sample)
-            mysample = [rand()*100 for _ in range(n_channels)]
+            mysample = [rand()*10 for _ in range(n_channels)]
             # now send it
             outlet.push_sample(mysample)
         sent_samples += required_samples

@@ -1,14 +1,16 @@
 # This Python file uses the following encoding: utf-8
 import time
+import warnings
 from collections import deque
 from typing import Callable
 
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QMovie
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from physiolabxr.configs import config_ui
+from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.configs.configs import AppConfigs, LinechartVizMode
 from physiolabxr.presets.load_user_preset import create_default_group_entry
 from physiolabxr.presets.presets_utils import get_stream_preset_info, set_stream_preset_info, get_stream_group_info, \
@@ -22,7 +24,7 @@ from physiolabxr.ui.VizComponents import VizComponents
 from physiolabxr.utils.buffers import DataBufferSingleStream
 from physiolabxr.utils.dsp_utils.dsp_modules import run_data_processors
 from physiolabxr.utils.performance_utils import timeit
-from physiolabxr.utils.ui_utils import clear_widget
+from physiolabxr.utils.ui_utils import clear_widget, show_label_movie
 from physiolabxr.ui.dialogs import dialog_popup
 
 
@@ -37,6 +39,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         pull_data_timer and viz v_timer are initialized and started here. Class extending this class will be responsible
         for starting the timers.
 
+        if a stream class inheriting this class implements stream availability, it must
+        * emit signal_stream_availability_tick
+
         @param parent_widget: the MainWindow class
         @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
         @param stream_name: the name of the stream
@@ -44,6 +49,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
+
         self.ui = uic.loadUi(AppConfigs()._ui_StreamWidget, self)
         self.set_pop_button(self.PopWindowBtn)
         self.StreamNameLabel.setText(stream_name)
@@ -65,6 +71,17 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.actualSamplingRate = 0
         self.current_timestamp = 0
         self.is_stream_available = False
+        self.start_when_available = False
+        self.start_stop_callback = None
+        self.StartStopStreamBtn.clicked.connect(self._start_stop_btn_clicked)
+        self.add_stream_availability = None
+        self.worker_thread = None
+        self.data_worker = None
+        self.loading_movie = QMovie(AppConfigs()._icon_load_square_48px)
+        self.waiting_label.setMovie(self.loading_movie)
+        show_label_movie(self.waiting_label, False)
+        self.StartStopStreamBtn.setToolTip("Start streaming {0}".format(self.stream_name))
+
         self.in_error_state = False  # an error state to prevent ticking when is set to true
 
         # visualization timer
@@ -135,14 +152,50 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.worker_thread.start()
         self.set_start_stop_button_icon()
 
-    def connect_start_stop_btn(self, start_stop_callback: Callable):
-        self.StartStopStreamBtn.clicked.connect(start_stop_callback)
+    def start_stream(self, warning_if_already_started: bool=True):
+        if self.start_when_available or self.is_streaming():
+            if warning_if_already_started:
+                warnings.warn(f'Stream {self.stream_name} is already started')
+            return
+        self._start_stop_btn_clicked()
+
+    def _start_stop_btn_clicked(self):
+        if self.start_when_available:  # if already waiting for stream availability, then stop waiting
+            # this clause is only reachable if the stream is not available and the user click the start button
+            # , in which case self.start_when_available is set to True
+            self.start_when_available = False
+            self.data_worker.signal_stream_availability.disconnect(self._start_stream_when_available)
+            show_label_movie(self.waiting_label, False)
+            self._set_start_stop_button_icon(False)
+            self.StartStopStreamBtn.setToolTip("Start streaming {0}".format(self.stream_name))
+            return
+        if self.add_stream_availability and not self.is_stream_available:
+            # this clause is only reachable if stream implements stream availability and the stream is not available when
+            # the user click the start button
+            # connect the available signal to the start stop button
+            self.start_when_available = True
+            self.data_worker.signal_stream_availability.connect(self._start_stream_when_available)
+            # set the icon to waiting
+            show_label_movie(self.waiting_label, True)
+            self._set_start_stop_button_icon(True)
+            # set the hint text for the start stop button
+            self.StartStopStreamBtn.setToolTip("Stop waiting for stream {0} to be available".format(self.stream_name))
+            return
+
+        self.start_stop_stream_btn_clicked()
+
+    def _start_stream_when_available(self, is_stream_available):
+        if is_stream_available:
+            self.start_when_available = False
+            self.data_worker.signal_stream_availability.disconnect(self._start_stream_when_available)
+            show_label_movie(self.waiting_label, False)
+            self.start_stop_stream_btn_clicked()
 
     def start_stop_stream_btn_clicked(self):
         if self.data_worker.is_streaming:
             self.data_worker.stop_stream()
             if not self.data_worker.is_streaming and self.add_stream_availability:
-                self.update_stream_availability(self.data_worker.is_stream_available)
+                self.update_stream_availability(self.data_worker.is_stream_available())
         else:
             self.data_worker.start_stream()
         self.set_button_icons()
@@ -167,22 +220,19 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             else:
                 self.start_stop_stream_btn_clicked()  # must stop the stream before dialog popup
                 self.set_stream_unavailable()
-                self.main_parent.current_dialog = dialog_popup('Lost connection to {0}'.format(self.stream_name), title='Warning', mode='modeless')
-        else:
-            # is the stream is not available
-            if is_stream_available:
+                GlobalSignals().show_notification_signal.emit({'title': 'Stream lost', 'body': 'Lost connection to {0}'.format(self.stream_name)})
+        else:  # if the data worker is not streaming
+            if is_stream_available:  # is the stream is not available
                 self.set_stream_available()
             else:
                 self.set_stream_unavailable()
         self.main_parent.update_active_streams()
 
     def set_stream_unavailable(self):
-        self.StartStopStreamBtn.setEnabled(False)
         self.StreamAvailablilityLabel.setPixmap(self.stream_unavailable_pixmap)
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is not available".format(self.stream_name))
 
     def set_stream_available(self):
-        self.StartStopStreamBtn.setEnabled(True)
         self.StreamAvailablilityLabel.setPixmap(self.stream_available_pixmap)
         self.StreamAvailablilityLabel.setToolTip("Stream {0} is available to start".format(self.stream_name))
 
@@ -199,6 +249,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
     def set_start_stop_button_icon(self):
         if not self.is_streaming():
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
+        else:
+            self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
+
+
+    def _set_start_stop_button_icon(self, is_start: bool):
+        if not is_start:
             self.StartStopStreamBtn.setIcon(AppConfigs()._icon_start)
         else:
             self.StartStopStreamBtn.setIcon(AppConfigs()._icon_stop)
@@ -294,6 +351,9 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         group_plot_dict = self.init_stream_visualization()
         self.viz_components = VizComponents(self.fs_label, self.ts_label, group_plot_dict)
 
+    def auto_scale_viz_components(self):
+        self.viz_components.auto_scale_all_groups()
+
     def process_stream_data(self, data_dict):
         '''
         update the visualization buffer, recording buffer, and scripting buffer
@@ -321,8 +381,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             self.actualSamplingRate = data_dict['sampling_rate']
             self.current_timestamp = data_dict['timestamps'][-1]
 
-
-
             # if data_dict['frames'].shape[
             #     -1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             #     self.run_data_processor(data_dict)
@@ -339,15 +397,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
             #     self.main_parent.recording_tab.update_recording_buffer(data_dict)
             #     self.main_parent.scripting_tab.forward_data(data_dict)
             #     # scripting tab
-
-    def stream_settings_changed(self, change):
-        self.setting_update_viz_mutex.lock()
-        # resolve the
-        if change[0] == "nominal_sampling_rate":
-            pass  # TODO
-        # TODO add other changes such as plot format, plot order, etc...
-
-        self.setting_update_viz_mutex.unlock()
 
     def visualize(self):
         '''

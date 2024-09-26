@@ -1,3 +1,6 @@
+import multiprocessing
+import socket
+
 import numpy as np
 import zmq
 
@@ -74,3 +77,53 @@ def recv_data_dict(socket_interface):
             rtn[key] = (data, timestamps)
         return rtn
 
+
+def find_available_ports(start_port, num_ports=100):
+    """
+    Find a range of available ports.
+
+    Parameters:
+    - start_port: The starting port number to check.
+    - num_ports: The number of consecutive available ports to find.
+
+    Returns:
+    - A list of available port numbers.
+    """
+    available_ports = []
+    port = start_port
+
+    while len(available_ports) < num_ports:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # Check if the port is available
+            result = sock.connect_ex(('localhost', port))
+            if result != 0:  # Port is available
+                available_ports.append(port)
+            else:
+                # Reset the list if the current port is unavailable and we were accumulating
+                available_ports.clear()
+
+        port += 1
+
+    return available_ports
+
+def find_available_port_from_list(ports_list):
+    """
+    Find an available port from a list of ports.
+
+    Parameters:
+    - ports_list: A list of candidate port numbers.
+
+    Returns:
+    - A port number if available; otherwise, None.
+    """
+    for port in ports_list:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            result = sock.connect_ex(('localhost', port))
+            if result != 0:  # Port is available
+                return port
+    return None
+
+def parse_port_from_socket(socket):
+    endpoint = socket.getsockopt(zmq.LAST_ENDPOINT).decode('utf-8')
+    _, _, port = endpoint.rpartition(':')
+    return port

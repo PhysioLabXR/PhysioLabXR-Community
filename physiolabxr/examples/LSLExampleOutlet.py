@@ -12,11 +12,11 @@ from pylsl import StreamInfo, StreamOutlet, local_clock
 
 
 def main(argv):
-    srate = 128
-    name = 'Dummy-8Chan'
+    srate = 250
+    name = 'UnicornHybridBlackLSL'
     print('Stream name is ' + name)
     type = 'EEG'
-    n_channels = 8
+    n_channels = 19
     help_string = 'SendData.py -s <sampling_rate> -n <stream_name> -t <stream_type>'
     try:
         opts, args = getopt.getopt(argv, "hs:c:n:t:", longopts=["srate=", "channels=", "name=", "type"])

@@ -12,37 +12,52 @@ from physiolabxr.configs.configs import RecordingFileFormat, AppConfigs
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.utils.data_utils import CsvStoreLoad
 from physiolabxr.utils.RNStream import RNStream
-from physiolabxr.utils.xdf_utils import create_xml_string, XDF
+from physiolabxr.utils.xdf_utils import create_xml_string, save_xdf
 
 
-class RecordingConversionDialog(QtWidgets.QWidget):
-    def __init__(self,  file_path, file_format: RecordingFileFormat):
+class RecordingPostProcessDialog(QtWidgets.QWidget):
+    def __init__(self, file_path, file_format: RecordingFileFormat, open_directory_func):
         super().__init__()
         self.ui = uic.loadUi(AppConfigs()._ui_RecordingConversionDialog, self)
+        self.copy_button.setIcon(AppConfigs()._icon_copy)
+        self.copied_label.hide()
         self.setWindowTitle(f'Please wait for converting to {file_format.value}')
+
+        self.finish_button.clicked.connect(self.on_finish_button_clicked)
+        self.finish_postprocess_widget.hide()
+        self.open_directory_button.clicked.connect(self.on_open_directory_button_clicked)
+        self.copy_button.clicked.connect(self.on_copy_button_clicked)
 
         self.file_format = file_format
         self.file_path = file_path
+        self.open_directory_func = open_directory_func
 
-        self.recording_convertion_worker = RecordingConversionWorker(RNStream(file_path), file_format, file_path)
-        self.thread = QThread()
-        self.thread.started.connect(self.recording_convertion_worker.run)
-        self.recording_convertion_worker.moveToThread(self.thread)
+        self.thread = None
 
-        self.recording_convertion_worker.progress.connect(self.conversion_progress)
-        self.recording_convertion_worker.finished_streamin.connect(self.streamin_finished)
-        self.recording_convertion_worker.finished_conversion.connect(self.conversion_finished)
 
-        self.finish_button.clicked.connect(self.on_finish_button_clicked)
-        self.finish_button.hide()
-        self.is_conversion_complete = False
+        # check if needs conversion
+        if not file_format == RecordingFileFormat.dats:
+            self.recording_convertion_worker = RecordingConversionWorker(RNStream(file_path), file_format, file_path)
+            self.thread = QThread()
+            self.thread.started.connect(self.recording_convertion_worker.run)
+            self.recording_convertion_worker.moveToThread(self.thread)
 
-        self.thread.start()
+            self.recording_convertion_worker.progress.connect(self.conversion_progress)
+            self.recording_convertion_worker.finished_streamin.connect(self.streamin_finished)
+            self.recording_convertion_worker.finished_conversion.connect(self.save_finished)
+            self.finish_button.hide()
+            self.thread.start()
+            self.is_conversion_complete = False
+        else:
+            self.save_finished(file_path)
 
-    def conversion_finished(self, newfile_path):
+    def save_finished(self, newfile_path):
         print('Conversion finished, showing the finish button')
-        self.setWindowTitle('Conversion completed')
-        self.progress_label.setText('Complete saving file to {}'.format(newfile_path))
+        self.setWindowTitle('Recording saved')
+        self.progress_label.setText(f'To')
+        self.save_path_line_edit.setText(newfile_path)
+
+        self.finish_postprocess_widget.show()
         self.finish_button.show()
         self.is_conversion_complete = True
         self.activateWindow()
@@ -58,7 +73,15 @@ class RecordingConversionDialog(QtWidgets.QWidget):
 
     def on_finish_button_clicked(self):
         self.close()
-        self.thread.quit()
+        if self.thread is not None:
+            self.thread.quit()
+
+    def on_copy_button_clicked(self):
+        QtWidgets.QApplication.clipboard().setText(self.save_path_line_edit.text())
+        self.copied_label.show()
+
+    def on_open_directory_button_clicked(self):
+        self.open_directory_func()
 
 
 class RecordingConversionWorker(QObject):
@@ -98,41 +121,10 @@ class RecordingConversionWorker(QObject):
             pickle.dump(buffer, open(newfile_path, 'wb'))
         elif self.file_format == RecordingFileFormat.csv:
             csv_store = CsvStoreLoad()
-            csv_store.store_csv(buffer, self.file_path)
+            csv_store.save_csv(buffer, self.file_path)
         elif self.file_format == RecordingFileFormat.xdf:
             newfile_path = self.file_path.replace(RecordingFileFormat.get_default_file_extension(), self.file_format.get_file_extension())
-            file_header_info = {'name': 'Test', 'user': 'ixi'}
-            file_header_xml = create_xml_string(file_header_info)
-            stream_headers = {}
-            stream_footers = {}
-            idx = 0
-            for stream_label, data_ts_array in buffer.items():
-                if stream_label == 'monitor 0':
-                    stream_header_info = {'name': stream_label, 'nominal_srate': str(
-                        len(data_ts_array[1])/(data_ts_array[1][-1]-data_ts_array[1][0])),
-                                          'channel_count': str(data_ts_array[0].shape[0] * data_ts_array[0].shape[1] * data_ts_array[0].shape[2]),
-                                          'channel_format': 'int8'}
-                    stream_header_xml = create_xml_string(stream_header_info)
-                    stream_headers[stream_label] = stream_header_xml
-                    stream_footer_info = {'first_timestamp': str(data_ts_array[1][0]),
-                                          'last_timestamp': str(data_ts_array[1][-1]),
-                                          'sample_count': str(len(data_ts_array[1])), 'stream_name': stream_label,
-                                          'stream_id': idx,
-                                          'frame_dimension': data_ts_array[0].shape[0:3]}
-                    stream_footers[stream_label] = stream_footer_info
-                    idx += 1
-                else:
-                    stream_header_info = {'name': stream_label, 'nominal_srate': str(Presets().stream_presets[stream_label].nominal_sampling_rate),
-                                          'channel_count': str(data_ts_array[0].shape[0]), 'channel_format': 'double64' if Presets().stream_presets[stream_label].data_type.value == 'float64' else Presets().stream_presets[stream_label].data_type.value}
-                    stream_header_xml = create_xml_string(stream_header_info)
-                    stream_headers[stream_label] = stream_header_xml
-                    stream_footer_info = {'first_timestamp': str(data_ts_array[1][0]), 'last_timestamp': str(data_ts_array[1][-1]), 'sample_count': str(len(data_ts_array[1])), 'stream_name': stream_label, 'stream_id': idx}
-                    # stream_footer_xml = create_xml_string(stream_footer_info)
-                    stream_footers[stream_label] = stream_footer_info
-                    idx += 1
-
-            xdffile = XDF(file_header_xml, stream_headers, stream_footers)
-            xdffile.store_xdf(newfile_path, buffer)
+            save_xdf(newfile_path, buffer)
         else:
             raise NotImplementedError
         self.finished_conversion.emit(newfile_path)

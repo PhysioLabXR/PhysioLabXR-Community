@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import csv
+from typing import Union, Dict, List, Tuple, Any
 
 import numpy as np
 from scipy.signal import resample
@@ -31,6 +32,7 @@ def window_slice(data, window_size, stride, channel_mode='channel_last'):
 
 
 def plot_stream(stream, timestamps):
+    import matplotlib.pyplot as plt
     timestamps = timestamps - timestamps[0]  # baseline the timestamps
     plt.plot(timestamps, stream)
     plt.xlabel('Time (sec)')
@@ -311,7 +313,25 @@ def replace_special(target_str: str, replacement_dict):
 #         pass
 
 
-def validate_output_data(data, expected_size):
+def validate_output_data(data: Union[List, Tuple, np.ndarray], expected_size: int):
+    """Validate the output data set by user in the script.
+
+    This function is called by RenaScript to validate the output data set by the user in the script.
+
+    Expect the data to be one of the following:
+
+    * single/multi-channel single timepoint: a list, tuple, or ndarray of floats or integers, each element is the value of a channel.
+    * single/multi-channel multi timepoint: a list, tuple, or ndarray of lists, tuples, or ndarrays of floats or integers,
+        If is a list or tuple, it should 2d nested list or tuple where the first axis are the channels, and the second axis are the timepoints.
+            For example, this list
+                [[1,2,3],
+                 [4,5,6]]
+            is a two-channel data with three timepoints. The first channel's values are 1, 2, 3.
+            The second channel's values are 4, 5, 6.
+        if is a ndarray, the first dimension is the number of channels and the second dimension is the number of timepoints.
+
+    """
+
     is_chunk = False
 
     if type(data) == list or type(data) == tuple:
@@ -337,7 +357,7 @@ def validate_output_data(data, expected_size):
         try:
             assert data.shape[0] == expected_size or data.shape[1] == expected_size
         except AssertionError:
-            raise BadOutputError(f'Out put data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
+            raise BadOutputError(f'Output data is two-dimensional with shape {data.shape}, one of the output\'s data dimension must be equal to the channel size {expected_size}')
         if data.shape[0] == expected_size:
             data = np.transpose(data)  #  the first dimension is the number of samples and the second is channels
         is_chunk = True
@@ -349,7 +369,25 @@ def validate_output_data(data, expected_size):
 
     return data, is_chunk
 
-def validate_output(data, expected_size):
+def validate_output(data: Union[Dict, Any], expected_size):
+    """validate the output set by user in the script.
+
+    This function is called by RenaScript to validate the output set by the user in the script. The function checks
+    if the output data is in the correct format and size.
+
+    Expect the output to be one of the following:
+
+    * a dictionary of the form {'data': data, 'timestamp': timestamp}.
+        For the type of 'data', see docstring for validate_output_data.
+        'timestamp' is a list, tuple or ndarray of timestamps corresponding to the data.
+        The number of timestamps must be equal to the number of samples in the data.
+    * an iterable containing the data, see docstring for validate_output_data for more details.
+
+    Notes on timestamp:
+    * If timestamp is not given, whether the data is a single timepoint for a number of timepoints, the local_clock
+    will be used as timestamps for the data.
+
+    """
     if type(data) == dict:  # data will be a dict if output is set using RenaScript.set_output
         _data, timestamp = data['data'], data['timestamp']
     else:
@@ -411,7 +449,7 @@ def convert_dict_keys_to_snake_case(d: dict) -> dict:
 class CsvStoreLoad:
     def __init__(self):
         self.path = None
-    def store_csv(self, data, file_path):
+    def save_csv(self, data, file_path):
         if not os.path.exists(file_path.replace('.dats', '')):
             newfile_path = file_path.replace('.dats', '')
             os.mkdir(newfile_path)

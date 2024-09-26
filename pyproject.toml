@@ -8,9 +8,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="physiolabxr"
-version="1.0.0-beta.2"
+version="1.1.5"
 authors=[
-    { name="Ziheng 'Leo' Li", email="s-vector.lee@hotmail.com"}
+    { name="Ziheng 'Leo' Li", email="apocalyvec@gmail.com"},
+    { name="Haowen 'John' Wei", email="haowenweijohn@gmail.com"},
+    { name="Ziwen 'Josie' Xie", email="jerseyxie@hotmail.com"}
 ]
 description="PhysioLabXR"
 
@@ -21,12 +23,12 @@ classifiers=[
 ]
 dependencies = [
     "brainflow",
-    "numpy >= 1.26.0",
+    "numpy ~= 1.26.0",
     "PyQt6",
     "pyserial",
     "pylsl",
     "scikit-learn",
-    "scipy~=1.9.1",
+    "scipy~=1.11.0",
     "pyqtgraph",
     "pyxdf",
     "pyscreeze",

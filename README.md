@@ -3,7 +3,6 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 
 
@@ -23,7 +22,7 @@
     <a href="https://physiolabxrdocs.readthedocs.io/en/latest/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apocalyvec/physiolabxr">View Demo</a>
+    <a href="https://physiolabxr.org">Official website</a>
     ·
     <a href="https://github.com/apocalyvec/physiolabxr/issues">Report Bug</a>
     ·
@@ -66,9 +65,9 @@
 
 [![PhysioLabXR Screen Shot][product-screenshot]](physiolabxr/_media/readme/AllPlottingFormat.png)
 
-**PhysioLabXR** is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
-data streams. PhysioLabXR can help you build novel interaction interface like BCIs as well as aid you in 
-running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (~500Mbps/sec), real-time data streams.
+**PhysioLabXR** is a Python-based App for real-time visualizing, recording, and processing (i.e., training ML models and inferencing) 
+data streams. PhysioLabXR can help you build novel interaction interfaces like BCIs and aid you in 
+running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (>500Mbps/sec), and real-time data streams.
 
 [//]: # (Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`)
 
@@ -76,6 +75,11 @@ running experiments. It works best with multi-modal (e.g., combining EEG and eye
 [//]: # (<p align="right">&#40;<a href="#readme-top">back to top</a>&#41;</p>)
 
 
+Check out the paper on [Journal of Open Source Software](https://doi.org/10.21105/joss.05854): [![DOI](https://joss.theoj.org/papers/10.21105/joss.05854/status.svg)](https://doi.org/10.21105/joss.05854). Cite:
+
+```
+@article{Li2024, doi = {10.21105/joss.05854}, url = {https://doi.org/10.21105/joss.05854}, year = {2024}, publisher = {The Open Journal}, volume = {9}, number = {93}, pages = {5854}, author = {Ziheng 'Leo' Li and Haowen 'John' Wei and Ziwen Xie and Yunxiang Peng and June Pyo Suh and Steven Feiner and Paul Sajda}, title = {PhysioLabXR: A Python Platform for Real-Time, Multi-modal, Brain–Computer Interfaces and Extended Reality Experiments}, journal = {Journal of Open Source Software} }
+```
 
 ### Built With
 
@@ -99,6 +103,8 @@ Download the latest release exe from [here](https://github.com/PhysioLabXR/Physi
 
 ### Install with pip
 
+PhysioLabXR currently supports Python 3.9, 3.10, and 3.11. Support for Python 3.12 is coming soon.
+
 Install PhysioLabXR's [PYPI distribution](https://pypi.org/project/physiolabxr/) with
 
   ```sh
@@ -112,7 +118,7 @@ Then run with
 
 ### Run from Source
 
-Alternatively, you can clone the repo and run from source.
+Alternatively, you can clone the repo and run it from the source.
 
   ```sh
     git clone https://github.com/PhysioLabXR/PhysioLabXR.git
@@ -154,6 +160,8 @@ More are coming soon!
 
 Distributed under the 3-Clause BSD License. See `LICENSE.txt` for more information.
 
+© 2023 The Trustees of Columbia University in the City of New York.  This work may be reproduced, distributed, and otherwise exploited for academic non-commercial purposes only.  To obtain a license to this work for commercial purposes, please contact Columbia Technology Ventures at techventures@columbia.edu.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
@@ -194,8 +202,6 @@ We would also like to thank all the community members who have contributed to *P
 [issues-url]: https://github.com/apocalyvec/renalabapp/issues
 [license-shield]: https://img.shields.io/github/license/apocalyvec/renalabapp.svg?style=for-the-badge
 [license-url]: https://github.com/apocalyvec/renalabapp/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/ziheng-leo-li/
 [product-screenshot]: physiolabxr/_media/readme/AllPlottingFormat.png
 
 [Python.org]: https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&color=3776AB&logoColor=white

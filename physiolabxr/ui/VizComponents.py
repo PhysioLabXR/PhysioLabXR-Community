@@ -16,3 +16,7 @@ class VizComponents():
 
     def set_spectrogram_cmap(self, group_name):
         self.group_plots[group_name].set_spectrogram_cmap()
+
+    def auto_scale_all_groups(self):
+        for group_plot in self.group_plots.values():
+            group_plot.auto_fit()

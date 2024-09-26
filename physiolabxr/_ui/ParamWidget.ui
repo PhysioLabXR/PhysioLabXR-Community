@@ -10,11 +10,11 @@
     <x>0</x>
     <y>0</y>
     <width>360</width>
-    <height>360</height>
+    <height>406</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+   <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -47,7 +47,7 @@
    <item>
     <widget class="QWidget" name="top_horizontal_widget" native="true">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+      <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -198,7 +198,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>344</width>
+           <width>358</width>
            <height>360</height>
           </rect>
          </property>

@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="plotFormatTabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <property name="iconSize">
       <size>
@@ -34,8 +34,25 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QWidget" name="NominalSamplingRateWidget" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_2"/>
+        <widget class="QWidget" name="ChannelsConstantOffsetWidget" native="true">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>100</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QLabel" name="timeSeriesChannelsConstantOffsetLineEditLabel">
+            <property name="text">
+             <string>Group Channels Constant Offset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="timeSeriesChannelsConstantOffsetLineEdit"/>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -96,7 +113,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="imageFormatComboBox"/>
+              <widget class="QComboBox" name="imageFormatComboBox">
+               <property name="placeholderText">
+                <string>Image Format</string>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -132,11 +153,48 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>809</width>
-            <height>362</height>
+            <width>310</width>
+            <height>458</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_13">
+           <item>
+            <widget class="QWidget" name="image_rotation_clockwise_degree_widget" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <item>
+               <widget class="QLabel" name="image_rotation_clockwise_degree_label">
+                <property name="text">
+                 <string>Rotation (Clockwise in Degree)</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="image_rotation_clockwise_degree_combobox">
+                <item>
+                 <property name="text">
+                  <string>0</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>90</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>180</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>270</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
            <item>
             <widget class="QWidget" name="display_options" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -414,7 +472,12 @@
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QComboBox" name="comboBox_spectrogram_cmap"/>
+        <widget class="QComboBox" name="comboBox_spectrogram_cmap">
+        <property name="placeholderText">
+         <string>Color Map</string>
+        </property>
+        </widget>
+
        </item>
        <item row="2" column="1">
         <widget class="QLineEdit" name="line_edit_overlap_between_segments"/>

@@ -75,7 +75,7 @@ def SampleDefinedLSLStream(stream_name, sample, n_channels=81, srate=2048, dtype
         time.sleep(1e-3)
     del outlet
 
-def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30, data_type=DataType.uint8):
+def ZMQTestStream(stream_name, port, num_channels=3*800*800, srate=30, data_type=DataType.uint8, **kwargs):
     topic = stream_name
 
     context = zmq.Context()

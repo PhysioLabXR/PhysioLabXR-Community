@@ -1,5 +1,6 @@
+import warnings
 from enum import Enum
-from typing import Type
+from typing import Type, Iterable
 
 from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets, QtCore
@@ -8,7 +9,9 @@ from PyQt6.QtWidgets import QHBoxLayout, QComboBox, QGraphicsView, QGraphicsScen
     QStyleFactory
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from physiolabxr.configs import config
 from physiolabxr.configs.config_ui import button_style_classic
+from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.exceptions.exceptions import RenaError
 from physiolabxr.presets.presets_utils import get_all_preset_names, get_stream_preset_names
 from physiolabxr.scripting.script_utils import validate_python_script_class
@@ -173,9 +176,12 @@ def stream_stylesheet(stylesheet_url):
     stream = QTextStream(stylesheet)
     QApplication.instance().setStyleSheet(stream.readAll())
 
+# def apply_stylesheet(widget):
+#     theme = config.settings.value('theme')
+#     widget.setStyleSheet(AppConfigs()._style_sheets[theme])
+
 def add_presets_to_combobox(combobox: QComboBox):
-    for i in get_all_preset_names():
-        combobox.addItem(i)
+    combobox.addItems([i for i in get_all_preset_names()])
 
 def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also call this when new preset is added
     combobox.clear()
@@ -183,8 +189,7 @@ def update_presets_to_combobox(combobox: QComboBox):  # TODO script should also 
         combobox.addItem(i)
 
 def add_stream_presets_to_combobox(combobox):
-    for i in get_stream_preset_names():
-        combobox.addItem(i)
+    combobox.addItems([i for i in get_stream_preset_names()])
 
 class AnotherWindow(QWidget):
     """
@@ -277,6 +282,14 @@ def validate_script_path(script_path, desired_class: Type) -> bool:
         return True
 
 def add_enum_values_to_combobox(combobox: QComboBox, enum: Type[Enum], can_be_selected_in_gui: list=None):
+    """Add all the names of an enum to a combobox.
+    If can_be_selected_in_gui is not None, only the values in the list are enabled.
+
+    Notes:
+        The strings that are added to the combobox are value of the enum, not the name.
+        So if you need to call combobox.findText(...), the argument should be enum_var.name, not enum_var.value.
+
+    """
     if can_be_selected_in_gui is None:
         combobox.addItems([name for name, member in enum.__members__.items()])
     else:
@@ -309,3 +322,19 @@ def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
             line_edit.textChanged.disconnect(set_back)
         line_edit.textChanged.connect(set_back)
         raise RenaError(f'{name} must be an integer')
+
+# def add_items(combobox: QComboBox, items: Iterable):
+#     """
+#     call addItems on a combobox
+#     remove placeholder if there's any
+#     """
+#     placeholder_index = combobox.findText(AppConfigs()._placeholder_text)
+#     if placeholder_index == -1:
+#         warnings.warn(f"combobox {combobox.objectName()} has no placeholder, may subject to NSException.")
+#     combobox.addItems(items)
+#     # remove the placeholder item from the combobox if it exists
+#     if placeholder_index != -1:
+#         combobox.removeItem(placeholder_index)
+
+
+

@@ -12,11 +12,12 @@ from physiolabxr.exceptions.exceptions import RenaError, InvalidStreamMetaInfoEr
 from physiolabxr.configs import config
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
-from physiolabxr.presets.PresetEnums import PresetType, DataType
+from physiolabxr.presets.PresetEnums import PresetType, DataType, CustomPresetType
 from physiolabxr.ui.AddWiget import AddStreamWidget
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.CloseDialog import CloseDialog
 from physiolabxr.ui.LSLWidget import LSLWidget
+from physiolabxr.ui.NotificationPane import NotificationPane
 from physiolabxr.ui.ScriptingTab import ScriptingTab
 from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
 from physiolabxr.ui.VideoWidget import VideoWidget
@@ -141,6 +142,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.close_event = None
         self.is_already_closed = False
 
+        # notification pane
+        self.notification_panel = NotificationPane(self)
+
+
         # # fmri widget
         # # TODO: FMRI WIDGET
         # fmri_preset = FMRIPreset(stream_name='Siemens Prisma 3T', preset_type=PresetType.FMRI, data_type=DataType.float64, num_channels=10713600,
@@ -200,9 +205,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.init_audio_input_device(stream_name)
             elif preset_type == PresetType.MONITOR:
                 self.init_video_device(stream_name, video_preset_type=preset_type)
-            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
-                raise NotImplementedError
-                # self.init_device(selected_text)  # add device stream
             elif preset_type == PresetType.LSL:
                 self.init_LSL_streaming(stream_name)  # add lsl stream
             elif preset_type == PresetType.ZMQ:
@@ -210,6 +212,13 @@ class MainWindow(QtWidgets.QMainWindow):
             elif preset_type == PresetType.EXPERIMENT:  # add multiple streams from an experiment preset
                 streams_for_experiment = get_experiment_preset_streams(stream_name)
                 self.add_streams_from_experiment_preset(streams_for_experiment)
+            elif preset_type == PresetType.CUSTOM:  # if this is a device preset
+                # check if stream_name is a custom device
+                if stream_name == CustomPresetType.UnicornHybridBlackBluetooth.value:
+                    self.init_custom_device(stream_name)
+                else:
+                    raise NotImplementedError
+                # self.init_device(selected_text)  # add device stream
             else:
                 raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
@@ -249,18 +258,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     # n channels won't be dealt here, leave that to starting the stream, handled by BaseStreamWidget
                 self.process_add(stream_name, *get_stream_meta_info(stream_name))
 
+            if AppConfigs().start_streams_on_replay:
+                self.stream_widgets[stream_name].start_stream(warning_if_already_started=False)
+
         if is_new_preset_added:
             GlobalSignals().stream_presets_entry_changed_signal.emit()
 
     def create_preset(self, stream_name, preset_type, data_type=DataType.float32, num_channels=1, nominal_sample_rate=None, **kwargs):
         if preset_type == PresetType.LSL:
-            create_default_lsl_preset(stream_name, num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+            create_default_lsl_preset(stream_name, num_channels=num_channels, nominal_sample_rate=nominal_sample_rate, data_type=data_type, **kwargs)  # create the preset
         elif preset_type == PresetType.ZMQ:
             try:
                 assert 'port' in kwargs.keys()
             except AssertionError:
                 raise ValueError("Port number must be specified for ZMQ preset")
-            create_default_zmq_preset(stream_name, kwargs['port'], num_channels, nominal_sample_rate, data_type=data_type)  # create the preset
+            create_default_zmq_preset(stream_name, num_channels=num_channels, nominal_sample_rate=nominal_sample_rate, data_type=data_type, **kwargs)  # create the preset
         elif preset_type == PresetType.CUSTOM:
             raise NotImplementedError
         else:
@@ -295,10 +307,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         widget_name = video_device_name + '_widget'
         widget = VideoWidget(parent_widget=self,
-                           parent_layout=self.camHorizontalLayout,
+                           parent_layout=self.streamsHorizontalLayout,
                              video_preset_type=video_preset_type,
                            video_device_name=video_device_name,
-                           insert_position=self.camHorizontalLayout.count() - 1)
+                           insert_position=self.streamsHorizontalLayout.count() - 1)
         widget.setObjectName(widget_name)
         self.stream_widgets[video_device_name] = widget
 
@@ -335,6 +347,21 @@ class MainWindow(QtWidgets.QMainWindow):
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
 
+    def init_custom_device(self, stream_name):
+        widget_name = stream_name + '_widget'
+        # from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
+        # create the worker for this device
+        # worker = workers.UnicornHybridBlackDeviceWorker(stream_name)
+
+
+        from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
+        stream_widget = CustomDeviceWidget(parent_widget=self,
+                                 parent_layout=self.streamsHorizontalLayout,
+                                 stream_name=stream_name,
+                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget.setObjectName(widget_name)
+        self.stream_widgets[stream_name] = stream_widget
+
     def update_meta_data(self):
         # get the stream viz fps
         fps_list = np.array([[s.get_fps() for s in self.stream_widgets.values()]])
@@ -353,20 +380,25 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.pull_data_delay_label.setText("%.5f ms" % (1e3 * np.mean(pull_data_delay_list)))
 
-    def init_device(self, device_name):
-        config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
-        device_type = config.settings.value('DeviceType')
-
-        if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
-            serial_port = config.settings.value('_SerialPort')
-            board_id = config.settings.value('_Board_id')
-            # create and start this device's worker thread
-            worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
-            config.settings.endGroup()
-            self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
-        else:
-            dialog_popup('We are not supporting this Device or the Device has been added')
-        config.settings.endGroup()
+    # def init_device(self, device_name):
+    #     config.settings.beginGroup('presets/streampresets/{0}'.format(device_name))
+    #     device_type = config.settings.value('DeviceType')
+    #
+    #     if device_name not in self.device_workers.keys() and device_type == 'OpenBCI':
+    #         serial_port = config.settings.value('_SerialPort')
+    #         board_id = config.settings.value('_Board_id')
+    #         # create and start this device's worker thread
+    #         worker = workers.OpenBCIDeviceWorker(device_name, serial_port, board_id)
+    #         config.settings.endGroup()
+    #         self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+    #     if device_name not in self.device_workers.keys() and device_type == 'UnicornHybridBlack':
+    #         board_id = config.settings.value('_Board_id')
+    #         worker = workers.UnicornHybridBlackDeviceWorker(device_name, board_id)
+    #         config.settings.endGroup()
+    #         self.init_network_streaming(device_name, networking_interface='Device', worker=worker)
+    #     else:
+    #         dialog_popup('We are not supporting this Device or the Device has been added')
+    #     config.settings.endGroup()
 
     def reload_all_presets_btn_clicked(self):
         if self.reload_all_presets():
@@ -485,3 +517,14 @@ class MainWindow(QtWidgets.QMainWindow):
         #     if stream_widget.preset_type == preset_type:
         #         stream_widget.try_close()
 
+
+    def auto_scale_stream_viz(self):
+        for stream_name, stream_widget in self.stream_widgets.items():
+            stream_widget.auto_scale_viz_components()
+
+    def resizeEvent(self, a0):
+        # always put the notification pane at bottom right
+        self.adjust_notification_panel_location()
+
+    def adjust_notification_panel_location(self):
+        self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_file_size_label.height() - 12)  # substract 64 to account for margin

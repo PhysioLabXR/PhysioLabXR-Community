@@ -28,8 +28,9 @@ def get_working_camera_ports():
     """
     non_working_ports = []
     dev_port = 0
-    working_ports = []
+    working_cams = []
     available_ports = []
+
     while len(non_working_ports) < 6: # if there are more than 5 non working ports stop the testing.
         camera = cv2.VideoCapture(dev_port)
         if not camera.isOpened():
@@ -37,14 +38,13 @@ def get_working_camera_ports():
             # SplashLoadingTextNotifier().set_loading_text("Video port %s is not working." %dev_port)
         else:
             is_reading, img = camera.read()
-            w = camera.get(3)
-            h = camera.get(4)
-            if is_reading:
+            if is_reading and img is not None:
+                h, w, ch = img.shape
                 # SplashLoadingTextNotifier().set_loading_text("Video port %s is working and reads images (%s x %s)" %(dev_port,h,w))
-                working_ports.append(dev_port)
+                working_cams.append({'stream_name': f"Camera {dev_port}", 'width': w, 'height': h, 'nchannels': ch, 'video_id': dev_port})
             else:
                 # SplashLoadingTextNotifier().set_loading_text("Video port %s for camera ( %s x %s) is present but does not read." %(dev_port,h,w))
                 available_ports.append(dev_port)
         dev_port +=1
         camera.release()
-    return available_ports, working_ports, non_working_ports
+    return available_ports, working_cams, non_working_ports

@@ -10,6 +10,7 @@ from physiolabxr.configs.configs import AppConfigs, LinechartVizMode, RecordingF
 from physiolabxr.presets.Presets import Presets, _load_video_device_presets, _load_audio_device_presets
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.startup.startup import load_settings
+from physiolabxr.threadings.ScreenCaptureWorker import get_screen_capture_size
 from physiolabxr.threadings.WaitThreads import start_wait_process
 from physiolabxr.utils.Validators import NoCommaIntValidator
 from physiolabxr.utils.ui_utils import stream_stylesheet
@@ -29,6 +30,16 @@ class SettingsWidget(QtWidgets.QWidget):
         # resolve save directory
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
         self.set_recording_file_location(config.settings.value('recording_file_location'))
+
+        # resolve replay settings
+        self.start_stream_on_replay_checkbox.setChecked(AppConfigs().start_streams_on_replay)
+        self.start_stream_on_replay_checkbox.stateChanged.connect(self.on_replay_start_stream_on_replay_changed)
+        self.auto_set_zmq_checkbox.setChecked(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        self.auto_set_zmq_lineedit.setText(str(AppConfigs().auto_select_zmq_n_channels))
+        self.auto_set_zmq_lineedit.setValidator(NoCommaIntValidator())
+        self.auto_set_zmq_lineedit.textChanged.connect(self.on_auto_set_zmq_lineedit_changed)
+        self.auto_set_zmq_checkbox.stateChanged.connect(self.on_auto_set_zmq_checkbox_changed)
 
         # resolve recording file format
         self.saveFormatComboBox.addItems([member.value for member in RecordingFileFormat.__members__.values()])
@@ -79,7 +90,6 @@ class SettingsWidget(QtWidgets.QWidget):
         an outside qthread must monitor the return of this process and call _presets().add_video_presets(rtn), where
         rtn is the return of the process _presets()._load_video_device_process.
 
-
         """
         self.parent.remove_stream_widget_with_preset_type(PresetType.WEBCAM)
         self.parent.remove_stream_widget_with_preset_type(PresetType.MONITOR)
@@ -87,7 +97,9 @@ class SettingsWidget(QtWidgets.QWidget):
         self.reload_video_device_button.setEnabled(False)
         self.reload_video_device_button.setText("Reloading...")
         Presets().remove_video_presets()
-        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0)  # always add the monitor 0 preset
+
+        screen_cap_height, screen_cap_width = get_screen_capture_size()
+        Presets().add_video_preset_by_fields('monitor 0', PresetType.MONITOR, 0, width=screen_cap_width, height=screen_cap_height, nchannels=3)  # always add the monitor 0 preset
         GlobalSignals().stream_presets_entry_changed_signal.emit()
 
         print("settings widget: creating reload video thread")
@@ -225,6 +237,10 @@ class SettingsWidget(QtWidgets.QWidget):
         AppConfigs().linechart_viz_mode = LinechartVizMode(self.linechart_viz_mode_combobox.currentText())
         print(f'Linechart viz mode changed to {AppConfigs().linechart_viz_mode}')
 
+    def on_replay_start_stream_on_replay_changed(self):
+        AppConfigs().start_streams_on_replay = self.start_stream_on_replay_checkbox.isChecked()
+        print(f'start_streams_on_replay changed to {AppConfigs().start_streams_on_replay}')
+
     def reload_stream_presets(self):
         if self.parent.is_any_stream_widget_added():
             dialog_popup('Please remove all stream widgets before reloading stream presets', title='Info', buttons=QDialogButtonBox.StandardButton.Ok)
@@ -242,3 +258,13 @@ class SettingsWidget(QtWidgets.QWidget):
             self._load_audio_device_process.terminate()
         self.wait_load_audio_device_process_thread.quit()
 
+    def on_auto_set_zmq_lineedit_changed(self):
+        if self.auto_set_zmq_lineedit.text() != '':
+            new_value = int(self.auto_set_zmq_lineedit.text())
+            AppConfigs().auto_select_zmq_n_channels = new_value
+            print(f'Set auto_select_zmq_n_channels to {new_value}')
+
+    def on_auto_set_zmq_checkbox_changed(self):
+        AppConfigs().auto_select_zmq_if_exceed_n_channels = self.auto_set_zmq_checkbox.isChecked()
+        self.auto_set_zmq_widget.setVisible(AppConfigs().auto_select_zmq_if_exceed_n_channels)
+        print(f'auto_select_zmq_if_exceed_n_channels changed to {AppConfigs().auto_select_zmq_if_exceed_n_channels}')

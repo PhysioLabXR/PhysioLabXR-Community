@@ -1,0 +1,2 @@
+{"ExperimentName": "MultiModalClassifier",
+  "PresetStreamNames": ["Example-BioSemi-64Chan","Example-EventMarker-DTN-Block", "Example-Eyetracking-Pupil", "Example-Video"]}

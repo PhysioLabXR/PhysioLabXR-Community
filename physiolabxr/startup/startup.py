@@ -59,11 +59,11 @@ def load_settings(revert_to_default=True, reload_presets=True, reload_configs=Tr
     Presets(_preset_root=preset_root, _reset=reload_presets)  # create the singleton presets object
     print("!!!Presets(_preset_root=preset_root, _reset=reload_presets)")
 
-    # instantiate the GlabalSignals singleton object
+    # instantiate the GlobalSignals singleton object
     GlobalSignals()
     print("!!!GlobalSignals()")
     #pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=False)
-    print("!!!pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True)")
+    print("!!!pyqtgraph.setConfigOptions(useNumba=True, useOpenGL=True, enableExperimental=True)")
 
 def load_ui_shared():
     global stream_unavailable_pixmap

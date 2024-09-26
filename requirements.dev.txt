@@ -1,11 +1,11 @@
 brainflow
-numpy >= 1.22.3
+numpy ~= 1.26.0
 PyQt6
 pyserial
 pylsl
 scikit-learn
-scipy~=1.9.1
-pyqtgraph
+scipy~=1.11.0
+git+https://github.com/physiolabxr/pyqtgraph.git@physio
 pyxdf
 pyscreeze
 pyzmq
@@ -18,3 +18,8 @@ PyOpenGL
 PyOpenGL_accelerate
 soundfile
 matplotlib
+imblearn
+toml
+grpcio
+grpcio-tools
+

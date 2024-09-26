@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import json
 from collections import defaultdict
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 
 import numpy as np
 from PyQt6 import QtWidgets, uic
@@ -28,7 +28,7 @@ class ReplayStreamHeader(QWidget):
         self.ui = uic.loadUi(AppConfigs()._ui_ReplayStreamHeaderWidget, self)
 
 class ReplayStreamListItem(QWidget):
-    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True, stream_interface=PresetType.LSL):
+    def __init__(self, replay_tab_parent, stream_name, stream_shape, srate, data_type, enabled_in_replay=True):
         """
 
         @param stream_name:
@@ -47,8 +47,11 @@ class ReplayStreamListItem(QWidget):
 
         if AppConfigs().is_lsl_available(): self.interface_combobox.addItem(PresetType.LSL.value)
         self.interface_combobox.addItem(PresetType.ZMQ.value)
-        # select the current interface
-        self.interface_combobox.setCurrentText(stream_interface.value)
+        # check the number of channels, if exceeds the max, change the type to ZMQ
+        if (AppConfigs().auto_select_zmq_if_exceed_n_channels and stream_shape[0] > AppConfigs().auto_select_zmq_n_channels) or not AppConfigs().is_lsl_available():
+            self.interface_combobox.setCurrentText(PresetType.ZMQ.value)
+        else:
+            self.interface_combobox.setCurrentText(PresetType.LSL.value)
         # add on change listener
         self.interface_combobox.currentTextChanged.connect(self.interface_combobox_changed)
         self.set_zmq_port_line_edit()
@@ -94,7 +97,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = None, None, None, None
 
         self.loading_label.setVisible(False)
-        self.loading_movie = QMovie(AppConfigs()._icon_load_48px)
+        self.loading_movie = QMovie(AppConfigs()._icon_load_square_48px)
         self.loading_label.setMovie(self.loading_movie)
 
         self.stream_list_widget.setVisible(False)
@@ -105,25 +108,29 @@ class ReplayTab(QtWidgets.QWidget):
 
         self.parent = parent
 
-        self.file_loc = config.DEFAULT_DATA_DIR
-        self.ReplayFileLoc.setText('')
         self.stream_info = {}
         self.stream_list_items = {}
 
         # start replay client
         self.playback_widget = None
         self.replay_server_process = None
-        self.replay_port = test_port_range(*AppConfigs().replay_port_range)
-        if self.replay_port is None:
-            dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
-            return
+        # self.replay_port = test_port_range(*AppConfigs().replay_port_range)
+        # if self.replay_port is None:
+        #     dialog_popup(f'No available port for replay server in range: {AppConfigs().replay_port_range}, No replay will be available for this session', title='Error')
+        #     return
+        parent_conn, child_conn = Pipe()
+        self.replay_server_process = Process(target=start_replay_server, kwargs={'conn': child_conn})
+        self.replay_server_process.start()
+        self.replay_port = parent_conn.recv()
+
         self.command_info_interface = RenaTCPInterface(stream_name='RENA_REPLAY',
-                                                       port_id=self.replay_port,
+                                                       port_id=self.replay_port,  # connect to the port that the replay server is publishing to
                                                        identity='client',
                                                        pattern='router-dealer')
         self._create_playback_widget()
-        self.replay_server_process = Process(target=start_replay_server, args=(self.replay_port, ))
-        self.replay_server_process.start()
+
+        if AppConfigs().last_replayed_file_path is not None:
+            self.select_file(AppConfigs().last_replayed_file_path)
 
     def _create_playback_widget(self):
         self._init_playback_widget()
@@ -145,17 +152,15 @@ class ReplayTab(QtWidgets.QWidget):
         # self.lsl_replay_worker.replay_progress_signal.connect(self.playback_widget.on_replay_tick)
 
     def select_data_dir_btn_pressed(self):
-        selected_file = QFileDialog.getOpenFileName(self.BottomWidget, "Select File")[0]
-        self.select_file(selected_file)
+        response = QFileDialog.getOpenFileName(self.BottomWidget, "Select File")
+        if response[0] != '':
+            self.select_file(response[0])
 
     def select_file(self, selected_file):
-        if selected_file != '':
-            self.file_loc = selected_file
+        self.replay_file_path_lineedit.setText(selected_file)
+        print("Selected file: ", selected_file)
 
         # self.file_loc = self.file_loc + 'data.dats'
-
-        print("Selected file: ", self.file_loc)
-        self.ReplayFileLoc.setText(self.file_loc + '/')
 
         # start loading the replay file
         self.SelectDataDirBtn.setEnabled(False)
@@ -164,7 +169,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.StartStopReplayBtn.setVisible(False)
         self.playback_window.hide()
 
-        self.command_info_interface.send_string(shared.LOAD_COMMAND + self.file_loc)
+        self.command_info_interface.send_string(shared.LOAD_COMMAND + selected_file)
         self.wait_worker, self.wait_thread = start_wait_for_response(socket=self.command_info_interface.socket)
         self.wait_worker.result_available.connect(self.process_reply_from_load_command)
 
@@ -177,10 +182,13 @@ class ReplayTab(QtWidgets.QWidget):
         client_info = self.command_info_interface.recv_string()
 
         if client_info.startswith(shared.FAIL_INFO):
-            dialog_popup(client_info.strip(shared.FAIL_INFO), title="ERROR")
+            dialog_popup(client_info.strip(shared.FAIL_INFO), title="WARNING", buttons=QDialogButtonBox.StandardButton.Ok)
+            # clear the text box
+            self.replay_file_path_lineedit.clear()
             self.SelectDataDirBtn.setEnabled(True)
             show_label_movie(self.loading_label, False)
             self.stream_list_widget.setVisible(False)
+            AppConfigs().last_replayed_file_path = None
         elif client_info.startswith(shared.LOAD_SUCCESS_INFO):
             time_info = self.command_info_interface.socket.recv()
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(time_info)
@@ -213,8 +221,10 @@ class ReplayTab(QtWidgets.QWidget):
             self.SelectDataDirBtn.setEnabled(True)
             self.stream_list_widget.setVisible(True)
             show_label_movie(self.loading_label, False)
+            AppConfigs().last_replayed_file_path = self.replay_file_path_lineedit.toPlainText()
         else:
             raise ValueError("ReplayTab.start_replay_btn_pressed: unsupported info from ReplayClient: " + client_info)
+
 
     def cancel_loading_replay(self):
         self.wait_worker.exit()
@@ -247,7 +257,7 @@ class ReplayTab(QtWidgets.QWidget):
                 self.StartStopReplayBtn.setText('Start Replay')
                 return
 
-            self.command_info_interface.send_string(shared.GO_AHEAD_COMMAND)
+            self.command_info_interface.send_string(shared.SETUP_STREAM_COMMAND)
             self.command_info_interface.send_string(json.dumps(replay_stream_info, cls=PresetsEncoder))  # use PresetsEncoder to encode enums
             # receive the new timing info
             reply = self.command_info_interface.recv_string()
@@ -257,9 +267,9 @@ class ReplayTab(QtWidgets.QWidget):
                 self.StartStopReplayBtn.setText('Start Replay')
                 return
             self.start_time, self.end_time, self.total_time, self.virtual_clock_offset = np.frombuffer(self.command_info_interface.socket.recv())
-
-            self.parent.add_streams_from_replay(replay_stream_info)
             print('Received replay starts successfully from ReplayClient')  # TODO change the send to a progress bar
+            # add streams to MainWindow
+            self.parent.add_streams_from_replay(replay_stream_info)
 
             # this is the official start of replay
             self.set_enable_stream_list_editable_fields(False)
@@ -271,6 +281,9 @@ class ReplayTab(QtWidgets.QWidget):
             self.playback_window.show()
             self.playback_window.activateWindow()
             self.playback_widget.start_replay(self.start_time, self.end_time, self.total_time, self.virtual_clock_offset)
+
+            # send START REPLAY COMMAND to replay server
+            self.command_info_interface.send_string(shared.START_REPLAY_COMMAND)
 
             # self.loading_canceled = False  # TODO implement canceling loading of replay file
             # self.loading_replay_dialog = dialog_popup('Loading replay file...', title='Starting Replay', mode='modeless', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Cancel)
