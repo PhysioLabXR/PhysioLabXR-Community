@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 from PyQt6.QtWidgets import QDialogButtonBox, QWidget
+from torch.cuda import device
 
 import physiolabxr.threadings.AudioWorkers
 import physiolabxr.threadings.DeviceWorker
@@ -30,12 +31,14 @@ class DeviceWidget(BaseStreamWidget):
         super().__init__(parent_widget, parent_layout, PresetType.CUSTOM, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
-        device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name, device_widget=self)
-        device_worker.device_widget = self
-        self.connect_worker(device_worker, False)
+        device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name)
+        self.connect_worker(device_worker, False)  # this will register device worker as self.data_worker
+        if device_worker.device_options_widget_class is not None:
+            self.register_device_options_widgets(device_worker.device_options_widget_class)
+        else:
+            self.device_options_widget = None
         self.start_timers()
         self.first_frame_received = False
-        self.device_options_widget = None
 
     def start_stop_stream_btn_clicked(self):
         if not self.is_streaming():
@@ -84,16 +87,19 @@ class DeviceWidget(BaseStreamWidget):
             show_label_movie(self.waiting_label, False)
         super().process_stream_data(data_dict)
 
-    def register_device_options_widgets(self, device_options_widget: QWidget):
+    def register_device_options_widgets(self, device_options_widget_class):
         """Register the device options widget to the device widget
 
         This function is called in the device worker if the function create_custom_device_classes returns a device_options_widget.
         """
-        self.device_options_widget = device_options_widget
-
+        self.device_options_widget: QWidget = device_options_widget_class(self, self.data_worker)
         def show_focus_device_options_widget():
             self.device_options_widget.show()
             self.device_options_widget.activateWindow()
         self.DeviceBtn.clicked.connect(show_focus_device_options_widget)
         self.DeviceBtn.show()
         show_focus_device_options_widget()
+
+    def remove_stream(self):
+        super().remove_stream()
+        self.device_options_widget.close()

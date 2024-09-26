@@ -23,7 +23,7 @@ class DSI24_Interface(DeviceInterface):
                                               is_supports_device_availability=False)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PULL)
-        self.socket.bind("tcp://localhost:0")  # Bind to port 0 for an available random port
+        self.socket.bind("tcp://*:0")  # Bind to port 0 for an available random port
         self.port = self.socket.getsockopt(zmq.LAST_ENDPOINT).decode("utf-8").split(":")[-1]
         self.data_process = None
         self.terminate_event = None

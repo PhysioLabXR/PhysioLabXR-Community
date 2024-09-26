@@ -6,7 +6,6 @@ from PyQt6 import QtCore
 from PyQt6.QtCore import QObject, pyqtSignal, QMutex, QThread
 
 from physiolabxr.interfaces.DeviceInterface.utils import create_custom_device_classes
-from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.threadings.workers import RenaWorker
 
 
@@ -16,16 +15,12 @@ class DeviceWorker(QObject, RenaWorker):
 
     def __init__(self, stream_name, *args, **kwargs):
         super(DeviceWorker, self).__init__()
-        device_widget = kwargs.get('device_widget', None)
 
         self.stream_name = stream_name
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
-        self.device_interface, device_options_widget = create_custom_device_classes(device_widget, device_worker=self, device_name=stream_name)
-
-        if device_options_widget is not None:
-            device_widget.register_device_options_widgets(device_options_widget)
+        self.device_interface, self.device_options_widget_class = create_custom_device_classes(device_name=stream_name)
 
         # check if an Options class exists for the custom device
         # first check if a fil

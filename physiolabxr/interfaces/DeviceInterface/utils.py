@@ -1,7 +1,7 @@
 import importlib
 
 
-def create_custom_device_classes(device_widget, device_worker, device_name):
+def create_custom_device_classes(device_name):
     """Dynamically imports and creates a custom device interface based on the stream name.
 
     The call stack should be
@@ -31,19 +31,18 @@ def create_custom_device_classes(device_widget, device_worker, device_name):
     except ModuleNotFoundError as e:
         raise NotImplementedError(
             f"create_custom_device_classes: DeviceInterface class is "
-            f"{device_name}_Interface is not implemented under {module_name}") from e
+            f"{device_name}_Interface is not implemented under {module_name}: {e}")
     # Instantiate and return the interface object
     try:
         interface_instance = device_interface_class()
     except Exception as e:
-        raise Exception(f"Error creating device interface for {device_name}") from e
+        raise Exception(f"Error creating device interface for {device_name}: {e}")
 
     try:
         options_class = getattr(module, f"{device_name}_Options")
-        options_instance = options_class(device_widget, device_worker)
     except ModuleNotFoundError as e:
-        options_instance = None
+        options_class = None
         print(f"Options class not found for {device_name}, will not have options UI for this device.")
 
-    return interface_instance, options_instance
+    return interface_instance, options_class
 
