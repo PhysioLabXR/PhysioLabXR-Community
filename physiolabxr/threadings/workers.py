@@ -16,15 +16,13 @@ from physiolabxr.configs.config import REQUEST_REALTIME_INFO_TIMEOUT
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.configs.shared import SCRIPT_INFO_PREFIX, SCRIPT_INFO_REQUEST, \
     STOP_COMMAND, STOP_SUCCESS_INFO, TERMINATE_COMMAND, TERMINATE_SUCCESS_COMMAND, PLAY_PAUSE_SUCCESS_INFO, \
-    PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO, SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, \
+    SCRIPT_ERR_PREFIX, SCRIPT_WARNING_PREFIX, \
     SCRIPT_FATAL_PREFIX, PLAY_PAUSE_COMMAND, SLIDER_MOVED_COMMAND, SLIDER_MOVED_SUCCESS_INFO
-from physiolabxr.interfaces.DeviceInterface.CustomDeviceInterface import create_custom_device_interface
-from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 # from physiolabxr.utils.buffers import process_preset_create_openBCI_interface_startsensor
 # from physiolabxr.utils.buffers import process_preset_create_UnicornHybridBlack_interface_startsensor
 from physiolabxr.interfaces.LSLInletInterface import create_lsl_interface
-from physiolabxr.utils.networking_utils import recv_string, recv_string_router
+from physiolabxr.utils.networking_utils import recv_string_router
 from physiolabxr.utils.sim import sim_imp, sim_heatmap, sim_detected_points
 from physiolabxr.utils.time_utils import get_clock_time
 from physiolabxr.threadings.Interfaces import QWorker
@@ -92,7 +90,7 @@ class LSLInletWorker(QObject, RenaWorker):
 
             self.interface_mutex.unlock()
 
-            if frames.shape[-1] == 0:
+            if frames.shape[-1] == 0:  # if no data is received
                 return
 
             self.num_samples += len(timestamps)
@@ -253,92 +251,6 @@ class LSLInletWorker(QObject, RenaWorker):
 #
 #     def is_stream_available(self):
 #         return True
-
-
-
-class CustomDeviceWorker(QObject, RenaWorker):
-    signal_stream_availability = pyqtSignal(bool)
-    signal_stream_availability_tick = pyqtSignal()
-
-    def __init__(self, stream_name,*args, **kwargs):
-        super(CustomDeviceWorker, self).__init__()
-        self.signal_data_tick.connect(self.process_on_tick)
-        self.signal_stream_availability_tick.connect(self.process_stream_availability)
-
-        self._custom_device_interface: DeviceInterface = create_custom_device_interface(stream_name)
-        self._custom_device_interface.device_worker = self
-
-        self.is_streaming = False
-        self.timestamp_queue = deque(maxlen=1024)
-
-        self.start_time = time.time()
-        self.num_samples = 0
-
-        self.previous_availability = None
-
-        # self.init_dsp_client_server(self._lslInlet_interface.lsl_stream_name)
-        self.interface_mutex = QMutex()
-
-    @QtCore.pyqtSlot()
-    def process_on_tick(self):
-        if QThread.currentThread().isInterruptionRequested():
-            return
-        if self.is_streaming:
-            pull_data_start_time = time.perf_counter()
-            self.interface_mutex.lock()
-            frames, timestamps = self._custom_device_interface.process_frames()  # get all data and remove it from internal buffer
-            self.timestamp_queue.extend(timestamps)
-            if len(self.timestamp_queue) > 1:
-                sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
-            else:
-                sampling_rate = np.nan
-
-            self.interface_mutex.unlock()
-            if frames.shape[-1] == 0:
-                return
-
-            self.num_samples += len(timestamps)
-
-            data_dict = {'stream_name': self._custom_device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
-            self.signal_data.emit(data_dict)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-
-    @QtCore.pyqtSlot()
-    def process_stream_availability(self):
-        """
-        only emit when the stream is not available
-        """
-        if QThread.currentThread().isInterruptionRequested():
-            return
-        is_stream_availability = self._custom_device_interface.is_stream_available()
-        if self.previous_availability is None:  # first time running
-            self.previous_availability = is_stream_availability
-            self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())
-        else:
-            if is_stream_availability != self.previous_availability:
-                self.previous_availability = is_stream_availability
-                self.signal_stream_availability.emit(is_stream_availability)
-
-    def reset_interface(self, stream_name, num_channels):
-        self.interface_mutex.lock()
-        self._custom_device_interface = create_custom_device_interface(stream_name)
-        self.interface_mutex.unlock()
-
-    def start_stream(self):
-        self._custom_device_interface.start_stream()
-        self.is_streaming = True
-
-        self.num_samples = 0
-        self.start_time = time.time()
-        self.signal_stream_availability.emit(self._custom_device_interface.is_stream_available())  # extra emit because the signal availability does not change on this call, but stream widget needs update
-
-    def stop_stream(self):
-        self._custom_device_interface.stop_stream()
-        self.is_streaming = False
-
-    def is_stream_available(self):
-        return self._custom_device_interface.is_stream_available()
-
 
 
 class MmwWorker(QObject):

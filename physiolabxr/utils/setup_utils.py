@@ -7,11 +7,18 @@ import urllib.request
 import warnings
 import shutil
 import subprocess
+import stat
 
 from physiolabxr.configs.shared import temp_rpc_path
 from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.ui.dialogs import dialog_popup
 
+def remove_readonly(fn, path, excinfo):
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        fn(path)
+    except Exception as exc:
+        print("Skipped:", path, "because:\n", exc)
 
 def get_ubuntu_version():
     try:
@@ -311,8 +318,10 @@ def add_protoc_to_path_windows():
     if len(protobuf_package_dirnames) == 0:
         raise RPCCSharpSetupError("Google.Protobuf not found in winget package cache.")
     protobuf_package_dirname = protobuf_package_dirnames[0]
-    protobuf_package_path = os.path.join(winget_package_path, protobuf_package_dirname, 'bin')
-    add_to_path(protobuf_package_path)
+    protobuf_package_bin_path = os.path.join(winget_package_path, protobuf_package_dirname, 'bin')
+    add_to_path(protobuf_package_bin_path)
+    # protobuf_package_include_path = os.path.join(winget_package_path, protobuf_package_dirname, 'include')
+    # add_to_path(protobuf_package_include_path)
 
 
 def setup_grpc_csharp_plugin():

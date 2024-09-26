@@ -14,6 +14,7 @@
 
 # Get the name of the Python unittest module from the first argument
 test_modules=(
+  VisualizationTest
   VisualizationLSLChannelTest
   VisualizationZMQChannelTest
   RecordingTest
