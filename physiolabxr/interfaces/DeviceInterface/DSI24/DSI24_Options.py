@@ -1,7 +1,3 @@
-from PyQt6 import uic
-from PyQt6.QtGui import QIcon
-
-from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.ui.BaseDeviceOptions import BaseDeviceOptions
 
 
