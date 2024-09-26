@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
+import traceback
+
 from PyQt6.QtWidgets import QDialogButtonBox, QWidget
-from torch.cuda import device
 
 import physiolabxr.threadings.AudioWorkers
 import physiolabxr.threadings.DeviceWorker
@@ -56,7 +57,21 @@ class DeviceWidget(BaseStreamWidget):
             self.first_frame_received = False
             show_label_movie(self.waiting_label, True)
         try:
-            super().start_stop_stream_btn_clicked()
+            # this segment is the same as in the BaseStreamWidget, except the start_stream include the start_stream_arguments
+            # from the device options widget
+            if self.data_worker.is_streaming:
+                self.data_worker.stop_stream()
+                if not self.data_worker.is_streaming and self.add_stream_availability:
+                    self.update_stream_availability(self.data_worker.is_stream_available())
+            else:
+                try:
+                    start_stream_args = self.device_options_widget.start_stream_args() if self.device_options_widget is not None else {}
+                except Exception as e:
+                    traceback.print_exc()
+                    raise Exception(f"Error in getting start stream arguments from device options widget: {e}")
+                self.data_worker.start_stream(**start_stream_args)
+            self.set_button_icons()
+            self.main_parent.update_active_streams()
         except CustomDeviceStartStreamError as e:
             self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
             return

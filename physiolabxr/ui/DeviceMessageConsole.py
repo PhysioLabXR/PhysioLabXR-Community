@@ -26,4 +26,4 @@ class DeviceMessageConsole(ScriptConsoleLog):
         The message is defined in DSI24_process.py
         """
         if 'i' in data:
-            self.console_log_widget.print_msg('info', data['i'])
+            self.print_msg('info', data['i'])

@@ -105,8 +105,8 @@ class DeviceWorker(QObject, RenaWorker):
         self.device_interface = create_custom_device_classes(stream_name)
         self.interface_mutex.unlock()
 
-    def start_stream(self):
-        self.device_interface.start_stream()
+    def start_stream(self, *args, **kwargs):
+        self.device_interface.start_stream(*args, **kwargs)
         self.is_streaming = True
         self.interrupted = False
 

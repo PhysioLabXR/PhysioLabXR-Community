@@ -21,6 +21,24 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Device port</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="device_port_lineedit">
+       <property name="text">
+        <string>COM6</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QPushButton" name="check_impedance_btn">
      <property name="text">
       <string>Check Impedance</string>

@@ -9,3 +9,6 @@ class DSI24_Options(BaseDeviceOptions):
 
     def check_impedance_btn_clicked(self):
         raise NotImplementedError
+
+    def start_stream_args(self):
+        return {'bluetooth_port': self.device_port_lineedit.text()}

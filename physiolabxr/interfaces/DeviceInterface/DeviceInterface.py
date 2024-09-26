@@ -42,8 +42,11 @@ class DeviceInterface:
         else:
             self.device_available = False
 
-    def start_stream(self):
-        """Start the stream from the device."""
+    def start_stream(self, *args, **kwargs):
+        """Start the stream from the device.
+
+        args and kwargs are the arguments that are passed from the device options UI when the user clicks the Start Stream button.
+        """
         pass
 
     def process_frames(self):
