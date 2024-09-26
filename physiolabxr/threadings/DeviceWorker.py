@@ -1,4 +1,5 @@
 import time
+import traceback
 from collections import deque
 
 import numpy as np
@@ -56,6 +57,7 @@ class DeviceWorker(QObject, RenaWorker):
             try:
                 frames, timestamps, messages = self.device_interface.process_frames()  # get all data and remove it from internal buffer
             except Exception as e:
+                traceback.print_exc()
                 error_message = str(e)
                 self.interrupted = True
 
@@ -79,6 +81,7 @@ class DeviceWorker(QObject, RenaWorker):
                     self.signal_data.emit(data_dict)
                     self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 except Exception as e:  # in case there's something wrong with the frames or timestamps
+                    traceback.print_exc()
                     error_message = str(e)
                     self.interrupted = True
                     self.signal_data.emit({'stream_name': self.stream_name, 'frames': np.empty(0), 'timestamps': [], 'sampling_rate': np.nan, 'e': error_message})

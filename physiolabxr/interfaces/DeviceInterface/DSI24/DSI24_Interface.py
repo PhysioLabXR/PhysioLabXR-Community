@@ -1,5 +1,6 @@
 from multiprocessing import Process, Event
 
+import numpy as np
 import zmq
 
 from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24_Process import DSI24_process
@@ -47,7 +48,7 @@ class DSI24_Interface(DeviceInterface):
                 break
 
         if len(frames) > 0:
-            return np.array(frames).transpose(2, 1, 0)[0], np.array(timestamps)[:, 0]
+            return np.array(frames).transpose(2, 1, 0)[0], np.array(timestamps)[:, 0], messages
         else:
             return frames, timestamps, messages
 

@@ -32,7 +32,7 @@
      <item>
       <widget class="QLineEdit" name="device_port_lineedit">
        <property name="text">
-        <string>COM6</string>
+        <string>COM7</string>
        </property>
       </widget>
      </item>
