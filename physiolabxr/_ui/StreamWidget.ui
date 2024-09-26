@@ -284,8 +284,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1540</width>
-                 <height>1107</height>
+                 <width>1534</width>
+                 <height>1086</height>
                 </rect>
                </property>
                <layout class="QVBoxLayout" name="viz_group_scroll_layout">
@@ -442,7 +442,44 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="DeviceBtn">
+             <widget class="QPushButton" name="device_msg_console_btn">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="visible">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Start plotting this stream</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="Start Stream" stdset="0">
+               <string>Start Stream</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="device_options_btn">
               <property name="enabled">
                <bool>true</bool>
               </property>

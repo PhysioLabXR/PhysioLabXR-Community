@@ -55,7 +55,6 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.StreamNameLabel.setText(stream_name)
         self.OptionsBtn.setIcon(AppConfigs()._icon_options)
         self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
-        self.DeviceBtn.setIcon(AppConfigs()._icon_terminal)
 
         if type(insert_position) == int:
             parent_layout.insertWidget(insert_position, self)

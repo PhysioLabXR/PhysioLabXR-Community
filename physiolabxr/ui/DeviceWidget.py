@@ -10,6 +10,7 @@ from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_stream_preset_info
 from physiolabxr.threadings import workers
 from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
+from physiolabxr.ui.DeviceMessageConsole import DeviceMessageConsole
 from physiolabxr.ui.dialogs import dialog_popup
 from physiolabxr.utils.ui_utils import show_label_movie
 
@@ -31,12 +32,22 @@ class DeviceWidget(BaseStreamWidget):
         super().__init__(parent_widget, parent_layout, PresetType.CUSTOM, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
+
+        self.device_msg_console_btn.setIcon(AppConfigs()._icon_terminal)
+        self.device_options_btn.setIcon(AppConfigs()._icon_device_options)
+
         device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name)
         self.connect_worker(device_worker, False)  # this will register device worker as self.data_worker
         if device_worker.device_options_widget_class is not None:
             self.register_device_options_widgets(device_worker.device_options_widget_class)
         else:
             self.device_options_widget = None
+
+        self.device_msg_console = DeviceMessageConsole(self, self.data_worker)
+        self.device_msg_console_btn.clicked.connect(self.show_focus_device_msg_console_widget)
+        self.device_msg_console_btn.show()
+        self.show_focus_device_msg_console_widget()
+
         self.start_timers()
         self.first_frame_received = False
 
@@ -87,6 +98,10 @@ class DeviceWidget(BaseStreamWidget):
             show_label_movie(self.waiting_label, False)
         super().process_stream_data(data_dict)
 
+    def show_focus_device_msg_console_widget(self):
+        self.device_msg_console.show()
+        self.device_msg_console.activateWindow()
+
     def register_device_options_widgets(self, device_options_widget_class):
         """Register the device options widget to the device widget
 
@@ -96,10 +111,12 @@ class DeviceWidget(BaseStreamWidget):
         def show_focus_device_options_widget():
             self.device_options_widget.show()
             self.device_options_widget.activateWindow()
-        self.DeviceBtn.clicked.connect(show_focus_device_options_widget)
-        self.DeviceBtn.show()
+        self.device_options_btn.clicked.connect(show_focus_device_options_widget)
+        self.device_options_btn.show()
         show_focus_device_options_widget()
 
     def remove_stream(self):
         super().remove_stream()
-        self.device_options_widget.close()
+        if self.device_options_widget is not None:
+            self.device_options_widget.close()
+        self.device_msg_console.close()
