@@ -1,21 +1,15 @@
 from PyQt6 import uic
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QWidget
 
 from physiolabxr.configs.configs import AppConfigs
-from physiolabxr.presets.PresetEnums import VideoDeviceChannelOrder
-from physiolabxr.presets.presets_utils import set_video_scale, set_video_channel_order
-from physiolabxr.ui.ScriptConsoleLog import ScriptConsoleLog
-from physiolabxr.ui.SliderWithValueLabel import SliderWithValueLabel
+from physiolabxr.ui.BaseDeviceOptions import BaseDeviceOptions
 
 
-class DSI24_Options(QWidget):
-    def __init__(self, parent_device_widget, device_worker):
-        super().__init__()
-        self.ui = uic.loadUi(AppConfigs()._ui_DSI24_Options, self)
-        window_icon = QIcon(AppConfigs()._app_logo)
-        self.setWindowIcon(window_icon)
-        self.setWindowTitle('Options for DSI24')
+class DSI24_Options(BaseDeviceOptions):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        self.parent_device_widget = parent_device_widget  # this is not used in this class
-        self.device_worker = device_worker
+        self.check_impedance_btn.clicked.connect(self.check_impedance_btn_clicked)
+
+    def check_impedance_btn_clicked(self):
+        raise NotImplementedError

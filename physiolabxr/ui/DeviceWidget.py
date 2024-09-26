@@ -107,7 +107,7 @@ class DeviceWidget(BaseStreamWidget):
 
         This function is called in the device worker if the function create_custom_device_classes returns a device_options_widget.
         """
-        self.device_options_widget: QWidget = device_options_widget_class(self, self.data_worker)
+        self.device_options_widget: QWidget = device_options_widget_class(self.stream_name, self.data_worker.device_interface)
         def show_focus_device_options_widget():
             self.device_options_widget.show()
             self.device_options_widget.activateWindow()
