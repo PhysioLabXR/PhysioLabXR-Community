@@ -29,7 +29,7 @@ class DSI24_Interface(DeviceInterface):
         self.terminate_event = None
 
     def start_stream(self):
-        self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, "COM6")
+        self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, "COM7")
 
     def process_frames(self):
         frames, timestamps, messages = [], [], []

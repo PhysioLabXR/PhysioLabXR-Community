@@ -1,5 +1,5 @@
 # This Python file uses the following encoding: utf-8
-from PyQt6.QtWidgets import QDialogButtonBox
+from PyQt6.QtWidgets import QDialogButtonBox, QWidget
 
 import physiolabxr.threadings.AudioWorkers
 import physiolabxr.threadings.DeviceWorker
@@ -30,12 +30,12 @@ class DeviceWidget(BaseStreamWidget):
         super().__init__(parent_widget, parent_layout, PresetType.CUSTOM, stream_name,
                          data_timer_interval=AppConfigs().pull_data_interval, use_viz_buffer=True,
                          insert_position=insert_position)
-        self.DeviceBtn.show()  # the device button is only shown for custom devices
         device_worker = physiolabxr.threadings.DeviceWorker.DeviceWorker(self.stream_name, device_widget=self)
         device_worker.device_widget = self
         self.connect_worker(device_worker, False)
         self.start_timers()
         self.first_frame_received = False
+        self.device_options_widget = None
 
     def start_stop_stream_btn_clicked(self):
         if not self.is_streaming():
@@ -83,3 +83,17 @@ class DeviceWidget(BaseStreamWidget):
             self.first_frame_received = True
             show_label_movie(self.waiting_label, False)
         super().process_stream_data(data_dict)
+
+    def register_device_options_widgets(self, device_options_widget: QWidget):
+        """Register the device options widget to the device widget
+
+        This function is called in the device worker if the function create_custom_device_classes returns a device_options_widget.
+        """
+        self.device_options_widget = device_options_widget
+
+        def show_focus_device_options_widget():
+            self.device_options_widget.show()
+            self.device_options_widget.activateWindow()
+        self.DeviceBtn.clicked.connect(show_focus_device_options_widget)
+        self.DeviceBtn.show()
+        show_focus_device_options_widget()

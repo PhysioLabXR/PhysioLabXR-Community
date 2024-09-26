@@ -18,15 +18,14 @@ class DeviceWorker(QObject, RenaWorker):
         super(DeviceWorker, self).__init__()
         device_widget = kwargs.get('device_widget', None)
 
+        self.stream_name = stream_name
         self.signal_data_tick.connect(self.process_on_tick)
         self.signal_stream_availability_tick.connect(self.process_stream_availability)
 
         self.device_interface, device_options_widget = create_custom_device_classes(device_widget, device_worker=self, device_name=stream_name)
-        self.device_interface.device_worker = self
 
         if device_options_widget is not None:
-            self.device_options_widget = device_options_widget
-            self.DeviceBtn.clicked.connect(self.device_options_widget.show)
+            device_widget.register_device_options_widgets(device_options_widget)
 
         # check if an Options class exists for the custom device
         # first check if a fil
@@ -48,6 +47,9 @@ class DeviceWorker(QObject, RenaWorker):
         """
         if self._custom_device_interface.process_frames() raises an exception, it means the device has disconnected.
 
+        In the emitted dictionary
+
+        frames: must be a ndarray of shape (num_channels, num_timesteps) or a empty ndarray if no data is available
         """
         if QThread.currentThread().isInterruptionRequested():
             return
@@ -66,7 +68,7 @@ class DeviceWorker(QObject, RenaWorker):
 
             if len(messages) > 0:  # first emit all the messages
                 for message in messages:
-                    self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'i': message})
+                    self.signal_data.emit({'stream_name': self.stream_name, 'frames': np.empty(0), 'timestamps': [], 'sampling_rate': [], 'i': message})
             if error_message is None:
                 try:
                     if len(frames) == 0:
@@ -78,15 +80,15 @@ class DeviceWorker(QObject, RenaWorker):
                     else:
                         sampling_rate = np.nan
                     self.num_samples += len(timestamps)
-                    data_dict = {'stream_name': self.device_interface._device_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
+                    data_dict = {'stream_name': self.stream_name, 'frames': frames, 'timestamps': timestamps, 'sampling_rate': sampling_rate}
                     self.signal_data.emit(data_dict)
                     self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
                 except Exception as e:  # in case there's something wrong with the frames or timestamps
                     error_message = str(e)
                     self.interrupted = True
-                    self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
+                    self.signal_data.emit({'stream_name': self.stream_name, 'frames': np.empty(0), 'timestamps': [], 'sampling_rate': np.nan, 'e': error_message})
             else:
-                self.signal_data.emit({'stream_name': None, 'frames': None, 'timestamps': None, 'sampling_rate': None, 'e': error_message})
+                self.signal_data.emit({'stream_name': self.stream_name, 'frames': np.empty(0), 'timestamps': [], 'sampling_rate': np.nan, 'e': error_message})
 
     @QtCore.pyqtSlot()
     def process_stream_availability(self):

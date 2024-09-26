@@ -39,4 +39,4 @@ class DSI24_Options(QWidget):
         The message is defined in DSI24_process.py
         """
         if 'i' in data:
-            self.console_log_widget.print_msg('info', data['message'])
+            self.console_log_widget.print_msg('info', data['i'])

@@ -93,10 +93,8 @@ def DSI24_process(terminate_event, network_port, com_port, args=''):
     except Exception as e:
         dsi24_data_socket.send_json({
                           't': 'e',
-                          'message': f"Error connecting to DSI-24 device: {e}. You might want to restart the device and try again."})
+                          'message': f"Error connecting to DSI-24 device: {e}. You might want to restart the device/computer and try again."})
         headset.Disconnect()
-        dsi24_data_socket.close()
-        context.term()
         return
 
     if args.lower().startswith('imp'):
