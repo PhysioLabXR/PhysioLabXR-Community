@@ -1,0 +1,8 @@
+{ "StreamName":"TobiiProFusion",
+  "NominalSamplingRate":  60,
+  "DeviceType": "OpenBCI",
+  "ChannelNames":  [
+    "",
+   ""],
+  "GroupInfo":  [20, 21],
+  "DataType": "float32"}
