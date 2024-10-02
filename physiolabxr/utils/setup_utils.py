@@ -306,7 +306,7 @@ def add_to_path(new_path):
 
 
 def add_protoc_to_path_windows():
-    winget_info = subprocess.run(["winget", "--info"], capture_output=True, text=True).stdout
+    winget_info = subprocess.run(["winget", "--info"], capture_output=True, text=True, encoding='utf-8').stdout
     winget_info = winget_info.splitlines()
     winget_info = [x for x in winget_info if 'Portable Package Root (User)' in x][0]
     winget_info = re.sub(r'\s+', ' ', winget_info).split(' ')[-1]
