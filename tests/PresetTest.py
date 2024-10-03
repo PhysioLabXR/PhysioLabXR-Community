@@ -24,10 +24,6 @@ def context_bot(app_main_window, qtbot):
 def test_with_buggy_presets(app_main_window, context_bot, qtbot):
     """
     pass in a temporary preset root containing a buggy preset file
-    @param app_main_window:
-    @param context_bot:
-    @param qtbot:
-    @return:
     """
     pass
 
