@@ -68,7 +68,50 @@ def example_sample_callback_signals(headsetPtr, packetTime, userData):
 
 @SampleCallback
 def example_sample_callback_impedances(headsetPtr, packetTime, userData):
-    raise NotImplementedError
+    global is_first_time
+    global time_offset
+    global dsi24_data_socket
+
+    # Create the headset object
+    h = Headset(headsetPtr)
+
+    # Collect impedance values from all referential EEG channels (excluding factory reference)
+    impedance_data = np.array(
+        ['%+08.2f' % (src.GetImpedanceEEG() for src in h.Sources() if src.IsReferentialEEG() and not src.IsFactoryReference())])
+    impedance_data = impedance_data.reshape(len(impedance_data), 1)
+    impedance_data = impedance_data[[9, 10, 3, 2, 4, 17, 18, 7, 1, 5, 11, 22, 12, 21, 8, 0, 6, 13, 14, 20, 23, 19, 15, 16], :]
+
+    # Add the common-mode function (CMF) impedance value at the end
+    cmf_impedance = np.array([h.GetImpedanceCMF()])
+    impedance_data = np.vstack([impedance_data, cmf_impedance])
+
+    # Calculate the time offset on the first packet
+    if is_first_time:
+        time_offset = local_clock() - float(packetTime)
+        is_first_time = False
+
+    # Create timestamp
+    t = [float(packetTime) + time_offset]
+
+    # Ensure that data and timestamps are aligned
+    if impedance_data.shape[1] != len(t):
+        print('Data and timestamp mismatch')
+        print(impedance_data.shape)
+        print(len(t))
+
+    # Convert impedance data to a dictionary for streaming
+    impedance_data_dict = {
+        't': 'd',  # 'd' for data, 'i' for info, 'e' for error
+        'impedance_frame': impedance_data.tolist(),  # Convert impedance data to a list for JSON serialization
+        'timestamp': t
+    }
+
+    # Send the impedance data via ZMQ socket to the main process
+    try:
+        dsi24_data_socket.send_json(impedance_data_dict)
+    except zmq.error.ZMQError:
+        print("Socket already closed.")
+
 
 def DSI24_process(terminate_event, network_port, com_port, args=''):
     """Process to connect to the DSI-24 device and send data to the main process
