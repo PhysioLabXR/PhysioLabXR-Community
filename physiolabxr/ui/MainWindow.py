@@ -8,7 +8,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
-from physiolabxr.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError
+from physiolabxr.exceptions.exceptions import RenaError, InvalidStreamMetaInfoError, FailToSetupDevice
 from physiolabxr.configs import config
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.Presets import Presets
@@ -40,6 +40,7 @@ from physiolabxr.ui.ReplayTab import ReplayTab
 from physiolabxr.utils.buffers import DataBuffer
 from physiolabxr.utils.ui_utils import another_window
 from physiolabxr.ui.dialogs import dialog_popup
+from physiolabxr.ui.DeviceWidget import DeviceWidget
 
 import numpy as np
 
@@ -136,7 +137,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # global buffer object for visualization, recording, and scripting
         self.global_stream_buffer = DataBuffer()
 
-
         # close dialog
         self.close_dialog = None
         self.close_event = None
@@ -213,12 +213,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = get_experiment_preset_streams(stream_name)
                 self.add_streams_from_experiment_preset(streams_for_experiment)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset
-                # check if stream_name is a custom device
-                if stream_name == CustomPresetType.UnicornHybridBlackBluetooth.value:
-                    self.init_custom_device(stream_name)
-                else:
-                    raise NotImplementedError
-                # self.init_device(selected_text)  # add device stream
+                self.init_custom_device(stream_name)  # add device stream
             else:
                 raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
@@ -341,24 +336,19 @@ class MainWindow(QtWidgets.QMainWindow):
         widget_name = stream_name + '_widget'
         from physiolabxr.ui.AudioInputDeviceWidget import AudioInputDeviceWidget
         stream_widget = AudioInputDeviceWidget(parent_widget=self,
-                                 parent_layout=self.streamsHorizontalLayout,
-                                 stream_name=stream_name,
-                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+                                               parent_layout=self.streamsHorizontalLayout,
+                                               stream_name=stream_name,
+                                               insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
 
     def init_custom_device(self, stream_name):
         widget_name = stream_name + '_widget'
-        # from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
         # create the worker for this device
-        # worker = workers.UnicornHybridBlackDeviceWorker(stream_name)
-
-
-        from physiolabxr.ui.CustomDeviceWidget import CustomDeviceWidget
-        stream_widget = CustomDeviceWidget(parent_widget=self,
-                                 parent_layout=self.streamsHorizontalLayout,
-                                 stream_name=stream_name,
-                                 insert_position=self.streamsHorizontalLayout.count() - 1)
+        stream_widget = DeviceWidget(parent_widget=self,
+                                     parent_layout=self.streamsHorizontalLayout,
+                                     stream_name=stream_name,
+                                     insert_position=self.streamsHorizontalLayout.count() - 1)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
 

@@ -1,24 +1,22 @@
+from physiolabxr.exceptions.exceptions import FailToSetupDevice
+
 try:
     import bluetooth
 except ImportError:
-    print('Bluetooth module is not available')
-    print('Please install the bluetooth module by running "pip install pybluez"')
+    raise FailToSetupDevice('Bluetooth module is not available.'
+                            'Please install the bluetooth module by running "pip install pybluez"')
 
-import brainflow
-from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import re
 import time
-import warnings
+
+import bluetooth
+import brainflow
+from brainflow import BoardShim, BrainFlowInputParams
+
+
 from physiolabxr.configs.GlobalSignals import GlobalSignals
-
-from physiolabxr.exceptions.exceptions import CustomDeviceNotFoundError, CustomDeviceStartStreamError, \
-    CustomDeviceStreamInterruptedError
+from physiolabxr.exceptions.exceptions import CustomDeviceStartStreamError
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
-
-try:
-    from pylsl import StreamInfo, StreamOutlet
-except:
-    warnings.warn("UnicornHybridBlackDeviceInterface: pylsl is not installed, LSL interface will not work.")
 
 
 class UnicornHybridBlackDeviceInterface(DeviceInterface):
@@ -151,16 +149,3 @@ class UnicornHybridBlackDeviceInterface(DeviceInterface):
 
     def get_sampling_rate(self):
         return self._board.get_sampling_rate(self.board_id)
-
-
-def create_custom_device_interface(stream_name):
-    if stream_name == 'UnicornHybridBlackBluetooth':
-        interface = UnicornHybridBlackDeviceInterface()
-        return interface
-
-    # interface = UnicornHybridBlackDeviceInterface()
-    # return interface
-
-# def create_unicorn_hybrid_black_interface():
-#     interface = UnicornHybridBlackDeviceInterface()
-#     return interface
