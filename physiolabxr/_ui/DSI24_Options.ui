@@ -39,7 +39,7 @@
     </layout>
    </item>
    <item>
-    <widget class="QPushButton" name="check_impedance_btn">
+    <widget class="QCheckBox" name="check_impedance_chkbx">
      <property name="text">
       <string>Check Impedance</string>
      </property>
