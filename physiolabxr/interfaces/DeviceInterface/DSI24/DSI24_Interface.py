@@ -7,9 +7,10 @@ from physiolabxr.interfaces.DeviceInterface.DSI24.DSI24_Process import DSI24_pro
 from physiolabxr.third_party.WearableSensing.DSI_py3 import *
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
 
-def run_dsi24_headset_process(port, com_port):
+
+def run_dsi24_headset_process(port, com_port, impedance):
     terminate_event = Event()
-    headset_process = Process(target=DSI24_process, args=(terminate_event, port, com_port))
+    headset_process = Process(target=DSI24_process, args=(terminate_event, port, com_port, impedance))
     headset_process.start()
     return headset_process, terminate_event
 
@@ -29,8 +30,8 @@ class DSI24_Interface(DeviceInterface):
         self.data_process = None
         self.terminate_event = None
 
-    def start_stream(self, bluetooth_port):
-        self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, bluetooth_port)
+    def start_stream(self, bluetooth_port, impedance):
+        self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, bluetooth_port, impedance)
 
     def process_frames(self):
         frames, timestamps, messages = [], [], []

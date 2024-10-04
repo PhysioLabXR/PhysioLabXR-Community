@@ -77,9 +77,12 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
 
     # Collect impedance values from all referential EEG channels (excluding factory reference)
     impedance_data = np.array(
-        ['%+08.2f' % (src.GetImpedanceEEG() for src in h.Sources() if src.IsReferentialEEG() and not src.IsFactoryReference())])
+        ['%+08.2f' % (src.GetImpedanceEEG()) for src in h.Sources() if src.IsReferentialEEG() and not src.IsFactoryReference()])
     impedance_data = impedance_data.reshape(len(impedance_data), 1)
-    impedance_data = impedance_data[[9, 10, 3, 2, 4, 17, 18, 7, 1, 5, 11, 22, 12, 21, 8, 0, 6, 13, 14, 20, 23, 19, 15, 16], :]
+    impedance_data = impedance_data[[10,11,5,4,6,16,17,9,3,7,12,19,13,18,0,8,14,15,1,2], :]
+    empty_rows = np.empty((3,impedance_data.shape[1]), dtype=object)
+    impedance_data = np.concatenate((impedance_data, empty_rows))
+    print(impedance_data)
 
     # Add the common-mode function (CMF) impedance value at the end
     cmf_impedance = np.array([h.GetImpedanceCMF()])
@@ -102,7 +105,7 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
     # Convert impedance data to a dictionary for streaming
     impedance_data_dict = {
         't': 'd',  # 'd' for data, 'i' for info, 'e' for error
-        'impedance_frame': impedance_data.tolist(),  # Convert impedance data to a list for JSON serialization
+        'frame': impedance_data.tolist(),  # Convert impedance data to a list for JSON serialization
         'timestamp': t
     }
 
@@ -113,13 +116,13 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
         print("Socket already closed.")
 
 
-def DSI24_process(terminate_event, network_port, com_port, args=''):
+def DSI24_process(terminate_event, network_port, com_port, impedance, args=''):
     """Process to connect to the DSI-24 device and send data to the main process
 
     Args:
         network_port (int): The port number to send data to the main process
         com_port (str): The COM port to connect to the DSI-24 device
-        mode (str): The mode of the headset (default: None), NOT IMPLEMENTED
+        impedance (str): The mode of the headset (default: None), NOT IMPLEMENTED
     """
     global dsi24_data_socket
     global is_first_time
@@ -140,14 +143,16 @@ def DSI24_process(terminate_event, network_port, com_port, args=''):
         headset.Disconnect()
         return
 
-    if args.lower().startswith('imp'):
+    if impedance == 1:
         # Currently not used
+        print("Impedance mode")
         headset.SetSampleCallback(example_sample_callback_impedances, 0)
         headset.StartImpedanceDriver()
     else:
         # Set the sample callback to ExampleSampleCallback_Signals
         headset.SetSampleCallback(example_sample_callback_signals, 0)
         if len(args.strip()): headset.SetDefaultReference(args, True)
+        print("EEG mode")
         # Start the data acquisition
     print("starting background acquisition")
     headset.StartBackgroundAcquisition()
