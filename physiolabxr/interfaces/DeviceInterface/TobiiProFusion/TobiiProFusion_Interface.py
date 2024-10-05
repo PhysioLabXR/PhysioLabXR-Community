@@ -1,26 +1,39 @@
 import time
 import zmq
+import subprocess
+import os
 from multiprocessing import Process, Event
-from physiolabxr.interfaces.DeviceInterface.TobiiProFusion.TobiiProFusion_Process import TobiiProFusion_process
-from ctypes import *
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
-tobii = CDLL('physiolabxr/thirdparty/TobiiProSDKMac/64/lib/libtobii_research.dylib')
+
+
+def compile_tobii_pro_fusion_process():
+    #if user_os == "Windows":
+    base_dir = os.path.dirname(__file__)
+    c_file = os.path.join(base_dir, "TobiiProFusion_Process.c")
+    output_file = os.path.join(base_dir, "tobiiprofusion_process")
+    compile_command = ["gcc", c_file, "-o", output_file, "-g", "-Wall"]
+
+    try:
+        subprocess.run(compile_command, check=True)
+        print("Compilation successful!")
+    except subprocess.CalledProcessError:
+        print("Compilation failed.")
 
 def run_tobii_pro_fusion_process(port):
     terminate_event = Event()
-    eyetracker_process = Process(target=TobiiProFusion_process, args=(terminate_event, port))
+    eyetracker_process = Process(target=tobiiprofusion_process, args=(terminate_event, port))
     eyetracker_process.start()
     return eyetracker_process, terminate_event
 
 class TobiiProFusionInterface(DeviceInterface):
     def __init__(self,
                  _device_name='TobiiProFusion',
-                 _device_type='eye_tracker',
+                 _device_type='TOBIIPRO',
                  _device_nominal_sampling_rate=250):
         super(TobiiProFusionInterface, self).__init__(_device_name=_device_name,
                                                       _device_type=_device_type,
                                                       device_nominal_sampling_rate=_device_nominal_sampling_rate,
-                                                      device_available=False,
+                                                      is_supports_device_availability=False,
                                                       )
 
         self.stream_name = _device_name
@@ -43,17 +56,15 @@ class TobiiProFusionInterface(DeviceInterface):
         self.data_process, self.terminate_event = run_tobii_pro_fusion_process(self.port)
 
     def stop_stream(self):
-        """
-        if self.device_available:
-            status = tobii.tobii_research_unsubscribe_from_gaze_data(self.eyetracker, None)
-            if status != 0:
-                raise Exception("Failed to unsubscribe from gaze data")
-            self.device_available = False
-            print(f'{self.stream_name}: stopped streaming.')
-        """
         self.terminate_event.set()
-        self.device_process.join()
-        self.device_process = None
+        self.data_process.join()
+        self.data_process = None
+        # empty the socket buffer, so that the next time we start the stream, we don't get old data
+        while True:  # do this after the process has been terminated
+            try:
+                self.socket.recv_json(flags=zmq.NOBLOCK)
+            except zmq.error.Again:
+                break
 
     def get_sampling_rate(self):
         return self.device_nominal_sampling_rate
@@ -64,8 +75,12 @@ class TobiiProFusionInterface(DeviceInterface):
         while True:  # Collect all available data
             try:
                 data = self.socket.recv_pyobj(flags=zmq.NOBLOCK)  # Non-blocking receive
-                frames.append(data['frame'])
-                timestamps.append(data['timestamp'])
+                if data['t'] == 'e':
+                    messages.append(data['message'])
+                    self.stop_stream();
+                elif data['t'] == 'd':
+                    frames.append(data['frame'])
+                    timestamps.append(data['timestamp'])
             except zmq.Again:
                 # No more data available, break the loop
                 break
@@ -87,6 +102,7 @@ class TobiiProFusionInterface(DeviceInterface):
  # time.perf_counter_ns()
 
 if __name__ == "__main__":
+    compile_tobii_pro_fusion_process()
     # Instantiate the device interface
     tobii_pro_fusion_interface = TobiiProFusionInterface()
 

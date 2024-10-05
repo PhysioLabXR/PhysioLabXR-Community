@@ -1,8 +1,11 @@
 { "StreamName":"TobiiProFusion",
   "NominalSamplingRate":  60,
-  "DeviceType": "OpenBCI",
+  "DeviceType": "TOBIIPRO",
   "ChannelNames":  [
-    "",
-   ""],
+    "Timestamp",
+    "Gaze origin",
+    "Gaze point",
+    "Pupil diameter",
+    "Validity code"],
   "GroupInfo":  [20, 21],
   "DataType": "float32"}

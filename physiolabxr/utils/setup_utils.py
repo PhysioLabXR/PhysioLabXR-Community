@@ -13,6 +13,19 @@ from physiolabxr.configs.shared import temp_rpc_path
 from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.ui.dialogs import dialog_popup
 
+def compile_tobii_pro_fusion_process():
+    user_os = platform.system()
+    #if user_os == "Windows":
+    c_file = "../../physiolabxr/interfaces/DeviceInterface/TobiiProFusion/TobiiProFusion_Process.c"
+
+    compile_command = ["gcc", c_file, "-o", "../../physiolabxr/interfaces/DeviceInterface/TobiiProFusion/tobiiprofusion_process", "-g", "-Wall"]
+
+    try:
+        subprocess.run(compile_command, check=True)
+        print("Compilation successful!")
+    except subprocess.CalledProcessError:
+        print("Compilation failed.")
+
 def remove_readonly(fn, path, excinfo):
     try:
         os.chmod(path, stat.S_IWRITE)
@@ -452,3 +465,4 @@ def run_setup_check():
     install_pyaudio()
     setup_grpc_csharp_plugin()
     install_pybluez()
+    compile_tobii_pro_fusion_process()
