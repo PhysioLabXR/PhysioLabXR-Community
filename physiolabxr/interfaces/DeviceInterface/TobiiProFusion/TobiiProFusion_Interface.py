@@ -10,18 +10,33 @@ def compile_tobii_pro_fusion_process():
     #if user_os == "Windows":
     base_dir = os.path.dirname(__file__)
     c_file = os.path.join(base_dir, "TobiiProFusion_Process.c")
-    output_file = os.path.join(base_dir, "tobiiprofusion_process")
-    compile_command = ["gcc", c_file, "-o", output_file, "-g", "-Wall"]
+    output_file = os.path.join(base_dir, "tobiiprofusion_process.exe")  # Assuming you're on Windows
+
+    cjson_lib_path = "physiolabxr/thirdparty/cJSON.h"
+    zmq_lib_path = "physiolabxr/thirdparty/zmq.h"
+    include_path = "physiolabxr/thirdparty/TobiiProSDKWindows/64/include"
+
+    # Compile command linking with -L for library paths and -I for include paths
+    compile_command = [
+        "gcc", c_file, "-o", output_file, "-g", "-Wall",
+    ]
 
     try:
         subprocess.run(compile_command, check=True)
         print("Compilation successful!")
-    except subprocess.CalledProcessError:
-        print("Compilation failed.")
+    except subprocess.CalledProcessError as e:
+        print(f"Compilation failed: {e}")
+
+def start_tobii_pro_fusion_process():
+    try:
+        result = subprocess.run("./tobiiprofusion_process", check=True)
+        print("Process started successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Process failed with error: {e}")
 
 def run_tobii_pro_fusion_process(port):
     terminate_event = Event()
-    eyetracker_process = Process(target=tobiiprofusion_process, args=(terminate_event, port))
+    eyetracker_process = Process(target=start_tobii_pro_fusion_process, args=(terminate_event, port))
     eyetracker_process.start()
     return eyetracker_process, terminate_event
 
@@ -103,28 +118,28 @@ class TobiiProFusionInterface(DeviceInterface):
 
 if __name__ == "__main__":
     compile_tobii_pro_fusion_process()
-    # Instantiate the device interface
-    tobii_pro_fusion_interface = TobiiProFusionInterface()
-
-    # Start the device stream
-    tobii_pro_fusion_interface.start_stream()
-
-    try:
-        # Continuously process frames from the device in a test loop
-        for _ in range(100):  # Run for 100 iterations (or replace with a time-based loop)
-            frames, timestamps, messages = tobii_pro_fusion_interface.process_frames()
-            if frames:
-                print(f"Frames: {frames}")
-                print(f"Timestamps: {timestamps}")
-            if messages:
-                print(f"Messages: {messages}")
-
-            time.sleep(0.1)  # Adjust sleep time to match expected data rate
-
-    except KeyboardInterrupt:
-        print("Test interrupted by user.")
-
-    finally:
-        # Stop the device stream and clean up resources
-        tobii_pro_fusion_interface.stop_stream()
-        print("Device stream stopped and resources cleaned up.")
+    # # Instantiate the device interface
+    # tobii_pro_fusion_interface = TobiiProFusionInterface()
+    #
+    # # Start the device stream
+    # tobii_pro_fusion_interface.start_stream()
+    #
+    # try:
+    #     # Continuously process frames from the device in a test loop
+    #     for _ in range(100):  # Run for 100 iterations (or replace with a time-based loop)
+    #         frames, timestamps, messages = tobii_pro_fusion_interface.process_frames()
+    #         if frames:
+    #             print(f"Frames: {frames}")
+    #             print(f"Timestamps: {timestamps}")
+    #         if messages:
+    #             print(f"Messages: {messages}")
+    #
+    #         time.sleep(0.1)  # Adjust sleep time to match expected data rate
+    #
+    # except KeyboardInterrupt:
+    #     print("Test interrupted by user.")
+    #
+    # finally:
+    #     # Stop the device stream and clean up resources
+    #     tobii_pro_fusion_interface.stop_stream()
+    #     print("Device stream stopped and resources cleaned up.")

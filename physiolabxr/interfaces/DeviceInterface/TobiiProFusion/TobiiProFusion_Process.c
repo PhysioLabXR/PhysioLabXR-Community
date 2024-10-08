@@ -1,22 +1,26 @@
 #include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research.h"
 #include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research_streams.h"
-#include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research.h"
+#include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research_eyetracker.h"
 #include "../../../thirdparty/zmq.h"
 #include "../../../thirdparty/cJSON.h"
 #include <windows.h>
-#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
+//cl TobiiProFusion_Process.c /I\PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\include \PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\lib\tobii_research.lib
 int is_first_time = 1;
 double time_offset = 0;
 void *responder;
 
 int64_t get_current_time_in_microseconds() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (int64_t)tv.tv_sec * 1000000 + (int64_t)tv.tv_usec;
+    FILETIME ft;
+    GetSystemTimeAsFileTime(&ft);
+    ULARGE_INTEGER time;
+    time.LowPart = ft.dwLowDateTime;
+    time.HighPart = ft.dwHighDateTime;
+    return (int64_t)(time.QuadPart / 10);
 }
 
 int64_t calculate_time_offset(int64_t system_time_stamp) {
@@ -112,7 +116,7 @@ static void buffer_overflow_notification_callback(TobiiResearchNotification* not
         //notification->value.text contains which streams' buffer is overflowing
         cJSON *root = cJSON_CreateObject();
         cJSON_AddStringToObject(root, "t", "e");
-        cJSON_AddItemToObject(root, "message", "Buffer overflow occured.");
+        cJSON_AddStringToObject(root, "message", "Buffer overflow occured.");
         //cJSON_AddItemToObject(root, "message", "Buffer overflow occured in %s stream buffer", notification->value.text);
     }
 }
@@ -122,7 +126,7 @@ int main ()
     void *context = zmq_ctx_new();
     responder = zmq_socket(context, ZMQ_REP);
     int rc = zmq_bind(responder, "tcp://*:5555");
-
+    assert(rc == 0);
     TobiiResearchEyeTrackers* eyetrackers = NULL;
 
     TobiiResearchStatus result;
@@ -184,7 +188,7 @@ int main ()
 
     is_first_time = 1;
     zmq_close(responder);
-    zmq_ctx_shutdown(context);
+    zmq_ctx_term(context);
 
     return 0;
 
