@@ -34,7 +34,7 @@ def generate_eeg_data(num_channels=8, noise_level=0.5, primary_eeg_frequency=12,
 
 
 # Usage
-num_channels = 100
+num_channels = 8
 duration = 1000  # seconds
 num_samples = 256
 sampling_rate = 256  # Hz
@@ -49,7 +49,7 @@ sent_samples = 0
 # recursively send this data to LSL
 timestamp = 0.0
 
-stream_name = 'Dummy-EEG'
+stream_name = 'Dummy-8Chan'
 info = StreamInfo(stream_name, 'my_stream_type', num_channels, sampling_rate, 'float32',
                   'my_stream_id')
 outlet = StreamOutlet(info)
