@@ -36,7 +36,6 @@ def generate_eeg_data(num_channels=8, noise_level=0.5, primary_eeg_frequency=12,
 # Usage
 num_channels = 8
 duration = 1000  # seconds
-num_samples = 256
 sampling_rate = 256  # Hz
 noise_level = 1
 primary_frequency = 12  # Hz
