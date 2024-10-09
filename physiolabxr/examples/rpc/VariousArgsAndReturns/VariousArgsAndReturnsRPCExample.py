@@ -31,7 +31,7 @@ class RPCExample(RenaScript):
         Args:
             input0 (str): the input
         """
-        return f"Miaomiaomiao: {input0}"
+        return f"received: {input0}"
 
     @rpc
     def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> (str, int):
