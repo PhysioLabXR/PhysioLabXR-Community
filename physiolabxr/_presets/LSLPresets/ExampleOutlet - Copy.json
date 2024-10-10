@@ -1,0 +1,13 @@
+{ "StreamName":"Dummy-8Chan",
+  "ChannelNames":[
+    "Fp1",
+    "F7",
+    "F8",
+    "T4",
+    "T6",
+    "T5",
+    "T3",
+    "Fp2"],
+  "NominalSamplingRate":  128,
+  "GroupInfo":  [4],
+  "DataType": "float32"}

@@ -1,0 +1,15 @@
+{ "StreamName":"OpenBCI_Cyton_8",
+  "StreamType": "EEG",
+  "SerialPort": "COM6",
+  "Board_id": 0,
+  "ChannelNames":[
+    "PackageNum",
+    "Fp1","Fp2","C3","C4","P7","P8","O1","O2",
+    "X","Y","Z",
+    "Other1","Other2","Other3","Other4","Other5","Other6","Other7",
+    "Analog1","Analog2","Analog3",
+    "TimeStamp",
+    "Marker"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [1, 9]}

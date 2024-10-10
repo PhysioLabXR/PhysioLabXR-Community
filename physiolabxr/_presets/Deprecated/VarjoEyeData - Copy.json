@@ -1,0 +1,13 @@
+{ "StreamName":"Unity.VarjoEyeTracking",
+  "ChannelNames":[
+    "L Pupil Diameter", "R Pupil Diameter",
+    "L Gaze Direction X", "L Gaze Direction Y", "L Gaze Direction Z",
+    "R Gaze Direction X", "R Gaze Direction Y", "R Gaze Direction Z",
+    "L Gaze Origin X", "L Gaze Origin Y", "L Gaze Origin Z",
+    "R Gaze Origin X", "R Gaze Origin Y", "R Gaze Origin Z",
+      "Gaze Combined Direction X", "Gaze Combined Direction Y", "Gaze Combined Direction Z",
+        "Gaze Combined Origin X", "Gaze Combined Origin Y", "Gaze Combined Origin Z", "Focal Distance", "Focal Stability"
+  ],
+  "NominalSamplingRate":  200,
+  "GroupInfo":  [2, 5, 8, 11, 14, 17, 20],
+  "DataType": "float32"}

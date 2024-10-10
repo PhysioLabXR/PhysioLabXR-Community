@@ -1,0 +1,10 @@
+{ "StreamName":"AOIAugmentationTargetImageInfoLSL",
+  "ChannelNames":[
+    "R",
+    "G",
+    "B",
+    "A"
+  ],
+  "NominalSamplingRate":  100,
+  "GroupInfo":  [1,2,3],
+  "DataType": "float32"}

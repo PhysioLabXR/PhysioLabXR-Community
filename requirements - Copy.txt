@@ -1,0 +1,24 @@
+brainflow
+numpy ~= 1.26.0
+PyQt6
+pyserial
+pylsl
+scikit-learn
+scipy~=1.11.0
+git+https://github.com/physiolabxr/pyqtgraph.git@physio
+pyxdf
+pyscreeze
+opencv-python
+pyzmq
+setuptools
+psutil
+numba
+PyOpenGL
+PyOpenGL_accelerate
+soundfile
+matplotlib
+imblearn
+toml
+git+https://github.com/pybluez/pybluez.git#egg=pybluez
+grpcio
+grpcio-tools

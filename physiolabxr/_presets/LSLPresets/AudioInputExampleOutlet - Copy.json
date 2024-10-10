@@ -1,0 +1,5 @@
+{ "StreamName":"Participant Microphone",
+  "ChannelNames":[
+    "Channel 0", "Channel 1"],
+  "NominalSamplingRate":  8000,
+  "DataType": "float32"}

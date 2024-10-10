@@ -1,0 +1,11 @@
+{ "StreamName":"Unity.HandTracker",
+  "ChannelNames":[
+    "L Hand IsGrabbing","R Hand IsGrabbing",
+    "L Hand Yaw", "L Hand Pitch", "L Hand Roll",
+    "L Hand Position X", "L Hand Position Y", "L Hand Position Z",
+    "R Hand Yaw", "R Hand Pitch", "R Hand Roll",
+    "R Hand Position X", "R Hand Position Y", "R Hand Position Z"
+  ],
+  "NominalSamplingRate":  150,
+  "GroupInfo":  [2, 5, 8, 11, 13],
+  "DataType": "float32"}

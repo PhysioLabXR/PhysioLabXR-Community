@@ -74,11 +74,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Season\\Documents\\PhysioLab\\tmpGrpcTools\\tmpGrpcTools.csproj",
+      "projectUniqueName": "C:\\Users\\Season\\OneDrive\\doc\\PhysioLab\\tmpGrpcTools\\tmpGrpcTools.csproj",
       "projectName": "tmpGrpcTools",
-      "projectPath": "C:\\Users\\Season\\Documents\\PhysioLab\\tmpGrpcTools\\tmpGrpcTools.csproj",
+      "projectPath": "C:\\Users\\Season\\OneDrive\\doc\\PhysioLab\\tmpGrpcTools\\tmpGrpcTools.csproj",
       "packagesPath": "C:\\Users\\Season\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Season\\Documents\\PhysioLab\\tmpGrpcTools\\obj\\",
+      "outputPath": "C:\\Users\\Season\\OneDrive\\doc\\PhysioLab\\tmpGrpcTools\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

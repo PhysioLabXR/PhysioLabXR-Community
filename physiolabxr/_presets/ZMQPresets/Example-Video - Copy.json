@@ -1,0 +1,6 @@
+{ "StreamName":"Example-Video",
+  "NumChannels": 480000,
+  "NominalSamplingRate":  30,
+  "DataType": "uint8",
+  "PortNumber":  5557
+  }

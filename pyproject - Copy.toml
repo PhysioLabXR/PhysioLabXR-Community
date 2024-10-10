@@ -1,0 +1,68 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name="physiolabxr"
+version="1.1.5"
+authors=[
+    { name="Ziheng 'Leo' Li", email="apocalyvec@gmail.com"},
+    { name="Haowen 'John' Wei", email="haowenweijohn@gmail.com"},
+    { name="Ziwen 'Josie' Xie", email="jerseyxie@hotmail.com"}
+]
+description="PhysioLabXR"
+
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "brainflow",
+    "numpy ~= 1.26.0",
+    "PyQt6",
+    "pyserial",
+    "pylsl",
+    "scikit-learn",
+    "scipy~=1.11.0",
+    "pyqtgraph",
+    "pyxdf",
+    "pyscreeze",
+    "opencv-python",
+    "pyzmq",
+    "setuptools",
+    "psutil",
+    "pytest-qt",
+    "numba",
+    "PyOpenGL",
+    "PyOpenGL_accelerate",
+    "soundfile"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/physiolabxr/physiolabxr"
+"Bug Tracker" = "https://github.com/physiolabxr/physiolabxr/issues"
+"Documentation" = "https://physiolabxrdocs.readthedocs.io/en/latest/"
+
+[project.scripts]
+physiolabxr = "physiolabxr:physiolabxr"
+
+[tool.setuptools]
+include-package-data = true
+
+#[tool.setuptools.packages.find]
+#where = ["physiolabxr"]  # list of folders that contain the packages (["."] by default)
+#include = ["physiolabxr*"]  # package names should match these glob patterns (["*"] by default)
+#exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
+#namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+#[tool.setuptools.package-data]
+#package_dir = [
+#    "_ui/*",
+#    "_presets/*",
+#    "_media/*",
+#]
