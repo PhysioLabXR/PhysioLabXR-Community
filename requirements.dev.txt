@@ -20,6 +20,5 @@ soundfile
 matplotlib
 imblearn
 toml
-git+https://github.com/pybluez/pybluez.git#egg=pybluez
 grpcio
 grpcio-tools

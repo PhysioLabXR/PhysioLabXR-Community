@@ -1,5 +1,5 @@
 from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.thirdparty.WearableSensing.DSI_py3 import *
+from physiolabxr.third_party.WearableSensing.DSI_py3 import *
 import numpy as np
 import sys
 from physiolabxr.utils.buffers import DataBuffer
