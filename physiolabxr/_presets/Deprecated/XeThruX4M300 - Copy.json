@@ -1,0 +1,11 @@
+{
+  "StreamName":"XeThruX4M300",
+  "StreamType": "CIR",
+  "SerialPort": "COM20",
+  "ChannelNames":[
+    "@img_(8,16,1)@RD",
+    "@img_(8,64,1)@RA"
+  ],
+  "NominalSamplingRate":  30,
+  "GroupInfo":  [1, 2]
+  }

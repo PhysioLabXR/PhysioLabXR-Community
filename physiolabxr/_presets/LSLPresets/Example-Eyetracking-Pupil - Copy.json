@@ -1,0 +1,5 @@
+{ "StreamName":"Example-Eyetracking-Pupil",
+  "NominalSamplingRate":  200,
+  "ChannelNames":  ["Gaze X", "Gaze Y", "Gaze Z", "Tracking Status", "Left Pupil Size", "Right Pupil Size"],
+  "DataType": "float32",
+  "GroupInfo":  [4]}

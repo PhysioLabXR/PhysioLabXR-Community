@@ -1,0 +1,11 @@
+{ "StreamName":"Unity.ViveSREyeTracking",
+  "ChannelNames":[
+    "L Pupil Diameter", "R Pupil Diameter",
+    "L Openness", "R Openness",
+    "L Gaze Direction X", "L Gaze Direction Y", "L Gaze Direction Z",
+    "R Gaze Direction X", "R Gaze Direction Y", "R Gaze Direction Z",
+    "L Gaze Origin X", "L Gaze Origin Y", "L Gaze Origin Z",
+    "R Gaze Origin X", "R Gaze Origin Y", "R Gaze Origin Z"],
+  "NominalSamplingRate":  70,
+  "GroupInfo":  [2, 4, 7, 10, 13],
+  "DataType": "float32"}

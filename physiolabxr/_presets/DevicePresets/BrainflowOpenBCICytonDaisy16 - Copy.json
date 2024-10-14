@@ -1,0 +1,16 @@
+{ "StreamName":"OpenBCI_CytonDaisy_16",
+  "StreamType": "EEG",
+  "DeviceType": "OpenBCI",
+  "_SerialPort": "COM3",
+  "_Board_id": 2,
+  "ChannelNames":[
+    "PackageNum",
+    "Fp1","Fp2","C3","C4","P7","P8","O1","O2","F7","F8","F3","F4","T7","T8","P3","P4",
+    "X","Y","Z",
+    "Other1","Other2","Other3","Other4","Other5","Other6","Other7",
+    "Analog1","Analog2","Analog3",
+    "TimeStamp",
+    "Marker"
+  ],
+  "NominalSamplingRate":  250,
+  "GroupInfo":  [1, 17, 20, 30, 31]}

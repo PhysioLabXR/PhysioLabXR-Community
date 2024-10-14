@@ -1,0 +1,4 @@
+{ "StreamName":"Unity.CameraCaptureCenterPatch",
+  "NumChannels": 192,
+  "NominalSamplingRate":  30,
+  "DataType": "uint8"}

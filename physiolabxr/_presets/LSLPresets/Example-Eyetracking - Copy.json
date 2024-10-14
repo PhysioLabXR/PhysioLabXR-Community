@@ -1,0 +1,4 @@
+{ "StreamName":"Example-Eyetracking",
+  "NominalSamplingRate":  200,
+  "ChannelNames":  ["Gaze X", "Gaze Y", "Gaze Z", "Tracking Status"],
+  "DataType": "float32"}

@@ -1,0 +1,13 @@
+{ "StreamName":"BAlert",
+  "ChannelNames":[
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "Fp1", "F7", "F8", "T4", "T6", "T5", "T3", "Fp2", "O1", "P3", "Pz", "F3", "Fz", "F4", "C4", "P4", "POz", "C3", "Cz", "O2", "EKG", "AUX1", "AUX2", "AUX3"],
+  "NominalSamplingRate":  256,
+  "GroupInfo":  [6],
+  "DataType": "float32"
+}

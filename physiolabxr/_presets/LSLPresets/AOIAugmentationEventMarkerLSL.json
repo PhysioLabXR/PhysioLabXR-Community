@@ -1,0 +1,13 @@
+{ "StreamName":"AOIAugmentationEventMarkerLSL",
+  "ChannelNames":[
+    "Block Marker",
+    "State Marker",
+    "Report Label Marker",
+    "AOI Augmentation Start End Marker",
+    "Toggle Visual Cue Visibility Marker",
+    "Update Visual Cue Marker",
+    "Visual Cue History Selected Marker"
+  ],
+  "NominalSamplingRate":  10,
+  "GroupInfo":  [1,2,3,4,5,6],
+  "DataType": "float32"}

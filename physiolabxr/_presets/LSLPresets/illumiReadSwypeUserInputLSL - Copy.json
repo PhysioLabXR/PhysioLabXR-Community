@@ -1,0 +1,17 @@
+{ "StreamName":"illumiReadSwypeUserInputLSL",
+  "ChannelNames":[
+    "GazeHitKeyboardBackground",
+    "KeyboardBackgroundHitPointLocalX",
+    "KeyboardBackgroundHitPointLocalY",
+    "KeyboardBackgroundHitPointLocalZ",
+    "GazeHitKey",
+    "KeyHitPointLocalX",
+    "KeyHitPointLocalY",
+    "KeyHitPointLocalZ",
+    "KeyHitIndex",
+    "UserInputButton1",
+    "UserInputButton2"
+  ],
+  "NominalSamplingRate":  80,
+  "GroupInfo":  [4, 8, 9],
+  "DataType": "float32"}

@@ -1,0 +1,16 @@
+{ "StreamName":"Unity.ReNa.EventMarkers",
+  "ChannelNames":[
+    "BlockMarker",
+    "BlockIDStartEnd",
+    "DTN",
+    "itemID",
+    "objDistFromPlayer",
+    "CarouselSpeed",
+    "CarouselAngle",
+    "TSHandLeft","TSHandRight",
+    "TSCollectItem",
+    "Likert"],
+  "GroupInfo":  [1,2,3,4,8,9],
+  "NominalSamplingRate":  75,
+  "DataType": "float32"
+}

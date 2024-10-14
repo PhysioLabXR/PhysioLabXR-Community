@@ -1,0 +1,61 @@
+{ "StreamName":"VarjoEyeTrackingLSL",
+  "ChannelNames":[
+    "FrameNumber",
+
+    "CaptureTime",
+
+    "LogTime",
+
+
+    "HMDLocalPositionX",
+    "HMDLocalPositionY",
+    "HMDLocalPositionZ",
+    "HMDLocalRotationX",
+    "HMDLocalRotationY",
+    "HMDLocalRotationZ",
+
+
+    "CombinedGazeValid",
+    "CombinedGazeForwardX",
+    "CombinedGazeForwardY",
+    "CombinedGazeForwardZ",
+    "CombinedGazeOriginX",
+    "CombinedGazeOriginY",
+    "CombinedGazeOriginZ",
+
+
+
+    "InterPupillaryDistanceInMM",
+
+
+    "LeftEyeGazeValid",
+    "LeftGazeForwardX",
+    "LeftGazeForwardY",
+    "LeftGazeForwardZ",
+    "LeftGazeOriginX",
+    "LeftGazeOriginY",
+    "LeftGazeOriginZ",
+    "LeftPupilIrisDiameterRatio",
+    "LeftPupilDiameterInMM",
+    "LeftIrisDiameterInMM",
+
+
+
+    "RightEyeGazeValid",
+    "RightGazeForwardX",
+    "RightGazeForwardY",
+    "RightGazeForwardZ",
+    "RightGazeOriginX",
+    "RightGazeOriginY",
+    "RightGazeOriginZ",
+    "RightPupilIrisDiameterRatio",
+    "RightPupilDiameterInMM",
+    "RightIrisDiameterInMM",
+
+
+    "FocusDistance",
+    "FocusStability"
+  ],
+  "NominalSamplingRate":  200,
+  "GroupInfo":  [3, 9, 16, 17, 37],
+  "DataType": "float32"}
