@@ -24,7 +24,7 @@ class RPCExample(RenaScript):
     @rpc
     def ExampleOneArgOneReturn(self, input0: str) -> str:
         """
-        This is an example of a RPC method that takes one argument and returns one value
+        This is an example of an RPC method that takes one argument and returns one value
 
         The input protobuf is called ExampleOneArgOneReturnRequest,
         and the output is called ExampleOneArgOneReturnResponse
@@ -36,7 +36,7 @@ class RPCExample(RenaScript):
     @rpc
     def TestRPCTwoArgTwoReturn(self, input0: str, input1: int) -> (str, int):
         """
-        This is an example of a RPC method that takes two arguments and returns two values
+        This is an example of an RPC method that takes two arguments and returns two values
 
         The input protobuf is called TestRPCTwoArgTwoReturnRequest,
         and the output is called TestRPCTwoArgTwoReturnResponse

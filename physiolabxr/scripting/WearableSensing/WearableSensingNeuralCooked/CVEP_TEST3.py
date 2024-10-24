@@ -28,17 +28,18 @@ class NeuralCooked(RenaScript):
         self.seq2_data = np.array([])
         self.seq3_data = np.array([])
     def loop(self):
-        EEG_Data = {                                            #creating a dictionary for EEG data
-            'stream_name': 'EEG Data',                          #defining the stream name
-            'frames': self.inputs['DSI-24'][0][14:18, :],       #choosing the correct channels
-            'timestamps': self.inputs['DSI-24'][1]              #defining the timestamps
-        }
-        Sequence_Data = {}                                      #creating a dictionary for sequence data
-        self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
-        if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
-            self.data.clear_stream_up_to_index(self, stream_name= 'EEG Data', cut_to_index= len(self.data.get_data('EEG Data').shape[1])-60000)
-        if len(self.cca_models) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
-            self.decode_choice()                                  #adding the detected choice to the list of detected choices
+        if self.inputs:
+            EEG_Data = {                                            #creating a dictionary for EEG data
+                'stream_name': 'EEG Data',                          #defining the stream name
+                'frames': self.inputs['DSI24'][0][14:18, :],       #choosing the correct channels
+                'timestamps': self.inputs['DSI24'][1]              #defining the timestamps
+            }
+            Sequence_Data = {}                                      #creating a dictionary for sequence data
+            self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
+            if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
+                self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-60000)
+            if len(self.cca_models) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
+                self.decode_choice()                                  #adding the detected choice to the list of detected choices
     def cleanup(self):
         self.freq_bands = [(8, 60), (12, 60), (30, 60)]
         self.mSequence = []
@@ -85,13 +86,13 @@ class NeuralCooked(RenaScript):
 
 
     @async_rpc
-    def add_seq_data(self, sequence_num: int): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
+    def add_seq_data(self, sequence_num: int, duration: float): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
         if sequence_num == 0:
-            self.seq1_data = np.append(self.seq1_data, self.data.get_data('EEG Data')[:,-1500:]) #Every 5 seconds
+            self.seq1_data = np.append(self.seq1_data, self.data.get_data('EEG Data')[:,-(duration * 300):]) #Every 5 seconds
         elif sequence_num == 1:
-            self.seq2_data = np.append(self.seq2_data, self.data.get_data('EEG Data')[:,-1500:])
+            self.seq2_data = np.append(self.seq2_data, self.data.get_data('EEG Data')[:,-(duration * 300):])
         elif sequence_num == 2:
-            self.seq3_data = np.append(self.seq3_data, self.data.get_data('EEG Data')[:,-1500:])
+            self.seq3_data = np.append(self.seq3_data, self.data.get_data('EEG Data')[:,-(duration * 300):])
 
     def train_cca(self):
         """
