@@ -1,18 +1,22 @@
-#include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research.h"
-#include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research_streams.h"
-#include "../../../thirdparty/TobiiProSDKWindows/64/include/tobii_research_eyetracker.h"
-#include "../../../thirdparty/zmq.h"
+#include "tobii_research.h"
+#include "tobii_research_streams.h"
+#include "tobii_research_eyetracker.h"
+//#include "../../../thirdparty/zmq.h"
 #include "../../../thirdparty/cJSON.h"
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <zmq.h>
+#include "TobiiProFusion_Shared.h"
 
-//cl TobiiProFusion_Process.c /I\PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\include \PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\lib\tobii_research.lib
+//cl TobiiProFusion_Process.c /I"C:\Users\Zey//cl TobiiProFusion_Process.c /I"C:\Users\Zeyi Tong\Desktop\PhysioLabXR\PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\include" "C:\Users\Zeyi Tong\Desktop\PhysioLabXR\PhysioLabXR-Community\physiolabxr\thirdparty\TobiiProSDKWindows\64\lib\tobii_research.lib" /link "C:\Users\Zeyi Tong\Desktop\PhysioLabXR\PhysioLabXR-Community\physiolabxr\thirdparty\cJSON.h" "C:\Users\Zeyi Tong\Desktop\PhysioLabXR\PhysioLabXR-Community\physiolabxr\thirdparty\zmq.h"
+
 int is_first_time = 1;
 double time_offset = 0;
 void *responder;
+char* address = NULL;
 
 int64_t get_current_time_in_microseconds() {
     FILETIME ft;
@@ -140,7 +144,6 @@ int main ()
     }
 
     TobiiResearchEyeTracker* eyetracker = eyetrackers->eyetrackers[0];
-    char* address = NULL;
     char* serial_number = NULL;
     char* device_name = NULL;
 
@@ -149,6 +152,9 @@ int main ()
     tobii_research_get_device_name(eyetracker, &device_name);
 
     printf("%s\t%s\t%s\n", address, serial_number, device_name);
+
+    free(json_data);
+    cJSON_Delete(root);
 
     tobii_research_free_string(address);
     tobii_research_free_string(serial_number);
@@ -177,12 +183,10 @@ int main ()
     if (status != TOBII_RESEARCH_STATUS_OK)
         return 1;
 
-    /* Wait while some gaze data is collected. */
     Sleep(2000000);
 
     status = tobii_research_unsubscribe_from_gaze_data(eyetracker, gaze_data_callback);
 
-    /* Wait while some gaze data is collected. */
     Sleep(2000000);
     tobii_research_unsubscribe_from_notifications(eyetracker, buffer_overflow_notification_callback);
 

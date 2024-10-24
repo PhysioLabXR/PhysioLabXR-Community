@@ -1,2 +1,2 @@
-from .TobiiProFusion_Interface import TobiiProFusionInterface
-# from .TobiiProFusion_Options import TobiiProFusionOptions
+from .TobiiProFusion_Interface import TobiiProFusion_Interface
+from .TobiiProFusion_Options import TobiiProFusion_Options

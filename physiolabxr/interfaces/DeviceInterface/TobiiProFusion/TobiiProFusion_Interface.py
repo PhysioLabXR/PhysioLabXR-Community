@@ -1,66 +1,83 @@
 import time
 import zmq
 import subprocess
-import os
 from multiprocessing import Process, Event
 from physiolabxr.interfaces.DeviceInterface.DeviceInterface import DeviceInterface
+from physiolabxr.utils.time_utils import get_clock_time
+import numpy as np
+import os
+import platform
+
+def get_executable_path():
+    base_dir = os.path.dirname(os.path.abspath(__file__))  # Get script directory
+    if platform.system() == "Windows":
+        return os.path.join(base_dir, "x64", "Debug", "TobiiProFusion.exe")
+    else:
+        raise NotImplementedError("This system is not supported at the moment. Please use a Windows system.")
 
 
-def compile_tobii_pro_fusion_process():
-    #if user_os == "Windows":
-    base_dir = os.path.dirname(__file__)
-    c_file = os.path.join(base_dir, "TobiiProFusion_Process.c")
-    output_file = os.path.join(base_dir, "tobiiprofusion_process.exe")  # Assuming you're on Windows
 
-    cjson_lib_path = "physiolabxr/thirdparty/cJSON.h"
-    zmq_lib_path = "physiolabxr/thirdparty/zmq.h"
-    include_path = "physiolabxr/thirdparty/TobiiProSDKWindows/64/include"
+# def compile_tobii_pro_fusion_process():
+#     #if user_os == "Windows":
+#     base_dir = os.path.dirname(__file__)
+#     c_file = os.path.join(base_dir, "TobiiProFusion_Process.c")
+#     output_file = os.path.join(base_dir, "tobiiprofusion_process.exe")  # Assuming you're on Windows
+#
+#     cjson_lib_path = "physiolabxr/thirdparty/cJSON.h"
+#     zmq_lib_path = "physiolabxr/thirdparty/zmq.h"
+#     include_path = "physiolabxr/thirdparty/TobiiProSDKWindows/64/include"
+#
+#     # Compile command linking with -L for library paths and -I for include paths
+#     compile_command = [
+#         "gcc", c_file, "-o", output_file, "-g", "-Wall",
+#     ]
+#
+#     try:
+#         subprocess.run(compile_command, check=True)
+#         print("Compilation successful!")
+#     except subprocess.CalledProcessError as e:
+#         print(f"Compilation failed: {e}")
 
-    # Compile command linking with -L for library paths and -I for include paths
-    compile_command = [
-        "gcc", c_file, "-o", output_file, "-g", "-Wall",
-    ]
-
+def start_tobii_pro_fusion_process(port, terminate_event):
     try:
-        subprocess.run(compile_command, check=True)
-        print("Compilation successful!")
-    except subprocess.CalledProcessError as e:
-        print(f"Compilation failed: {e}")
+        # Start the process with the port argument
+        process = subprocess.Popen([get_executable_path(), str(port)])
 
-def start_tobii_pro_fusion_process():
-    try:
-        result = subprocess.run("./tobiiprofusion_process", check=True)
-        print("Process started successfully!")
+        # Monitor the terminate event
+        while not terminate_event.is_set():
+            time.sleep(0.1)  # Check for the termination signal periodically
+
+        # When terminate_event is set, terminate the process
+        process.terminate()
+        process.wait()
+        print("Process terminated successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Process failed with error: {e}")
 
 def run_tobii_pro_fusion_process(port):
     terminate_event = Event()
-    eyetracker_process = Process(target=start_tobii_pro_fusion_process, args=(terminate_event, port))
+    eyetracker_process = Process(target=start_tobii_pro_fusion_process, args=(port, terminate_event))
     eyetracker_process.start()
     return eyetracker_process, terminate_event
 
-class TobiiProFusionInterface(DeviceInterface):
+class TobiiProFusion_Interface(DeviceInterface):
     def __init__(self,
                  _device_name='TobiiProFusion',
                  _device_type='TOBIIPRO',
                  _device_nominal_sampling_rate=250):
-        super(TobiiProFusionInterface, self).__init__(_device_name=_device_name,
-                                                      _device_type=_device_type,
-                                                      device_nominal_sampling_rate=_device_nominal_sampling_rate,
-                                                      is_supports_device_availability=False,
-                                                      )
+        super(TobiiProFusion_Interface, self).__init__(_device_name=_device_name,
+                                                       _device_type=_device_type,
+                                                       device_nominal_sampling_rate=_device_nominal_sampling_rate,
+                                                       is_supports_device_availability=False,
+                                                       )
 
         self.stream_name = _device_name
         self.stream_type = _device_type
-        self.eyetracker = None
 
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.SUB)  # Subscriber socket
-        self.socket.setsockopt_string(zmq.SUBSCRIBE, '')  # Subscribe to all topics
-        self.socket.connect("tcp://localhost:0")  # Bind to port 0 for an available random port
-        self.port = self.socket.getsockopt(zmq.LAST_ENDPOINT).decode("utf-8").split(":")[
-            -1]  # Get the randomly binded port number from the socket
+        self.socket = self.context.socket(zmq.PULL)
+        self.socket.bind("tcp://*:0")  # Bind to port 0 for an available random port
+        self.port = self.socket.getsockopt(zmq.LAST_ENDPOINT).decode("utf-8").split(":")[-1]  # Get the randomly binded port number from the socket
 
         self.terminate_event = Event()
         self.device_process = None
@@ -89,7 +106,7 @@ class TobiiProFusionInterface(DeviceInterface):
         frames, timestamps, messages = [], [], []
         while True:  # Collect all available data
             try:
-                data = self.socket.recv_pyobj(flags=zmq.NOBLOCK)  # Non-blocking receive
+                data = self.socket.recv_json(flags=zmq.NOBLOCK)  # Non-blocking receive
                 if data['t'] == 'e':
                     messages.append(data['message'])
                     self.stop_stream();
@@ -100,10 +117,37 @@ class TobiiProFusionInterface(DeviceInterface):
                 # No more data available, break the loop
                 break
 
+        if len(frames) > 0:
+            frames_array = np.array(frames)
+            # print(f"Shape of frames before transpose: {frames_array.shape}")
+
+            if frames_array.ndim == 3:
+                # If it's 3D, transpose as originally intended
+                return frames_array.transpose(2, 1, 0)[0], np.array(timestamps)[:, 0], messages
+            elif frames_array.ndim == 2:
+                # If it's 2D, just transpose the two axes
+                return frames_array.transpose(1, 0), np.array(timestamps)[:, 0], messages
+            else:
+                # If it's 1D or unexpected, return it directly or handle differently
+                return frames_array, np.array(timestamps)[:, 0], messages
         return frames, timestamps, messages
+
 
     def is_device_available(self):
         return self.device_available
+
+    # def receive_address_data(self):
+    #     try:
+    #         data = self.socket.recv_json(flags=zmq.NOBLOCK)  # Non-blocking receive
+    #         if 'address' in data:
+    #             return data['address']
+    #         else:
+    #             print("Address data not found in the received message.")
+    #             return None
+    #     except zmq.Again:
+    #         print("No data received.")
+    #         return None
+
 
     def __del__(self):
         """Clean up ZMQ context and sockets.
@@ -117,29 +161,34 @@ class TobiiProFusionInterface(DeviceInterface):
  # time.perf_counter_ns()
 
 if __name__ == "__main__":
-    compile_tobii_pro_fusion_process()
-    # # Instantiate the device interface
-    # tobii_pro_fusion_interface = TobiiProFusionInterface()
-    #
-    # # Start the device stream
-    # tobii_pro_fusion_interface.start_stream()
-    #
-    # try:
-    #     # Continuously process frames from the device in a test loop
-    #     for _ in range(100):  # Run for 100 iterations (or replace with a time-based loop)
-    #         frames, timestamps, messages = tobii_pro_fusion_interface.process_frames()
-    #         if frames:
-    #             print(f"Frames: {frames}")
-    #             print(f"Timestamps: {timestamps}")
-    #         if messages:
-    #             print(f"Messages: {messages}")
-    #
-    #         time.sleep(0.1)  # Adjust sleep time to match expected data rate
-    #
-    # except KeyboardInterrupt:
-    #     print("Test interrupted by user.")
-    #
-    # finally:
-    #     # Stop the device stream and clean up resources
-    #     tobii_pro_fusion_interface.stop_stream()
-    #     print("Device stream stopped and resources cleaned up.")
+    # Instantiate the device interface
+    tobii_pro_fusion_interface = TobiiProFusion_Interface()
+    print(tobii_pro_fusion_interface.port)
+
+    # Start the device stream
+    tobii_pro_fusion_interface.start_stream()
+
+    try:
+        # Continuously process frames from the device in a test loop
+        for _ in range(10000):  # Run for 100 iterations (or replace with a time-based loop)
+            frames, timestamps, messages = tobii_pro_fusion_interface.process_frames()
+            # if timestamps:
+            #     for timestamp in timestamps:
+            #         system_time = get_clock_time()
+            #         time_diff = abs(system_time - float(timestamp) * 1e-6)
+            #         print(f"Timestamp: {timestamp}, System Time: {system_time}, Difference: {time_diff}ms")
+            if frames is not None and len(frames) > 0:
+                print(f"Frames: {frames}")
+                print(f"Timestamps: {timestamps}")
+            if messages:
+                print(f"Messages: {messages}")
+
+            time.sleep(0.004)  # Adjust sleep time to match expected data rate
+
+    except KeyboardInterrupt:
+        print("Test interrupted by user.")
+
+    finally:
+        # Stop the device stream and clean up resources
+        tobii_pro_fusion_interface.stop_stream()
+        print("Device stream stopped and resources cleaned up.")
