@@ -24,9 +24,9 @@ class NeuralCooked(RenaScript):
             [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],  #mSequence2
             [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]   #mSequence3
         ]
-        self.seq1_data = np.array([])
-        self.seq2_data = np.array([])
-        self.seq3_data = np.array([])
+        self.seq1_data = np.array([[]])
+        self.seq2_data = np.array([[]])
+        self.seq3_data = np.array([[]])
     def loop(self):
         if self.inputs:
             EEG_Data = {                                            #creating a dictionary for EEG data
@@ -86,13 +86,24 @@ class NeuralCooked(RenaScript):
 
 
     @async_rpc
-    def add_seq_data(self, sequence_num: int, duration: float): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
-        if sequence_num == 0:
-            self.seq1_data = np.append(self.seq1_data, self.data.get_data('EEG Data')[:,-(duration * 300):]) #Every 5 seconds
-        elif sequence_num == 1:
-            self.seq2_data = np.append(self.seq2_data, self.data.get_data('EEG Data')[:,-(duration * 300):])
-        elif sequence_num == 2:
-            self.seq3_data = np.append(self.seq3_data, self.data.get_data('EEG Data')[:,-(duration * 300):])
+    def add_seq_data(self, sequenceNum: int, duration: float): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
+        eegData = self.data.get_data('EEG Data')[:, int(-duration *300) :]
+
+        if sequenceNum == 1:
+            if self.seq1_data.size == 0:
+                self.seq1_data = eegData
+            else:
+                self.seq1_data = np.concatenate((self.seq1_data, eegData),axis =1)
+        elif sequenceNum == 2:
+            if self.seq2_data.size == 0:
+                self.seq2_data = eegData
+            else:
+                self.seq2_data = np.concatenate((self.seq2_data, eegData), axis=1)
+        elif sequenceNum == 3:
+            if self.seq3_data.size == 0:
+                self.seq3_data = eegData
+            else:
+                self.seq3_data = np.concatenate((self.seq3_data, eegData), axis=1)
 
     def train_cca(self):
         """
@@ -100,7 +111,7 @@ class NeuralCooked(RenaScript):
         This method generates spatial filters and templates for each target m-sequence.
         """
 
-        segment_Length = 1500
+        segment_Length = 30#1500
         # Split data into segments for each m-sequence
         seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // segment_Length, axis=1)
         seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // segment_Length, axis=1)

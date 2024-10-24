@@ -6,7 +6,7 @@ service NeuralCooked {
   rpc training(google.protobuf.Empty) returns (trainingResponse);
 }
 message add_seq_dataRequest {
-  int32 sequence_num = 1;
+  int32 sequenceNum = 1;
   float duration = 2;
 }
 message decodeResponse {
