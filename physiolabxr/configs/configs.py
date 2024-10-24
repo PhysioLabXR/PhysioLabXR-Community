@@ -127,6 +127,9 @@ class AppConfigs(metaclass=Singleton):
     # scripting
     add_default_rpc_output = True
 
+    # Tobii Pro Fusion Eye Tracker Manager
+    tobii_app_path: str = None
+
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']
     _ui_path = 'physiolabxr/_ui'
