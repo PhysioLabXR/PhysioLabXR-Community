@@ -24,6 +24,8 @@ class NeuralCooked(RenaScript):
             [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],  #mSequence2
             [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]   #mSequence3
         ]
+        self.sequence_length = len(self.mSequence[0])
+        self.mSequenceSignal =  []
         self.seq1_data = np.array([[]])
         self.seq2_data = np.array([[]])
         self.seq3_data = np.array([[]])
@@ -31,8 +33,8 @@ class NeuralCooked(RenaScript):
         if self.inputs:
             EEG_Data = {                                            #creating a dictionary for EEG data
                 'stream_name': 'EEG Data',                          #defining the stream name
-                'frames': self.inputs['DSI24'][0][14:18, :],       #choosing the correct channels
-                'timestamps': self.inputs['DSI24'][1]              #defining the timestamps
+                'frames': self.inputs['DSI24'][0][14:18, :].astype(float),       #choosing the correct channels
+                'timestamps': self.inputs['DSI24'][1].astype(float)           #defining the timestamps
             }
             Sequence_Data = {}                                      #creating a dictionary for sequence data
             self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
@@ -53,6 +55,37 @@ class NeuralCooked(RenaScript):
 
     ##Basic Tools
 #===================================================================================================
+    def adjust_segments(self, segments, segment_length):
+        adjusted_segments = []
+        for segment in segments:
+            # If the segment is shorter than the desired length, pad it with zeros
+            if segment.shape[1] < segment_length:
+                padding = np.zeros((segment.shape[0], segment_length - segment.shape[1]))
+                adjusted_segment = np.hstack((segment, padding))  # Pad with zeros
+            else:
+                # If the segment is longer, trim it to the desired length
+                adjusted_segment = segment[:, :segment_length]
+
+            adjusted_segments.append(adjusted_segment)
+
+        return adjusted_segments
+
+    def generate_m_signal(self, seqNum):
+
+        # Step 1: Calculate the total number of samples needed
+        total_samples = self.sequence_length
+
+        # Step 2: Calculate the number of samples per m-sequence element
+        samples_per_bit = total_samples // len(self.mSequence[seqNum])
+
+        # Step 3: Create the binary signal by repeating each bit
+        signal = np.repeat(self.mSequence[seqNum], samples_per_bit)
+
+        # Step 4: If the signal is longer than required, truncate it
+        if len(signal) > total_samples:
+            signal = signal[:total_samples]
+        return signal
+
     def apply_filter_banks(self, data):
         band_data = {}
         for band in self.freq_bands:
@@ -60,12 +93,15 @@ class NeuralCooked(RenaScript):
             band_data[band_key] = self.bandpass_filter(data, band[0], band[1], self.frequency)
         return band_data
 
+
     def bandpass_filter(self, data, lowcut, highcut,fs, order=8):
+        filtered_data = []
         nyquist = 0.5 * fs
         low = lowcut / nyquist
         high = highcut / nyquist
         b, a = butter(order, [low, high], btype='band')
-        filtered_data= filtfilt(b, a, data)
+        for i in range(4):
+            filtered_data[i]= filtfilt(b, a, data[i])
         return filtered_data
 
 
@@ -110,12 +146,17 @@ class NeuralCooked(RenaScript):
         Trains the CCA model.
         This method generates spatial filters and templates for each target m-sequence.
         """
-
-        segment_Length = 30#1500
+        #ensure seq segments are the same
+        
         # Split data into segments for each m-sequence
-        seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // segment_Length, axis=1)
-        seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // segment_Length, axis=1)
-        seq3_segments = np.array_split(self.seq3_data, self.seq3_data.shape[1] // segment_Length, axis=1)
+        seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.sequence_length, axis=1)
+        seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // self.sequence_length, axis=1)
+        seq3_segments = np.array_split(self.seq3_data, self.seq3_data.shape[1] // self.sequence_length, axis=1)
+
+        seq1_segments = self.adjust_segments(seq1_segments, self.sequence_length)
+        seq2_segments = self.adjust_segments(seq2_segments, self.sequence_length)
+        seq3_segments = self.adjust_segments(seq3_segments, self.sequence_length)
+
 
         # Generate templates by averaging segments for each m-sequence
         templates = {
@@ -124,19 +165,19 @@ class NeuralCooked(RenaScript):
             3: np.mean(seq3_segments, axis=0)
         }
 
-        # Filter the data using predefined frequency bands
-        band_data = self.apply_filter_banks(self.data.get_data('EEG Data'))
-
         # Generate CCA-based spatial filters and templates for each band and each m-sequence
         cca_model = {}
         for band in self.freq_bands:
             band_key = f'band_{band[0]}_{band[1]}'
             cca_model[band_key] = {}
-
+            band_data = [[]]
             for i in range(1, 4):  # Assuming there are 3 m-sequences
-                cca = CCA(n_components=1)
-                filtered_template = self.bandpass_filter(templates[i], band[0], band[1], self.frequency)
-                cca.fit(filtered_template.T, self.mSequence[i - 1])
+                band_data[i] = self.apply_filter_banks(templates[i])    #generates band data
+                cca = CCA(n_components=1)                               #initalizes cca model
+                filtered_template = self.bandpass_filter(band_data[i], band[0], band[1], self.frequency)        #applies filter to band data
+
+
+                cca.fit(filtered_template.T, self.mSequenceSignal[i - 1])
                 cca_model[band_key][i] = cca
 
         # Store the CCA models
