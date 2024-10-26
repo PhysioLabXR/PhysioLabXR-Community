@@ -146,13 +146,7 @@ class NeuralCooked(RenaScript):
         Trains the CCA model.
         This method generates spatial filters and templates for each target m-sequence.
         """
-<<<<<<< HEAD
-        #ensure seq segments are the same
-        
-=======
-        #self.seqX_data.shape = [4,num_samples]
-        segment_Length = 30#1500
->>>>>>> 9beb02f2b44e3052f8967575f4bf9852b91ccd5d
+
         # Split data into segments for each m-sequence
         seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.sequence_length, axis=1)
         seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // self.sequence_length, axis=1)
