@@ -123,7 +123,7 @@ class NeuralCooked(RenaScript):
 
     @async_rpc
     def add_seq_data(self, sequenceNum: int, duration: float): #Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
-        eegData = self.data.get_data('EEG Data')[:, int(-duration *300) :]
+        eegData = self.data.get_data('EEG Data')[:, int(-duration *300) :]      # 4 by (samples)
 
         if sequenceNum == 1:
             if self.seq1_data.size == 0:
@@ -146,8 +146,13 @@ class NeuralCooked(RenaScript):
         Trains the CCA model.
         This method generates spatial filters and templates for each target m-sequence.
         """
+<<<<<<< HEAD
         #ensure seq segments are the same
         
+=======
+        #self.seqX_data.shape = [4,num_samples]
+        segment_Length = 30#1500
+>>>>>>> 9beb02f2b44e3052f8967575f4bf9852b91ccd5d
         # Split data into segments for each m-sequence
         seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.sequence_length, axis=1)
         seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // self.sequence_length, axis=1)

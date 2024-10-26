@@ -39,6 +39,7 @@ def ExampleSampleCallback_Signals(headsetPtr, packetTime, userData):
     if new_data.shape[1] != len(t):
         print('Data and timestamp mismatch')
         print(new_data.shape)
+        print(new_data.shape)
         print(len(t))
 
     #Create a dictionary with the stream name, data, and timestamps
