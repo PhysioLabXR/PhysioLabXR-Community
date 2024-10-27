@@ -1,15 +1,19 @@
 import json
+import multiprocessing
 import os
 import platform
 import warnings
 from dataclasses import dataclass, fields
 from enum import Enum
+from multiprocessing import Manager
 
 from PyQt6.QtCore import QStandardPaths, QFile, QTextStream
 from PyQt6.QtGui import QIcon
 
+from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
+from physiolabxr.utils.setup_utils import locate_csharp_plugin
 
 
 class LinechartVizMode(Enum):
@@ -113,11 +117,15 @@ class AppConfigs(metaclass=Singleton):
     main_window_meta_data_refresh_interval = 500  # in milliseconds, how often does the main window refreshes the meta data
 
     # ZMQ ports
+    scripting_port = 13000
     replay_stream_starting_port = 10000
     output_stream_starting_port = 11000
     test_port_starting_port = 12000
-    replay_port_range = 9980, 9990
+    # replay_port_range = 9980, 9990
     zmq_lost_connection_timeout = 4000  # in milliseconds
+
+    # scripting
+    add_default_rpc_output = True
 
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']
@@ -128,6 +136,9 @@ class AppConfigs(metaclass=Singleton):
     _style_sheets = {"dark": "physiolabxr/_ui/stylesheet/dark.qss", "light": "physiolabxr/_ui/stylesheet/light.qss"}
 
     _placeholder_text = 'placeholder'
+
+    csharp_plugin_path = None  # the csharp plugin location is set in post init
+    is_csharp_plugin_available: bool = True
 
     def __post_init__(self):
         # change the cwd to root folder
@@ -179,12 +190,19 @@ class AppConfigs(metaclass=Singleton):
             stream = QTextStream(stylesheet)
             self._style_sheets[theme] = stream.readAll()
 
+        # locate the csharp grpc plugin
+        self.csharp_plugin_path = locate_csharp_plugin()
+        if self.csharp_plugin_path is None:
+            self.is_csharp_plugin_available = False
+            warnings.warn("AppConfigs: C# plugin is not found. No RPC will be available for C#")
+
     def __del__(self):
         """
         save the presets to the local disk when the application is closed
         """
         save_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         save_local(self.app_data_path, save_dict, self._file_name, encoder=AppConfigsEncoder)
+        # kill the port finder process
         print(f"AppConfigs instance successfully deleted with its contents saved to {self._app_config_path}")
 
     def get_app_data_path(self):

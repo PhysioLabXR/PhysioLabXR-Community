@@ -2,7 +2,7 @@ import inspect
 import warnings
 
 from PyQt6.QtGui import QPixmap, QPainter, QFont
-from PyQt6.QtWidgets import QApplication, QSplashScreen, QLabel, QVBoxLayout
+from PyQt6.QtWidgets import QApplication, QSplashScreen, QLabel, QVBoxLayout, QSizePolicy
 from PyQt6.QtCore import Qt, QTimer, QObject, pyqtSignal, QCoreApplication
 
 from physiolabxr.configs.configs import AppConfigs
@@ -58,11 +58,17 @@ class SplashScreen(QSplashScreen):
         layout = QVBoxLayout()
         self.loading_label = QLabel("Loading...")
         self.loading_label .setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+        self.loading_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
+
+        # make the loading label size minimal to avoid it become bigger than the splash image
+
         layout.addWidget(self.loading_label)
 
         version_label = QLabel(f"<i>Physiological Laboratory for Mixed Reality v{get_project_version()}</i>", self)
         version_label .setAlignment(Qt.AlignmentFlag.AlignRight)
-        version_label.setGeometry(180, 120, 320, 20)  # Set the x, y, width, and height values as desired
+        # smaller y value puts the label higher
+        # smaller x value puts the label more to the left
+        version_label.setGeometry(160, 60, 320, 20)  # Set the x, y, width, and height values as desired
 
         self.setLayout(layout)
         self.setWindowTitle("Splash Screen")

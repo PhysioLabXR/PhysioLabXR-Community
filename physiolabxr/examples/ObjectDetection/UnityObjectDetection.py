@@ -80,7 +80,7 @@ while True:
         cv2.waitKey(delay=1)
 
         # Get color frame and perform 2D YOLO object detection
-        colorImg = cv2.imdecode(np.frombuffer(colorImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED).reshape(image_shape)
+        colorImg = cv2.imdecode(np.frombuffer(colorImagePNGBytes, dtype='uint8'), cv2.IMREAD_UNCHANGED)
 
         classIds, confs, bbox = net.detect(colorImg, confThreshold=threshold)
         bbox = list(bbox)

@@ -176,6 +176,8 @@ class ContextBot:
     def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float, dtype: DataType, interface_type=PresetType.LSL, port=None):
         from physiolabxr.presets.Presets import Presets
 
+        # self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels)  # add a default preset
+
         samples = np.random.random((num_channels, stream_time * srate)).astype(dtype.get_data_type())
         if interface_type == PresetType.LSL:
             p = Process(target=SampleDefinedLSLStream, args=(stream_name, samples), kwargs={'n_channels': num_channels, 'srate': srate, 'dtype': dtype.get_lsl_type()})
@@ -327,6 +329,16 @@ class ContextBot:
         self.qtbot.keyPress(self.app.addStreamWidget.stream_name_combo_box, Qt.Key.Key_A, modifier=Qt.KeyboardModifier.ControlModifier)
         self.qtbot.keyClicks(self.app.addStreamWidget.stream_name_combo_box, self.monitor_stream_name)
         self.qtbot.mouseClick(self.app.addStreamWidget.add_btn, QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+
+    def add_existing_script(self, script_path):
+        """
+        add an existing script to the app's scripting tab
+        """
+        self.qtbot.mouseClick(self.app.scripting_tab.AddScriptBtn,QtCore.Qt.MouseButton.LeftButton)  # click the add widget combo box
+        script_ids = list(self.app.scripting_tab.script_widgets.keys())
+        this_scripting_widget = self.app.scripting_tab.script_widgets[script_ids[-1]]
+        this_scripting_widget.locate_script(script_path)
+        return this_scripting_widget
 
     def __del__(self):
         self.clean_up()

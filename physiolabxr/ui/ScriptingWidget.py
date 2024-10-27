@@ -2,17 +2,19 @@
 import json
 import os
 import uuid
+from multiprocessing import Event
 from typing import List
 
 import numpy as np
 import psutil
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtCore import QThread, QTimer
+from PyQt6.QtCore import QThread, QTimer, pyqtSlot
 from PyQt6.QtGui import QMovie
 
 from PyQt6.QtWidgets import QFileDialog, QLayout
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
+from physiolabxr.configs.NetworkManager import NetworkManager
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.exceptions.exceptions import MissingPresetError, UnsupportedLSLDataTypeError, RenaError
 from physiolabxr.configs.config import SCRIPTING_UPDATE_REFRESH_INTERVAL
@@ -20,13 +22,16 @@ from physiolabxr.presets.PresetEnums import DataType, PresetType
 from physiolabxr.presets.Presets import Presets
 from physiolabxr.presets.ScriptPresets import ScriptPreset, ScriptOutput
 from physiolabxr.scripting.RenaScript import RenaScript
-from physiolabxr.scripting.script_utils import start_rena_script, get_target_class_name
+from physiolabxr.scripting.script_utils import get_script_class_name
+from physiolabxr.scripting.script_process import start_rena_script
 from physiolabxr.scripting.scripting_enums import ParamChange, ParamType
-from physiolabxr.configs.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST
+from physiolabxr.configs.shared import SCRIPT_STOP_SUCCESS, SCRIPT_PARAM_CHANGE, SCRIPT_STOP_REQUEST, INCLUDE_RPC, \
+    EXCLUDE_RPC, SCRIPT_SETUP_FAILED
 from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.threadings import workers
 from physiolabxr.threadings.WaitThreads import start_wait_for_response
 from physiolabxr.ui.PoppableWidget import Poppable
+from physiolabxr.ui.RPCWidget import RPCWidget
 from physiolabxr.ui.ScriptConsoleLog import ScriptConsoleLog
 from physiolabxr.ui.ScriptingInputWidget import ScriptingInputWidget
 from physiolabxr.ui.ScriptingOutputWidget import ScriptingOutputWidget
@@ -34,7 +39,7 @@ from physiolabxr.ui.ParamWidget import ParamWidget
 from physiolabxr.ui.ui_shared import script_realtime_info_text
 from physiolabxr.utils.Validators import NoCommaIntValidator
 from physiolabxr.utils.buffers import DataBuffer, click_on_file
-from physiolabxr.utils.networking_utils import send_data_dict
+from physiolabxr.utils.networking_utils import send_data_dict, recv_string_router
 from physiolabxr.presets.presets_utils import get_stream_preset_names, get_experiment_preset_streams, \
     get_experiment_preset_names, get_stream_preset_info, is_stream_name_in_presets, remove_script_from_settings
 
@@ -44,14 +49,22 @@ from physiolabxr.ui.dialogs import dialog_popup
 
 
 class ScriptingWidget(Poppable, QtWidgets.QWidget):
+    """
 
-    def __init__(self, parent_widget: QtWidgets, main_window, port, script_preset: ScriptPreset, layout: QLayout):
+    Sockets that are used in this class:
+    1. stdout_socket_interface: used to receive stdout from the script process,             using port
+    2. info_socket_interface: used to receive information from the script process,          using port + 1
+    3. forward_input_socket_interface: used to forward input data to the script process,    using port + 2
+    4. command_socket_interface: used to send command to the script process,                using port + 3
+    5. rpc port:                                                                            using port + 4
+    """
+
+    def __init__(self, parent_widget: QtWidgets, main_window, script_preset: ScriptPreset, layout: QLayout):
         super().__init__('Rena Script', parent_widget, layout, self.remove_script_clicked)
         self.ui = uic.loadUi(AppConfigs()._ui_ScriptingWidget, self)
         self.set_pop_button(self.PopWindowBtn)
 
         self.parent = parent_widget
-        self.port = port
         self.script = None
         self.input_widgets = []
         self.output_widgets = []
@@ -109,21 +122,29 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         # Fields for the console output window #########################################################################
         self.ConsoleLogBtn.clicked.connect(self.on_console_log_btn_clicked)
-        self.script_console_log = ScriptConsoleLog()
+        self.script_console_log = ScriptConsoleLog(self)
         self.script_console_log_window = another_window('Console Log')
         self.script_console_log_window.get_layout().addWidget(self.script_console_log)
         self.script_console_log_window.hide()
         self.stdout_timer = None
         self.script_worker = None
-        self.stdout_worker_thread = None
-        self.create_stdout_worker()  # setup stdout worker
 
         # Fields reading information from the script process, including timing performance and check for abnormal termination
         self.wait_for_response_worker, self.wait_response_thread = None, None
         self.info_socket_interface = None
+        self.command_socket_interface = None
+
         self.info_thread = None
         self.info_worker = None
         self.script_pid = None
+
+        # stdout
+        self.stdout_socket_interface = None
+        self.stdout_worker_thread = None
+        self.stdout_worker = None
+        self.stdout_port = None
+        self.stdout_routing_id = None
+        self.create_stdout_worker()  # setup stdout worker
 
         # Fields for the console output window #########################################################################
         self.input_shape_dict = None  # to keep the input shape for each forward input callback, so we don't query the UI everytime for the input shapes
@@ -131,6 +152,19 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.run_signal_timer.timeout.connect(self.run_signal)
         # self.data_buffer = None
         self.forward_input_socket_interface = None
+
+        # rpc fields
+        self.rpc_port = ''
+        self.rpc_widget = RPCWidget(self)
+        self.rpc_window = another_window('Settings')
+        self.rpc_window.get_layout().addWidget(self.rpc_widget)
+        self.rpc_window.hide()
+        self.RPC_button.clicked.connect(self.on_rpc_button_clicked)
+        self.async_shutdown_event = None
+        self.rpc_copy_port_button.setIcon(AppConfigs()._icon_copy)
+        self.rpc_copy_port_button.clicked.connect(self.copy_button_clicked)
+        self.rpc_copy_port_button.hide()
+        self.copied_label.hide()
 
         # loading from script preset from the persistent sittings ######################################################
         if script_preset is not None:
@@ -145,9 +179,16 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         # global signals
         GlobalSignals().stream_preset_nominal_srate_changed.connect(self.on_stream_nominal_sampling_rate_change)
 
-    def setup_info_worker(self, script_pid):
+    def on_rpc_button_clicked(self):
+        if self.rpc_window.isVisible():
+            self.rpc_window.hide()
+        else:
+            self.rpc_window.show()
+            self.rpc_window.activateWindow()
+
+    def setup_info_worker(self, script_pid, port):
         self.info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                                      port_id=self.port + 1,
+                                                      port_id=port,
                                                       identity='client',
                                                       pattern='router-dealer', add_poller=True)
         print('MainApp: Sending command info socket routing ID')
@@ -167,11 +208,11 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
         self.info_worker.timer = self.info_timer
 
-    def setup_forward_input(self, forward_interval, internal_buffer_sizes):
+    def setup_forward_input(self, forward_interval, internal_buffer_sizes, port):
         self.run_signal_timer.setInterval(int(forward_interval))
         self.internal_data_buffer = DataBuffer(stream_buffer_sizes=internal_buffer_sizes)  # buffer that keeps data between run signals
         self.forward_input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
-                                                               port_id=self.port + 2,
+                                                               port_id=port,
                                                                identity='client',
                                                                pattern='router-dealer',
                                                                disable_linger=True)
@@ -179,27 +220,36 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def stop_run_signal_forward_input(self):
         self.run_signal_timer.stop()
-        del self.internal_data_buffer, self.forward_input_socket_interface
+        self.internal_data_buffer = None
+        self.forward_input_socket_interface = None
 
-    def setup_command_interface(self):
+    def setup_command_interface(self, port):
         self.command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
-                                                         port_id=self.port + 3,
+                                                         port_id=port,
                                                          identity='client',
                                                          pattern='router-dealer', add_poller=True,
                                                          disable_linger=True)  # must disable lingering in case of dead script process
         self.command_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
     def close_command_interface(self):
-        del self.command_socket_interface
+        self.command_socket_interface = None
 
     def show_realtime_info(self, realtime_info: list):
         self.realtimeInfoLabel.setText(script_realtime_info_text.format(*realtime_info))
 
     def create_stdout_worker(self):
+        """
+        stdout worker must be created and its thread running in the init function of ScriptingWidget
+        It should not be created when the run button is clicked along with other sockets,
+        otherwise it cannot receive stdout from the scripting process before the run button function
+        finished
+        """
         self.stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                                        port_id=self.port,
-                                                        identity='client',
+                                                        port_id=0,
+                                                        identity='server',
                                                         pattern='router-dealer')
+        self.stdout_port = self.stdout_socket_interface.binded_port
+
         self.stdout_worker_thread = QThread(self.parent)
         self.stdout_worker = workers.ScriptingStdoutWorker(self.stdout_socket_interface)
         self.stdout_worker.std_signal.connect(self.redirect_script_std)
@@ -215,8 +265,6 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.stdout_worker_thread.requestInterruption()
         self.stdout_worker_thread.exit()
         self.stdout_worker_thread.wait()
-        del self.stdout_socket_interface
-        # del self.stdout_timer, self.stdout_worker, self.stdout_worker_thread
 
     def close_info_interface(self):
         self.info_timer.stop()
@@ -230,33 +278,61 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         # if std_message[1] != '\n':
         self.script_console_log.print_msg(*std_message)
 
+    @QtCore.pyqtSlot()
+    def copy_button_clicked(self):
+        QtWidgets.QApplication.clipboard().setText(str(self.rpc_port))
+        self.copied_label.show()
+
     def on_run_btn_clicked(self):
+        """
+        When starting a script, there are four ports being established
+
+        self.setup_info_worker() -> info socket
+        self.setup_command_interface() -> command socket
+        self.create_stdout_worker() -> stdout socket
+        self._setup_running_script() -> input socket
+
+        """
         if not self.is_running:
             script_path = self.scriptPathLineEdit.text()
             if not validate_script_path(script_path, RenaScript): return
+
+            # check if the script has at least one output, if not, add the default
+            if AppConfigs().add_default_rpc_output:
+                self.rpc_widget.check_add_default_output()
+
             try:
                 script_args = self.get_verify_script_args()
             except RenaError as e:
                 dialog_popup(str(e), title='Error', main_parent=self.main_window)
                 return
 
-            forward_interval = 1e3 / float(self.frequencyLineEdit.text())
-
             self.script_console_log_window.show()
-            self.stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
 
-            self.script_process = start_rena_script(script_path, script_args)
-            self.script_pid = self.script_process.pid  # receive the PID
-            print('MainApp: User script started on process with PID {}'.format(self.script_pid))
-            self.setup_info_worker(self.script_pid)
-            self.setup_command_interface()
+            self.script_process, stdout_port, info_port, input_port, command_port = start_rena_script(script_path, script_args)
+            self.script_pid = self.script_process.pid  # get the PID
 
-            internal_buffer_size = dict([(name, size * 2)for name, size in script_args['buffer_sizes'].items()])
-            self.setup_forward_input(forward_interval, internal_buffer_size)
-            self.is_running = True
-            self.is_simulating = self.simulateCheckbox.isChecked()
-            self.change_ui_on_run_stop(self.is_running)
-            self.input_shape_dict = self.get_input_shape_dict()
+            self.setup_info_worker(self.script_pid, info_port)
+            self.setup_command_interface(command_port)
+            # unlike other sockets, stdout socket is set up in ScriptingWidget's init
+            _, self.stdout_routing_id = recv_string_router(self.stdout_socket_interface, True)
+
+            script_status = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)
+            if script_status == INCLUDE_RPC:
+                # change the rpc button text to display the port number
+                rpc_server_port = np.frombuffer(self.info_socket_interface.socket.recv(), dtype=int)[0]
+                rpc_info = np.frombuffer(self.info_socket_interface.socket.recv(), dtype='<U61').reshape(-1, 3).tolist()
+                self.RPC_button.setText('RPC Options ({})'.format(rpc_server_port))
+                self.rpc_port = rpc_server_port
+                self.rpc_widget.write_rpc_table(rpc_info)
+                self.rpc_copy_port_button.show()
+            elif script_status == EXCLUDE_RPC:
+                self.RPC_button.setText('RPC Options')
+                self.rpc_copy_port_button.hide()
+            elif script_status == SCRIPT_SETUP_FAILED:
+                self.clean_up_after_stop(close_console=False)
+                return
+            self._setup_running_script(script_args['buffer_sizes'], input_port)
         else:
             self.info_worker.deactivate()
             show_label_movie(self.stopping_label, True)
@@ -270,6 +346,20 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         # if is_timeout_killed:
         #     dialog_popup('Failed to terminate script process within timeout. Killing it', title='ERROR')
 
+    def _setup_running_script(self, buffer_sizes, input_port):
+        """
+
+        """
+
+        print('MainApp: User script started on process with PID {}'.format(self.script_pid))
+
+        internal_buffer_size = dict([(name, size * 2) for name, size in buffer_sizes.items()])
+        forward_interval = 1e3 / float(self.frequencyLineEdit.text())
+        self.setup_forward_input(forward_interval, internal_buffer_size, input_port)
+        self.is_running = True
+        self.is_simulating = self.simulateCheckbox.isChecked()
+        self.change_ui_on_run_stop(self.is_running)
+        self.input_shape_dict = self.get_input_shape_dict()
 
     def stop_message_is_available(self):
         """
@@ -287,7 +377,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             self.clean_up_after_stop()
 
-    def kill_script_process(self):
+    def kill_script_process(self, *args, **kwargs):
         """
         This function is called from
         * when the stop button is clicked, it calls notify_script_to_stop, which sends a message to the script process,
@@ -309,9 +399,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
             self.wait_response_thread.wait()
         if psutil.pid_exists(self.script_pid):
             self.script_process.kill()
-        self.clean_up_after_stop()
+        self.clean_up_after_stop(*args, **kwargs)
 
-    def clean_up_after_stop(self):
+    def clean_up_after_stop(self, close_console=True):
         """
         this is the final step of stopping the script process
         @return:
@@ -319,16 +409,21 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.close_command_interface()
         self.stop_run_signal_forward_input()
         self.close_info_interface()
-        del self.info_socket_interface
-        self.script_console_log_window.hide()
+        self.info_socket_interface = None
+        if close_console:
+            self.script_console_log_window.hide()
         self.is_running = False
         self.change_ui_on_run_stop(self.is_running)
         self.runBtn.clicked.disconnect()
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
+
+        self.rpc_copy_port_button.hide()
+
         show_label_movie(self.stopping_label, False)
         self.wait_for_response_worker, self.wait_response_thread = None, None
         if self.needs_to_close:  # this is set to true when try_close is called
-            self.finish_close()
+            self.finish_close(close_console=close_console)
+        self.async_shutdown_event = None
 
     # def process_command_return(self, command_return):
     #     command, is_success = command_return
@@ -347,6 +442,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         script_path = str(QFileDialog.getOpenFileName(self, "Select File", filter="py(*.py)")[0])
         if script_path == '':
             return
+        self.locate_script(script_path)
+
+    def locate_script(self, script_path):
         self.process_locate_script(script_path)
         self.export_script_args_to_settings()
 
@@ -394,7 +492,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
 
     def load_script_name(self, script_path):
         self.scriptPathLineEdit.setText(script_path)
-        self.scriptNameLabel.setText(get_target_class_name(script_path, RenaScript))
+        self.scriptNameLabel.setText(get_script_class_name(script_path, RenaScript))
 
     def change_ui_on_run_stop(self, is_run):
         self.widget_input.setEnabled(not is_run)
@@ -404,6 +502,9 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.widget_script_basic_info.setEnabled(not is_run)
         self.runBtn.setText('Run' if not is_run else 'Stop')
         self.simulateCheckbox.setEnabled(not is_run)
+        # change the text of the rpc button to not display the port number
+        if not is_run:
+            self.RPC_button.setText('RPC Options')
 
     def add_input_clicked(self):
         input_preset_name = self.inputComboBox.currentText()
@@ -603,11 +704,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         return num_channel, int(int(self.timeWindowLineEdit.text()) * sampling_rate)
 
     def try_close(self):
-        """
+        """This function is called when the app is about to be closed.
+
         if the script is running, it will call the stop button, which will call on_run_btn_clicked and close routine.
         otherwise it will call finish_close
         @return: None
         """
+        self.close_stdout()
         if self.is_running:
             if self.wait_for_response_worker is None:  # if is not already stopping the script
                 self.on_run_btn_clicked()
@@ -615,11 +718,15 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             self.finish_close()
 
-    def finish_close(self):
-        self.close_stdout()
+    def finish_close(self, close_console=True, *args, **kwargs):
+        self.close()
         if self.is_popped:
             self.delete_window()
-        self.script_console_log_window.close()
+        if close_console:
+            self.script_console_log_window.close()
+
+        self.rpc_window.close()
+
         self.deleteLater()
         print('Script widget closed')
         self.parent.remove_script_widget(self)
@@ -655,8 +762,13 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.run_signal()  # run the loop so it can process the stop command
         print("MainApp: waiting for stop success")
 
+        # in case of async stop
+        if self.async_shutdown_event is not None:
+            self.async_shutdown_event.set()
+
         self.wait_for_response_worker, self.wait_response_thread = start_wait_for_response(self.command_socket_interface.socket)
-        self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)
+        self.wait_for_response_worker.result_available.connect(self.stop_message_is_available)  # this will run clean_up_after_stop
+
 
     def get_verify_script_args(self):
         time_window = get_int_from_line_edit(self.timeWindowLineEdit, "Input buffer duration")
@@ -665,16 +777,24 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         buffer_sizes = [(input_name, input_shape[1]) for input_name, input_shape in self.get_input_shape_dict().items()]
         buffer_sizes = dict(buffer_sizes)
 
+        # get the rpc args
+        rpc_outputs = self.rpc_widget.get_output_info()
+        self.async_shutdown_event = Event()
+
         rtn = {'inputs': self.get_inputs(),
-                'input_shapes': self.get_input_shape_dict(),
+               'input_shapes': self.get_input_shape_dict(),
                 'buffer_sizes': buffer_sizes,
                 'outputs': self.get_output_presets(),
-                'params': self.get_param_dict(), 'port': self.stdout_socket_interface.port_id,
+                'params': self.get_param_dict(),
                 'run_frequency': run_frequency,
                 'time_window': time_window,
                 'script_path': self.scriptPathLineEdit.text(),
                 'is_simulate': self.simulateCheckbox.isChecked(),
-                'presets': Presets()}
+                'presets': Presets(),
+                'rpc_outputs': rpc_outputs,
+                'async_shutdown_event': self.async_shutdown_event,
+                'csharp_plugin_path': AppConfigs().csharp_plugin_path,
+                'stdout_port': self.stdout_port}
         lsl_supported_types = DataType.get_lsl_supported_types()
         lsl_output_data_types = {(o_preset.stream_name, o_preset.data_type) for o_preset in rtn['outputs'] if o_preset.interface_type == PresetType.LSL}
         for output_name, dtype in lsl_output_data_types:
@@ -741,3 +861,5 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         else:
             return max(existing_ports) + 1
 
+    def get_script_path(self):
+        return self.scriptPathLineEdit.text()

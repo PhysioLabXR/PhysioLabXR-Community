@@ -9,9 +9,11 @@ def physiolabxr():
     from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
 
     from physiolabxr.configs.configs import AppConfigs
+    from physiolabxr.configs.NetworkManager import NetworkManager
     from physiolabxr.ui.SplashScreen import SplashScreen
 
     AppConfigs(_reset=False)  # create the singleton app configs object
+    NetworkManager()
 
     app = None
 

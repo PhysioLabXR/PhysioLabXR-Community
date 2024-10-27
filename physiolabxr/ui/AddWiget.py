@@ -204,7 +204,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         if is_new_preset:
             selected_type = PresetType.LSL
 
-        preset_type_combobox_index = self.preset_type_combobox.findText(selected_type.value)
+        preset_type_combobox_index = self.preset_type_combobox.findText(selected_type.name)
         self.preset_type_combobox.setCurrentIndex(preset_type_combobox_index)
 
         if selected_type == PresetType.LSL:
@@ -220,9 +220,7 @@ class AddStreamWidget(QtWidgets.QWidget):
         elif selected_type == PresetType.FMRI:
             self.hide_stream_uis()
         elif selected_type == PresetType.CUSTOM:
-            if stream_name == CustomPresetType.UnicornHybridBlackBluetooth.value:
-                self.hide_stream_uis()
-            # self.show_custom_preset_ui(stream_name)
+            self.hide_stream_uis()
 
         else: raise Exception("Unknow preset type {}".format(selected_type))
 
