@@ -13,35 +13,38 @@ class NeuralCooked(RenaScript):
         super().__init__(*args, **kwargs)
 
     def init(self):
-        self.freq_bands = [(8, 60), (12, 60), (30, 60)]         #defining frequency bands for filter bank
-        self.mSequence = []                                     #creating a list of m_sequences
-        self.frequency = 300                                    #default frequency of DSI-24
-        self.data = DataBuffer()                                #generating a data buffer for EEG data
-        self.cca_models = []                                    #creating a list to store all of the CCA models
-        self.decoded_choices = []                               #creating a list to store all of the decoded choices
+        self.freq_bands = [(8, 60), (12, 60), (30, 60)]  # defining frequency bands for filter bank
+        self.mSequence = []  # creating a list of m_sequences
+        self.frequency = 300  # default frequency of DSI-24
+        self.data = DataBuffer()  # generating a data buffer for EEG data
+        self.cca_models = []  # creating a list to store all of the CCA models
+        self.decoded_choices = []  # creating a list to store all of the decoded choices
         self.mSequence = [
-            [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0],  #mSequence1
-            [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],  #mSequence2
-            [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]   #mSequence3
+            [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0],  # mSequence1
+            [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],  # mSequence2
+            [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]  # mSequence3
         ]
         self.sequence_length = len(self.mSequence[0])
-        self.mSequenceSignal =  []
+        self.mSequenceSignal = []
         self.seq1_data = np.array([[]])
         self.seq2_data = np.array([[]])
         self.seq3_data = np.array([[]])
+
     def loop(self):
         if self.inputs:
-            EEG_Data = {                                            #creating a dictionary for EEG data
-                'stream_name': 'EEG Data',                          #defining the stream name
-                'frames': self.inputs['DSI24'][0][14:18, :].astype(float),       #choosing the correct channels
-                'timestamps': self.inputs['DSI24'][1].astype(float)           #defining the timestamps
+            EEG_Data = {  # creating a dictionary for EEG data
+                'stream_name': 'EEG Data',  # defining the stream name
+                'frames': self.inputs['DSI24'][0][14:18, :].astype(float),  # choosing the correct channels
+                'timestamps': self.inputs['DSI24'][1].astype(float)  # defining the timestamps
             }
-            Sequence_Data = {}                                      #creating a dictionary for sequence data
-            self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
-            if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
-                self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-60000)
-            if len(self.cca_models) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
-                self.decode_choice()                                  #adding the detected choice to the list of detected choices
+            Sequence_Data = {}  # creating a dictionary for sequence data
+            self.data.update_buffer(EEG_Data)  # updating the data buffer with EEG data
+            if self.data.get_data('EEG Data').shape[
+                1] > 60000:  # if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
+                self.data.clear_stream_up_to_index(stream_name='EEG Data',
+                                                   cut_to_index=self.data.get_data('EEG Data').shape[1] - 60000)
+            if len(self.cca_models) == 3:  # if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
+                self.decode_choice()  #adding the detected choice to the list of detected choices
     def cleanup(self):
         self.freq_bands = [(8, 60), (12, 60), (30, 60)]
         self.mSequence = []
@@ -170,13 +173,12 @@ class NeuralCooked(RenaScript):
             band_key = f'band_{band[0]}_{band[1]}'
             cca_model[band_key] = {}
             band_data = [[]]
-            for i in range(1, 4):  # Assuming there are 3 m-sequences
+            for i in range(0, 3):  # Assuming there are 3 m-sequences
                 band_data[i] = self.apply_filter_banks(templates[i])    #generates band data
                 cca = CCA(n_components=1)                               #initalizes cca model
-                filtered_template = self.bandpass_filter(band_data[i], band[0], band[1], self.frequency)        #applies filter to band data
 
 
-                cca.fit(filtered_template.T, self.mSequenceSignal[i - 1])
+                cca.fit(band_data[i].T, self.mSequenceSignal[i].T)
                 cca_model[band_key][i] = cca
 
         # Store the CCA models
