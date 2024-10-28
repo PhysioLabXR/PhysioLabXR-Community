@@ -27,9 +27,9 @@ class NeuroCooked(RenaScript):
         ]
         self.sequence_length = len(self.mSequence[0])
         self.mSequenceSignal =  {
-            'segment1': self.generateMSignal(self.mSequence[0]),
-            'segment2': self.generateMSignal(self.mSequence[1]),
-            'segment3': self.generateMSignal(self.mSequence[2])
+            'segment1': self.generateMSignal(0),
+            'segment2': self.generateMSignal(1),
+            'segment3': self.generateMSignal(2)
         }
         self.seq1_data = np.array([[]])
         self.seq2_data = np.array([[]])
@@ -47,7 +47,7 @@ class NeuroCooked(RenaScript):
             self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
             if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
                 self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-60000)
-            if len(self.cca_models) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
+            if len(self.ccaModel) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
                 self.decode_choice()                                  #adding
 
     def cleanup(self):
@@ -57,7 +57,7 @@ class NeuroCooked(RenaScript):
         self.data = DataBuffer()
         self.cca_models = []
         self.decoded_choices = []
-        self.mSequence = []
+
         return
 
     #Data Manipulation
