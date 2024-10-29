@@ -97,17 +97,16 @@ class NeuralCooked(RenaScript):
             # Average the filtered segments across the first axis
             band[self.freq_bands[i]] = np.mean(filtered_segments, axis=0)
         return band
-    def adjust_segments(self, segments, sequence_length):
+    def adjust_segments(self, segments):
         adjusted_segments = []
-        segment_length = int(sequence_length * 0.033*300)
         for segment in segments:
             # If the segment is shorter than the desired length, pad it with zeros
-            if segment.shape[1] < segment_length:
-                padding = np.zeros((segment.shape[0], segment_length - segment.shape[1]))
+            if segment.shape[1] < self.segment_length:
+                padding = np.zeros((segment.shape[0], self.segment_length - segment.shape[1]))
                 adjusted_segment = np.hstack((segment, padding))  # Pad with zeros
             else:
                 # If the segment is longer, trim it to the desired length
-                adjusted_segment = segment[:, :segment_length]
+                adjusted_segment = segment[:, :self.segment_length]
 
             adjusted_segments.append(adjusted_segment)
 
@@ -118,16 +117,16 @@ class NeuralCooked(RenaScript):
         :param data: EEG data for segmenting into templates
         :return: dictionary of dictionary of filtered EEG arrays Keys: segment number -> keys frequency band
         """
-        seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.segment_length, axis=1)
+        seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.segment_length, axis=1)  #size segment_length
         seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // self.segment_length, axis=1)
         seq3_segments = np.array_split(self.seq3_data, self.seq3_data.shape[1] // self.segment_length, axis=1)
 
-        seq1_segments = self.adjust_segments(seq1_segments, self.segment_length)
-        seq2_segments = self.adjust_segments(seq2_segments, self.segment_length)
-        seq3_segments = self.adjust_segments(seq3_segments, self.segment_length)
+        seq1_segments = self.adjust_segments(seq1_segments) #size segment_length
+        seq2_segments = self.adjust_segments(seq2_segments)
+        seq3_segments = self.adjust_segments(seq3_segments)
 
 
-        self.templates['segment1'] = self.applyFilterBank(seq1_segments)
+        self.templates['segment1'] = self.applyFilterBank(seq1_segments) #size_segment_length
         self.templates['segment2'] = self.applyFilterBank(seq2_segments)
         self.templates['segment3'] = self.applyFilterBank(seq3_segments)
 
