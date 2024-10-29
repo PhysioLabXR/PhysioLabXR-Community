@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import NeuroCooked_pb2 as NeuroCooked__pb2
+import NeuralCooked_pb2 as NeuralCooked__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 GRPC_GENERATED_VERSION = '1.67.0'
@@ -19,14 +19,14 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in NeuroCooked_pb2_grpc.py depends on'
+        + f' but the generated code in NeuralCooked_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
-class NeuroCookedStub(object):
+class NeuralCookedStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -36,18 +36,23 @@ class NeuroCookedStub(object):
             channel: A grpc.Channel.
         """
         self.add_seq_data = channel.unary_unary(
-                '/NeuroCooked/add_seq_data',
-                request_serializer=NeuroCooked__pb2.add_seq_dataRequest.SerializeToString,
+                '/NeuralCooked/add_seq_data',
+                request_serializer=NeuralCooked__pb2.add_seq_dataRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
         self.decode = channel.unary_unary(
-                '/NeuroCooked/decode',
+                '/NeuralCooked/decode',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=NeuroCooked__pb2.decodeResponse.FromString,
+                response_deserializer=NeuralCooked__pb2.decodeResponse.FromString,
+                _registered_method=True)
+        self.training = channel.unary_unary(
+                '/NeuralCooked/training',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=NeuralCooked__pb2.trainingResponse.FromString,
                 _registered_method=True)
 
 
-class NeuroCookedServicer(object):
+class NeuralCookedServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def add_seq_data(self, request, context):
@@ -62,28 +67,39 @@ class NeuroCookedServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def training(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-def add_NeuroCookedServicer_to_server(servicer, server):
+
+def add_NeuralCookedServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'add_seq_data': grpc.unary_unary_rpc_method_handler(
                     servicer.add_seq_data,
-                    request_deserializer=NeuroCooked__pb2.add_seq_dataRequest.FromString,
+                    request_deserializer=NeuralCooked__pb2.add_seq_dataRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'decode': grpc.unary_unary_rpc_method_handler(
                     servicer.decode,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=NeuroCooked__pb2.decodeResponse.SerializeToString,
+                    response_serializer=NeuralCooked__pb2.decodeResponse.SerializeToString,
+            ),
+            'training': grpc.unary_unary_rpc_method_handler(
+                    servicer.training,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=NeuralCooked__pb2.trainingResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'NeuroCooked', rpc_method_handlers)
+            'NeuralCooked', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('NeuroCooked', rpc_method_handlers)
+    server.add_registered_method_handlers('NeuralCooked', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class NeuroCooked(object):
+class NeuralCooked(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -100,8 +116,8 @@ class NeuroCooked(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/NeuroCooked/add_seq_data',
-            NeuroCooked__pb2.add_seq_dataRequest.SerializeToString,
+            '/NeuralCooked/add_seq_data',
+            NeuralCooked__pb2.add_seq_dataRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
@@ -127,9 +143,36 @@ class NeuroCooked(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/NeuroCooked/decode',
+            '/NeuralCooked/decode',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            NeuroCooked__pb2.decodeResponse.FromString,
+            NeuralCooked__pb2.decodeResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def training(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/NeuralCooked/training',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            NeuralCooked__pb2.trainingResponse.FromString,
             options,
             channel_credentials,
             insecure,
