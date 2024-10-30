@@ -26,7 +26,7 @@ class NeuralCooked(RenaScript):
             [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]   #mSequence3
         ]
         self.sequence_length = len(self.mSequence[0])
-        self.segment_length = np.floor(self.sequence_length*300 * 0.033)
+        self.segment_length = int(np.floor(self.sequence_length*300 * 0.033))
         self.mSequenceSignal =  {
             'segment1': self.generateMSignal(0),
             'segment2': self.generateMSignal(1),
@@ -49,7 +49,8 @@ class NeuralCooked(RenaScript):
             if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
                 self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-60000)
             if len(self.ccaModel) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
-                self.decode_choice()                                  #adding
+                if self.data.get_data('EEG Data').shape[1] < self.segment_length:
+                    self.decode_choice()                                  #adding
 
     def cleanup(self):
         self.freq_bands = [(8, 60), (12, 60), (30, 60)]
@@ -134,10 +135,14 @@ class NeuralCooked(RenaScript):
     def generateMSignal(self, seqNum):
 
         samples_per_bit = self.segment_length // len(self.mSequence[seqNum])
-        signal = np.repeat(self.mSequence[seqNum], samples_per_bit)
+        signal = np.repeat(self.mSequence[seqNum], samples_per_bit )
 
         # Step 4: If the signal is longer than required, truncate it
         if len(signal) > self.segment_length:
+            signal = signal[:, :self.segment_length]
+        elif len(signal) < self.segment_length:
+            padding= int(np.ceil((self.segment_length - len(signal))/2)+1)
+            signal = np.pad(signal, pad_width=padding, mode = 'constant', constant_values= 0)
             signal = signal[:self.segment_length]
         return signal
     def train_cca(self):
@@ -146,7 +151,7 @@ class NeuralCooked(RenaScript):
         By generated spatial filters and templates for each target m-sequence
         """
         self.createTemplates()
-
+        self.ccaModel = self.templates
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
                 cca = CCA(n_components = 1)
@@ -199,10 +204,8 @@ class NeuralCooked(RenaScript):
         # Return the most common detected choice
         return user_choice
     def decode_choice(self):
-        self.correlation_coefficients = self.apply_shifting_window_cca(
-            self.data.get_data('EEG Data'))  # getting the correlation coefficients by applying shifting window CCA
-        highest_correlation, detected_choice = self.evaluate_correlation_coefficients(
-            self.correlation_coefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        self.correlation_coefficients = self.apply_shifting_window_cca(self.data.get_data('EEG Data'))  # getting the correlation coefficients by applying shifting window CCA
+        highest_correlation, detected_choice = self.evaluate_correlation_coefficients(self.correlation_coefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
         self.decoded_choices.append[detected_choice]
 
     def apply_shifting_window_cca(self, data):
@@ -213,7 +216,7 @@ class NeuralCooked(RenaScript):
         step_size = window_size/2  # For example, 0.5 second step size for 300 Hz sampling rate
 
         segments = []
-        for start in range(0, (len(data) - window_size + 1), step_size):
+        for start in range(0, (len(data)), step_size):
             segment = data[start:start+window_size]
             segments.append(segment)
 
