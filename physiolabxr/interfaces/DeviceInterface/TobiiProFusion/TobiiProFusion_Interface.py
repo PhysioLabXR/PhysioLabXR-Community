@@ -46,15 +46,8 @@ class TobiiProFusion_Interface(DeviceInterface):
                                                        )
         # Check for platform compatibility
         if platform.system() != "Windows":
-            dialog_popup(
-                msg="Tobii Pro Fusion is only supported on Windows. Please try a different platform.",
-                mode='modal',
-                title='Platform Not Supported',
-                dialog_name='tobii_platform_warning',
-                enable_dont_show=True,
-            )
             # Raise an exception to prevent further setup if not Windows
-            raise EnvironmentError("Tobii Pro Fusion is only supported on Windows")
+            raise EnvironmentError("Platform Not Supported: Tobii Pro Fusion is only supported on Windows")
 
         self.stream_name = _device_name
         self.stream_type = _device_type
