@@ -44,12 +44,11 @@ class NeuralCooked(RenaScript):
                 'frames': self.inputs['DSI24'][0][14:18, :].astype(float),       #choosing the correct channels
                 'timestamps': self.inputs['DSI24'][1].astype(float)           #defining the timestamps
             }
-            Sequence_Data = {}                                      #creating a dictionary for sequence data
             self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
             if self.data.get_data('EEG Data').shape[1] > 60000:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
                 self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-60000)
             if len(self.ccaModel) == 3:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
-                if self.data.get_data('EEG Data').shape[1] < self.segment_length:
+                if self.data.get_data('EEG Data').shape[1] > self.segment_length:
                     self.decode_choice()                                  #adding
 
     def cleanup(self):
@@ -193,14 +192,14 @@ class NeuralCooked(RenaScript):
     def decode(self) -> int:
         # Get the choices decoded so far
         choices = self.decoded_choices
-
-        # Determine the most common choice
-        user_choice = max(set(choices), key=choices.count)
-
-        # Clear the decoded choices list for the next round
-        self.decoded_choices = []
-        self.data.clear_buffer_data('EEG Data')
-
+        if choices != []:
+            # Determine the most common choice
+            user_choice = max(set(choices), key=choices.count)
+            self.decoded_choices = []
+            self.data.clear_buffer_data('EEG Data')
+        else:
+            print('not enough time has passed')
+            user_choice = 0
         # Return the most common detected choice
         return user_choice
     def decode_choice(self):
@@ -212,11 +211,11 @@ class NeuralCooked(RenaScript):
         """
         Applies shifting window CCA to the filtered band data.
         """
-        window_size = self.sequence_length * 0.033 * 300  # For example, 1 second window for 300 Hz sampling rate
-        step_size = window_size/2  # For example, 0.5 second step size for 300 Hz sampling rate
+        window_size = int(self.sequence_length * 0.033 * 300)  # For example, 1 second window for 300 Hz sampling rate
+        step_size = int(window_size/2)  # For example, 0.5 second step size for 300 Hz sampling rate
 
         segments = []
-        for start in range(0, (len(data)), step_size):
+        for start in range(0, data.shape[1], step_size):
             segment = data[start:start+window_size]
             segments.append(segment)
 
