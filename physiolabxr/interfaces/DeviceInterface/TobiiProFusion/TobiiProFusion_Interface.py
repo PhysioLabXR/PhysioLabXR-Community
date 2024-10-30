@@ -7,36 +7,11 @@ from physiolabxr.utils.time_utils import get_clock_time
 import numpy as np
 import os
 import platform
+from physiolabxr.ui.dialogs import dialog_popup
 
 def get_executable_path():
     base_dir = os.path.dirname(os.path.abspath(__file__))  # Get script directory
-    if platform.system() == "Windows":
-        return os.path.join(base_dir, "x64", "Debug", "TobiiProFusion.exe")
-    else:
-        raise NotImplementedError("This system is not supported at the moment. Please use a Windows system.")
-
-
-
-# def compile_tobii_pro_fusion_process():
-#     #if user_os == "Windows":
-#     base_dir = os.path.dirname(__file__)
-#     c_file = os.path.join(base_dir, "TobiiProFusion_Process.c")
-#     output_file = os.path.join(base_dir, "tobiiprofusion_process.exe")  # Assuming you're on Windows
-#
-#     cjson_lib_path = "physiolabxr/thirdparty/cJSON.h"
-#     zmq_lib_path = "physiolabxr/thirdparty/zmq.h"
-#     include_path = "physiolabxr/thirdparty/TobiiProSDKWindows/64/include"
-#
-#     # Compile command linking with -L for library paths and -I for include paths
-#     compile_command = [
-#         "gcc", c_file, "-o", output_file, "-g", "-Wall",
-#     ]
-#
-#     try:
-#         subprocess.run(compile_command, check=True)
-#         print("Compilation successful!")
-#     except subprocess.CalledProcessError as e:
-#         print(f"Compilation failed: {e}")
+    return os.path.join(base_dir, "x64", "Debug", "TobiiProFusion.exe")
 
 def start_tobii_pro_fusion_process(port, terminate_event):
     try:
@@ -53,7 +28,6 @@ def start_tobii_pro_fusion_process(port, terminate_event):
         print("Process terminated successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Process failed with error: {e}")
-
 def run_tobii_pro_fusion_process(port):
     terminate_event = Event()
     eyetracker_process = Process(target=start_tobii_pro_fusion_process, args=(port, terminate_event))
@@ -70,6 +44,17 @@ class TobiiProFusion_Interface(DeviceInterface):
                                                        device_nominal_sampling_rate=_device_nominal_sampling_rate,
                                                        is_supports_device_availability=False,
                                                        )
+        # Check for platform compatibility
+        if platform.system() != "Windows":
+            dialog_popup(
+                msg="Tobii Pro Fusion is only supported on Windows. Please try a different platform.",
+                mode='modal',
+                title='Platform Not Supported',
+                dialog_name='tobii_platform_warning',
+                enable_dont_show=True,
+            )
+            # Raise an exception to prevent further setup if not Windows
+            raise EnvironmentError("Tobii Pro Fusion is only supported on Windows")
 
         self.stream_name = _device_name
         self.stream_type = _device_type
@@ -135,18 +120,6 @@ class TobiiProFusion_Interface(DeviceInterface):
 
     def is_device_available(self):
         return self.device_available
-
-    # def receive_address_data(self):
-    #     try:
-    #         data = self.socket.recv_json(flags=zmq.NOBLOCK)  # Non-blocking receive
-    #         if 'address' in data:
-    #             return data['address']
-    #         else:
-    #             print("Address data not found in the received message.")
-    #             return None
-    #     except zmq.Again:
-    #         print("No data received.")
-    #         return None
 
 
     def __del__(self):
