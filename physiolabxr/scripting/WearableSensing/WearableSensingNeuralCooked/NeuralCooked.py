@@ -27,7 +27,7 @@ class NeuralCooked(RenaScript):
         ]
         self.sequence_length = len(self.mSequence[0])
         self.segment_length = int(np.floor(self.sequence_length*300 * 0.033))
-        self.mSequenceSignal =  {
+        self.mSequenceSignal = {
             'segment1': self.generateMSignal(0),
             'segment2': self.generateMSignal(1),
             'segment3': self.generateMSignal(2)
@@ -150,9 +150,10 @@ class NeuralCooked(RenaScript):
         By generated spatial filters and templates for each target m-sequence
         """
         self.createTemplates()
-        self.ccaModel = self.templates
+        self.ccaModel = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
+                cca = None
                 cca = CCA(n_components = 1)
                 cca.fit(self.templates[segment][freqBand].T,self.mSequenceSignal[segment])
                 self.ccaModel[segment][freqBand] = cca
@@ -187,6 +188,7 @@ class NeuralCooked(RenaScript):
         """
         # Train the CCA
         self.train_cca()  # start training the CCA
+        self.data.clear_buffer_data() #Clear the buffer after training
         return 1
     @async_rpc
     def decode(self) -> int:
@@ -196,7 +198,7 @@ class NeuralCooked(RenaScript):
             # Determine the most common choice
             user_choice = max(set(choices), key=choices.count)
             self.decoded_choices = []
-            self.data.clear_buffer_data('EEG Data')
+            self.data.clear_buffer_data()
         else:
             print('not enough time has passed')
             user_choice = 0
@@ -216,22 +218,23 @@ class NeuralCooked(RenaScript):
 
         segments = []
         for start in range(0, data.shape[1], step_size):
-            segment = data[start:start+window_size]
-            segments.append(segment)
+            if start+window_size < data.shape[1]:
+                segment = data[:, start:start+window_size]
+                segments.append(segment) #For some reason the segments created are not of the shape
 
         #Filter the data
         filtered_data = {}
-        for band in self.freq_bands:
-            filtered_data[band] = self.applyFilterBank(segments)
+        filtered_data = self.applyFilterBank(segments)
+        self.ccaResults =  {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)} #temporarily assigns the dictionary so that we can use the keys
+
         correlation = {}
         avg_correlation = {}
         #Transform the data with CCA
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
                 cca = self.ccaModel[segment][freqBand]
-                self.ccaResults[segment][freqBand] = cca.transform(filtered_data[freqBand])
-
-                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand], self.templates[segment][freqBand])
+                self.ccaResults[segment][freqBand] = cca.transform(filtered_data[freqBand].T).flatten()
+                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand], self.mSequenceSignal[segment])
             avg_correlation[segment] = np.mean(correlation[segment].values())
         return avg_correlation
 
