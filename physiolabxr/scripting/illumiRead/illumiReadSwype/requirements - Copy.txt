@@ -1,2 +1,0 @@
-dtw-python==1.5.1
-openpyxl

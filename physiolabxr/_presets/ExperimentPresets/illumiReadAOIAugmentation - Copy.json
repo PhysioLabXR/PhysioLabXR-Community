@@ -1,7 +1,0 @@
-{"ExperimentName": "illumiReadAOIAugmentation",
-  "PresetStreamNames": [
-    "AOIAugmentationEventMarkerLSL",
-    "TobiiProFusionUnityLSL",
-    "AOIAugmentationTargetImageInfoLSL",
-    "AOIAugmentationHeatmapOverlayImageInfoLSL"
-  ]}

@@ -1,8 +1,0 @@
-{
-  "StreamName":"IndexPen_30",
-  "ChannelNames":[
-    "IndexPenEventMarker"
-  ],
-  "NominalSamplingRate":  3,
-  "DataType": "float32"
-  }

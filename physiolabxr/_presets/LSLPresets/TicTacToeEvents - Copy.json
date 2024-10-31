@@ -1,4 +1,0 @@
-{ "StreamName":"TicTacToeEvents",
-  "NominalSamplingRate":  1,
-  "ChannelNames":  ["Event"],
-  "DataType": "float32"}

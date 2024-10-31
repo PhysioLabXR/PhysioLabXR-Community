@@ -1,6 +1,0 @@
-{ "StreamName":"AOIAugmentationGazeAttentionGridVectorArchive",
-  "NumChannels":1250,
-  "NominalSamplingRate":  250,
-  "DataType": "float64",
-  "PortNumber":  11000
-  }
