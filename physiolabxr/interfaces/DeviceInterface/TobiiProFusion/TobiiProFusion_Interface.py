@@ -24,10 +24,10 @@ def start_tobii_pro_fusion_process(port, terminate_event):
 
         # When terminate_event is set, terminate the process
         process.terminate()
-        process.wait()
         print("Process terminated successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Process failed with error: {e}")
+
 def run_tobii_pro_fusion_process(port):
     terminate_event = Event()
     eyetracker_process = Process(target=start_tobii_pro_fusion_process, args=(port, terminate_event))
@@ -64,7 +64,7 @@ class TobiiProFusion_Interface(DeviceInterface):
         self.socket.bind("tcp://*:0")  # Bind to port 0 for an available random port
         self.port = self.socket.getsockopt(zmq.LAST_ENDPOINT).decode("utf-8").split(":")[-1]  # Get the randomly binded port number from the socket
 
-        self.terminate_event = Event()
+        # self.terminate_event = Event()
         self.device_process = None
         self.data_process = None
         self.terminate_event = None

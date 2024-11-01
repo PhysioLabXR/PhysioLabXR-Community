@@ -8,10 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <assert.h>
 
 int is_first_time = 1;
 int64_t time_offset = 0;
+void* context = NULL;
+TobiiResearchEyeTracker* eyetracker = NULL;
 void* tobii_socket;
 
 int64_t get_current_time_in_microseconds() {
@@ -95,6 +98,31 @@ void gaze_data_callback(TobiiResearchGazeData* gaze_data, void* user_data) {
 
 }
 
+void handle_signal(int signal) {
+    if (signal == SIGTERM) {
+        printf("Received SIGTERM, cleaning up resources...\n");
+
+        // Unsubscribe from gaze data if applicable
+        if (eyetracker) {
+            tobii_research_unsubscribe_from_gaze_data(eyetracker, gaze_data_callback);
+        }
+
+        // Close and terminate ZeroMQ resources
+        if (tobii_socket) {
+            zmq_close(tobii_socket);
+            tobii_socket = NULL; // Avoid dangling pointer
+        }
+        if (context) {
+            zmq_ctx_term(context);
+            context = NULL; // Avoid dangling pointer
+        }
+
+        // Perform any additional cleanup
+        printf("Resources cleaned up successfully.\n");
+        exit(0); // Ensure program exits after cleanup
+    }
+}
+
 static void buffer_overflow_notification_callback(TobiiResearchNotification* notification, void* user_data) {
     (void)user_data;
     // Make sure we are handling the correct notification
@@ -109,13 +137,14 @@ static void buffer_overflow_notification_callback(TobiiResearchNotification* not
 
 
 void tobii_pro_fusion_process(int port) {
+    signal(SIGTERM, handle_signal);
     printf("Entered tobii_pro_fusion_process with port %d\n", port);
 
     // Initialize ZMQ context and socket
     char endpoint[50];
     sprintf_s(endpoint, sizeof(endpoint), "tcp://localhost:%d", port);
 
-    void* context = zmq_ctx_new();
+    context = zmq_ctx_new();
     if (!context) {
         fprintf(stderr, "Failed to create ZMQ context: %s\n", zmq_strerror(zmq_errno()));
         return;
@@ -139,7 +168,7 @@ void tobii_pro_fusion_process(int port) {
         return;
     }
 
-    TobiiResearchEyeTracker* eyetracker = eyetrackers->eyetrackers[0];
+    eyetracker = eyetrackers->eyetrackers[0];
     char* address = NULL, * serial_number = NULL, * device_name = NULL;
     tobii_research_get_address(eyetracker, &address);
     tobii_research_get_serial_number(eyetracker, &serial_number);
@@ -163,18 +192,7 @@ void tobii_pro_fusion_process(int port) {
 
     // Continuously collect and send data
     while (1) {
-        Sleep(2000);
-        char data_message[100];
-        snprintf(data_message, sizeof(data_message), "Gaze data packet on port %d", port);
-
-        if (zmq_send(tobii_socket, data_message, strlen(data_message), 0) == -1) {
-            fprintf(stderr, "Failed to send data via ZeroMQ: %s\n", zmq_strerror(zmq_errno()));
-        }
-        else {
-            printf("Sent data: %s\n", data_message);
-        }
-
-        Sleep(4); // Adjust frequency as needed
+        Sleep(4000);
     }
 
     // Clean up when finished
@@ -182,83 +200,6 @@ void tobii_pro_fusion_process(int port) {
     zmq_close(tobii_socket);
     zmq_ctx_term(context);
 }
-
-
-void tobii_pro_fusion_process(int port) {
-    printf("Entered tobii_pro_fusion_process with port %d\n", port);
-    fflush(stdout);
-
-    // Initialize ZMQ context and socket
-    char endpoint[50];
-    snprintf(endpoint, sizeof(endpoint), "tcp://localhost:%d", port);
-    printf("Attempting to connect ZMQ socket to endpoint: %s\n", endpoint);
-    fflush(stdout);
-
-    void* context = zmq_ctx_new();
-    if (!context) {
-        fprintf(stderr, "Failed to create ZMQ context: %s\n", zmq_strerror(zmq_errno()));
-        fflush(stderr);
-        return;
-    }
-    tobii_socket = zmq_socket(context, ZMQ_PUSH);
-    assert(tobii_socket && "ZeroMQ socket creation failed.");
-
-    int rc = zmq_connect(tobii_socket, endpoint);
-    if (rc != 0) {
-        fprintf(stderr, "Failed to connect ZMQ socket: %s\n", zmq_strerror(zmq_errno()));
-        fflush(stderr);
-        zmq_ctx_term(context);
-        return;
-    }
-    else {
-        printf("ZMQ socket connected to %s\n", endpoint);
-        fflush(stdout);
-    }
-
-    // Initialize Tobii Research
-    printf("Looking for Tobii eye trackers...\n");
-    fflush(stdout);
-    TobiiResearchEyeTrackers* eyetrackers = NULL;
-    TobiiResearchStatus result = tobii_research_find_all_eyetrackers(&eyetrackers);
-    if (result != TOBII_RESEARCH_STATUS_OK) {
-        fprintf(stderr, "Finding trackers failed. Error: %d\n", result);
-        fflush(stderr);
-        zmq_close(tobii_socket);
-        zmq_ctx_term(context);
-        return;
-    }
-    printf("Tobii eye tracker found.\n");
-    fflush(stdout);
-
-    // Process and send gaze data
-    TobiiResearchEyeTracker* eyetracker = eyetrackers->eyetrackers[0];
-    tobii_research_free_eyetrackers(eyetrackers);
-
-    result = tobii_research_subscribe_to_gaze_data(eyetracker, gaze_data_callback, NULL);
-    if (result != TOBII_RESEARCH_STATUS_OK) {
-        fprintf(stderr, "Error subscribing to gaze data.\n");
-        fflush(stderr);
-        zmq_close(tobii_socket);
-        zmq_ctx_term(context);
-        return;
-    }
-
-    printf("Started gaze data collection\n");
-    fflush(stdout);
-
-    // Keep process running and handle gaze data in the callback
-    while (1) {
-        Sleep(2000); // Keep alive, assuming Tobii device is sending data
-        printf("Collecting data...\n");
-        fflush(stdout);
-    }
-
-    // Clean up when finished
-    tobii_research_unsubscribe_from_gaze_data(eyetracker, gaze_data_callback);
-    zmq_close(tobii_socket);
-    zmq_ctx_term(context);
-}
-
 
 int main(int argc, char* argv[])
 {
