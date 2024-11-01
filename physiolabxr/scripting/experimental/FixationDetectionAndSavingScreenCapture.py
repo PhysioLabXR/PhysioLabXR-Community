@@ -41,6 +41,7 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 # Disk Utilities Fields ########################################
 capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
 is_saving_captures = True
+draw_fovea_on_image = False
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
@@ -138,12 +139,13 @@ while True:
 
         cv2.circle(img_modified, center, 1, center_color, 2)
         axis = (int(central_fov * ppds[0]), int(central_fov * ppds[1]))
-        cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
-        axis = (int(near_peripheral_fov * ppds[0]), int(near_peripheral_fov * ppds[1]))
-        cv2.ellipse(img_modified, center, axis, 0, 0, 360, parafovea_color, thickness=4)
-        axis = (int(1.25 * mid_perpheral_fov * ppds[0]), int(mid_perpheral_fov * ppds[1]))
-        cv2.ellipse(img_modified, center, axis, 0, 0, 360, peripheri_color, thickness=4)
 
+        if draw_fovea_on_image:
+            cv2.ellipse(img_modified, center, axis, 0, 0, 360, fovea_color, thickness=4)
+            axis = (int(near_peripheral_fov * ppds[0]), int(near_peripheral_fov * ppds[1]))
+            cv2.ellipse(img_modified, center, axis, 0, 0, 360, parafovea_color, thickness=4)
+            axis = (int(1.25 * mid_perpheral_fov * ppds[0]), int(mid_perpheral_fov * ppds[1]))
+            cv2.ellipse(img_modified, center, axis, 0, 0, 360, peripheri_color, thickness=4)
 
         # put the item bboxes on the image
         for item_index, item_bbox in item_bboxes.items():
