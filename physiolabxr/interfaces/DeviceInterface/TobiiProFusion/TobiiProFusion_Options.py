@@ -2,11 +2,12 @@ from physiolabxr.ui.BaseDeviceOptions import BaseDeviceOptions
 import os
 import subprocess
 from physiolabxr.configs.configs import AppConfigs
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 
 class TobiiProFusion_Options(BaseDeviceOptions):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        (super
+         ().__init__(*args, **kwargs))
 
         # Connect the Calibration button to the click handler
         self.calibration_btn.clicked.connect(self.calibration_btn_clicked)
