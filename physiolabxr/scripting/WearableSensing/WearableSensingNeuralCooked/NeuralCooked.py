@@ -21,9 +21,9 @@ class NeuralCooked(RenaScript):
         self.ccaResults= {}
         self.decoded_choices = []                               #creating a list to store all of the decoded choices
         self.mSequence = [
-            [1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0],  #mSequence1
-            [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1],  #mSequence2
-            [0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1]   #mSequence3
+            [0,0,0,1,1,1,1,0,1,0,1,1,0,0,1],  #mSequence1
+            [1,0,1,1,0,0,1,0,0,0,1,1,1,1,0],  #mSequence2
+            [0,1,1,1,1,0,1,0,1,1,0,0,1,0,0]   #mSequence3
         ]
         self.sequence_length = len(self.mSequence[0])
         self.segment_length = int(np.floor(self.sequence_length*300 * 0.033))
@@ -130,7 +130,6 @@ class NeuralCooked(RenaScript):
         self.templates['segment2'] = self.applyFilterBank(seq2_segments)
         self.templates['segment3'] = self.applyFilterBank(seq3_segments)
 
-
     def generateMSignal(self, seqNum):
 
         samples_per_bit = self.segment_length // len(self.mSequence[seqNum])
@@ -144,6 +143,7 @@ class NeuralCooked(RenaScript):
             signal = np.pad(signal, pad_width=padding, mode = 'constant', constant_values= 0)
             signal = signal[:self.segment_length]
         return signal
+
     def train_cca(self):
         """
         Training the CCA model
@@ -153,9 +153,8 @@ class NeuralCooked(RenaScript):
         self.ccaModel = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
-                cca = None
                 cca = CCA(n_components = 1)
-                cca.fit(self.templates[segment][freqBand].T,self.mSequenceSignal[segment])
+                cca.fit(self.templates[segment][freqBand].T,self.mSequenceSignal[segment].T)
                 self.ccaModel[segment][freqBand] = cca
 
     @async_rpc
@@ -194,7 +193,7 @@ class NeuralCooked(RenaScript):
     def decode(self) -> int:
         # Get the choices decoded so far
         choices = self.decoded_choices
-        if choices != []:
+        if len(choices) > 2:
             # Determine the most common choice
             user_choice = max(set(choices), key=choices.count)
             self.decoded_choices = []
@@ -207,7 +206,7 @@ class NeuralCooked(RenaScript):
     def decode_choice(self):
         self.correlation_coefficients = self.apply_shifting_window_cca(self.data.get_data('EEG Data'))  # getting the correlation coefficients by applying shifting window CCA
         highest_correlation, detected_choice = self.evaluate_correlation_coefficients(self.correlation_coefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        self.decoded_choices.append[detected_choice]
+        self.decoded_choices.append(detected_choice)
 
     def apply_shifting_window_cca(self, data):
         """
@@ -227,27 +226,28 @@ class NeuralCooked(RenaScript):
         filtered_data = self.applyFilterBank(segments)
         self.ccaResults =  {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)} #temporarily assigns the dictionary so that we can use the keys
 
-        correlation = {}
+        correlation = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
         avg_correlation = {}
         #Transform the data with CCA
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
                 cca = self.ccaModel[segment][freqBand]
-                self.ccaResults[segment][freqBand] = cca.transform(filtered_data[freqBand].T).flatten()
-                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand], self.mSequenceSignal[segment])
-            avg_correlation[segment] = np.mean(correlation[segment].values())
+                self.ccaResults[segment][freqBand] = cca.transform(filtered_data[freqBand].T)
+                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand].flatten(), self.mSequenceSignal[segment])[0,1]
+                print(segment, freqBand, correlation[segment][freqBand])
+            avg_correlation[segment] = np.mean(list(correlation[segment].values()))
+        print(avg_correlation)
         return avg_correlation
 
     def evaluate_correlation_coefficients(self, correlation_coefficients):
         # Sort the sequences by their average correlation in descending order
         sorted_correlations = sorted(correlation_coefficients.items(), key=lambda item: item[1], reverse=True)
-
         # Get the highest and second-highest correlations
         highest_sequence, highest_corr = sorted_correlations[0]
         second_highest_sequence, second_highest_corr = sorted_correlations[1]
 
         # Check if the highest correlation is at least 0.15 higher than the second highest
-        if highest_corr >= second_highest_corr + 0.15:
-            return highest_corr, highest_sequence
+        if highest_corr >= second_highest_corr + 0.01:
+            return highest_corr, int(highest_sequence[-1])
         else:
-            return highest_corr, -1
+            return highest_corr, 0
