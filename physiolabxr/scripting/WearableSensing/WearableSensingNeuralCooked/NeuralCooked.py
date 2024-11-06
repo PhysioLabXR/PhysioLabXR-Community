@@ -51,6 +51,7 @@ class NeuralCooked(RenaScript):
                 if self.data.get_data('EEG Data').shape[1] > self.segment_length:
                     self.decode_choice()                                  #adding
 
+
     def cleanup(self):
         self.freq_bands = [(8, 60), (12, 60), (30, 60)]
         self.mSequence = []
@@ -73,7 +74,7 @@ class NeuralCooked(RenaScript):
         :return: A bandpassed version of the data
         """
         nq = 0.5 * self.frequency
-        order = 1
+        order = 8
         lowcutoffnorm = lowcutoff / nq
         highcutoffnorm = highcutoff / nq
         b, a = butter(order, [ lowcutoffnorm, highcutoffnorm], btype = 'band')
@@ -135,14 +136,17 @@ class NeuralCooked(RenaScript):
         samples_per_bit = self.segment_length // len(self.mSequence[seqNum])
         signal = np.repeat(self.mSequence[seqNum], samples_per_bit )
 
+        ##Change signal to be another dictionary holding freq bands and the respective
+
         # Step 4: If the signal is longer than required, truncate it
         if len(signal) > self.segment_length:
             signal = signal[:, :self.segment_length]
         elif len(signal) < self.segment_length:
-            padding= int(np.ceil((self.segment_length - len(signal))/2)+1)
+            padding = int(np.ceil((self.segment_length - len(signal))/2)+1)
             signal = np.pad(signal, pad_width=padding, mode = 'constant', constant_values= 0)
             signal = signal[:self.segment_length]
-        return signal
+        filteredSignal = self.applyFilterBank([signal])
+        return filteredSignal
 
     def train_cca(self):
         """
@@ -154,7 +158,7 @@ class NeuralCooked(RenaScript):
         for segment in self.templates.keys():
             for freqBand in self.templates[segment].keys():
                 cca = CCA(n_components = 1)
-                cca.fit(self.templates[segment][freqBand].T,self.mSequenceSignal[segment].T)
+                cca.fit(self.templates[segment][freqBand].T,self.mSequenceSignal[segment][freqBand].T)
                 self.ccaModel[segment][freqBand] = cca
 
     @async_rpc
@@ -193,11 +197,13 @@ class NeuralCooked(RenaScript):
     def decode(self) -> int:
         # Get the choices decoded so far
         choices = self.decoded_choices
-        if len(choices) > 2:
+        print(choices)
+        if len([x for x in choices if x != 0]) > 5:
             # Determine the most common choice
             user_choice = max(set(choices), key=choices.count)
             self.decoded_choices = []
             self.data.clear_buffer_data()
+
         else:
             print('not enough time has passed')
             user_choice = 0
@@ -213,7 +219,7 @@ class NeuralCooked(RenaScript):
         Applies shifting window CCA to the filtered band data.
         """
         window_size = int(self.sequence_length * 0.033 * 300)  # For example, 1 second window for 300 Hz sampling rate
-        step_size = int(window_size/2)  # For example, 0.5 second step size for 300 Hz sampling rate
+        step_size = int(window_size/8)  # For example, 0.5 second step size for 300 Hz sampling rate
 
         segments = []
         for start in range(0, data.shape[1], step_size):
@@ -233,8 +239,7 @@ class NeuralCooked(RenaScript):
             for freqBand in self.templates[segment].keys():
                 cca = self.ccaModel[segment][freqBand]
                 self.ccaResults[segment][freqBand] = cca.transform(filtered_data[freqBand].T)
-                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand].flatten(), self.mSequenceSignal[segment])[0,1]
-                print(segment, freqBand, correlation[segment][freqBand])
+                correlation[segment][freqBand] = np.corrcoef(self.ccaResults[segment][freqBand].flatten(), self.mSequenceSignal[segment][freqBand])[0,1]
             avg_correlation[segment] = np.mean(list(correlation[segment].values()))
         print(avg_correlation)
         return avg_correlation
@@ -247,7 +252,7 @@ class NeuralCooked(RenaScript):
         second_highest_sequence, second_highest_corr = sorted_correlations[1]
 
         # Check if the highest correlation is at least 0.15 higher than the second highest
-        if highest_corr >= second_highest_corr + 0.01:
+        if highest_corr >= second_highest_corr + 0.1:
             return highest_corr, int(highest_sequence[-1])
         else:
             return highest_corr, 0

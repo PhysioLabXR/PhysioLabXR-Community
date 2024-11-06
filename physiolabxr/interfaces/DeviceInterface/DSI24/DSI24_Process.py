@@ -82,7 +82,6 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
     impedance_data = impedance_data[[10,11,5,4,6,16,17,9,3,7,12,19,13,18,0,8,14,15,1,2], :]
     empty_rows = np.empty((3,impedance_data.shape[1]), dtype=object)
     impedance_data = np.concatenate((impedance_data, empty_rows))
-    print(impedance_data)
 
     # Add the common-mode function (CMF) impedance value at the end
     cmf_impedance = np.array([h.GetImpedanceCMF()])
