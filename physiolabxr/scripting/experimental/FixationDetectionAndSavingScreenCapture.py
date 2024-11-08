@@ -40,7 +40,7 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 # Disk Utilities Fields ########################################
 capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
-is_saving_captures = True
+is_saving_captures = False
 draw_fovea_on_image = False
 
 now = datetime.now()
@@ -151,6 +151,7 @@ while True:
         for item_index, item_bbox in item_bboxes.items():
             # clip the bbox to the image size, the bbox is in the format x_center, y_center, width, height
             item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+
             img_modified = add_bounding_box(img_modified, *item_bbox_clipped, color=(0, 255, 0))
             # put the item index as text
             cv2.putText(img_modified, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
