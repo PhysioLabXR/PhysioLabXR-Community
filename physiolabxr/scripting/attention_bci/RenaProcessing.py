@@ -29,7 +29,7 @@ from renaanalysis.utils.utils import get_item_events
 from renaanalysis.utils.viz_utils import visualize_block_gaze_event
 from scipy.stats import stats
 
-from physiolabxr.scripting.deprecated.RenaProcessingParameters import locking_filters, event_names, epoch_margin
+from physiolabxr.scripting.attention_bci.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.shared import bcolors
 from physiolabxr.utils.data_utils import get_date_string, mode_by_column
