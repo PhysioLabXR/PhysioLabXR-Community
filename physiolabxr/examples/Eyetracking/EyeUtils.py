@@ -32,6 +32,24 @@ def add_bounding_box(a, x, y, width, height, color):
     copy[bounding_box[1]:bounding_box[1] + bounding_box[3], np.min([image_width-1, bounding_box[0] + bounding_box[2]])] = color
     return copy
 
+    # # Create a copy of the image to avoid modifying the original
+    # copy = np.copy(a)
+    # image_height, image_width = a.shape[:2]
+    #
+    # # Calculate the top-left corner of the bounding box
+    # x1 = max(0, x - width // 2)
+    # y1 = max(0, y - height // 2)
+    # x2 = min(image_width - 1, x + width // 2)
+    # y2 = min(image_height - 1, y + height // 2)
+    #
+    # # Draw the bounding box
+    # copy[y1:y2, x1] = color  # Left vertical line
+    # copy[y1:y2, x2] = color  # Right vertical line
+    # copy[y1, x1:x2] = color  # Top horizontal line
+    # copy[y2, x1:x2] = color  # Bottom horizontal line
+    #
+    # return copy
+
 def clip_bbox(x_center, y_center, width, height, image_shape):
     H, W = image_shape[:2]  # Get the height and width of the image
 
