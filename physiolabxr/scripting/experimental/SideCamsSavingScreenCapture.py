@@ -20,13 +20,9 @@ import struct
 import matplotlib.pyplot as plt
 
 # fix detection parameters  #######################################
-loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
 previous_img_patch = None
 fixation_frame_counter = 0
 distance = 0
-
-# LSL detected fixations ########################################
-outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
 # zmq camera capture fields #######################################
 
@@ -89,14 +85,14 @@ while True:
 
         # save the original image
         if is_saving_captures:
-            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('f', timestamp_right)}.png"), right_cam_color)
-            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('f', timestamp_right)}_depth.png"), right_cam_depth)
+            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('d', timestamp_right)}.png"), right_cam_color)
+            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('d', timestamp_right)}_depth.png"), right_cam_depth)
 
-            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('f', timestamp_left)}.png"), left_cam_color)
-            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('f', timestamp_left)}_depth.png"), left_cam_depth)
+            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('d', timestamp_left)}.png"), left_cam_color)
+            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('d', timestamp_left)}_depth.png"), left_cam_depth)
 
-            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('f', timestamp_back)}.png"), back_cam_color)
-            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('f', timestamp_back)}_depth.png"), back_cam_depth)
+            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('d', timestamp_back)}.png"), back_cam_color)
+            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('d', timestamp_back)}_depth.png"), back_cam_depth)
 
         frame_counter += 1
 
