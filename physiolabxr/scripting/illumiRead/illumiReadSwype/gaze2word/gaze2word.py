@@ -27,8 +27,7 @@ from joblib import Parallel, delayed
 from collections import OrderedDict
 import pickle
 from enum import Enum
-from types import NoneType
-from typing import Union, List
+from typing import Union, List, Optional
 
 import pandas as pd
 import numpy as np
@@ -134,9 +133,9 @@ class Gaze2Word:
 
 
     def predict(self, k: int, gaze_trace: np.ndarray, timestamps=None,
-                prefix: Union[NoneType, str, PREFIX_OPTIONS]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
+                prefix: Optional[Union[str, PREFIX_OPTIONS]]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
                 run_dbscan: bool=False, dbscan_eps: float= 0.1, dbscan_min_samples: int=3,
-                filter_by_starting_letter: Union[NoneType, float]=None,
+                filter_by_starting_letter: Optional[float]=None,
                 njobs: int=1,
                 return_prob: float=True,
                 use_trimmed_vocab: bool=False,
