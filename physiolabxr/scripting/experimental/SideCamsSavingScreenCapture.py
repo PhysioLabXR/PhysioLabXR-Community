@@ -62,7 +62,7 @@ capture_save_location = "C:/Recordings"
 
 
 is_saving_captures = True
-is_displaying = True
+is_displaying = False
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
@@ -118,6 +118,7 @@ while True:
             # cv2.imshow('Left', left)
             # cv2.imshow('Back', back)
 
+            # displaying
             cv2.imshow('Right', right_cam_color)
             cv2.imshow('RightDepth', right_cam_depth)
 
