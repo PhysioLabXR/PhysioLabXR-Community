@@ -58,7 +58,7 @@ left_cam_socket = get_cam_socket("tcp://localhost:5558", 'ColorDepthCamLeft')
 back_cam_socket = get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
 
 # Disk Utilities Fields ########################################
-capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
+capture_save_location = "C:/Recordings"
 
 
 is_saving_captures = True

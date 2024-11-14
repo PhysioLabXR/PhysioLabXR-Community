@@ -39,8 +39,8 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 
 # Disk Utilities Fields ########################################
-capture_save_location = "C:/Users/LLINC-Lab/Documents/Recordings"
-is_saving_captures = False
+capture_save_location = "C:/Recordings"
+is_saving_captures = True
 draw_fovea_on_image = False
 
 now = datetime.now()
