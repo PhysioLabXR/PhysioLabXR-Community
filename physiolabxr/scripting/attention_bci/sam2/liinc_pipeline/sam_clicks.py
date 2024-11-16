@@ -17,7 +17,7 @@ from PIL import Image
 import cv2
 
 #The total number of masks that are considered invalid
-Rejected_masks_cnt = 0
+Rejected_cnt = 0
 
 
 def compute_shift(img1, img2):
@@ -223,14 +223,31 @@ def check_mask(mask, threshold=0.7):
         mask: Binary mask to check, shape (H, W)
         threshold: Threshold for valid mask
     """
-    global Rejected_masks_cnt
+    global Rejected_cnt
     #print("MSKSHAPE:",mask.shape)
     if mask.sum() > threshold * mask.shape[0] * mask.shape[1]:
-        Rejected_masks_cnt += 1 
+        Rejected_cnt += 1 
         return np.zeros_like(mask)
     else:
         return mask
 
+def check_bbox(bbox, imgSize, threshold=0.7):
+    """Reject the bbox if it is too large against the whole frame
+
+    Args:
+        bbox (List): List of coords like: [int(x_min), int(y_min), int(x_max), int(y_max)]
+        imgSize (_type_): the img width * height
+        threshold (float, optional): The size ratio for rejection. Defaults to 0.7.
+    """
+    
+    x_min, y_min, x_max, y_max = bbox
+    bboxSize=(x_max-x_min)*(y_max-y_min)
+    global Rejected_cnt
+    
+    if bboxSize > imgSize*threshold:
+        Rejected_cnt += 1
+        return False
+    return True
     
 def process_sequence_batch(model_predictor, frames, coords, iou_threshold=0.7, avg_threshold=0.5):
     """
@@ -463,6 +480,7 @@ def save_sequence_results(frames, coords, frame_paths, sequence_results, save_di
             for seq_idx in range(seq_length):
                 frame = frames[item_idx, seq_idx].permute(1,2,0).cpu().numpy().astype(np.uint8)
                 img_height, img_width = frame.shape[0], frame.shape[1]
+                img_size=img_height*img_width
                 
                 # Get masks and metadata
                 final_mask = sequence_results[seq_idx]['final_masks'][item_idx]
@@ -472,6 +490,7 @@ def save_sequence_results(frames, coords, frame_paths, sequence_results, save_di
                 
                 # Compute bounding box from final mask
                 bbox = compute_bbox_from_mask(final_mask)
+                bbox is None if not check_bbox(bbox,imgSize=img_size,threshold=0.7) else bbox
                 
                 if bbox is not None:
                     # Create and save JSONL entry
@@ -550,16 +569,16 @@ if __name__ == "__main__":
     # Example usage with updated code
     transform = ToTensor()
     dataloader = get_target_sequence_dataloader(
-        # Leave your data folder here
+        # Leave your data root folder here
         root_dir=r"/home/ian/participant=1_session=2",
         # Your target_id from the experiment, this works with target response dtn: 2 only for the target_id items
-        target_id="407.0",
+        target_id="607.0",
         batch_size=32,
         sequence_length=3,
         transform=transform
     )
 
-    device = init_device()
+    device = init_device(device_name='cuda:4')
     model_predictor = init_sam_2(device)
 
     # Main execution
@@ -576,5 +595,5 @@ if __name__ == "__main__":
                          categories=categories)
         print("\nResults saved to 'sam2_results' directory")
     print("-"*32)
-    print("All batches processed, the number of rejected masks: ", Rejected_masks_cnt)
+    print("All batches processed, the number of rejected masks: ", Rejected_cnt)
     print("-"*32)
