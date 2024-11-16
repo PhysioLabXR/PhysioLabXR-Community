@@ -1,0 +1,176 @@
+Batch 0:
+- Score: 0.930
+- Fixation coordinate: (209.0, 210.0)
+
+Batch 1:
+- Score: 0.922
+- Fixation coordinate: (215.0, 255.0)
+
+Batch 2:
+- Score: 0.941
+- Fixation coordinate: (179.0, 224.0)
+
+Batch 3:
+- Score: 0.949
+- Fixation coordinate: (145.0, 244.0)
+
+Batch 4:
+- Score: 0.941
+- Fixation coordinate: (181.0, 228.0)
+
+Batch 5:
+- Score: 0.910
+- Fixation coordinate: (217.0, 183.0)
+
+Batch 6:
+- Score: 0.953
+- Fixation coordinate: (244.0, 184.0)
+
+Batch 7:
+- Score: 0.949
+- Fixation coordinate: (206.0, 166.0)
+
+Batch 8:
+- Score: 0.926
+- Fixation coordinate: (218.0, 199.0)
+
+Batch 9:
+- Score: 0.938
+- Fixation coordinate: (221.0, 182.0)
+
+Batch 10:
+- Score: 0.938
+- Fixation coordinate: (223.0, 201.0)
+
+Batch 11:
+- Score: 0.957
+- Fixation coordinate: (239.0, 203.0)
+
+Batch 12:
+- Score: 0.953
+- Fixation coordinate: (176.0, 253.0)
+
+Batch 13:
+- Score: 0.961
+- Fixation coordinate: (149.0, 268.0)
+
+Batch 14:
+- Score: 0.957
+- Fixation coordinate: (231.0, 277.0)
+
+Batch 15:
+- Score: 0.941
+- Fixation coordinate: (185.0, 184.0)
+
+Batch 16:
+- Score: 0.926
+- Fixation coordinate: (170.0, 208.0)
+
+Batch 17:
+- Score: 0.941
+- Fixation coordinate: (194.0, 195.0)
+
+Batch 18:
+- Score: 0.941
+- Fixation coordinate: (219.0, 154.0)
+
+Batch 19:
+- Score: 0.934
+- Fixation coordinate: (239.0, 200.0)
+
+Batch 20:
+- Score: 0.941
+- Fixation coordinate: (196.0, 198.0)
+
+Batch 21:
+- Score: 0.953
+- Fixation coordinate: (204.0, 261.0)
+
+Batch 0:
+- Score: 0.930
+- Fixation coordinate: (209.0, 210.0)
+
+Batch 1:
+- Score: 0.922
+- Fixation coordinate: (215.0, 255.0)
+
+Batch 2:
+- Score: 0.941
+- Fixation coordinate: (179.0, 224.0)
+
+Batch 3:
+- Score: 0.949
+- Fixation coordinate: (145.0, 244.0)
+
+Batch 4:
+- Score: 0.941
+- Fixation coordinate: (181.0, 228.0)
+
+Batch 5:
+- Score: 0.910
+- Fixation coordinate: (217.0, 183.0)
+
+Batch 6:
+- Score: 0.953
+- Fixation coordinate: (244.0, 184.0)
+
+Batch 7:
+- Score: 0.949
+- Fixation coordinate: (206.0, 166.0)
+
+Batch 8:
+- Score: 0.926
+- Fixation coordinate: (218.0, 199.0)
+
+Batch 9:
+- Score: 0.938
+- Fixation coordinate: (221.0, 182.0)
+
+Batch 10:
+- Score: 0.938
+- Fixation coordinate: (223.0, 201.0)
+
+Batch 11:
+- Score: 0.957
+- Fixation coordinate: (239.0, 203.0)
+
+Batch 12:
+- Score: 0.953
+- Fixation coordinate: (176.0, 253.0)
+
+Batch 13:
+- Score: 0.961
+- Fixation coordinate: (149.0, 268.0)
+
+Batch 14:
+- Score: 0.957
+- Fixation coordinate: (231.0, 277.0)
+
+Batch 15:
+- Score: 0.941
+- Fixation coordinate: (185.0, 184.0)
+
+Batch 16:
+- Score: 0.926
+- Fixation coordinate: (170.0, 208.0)
+
+Batch 17:
+- Score: 0.941
+- Fixation coordinate: (194.0, 195.0)
+
+Batch 18:
+- Score: 0.941
+- Fixation coordinate: (219.0, 154.0)po
+
+Batch 19:
+- Score: 0.934
+- Fixation coordinate: (239.0, 200.0)
+
+Batch 20:
+- Score: 0.941
+- Fixation coordinate: (196.0, 198.0)
+
+Batch 21:
+- Score: 0.953
+- Fixation coordinate: (204.0, 261.0)
+
