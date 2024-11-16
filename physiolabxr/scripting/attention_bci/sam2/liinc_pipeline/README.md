@@ -41,4 +41,7 @@ dataloader = get_target_sequence_dataloader(
     device = init_device(device_name='cuda:4')
 ```
 
+
 **All of the areas with annotations should be Configured** 
+
+**Again, based on your specific need, adjust the thresholds in `def check_mask(mask, threshold=0.7)` and `def check_bbox(bbox, imgSize, threshold=0.7):`, now the logic is adjusted to not include the data into the jsonl dataset for paligemma if the binary mask or the bounding box of an item is over 0.7 of the size of the whole frame.**
