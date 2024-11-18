@@ -176,6 +176,8 @@ class ContextBot:
     def create_add_start_predefined_stream(self, stream_name: str, num_channels: int, srate:int, stream_time:float, dtype: DataType, interface_type=PresetType.LSL, port=None):
         from physiolabxr.presets.Presets import Presets
 
+        # self.app.create_preset(stream_name, PresetType.LSL, num_channels=num_channels)  # add a default preset
+
         samples = np.random.random((num_channels, stream_time * srate)).astype(dtype.get_data_type())
         if interface_type == PresetType.LSL:
             p = Process(target=SampleDefinedLSLStream, args=(stream_name, samples), kwargs={'n_channels': num_channels, 'srate': srate, 'dtype': dtype.get_lsl_type()})

@@ -7,7 +7,7 @@ from nltk import RegexpTokenizer
 
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import load_trace_file
 
-trace_path = '/Users/apocalyvec/Downloads/good_FixationTrace.csv'
+trace_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\TraceSamples\good_FixationTrace.csv'
 
 trace_list = load_trace_file(trace_path)
 
@@ -43,4 +43,4 @@ for i, trace in enumerate(trace_list):
 
     start_time = time.perf_counter()
     top_k = g2w.predict(4, trace, run_dbscan=True, prefix='', verbose=True, filter_by_starting_letter=0.45, njobs=16)
-    print(f'Time spent predicting w/o vocab trimmed: {(pred_time := time.perf_counter() - start_time):.8f}s： top_k: {top_k}')
+    print(f'Time spent predicting w/o vocab trimmed: {(pred_time := time.perf_counter() - start_time):.8f}s: top_k: {top_k}')

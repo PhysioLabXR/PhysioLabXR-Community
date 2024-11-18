@@ -42,11 +42,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         if a stream class inheriting this class implements stream availability, it must
         * emit signal_stream_availability_tick
 
-        @param parent_widget: the MainWindow class
-        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
-        @param stream_name: the name of the stream
-        @param use_viz_buffer: whether to use a buffer for visualization. If set to false, the child class must override
-        the visualize function. Video stream including webcam and screen capture does not use viz buffer
+        Args:
+            parent_widget: the MainWindow class
+            parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab.
+                This can also be None, in which case the widget will not be added to any layout
+            stream_name: the name of the stream
+            use_viz_buffer: whether to use a buffer for visualization. If set to false, the child class must override
+                the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
 
@@ -56,10 +58,12 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.OptionsBtn.setIcon(AppConfigs()._icon_options)
         self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
 
-        if type(insert_position) == int:
-            parent_layout.insertWidget(insert_position, self)
-        else:
-            parent_layout.addWidget(self)
+        if parent_layout is not None:
+            if type(insert_position) == int:
+                parent_layout.insertWidget(insert_position, self)
+            else:
+                parent_layout.addWidget(self)
+
         self.parent = parent_layout
         self.main_parent = parent_widget
         # add splitter to the layout
@@ -296,7 +300,8 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_data_buffer = DataBufferSingleStream(num_channels=num_channels, buffer_sizes=buffer_size, append_zeros=True)
 
     def remove_stream(self):
-
+        """ Called when the remove stream button is clicked, or when the app is closing
+        """
         if self.main_parent.recording_tab.is_recording:
             self.main_parent.current_dialog = dialog_popup(msg='Cannot remove stream while recording.')
             return False
@@ -355,8 +360,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.viz_components.auto_scale_all_groups()
 
     def process_stream_data(self, data_dict):
-        '''
-        update the visualization buffer, recording buffer, and scripting buffer
+        ''' update the visualization buffer, recording buffer, and scripting buffer
         '''
         if data_dict['frames'].shape[-1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
             # if only applied to visualization, then only update the visualization buffer
@@ -372,31 +376,11 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
                 self.main_parent.scripting_tab.forward_data(data_dict)
                 self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
 
-
-            # self.run_data_processor(data_dict)
-            # self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
             self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict, ))[1])  # NOTE performance test scripts, don't include in production code
             self._has_new_viz_data = True
 
             self.actualSamplingRate = data_dict['sampling_rate']
             self.current_timestamp = data_dict['timestamps'][-1]
-
-            # if data_dict['frames'].shape[
-            #     -1] > 0 and not self.in_error_state:  # if there are data in the emitted data dict
-            #     self.run_data_processor(data_dict)
-            #     self.viz_data_head = self.viz_data_head + len(data_dict['timestamps'])
-            #     self.update_buffer_times.append(timeit(self.viz_data_buffer.update_buffer, (data_dict,))[
-            #                                         1])  # NOTE performance test scripts, don't include in production code
-            #     self._has_new_viz_data = True
-            #
-            #     self.actualSamplingRate = data_dict['sampling_rate']
-            #     self.current_timestamp = data_dict['timestamps'][-1]
-            #     # notify the internal buffer in recordings tab
-            #
-            #     # reshape data_dict based on sensor interface
-            #     self.main_parent.recording_tab.update_recording_buffer(data_dict)
-            #     self.main_parent.scripting_tab.forward_data(data_dict)
-            #     # scripting tab
 
     def visualize(self):
         '''

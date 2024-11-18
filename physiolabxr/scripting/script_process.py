@@ -3,7 +3,7 @@ import logging
 import pickle
 import sys
 from concurrent import futures
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 
 import grpc
 import numpy as np
@@ -17,7 +17,7 @@ from physiolabxr.sub_process.TCPInterface import RenaTCPInterface
 from physiolabxr.utils.networking_utils import recv_string_router, send_string_router, send_router
 
 
-def start_script_server(script_path, script_args):
+def start_script_server(script_path, script_args, conn):
     """
     This is the entry point of the script process.
 
@@ -27,28 +27,49 @@ def start_script_server(script_path, script_args):
     Note that any call to logging.fatal will terminate the script process.
     """
     # redirect stdout
-    port = script_args['port']
     rpc_outputs = script_args['rpc_outputs']
     csharp_plugin_path = script_args['csharp_plugin_path']
-    reserved_ports = script_args['reserved_ports']
+    stdout_port = script_args['stdout_port']
     async_shutdown_event = script_args['async_shutdown_event']
 
     stdout_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_STDOUT',
-                                               port_id=port,
-                                               identity='server',
+                                               port_id=stdout_port,
+                                               identity='client',
                                                pattern='router-dealer')
     info_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INFO',
-                                             port_id=port + 1,  # starts with +1 because the first port is taken by stdout
+                                             port_id=0,
                                              identity='server',
                                              pattern='router-dealer')
 
-    logging.info('Waiting for stdout routing ID from main app for stdout socket')
-    _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
+    input_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_INPUT',
+                                               port_id=0,
+                                               identity='server',
+                                               pattern='router-dealer')
+    command_socket_interface = RenaTCPInterface(stream_name='RENA_SCRIPTING_COMMAND',
+                                                 port_id=0,
+                                                 identity='server',
+                                                 pattern='router-dealer')
+
+    script_args['input_socket_interface'] = input_socket_interface
+    script_args['command_socket_interface'] = command_socket_interface
+
+    stdout_port = stdout_socket_interface.binded_port
+    info_port = info_socket_interface.binded_port
+    input_port = input_socket_interface.binded_port
+    command_port = command_socket_interface.binded_port
+
+    conn.send([stdout_port, info_port, input_port, command_port])
+    conn.close()
+
+    logging.info('Sending message to the main app to set up the routing ID')
+    stdout_socket_interface.send_string('Go')  # send an empty message, this is for setting up the routing id
+    # _, stdout_routing_id = recv_string_router(stdout_socket_interface, True)
+
     logging.info('Waiting for info routing ID from main app for info socket')
     _, info_routing_id = recv_string_router(info_socket_interface, True)
 
-    sys.stdout = redirect_stdout = RedirectStdout(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
-    sys.stderr = redirect_stderr = RedirectStderr(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
+    sys.stdout = redirect_stdout = RedirectStdout(socket_interface=stdout_socket_interface)
+    sys.stderr = redirect_stderr = RedirectStderr(socket_interface=stdout_socket_interface)
 
     script_args['redirect_stdout'] = redirect_stdout
     script_args['redirect_stderr'] = redirect_stderr
@@ -59,7 +80,7 @@ def start_script_server(script_path, script_args):
 
     # redirect logging
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    socket_handler = SocketLoggingHandler(socket_interface=stdout_socket_interface, routing_id=stdout_routing_id)
+    socket_handler = SocketLoggingHandler(socket_interface=stdout_socket_interface)
     socket_handler.setFormatter(formatter)
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -70,7 +91,12 @@ def start_script_server(script_path, script_args):
 
     # compile the rpc first
     try:
-        rpc_info, is_async = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        compile_rtn = compile_rpc(script_path, script_class=target_class, rpc_outputs=rpc_outputs, csharp_plugin_path=csharp_plugin_path)
+        if compile_rtn is not None:
+            rpc_info, is_async = compile_rtn
+        else: # no rpc methods to be exposed
+            rpc_info = None
+            is_async = False
     except Exception as e:
         # notify the main app that the script has failed to start
         logging.fatal(f"Error compiling rpc: {e}")
@@ -88,7 +114,7 @@ def start_script_server(script_path, script_args):
         # also start the rpc
         if is_async:
             server = grpc.aio.server()
-            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server)
             async def check_shutdown_event(server, shutdown_event):
                 while not shutdown_event.is_set():
                     await asyncio.sleep(1)
@@ -98,7 +124,7 @@ def start_script_server(script_path, script_args):
                 await check_shutdown_event(server, shutdown_event)
         else:
             server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server, port + 4, reserved_ports=reserved_ports)
+            rpc_server, port = create_rpc_server(script_path, rena_script_thread, server)
             logging.info(f"Starting rpc server listening for calls on {port}")
 
         rena_script_thread.rpc_server = rpc_server
@@ -121,13 +147,10 @@ def start_script_server(script_path, script_args):
     logging.info('Script process terminated.')
 
 
-
-
 class SocketLoggingHandler(logging.Handler):
-    def __init__(self, socket_interface, routing_id, *args, **kwargs):
+    def __init__(self, socket_interface, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.socket_interface = socket_interface
-        self.routing_id = routing_id
 
     def emit(self, record):
         try:
@@ -142,15 +165,15 @@ class SocketLoggingHandler(logging.Handler):
             else:
                 prefix = SCRIPT_INFO_PREFIX  # Default prefix for non-error messages
             # Send the message with the appropriate prefix
-            send_string_router(prefix + msg, self.routing_id, self.socket_interface)
+            # send_string_router(prefix + msg, self.routing_id, self.socket_interface)
+            self.socket_interface.send_string(prefix + msg)
         except Exception:
             self.handleError(record)
 
 
 class RedirectStderr(object):
-    def __init__(self, socket_interface, routing_id):
+    def __init__(self, socket_interface):
         self.terminal = sys.stderr
-        self.routing_id = routing_id
         self.socket_interface = socket_interface
         self.message_buffer = ""
 
@@ -163,19 +186,20 @@ class RedirectStderr(object):
 
     def send_buffered_messages(self):
         if self.message_buffer:
-            send_string_router(SCRIPT_ERR_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
+            self.socket_interface.send_string(SCRIPT_ERR_PREFIX + self.message_buffer)
+            # send_string_router(SCRIPT_ERR_PREFIX + self.message_buffer, self.routing_id, self.socket_interface)
             self.message_buffer = ""
 
 
 class RedirectStdout(object):
-    def __init__(self, socket_interface, routing_id):
+    def __init__(self, socket_interface):
         self.terminal = sys.stdout
-        self.routing_id = routing_id
         self.socket_interface = socket_interface
 
     def write(self, message):
         self.terminal.write(message)
-        send_string_router(SCRIPT_INFO_PREFIX + message, self.routing_id, self.socket_interface)
+        # send_string_router(SCRIPT_INFO_PREFIX + message, self.routing_id, self.socket_interface)
+        self.socket_interface.send_string(SCRIPT_INFO_PREFIX + message)
 
     def flush(self):
         pass
@@ -184,8 +208,11 @@ class RedirectStdout(object):
 def start_rena_script(script_path, script_args):
     print('Script started')
     if not debugging:
-        script_process = Process(target=start_script_server, args=(script_path, script_args))
+        parent_conn, child_conn = Pipe()
+        script_process = Process(target=start_script_server, args=(script_path, script_args, child_conn))
         script_process.start()
-        return script_process
+        stdout_port, info_port, input_port, command_port = parent_conn.recv()
+
+        return script_process, stdout_port, info_port, input_port, command_port
     else:
         pickle.dump([script_path, script_args], open('start_script_args.p', 'wb'))

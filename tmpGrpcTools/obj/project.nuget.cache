@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "EUYEu99v6K8=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Season\\OneDrive\\doc\\PhysioLab\\tmpGrpcTools\\tmpGrpcTools.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Season\\.nuget\\packages\\grpc.tools\\2.65.0\\grpc.tools.2.65.0.nupkg.sha512"
+  ],
+  "logs": []
+}

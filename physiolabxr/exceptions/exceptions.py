@@ -283,4 +283,13 @@ class RPCCSharpSetupError(RenaError):
     def __init__(self, message):
         super().__init__(message)
     def __str__(self):
-        return 'Failed to set up RPC for C#' + self.message
+        return 'Failed to set up RPC for C#: ' + self.message
+
+class FailToSetupDevice(RenaError):
+    """
+    Raised when an error occurs while setting up device
+    """
+    def __init__(self, message):
+        super().__init__(message)
+    def __str__(self):
+        return 'Failed to set up device: ' + self.message

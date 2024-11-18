@@ -272,8 +272,10 @@ class DataBufferSingleStream():
     def update_buffer(self, data_dict: dict):
         '''
 
-        :param data_dict: two keys: frame and timestamp, note this is different from DataBuffer defined above
-        where the keys are the lsl stream names
+        Args
+        data_dict: two keys: 'frames' and 'timestamp', note this is different from DataBuffer defined above
+            where the keys are the lsl stream names.
+            Shape of the 'frames' should be (num_channels, num_samples)
         :return:
         '''
         frames = data_dict['frames']
@@ -281,6 +283,7 @@ class DataBufferSingleStream():
         if len(self.buffer) == 0:  # init the data buffer
             self.init_buffer(frames.shape[0])
         if frames.shape[0] != self.num_channels:
+            print(f"DataBufferSingleStream: Channel mismatch. Expected {self.num_channels}, got {frames.shape[0]}. Maybe you need to reshape the data.")
             raise ChannelMismatchError(frames.shape[0])
 
         self.buffer[0] = np.roll(self.buffer[0], -frames.shape[-1], axis=-1)

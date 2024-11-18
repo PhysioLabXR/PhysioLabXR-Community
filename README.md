@@ -3,7 +3,6 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 
 
@@ -66,9 +65,9 @@
 
 [![PhysioLabXR Screen Shot][product-screenshot]](physiolabxr/_media/readme/AllPlottingFormat.png)
 
-**PhysioLabXR** is a Python-based App for visualizing, recording, and processing (i.e., make prediction) 
-data streams. PhysioLabXR can help you build novel interaction interface like BCIs as well as aid you in 
-running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (~500Mbps/sec), real-time data streams.
+**PhysioLabXR** is a Python-based App for real-time visualizing, recording, and processing (i.e., training ML models and inferencing) 
+data streams. PhysioLabXR can help you build novel interaction interfaces like BCIs and aid you in 
+running experiments. It works best with multi-modal (e.g., combining EEG and eyetracking, camera with speech), high-throughput (>500Mbps/sec), and real-time data streams.
 
 [//]: # (Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`)
 
@@ -119,7 +118,7 @@ Then run with
 
 ### Run from Source
 
-Alternatively, you can clone the repo and run from source.
+Alternatively, you can clone the repo and run it from the source.
 
   ```sh
     git clone https://github.com/PhysioLabXR/PhysioLabXR.git
@@ -203,8 +202,6 @@ We would also like to thank all the community members who have contributed to *P
 [issues-url]: https://github.com/apocalyvec/renalabapp/issues
 [license-shield]: https://img.shields.io/github/license/apocalyvec/renalabapp.svg?style=for-the-badge
 [license-url]: https://github.com/apocalyvec/renalabapp/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/ziheng-leo-li/
 [product-screenshot]: physiolabxr/_media/readme/AllPlottingFormat.png
 
 [Python.org]: https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&color=3776AB&logoColor=white

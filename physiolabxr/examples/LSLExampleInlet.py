@@ -6,7 +6,7 @@ from pylsl import StreamInlet, resolve_stream
 def main():
     # first resolve an EEG stream on the lab network
     print("looking for LSL stream...")
-    streams = resolve_stream('name', 'obci_eeg1')
+    streams = resolve_stream('type', 'KeyboardContext')
 
     # create a new inlet to read from the stream
     inlet = StreamInlet(streams[0])
@@ -25,6 +25,7 @@ def main():
                 f_sample = 1. / ((samples[-1][0] - samples[0][0]) / len(samples))
                 print('Interrupted, f_sample is ' + str(f_sample))
             break
+
 
 if __name__ == '__main__':
     main()

@@ -9,20 +9,24 @@ import sys
 import matplotlib.pyplot as plt
 from itertools import groupby
 from physiolabxr.scripting.RenaScript import RenaScript
-from pylsl import StreamInfo, StreamOutlet, cf_float32
+from pylsl import StreamInfo, StreamOutlet,StreamInlet, resolve_stream ,cf_float32, LostError
 import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.Tap2Char import Tap2Char
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
-from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput, \
+from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput,\
     word_candidate_list_to_lvt
 from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils import VarjoGazeData
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
 
-from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word import gaze2word
 import csv
+import pandas as pd
+from nltk import RegexpTokenizer
+from physiolabxr.rpc.decorator import rpc, async_rpc
 
 
 class IllumiReadSwypeScript(RenaScript):
@@ -53,8 +57,8 @@ class IllumiReadSwypeScript(RenaScript):
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
         # spelling correction
-        self.spell_corrector = SpellCorrector()
-        self.spell_corrector.correct_string("WHAT")
+        # self.spell_corrector = SpellCorrector()
+        # self.spell_corrector.correct_string("WHAT")
 
         # create stream outlets
         illumireadswype_keyboard_suggestion_strip_lsl_stream_info = StreamInfo(
@@ -69,63 +73,77 @@ class IllumiReadSwypeScript(RenaScript):
         # create gaze2word object
         gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
 
-        self.g2w = gaze2word.Gaze2Word(gaze_data_path)
-
-        # the csv file path for later use
-        self.csv_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\FixationTrace.csv'
-
-        # the gaze trace path
-        self.ground_truth_file_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\Trace.csv'
-
-        # init the csv files
-        # self.init_csv_file(self.csv_file_path)
-
-        # self.init_csv_file(self.gaze_file_path)
-
-        with open(self.csv_file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
-
-        with open(self.ground_truth_file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(["KeyBoardLocalX", "KeyBoardLocalY"])
-
-
-
-    # def init_csv_file(self, path):
-    #     self.csv_file_path = csv_file_path
+        # load from pickle if exists
+        if os.path.exists('g2w.pkl'):
+            with open('g2w.pkl', 'rb') as f:
+                self.g2w = pickle.load(f)
+        else:
+            print("Instantiating g2w...")
+            self.g2w = Gaze2Word(gaze_data_path)
+            with open('g2w.pkl', 'wb') as f:
+                pickle.dump(self.g2w, f)
+            print("Finished instantiating g2w")
         
-    #     with open(self.csv_file_path, 'w', newline='') as csvfile:
-    #         pass
-
-    # data writer
-    def write_to_csv(self, data, path=None):
-        if path is not None:
-            with open(path, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-                for row in data:
-                    writer.writerow(row)
+        # trim the vocab for g2w
+        file_path = self.params['trial_sentences']
+        df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+        
+        sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        sentences = [s for s in sentences if isinstance(s, str)]
+        tokenizer = RegexpTokenizer(r'\w+')
+        words = [tokenizer.tokenize(s) for s in sentences]
+        words = [word for sublist in words for word in sublist]  # flatten the list
+        self.g2w.trim_vocab(words)
+        
+        # t2c definition
+        if os.path.exists('t2c.pkl'):
+            with open('t2c.pkl', 'rb') as f:
+                self.t2c = pickle.load(f)
         else:
-            print("CSV file path is not initialized.")
+            print("Instantiating t2c...")
+            self.t2c = Tap2Char(gaze_data_path)
+            with open('t2c.pkl', 'wb') as f:
+                pickle.dump(self.t2c, f)
+            print("Finished instantiating t2c")
 
-    # string writer
-    def write_string_to_csv(self, string,path=None):
-        if path is not None:
-            with open(path, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([string])
-        else:
-            print("CSV file path is not initialized.")
+        # the current context for the inputfield
+        self.context = ""
+        self.nextChar = ""
+    
+    #  ----------------- RPC START-----------------------------------------------------------------
+    # get the rpc call of word context from unity
+    @async_rpc
+    def ContextRPC(self, input0: str) -> str:
+        
+        self.context = input0.lower().rstrip()
+        
+        return f"Sucess:{self.context}"
+    
+    # the rpc for Tap2Char prediction
+    # input: float of x and y position of the tap
+    @async_rpc
+    def Tap2CharRPC(self, input0: float, input1:float) -> str:
+        # merge the x and y input to a ndarray
+        tap_position = np.array([input0, input1])
+        result = self.t2c.predict(tap_position, self.context)
+        
+        highest_prob_char = str(result[0][0])
+        
+        return highest_prob_char
+        
+        
+    
+    # ----------------- RPC END--------------------------------------------------------------------
 
     def init(self):
         pass
 
     # loop is called <Run Frequency> times per second
     def loop(self):
-
+        
         if (EventMarkerLSLStreamInfo.StreamName not in self.inputs.keys()) or (
                 GazeDataLSLStreamInfo.StreamName not in self.inputs.keys()) or (
-                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()):  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
+                UserInputLSLStreamInfo.StreamName not in self.inputs.keys()) :  # or GazeDataLSLOutlet.StreamName not in self.inputs.keys():
             return
         # print("process event marker call start")
         self.process_event_markers()
@@ -133,7 +151,6 @@ class IllumiReadSwypeScript(RenaScript):
         # self.process_gaze_data()
 
         # gaze callback
-
         self.state_callbacks()
 
         # if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState or \
@@ -301,7 +318,6 @@ class IllumiReadSwypeScript(RenaScript):
 
     def keyboard_dewelltime_state_callback(self):
         # print("keyboard dewell time state")
-
         pass
 
     def keyboard_illumireadswype_state_callback(self):
@@ -337,22 +353,8 @@ class IllumiReadSwypeScript(RenaScript):
                 # user_input_timestamp = self.data_buffer[UserInputLSLStreamInfo.StreamName][1]
 
                 fixation_character_sequence = []
-                gaze_trace = []
+                # gaze_trace = []
                 fixation_trace = []
-
-                for group in grouped_list:
-                    print(group[0].gaze_type)
-                #     # get the gaze trace data
-                #     user_input_data, user_input_timestamp = self.data_buffer.get_stream_in_time_range(UserInputLSLStreamInfo.StreamName, group[0].timestamp, group[-1].timestamp)
-                    
-                #     gaze_sequence = []
-                #     for user_input, timestamp in zip(user_input_data.T, user_input_timestamp):
-                #         gaze_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
-                    
-                #     for gaze_data in gaze_sequence:
-                #         if not np.array_equal(gaze_data.keyboard_background_hit_point_local, [1,1,1]):
-                #             gaze_trace.append(gaze_data.keyboard_background_hit_point_local[:2])
-
 
                 for group in grouped_list:
                     # if the gaze is a fixation
@@ -371,29 +373,10 @@ class IllumiReadSwypeScript(RenaScript):
                             user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
 
                         # check if the fixation consists of only one user input
-                        user_input_dict = {}
                         for user_input in user_input_sequence:
                             # gaze trace under fixation mode
                             if not np.array_equal(user_input.keyboard_background_hit_point_local, [1,1,1]):
                                 fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
-
-                            if user_input.key_hit_index in user_input_dict:
-                                user_input_dict[user_input.key_hit_index] += 1
-                            else:
-                                user_input_dict[user_input.key_hit_index] = 1
-
-                        # find the most frequent user input
-                        if len(user_input_dict) > 0:
-                            most_frequent_user_input_index = max(user_input_dict, key=user_input_dict.get)
-                            print("most frequent user input index: ", most_frequent_user_input_index)
-                            user_input = illumiReadSwypeConfig.KeyIDIndexDict[most_frequent_user_input_index]
-                            print("most frequent user input: ", user_input)
-                            fixation_character_sequence.append(user_input)
-
-                        else:
-                            print("no user input detected")
-
-                        # update the character sequence
 
                         # TODO: decoding method
 
@@ -407,51 +390,18 @@ class IllumiReadSwypeScript(RenaScript):
                 self.gaze_data_sequence = []
                 self.data_buffer = DataBuffer()
                 self.ivt_filter.reset_data_processor()
-
-                # send the character sequence to the keyboard
-                # print(fixation_character_sequence)
-                # use the spell correction algorithm to correct the character sequence
-
-                # word_candidate_list = ["hello", "world", "how", "are"]
-                #
-                # lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
-                # self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
-
-                # ['W', 'H', 'W', 'R', 'S', 'Y', 'E']
-
-                # remove the None character
-                fixation_character_sequence = [x for x in fixation_character_sequence if x is not None]
-
-
-
-                fixation_character_string = "".join(fixation_character_sequence).lower()
-
-                print(fixation_character_string)
-                if len(fixation_character_string) > 0:
+                
+                # the fixation trace length should be greater than 1
+                print(fixation_trace)
+                if len(fixation_trace) >= 1:
                     
-                    trace = []
-                    for i in range(0,len(fixation_character_string)):
-                        trace.append(self.g2w.letter_locations[fixation_character_string[i]].tolist())
-
-                    print(trace)
-
-                    # -------------------------------------------------------------------------
-
-                    # write the entire gaze trace to the csv file
-                    self.write_string_to_csv(fixation_character_string,self.ground_truth_file_path)
-                    self.write_to_csv(trace,self.ground_truth_file_path)
-
-                    # write the fixation trace to the csv file
-                    self.write_string_to_csv(fixation_character_string,self.csv_file_path)
-                    self.write_to_csv(fixation_trace,self.csv_file_path)
+                    # use the trimmed vocab to predict g2w
+                    fixation_trace = np.array(fixation_trace)
                     
-                    # -------------------------------------------------------------------------
-
-                    cadidate_list = self.g2w.predict(4,trace, prefix = None)
+                    # predict the candidate words
+                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
                     word_candidate_list = [item[0] for item in cadidate_list]
                     
-
-                    # word_candidate_list = self.spell_corrector.correct_string(fixation_character_string, 4) # the output is a list of list  
                     word_candidate_list = np.array(word_candidate_list).flatten().tolist()
                     print(word_candidate_list)
 
@@ -473,48 +423,6 @@ class IllumiReadSwypeScript(RenaScript):
                 gaze_data = self.ivt_filter.process_sample(gaze_data)
                 self.gaze_data_sequence.append(gaze_data)
 
-            # for user_input_t, timestamp in (
-            #         zip(self.inputs[UserInputLSLStreamInfo.StreamName][0].T,
-            #             self.inputs[UserInputLSLStreamInfo.StreamName][1])):
-            #     gaze_hit_keyboard_background = user_input_data_t[
-            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyboardBackgroundChannelIndex]
-            #     keyboard_background_hit_point_local = [
-            #         user_input_data_t[
-            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalXChannelIndex],
-            #         user_input_data_t[
-            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalYChannelIndex],
-            #         user_input_data_t[
-            #             illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyboardBackgroundHitPointLocalZChannelIndex]
-            #     ]
-            #
-            #     gaze_hit_key = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.GazeHitKeyChannelIndex]
-            #     key_hit_point_local = [
-            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalXChannelIndex],
-            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalYChannelIndex],
-            #         user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitPointLocalZChannelIndex]
-            #     ]
-            #
-            #     key_hit_index = user_input_data_t[illumiReadSwypeConfig.UserInputLSLStreamInfo.KeyHitIndexChannelIndex]
-            #
-            #     user_input_button_1 = user_input_data_t[
-            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton1ChannelIndex]  # swyping invoker
-            #     user_input_button_2 = user_input_data_t[
-            #         illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]
-            #
-            #     user_input = illumiReadSwypeUserInput(
-            #         gaze_hit_keyboard_background,
-            #         keyboard_background_hit_point_local,
-            #         gaze_hit_key,
-            #         key_hit_point_local,
-            #         key_hit_index,
-            #         user_input_button_1,
-            #         user_input_button_2,
-            #         timestamp
-            #     )
-            #
-            #     self.user_input_sequence.append(user_input)
-            #
-
             self.data_buffer.update_buffers(self.inputs.buffer)
 
         # clear the processed user input data and gaze data
@@ -525,15 +433,3 @@ class IllumiReadSwypeScript(RenaScript):
         print("keyboard free switch state")
 
         pass
-
-    # def process_gaze_data(self):
-    #
-    #     for gaze_data_t in self.inputs[GazeDataLSLStreamInfo.StreamName][0].T:
-    #
-    #         gaze_data = VarjoGazeData()
-    #         gaze_data.construct_gaze_data_varjo(gaze_data_t)
-    #         gaze_data = self.ivt_filter.process_sample(gaze_data)
-    #         print(gaze_data.get_gaze_type())
-    #
-    #
-    #     self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
