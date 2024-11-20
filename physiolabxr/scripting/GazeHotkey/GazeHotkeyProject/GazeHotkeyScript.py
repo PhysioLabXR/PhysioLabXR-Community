@@ -11,6 +11,9 @@ from datetime import datetime
 
 
 from itertools import groupby
+
+from numba.core.cgutils import printf
+
 from physiolabxr.scripting.RenaScript import RenaScript
 
 # necessary packages for physiolabXR
@@ -26,18 +29,26 @@ import zmq
 import numpy as np
 import struct
 
-# #class of renascript
-# class GazeHotkeyProject(RenaScript):
-#     def __init__(self,*args,**kwargs):
-#         super().__init__(*args,**kwargs)
-#         # setup the init file for python backend
-#
-#     def init(self):
-#         pass
-#
-#     def loop(self):
-#         pass
-
 
 if __name__=="__main__":
-    pass
+
+    # zmq gaze capture
+    subtopic = "GazeCapture"
+    sub_tcpAddress = "tcp://localhost:5556"
+    context = zmq.Context()
+    gaze_capture_sub_socket = context.socket(zmq.SUB)
+    gaze_capture_sub_socket.connect(sub_tcpAddress)
+    gaze_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
+
+    # sockets connected and start the streaming
+    printf(f'Sockets connected, entering image loop. ')
+    while True:
+        try:
+            received = gaze_capture_sub_socket.recv_multipart()
+
+
+        #     predtion
+        #     publisher:
+
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt")
