@@ -4,25 +4,20 @@ Realtime fixation detection based on patch similarity.
 Also decode the camera frames, both color and depth and save them to
 """
 
+import json
 import os.path
-import time
+import struct
 from datetime import datetime
 
 import cv2
-import lpips
-import pandas as pd
-import zmq
 import numpy as np
-from pylsl import StreamInlet, resolve_stream, StreamOutlet, StreamInfo
-from physiolabxr.examples.Eyetracking.EyeUtils import prepare_image_for_sim_score, add_bounding_box
-from physiolabxr.examples.Eyetracking.configs import *
-import struct
-import matplotlib.pyplot as plt
+import zmq
 
-# fix detection parameters  #######################################
-previous_img_patch = None
-fixation_frame_counter = 0
-distance = 0
+from physiolabxr.examples.Eyetracking.EyeUtils import add_bounding_box, clip_bbox
+from physiolabxr.examples.Eyetracking.configs import *
+
+is_saving_captures = True
+is_displaying = True
 
 # zmq camera capture fields #######################################
 
@@ -38,6 +33,8 @@ def receive_decode_image(socket):
     timestamp = struct.unpack('d', received[1])[0]
     colorImagePNGBytes = received[2]
     depthImagePNGBytes = received[3]
+    item_bboxes = received[4]
+
     colorImg = np.frombuffer(colorImagePNGBytes, dtype='uint8').reshape((*image_shape[:2], 4))
     depthImg = np.frombuffer(depthImagePNGBytes, dtype='uint16').reshape((*image_shape[:2], 1))
 
@@ -46,7 +43,9 @@ def receive_decode_image(socket):
     colorImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
     depthImg = cv2.flip(depthImg, 0)
 
-    return colorImg, depthImg, timestamp
+    item_bboxes = json.loads(item_bboxes)
+
+    return colorImg, depthImg, timestamp, item_bboxes
 
 
 right_cam_socket = get_cam_socket("tcp://localhost:5557", 'ColorDepthCamRight')
@@ -57,8 +56,6 @@ back_cam_socket = get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
 capture_save_location = "C:/Recordings"
 
 
-is_saving_captures = True
-is_displaying = False
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
@@ -79,9 +76,9 @@ while True:
     try:
         fix_detection_sample = np.zeros(3) - 1
 
-        right_cam_color, right_cam_depth, timestamp_right = receive_decode_image(right_cam_socket)
-        left_cam_color, left_cam_depth, timestamp_left = receive_decode_image(left_cam_socket)
-        back_cam_color, back_cam_depth, timestamp_back = receive_decode_image(back_cam_socket)
+        right_cam_color, right_cam_depth, timestamp_right, bboxes_right = receive_decode_image(right_cam_socket)
+        left_cam_color, left_cam_depth, timestamp_left, bboxes_left = receive_decode_image(left_cam_socket)
+        back_cam_color, back_cam_depth, timestamp_back, bboxes_back = receive_decode_image(back_cam_socket)
 
         # save the original image
         if is_saving_captures:
@@ -96,6 +93,39 @@ while True:
 
         frame_counter += 1
 
+        # get all available item markers
+        img_modified_left = left_cam_color.copy()
+        img_modified_right = right_cam_color.copy()
+        img_modified_back = back_cam_color.copy()
+
+        # put the item bboxes on the image
+        #----------------------------------------------------------------------------------------------
+        for item_index, item_bbox in bboxes_left.items():
+            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+
+            img_modified_left = add_bounding_box(img_modified_left, *item_bbox_clipped, color=(0, 255, 0))
+
+            cv2.putText(img_modified_left, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        for item_index, item_bbox in bboxes_right.items():
+            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+
+            img_modified_right = add_bounding_box(img_modified_right, *item_bbox_clipped, color=(0, 255, 0))
+
+            cv2.putText(img_modified_right, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        for item_index, item_bbox in bboxes_back.items():
+            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+
+            img_modified_back = add_bounding_box(img_modified_back, *item_bbox_clipped, color=(0, 255, 0))
+
+            cv2.putText(img_modified_back, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+
+        #---------------------------------------------------------------------------------------------
         if is_displaying:
             # concate the right color and depth side by side
             # left_cam_depth = cv2.normalize(left_cam_depth, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
@@ -115,13 +145,13 @@ while True:
             # cv2.imshow('Back', back)
 
             # displaying
-            cv2.imshow('Right', right_cam_color)
+            cv2.imshow('Right', img_modified_right)
             cv2.imshow('RightDepth', right_cam_depth)
 
-            cv2.imshow('Left', left_cam_color)
+            cv2.imshow('Left', img_modified_left)
             cv2.imshow('LeftDepth', left_cam_depth)
 
-            cv2.imshow('Back', back_cam_color)
+            cv2.imshow('Back', img_modified_back)
             cv2.imshow('BackDepth', back_cam_depth)
 
             cv2.waitKey(delay=1)

@@ -18,8 +18,10 @@ from physiolabxr.examples.Eyetracking.EyeUtils import prepare_image_for_sim_scor
 from physiolabxr.examples.Eyetracking.configs import *
 import struct
 
-is_displaying = False
+is_displaying = True
 is_decoding_fixations= False
+is_saving_captures = True
+draw_fovea_on_image = False
 
 # fix detection parameters  #######################################
 loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
@@ -41,8 +43,6 @@ cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
 
 # Disk Utilities Fields ########################################
 capture_save_location = "C:/Recordings"
-is_saving_captures = True
-draw_fovea_on_image = False
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
