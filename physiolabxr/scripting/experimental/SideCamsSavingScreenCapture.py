@@ -11,6 +11,7 @@ from datetime import datetime
 
 import cv2
 import numpy as np
+import pandas as pd
 import zmq
 
 from physiolabxr.examples.Eyetracking.EyeUtils import add_bounding_box, clip_bbox
@@ -52,24 +53,36 @@ right_cam_socket = get_cam_socket("tcp://localhost:5557", 'ColorDepthCamRight')
 left_cam_socket = get_cam_socket("tcp://localhost:5558", 'ColorDepthCamLeft')
 back_cam_socket = get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
 
+
 # Disk Utilities Fields ########################################
 capture_save_location = "C:/Recordings"
-
-
 
 now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
 capture_save_location = os.path.join(capture_save_location, 'ReNaUnityCameraCapture_' + dt_string)
+
+
 capture_right_path = os.path.join(capture_save_location, 'RightCamCapture')
 capture_left_path = os.path.join(capture_save_location, 'LeftCamCapture')
 capture_back_path = os.path.join(capture_save_location, 'BackCamCapture')
+df_right = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
+df_left = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
+df_back = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
 
-os.makedirs(capture_right_path, exist_ok=False)
-os.makedirs(capture_left_path, exist_ok=False)
-os.makedirs(capture_back_path, exist_ok=False)
+csv_path_right = os.path.join(capture_right_path, 'GazeInfo.csv')
+csv_path_left = os.path.join(capture_left_path, 'GazeInfo.csv')
+csv_path_back = os.path.join(capture_back_path, 'GazeInfo.csv')
+
+csv_save_counter_max = 4  # frames
+csv_save_counter = 0  # frames
+
+if is_saving_captures:
+    print(f'Writing to {capture_save_location}')
+    os.makedirs(capture_right_path, exist_ok=False)
+    os.makedirs(capture_left_path, exist_ok=False)
+    os.makedirs(capture_back_path, exist_ok=False)
 
 frame_counter = 0
-
 
 print('Sockets connected, entering image loop')
 while True:
@@ -82,51 +95,59 @@ while True:
 
         # save the original image
         if is_saving_captures:
-            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('d', timestamp_right)}.png"), right_cam_color)
-            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_t={struct.pack('d', timestamp_right)}_depth.png"), right_cam_depth)
+            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}.png"), right_cam_color)
+            cv2.imwrite(os.path.join(capture_right_path, f"{frame_counter}_depth.png"), right_cam_depth)
 
-            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('d', timestamp_left)}.png"), left_cam_color)
-            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_t={struct.pack('d', timestamp_left)}_depth.png"), left_cam_depth)
+            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}.png"), left_cam_color)
+            cv2.imwrite(os.path.join(capture_left_path, f"{frame_counter}_depth.png"), left_cam_depth)
 
-            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('d', timestamp_back)}.png"), back_cam_color)
-            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_t={struct.pack('d', timestamp_back)}_depth.png"), back_cam_depth)
+            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}.png"), back_cam_color)
+            cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_depth.png"), back_cam_depth)
 
+            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_right, 'bboxes': json.dumps(bboxes_right)}
+            df_right = pd.concat([df_right, pd.DataFrame([row])], ignore_index=True)
+
+            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_left, 'bboxes': json.dumps(bboxes_left)}
+            df_left = pd.concat([df_left, pd.DataFrame([row])], ignore_index=True)
+
+            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_back, 'bboxes': json.dumps(bboxes_back)}
+            df_back = pd.concat([df_back, pd.DataFrame([row])], ignore_index=True)
+
+            csv_save_counter += 1
+            if csv_save_counter >= csv_save_counter_max:
+                df_right.to_csv(csv_path_right)
+                df_left.to_csv(csv_path_left)
+                df_back.to_csv(csv_path_back)
+                gaze_info_save_counter = 0
         frame_counter += 1
-
-        # get all available item markers
-        img_modified_left = left_cam_color.copy()
-        img_modified_right = right_cam_color.copy()
-        img_modified_back = back_cam_color.copy()
-
-        # put the item bboxes on the image
-        #----------------------------------------------------------------------------------------------
-        for item_index, item_bbox in bboxes_left.items():
-            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
-
-            img_modified_left = add_bounding_box(img_modified_left, *item_bbox_clipped, color=(0, 255, 0))
-
-            cv2.putText(img_modified_left, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-        for item_index, item_bbox in bboxes_right.items():
-            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
-
-            img_modified_right = add_bounding_box(img_modified_right, *item_bbox_clipped, color=(0, 255, 0))
-
-            cv2.putText(img_modified_right, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-        for item_index, item_bbox in bboxes_back.items():
-            item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
-
-            img_modified_back = add_bounding_box(img_modified_back, *item_bbox_clipped, color=(0, 255, 0))
-
-            cv2.putText(img_modified_back, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
 
         #---------------------------------------------------------------------------------------------
         if is_displaying:
+            # get all available item markers
+            img_modified_left = left_cam_color.copy()
+            img_modified_right = right_cam_color.copy()
+            img_modified_back = back_cam_color.copy()
+
+            # put the item bboxes on the image
+            # ----------------------------------------------------------------------------------------------
+            for item_index, item_bbox in bboxes_left.items():
+                item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+                img_modified_left = add_bounding_box(img_modified_left, *item_bbox_clipped, color=(0, 255, 0))
+                cv2.putText(img_modified_left, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+            for item_index, item_bbox in bboxes_right.items():
+                item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+                img_modified_right = add_bounding_box(img_modified_right, *item_bbox_clipped, color=(0, 255, 0))
+                cv2.putText(img_modified_right, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+            for item_index, item_bbox in bboxes_back.items():
+                item_bbox_clipped = clip_bbox(*item_bbox, image_shape)
+                img_modified_back = add_bounding_box(img_modified_back, *item_bbox_clipped, color=(0, 255, 0))
+                cv2.putText(img_modified_back, str(item_index), (item_bbox_clipped[0], item_bbox_clipped[1]),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
             # concate the right color and depth side by side
             # left_cam_depth = cv2.normalize(left_cam_depth, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
             # left_cam_depth = cv2.cvtColor(left_cam_depth, cv2.COLOR_GRAY2RGB)
