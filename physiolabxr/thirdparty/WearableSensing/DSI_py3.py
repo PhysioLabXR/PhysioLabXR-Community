@@ -258,8 +258,8 @@ def ExampleMessageCallback( msg, lvl=0 ):
 @SampleCallback
 def ExampleSampleCallback_Signals( headsetPtr, packetTime, userData ):
 	h = Headset( headsetPtr )
-	strings = [ '%s=%+08.2f' % ( IfStringThenNormalString( ch.GetName() ), ch.ReadBuffered() ) for ch in h.Channels() ]
-	print( ( '%8.3f:   ' % packetTime ) + ', '.join( strings ) )
+	strings = [ '%s=%+08.2f \n' % ( IfStringThenNormalString( ch.GetName() ), ch.ReadBuffered() ) for ch in h.Channels() ]
+	print( ( '%8.3f:   \n' % packetTime ) + ', '.join( strings ) )
 	sys.stdout.flush()
 
 @SampleCallback
@@ -302,8 +302,8 @@ def Test( port, arg='' ):
 
 if __name__ == '__main__':
 	args = getattr( sys, 'argv', [ '' ] )
-	if sys.platform.lower().startswith( 'win' ): default_port = 'COM4'
-	else:                                        default_port = '/dev/cu.DSI7-0009.BluetoothSeri'
+	if sys.platform.lower().startswith( 'win' ): default_port = 'COM5'
+	else:                                        default_port = '/dev/cu.DSI7-0009.BluetoothSeries'
 
 	# first command-line argument: serial port address
 	if len( args ) > 1: port = args[ 1 ]
@@ -313,4 +313,4 @@ if __name__ == '__main__':
 	if len( args ) > 2: ref = args[ 2 ]
 	else: ref = ''
 
-	Test( port, 'imp' )
+	Test( port, '' )

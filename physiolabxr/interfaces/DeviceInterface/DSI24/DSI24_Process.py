@@ -39,7 +39,7 @@ def example_sample_callback_signals(headsetPtr, packetTime, userData):
     h = Headset(headsetPtr)
     new_data = np.array(['%+08.2f' % (ch.GetSignal()) for ch in h.Channels()])
     new_data = new_data.reshape(24, 1)
-    new_data = new_data[[9, 10, 3, 2, 4, 17, 18, 7, 1, 5, 11, 22, 12, 21, 8, 0, 6, 13, 14, 20, 23, 19, 15, 16], :]
+    new_data = new_data[[9, 10, 3, 2, 4, 17, 18, 7, 1, 5, 11, 22, 12, 21, 8, 0, 6, 13, 14, 20, 23, 19, 16, 15], :]
 
     # Calculate the time offset on the first packet
     if is_first_time:

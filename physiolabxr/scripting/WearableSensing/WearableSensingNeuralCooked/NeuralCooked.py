@@ -3,9 +3,10 @@ from sklearn.cross_decomposition import CCA
 import numpy as np
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.utils.buffers import DataBuffer
-from physiolabxr.rpc.decorator import rpc, async_rpc
+from physiolabxr.rpc.decorator import async_rpc
 import time
 class NeuralCooked(RenaScript):
+
     def __init__(self, *args, **kwargs):
         """
         Please do not edit this function
@@ -13,166 +14,181 @@ class NeuralCooked(RenaScript):
         super().__init__(*args, **kwargs)
 
     def init(self):
-        self.freq_bands = [(8, 60), (12, 60), (30, 60)]         #defining frequency bands for filter bank
+        self.freqBands = [(8, 60), (12, 60), (30, 60)]          #defining frequency bands for filter bank
         self.frequency = 300                                    #default frequency of DSI-24
+        self.refreshRate  = 0.033                               #Duration of  flicker
         self.data = DataBuffer()                                #generating a data buffer for EEG data
         self.templates = {}
-        self.ccaModel = {}                                  #creating a list to store all of the CCA models
+        self.ccaModel = {}                                      #creating a list to store all of the CCA models
         self.ccaResults= {}
-        self.decoded_choices = []                               #creating a list to store all of the decoded choices
+        self.decodedChoices = []                                #creating a list to store all of the decoded choices
         self.mSequence = [
-            [0,0,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0],  #mSequence1
-            [0,1,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0],  #mSequence2
-            [1,1,1,0,1,0,0,1,1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0]   #mSequence3
+            [1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],  #mSequence1
+            [1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0],  #mSequence2
+            [1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0]   #mSequence3
         ]
-        self.sequence_length = len(self.mSequence[0])
-        self.segment_length = int(np.floor(self.sequence_length*300 * 0.033))
+        self.sequenceLength = len(self.mSequence[0])
+        self.segmentLength = int(np.floor(self.sequenceLength*self.frequency * self.refreshRate))
         self.mSequenceSignal = {
             'sequence1': self.generateMSignal(0),
             'sequence2': self.generateMSignal(1),
             'sequence3': self.generateMSignal(2)
         }
-        self.seq1_data = np.array([[]])
-        self.seq2_data = np.array([[]])
-        self.seq3_data = np.array([[]])
-        self.game_start = 0
+        self.seq1Data = np.array([[]])
+        self.seq2Data = np.array([[]])
+        self.seq3Data = np.array([[]])
+        self.gameState = 0
 
 
     def loop(self):
         if self.inputs:
             unfilteredData = self.inputs['DSI24'][0][14:18, :].astype(float)
-            filteredData1 = self.bandpassFilter(unfilteredData, 2,120)
-            filteredData2 = self.notchFilter(filteredData1,60)
+            filteredData1 = self.bandpassFilter(unfilteredData, 2, 120)
+            filteredData2 = self.notchFilter(filteredData1, 60)
 
 
-            EEG_Data = {                                            #creating a dictionary for EEG data
-                'stream_name': 'EEG Data',                          #defining the stream name
-                'frames': filteredData2,       #choosing the correct channels
-                'timestamps': self.inputs['DSI24'][1].astype(float)           #defining the timestamps
+            EEG_Data = {                                                        #creating a dictionary for EEG data
+                'stream_name': 'EEG Data',                                      #defining the stream name
+                'frames': filteredData2,                                        #choosing the correct channels
+                'timestamps': self.inputs['DSI24'][1].astype(float)             #defining the timestamps
             }
-            self.data.update_buffer(EEG_Data)                       #updating the data buffer with EEG data
+            self.data.update_buffer(EEG_Data)                                   #updating the data buffer with EEG data
             Data = self.data.get_data('EEG Data')
-            if Data.shape[1] > 3600:     #if the data is longer than 200 seconds then cut off beginning of data so that it is to 200 seconds
-                self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-1800)
-            if self.game_start == 1:                           #if training is complete (i.e there are 3 CCA models) then we can start decoding everything asyncronously
-                if Data.shape[1] > self.segment_length:
-                    self.decode_choice()
-                if len(self.decoded_choices)> 7:
-                    self.decoded_choices = self.decoded_choices[len(self.decoded_choices)-5:]
+            if Data.shape[1] > 3600:                                            #if the data is longer than 12 seconds then cut off beginning of data so that it is to 200 seconds
+                self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-300)
+            if self.data.get_data('EEG Data').shape[1] > self.segmentLength:
+                if self.gameState == 1:
+                    self.decodeChoice()
+
 
 
     def cleanup(self):
-        self.freq_bands = [(8, 60), (12, 60), (30, 60)]
+        self.freqBands = [(8, 60), (12, 60), (30, 60)]
         self.mSequence = []
         self.frequency = 300
         self.data = DataBuffer()
-        self.cca_models = []
-        self.decoded_choices = []
+        self.ccaModels = []
+        self.decodedChoices = []
+        self.gameState = 0
 
         return
 
     #Data Manipulation
     def bandpassFilter(self, data, lowcutoff, highcutoff):
         """
-        Takes in data and applies a bandpass filter to it
-        :param data: EEG data to be bandpassed
-        :param low: Low pass
-        :param high: High pass
-        :param fs: sampling frequency
-        :param order: Default is 8
-        :return: A bandpassed version of the data
+        Function that takes in data and applies a bandpass filter to it
+        :param data: EEG data to be band passed
+        :param lowcutoff: Low pass
+        :param highcutoff: High pass
+        :return: A band passed version of the data
         """
         nq = 0.5 * self.frequency
         order = 8
-        lowcutoffnorm = lowcutoff / nq
-        highcutoffnorm = highcutoff / nq
-        b, a = butter(order, [ lowcutoffnorm, highcutoffnorm], btype = 'band')
+        lowcutOffNorm = lowcutoff / nq
+        highcutOffNorm = highcutoff / nq
+        b, a = butter(order, [ lowcutOffNorm, highcutOffNorm], btype = 'band')
         BPdata = filtfilt(b,a,data)
         return BPdata
     def notchFilter(self, data, notchfreq, qualityFactor = 30):
         """
-
+        Function that takes in data and applies a notch filter to it
         :param data: signal to be filtered
         :param notchfreq: frequency to notch
         :param qualityFactor: quality factor of the notch filter that determines the width of the notch
         :return: filtered array
         """
-    # Design the notch filter
+        # Design the notch filter
         b, a = iirnotch(notchfreq, qualityFactor, self.frequency)
         # Apply the filter to the data
-        filtered_data = filtfilt(b, a, data)
-        return filtered_data
+        filteredData = filtfilt(b, a, data)
+        return filteredData
     def applyFilterBank(self, data):
         """
-        Returns data in 3 different arrays of different frequncy ranges
+        Function that takes segmented data filters it with a bandpass filter, and averages the signal out over all the
+        segments to return a dictionary that contains 3 arrays for each frequency band
         :param data: list of data to be filtered after data has been segmented
-        :return: a dictionary that contains 3 arrays for each frequency band where the keys are the found in self.freq_bands
+        :return: a dictionary that contains 3 arrays for each frequency band where the keys are the found in self.freqBands
         """
         band = {}           #Dictionary created to fill in
         for i in range(3):
-            filtered_segments = np.empty((4,data[0].shape[1],0))  # List to hold filtered segments for the current frequency band
+            filteredSegments = np.empty((4,data[0].shape[1],0))  # List to hold filtered segments for the current frequency band
             for segment in data:
                 # Apply bandpass filter to each segment and append the result to the list
-                filtered_segment = self.bandpassFilter(segment, self.freq_bands[i][0], self.freq_bands[i][1])
-                filtered_segments = np.concatenate((filtered_segments, filtered_segment[:,:,np.newaxis]),axis =2)
+                filteredSegment = self.bandpassFilter(segment, self.freqBands[i][0], self.freqBands[i][1])
+                filteredSegments = np.concatenate((filteredSegments, filteredSegment[:, :, np.newaxis]), axis =2)
 
             # Average the filtered segments across the first axis
-            band[self.freq_bands[i]] = np.mean(filtered_segments, axis=2)
+            band[self.freqBands[i]] = np.mean(filteredSegments, axis=2)
         return band
-    def adjust_segments(self, segments):
-        adjusted_segments = []
+    def adjustSegments(self, segments):
+        """
+        Function that ensures that all segments created by the splitting of data to be the same shape as the
+        expected segment length
+        :param segments: EEG data that has been segmented
+        :return: Returns the segments but truncated to be the same size as self.segmentLength
+        """
+        adjustedSegments = []
         for segment in segments:
             # If the segment is shorter than the desired length, pad it with zeros
-            if segment.shape[1] < self.segment_length:
-                padding = np.zeros((segment.shape[0], self.segment_length - segment.shape[1]))
-                adjusted_segment = np.hstack((segment, padding))  # Pad with zeros
+            if segment.shape[1] < self.segmentLength:
+                padding = np.ones((segment.shape[0], self.segmentLength - segment.shape[1]))
+                adjustedSegment = np.hstack((segment, padding))  # Pad with zeros
             else:
                 # If the segment is longer, trim it to the desired length
-                adjusted_segment = segment[:, :self.segment_length]
+                adjustedSegment = segment[:, :self.segmentLength]
 
-            adjusted_segments.append(adjusted_segment)
+            adjustedSegments.append(adjustedSegment)
 
-        return adjusted_segments
+        return adjustedSegments
     def createTemplates(self):
         """
-        Creates templates that are EEG arrays that are filtered
-        :param data: EEG data for segmenting into templates
-        :return: dictionary of dictionary of filtered EEG arrays Keys: segment number -> keys frequency band
+        Function that generates templates of the training EEG data by segmenting the data based on expected length of
+        samples within one iteration of the m-sequence playing in Unity and averaging the data out.
+        :param: EEG data for segmenting into templates
+        :return: dictionary of segment numbers that contain a dictionary of frequency banded EEG data that has been
+        averaged out for each segment: segment number -> keys frequency band
         """
-        seq1_segments = np.array_split(self.seq1_data, self.seq1_data.shape[1] // self.segment_length, axis=1)  #size segment_length
-        seq2_segments = np.array_split(self.seq2_data, self.seq2_data.shape[1] // self.segment_length, axis=1)
-        seq3_segments = np.array_split(self.seq3_data, self.seq3_data.shape[1] // self.segment_length, axis=1)
+        self.seq1Data = self.bandpassFilter(self.notchFilter(self.seq1Data, 60), 2, 120)
+        self.seq2Data = self.bandpassFilter(self.notchFilter(self.seq2Data, 60), 2, 120)
+        self.seq3Data = self.bandpassFilter(self.notchFilter(self.seq3Data, 60), 2, 120)
 
-        seq1_segments = self.adjust_segments(seq1_segments) #size segment_length
-        seq2_segments = self.adjust_segments(seq2_segments)
-        seq3_segments = self.adjust_segments(seq3_segments)
+        seq1Segments = np.array_split(self.seq1Data, self.seq1Data.shape[1] // self.segmentLength, axis=1)  #size segment_length
+        seq2Segments = np.array_split(self.seq2Data, self.seq2Data.shape[1] // self.segmentLength, axis=1)
+        seq3Segments = np.array_split(self.seq3Data, self.seq3Data.shape[1] // self.segmentLength, axis=1)
+
+        seq1Segments = self.adjustSegments(seq1Segments)
+        seq2Segments = self.adjustSegments(seq2Segments)
+        seq3Segments = self.adjustSegments(seq3Segments)
 
 
-        self.templates['sequence1'] = self.applyFilterBank(seq1_segments) #size_segment_length
-        self.templates['sequence2'] = self.applyFilterBank(seq2_segments)
-        self.templates['sequence3'] = self.applyFilterBank(seq3_segments)
+        self.templates['sequence1'] = self.applyFilterBank(seq1Segments) #size_segment_length
+        self.templates['sequence2'] = self.applyFilterBank(seq2Segments)
+        self.templates['sequence3'] = self.applyFilterBank(seq3Segments)
 
     def generateMSignal(self, seqNum):
+        """
+        Function to generate a signal template for the m-sequence for CCA.fit. It functions by repeating the sequence
+        element by a certain number of times based on the sampling rate of the EEG and the refresh rate of the monitor.
+        :param seqNum: The number associated with which m-sequence the function will generate a signal for
+        :return: Returns an 8 x segmentLength array where each row is the m-sequence stretched to fit the required
+        segment length necessary for analysis via CCA
+        """
+        samplesPerBit = self.segmentLength // len(self.mSequence[seqNum])
+        signal = np.repeat(self.mSequence[seqNum], samplesPerBit )
 
-        samples_per_bit = self.segment_length // len(self.mSequence[seqNum])
-        signal = np.repeat(self.mSequence[seqNum], samples_per_bit )
-
-        ##Change signal to be another dictionary holding freq bands and the respective
-
-        # Step 4: If the signal is longer than required, truncate it
-        if len(signal) > self.segment_length:
-            signal = signal[:, :self.segment_length]
+        if len(signal) > self.segmentLength:
+            signal = signal[:, :self.segmentLength]
 
 
-        elif len(signal) < self.segment_length:
-            padding = int(np.ceil((self.segment_length - len(signal))/2)+1)
-            signal = np.pad(signal, pad_width=padding, mode = 'constant', constant_values= 0)
-            signal = signal[:self.segment_length]
-        Msignal = [np.tile(signal, (4, 1))]
-        FilteredMsignal = self.applyFilterBank(Msignal)
-        return FilteredMsignal
+        elif len(signal) < self.segmentLength:
+            padding = int(np.ceil((self.segmentLength - len(signal))/2)+1)
+            signal = np.pad(signal, pad_width=padding, mode='constant', constant_values=0)
+            signal = signal[:self.segmentLength]
+        mSignal = [np.tile(signal, (4, 1))]
+        filteredMsignal = self.applyFilterBank(mSignal)
+        return filteredMsignal
 
-    def train_cca(self):
+    def trainCCA(self):
         """
         Training the CCA model
         By generated spatial filters and templates for each target m-sequence
@@ -181,103 +197,157 @@ class NeuralCooked(RenaScript):
         self.ccaModel = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
         for sequence in self.templates.keys():
             for freqBand in self.templates[sequence].keys():
-                cca = CCA(n_components = 1)
+                cca = CCA(n_components=1)
                 cca.fit(self.templates[sequence][freqBand].T, self.mSequenceSignal[sequence][freqBand].T)
                 self.ccaModel[sequence][freqBand] = cca
+                test1,test2 = cca.transform(self.templates[sequence][freqBand].T, self.mSequenceSignal[sequence][freqBand].T)
+                print(np.abs(np.corrcoef(test1.T,test2.T)[0, 1]))
+
         print('training done')
+        self.gameState = 1
 
     @async_rpc
-    def add_seq_data(self, sequenceNum: int, duration: float):  # Data is going to come in sequencially seq1 -> seq2 -> seq3 repeat
-        eegData = self.data.get_data('EEG Data')[:, int(-duration * 300):]  # 4 by (samples)
+    def add_seq_data(self, sequenceNum: int, duration: float):
+        """
+        RPC function that gets called by Unity to grab the EEG data from *duration* samples ago and adds it to the
+        respective m-sequence data storage
+        :param sequenceNum: The number that represents the m-sequence that was played for *duration* time
+        :param duration: How long the respective m-sequence was played for
+        :return: Does not return anything to Unity it is an asynchronous process
+        """
+        eegData = self.data.get_data('EEG Data')[:, int(-duration * self.frequency):]  # 4 by (samples)
 
         if sequenceNum == 1:
-            if self.seq1_data.size == 0:
-                self.seq1_data = eegData
+            if self.seq1Data.size == 0:
+                self.seq1Data = eegData
             else:
-                self.seq1_data = np.concatenate((self.seq1_data, eegData), axis=1)
+                self.seq1Data = np.concatenate((self.seq1Data, eegData), axis=1)
         elif sequenceNum == 2:
-            if self.seq2_data.size == 0:
-                self.seq2_data = eegData
+            if self.seq2Data.size == 0:
+                self.seq2Data = eegData
             else:
-                self.seq2_data = np.concatenate((self.seq2_data, eegData), axis=1)
+                self.seq2Data = np.concatenate((self.seq2Data, eegData), axis=1)
         elif sequenceNum == 3:
-            if self.seq3_data.size == 0:
-                self.seq3_data = eegData
+            if self.seq3Data.size == 0:
+                self.seq3Data = eegData
             else:
-                self.seq3_data = np.concatenate((self.seq3_data, eegData), axis=1)
-
+                self.seq3Data = np.concatenate((self.seq3Data, eegData), axis=1)
     @async_rpc
     def training(self) -> int:
         """
-        Args:
-            input0: int - 1 for choice 1, 2 for choice 2, 3 for choice 3
-        Returns: Generates correlation coefficients for EEG data x m-sequence
+        RPC function that gets called by Unity to begin training off of the saved data from function: add_seq_data
+        :return: Returns 1 to Unity once it is done training
         """
         # Train the CCA
-        self.train_cca()  # start training the CCA
+        self.trainCCA()  # start training the CCA
         self.data.clear_buffer_data() #Clear the buffer after training
         return 1
     @async_rpc
     def decode(self) -> int:
-        self.game_start = 1
-        # Get the choices decoded so far
-        choices = self.decoded_choices
-        if len([x for x in choices if x != None]) > 2:
-            # Determine the most common choice
-            user_choice = max(set([x for x in choices if x != None]), key=choices.count)
-            print(choices, user_choice)
-            self.decoded_choices = []
+        """
+        RPC function that gets called by Unity to receive what the player is looking at by sending Unity the most
+        frequently occurring m-sequence using the mode of the decoded choices
+        :return: Sends Unity the most common choice to Unity, sends 0 if there is no common choice
+        """
+        if len(self.decodedChoices) > 5:
+            choices = [x for x in self.decodedChoices if x is not None]
+
+            if choices:
+                counts = {choice: choices.count(choice) for choice in set(choices)}
+                max_count = max(counts.values())
+                modes = [choice for choice, count in counts.items() if count == max_count]
+                userChoice = modes[0] if len(modes) == 1 else 0
+            else:
+                userChoice = 0
+            print(choices, userChoice)
+            self.decodedChoices = []
             self.data.clear_buffer_data()
-
-
+            return userChoice
         else:
-            user_choice = 0
-        # Return the most common detected choice
-        return user_choice
-    def decode_choice(self):
+            return 0
 
-        self.correlation_coefficients = self.apply_shifting_window_cca(self.data.get_data('EEG Data'))  # getting the correlation coefficients by applying shifting window CCA
-        highest_correlation, detected_choice = self.evaluate_correlation_coefficients(self.correlation_coefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detected_choice != None:
-            self.decoded_choices.append(detected_choice)
-
-    def apply_shifting_window_cca(self, data):
+    def decodeChoice(self):
         """
-        Applies shifting window CCA to the filtered band data.
+        A looping function that decodes the correlation coefficients of the data and adds the highest correlation
+        m-sequence (what m-sequence the user is likely looking at) to a list called decodedChoices
+        :return: Updates decodedChoice with what has been decoded
         """
-        window_size = int(self.sequence_length * 0.033 * 300)  # For example, 1 second window for 300 Hz sampling rate
-        step_size = int(window_size/4)  # For example, 0.5 second step size for 300 Hz sampling rate
+        data = self.data.get_data('EEG Data')
+        self.correlationCoefficients = self.applyCCA(data, 0)  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
+        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/8)))  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
+            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
+        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/7)))  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
+            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
+        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/6)))  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
+            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
+        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/5)))  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
+            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
+        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/4)))  # getting the correlation coefficients by applying CCA
+        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
+            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
+        if detectedChoice != None:
+            self.decodedChoices.append(detectedChoice)
 
+    def applyCCA(self, data,step):
+        """
+        Function for applying CCA
+        :param data: Data that needs to be classified
+        :return: A dictionary that contains the correlation of the EEG data with the templates
+        """
+        windowSize = self.segmentLength
         segments = []
-        for start in range(0, data.shape[1], step_size):
-            if start+window_size < data.shape[1]:
-                segment = data[:, start:start+window_size]
-                segments.append(segment) #For some reason the segments created are not of the shape
+        #This is generating the segments for one window of data
+        for start in range(step, data.shape[1], windowSize):
+            if start+windowSize < data.shape[1]:
+                segment = data[:, start:start+windowSize]
+                segments.append(segment)
 
         #Filter the data
-        filtered_data = self.applyFilterBank(segments)
+        filteredData = self.applyFilterBank(segments)
         self.ccaResults =  {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)} #temporarily assigns the dictionary so that we can use the keys
 
         correlation = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
-        avg_correlation = {}
+        avgCorrelation = {}
         #Transform the data with CCA
         for sequence in self.templates.keys():
             for freqBand in self.templates[sequence].keys():
                 cca = self.ccaModel[sequence][freqBand]
-                self.ccaResults[sequence][freqBand], refMSeq = cca.transform(filtered_data[freqBand].T, self.mSequenceSignal[sequence][freqBand].T)
-                correlation[sequence][freqBand] = np.abs(np.corrcoef(self.ccaResults[sequence][freqBand].flatten(), refMSeq.T)[0, 1])
-                print(correlation[sequence][freqBand], freqBand, sequence)
-            avg_correlation[sequence] = np.mean(list(correlation[sequence].values()))
-        return avg_correlation
+                self.ccaResults[sequence][freqBand], refMSeq = cca.transform(filteredData[freqBand].T, self.mSequenceSignal[sequence][freqBand].T)
+                correlation[sequence][freqBand] = np.abs(np.corrcoef(self.ccaResults[sequence][freqBand].T, refMSeq.T)[0, 1])
+            avgCorrelation[sequence] = np.mean(list(correlation[sequence].values()))
+        return avgCorrelation
 
-    def evaluate_correlation_coefficients(self, correlation_coefficients):
+    def evaluateCorrelationCoefficients(self, correlationCoefficients):
+        """
+        Function for determining the highest correlation coefficient and whether the coefficient is greater than the
+         second-highest correlation by a certain threshold.
+        :param correlationCoefficients:  Correlation coefficients between the EEG data and the templates
+        :return: The highest correlation as well as the corresponding m-sequence number if the correlation surpasses the
+        threshold
+        """
         # Sort the sequences by their average correlation in descending order
-        sorted_correlations = sorted(correlation_coefficients.items(), key=lambda item: item[1], reverse=True)
+        sortedCorrelations = sorted(correlationCoefficients.items(), key=lambda item: item[1], reverse=True)
         # Get the highest and second-highest correlations
-        highest_sequence, highest_corr = sorted_correlations[0]
-        second_highest_sequence, second_highest_corr = sorted_correlations[1]
+        highestSequence, highestCorr = sortedCorrelations[0]
+        secondHighestSequence, secondHighestCorr = sortedCorrelations[1]
         # Check if the highest correlation is at least 0.15 higher than the second highest
-        if highest_corr >= second_highest_corr + 0.05:
-            return highest_corr, int(highest_sequence[-1])
+        print(highestSequence,highestCorr, highestCorr - secondHighestCorr)
+        if highestCorr >= secondHighestCorr + 0.15:
+            return highestCorr, int(highestSequence[-1])
         else:
-            return highest_corr, None
+            return highestCorr, None
