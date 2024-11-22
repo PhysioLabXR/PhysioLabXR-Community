@@ -42,11 +42,13 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         if a stream class inheriting this class implements stream availability, it must
         * emit signal_stream_availability_tick
 
-        @param parent_widget: the MainWindow class
-        @param parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab
-        @param stream_name: the name of the stream
-        @param use_viz_buffer: whether to use a buffer for visualization. If set to false, the child class must override
-        the visualize function. Video stream including webcam and screen capture does not use viz buffer
+        Args:
+            parent_widget: the MainWindow class
+            parent_layout: the layout of the parent widget, that is the layout of MainWindow's stream tab.
+                This can also be None, in which case the widget will not be added to any layout
+            stream_name: the name of the stream
+            use_viz_buffer: whether to use a buffer for visualization. If set to false, the child class must override
+                the visualize function. Video stream including webcam and screen capture does not use viz buffer
         """
         super().__init__(stream_name, parent_widget, parent_layout, self.remove_stream)
 
@@ -56,10 +58,12 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         self.OptionsBtn.setIcon(AppConfigs()._icon_options)
         self.RemoveStreamBtn.setIcon(AppConfigs()._icon_remove)
 
-        if type(insert_position) == int:
-            parent_layout.insertWidget(insert_position, self)
-        else:
-            parent_layout.addWidget(self)
+        if parent_layout is not None:
+            if type(insert_position) == int:
+                parent_layout.insertWidget(insert_position, self)
+            else:
+                parent_layout.addWidget(self)
+
         self.parent = parent_layout
         self.main_parent = parent_widget
         # add splitter to the layout

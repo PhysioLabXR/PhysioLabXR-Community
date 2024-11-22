@@ -213,7 +213,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 streams_for_experiment = get_experiment_preset_streams(stream_name)
                 self.add_streams_from_experiment_preset(streams_for_experiment)
             elif preset_type == PresetType.CUSTOM:  # if this is a device preset
-                self.init_custom_device(stream_name)  # add device stream
+                widget = self.init_custom_device(stream_name)  # add device stream
+                self.streamsHorizontalLayout.insertWidget(self.streamsHorizontalLayout.count() - 1, widget)
             else:
                 raise Exception("Unknow preset type {}".format(preset_type))
             self.update_active_streams()
@@ -346,11 +347,11 @@ class MainWindow(QtWidgets.QMainWindow):
         widget_name = stream_name + '_widget'
         # create the worker for this device
         stream_widget = DeviceWidget(parent_widget=self,
-                                     parent_layout=self.streamsHorizontalLayout,
-                                     stream_name=stream_name,
-                                     insert_position=self.streamsHorizontalLayout.count() - 1)
+                                     parent_layout=None,
+                                     stream_name=stream_name)
         stream_widget.setObjectName(widget_name)
         self.stream_widgets[stream_name] = stream_widget
+        return stream_widget
 
     def update_meta_data(self):
         # get the stream viz fps

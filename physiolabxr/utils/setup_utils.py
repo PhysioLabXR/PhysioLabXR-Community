@@ -452,3 +452,4 @@ def run_setup_check():
     install_pyaudio()
     setup_grpc_csharp_plugin()
     install_pybluez()
+    # compile_tobii_pro_fusion_process()
