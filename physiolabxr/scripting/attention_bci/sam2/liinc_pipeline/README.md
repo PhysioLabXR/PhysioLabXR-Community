@@ -1,12 +1,14 @@
 # How to convert the data from attention experiments to a valid paligemma dataset
 
 ## Pre-requisites
-Pytorch, numpy, json, cv2, ...
+use conda to create a virtual env. activate it.
 
 ## First, build the sam-2 library
 `cd ..`
 
 in the sam2 folder, do ` pip install -e . `
+
+and then in the liinc pipeline folder, do `pip3 install -r requirements.txt`  
 
 ## Second, download the sam-2 ckpt from:
 Default: hiera_large

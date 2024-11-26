@@ -239,7 +239,10 @@ def check_bbox(bbox, imgSize, threshold=0.7):
         imgSize (_type_): the img width * height
         threshold (float, optional): The size ratio for rejection. Defaults to 0.7.
     """
+    if bbox is None:
+        return False
     
+    # convert bbox to (x_min, y_min, x_max, y_max) format
     x_min, y_min, x_max, y_max = bbox
     bboxSize=(x_max-x_min)*(y_max-y_min)
     global Rejected_cnt
@@ -412,7 +415,7 @@ def create_jsonl_entry(frame_path, bbox, img_height, img_width, categories="targ
     """
     
     normalized_bbox = normalize_bbox(bbox,img_height,img_width)
-    loc_tags=f"<loc{normalized_bbox[0]:04d}><loc{normalized_bbox[1]:04d}><loc<loc{normalized_bbox[2]:04d}><loc<loc{normalized_bbox[3]:04d}> {categories}"
+    loc_tags=f"<loc{normalized_bbox[0]:04d}><loc{normalized_bbox[1]:04d}><loc{normalized_bbox[2]:04d}><loc{normalized_bbox[3]:04d}> {categories}"
 
     jsonl_entry = {"image": frame_path, "prefix": f"detect {categories}", "suffix": loc_tags}
     
@@ -490,7 +493,7 @@ def save_sequence_results(frames, coords, frame_paths, sequence_results, save_di
                 
                 # Compute bounding box from final mask
                 bbox = compute_bbox_from_mask(final_mask)
-                bbox is None if not check_bbox(bbox,imgSize=img_size,threshold=0.7) else bbox
+                bbox = None if not check_bbox(bbox,imgSize=img_size,threshold=0.7) else bbox
                 
                 if bbox is not None:
                     # Create and save JSONL entry
@@ -578,7 +581,7 @@ if __name__ == "__main__":
         transform=transform
     )
 
-    device = init_device(device_name='cuda:4')
+    device = init_device(device_name='cuda:2')
     model_predictor = init_sam_2(device)
 
     # Main execution
