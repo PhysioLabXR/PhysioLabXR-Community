@@ -568,35 +568,49 @@ def init_sam_2(device):
     predictor = SAM2ImagePredictor(sam2_model)
     return predictor
 
-if __name__ == "__main__":
-    # Example usage with updated code
+def process_target_sequence(
+    root_dir,
+    target_id,
+    device_name='cuda:2',
+    batch_size=32,
+    sequence_length=3,
+    save_dir="sam2_results",
+    categories="target"
+):
     transform = ToTensor()
     dataloader = get_target_sequence_dataloader(
-        # Leave your data root folder here
-        root_dir=r"/home/ian/participant=1_session=2",
-        # Your target_id from the experiment, this works with target response dtn: 2 only for the target_id items
-        target_id="607.0",
-        batch_size=32,
-        sequence_length=3,
+        root_dir=root_dir,
+        target_id=target_id,
+        batch_size=batch_size,
+        sequence_length=sequence_length,
         transform=transform
     )
-
-    device = init_device(device_name='cuda:2')
+    
+    device = init_device(device_name=device_name)
     model_predictor = init_sam_2(device)
-
-    # Main execution
+    
     for frames, coords, frame_paths in dataloader:
         print("Processing batch...")
-        
-        # Process the batch
         sequence_results = process_sequence_batch(model_predictor, frames, coords)
-        
-        # Save results with path information
-        categories = "target"  # currently only support single category
-        save_sequence_results(frames, coords, frame_paths, sequence_results, 
-                         save_dir="sam2_results", 
-                         categories=categories)
-        print("\nResults saved to 'sam2_results' directory")
+        save_sequence_results(
+            frames, coords, frame_paths, sequence_results,
+            save_dir=save_dir,
+            categories=categories
+        )
+    
+    print("\nResults saved to", os.path. save_dir)
     print("-"*32)
     print("All batches processed, the number of rejected masks: ", Rejected_cnt)
     print("-"*32)
+
+if __name__ == "__main__":
+    # Example usage
+    process_target_sequence(
+        root_dir=r"/home/ian/participant=1_session=2",
+        target_id="607.0",
+        device_name='cuda:2',
+        batch_size=32,
+        sequence_length=3,
+        save_dir="sam2_results",
+        categories="target"
+    )
