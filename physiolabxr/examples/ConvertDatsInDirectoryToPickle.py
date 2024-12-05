@@ -3,7 +3,7 @@ import pickle
 
 from physiolabxr.utils.RNStream import RNStream
 
-my_directory = f'/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/Participants'
+my_directory = r'C:\Users\Haowe\Downloads\temp\0'
 
 def directory_dats_to_pickle_recursive(directory):
     files_to_convert = []
