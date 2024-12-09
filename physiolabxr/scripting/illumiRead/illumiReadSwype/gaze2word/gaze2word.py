@@ -21,8 +21,10 @@ Known issues:
 * the inference can be slow when the gaze sequence is long. Mostly from the quadratic time complexity of the DTW algorithm.
 
 """
+import os
+import ctypes
 import warnings
-
+import time
 from joblib import Parallel, delayed
 from collections import OrderedDict
 import pickle
@@ -37,7 +39,7 @@ from dtw import dtw
 from sklearn.cluster import DBSCAN
 
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations, \
-    run_dbscan_on_gaze
+    run_dbscan_on_gaze, run_dwt_dll
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
 
@@ -196,11 +198,12 @@ class Gaze2Word:
         Returns:
             list of str: top k candidate words
         """
+        start_tot = time.perf_counter()
         assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
-
+        start = time.perf_counter()
         if run_dbscan:
             gaze_trace = run_dbscan_on_gaze(gaze_trace, timestamps, dbscan_eps, dbscan_min_samples, verbose)
-
+        print(f'db_scan time: {(time.perf_counter() - start):.8f}')
         if len(gaze_trace) == 0:
             return []
 
@@ -223,25 +226,50 @@ class Gaze2Word:
             vocab_list = self.vocab.vocab_list
 
         if filter_by_starting_letter is not None:
+            start = time.perf_counter()
             # find the letters in self.letters that are within the filter_by_starting_letter radius
             first_gaze_point = gaze_trace[0]
             possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
             template_traces = {word: trace for letter in possible_letters for word, trace in vocab_traces_starting_letter[letter].items()}
             vocab_list = list(template_traces.keys())
             if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
+            print(f'filter time: {(time.perf_counter() - start):.8f}')
         else:
             template_traces = template_traces
             vocab_list = vocab_list
 
+        start = time.perf_counter()
+        # if njobs == 1:
+        #     distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+        #                  word, template_trace in template_traces.items()]
+        # else:
+        #     distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
+        #                  word, template_trace in template_traces.items())
+        #     distances = [result.distance for result in distances]
+        
+        dll_path = os.path.join(os.path.dirname(__file__), 'DWT.dll')
+        dwt_dll = ctypes.CDLL(dll_path)
+        
         if njobs == 1:
-            distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                         word, template_trace in template_traces.items()]
+            distances = [
+                run_dwt_dll(
+                    dwt_dll,
+                    gaze_trace,
+                    template_trace
+                ) for word, template_trace in template_traces.items()
+            ]
         else:
-            distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
-                         word, template_trace in template_traces.items())
-            distances = [result.distance for result in distances]
+            distances = Parallel(n_jobs=njobs)(
+                delayed(run_dwt_dll)(
+                    dwt_dll,
+                    gaze_trace,
+                    template_trace
+                ) for word, template_trace in template_traces.items())
+            
+        print(f'distance time: {(time.perf_counter() - start):.8f}')
 
         if prefix is not None and isinstance(prefix, str):
+            start = time.perf_counter()
             # tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k * 50]]
             tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])][:k * 10]
             distance_top_words = [word for word, _ in tops]
@@ -257,8 +285,10 @@ class Gaze2Word:
             ngram_probs = np.array([ngram_preds[word] for word in distance_top_words]) + ngram_epsilon
 
             combined_prob = (ngram_probs ** ngram_alpha) * (distance_probs ** (1 - ngram_alpha))
-
-            return [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
+            ret = [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
+            print(f'prefix time: {(time.perf_counter() - start):.8f}')
+            print(f'total time: {(time.perf_counter() - start_tot):.8f}')
+            return ret
         elif prefix is None:
             tops = [(w, d) for w, d in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k]]
 

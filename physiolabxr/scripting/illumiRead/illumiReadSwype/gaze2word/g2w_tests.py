@@ -1,12 +1,18 @@
 import pickle
 import time
+import sys
+import os
 
 import numpy as np
 from matplotlib import pyplot as plt
 
+module_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', '..'))
+sys.path.append(module_dir)
+
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import load_trace_file, run_dbscan_on_gaze
 
-trace_path = '/Users/apocalyvec/Downloads/good_FixationTrace.csv'
+# trace_path = '/Users/apocalyvec/Downloads/good_FixationTrace.csv'
+trace_path = 'C:/Users/evank/Repos/PhysioLabXR-Community/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/TraceSamples/good_FixationTrace.csv'
 
 trace_list = load_trace_file(trace_path)
 
@@ -43,7 +49,7 @@ for i, trace in enumerate(trace_list):
     # get the prediction
     print(f"Predicting for trace {i}")
     start_time = time.perf_counter()
-    top_k = g2w.predict(4, trace, timestamps=dummy_timestamps, run_dbscan=True, prefix='', verbose=True, filter_by_starting_letter=0.45, njobs=16)
+    top_k = g2w.predict(4, trace, timestamps=dummy_timestamps, run_dbscan=True, prefix='', verbose=True, filter_by_starting_letter=0.45, njobs=1)
     print(f'Time taken for prediction: {(pred_time := time.perf_counter() - start_time):.8f}s')
 
     plt.legend()
