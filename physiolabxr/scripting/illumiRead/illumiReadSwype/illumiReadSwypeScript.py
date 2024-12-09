@@ -133,8 +133,8 @@ class IllumiReadSwypeScript(RenaScript):
     
     @async_rpc
     def SwypePredictRPC(self) -> str:
-        highest_prob_word = self._swype_predict()
-        return highest_prob_word
+        highest_prob_words = self._swype_predict()
+        return '.'.join(highest_prob_words)
         
         
     
@@ -382,12 +382,8 @@ class IllumiReadSwypeScript(RenaScript):
             word_candidate_list = [item[0] for item in cadidate_list]
             
             word_candidate_list = np.array(word_candidate_list).flatten().tolist()
-            print(word_candidate_list)
 
-            # send the top n words to the feedback state
-            lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
-
-            return lvt
+            return word_candidate_list
 
     def keyboard_illumireadswype_state_callback(self):
         # print("keyboard illumiread swype state")
