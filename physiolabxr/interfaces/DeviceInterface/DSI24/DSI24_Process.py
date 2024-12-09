@@ -6,7 +6,6 @@ import zmq
 from physiolabxr.third_party.WearableSensing.DSI_py3 import *
 import numpy as np
 from pylsl import local_clock
-
 is_first_time = True
 time_offset = 0
 dsi24_data_socket = None
@@ -51,13 +50,15 @@ def example_sample_callback_signals(headsetPtr, packetTime, userData):
         print('Data and timestamp mismatch')
         print(new_data.shape)
         print(len(t))
-
+    batteryLevel = list(map(int, IfStringThenNormalString(h.GetBatteryLevelString()).strip("[]").split(",")))
     # Create a dictionary with the stream name, data, and timestamps
     # need to convert the new_data to list to make it json serializable
     new_data_dict = {
         't': 'd', # 'd' for data, 'i' for info, 'e' for error
         'frame': new_data.tolist(),
-        'timestamp': t
+        'timestamp': t,
+        'battery': batteryLevel,
+        'impedance': 0
     }
 
     # Send data via ZMQ socket to the main process
@@ -100,12 +101,14 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
         print('Data and timestamp mismatch')
         print(impedance_data.shape)
         print(len(t))
-
+    batteryLevel = list(map(int, IfStringThenNormalString(h.GetBatteryLevelString()).strip("[]").split(",")))
     # Convert impedance data to a dictionary for streaming
     impedance_data_dict = {
         't': 'd',  # 'd' for data, 'i' for info, 'e' for error
         'frame': impedance_data.tolist(),  # Convert impedance data to a list for JSON serialization
-        'timestamp': t
+        'timestamp': t,
+        'battery': batteryLevel,
+        'impedance': 1
     }
 
     # Send the impedance data via ZMQ socket to the main process
@@ -115,7 +118,7 @@ def example_sample_callback_impedances(headsetPtr, packetTime, userData):
         print("Socket already closed.")
 
 
-def DSI24_process(terminate_event, network_port, com_port, impedance, args=''):
+def DSI24_process(terminate_event, network_port, com_port, impedance,args=''):
     """Process to connect to the DSI-24 device and send data to the main process
 
     Args:
@@ -126,6 +129,7 @@ def DSI24_process(terminate_event, network_port, com_port, impedance, args=''):
     global dsi24_data_socket
     global is_first_time
     global time_offset
+    global batteryLevel
 
     context = zmq.Context()
     dsi24_data_socket = context.socket(zmq.PUSH)
@@ -143,8 +147,7 @@ def DSI24_process(terminate_event, network_port, com_port, impedance, args=''):
         return
 
     if impedance == 1:
-        # Currently not used
-        print("Impedance mode")
+
         headset.SetSampleCallback(example_sample_callback_impedances, 0)
         headset.StartImpedanceDriver()
     else:

@@ -29,6 +29,8 @@ class DSI24_Interface(DeviceInterface):
         self.port = self.socket.getsockopt(zmq.LAST_ENDPOINT).decode("utf-8").split(":")[-1]
         self.data_process = None
         self.terminate_event = None
+        self.battery_level = None
+        self.impedanceValues = []
 
     def start_stream(self, bluetooth_port, impedance):
         self.data_process, self.terminate_event = run_dsi24_headset_process(self.port, bluetooth_port, impedance)
@@ -43,8 +45,16 @@ class DSI24_Interface(DeviceInterface):
                 elif data['t'] == 'e':
                     raise DSIException(data['message']) # this will cause stop_stream to be called
                 elif data['t'] == 'd':
-                    frames.append(data['frame'])
-                    timestamps.append(data['timestamp'])
+                    self.battery_level = data['battery']
+                    if data['impedance'] == 0:
+                        frames.append(data['frame'])
+                        timestamps.append(data['timestamp'])
+                    else:
+                        self.impedanceValues = data['frame']
+                        frames.append(data['frame'])
+                        timestamps.append(data['timestamp'])
+
+
             except zmq.error.Again:
                 break
 
