@@ -23,6 +23,9 @@ from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilter
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
 
+from Leap.Unity import LeapProvider  # Import Ultraleap SDK classes
+from Leap import Frame, Hand
+
 import csv
 import pandas as pd
 from nltk import RegexpTokenizer
@@ -55,6 +58,9 @@ class IllumiReadSwypeScript(RenaScript):
         self.process_gaze_data_time_buffer = deque(maxlen=1000)
 
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
+
+        self.leap_provider = None  # Ultraleap provider
+        self.hand_trajectory = deque(maxlen=1000)  # Buffer to store hand trajectory
 
         # spelling correction
         # self.spell_corrector = SpellCorrector()
@@ -109,6 +115,71 @@ class IllumiReadSwypeScript(RenaScript):
         # the current context for the inputfield
         self.context = ""
         self.nextChar = ""
+
+    """"
+    def init(self):
+        # Initialize Ultraleap hand tracking provider.
+        self.leap_provider = LeapProvider.FindDefault()  # Find the default provider in the scene
+        if not self.leap_provider:
+            print("LeapProvider not found. Hand tracking will not work.")
+        else:
+            self.leap_provider.OnUpdateFrame += self.process_hand_tracking
+
+    def process_hand_tracking(self, frame: Frame):
+        # Callback to process hand tracking data from Ultraleap.
+        hands = frame.Hands
+        for hand in hands:
+            if hand.IsLeft or hand.IsRight:  # Process both hands
+                palm_position = hand.PalmPosition.ToVector3()  # Convert to Unity Vector3
+                self.hand_trajectory.append(palm_position)
+
+                # Map hand position to keyboard
+                keyboard_key = self.map_hand_to_keyboard(palm_position)
+                if keyboard_key:
+                    self.process_key_swipe(keyboard_key)
+
+    # position in keyboard already in place
+    def map_hand_to_keyboard(self, palm_position):
+        # Map the palm position to a keyboard key (approximate example).
+        keyboard_width, keyboard_height = 0.3, 0.1  # Example dimensions in meters
+        key_size = 0.03  # Example size of each key
+        keyboard_origin = [0, 0, 0]  # Origin position of the keyboard
+
+        # Transform palm position relative to the keyboard
+        relative_position = [
+            palm_position[0] - keyboard_origin[0],
+            palm_position[1] - keyboard_origin[1],
+            palm_position[2] - keyboard_origin[2]
+        ]
+
+        if 0 <= relative_position[0] <= keyboard_width and 0 <= relative_position[1] <= keyboard_height:
+            key_x = int(relative_position[0] / key_size)
+            key_y = int(relative_position[1] / key_size)
+            return f"Key[{key_x},{key_y}]"  # Example key identifier
+        return None
+    """
+
+    def process_key_swipe(self, keyboard_key):
+        # Process the swiped keys and decode them.
+        self.hand_trajectory.append(keyboard_key)
+        if len(self.hand_trajectory) > 1:
+            print(f"Swiped trajectory: {list(self.hand_trajectory)}")
+
+        # Decode the trajectory using G2W or T2C
+        candidate_words = self.decode_swipe_to_words(list(self.hand_trajectory))
+        print(f"Candidate words: {candidate_words}")
+
+    def decode_swipe_to_words(self, trajectory):
+        # Decode the swiped trajectory into possible words.
+        # Use the G2W model to predict words from the trajectory
+        cadidate_list = self.g2w.predict(4, trajectory, run_dbscan=True, prefix=self.context)
+        return [item[0] for item in cadidate_list]
+
+    def cleanup(self):
+        # Cleanup resources.
+        if self.leap_provider:
+            self.leap_provider.OnUpdateFrame -= self.process_hand_tracking
+        super().cleanup()
     
     #  ----------------- RPC START-----------------------------------------------------------------
     # get the rpc call of word context from unity
@@ -121,17 +192,30 @@ class IllumiReadSwypeScript(RenaScript):
     
     # the rpc for Tap2Char prediction
     # input: float of x and y position of the tap
+    # whenever finger makes contact with keyboard
+    # 2 predictor classes, use gaze to word 
     @async_rpc
     def Tap2CharRPC(self, input0: float, input1:float) -> str:
         # merge the x and y input to a ndarray
         tap_position = np.array([input0, input1])
-        result = self.t2c.predict(tap_position, self.context)
+        result = self.t2c.predict(tap_position, self.context) # takes x y position, but gaze 2 word takes entire trajactory
         
         highest_prob_char = str(result[0][0])
         
         return highest_prob_char
         
-        
+    # write definition here
+    @async_rpc
+    def HandSwipe2WordRPC(self, trajectory_data: list) -> str:
+        # Ensure trajectory_data is formatted as a numpy array
+        hand_trajectory = np.array(trajectory_data)
+    
+        # Use Gaze2Word to make a prediction based on the hand trajectory
+        result = self.g2w.predict(hand_trajectory, self.context)  # Assumes G2W supports trajectory input
+    
+        highest_prob_word = str(result[0][0])
+    
+        return highest_prob_word
     
     # ----------------- RPC END--------------------------------------------------------------------
 
