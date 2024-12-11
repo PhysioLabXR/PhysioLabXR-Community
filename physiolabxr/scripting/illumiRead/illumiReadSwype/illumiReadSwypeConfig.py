@@ -130,27 +130,60 @@ KeyIndexIDDict = {
 
 
 class ExperimentState(Enum):
+    # InitState = 0
+    #
+    # CalibrationState = 1
+    # StartState = 2
+    # IntroductionInstructionState = 3
+    # IntroductionEegState =4
+    #
+    # KeyboardDewellTimeIntroductionState = 5
+    # KeyboardDewellTimeState = 6
+    #
+    # KeyboardClickIntroductionState = 7
+    # KeyboardClickState = 8
+    #
+    # KeyboardIllumiReadSwypeIntroductionState = 9
+    # KeyboardIllumiReadSwypeState = 10
+    #
+    # KeyboardFreeSwitchInstructionState = 11
+    # KeyboardFreeSwitchState = 12
+    #
+    # FeedbackState = 13
+    #
+    # EndState = 14
+    # EegState = 15
+
+
     InitState = 0
 
     CalibrationState = 1
     StartState = 2
     IntroductionInstructionState = 3
+    IntroductionEegState = 4
+    EegState = 5
 
-    KeyboardDewellTimeIntroductionState = 4
-    KeyboardDewellTimeState = 5
+    KeyboardDewellTimeIntroductionState = 6
+    KeyboardDewellTimeState = 7
 
-    KeyboardClickIntroductionState = 6
-    KeyboardClickState = 7
+    KeyboardClickIntroductionState = 8
+    KeyboardClickState = 9
 
-    KeyboardIllumiReadSwypeIntroductionState = 8
-    KeyboardIllumiReadSwypeState = 9
+    KeyboardIllumiReadSwypeIntroductionState = 10
+    KeyboardIllumiReadSwypeState = 11
 
-    KeyboardFreeSwitchInstructionState = 10
-    KeyboardFreeSwitchState = 11
+    KeyboardFreeSwitchInstructionState = 12
+    KeyboardFreeSwitchState = 13
 
-    FeedbackState = 12
+    KeyboardIllumiReadSwypeIntroductionState_noeeg = 14
+    KeyboardIllumiReadSwypeState_noeeg = 15
 
-    EndState = 13
+    FeedbackState = 16
+    EndState = 17
+
+    # FeedbackState = 14
+    # EndState = 15
+
 
 
 class ExperimentBlock(Enum):
