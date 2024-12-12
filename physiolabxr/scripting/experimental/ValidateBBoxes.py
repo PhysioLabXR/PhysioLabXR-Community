@@ -6,7 +6,7 @@ import json
 
 from physiolabxr.examples.Eyetracking.EyeUtils import clip_bbox, add_bounding_box
 
-data_root = r"C:\Users\LLINC-Lab\Documents\Recordings\ReNaUnityCameraCapture_10_31_2024_23_01_33"
+data_root = "/Users/apocalyvec/Data/physioxr_experiment/attentionbci-pilot/Tests/2/0_video/ReNaUnityCameraCapture_11_20_2024_21_03_56"
 image_shape = (448, 448, 3)
 
 # read GazeInfo.csv
