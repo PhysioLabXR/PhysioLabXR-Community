@@ -14,9 +14,9 @@ class NeuralCooked(RenaScript):
         super().__init__(*args, **kwargs)
 
     def init(self):
-        self.freqBands = [(8, 60), (12, 60), (30, 60)]          #defining frequency bands for filter bank
+        self.freqBands = [(8, 60), (13, 60), (30, 60)]          #defining frequency bands for filter bank
         self.frequency = 300                                    #default frequency of DSI-24
-        self.refreshRate  = 0.033                               #Duration of  flicker
+        self.refreshRate  = 0.0166                              #Duration of  flicker
         self.data = DataBuffer()                                #generating a data buffer for EEG data
         self.templates = {}
         self.ccaModel = {}                                      #creating a list to store all of the CCA models
@@ -28,15 +28,15 @@ class NeuralCooked(RenaScript):
             [1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0]   #mSequence3
         ]
         self.sequenceLength = len(self.mSequence[0])
-        self.segmentLength = int(np.floor(self.sequenceLength*self.frequency * self.refreshRate))
+        self.segmentLength = int(np.ceil(self.sequenceLength*self.frequency * self.refreshRate))
         self.mSequenceSignal = {
             'sequence1': self.generateMSignal(0),
             'sequence2': self.generateMSignal(1),
             'sequence3': self.generateMSignal(2)
         }
-        self.seq1Data = np.array([[]])
-        self.seq2Data = np.array([[]])
-        self.seq3Data = np.array([[]])
+        self.seq1Data = np.array([[[ ]]])
+        self.seq2Data = np.array([[[ ]]])
+        self.seq3Data = np.array([[[ ]]])
         self.gameState = 0
 
 
@@ -54,8 +54,8 @@ class NeuralCooked(RenaScript):
             }
             self.data.update_buffer(EEG_Data)                                   #updating the data buffer with EEG data
             Data = self.data.get_data('EEG Data')
-            if Data.shape[1] > 3600:                                            #if the data is longer than 12 seconds then cut off beginning of data so that it is to 200 seconds
-                self.data.clear_stream_up_to_index(stream_name= 'EEG Data', cut_to_index= self.data.get_data('EEG Data').shape[1]-300)
+            if Data.shape[1] > 400:                                            #if the data is longer than 12 seconds then cut off beginning of data so that it is to 200 seconds
+                self.data.clear_stream_up_to_index(stream_name='EEG Data', cut_to_index=self.data.get_data('EEG Data').shape[1]-400)
             if self.data.get_data('EEG Data').shape[1] > self.segmentLength:
                 if self.gameState == 1:
                     self.decodeChoice()
@@ -83,7 +83,7 @@ class NeuralCooked(RenaScript):
         :return: A band passed version of the data
         """
         nq = 0.5 * self.frequency
-        order = 8
+        order = 3
         lowcutOffNorm = lowcutoff / nq
         highcutOffNorm = highcutoff / nq
         b, a = butter(order, [ lowcutOffNorm, highcutOffNorm], btype = 'band')
@@ -111,14 +111,21 @@ class NeuralCooked(RenaScript):
         """
         band = {}           #Dictionary created to fill in
         for i in range(3):
-            filteredSegments = np.empty((4,data[0].shape[1],0))  # List to hold filtered segments for the current frequency band
-            for segment in data:
+            filteredSegments = np.empty((4,self.segmentLength,0))  # List to hold filtered segments for the current frequency band
+            # for segment in data:
+            #     # Apply bandpass filter to each segment and append the result to the list
+            #     filteredSegment = self.bandpassFilter(segment, self.freqBands[i][0], self.freqBands[i][1])
+            #     filteredSegments = np.concatenate((filteredSegments, filteredSegment[:, :, np.newaxis]), axis =2)
+            for segmentNum in range(data.shape[2]):
                 # Apply bandpass filter to each segment and append the result to the list
-                filteredSegment = self.bandpassFilter(segment, self.freqBands[i][0], self.freqBands[i][1])
+                filteredSegment = self.bandpassFilter(data[:, :, segmentNum], self.freqBands[i][0], self.freqBands[i][1])
                 filteredSegments = np.concatenate((filteredSegments, filteredSegment[:, :, np.newaxis]), axis =2)
 
+            band[self.freqBands[i]]= np.mean(filteredSegments, axis=2)
             # Average the filtered segments across the first axis
-            band[self.freqBands[i]] = np.mean(filteredSegments, axis=2)
+            # averageSegments = np.mean(filteredSegments, axis=2)
+            # Downsampling
+            # band[self.freqBands[i]] = np.mean(averageSegments.reshape(-1, 5), axis=1)
         return band
     def adjustSegments(self, segments):
         """
@@ -148,23 +155,17 @@ class NeuralCooked(RenaScript):
         :return: dictionary of segment numbers that contain a dictionary of frequency banded EEG data that has been
         averaged out for each segment: segment number -> keys frequency band
         """
-        self.seq1Data = self.bandpassFilter(self.notchFilter(self.seq1Data, 60), 2, 120)
-        self.seq2Data = self.bandpassFilter(self.notchFilter(self.seq2Data, 60), 2, 120)
-        self.seq3Data = self.bandpassFilter(self.notchFilter(self.seq3Data, 60), 2, 120)
+        filteredData1= np.zeros(self.seq1Data.shape)
+        filteredData2= np.zeros(self.seq2Data.shape)
+        filteredData3= np.zeros(self.seq3Data.shape)
+        for segment in range(self.seq1Data.shape[2]):
+            filteredData1[:,:,segment] = self.bandpassFilter(self.notchFilter(self.seq1Data[:, :, segment], 60), 2, 120)
+            filteredData2[:,:,segment] = self.bandpassFilter(self.notchFilter(self.seq2Data[:, :, segment], 60), 2, 120)
+            filteredData3[:,:,segment] = self.bandpassFilter(self.notchFilter(self.seq3Data[:, :, segment], 60), 2, 120)
 
-        seq1Segments = np.array_split(self.seq1Data, self.seq1Data.shape[1] // self.segmentLength, axis=1)  #size segment_length
-        seq2Segments = np.array_split(self.seq2Data, self.seq2Data.shape[1] // self.segmentLength, axis=1)
-        seq3Segments = np.array_split(self.seq3Data, self.seq3Data.shape[1] // self.segmentLength, axis=1)
-
-        seq1Segments = self.adjustSegments(seq1Segments)
-        seq2Segments = self.adjustSegments(seq2Segments)
-        seq3Segments = self.adjustSegments(seq3Segments)
-
-
-        self.templates['sequence1'] = self.applyFilterBank(seq1Segments) #size_segment_length
-        self.templates['sequence2'] = self.applyFilterBank(seq2Segments)
-        self.templates['sequence3'] = self.applyFilterBank(seq3Segments)
-
+        self.templates['sequence1'] = self.applyFilterBank(filteredData1) #size_segment_length
+        self.templates['sequence2'] = self.applyFilterBank(filteredData2)
+        self.templates['sequence3'] = self.applyFilterBank(filteredData3)
     def generateMSignal(self, seqNum):
         """
         Function to generate a signal template for the m-sequence for CCA.fit. It functions by repeating the sequence
@@ -184,7 +185,7 @@ class NeuralCooked(RenaScript):
             padding = int(np.ceil((self.segmentLength - len(signal))/2)+1)
             signal = np.pad(signal, pad_width=padding, mode='constant', constant_values=0)
             signal = signal[:self.segmentLength]
-        mSignal = [np.tile(signal, (4, 1))]
+        mSignal = np.expand_dims(np.tile(signal, (4, 1)),axis=2)
         filteredMsignal = self.applyFilterBank(mSignal)
         return filteredMsignal
 
@@ -215,23 +216,25 @@ class NeuralCooked(RenaScript):
         :param duration: How long the respective m-sequence was played for
         :return: Does not return anything to Unity it is an asynchronous process
         """
-        eegData = self.data.get_data('EEG Data')[:, int(-duration * self.frequency):]  # 4 by (samples)
 
+        eegData = np.expand_dims(self.data.get_data('EEG Data')[:, -self.segmentLength:], axis=2) # 4 by (samples)
+        print(self.segmentLength,duration*300)
         if sequenceNum == 1:
             if self.seq1Data.size == 0:
                 self.seq1Data = eegData
             else:
-                self.seq1Data = np.concatenate((self.seq1Data, eegData), axis=1)
+                self.seq1Data = np.concatenate((self.seq1Data, eegData), axis=2)
         elif sequenceNum == 2:
             if self.seq2Data.size == 0:
                 self.seq2Data = eegData
             else:
-                self.seq2Data = np.concatenate((self.seq2Data, eegData), axis=1)
+                self.seq2Data = np.concatenate((self.seq2Data, eegData), axis=2)
         elif sequenceNum == 3:
             if self.seq3Data.size == 0:
                 self.seq3Data = eegData
             else:
-                self.seq3Data = np.concatenate((self.seq3Data, eegData), axis=1)
+                self.seq3Data = np.concatenate((self.seq3Data, eegData), axis=2)
+
     @async_rpc
     def training(self) -> int:
         """
@@ -249,22 +252,17 @@ class NeuralCooked(RenaScript):
         frequently occurring m-sequence using the mode of the decoded choices
         :return: Sends Unity the most common choice to Unity, sends 0 if there is no common choice
         """
+
+        userChoice = 0
         if len(self.decodedChoices) > 5:
             choices = [x for x in self.decodedChoices if x is not None]
-
-            if choices:
-                counts = {choice: choices.count(choice) for choice in set(choices)}
-                max_count = max(counts.values())
-                modes = [choice for choice, count in counts.items() if count == max_count]
-                userChoice = modes[0] if len(modes) == 1 else 0
-            else:
-                userChoice = 0
-            print(choices, userChoice)
+            counts = {choice: choices.count(choice) for choice in set(choices)}
+            max_count = max(counts.values())
+            modes = [choice for choice, count in counts.items() if count == max_count]
+            userChoice = modes[0] if len(modes) == 1 else 0
             self.decodedChoices = []
             self.data.clear_buffer_data()
-            return userChoice
-        else:
-            return 0
+        return userChoice
 
     def decodeChoice(self):
         """
@@ -272,54 +270,22 @@ class NeuralCooked(RenaScript):
         m-sequence (what m-sequence the user is likely looking at) to a list called decodedChoices
         :return: Updates decodedChoice with what has been decoded
         """
-        data = self.data.get_data('EEG Data')
-        self.correlationCoefficients = self.applyCCA(data, 0)  # getting the correlation coefficients by applying CCA
+        data = np.expand_dims(self.data.get_data('EEG Data')[:, -self.segmentLength:],axis=2)
+        self.correlationCoefficients = self.applyCCA(data)  # getting the correlation coefficients by applying CCA
         highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
         if detectedChoice != None:
             self.decodedChoices.append(detectedChoice)
-        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/8)))  # getting the correlation coefficients by applying CCA
-        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
-            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detectedChoice != None:
-            self.decodedChoices.append(detectedChoice)
-        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/7)))  # getting the correlation coefficients by applying CCA
-        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
-            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detectedChoice != None:
-            self.decodedChoices.append(detectedChoice)
-        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/6)))  # getting the correlation coefficients by applying CCA
-        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
-            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detectedChoice != None:
-            self.decodedChoices.append(detectedChoice)
-        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/5)))  # getting the correlation coefficients by applying CCA
-        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
-            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detectedChoice != None:
-            self.decodedChoices.append(detectedChoice)
-        self.correlationCoefficients = self.applyCCA(data, int(np.floor(data.shape[1]/4)))  # getting the correlation coefficients by applying CCA
-        highestCorrelation, detectedChoice = self.evaluateCorrelationCoefficients(
-            self.correlationCoefficients)  # evaluating the correlation coefficients to get the highest correlation and the detected choice
-        if detectedChoice != None:
-            self.decodedChoices.append(detectedChoice)
 
-    def applyCCA(self, data,step):
+    def applyCCA(self, data):
         """
         Function for applying CCA
         :param data: Data that needs to be classified
         :return: A dictionary that contains the correlation of the EEG data with the templates
         """
-        windowSize = self.segmentLength
-        segments = []
-        #This is generating the segments for one window of data
-        for start in range(step, data.shape[1], windowSize):
-            if start+windowSize < data.shape[1]:
-                segment = data[:, start:start+windowSize]
-                segments.append(segment)
 
         #Filter the data
-        filteredData = self.applyFilterBank(segments)
-        self.ccaResults =  {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)} #temporarily assigns the dictionary so that we can use the keys
+        filteredData = self.applyFilterBank(data)
+        self.ccaResults = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)} #temporarily assigns the dictionary so that we can use the keys
 
         correlation = {k: {sub_k: None for sub_k in v.keys()} for k, v in self.templates.items() if isinstance(v, dict)}
         avgCorrelation = {}
@@ -329,6 +295,7 @@ class NeuralCooked(RenaScript):
                 cca = self.ccaModel[sequence][freqBand]
                 self.ccaResults[sequence][freqBand], refMSeq = cca.transform(filteredData[freqBand].T, self.mSequenceSignal[sequence][freqBand].T)
                 correlation[sequence][freqBand] = np.abs(np.corrcoef(self.ccaResults[sequence][freqBand].T, refMSeq.T)[0, 1])
+                print(sequence, freqBand, correlation[sequence][freqBand])
             avgCorrelation[sequence] = np.mean(list(correlation[sequence].values()))
         return avgCorrelation
 
@@ -346,8 +313,7 @@ class NeuralCooked(RenaScript):
         highestSequence, highestCorr = sortedCorrelations[0]
         secondHighestSequence, secondHighestCorr = sortedCorrelations[1]
         # Check if the highest correlation is at least 0.15 higher than the second highest
-        print(highestSequence,highestCorr, highestCorr - secondHighestCorr)
-        if highestCorr >= secondHighestCorr + 0.15:
+        if highestCorr >= secondHighestCorr + 0.01:
             return highestCorr, int(highestSequence[-1])
         else:
             return highestCorr, None

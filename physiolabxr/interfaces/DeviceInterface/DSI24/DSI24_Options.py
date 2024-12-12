@@ -53,7 +53,6 @@ class DSI24_Options(BaseDeviceOptions):
         if self.device_interface.impedanceValues:
             impedanceValues = self.device_interface.impedanceValues
             for i in range(21):
-                print(float(impedanceValues[i][0]))
                 if float(impedanceValues[i][0]) < 1:
                     color = 'green'
                 elif float(impedanceValues[i][0]) < 10 and float(impedanceValues[i][0]) > 1:
