@@ -50,16 +50,17 @@ class DSI24_Options(BaseDeviceOptions):
             self.Impedance = 0
             
     def updateImpedance(self):
-        if self.device_interface.impedanceValues:
-            impedanceValues = self.device_interface.impedanceValues
-            for i in range(21):
-                if float(impedanceValues[i][0]) < 1:
-                    color = 'green'
-                elif float(impedanceValues[i][0]) < 10 and float(impedanceValues[i][0]) > 1:
-                    color = 'yellow'
-                else:
-                    color = 'red'
-                self.impedanceDictionary[i].setStyleSheet(f"""background-color: {color}; color: black""")
+        if self.Impedance == 1:
+            if self.device_interface.impedanceValues:
+                impedanceValues = self.device_interface.impedanceValues
+                for i in range(20):
+                    if float(impedanceValues[i][0]) < 1:
+                        color = 'green'
+                    elif float(impedanceValues[i][0]) < 10 and float(impedanceValues[i][0]) > 1:
+                        color = 'yellow'
+                    else:
+                        color = 'red'
+                    self.impedanceDictionary[i].setStyleSheet(f"""background-color: {color}; color: black""")
 
         
     def batteryUpdate(self):
