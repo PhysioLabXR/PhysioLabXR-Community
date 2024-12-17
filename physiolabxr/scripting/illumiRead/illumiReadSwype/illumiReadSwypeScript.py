@@ -22,6 +22,7 @@ from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
+from google.protobuf.empty_pb2 import Empty
 
 import csv
 import pandas as pd
@@ -133,8 +134,9 @@ class IllumiReadSwypeScript(RenaScript):
     
     @async_rpc
     def SwypePredictRPC(self) -> str:
-        highest_prob_words = self._swype_predict()
-        return '.'.join(highest_prob_words)
+        highest_prob_word = self._swype_predict()
+        # print(highest_prob_word)
+        return highest_prob_word[0]
         
         
     
@@ -378,12 +380,15 @@ class IllumiReadSwypeScript(RenaScript):
             fixation_trace = np.array(fixation_trace)
             
             # predict the candidate words
-            cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
+
+            cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=1)
+
             word_candidate_list = [item[0] for item in cadidate_list]
             
             word_candidate_list = np.array(word_candidate_list).flatten().tolist()
-
             return word_candidate_list
+        else:
+            return ["None"]
 
     def keyboard_illumireadswype_state_callback(self):
         # print("keyboard illumiread swype state")
@@ -464,7 +469,7 @@ class IllumiReadSwypeScript(RenaScript):
                     fixation_trace = np.array(fixation_trace)
                     
                     # predict the candidate words
-                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
+                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=1)
                     word_candidate_list = [item[0] for item in cadidate_list]
                     
                     word_candidate_list = np.array(word_candidate_list).flatten().tolist()

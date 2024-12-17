@@ -12,7 +12,8 @@ sys.path.append(module_dir)
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import load_trace_file, run_dbscan_on_gaze
 
 # trace_path = '/Users/apocalyvec/Downloads/good_FixationTrace.csv'
-trace_path = 'C:/Users/evank/Repos/PhysioLabXR-Community/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/TraceSamples/good_FixationTrace.csv'
+trace_path = 'C:/Users/6173-Annie-Evan/PycharmProjects/PhysioLabXR-Community/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/TraceSamples/good_FixationTrace.csv'
+# trace_path = 'C:/Users/evank/Repos/PhysioLabXR-Community/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/TraceSamples/good_FixationTrace.csv'
 
 trace_list = load_trace_file(trace_path)
 
