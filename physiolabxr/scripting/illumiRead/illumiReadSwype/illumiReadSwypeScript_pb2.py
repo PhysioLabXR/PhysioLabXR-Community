@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1billumiReadSwypeScript.proto\x1a\x1bgoogle/protobuf/empty.proto\"#\n\x11\x43ontextRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\t\"%\n\x12\x43ontextRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"4\n\x12Tap2CharRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\x02\x12\x0e\n\x06input1\x18\x02 \x01(\x02\"&\n\x13Tap2CharRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\x88\x01\n\x15IllumiReadSwypeScript\x12\x35\n\nContextRPC\x12\x12.ContextRPCRequest\x1a\x13.ContextRPCResponse\x12\x38\n\x0bTap2CharRPC\x12\x13.Tap2CharRPCRequest\x1a\x14.Tap2CharRPCResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1billumiReadSwypeScript.proto\x1a\x1bgoogle/protobuf/empty.proto\"#\n\x11\x43ontextRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\t\"%\n\x12\x43ontextRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"*\n\x17SwypePredictRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"4\n\x12Tap2CharRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\x02\x12\x0e\n\x06input1\x18\x02 \x01(\x02\"&\n\x13Tap2CharRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\xcd\x01\n\x15IllumiReadSwypeScript\x12\x35\n\nContextRPC\x12\x12.ContextRPCRequest\x1a\x13.ContextRPCResponse\x12\x43\n\x0fSwypePredictRPC\x12\x16.google.protobuf.Empty\x1a\x18.SwypePredictRPCResponse\x12\x38\n\x0bTap2CharRPC\x12\x13.Tap2CharRPCRequest\x1a\x14.Tap2CharRPCResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,10 +36,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CONTEXTRPCREQUEST']._serialized_end=95
   _globals['_CONTEXTRPCRESPONSE']._serialized_start=97
   _globals['_CONTEXTRPCRESPONSE']._serialized_end=134
-  _globals['_TAP2CHARRPCREQUEST']._serialized_start=136
-  _globals['_TAP2CHARRPCREQUEST']._serialized_end=188
-  _globals['_TAP2CHARRPCRESPONSE']._serialized_start=190
-  _globals['_TAP2CHARRPCRESPONSE']._serialized_end=228
-  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_start=231
-  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_end=367
+  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_start=136
+  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_end=178
+  _globals['_TAP2CHARRPCREQUEST']._serialized_start=180
+  _globals['_TAP2CHARRPCREQUEST']._serialized_end=232
+  _globals['_TAP2CHARRPCRESPONSE']._serialized_start=234
+  _globals['_TAP2CHARRPCRESPONSE']._serialized_end=272
+  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_start=275
+  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_end=480
 # @@protoc_insertion_point(module_scope)

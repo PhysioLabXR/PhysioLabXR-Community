@@ -22,6 +22,7 @@ from physiolabxr.scripting.illumiRead.utils.VarjoEyeTrackingUtils.VarjoGazeUtils
 from physiolabxr.scripting.illumiRead.utils.gaze_utils.general import GazeFilterFixationDetectionIVT, GazeType
 from physiolabxr.scripting.illumiRead.utils.language_utils.neuspell_utils import SpellCorrector
 from physiolabxr.utils.buffers import DataBuffer
+from google.protobuf.empty_pb2 import Empty
 
 import csv
 import pandas as pd
@@ -134,7 +135,8 @@ class IllumiReadSwypeScript(RenaScript):
     @async_rpc
     def SwypePredictRPC(self) -> str:
         highest_prob_word = self._swype_predict()
-        return highest_prob_word
+        # print(highest_prob_word)
+        return highest_prob_word[0]
         
         
     
@@ -371,23 +373,23 @@ class IllumiReadSwypeScript(RenaScript):
         self.ivt_filter.reset_data_processor()
         
         # the fixation trace length should be greater than 1
-        print(fixation_trace)
+        print(f"{fixation_trace = }")
         if len(fixation_trace) >= 1:
             
             # use the trimmed vocab to predict g2w
             fixation_trace = np.array(fixation_trace)
             
             # predict the candidate words
-            cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
+
+            cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=False, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=1)
+            print(f"{cadidate_list = }")
+
             word_candidate_list = [item[0] for item in cadidate_list]
             
             word_candidate_list = np.array(word_candidate_list).flatten().tolist()
-            print(word_candidate_list)
-
-            # send the top n words to the feedback state
-            lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
-
-            return lvt
+            return word_candidate_list
+        else:
+            return ["None"]
 
     def keyboard_illumireadswype_state_callback(self):
         # print("keyboard illumiread swype state")
@@ -468,7 +470,7 @@ class IllumiReadSwypeScript(RenaScript):
                     fixation_trace = np.array(fixation_trace)
                     
                     # predict the candidate words
-                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=16)
+                    cadidate_list = self.g2w.predict(4,fixation_trace,run_dbscan=True,prefix = self.context, verbose=True, filter_by_starting_letter=0.35, use_trimmed_vocab=True, njobs=1)
                     word_candidate_list = [item[0] for item in cadidate_list]
                     
                     word_candidate_list = np.array(word_candidate_list).flatten().tolist()
