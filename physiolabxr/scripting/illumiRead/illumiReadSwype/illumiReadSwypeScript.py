@@ -133,7 +133,7 @@ class IllumiReadSwypeScript(RenaScript):
 
     @async_rpc
     def HandSwipe2WordRPC(self, trajectory_data_str: str) -> str:
-        # Convert string back to list or array (you can modify the string conversion based on your needs)
+        # Convert string back to list or array
         trajectory_data = np.fromstring(trajectory_data_str, sep=',')
 
         # Call the prediction method with the trajectory data
