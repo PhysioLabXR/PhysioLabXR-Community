@@ -5,7 +5,7 @@ import warnings
 
 import illumiReadSwypeScript_pb2 as illumiReadSwypeScript__pb2
 
-GRPC_GENERATED_VERSION = '1.66.2'
+GRPC_GENERATED_VERSION = '1.67.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -39,6 +39,11 @@ class IllumiReadSwypeScriptStub(object):
                 request_serializer=illumiReadSwypeScript__pb2.ContextRPCRequest.SerializeToString,
                 response_deserializer=illumiReadSwypeScript__pb2.ContextRPCResponse.FromString,
                 _registered_method=True)
+        self.HandSwipe2WordRPC = channel.unary_unary(
+                '/IllumiReadSwypeScript/HandSwipe2WordRPC',
+                request_serializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.SerializeToString,
+                response_deserializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCResponse.FromString,
+                _registered_method=True)
         self.Tap2CharRPC = channel.unary_unary(
                 '/IllumiReadSwypeScript/Tap2CharRPC',
                 request_serializer=illumiReadSwypeScript__pb2.Tap2CharRPCRequest.SerializeToString,
@@ -50,6 +55,12 @@ class IllumiReadSwypeScriptServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def ContextRPC(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def HandSwipe2WordRPC(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -68,6 +79,11 @@ def add_IllumiReadSwypeScriptServicer_to_server(servicer, server):
                     servicer.ContextRPC,
                     request_deserializer=illumiReadSwypeScript__pb2.ContextRPCRequest.FromString,
                     response_serializer=illumiReadSwypeScript__pb2.ContextRPCResponse.SerializeToString,
+            ),
+            'HandSwipe2WordRPC': grpc.unary_unary_rpc_method_handler(
+                    servicer.HandSwipe2WordRPC,
+                    request_deserializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.FromString,
+                    response_serializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCResponse.SerializeToString,
             ),
             'Tap2CharRPC': grpc.unary_unary_rpc_method_handler(
                     servicer.Tap2CharRPC,
@@ -102,6 +118,33 @@ class IllumiReadSwypeScript(object):
             '/IllumiReadSwypeScript/ContextRPC',
             illumiReadSwypeScript__pb2.ContextRPCRequest.SerializeToString,
             illumiReadSwypeScript__pb2.ContextRPCResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def HandSwipe2WordRPC(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/IllumiReadSwypeScript/HandSwipe2WordRPC',
+            illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.SerializeToString,
+            illumiReadSwypeScript__pb2.HandSwipe2WordRPCResponse.FromString,
             options,
             channel_credentials,
             insecure,
