@@ -7,6 +7,34 @@ from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+def compute_erp(X, conditions, fs, condition_label=1):
+    """
+    Compute the ERP for a given condition.
+
+    Args:
+        X (np.ndarray): EEG data of shape (N, channels, samples)
+        conditions (np.ndarray): Array of shape (N,) with condition labels (0 or 1)
+        fs (int): Sampling rate
+        condition_label (int): Condition for which to compute ERP (e.g., 0 or 1)
+
+    Returns:
+        mean_erp (np.ndarray): shape (channels, samples)
+        sem_erp (np.ndarray): shape (channels, samples)
+        time (np.ndarray): time vector in seconds for plotting
+    """
+    # Select trials for the given condition
+    cond_trials = X[conditions == condition_label]
+
+    # Compute mean and SEM
+    mean_erp = np.mean(cond_trials, axis=0)  # (channels, samples)
+    sem_erp = np.std(cond_trials, axis=0, ddof=1) / np.sqrt(cond_trials.shape[0])
+
+    # Create time vector in seconds
+    samples = X.shape[2]
+    time = np.arange(samples) / fs - 0.5  # assuming 0s is event onset
+
+    return mean_erp, sem_erp, time
+
 
 def z_norm_by_trial(X):
     """Normalize EEG data trial-wise"""
@@ -104,7 +132,7 @@ def extract_epochs_from_combined(data, window_size=256):
     return np.array(epochs), np.array(conditions)
 
 
-def save_model_parameters(weights, bias, filepath=r'C:\Users\6173-group\Documents\PhysioLabXR\physiolabxr\scripting\illumiRead\illumiReadSwype\SweyepeEEGModel.pt'):
+def save_model_parameters(weights, bias, filepath='SweyepeEEGModel'):
     """Save model weights and bias to a file."""
     torch.save({
         'weights': weights,
@@ -172,8 +200,50 @@ def train_model(data_path):
     # Save the model
     save_model_parameters(weights, bias)
 
+    # After training, also plot ERPs for the entire balanced dataset
+    # Normalize the entire balanced dataset for ERP plotting
+    X_norm, _ = z_norm_by_trial(X)
+
+    fs = 300  # Sampling rate (adjust if different)
+    mean_target, sem_target, time = compute_erp(X_norm, conditions, fs, condition_label=1)
+    mean_distractor, sem_distractor, _ = compute_erp(X_norm, conditions, fs, condition_label=0)
+
+    num_channels = X_norm.shape[1]
+    rows = 6
+    cols = 4
+    fig, axes = plt.subplots(rows, cols, figsize=(18, 12), sharex=True, sharey=True)
+    axes = axes.flatten()
+
+    for ch in range(num_channels):
+        ax = axes[ch]
+        # Plot distractor condition
+        ax.plot(time, mean_distractor[ch, :], color='blue', label='Distractor' if ch == 0 else None)
+        ax.fill_between(time,
+                        mean_distractor[ch, :] - sem_distractor[ch, :],
+                        mean_distractor[ch, :] + sem_distractor[ch, :],
+                        color='blue', alpha=0.3)
+
+        # Plot target condition
+        ax.plot(time, mean_target[ch, :], color='red', label='Target' if ch == 0 else None)
+        ax.fill_between(time,
+                        mean_target[ch, :] - sem_target[ch, :],
+                        mean_target[ch, :] + sem_target[ch, :],
+                        color='red', alpha=0.3)
+
+        ax.axvline(0, color='k', linestyle='--')
+        ax.set_title(f"Channel {ch}")
+        if ch % cols == 0:
+            ax.set_ylabel('Amplitude (a.u.)')
+
+    # Add a single legend for the entire figure
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper right')
+
+    fig.text(0.5, 0.04, 'Time (s)', ha='center')
+    fig.suptitle("ERPs for All Channels - Target vs Distractor", fontsize=16, y=0.98)
+    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
+    plt.show()
+
     return weights, bias
 
 
-# if __name__ == "__main__":
-#     weights, bias = train_model('combined_eeg_data.csv')

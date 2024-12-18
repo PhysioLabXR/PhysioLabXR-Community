@@ -360,18 +360,18 @@ class IllumiReadSwypeScript(RenaScript):
         """Exit state logic extended for EEG state."""
         if state_marker == -illumiReadSwypeConfig.ExperimentState.EegState.value:
             # Step 1: Mark fixation data
-            # fixation_results = self.mark_fixation_data()
-            # print(fixation_results)
-            #
-            # # Step 2: Process and mark EEG data
-            # marked_eeg_results = self.process_eeg_with_fixation_results(fixation_results)
-            # print(marked_eeg_results)
-            # self.save_marked_eeg_to_csv(marked_eeg_results)
-            # time.sleep(3)
-            #
-            # weight,bias = train_model(r'C:\Users\6173-group\Documents\PhysioLabXR\physiolabxr\scripting\illumiRead\illumiReadSwype\m'
-            #                           r''
-            #                           r'arked_eeg_results.csv')
+            fixation_results = self.mark_fixation_data()
+            print(fixation_results)
+
+            # Step 2: Process and mark EEG data
+            marked_eeg_results = self.process_eeg_with_fixation_results(fixation_results)
+            print(marked_eeg_results)
+            self.save_marked_eeg_to_csv(marked_eeg_results)
+            time.sleep(3)
+
+            weight,bias = train_model(r'C:\Users\6173-group\Documents\PhysioLabXR\physiolabxr\scripting\illumiRead\illumiReadSwype\m'
+                                      r''
+                                      r'arked_eeg_results.csv')
 
 
             # Reset EEG state storage
@@ -565,7 +565,10 @@ class IllumiReadSwypeScript(RenaScript):
 
                     print(filtered_trace)
 
-                    if len(filtered_trace) >= 1:
+                    if len(filtered_trace) < 20:
+                        filtered_trace = fixation_trace
+
+                    if 1 <= len(filtered_trace):
                         fixation_trace = filtered_trace
 
 
