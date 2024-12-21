@@ -1,8 +1,9 @@
+import os
 import sys
 import webbrowser
 import requests
+from dotenv import load_dotenv
 import firebase_admin
-from firebase_admin import auth
 from PyQt6 import QtCore, QtWidgets
 from PyQt6.QtWidgets import QDialog, QMessageBox
 
@@ -74,7 +75,8 @@ class LoginDialog(QDialog):
         try:
             # Firebase REST API endpoint for sign-in
             url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
-            api_key = "AIzaSyD7CJXqoCPtv2GzMQpGLKwTo4MacPqjqnw"
+            load_dotenv()
+            api_key = os.getenv("FIREBASE_API_KEY")
             data = {
                 "email": email,
                 "password": password,
