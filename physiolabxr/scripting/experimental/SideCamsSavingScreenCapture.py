@@ -3,7 +3,7 @@ Realtime fixation detection based on patch similarity.
 
 Also decode the camera frames, both color and depth and save them to
 """
-
+import csv
 import json
 import os.path
 import struct
@@ -61,13 +61,9 @@ now = datetime.now()
 dt_string = now.strftime("%m_%d_%Y_%H_%M_%S")
 capture_save_location = os.path.join(capture_save_location, 'ReNaUnityCameraCapture_' + dt_string)
 
-
 capture_right_path = os.path.join(capture_save_location, 'RightCamCapture')
 capture_left_path = os.path.join(capture_save_location, 'LeftCamCapture')
 capture_back_path = os.path.join(capture_save_location, 'BackCamCapture')
-df_right = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
-df_left = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
-df_back = pd.DataFrame(columns=['FrameNumber', 'LocalClock', 'bboxes'])
 
 csv_path_right = os.path.join(capture_right_path, 'GazeInfo.csv')
 csv_path_left = os.path.join(capture_left_path, 'GazeInfo.csv')
@@ -81,6 +77,11 @@ if is_saving_captures:
     os.makedirs(capture_right_path, exist_ok=False)
     os.makedirs(capture_left_path, exist_ok=False)
     os.makedirs(capture_back_path, exist_ok=False)
+
+    for csv_path in [csv_path_right, csv_path_left, csv_path_back]:
+        with open(csv_path, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=['FrameNumber', 'LocalClock', 'bboxes'])
+            writer.writeheader()
 
 frame_counter = 0
 
@@ -104,21 +105,18 @@ while True:
             cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}.png"), back_cam_color)
             cv2.imwrite(os.path.join(capture_back_path, f"{frame_counter}_depth.png"), back_cam_depth)
 
-            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_right, 'bboxes': json.dumps(bboxes_right)}
-            df_right = pd.concat([df_right, pd.DataFrame([row])], ignore_index=True)
+            with open(csv_path_right, mode='a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['FrameNumber', 'LocalClock', 'bboxes'])
+                writer.writerow({'FrameNumber': frame_counter, 'LocalClock': timestamp_right, 'bboxes': json.dumps(bboxes_right)})
 
-            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_left, 'bboxes': json.dumps(bboxes_left)}
-            df_left = pd.concat([df_left, pd.DataFrame([row])], ignore_index=True)
+            with open(csv_path_left, mode='a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['FrameNumber', 'LocalClock', 'bboxes'])
+                writer.writerow({'FrameNumber': frame_counter, 'LocalClock': timestamp_left, 'bboxes': json.dumps(bboxes_left)})
 
-            row = {'FrameNumber': frame_counter, 'LocalClock': timestamp_back, 'bboxes': json.dumps(bboxes_back)}
-            df_back = pd.concat([df_back, pd.DataFrame([row])], ignore_index=True)
+            with open(csv_path_back, mode='a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['FrameNumber', 'LocalClock', 'bboxes'])
+                writer.writerow({'FrameNumber': frame_counter, 'LocalClock': timestamp_back, 'bboxes': json.dumps(bboxes_back)})
 
-            csv_save_counter += 1
-            if csv_save_counter >= csv_save_counter_max:
-                df_right.to_csv(csv_path_right)
-                df_left.to_csv(csv_path_left)
-                df_back.to_csv(csv_path_back)
-                gaze_info_save_counter = 0
         frame_counter += 1
 
         #---------------------------------------------------------------------------------------------

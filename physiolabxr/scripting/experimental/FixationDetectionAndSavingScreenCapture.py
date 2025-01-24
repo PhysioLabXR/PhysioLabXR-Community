@@ -3,6 +3,7 @@ Realtime fixation detection based on patch similarity.
 
 Also decode the camera frames, both color and depth and save them to
 """
+import csv
 import json
 import os.path
 import time
@@ -50,9 +51,11 @@ capture_save_location = os.path.join(capture_save_location, 'ReNaUnityCameraCapt
 os.makedirs(capture_save_location, exist_ok=False)
 frame_counter = 0
 df = pd.DataFrame(columns=['FrameNumber', 'GazePixelPositionX', 'GazePixelPositionY', 'LocalClock', 'bboxes'])
-gaze_info_save_counter_max = 120  # frames
-gaze_info_save_counter = 0
 gaze_info_path = os.path.join(capture_save_location, 'GazeInfo.csv')
+
+with open(gaze_info_path, mode='w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=['FrameNumber', 'GazePixelPositionX', 'GazePixelPositionY', 'LocalClock', 'bboxes', 'GazedItemIndex', 'GazedItemDTN'])
+    writer.writeheader()
 
 print(f'Sockets connected, entering image loop. Writing to {capture_save_location}')
 while True:
@@ -75,7 +78,9 @@ while True:
         depthImg = np.frombuffer(depthImagePNGBytes, dtype='uint16').reshape((*image_shape[:2], 1))
         depthImg = cv2.flip(depthImg, 0)
 
-        gaze_info = received[5]
+        gazed_item_index, gazed_item_dtn = struct.unpack('hh', received[5])
+
+        gaze_info = received[6]
         gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
         gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
 
@@ -88,11 +93,11 @@ while True:
             cv2.imwrite(os.path.join(capture_save_location, '{}.png'.format(frame_counter)), colorImg)
             cv2.imwrite(os.path.join(capture_save_location, '{}_depth.png'.format(frame_counter)), depthImg)
             # write to gaze info csv
-            row = {'FrameNumber': frame_counter, 'GazePixelPositionX': gaze_x, 'GazePixelPositionY': gaze_y, 'LocalClock': timestamp, 'bboxes': json.dumps(item_bboxes)}
+            row = {'FrameNumber': frame_counter, 'GazePixelPositionX': gaze_x, 'GazePixelPositionY': gaze_y, 'LocalClock': timestamp, 'bboxes': json.dumps(item_bboxes), 'GazedItemIndex': gazed_item_index, 'GazedItemDTN': gazed_item_dtn}
             df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-            gaze_info_save_counter += 1
-            if gaze_info_save_counter >= gaze_info_save_counter_max:
-                df.to_csv(gaze_info_path)
+            with open(gaze_info_path, mode='a', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=['FrameNumber', 'GazePixelPositionX', 'GazePixelPositionY', 'LocalClock', 'bboxes', 'GazedItemIndex', 'GazedItemDTN'])
+                writer.writerow(row)
                 gaze_info_save_counter = 0
         frame_counter += 1
 
