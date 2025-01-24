@@ -11,9 +11,6 @@ from datetime import datetime
 
 
 from itertools import groupby
-
-from numba.core.cgutils import printf
-
 from physiolabxr.scripting.RenaScript import RenaScript
 
 # necessary packages for physiolabXR
@@ -29,26 +26,50 @@ import zmq
 import numpy as np
 import struct
 
+# #class of renascript
+# class GazeHotkeyProject(RenaScript):
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args,**kwargs)
+#         # setup the init file for python backend
+#
+#     def init(self):
+#         pass
+#
+#     def loop(self):
+#         pass
+
+# ZMQ camera socket
+def get_cam_socket(sub_tcpAddress, topic: str):
+    context = zmq.Context()
+    cam_capture_sub_socket = context.socket(zmq.SUB)
+    cam_capture_sub_socket.connect(sub_tcpAddress)
+    cam_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, topic)
+    return cam_capture_sub_socket
+
+# ZMQ decode received gaze trace
+def receive_decode_info(socket):
+    received = socket.recv_multipart()
+
+    player_position = received[1]
+    player_rotation = received[2]
+    UIHitLocal = received[3]
+    KeyHitLocal = received[4]
+    currentTextUI = received[5]
+
+    print(f"Player Position: {player_position}, Player Rotation: {player_rotation}, UI Hit Local: {UIHitLocal}, Key Hit Local: {KeyHitLocal}, Current Text UI: {currentTextUI}")
+    # decode the received data
+
+    return
 
 if __name__=="__main__":
+    camera_cam_socket = get_cam_socket("tcp://localhost:5556", 'CamGazeHitPosition')
 
-    # zmq gaze capture
-    subtopic = "GazeCapture"
-    sub_tcpAddress = "tcp://localhost:5556"
-    context = zmq.Context()
-    gaze_capture_sub_socket = context.socket(zmq.SUB)
-    gaze_capture_sub_socket.connect(sub_tcpAddress)
-    gaze_capture_sub_socket.setsockopt_string(zmq.SUBSCRIBE, subtopic)
-
-    # sockets connected and start the streaming
-    printf(f'Sockets connected, entering image loop. ')
+    print("Sockets connected, entering streaming loop.")
     while True:
         try:
-            received = gaze_capture_sub_socket.recv_multipart()
-
-
-        #     predtion
-        #     publisher:
-
+            receive_decode_info(camera_cam_socket)
         except KeyboardInterrupt:
-            print("KeyboardInterrupt")
+            print("Exiting the streaming loop.")
+            break
+
+
