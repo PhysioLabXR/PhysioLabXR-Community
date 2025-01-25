@@ -293,3 +293,12 @@ class FailToSetupDevice(RenaError):
         super().__init__(message)
     def __str__(self):
         return 'Failed to set up device: ' + self.message
+
+class TrySerializeObjectError(RenaError):
+    """
+    Raised when an error occurs while serializing object
+    """
+    def __init__(self, message):
+        super().__init__(message)
+    def __str__(self):
+        return 'Trying serialize object with RNStream, which is not supported. Stream label is ' + self.message

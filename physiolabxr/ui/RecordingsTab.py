@@ -11,6 +11,7 @@ from datetime import datetime
 from PyQt6.QtCore import QTimer, QSettings
 from PyQt6.QtWidgets import QDialogButtonBox
 
+from physiolabxr.exceptions.exceptions import RenaError, TrySerializeObjectError
 from physiolabxr.ui import ui_shared
 from physiolabxr.configs.config import settings
 from physiolabxr.configs.configs import AppConfigs, RecordingFileFormat
@@ -158,14 +159,21 @@ class RecordingsTab(QtWidgets.QWidget):
         except FileNotFoundError:
             self.parent.current_dialog = dialog_popup(msg=f"Recording directory {self.save_path} does not exist. "
                              "Recording stopped.", title="Error", main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
-            self.is_recording = False
-            self.StartStopRecordingBtn.setText(start_recording_text)
-            self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
-            self.timer.stop()
-            self.recording_byte_count = 0
-            self.update_file_size_label()
+            self.interrupt_recordings_on_failed_evict()
             return
+        except TrySerializeObjectError as e:
+            self.parent.current_dialog = dialog_popup(msg=str(e), title="Error", main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
+            self.interrupt_recordings_on_failed_evict()
+
         self.recording_buffer.clear_buffer()
+        self.update_file_size_label()
+
+    def interrupt_recordings_on_failed_evict(self):
+        self.is_recording = False
+        self.StartStopRecordingBtn.setText(start_recording_text)
+        self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
+        self.timer.stop()
+        self.recording_byte_count = 0
         self.update_file_size_label()
 
     def update_file_size_label(self):
