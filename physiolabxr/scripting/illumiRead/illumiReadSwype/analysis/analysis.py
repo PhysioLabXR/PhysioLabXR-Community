@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 import warnings
@@ -6,26 +7,39 @@ from collections import defaultdict
 import nltk
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
 from physiolabxr.configs.config import default_group_name
 from physiolabxr.utils.RNStream import RNStream
 from physiolabxr.utils.user_utils import stream_in
 
+
+def find_closes_time_index(target_timestamps, source_timestamp, return_diff=False):
+    index_in_target = np.argmin(np.abs(target_timestamps - source_timestamp))
+    if return_diff:
+        return index_in_target, abs(target_timestamps[index_in_target] - source_timestamp)
+    return index_in_target
+
 TRIAL_TIMESTAMP_STD_TOLERANCE = 0.5
 # user parameters ##############################################################
 data_root = '/Users/apocalyvec/Library/CloudStorage/GoogleDrive-zl2990@columbia.edu/My Drive/Sweyepe/Data'
+eyetracking_channel_names = json.load(open('/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/_presets/LSLPresets/VarjoEyeDataComplete.json', 'r'))['ChannelNames']
+
 session_names = ['One', 'Two', 'Three', 'Four', 'Five']
 condition_names = ['HandTap', 'GazePinch', 'Sweyepe']
 participant_notes = {
     'P001': ''
 }
 
+# because in some of the earlier experiments, the absoluteTime in action info is not
+# LSL's local clock, the log_time as one of the eyetracking channels is always used as the reference clock to
+# sync the action info and the eyetracking stream
+
 # start of the script #########################################################
 participant_dirs = [os.path.join(data_root, d) for d in os.listdir(data_root) if d.startswith('P')]
 # sort by participant id
 participant_dirs.sort(key=lambda x: int(os.path.basename(x)[1:]))
 
-trial_data = pd.DataFrame(columns=['participant', 'session', 'condition', 'duration', 'wpm'])
+trial_data = pd.DataFrame(columns=['participant', 'session', 'condition', 'duration', 'wpm', 'finalUserInputEditDistance2Target', 'finalUserInputEditDistance2TargetNormalized'])
 
 # first iterate over participants, then sessions, then trials
 # word per minute of the first session for the three conditions
@@ -84,6 +98,9 @@ for p_i, p_dir in enumerate(participant_dirs):
         for key in stream_keys:
             stream_data[key][0] = np.concatenate([x[key][0] for x in stream_data_], axis=-1)  # 0 for the data, -1 is the time axis
             stream_data[key][1] = np.concatenate([x[key][1] for x in stream_data_])  # 0 for the time
+        eyetracking_stream_status = stream_data['VarjoEyeTrackingLSL'][0][9]
+        eyetracking_stream_x = stream_data['VarjoEyeTrackingLSL'][0][10]
+        eyetracking_stream_timestamps = stream_data['VarjoEyeTrackingLSL'][0][eyetracking_channel_names.index('log_time')]
 
         # find the start of the first input in the trials
         # * Sweyepe: the first rwo when xKeyHitLocal is not -inf
@@ -91,7 +108,13 @@ for p_i, p_dir in enumerate(participant_dirs):
         # chunk the df by the trialIndex first
         trial_dfs = []
         for trial_index, trial_df in action_info_df.groupby('trialIndex'):
-            trial_df = trial_df[trial_df['conditionType'].isin(condition_names)]
+            # if EndState is in the column conditionType, then this trial is skipped
+            if 'EndState' in trial_df['conditionType'].values:
+                print(f'Find a skipped trial in participant {participant_id} session {sesion_number} trial {trial_index}')
+                continue
+            new_trial_row = {key: None for key in trial_data.columns}
+
+            trial_df = trial_df[trial_df['conditionType'].isin(condition_names)]  # only keep the rows where conditionType is one of the condition_names
 
             # check the continuity of the trialTime and absoluteTime
 
@@ -103,36 +126,63 @@ for p_i, p_dir in enumerate(participant_dirs):
             user_inputs_step = trial_df['currentText'].drop_duplicates(keep='first')
             target_sentence = trial_df['targetText'].drop_duplicates(keep='first').iloc[0]
             if trial_df[trial_df['xKeyHitLocal'] != -np.inf].shape[0] == 0:
-                warnings.warn(f"Participant {participant_id} session {sesion_number} trial {trial_index} has no input. \n"
+                warnings.warn(f"trial {trial_index} for Participant {participant_id} session {sesion_number} has no input. \n"
                               f"Deduplicated user input text are \n"
                               f"{trial_df['currentText'].drop_duplicates(keep='first')}. \n"
                               f"Drop this trial.")
                 continue
-            # if the levenshtein distance between the target sentence and the last user input is too great, drop the trial
-            # nltk.edit_distance(s1, s2)
-
-
+            # TODO if the levenshtein distance between the target sentence and the last user input is too great, drop the trial
+            new_trial_row['FinalUserInputEditDistance2Target'] = nltk.edit_distance(user_inputs_step.iloc[-1], target_sentence)
+            new_trial_row['FinalUserInputEditDistance2TargetNormalized'] = new_trial_row['FinalUserInputEditDistance2Target'] / max(len(user_inputs_step.iloc[-1]), len(target_sentence))
 
             # get the trial condition
-            condition = trial_df['conditionType'].iloc[0]
+            new_trial_row['condition'] = trial_df['conditionType'].iloc[0]
 
             # find the first input
-            if condition == 'Sweyepe':
+            if new_trial_row['condition'] == 'Sweyepe':
                 first_input_index = trial_df[trial_df['xKeyHitLocal'] != -np.inf].index[0]  # this index is that of action_info_df's instead of trial_df's
-            elif condition == 'HandTap' or condition == 'GazePinch':
+            elif new_trial_row['condition'] == 'HandTap' or new_trial_row['condition'] == 'GazePinch':
                 first_input_index = trial_df[trial_df['keyboardValue'] != np.nan].index[0]  # this index is that of action_info_df's instead of trial_df's
-
+            else:
+                raise Exception(f"Unknown condition {new_trial_row['condition']}")
             # find the last index where the currentText is changed, stripped of <color=green>, </color>
             trial_df.loc[:, 'currentText'] = trial_df['currentText'].str.replace('<color=green>', '').str.replace('</color>', '')  # Use .loc to avoid SettingWithCopyWarning
             # find indices of the last unique text
             last_unique_text_index = user_inputs_step.index[-1]  # this index is that of action_info_df's instead of trial_df's
 
+            if last_unique_text_index <= first_input_index:
+                raise Exception(f"Participant {participant_id} session {sesion_number} trial {trial_index} has no input. \n"
+                                f"Deduplicated user input text are \n"
+                                f"{trial_df['currentText'].drop_duplicates(keep='first')}.")
+            trial_w_input_df = trial_df.loc[first_input_index:last_unique_text_index]
+
             # remove the rows of calibration
             # there are two ways to know if is calibrating,
             # * one is using the column 'eyeTrackingStatus'
-            trial_df = trial_df.loc[first_input_index:]
-            trial_dfs.append(trial_df)
+            if 'eyeTrackingStatus' in trial_w_input_df.columns:
+                trial_w_input_df = trial_w_input_df[trial_w_input_df['eyeTrackingStatus'] != 'calibrating']
+            else:
+                trial_start_stream_index, diff = find_closes_time_index(eyetracking_stream_timestamps, trial_w_input_df['absoluteTime'].iloc[0], return_diff=True)
+                assert diff < 5e-3, f"Participant {participant_id} session {sesion_number}: ActionInfo and EyetrackingStream might be out of sync"
+                trial_end_stream_index, diff = find_closes_time_index(eyetracking_stream_timestamps, trial_w_input_df['absoluteTime'].iloc[-1], return_diff=True)
+                assert diff < 5e-3, f"Participant {participant_id} session {sesion_number}: ActionInfo and EyetrackingStream might be out of sync"
+                eye_status_trial = eyetracking_stream_status[trial_start_stream_index:trial_end_stream_index]
+                eye_x_trial = eyetracking_stream_x[trial_start_stream_index:trial_end_stream_index]
+                eye_timestamps_trial = eyetracking_stream_timestamps[trial_start_stream_index:trial_end_stream_index]
+
+                change_indices = np.where(np.diff(eye_status_trial) != 0)[0] + 1
+                change_indices = np.concatenate(([0], change_indices, [len(eye_status_trial)]))
+                durations = np.diff(eye_timestamps_trial[np.clip(change_indices, 0, len(eye_timestamps_trial) - 1)])
+                total_invalid_duration = np.sum(durations[eye_status_trial[change_indices[:-1]] == 0])
+            # TODO record per-word statistics
 
             # action_info_df.iloc[last_unique_text_index]['trialTime'] - action_info_df.iloc[first_input_index]['trialTime']
 
             # report the number of valid trials for each conditions that this session has
+
+            new_trial_row['participant'] = participant_id
+            new_trial_row['session'] = sesion_number
+            new_trial_row['duration'] = trial_w_input_df['trialTime'].iloc[-1] - trial_w_input_df['trialTime'].iloc[0] - total_invalid_duration  # trial_df at this point is already cleaned
+
+            trial_data = pd.concat([trial_data, pd.DataFrame([new_trial_row])], ignore_index=True)
+            trial_dfs.append(trial_df)
