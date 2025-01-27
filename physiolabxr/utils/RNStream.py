@@ -5,6 +5,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from physiolabxr.exceptions.exceptions import TrySerializeObjectError
+
 magic = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'
 max_label_len = 32
 max_dtype_len = 8
@@ -57,6 +59,7 @@ class RNStream:
                     " " for x in range(max_label_len - len(stream_label))), encoding)
             try:
                 dtype_str = str(data_array.dtype)
+                if dtype_str == 'object': raise TrySerializeObjectError(stream_label)  # object dtype is not supported because it cannot be deserialized
                 assert len(dtype_str) < max_dtype_len
             except AssertionError:
                 raise Exception('dtype encoding exceeds max dtype length: {0}, please contact support'.format(max_dtype_len))
@@ -114,7 +117,7 @@ class RNStream:
                 # read read_bytes
                 read_bytes = file.read(max_dtype_len)
                 read_bytes_count += len(read_bytes)
-                stream_dytpe = str(read_bytes, encoding).strip(' ')
+                stream_dtype = str(read_bytes, encoding).strip(' ')
                 # read number of dimensions
                 read_bytes = file.read(dim_bytes_len)
                 read_bytes_count += len(read_bytes)
@@ -126,7 +129,7 @@ class RNStream:
                     read_bytes_count += len(read_bytes)
                     shape.append(int.from_bytes(read_bytes, 'little'))
 
-                data_array_num_bytes = np.prod(shape) * np.dtype(stream_dytpe).itemsize
+                data_array_num_bytes = np.prod(shape) * np.dtype(stream_dtype).itemsize
                 timestamp_array_num_bytes = shape[-1] * np.dtype(ts_dtype).itemsize
 
                 this_in_only_stream = (stream_name in only_stream) if only_stream else True
@@ -135,14 +138,15 @@ class RNStream:
                     # read data array
                     read_bytes = file.read(data_array_num_bytes)
                     read_bytes_count += len(read_bytes)
-                    data_array = np.frombuffer(read_bytes, dtype=stream_dytpe)
+                    # stream_dtype = np.float64 if stream_name == 'TobiiProFusion' else stream_dtype
+                    data_array = np.frombuffer(read_bytes, dtype=stream_dtype)
                     data_array = np.reshape(data_array, newshape=shape)
                     # read timestamp array
                     read_bytes = file.read(timestamp_array_num_bytes)
                     ts_array = np.frombuffer(read_bytes, dtype=ts_dtype)
 
                     if stream_name not in buffer.keys():
-                        buffer[stream_name] = [np.empty(shape=tuple(shape[:-1]) + (0,), dtype=stream_dytpe),
+                        buffer[stream_name] = [np.empty(shape=tuple(shape[:-1]) + (0,), dtype=stream_dtype),
                                                np.empty(shape=(0,))]  # data first, timestamps second
                     buffer[stream_name][0] = np.concatenate([buffer[stream_name][0], data_array], axis=-1)
                     buffer[stream_name][1] = np.concatenate([buffer[stream_name][1], ts_array])
