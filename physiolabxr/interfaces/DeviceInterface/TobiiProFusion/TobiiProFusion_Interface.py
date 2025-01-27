@@ -96,7 +96,7 @@ class TobiiProFusion_Interface(DeviceInterface):
                 break
 
         if len(frames) > 0:
-            frames_array = np.array(frames)
+            frames_array = np.array(frames).astype(np.float64)
             # print(f"Shape of frames before transpose: {frames_array.shape}")
 
             if frames_array.ndim == 3:
