@@ -34,4 +34,4 @@
     "rgov"
   ],
   "GroupInfo":  [6, 8],
-  "DataType": "float32"}
+  "DataType": "float64"}
