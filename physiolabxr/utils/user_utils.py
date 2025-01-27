@@ -10,7 +10,6 @@ from physiolabxr.utils.xdf_utils import load_xdf
 
 def stream_in(file_path):
     '''
-
     :param file_path:
     :return:
     '''

@@ -138,7 +138,7 @@ class RNStream:
                     # read data array
                     read_bytes = file.read(data_array_num_bytes)
                     read_bytes_count += len(read_bytes)
-                    stream_dtype = np.float64 if stream_name == 'TobiiProFusion' else stream_dtype
+                    # stream_dtype = np.float64 if stream_name == 'TobiiProFusion' else stream_dtype
                     data_array = np.frombuffer(read_bytes, dtype=stream_dtype)
                     data_array = np.reshape(data_array, newshape=shape)
                     # read timestamp array
