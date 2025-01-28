@@ -21,3 +21,5 @@ imblearn
 toml
 grpcio
 grpcio-tools
+python-dotenv
+firebase-admin
