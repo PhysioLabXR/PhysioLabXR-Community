@@ -2,6 +2,8 @@ import os
 import sys
 import webbrowser
 import requests
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from dotenv import load_dotenv
 import firebase_admin
 from PyQt6 import QtCore, QtWidgets
@@ -18,7 +20,7 @@ class LoginDialog(QDialog):
         self.resize(425, 358)
 
         self.label = QtWidgets.QLabel(self)
-        self.label.setGeometry(QtCore.QRect(130, 10, 191, 20))
+        self.label.setGeometry(QtCore.QRect(50, 10, 191, 20))
         self.label.setObjectName("label")
 
         self.pushButton = QtWidgets.QPushButton(self)
@@ -55,8 +57,14 @@ class LoginDialog(QDialog):
         self.pushButton_2.clicked.connect(self.handle_signup)
 
     def retranslateUi(self):
-        self.setWindowTitle("Login")
-        self.label.setText("Welcome to PhysioLabXR!")
+        self.setWindowTitle("Welcome")
+        self.label.setText("Log into your PhysioLabXR account")
+        font = QFont()
+        font.setBold(True)  # Make the text bold
+        font.setPointSize(20)  # Set the font size
+        self.label.setFont(font)
+        self.label.adjustSize()
+
         self.pushButton.setText("Log In")
         self.pushButton_2.setText("Sign Up")
         self.label_2.setText("Email:")

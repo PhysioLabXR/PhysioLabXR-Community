@@ -10,6 +10,7 @@ def physiolabxr():
     from physiolabxr.configs.configs import AppConfigs
     from physiolabxr.configs.NetworkManager import NetworkManager
     from physiolabxr.ui.SplashScreen import SplashScreen
+    from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
     from physiolabxr.ui.Login import LoginDialog
     import firebase_admin
 
@@ -32,6 +33,7 @@ def physiolabxr():
     splash.show()
 
     # Initialize Firebase Admin SDK
+    SplashLoadingTextNotifier().set_loading_text("Logging in...")
     if not firebase_admin._apps:
         firebase_admin.initialize_app()
     # Initialize the LoginDialog
