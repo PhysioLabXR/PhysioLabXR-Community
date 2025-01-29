@@ -418,6 +418,7 @@ class ScriptingWidget(Poppable, QtWidgets.QWidget):
         self.runBtn.clicked.connect(self.on_run_btn_clicked)
 
         self.rpc_copy_port_button.hide()
+        self.copied_label.hide()
 
         show_label_movie(self.stopping_label, False)
         self.wait_for_response_worker, self.wait_response_thread = None, None
