@@ -13,7 +13,7 @@ import re
 from dtw import dtw
 from sklearn.cluster import DBSCAN
 
-from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import run_dbscan_on_gaze
+# from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import run_dbscan_on_gaze
 
 class Gaze2Hotkey:
     def __init__(self, gaze_data_path):
