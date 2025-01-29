@@ -1,6 +1,6 @@
 import time
 
-import pyscreeze
+from mss import mss
 import numpy as np
 from PyQt6 import QtCore
 from PyQt6.QtCore import QObject
@@ -11,7 +11,7 @@ from physiolabxr.utils.image_utils import process_image
 from physiolabxr.utils.time_utils import get_clock_time
 
 def get_screen_capture_size():
-    img = pyscreeze.screenshot()
+    img = mss().grab(mss().monitors[1])
     frame = np.array(img)
     return frame.shape[0], frame.shape[1]
 
@@ -25,6 +25,8 @@ class ScreenCaptureWorker(QObject, RenaWorker):
 
         self.video_scale = video_scale
         self.channel_order = channel_order
+        self.sct = mss()
+        # self.bounding_box = {'top': 100, 'left': 0, 'width': 400, 'height': 300}
 
     def stop_stream(self):
         self.is_streaming = False
@@ -36,7 +38,8 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     def process_on_tick(self):
         if self.is_streaming:
             pull_data_start_time = time.perf_counter()
-            img = pyscreeze.screenshot()
+            # img = self.sct.grab(self.bounding_box)
+            img = self.sct.grab(self.sct.monitors[1])
             frame = np.array(img)
             frame = frame.astype(np.uint8)
             frame = process_image(frame, self.channel_order, self.video_scale)
