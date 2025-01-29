@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict, Counter
+from logging import warning
 
 import nltk
 import numpy as np
@@ -118,7 +119,11 @@ class Tap2Char:
 
         # normalize the probabilities
         total_prob = sum(prefix_probs.values())
-        normalized_probs_prefix = {letter: prob / total_prob for letter, prob in prefix_probs.items()}
+        try:
+            normalized_probs_prefix = {letter: prob / total_prob for letter, prob in prefix_probs.items()}
+        except ZeroDivisionError:
+            warning(f"Zero division error occurred. Setting the prefix probabilities to zero. {prefix_probs = }")
+            normalized_probs_prefix = {letter: 0 for letter in prefix_probs.keys()}  # in case of zero division
         # combine the probabilities
         combined_probs = {letter: alpha * normalized_probs_prefix[letter] + (1 - alpha) * normalized_probs_tap[letter] for letter in self.letters}
 
