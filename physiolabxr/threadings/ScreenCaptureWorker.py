@@ -25,7 +25,6 @@ class ScreenCaptureWorker(QObject, RenaWorker):
 
         self.video_scale = video_scale
         self.channel_order = channel_order
-        self.sct = mss()
         # self.bounding_box = {'top': 100, 'left': 0, 'width': 400, 'height': 300}
 
     def stop_stream(self):
@@ -37,12 +36,13 @@ class ScreenCaptureWorker(QObject, RenaWorker):
     @QtCore.pyqtSlot()
     def process_on_tick(self):
         if self.is_streaming:
-            pull_data_start_time = time.perf_counter()
-            # img = self.sct.grab(self.bounding_box)
-            img = self.sct.grab(self.sct.monitors[1])
-            frame = np.array(img)
-            frame = frame.astype(np.uint8)
-            frame = process_image(frame, self.channel_order, self.video_scale)
-            frame = np.flip(frame, axis=0)
-            self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
-            self.signal_data.emit({"frame": frame, "timestamp": get_clock_time()})  # uses lsl local clock for syncing
+            with mss() as sct:
+                pull_data_start_time = time.perf_counter()
+                # img = self.sct.grab(self.bounding_box)
+                img = sct.grab(self.sct.monitors[1])
+                frame = np.array(img)
+                frame = frame.astype(np.uint8)
+                frame = process_image(frame, self.channel_order, self.video_scale)
+                frame = np.flip(frame, axis=0)
+                self.pull_data_times.append(time.perf_counter() - pull_data_start_time)
+                self.signal_data.emit({"frame": frame, "timestamp": get_clock_time()})  # uses lsl local clock for syncing
