@@ -73,15 +73,11 @@ class IllumiReadSwypeScript(RenaScript):
 
         # Get the current script directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        #
-                # Navigate one level up (cd ..)
-        # parent_dir = os.path.dirname(current_dir)
-        #
-        #         # Navigate into 'gaze2word' directory
-        # gaze_data_path = os.path.join(current_dir, 'gaze2word', 'GazeData.csv')
+        # Navigate one level up (cd ..)
+        parent_dir = os.path.dirname(current_dir)
+        # Navigate into 'gaze2word' directory
+        gaze_data_path = os.path.join(parent_dir, 'gaze2word', 'GazeData.csv')
 
-        # create gaze2word object
-        gaze_data_path = r'C:\Users\Haowe\Desktop\RENA\RealityNavigation\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
 
         # load from pickle if exists
         if os.path.exists('g2w.pkl'):
@@ -141,6 +137,19 @@ class IllumiReadSwypeScript(RenaScript):
         highest_prob_char = str(result[0][0])
 
         return highest_prob_char
+
+    @async_rpc
+    def HandSwipe2WordRPC(self, localX:float, localY: float):
+        # Convert string back to list or array
+        # trajectory_data = np.fromstring(trajectory_data_str, sep=',')
+
+        # Call the prediction method with the trajectory data
+        # result = self.g2w.predict(trajectory_data, self.context)
+
+        # highest_prob_word = str(result[0][0])
+
+        # return highest_prob_word
+        pass
 
     # ----------------- RPC END--------------------------------------------------------------------
 
@@ -438,6 +447,10 @@ class IllumiReadSwypeScript(RenaScript):
         # clear the processed user input data and gaze data
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
         self.inputs.clear_stream_buffer_data(UserInputLSLStreamInfo.StreamName)
+
+    def keyboard_handswype_state_callback(self):
+        # print("keyboard handswype state")
+        pass
 
     def keyboard_freeswitch_state_callback(self):
         print("keyboard free switch state")
