@@ -62,8 +62,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1554</width>
-                <height>857</height>
+                <width>1524</width>
+                <height>810</height>
                </rect>
               </property>
               <layout class="QHBoxLayout" name="scrollAreaWidgetContents_3_layout">
@@ -293,7 +293,7 @@
      <x>0</x>
      <y>0</y>
      <width>1600</width>
-     <height>21</height>
+     <height>37</height>
     </rect>
    </property>
    <widget class="QMenu" name="menufile">
@@ -303,6 +303,7 @@
     <addaction name="actionShow_Recordings"/>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
+    <addaction name="actionSign_Out"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -312,8 +313,15 @@
     <addaction name="actionRepo"/>
     <addaction name="actionDocumentation"/>
    </widget>
+   <widget class="QMenu" name="menuAccount">
+    <property name="title">
+     <string>Account</string>
+    </property>
+    <addaction name="actionSign_out"/>
+   </widget>
    <addaction name="menufile"/>
    <addaction name="menuHelp"/>
+   <addaction name="menuAccount"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
@@ -344,6 +352,16 @@
   <action name="actionSettings">
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionSign_out">
+   <property name="text">
+    <string>Sign out</string>
+   </property>
+  </action>
+  <action name="actionSign_Out">
+   <property name="text">
+    <string>Sign Out</string>
    </property>
   </action>
  </widget>

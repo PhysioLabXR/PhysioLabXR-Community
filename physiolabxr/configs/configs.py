@@ -79,7 +79,7 @@ class AppConfigs(metaclass=Singleton):
     _app_data_name: str = 'RenaLabApp'
 
     app_data_path = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation), _app_data_name)
-
+    print("⚠️" + app_data_path)
     # appearance configs
     theme: str = 'dark'  # TODO: refactor this to an enum, replace config.value
 
@@ -129,6 +129,9 @@ class AppConfigs(metaclass=Singleton):
 
     # Tobii Pro Fusion Eye Tracker Manager
     tobii_app_path: str = None
+
+    # user login
+    remembered_uid: str = None
 
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']

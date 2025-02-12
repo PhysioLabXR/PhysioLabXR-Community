@@ -44,6 +44,8 @@ from physiolabxr.ui.DeviceWidget import DeviceWidget
 
 import numpy as np
 
+from firebase_admin import auth
+
 
 # Define function to import external files when using PyInstaller.
 def resource_path(relative_path):
@@ -127,6 +129,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionShow_Recordings.triggered.connect(self.fire_action_show_recordings)
         self.actionExit.triggered.connect(self.fire_action_exit)
         self.actionSettings.triggered.connect(self.fire_action_settings)
+        self.actionSign_Out.triggered.connect(self.on_sign_out_triggered)
 
         # create the settings window
         self.settings_widget = SettingsWidget(self)
@@ -519,3 +522,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def adjust_notification_panel_location(self):
         self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_file_size_label.height() - 12)  # substract 64 to account for margin
+
+    def on_sign_out_triggered(self):
+        """Handles user sign-out, clears remembered user data, and quits the app."""
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            'Sign Out',
+            'Signing out will close the app and remove your saved account login information. Are you sure?',
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No
+        )
+
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            try:
+                # Get the current remembered user UID
+                remembered_uid = AppConfigs().remembered_uid
+
+                if remembered_uid:
+                    # Revoke Firebase session (Optional: Only if using Firebase Admin)
+                    auth.revoke_refresh_tokens(remembered_uid)
+
+                # Clear remembered user data
+                AppConfigs().remembered_uid = None
+
+                # Display message
+                QMessageBox.information(self, "Signed Out", "You have been signed out.")
+
+                # Close the app
+                self.ask_to_close = False
+                self.close()
+            except Exception as e:
+                QMessageBox.critical(self, "Sign Out Failed", f"Error while signing out: {e}")

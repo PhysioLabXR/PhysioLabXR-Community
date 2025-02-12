@@ -1,3 +1,6 @@
+import os
+
+
 def physiolabxr():
     import multiprocessing
     import sys
@@ -6,6 +9,7 @@ def physiolabxr():
     from PyQt6 import QtWidgets
     from PyQt6.QtGui import QIcon
     from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QInputDialog, QMessageBox
+    from PyQt6.QtCore import QSettings
 
     from physiolabxr.configs.configs import AppConfigs
     from physiolabxr.configs.NetworkManager import NetworkManager
@@ -13,6 +17,7 @@ def physiolabxr():
     from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
     from physiolabxr.ui.Login import LoginDialog
     import firebase_admin
+    from firebase_admin import auth, credentials
 
     AppConfigs(_reset=False)  # create the singleton app configs object
     NetworkManager()
@@ -32,44 +37,56 @@ def physiolabxr():
     splash = SplashScreen()
     splash.show()
 
+
     # Initialize Firebase Admin SDK
     SplashLoadingTextNotifier().set_loading_text("Logging in...")
+
+    service_account_path = "/Users/zeyitong/Desktop/physiolabxr-8cbb7-firebase-adminsdk-pb9po-b5c9df1c77.json"
+    # Initialize Firebase Admin SDK (with credentials)
+
     if not firebase_admin._apps:
-        firebase_admin.initialize_app()
-    # Initialize the LoginDialog
+        try:
+            cred = credentials.Certificate(service_account_path)  # Replace with actual path
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            QMessageBox.critical(None, "Firebase Init Failed", f"Could not initialize Firebase: {e}")
+            sys.exit(1)
+
     login_dialog = LoginDialog()
 
-    # Check if the user successfully logs in
-    if login_dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-        # load default settings
-        from physiolabxr.utils.setup_utils import run_setup_check
-        run_setup_check()
-        from physiolabxr.startup.startup import load_settings
-        load_settings(revert_to_default=False, reload_presets=False)
-        # main window init
-        print("Creating main window")
-        from physiolabxr.ui.MainWindow import MainWindow
-        window = MainWindow(app=app)
+    # **🌟 Improved Auto-login Handling**
+    auto_login_success = login_dialog.auto_login()
 
-        window.setWindowIcon(QIcon(AppConfigs()._app_logo))
-        # make tray menu
-        menu = QMenu()
-        exit_action = menu.addAction('Exit')
-        exit_action.triggered.connect(window.close)
-
-        print("Closing splash screen, showing main window")
-        # splash screen destroy
-        splash.close()
-        window.show()
-
-        print("Entering exec loop")
-        try:
-            sys.exit(app.exec())
-        except KeyboardInterrupt:
-            print('App terminate by KeyboardInterrupt')
+    if not auto_login_success:  # If auto-login fails, prompt login
+        if login_dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            splash.close()
+            QMessageBox.critical(None, "Access Denied", "Login required to access the application.")
             sys.exit()
-    else:
-        # Exit if login is unsuccessful
-        splash.close()
-        QMessageBox.critical(None, "Access Denied", "Login required to access the application.")
+
+    # load default settings
+    from physiolabxr.utils.setup_utils import run_setup_check
+    run_setup_check()
+    from physiolabxr.startup.startup import load_settings
+    load_settings(revert_to_default=False, reload_presets=False)
+    # main window init
+    print("Creating main window")
+    from physiolabxr.ui.MainWindow import MainWindow
+    window = MainWindow(app=app)
+
+    window.setWindowIcon(QIcon(AppConfigs()._app_logo))
+    # make tray menu
+    menu = QMenu()
+    exit_action = menu.addAction('Exit')
+    exit_action.triggered.connect(window.close)
+
+    print("Closing splash screen, showing main window")
+    # splash screen destroy
+    splash.close()
+    window.show()
+
+    print("Entering exec loop")
+    try:
+        sys.exit(app.exec())
+    except KeyboardInterrupt:
+        print('App terminate by KeyboardInterrupt')
         sys.exit()
