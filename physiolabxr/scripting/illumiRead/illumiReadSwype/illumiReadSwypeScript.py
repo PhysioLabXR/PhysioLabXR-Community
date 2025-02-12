@@ -166,16 +166,10 @@ class IllumiReadSwypeScript(RenaScript):
         # print("process event marker call start")
         self.process_event_markers()
 
-        # self.process_gaze_data()
 
         # gaze callback
         self.state_callbacks()
 
-        # if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState or \
-        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardClickState or \
-        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState or \
-        #         self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
-        # self.process_gaze_data()
 
     def cleanup(self):
         print('Cleanup function is called')
@@ -186,7 +180,6 @@ class IllumiReadSwypeScript(RenaScript):
 
         # state shift
         for event_marker in event_markers.T:
-            # print(f"working on event marker {event_marker}")
             block_marker = event_marker[illumiReadSwypeConfig.EventMarkerLSLStreamInfo.BlockChannelIndex]
             state_marker = event_marker[illumiReadSwypeConfig.EventMarkerLSLStreamInfo.ExperimentStateChannelIndex]
             user_inputs_marker = event_marker[illumiReadSwypeConfig.EventMarkerLSLStreamInfo.UserInputsChannelIndex]
@@ -196,7 +189,6 @@ class IllumiReadSwypeScript(RenaScript):
                 if block_marker > 0:
                     self.enter_block(block_marker)
                     print(self.currentBlock)
-
 
                 else:
                     self.exit_block(block_marker)
@@ -213,17 +205,6 @@ class IllumiReadSwypeScript(RenaScript):
                     self.exit_state(state_marker)
                     print("Exit Current State")
 
-            # if state_marker and state_marker > 0:  # evoke state change
-            #     self.enter_state(state_marker)
-            #     print(self.currentExperimentState)
-            #     if state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState or \
-            #             state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardClickState or \
-            #             state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState or \
-            #             state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
-            #
-            #         print("state change")
-
-            # print("process event marker call end")
 
     def enter_block(self, block_marker):
 
@@ -268,10 +249,10 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.StartState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.IntroductionInstructionState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.IntroductionInstructionState
-        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeIntroductionState.value:
-            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeIntroductionState
-        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState.value:
-            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHandTapIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHandTapIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHandTapState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHandTapState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardClickIntroductionState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardClickIntroductionState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.GazePinchState.value:
@@ -298,9 +279,9 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.IntroductionInstructionState.value:
             self.currentExperimentState = None
-        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeIntroductionState.value:
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHandTapIntroductionState.value:
             self.currentExperimentState = None
-        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState.value:
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHandTapState.value:
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardClickIntroductionState.value:
             self.currentExperimentState = None
@@ -322,7 +303,7 @@ class IllumiReadSwypeScript(RenaScript):
     def state_callbacks(self):
         if self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.GazePinchState:
             self.gaze_pinch_state_callback()
-        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDewellTimeState:
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardHandTapState:
             self.keyboard_dewelltime_state_callback()
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardIllumiReadSwypeState:
             self.keyboard_illumireadswype_state_callback()

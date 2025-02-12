@@ -52,16 +52,6 @@ class illumiReadSwypeKeyboardSuggestionStripLSLStreamInfo:
     NominalSamplingRate = 1
 
 
-# class KeyboardContextLSLStreamInfo:
-#     StreamName = "illumiReadSwypeKeyboardContextLSL"
-#     StreamType = "KeyboardContext"
-#     StreamID = "5"
-#     ChannelNum = 1
-#     NominalSamplingRate = 80
-
-#     KeyboardContextChannelIndex = 0
-
-
 KeyIDIndexDict = {
     0: None,
     1: "A",
@@ -137,8 +127,8 @@ class ExperimentState(Enum):
     StartState = 2
     IntroductionInstructionState = 3
 
-    KeyboardDewellTimeIntroductionState = 4
-    KeyboardDewellTimeState = 5
+    KeyboardHandTapIntroductionState = 4
+    KeyboardHandTapState = 5
 
     KeyboardClickIntroductionState = 6
     GazePinchState = 7
