@@ -43,6 +43,7 @@ class IllumiReadSwypeScript(RenaScript):
             illumiReadSwypeConfig.ExperimentBlock.InitBlock
 
         self.illumiReadSwyping = False
+        self.HandSwyping = False
 
         self.data_buffer = DataBuffer()
         self.gaze_data_sequence = list()
@@ -265,8 +266,16 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchInstructionState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState
-        elif state_marker == illumiReadSwypeConfig.ExperimentState.FeedbackState.value:
-            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.FeedbackState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState
+        # elif state_marker == illumiReadSwypeConfig.ExperimentState.FeedbackState.value:
+        #     self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.FeedbackState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.EndState
 
@@ -295,7 +304,15 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState.value:
             self.currentExperimentState = None
-        elif state_marker == -illumiReadSwypeConfig.ExperimentState.FeedbackState.value:
+        # elif state_marker == -illumiReadSwypeConfig.ExperimentState.FeedbackState.value:
+        #     self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeIntroductionState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeIntroductionState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = None
@@ -309,6 +326,10 @@ class IllumiReadSwypeScript(RenaScript):
             self.keyboard_illumireadswype_state_callback()
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardFreeSwitchState:
             self.keyboard_freeswitch_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeState:
+            self.keyboard_handswype_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState:
+            self.keyboard_partialswype_state_callback()
 
     def gaze_pinch_state_callback(self):
         # print("keyboard click state")
@@ -431,6 +452,10 @@ class IllumiReadSwypeScript(RenaScript):
 
     def keyboard_handswype_state_callback(self):
         # print("keyboard handswype state")
+        pass
+
+    def keyboard_partialswype_state_callback(self):
+        # print("keyboard partial swype state")
         pass
 
     def keyboard_freeswitch_state_callback(self):
