@@ -79,7 +79,8 @@ trial_data = pd.DataFrame(columns=['participant', 'session', 'trial_index', 'isV
                                    'wpm', 'finalUserInputEditDistance2Target', 'finalUserInputEditDistance2TargetNormalized',
                                    'targetSentence', 'userSentence',
                                    'overallCPM'] + [f'CPMWordLen={i}' for i in range(1, 30)] \
-                                   + ['backspaceUsage', 'firstCandidateMissRate', 'allCandidateMissRate',])
+                                   + ['backspaceUsage', 'firstCandidateMissRate', 'allCandidateMissRate', 'sweyepe_first_candidate_match_rate', 'sweyepe_any_candidate_match_rate', 'sweyepe_all_candidate_miss_rate',
+                                      'numDeletePress', 'numDeletePressPerChar'])
 
 trial_first_index_is_zero_counter = 0
 
@@ -162,6 +163,11 @@ for p_i, p_dir in enumerate(participant_dirs):
         # * Sweyepe: the first rwo when xKeyHitLocal is not -inf
         # also need to know if a trial is skipped
         # chunk the df by the trialIndex first
+        n_sweyepe_words = 0
+        n_sweyepe_first_candidate_matched = 0
+        n_sweyepe_any_candidates_matched = 0
+        n_sweyepe_all_candidate_missed = 0
+
         for trial_index, trial_df in action_info_df.groupby('trialIndex'):
             # if EndState is in the column conditionType, then this trial is skipped
             if 'EndState' in trial_df['conditionType'].values:
@@ -203,8 +209,8 @@ for p_i, p_dir in enumerate(participant_dirs):
 
             deduplicated_user_inputs = trial_df_filtered_with_condition['currentText'].drop_duplicates(keep='first')
             if len(deduplicated_user_inputs) == 1 and np.isnan(deduplicated_user_inputs.iloc[0]):
-                warnings.warn(f"trial {trial_index} for Participant {participant_id} session {session_number} has no input. \n"
-                              f"Deduplicated user input text are \n"
+                warnings.warn(f"trial {trial_index} for Participant {participant_id} session {session_number} has no input."
+                              f"Deduplicated user input text are"
                               f"{deduplicated_user_inputs}. \n"
                               f"Setting this trial to invalid.")
                 new_trial_row['isValid'] = 'No user input'
@@ -308,31 +314,78 @@ for p_i, p_dir in enumerate(participant_dirs):
             # 1. TODO overall CPM, CPM as a function word length
             new_trial_row['overallCPM'] = len(new_trial_row['userSentence']) / new_trial_row['duration'] * 60
 
-            # find all the words in the sentence
+            # find all the words in the final sentence
             words = re.findall(r'\b\w+\b', new_trial_row['userSentence'])
-            trial_w_input_df.loc[:, 'currentWords']= trial_w_input_df['currentText'].apply(lambda x: re.findall(r'\b\w+\b', x))
-            trial_w_input_df.loc[:, 'nWords'] = trial_w_input_df['currentWords'].apply(lambda x: len(x))
+            # replace nan in currentText with empty string
+            trial_w_input_df = trial_w_input_df.copy()
+            trial_w_input_df.loc[pd.isna(trial_w_input_df['currentText']), 'currentText'] = ""
+            trial_w_input_df.loc[:, 'currentWords'] = trial_w_input_df['currentText'].apply(lambda x: re.findall(r'\b\w+\b', x))  # TODO these three lines comes out with warnings
+            trial_w_input_df.loc[:, 'xKeyHitLocalValid'] = trial_w_input_df['xKeyHitLocal'].apply(lambda x: abs(x) != np.inf)
+            trial_w_input_df.loc[:, 'nWords'] = trial_w_input_df.copy()['currentWords'].apply(lambda x: len(x))
 
-            trial_w_input_df_copy = trial_w_input_df.copy()
             for w in words:
+                if len(w) == 1:
+                    continue  # ignore single letter
                 # find the index when w first appear in trial_w_input_df['currentText']
-                try:
-                    w_first_appear_index = trial_w_input_df[trial_w_input_df['currentWords'].apply(lambda x: w in x)].index[0]
-                except IndexError as e:
-                    pass
+                w_first_appear_index = trial_w_input_df[trial_w_input_df['currentWords'].apply(lambda x: w in x)].index[0]
                 if new_trial_row['condition'] != 'Sweyepe':
                     # find the last time nWords increment in the series up to w_first_appear_index, this is the beginning letter of the new word first being typed
                     nWords_last_increment_index = trial_w_input_df.loc[:w_first_appear_index, 'nWords'].idxmax()
                     assert w_first_appear_index >= nWords_last_increment_index, f"Participant {participant_id} session {session_number} trial {trial_index} word {w} first appear index is smaller than the last nWords increment index."
                     w_duration = trial_w_input_df['absoluteTime'][w_first_appear_index] - trial_w_input_df['absoluteTime'][nWords_last_increment_index]
-                    new_trial_row[f'CPMWordLen={len(w)}'] = len(w) / w_duration * 60
                 else:  # in Sweyepe, the start-typing time for a word is when the sweyepe trace starts
-                    pass
+                    hit_state_transition = np.argwhere(np.diff(np.concatenate([[False], trial_w_input_df.loc[:w_first_appear_index, 'xKeyHitLocalValid'].values])))
+                    sweyepe_start_index = trial_w_input_df.index[hit_state_transition[-2][0]]
+                    sweyepe_end_index = trial_w_input_df.index[hit_state_transition[-1][0]]
+                    assert w_first_appear_index >= sweyepe_start_index
+                    assert sweyepe_end_index >= sweyepe_start_index
+                    w_duration = trial_w_input_df['absoluteTime'][sweyepe_end_index] - trial_w_input_df['absoluteTime'][sweyepe_start_index]
 
+                    # 3. Sweyepe first candidate miss rate, all candidate miss rate
+                    # find the first row after sweyepe_end_index, where candidates are available, and the current text has content
+                    # because the candidates from previous trial may be carried over to the next trial, we need to find the first row where the currentText is not empty
+                    n_sweyepe_words += 1
+                    first_candidate_available_index = ~pd.isna(trial_w_input_df.loc[sweyepe_end_index:, 'candidate1']) & (trial_w_input_df.loc[sweyepe_end_index:, 'currentText'] != "")
+                    first_candidate_available_index = first_candidate_available_index.idxmax()
 
+                    cur_words = [x.lower() for x in re.findall(r'\b\w+\b', trial_w_input_df.loc[first_candidate_available_index]['currentText'])]
+                    first_candidate = cur_words[-1]
+                    candidate123 = [trial_w_input_df.loc[first_candidate_available_index][f'candidate{i}'] for i in range(1, 4)]
+                    # the target word is first word in target_sentence after removing the words that are already in cur_words
+                    target_words = [x.lower() for x in re.findall(r'\b\w+\b', target_sentence)]
+                    target_word = [x for x in target_words if x not in cur_words[:-1]][0]
+                    if first_candidate == target_word:
+                        n_sweyepe_first_candidate_matched += 1
+                        n_sweyepe_any_candidates_matched += 1
+                    elif target_word in candidate123:
+                        n_sweyepe_any_candidates_matched += 1
+                    else:
+                        n_sweyepe_all_candidate_missed += 1
+
+                new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60] if f'CPMWordLen={len(w)}' not in new_trial_row else new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
+
+            # 3. Sweyepe first candidate miss rate, all candidate miss rate
+            if new_trial_row['condition'] == 'Sweyepe':
+                try:
+                    new_trial_row['sweyepe_first_candidate_match_rate'] = n_sweyepe_first_candidate_matched / n_sweyepe_words
+                    new_trial_row['sweyepe_any_candidate_match_rate'] = n_sweyepe_any_candidates_matched / n_sweyepe_words
+                    new_trial_row['sweyepe_all_candidate_miss_rate'] = n_sweyepe_all_candidate_missed / n_sweyepe_words
+                except ZeroDivisionError:
+                    new_trial_row['sweyepe_first_candidate_match_rate'] = np.nan
+                    new_trial_row['sweyepe_any_candidate_match_rate'] = np.nan
+                    new_trial_row['sweyepe_all_candidate_miss_rate'] = np.nan
+            # compute the average CPM for each word length
+            for i in range(1, 30):
+                if f'CPMWordLen={i}' in new_trial_row:
+                    new_trial_row[f'CPMWordLen={i}'] = np.mean(new_trial_row[f'CPMWordLen={i}'])
             # 2. TODO Backspace usage
-
-            # 3. TODO Sweyepe first candidate miss rate, all candidate miss rate
+            # only count non-consecutive backspace
+            delete_presses = (trial_w_input_df["keyboardValue"] == "Delete") & (trial_w_input_df["keyboardValue"].shift() != "Delete")
+            if new_trial_row['condition'] == 'Sweyepe':
+                new_trial_row['numDeletePress'] = new_trial_row['sweyepe_all_candidate_miss_rate']
+            else:
+                new_trial_row['numDeletePress'] = delete_presses.sum()
+            new_trial_row['numDeletePressPerChar'] = new_trial_row['numDeletePress'] / len(new_trial_row['userSentence'])
 
             # 4. TODO information transfer rate
 
@@ -349,13 +402,113 @@ for p_i, p_dir in enumerate(participant_dirs):
 # save the trial_data
 trial_data.to_csv(trial_data_export_path, index=False)
 
-# plot the wpm as a function of trial index
-# sns
+# plot the wpm as a function of sessio ##############################################################
 trial_data_wpm_na_dropped = trial_data.dropna(subset=['wpm'])
 sns.boxplot(data=trial_data_wpm_na_dropped, x="session", y="wpm", hue="condition")
 plt.ylim(0, 60)
 plt.show()
 
-sns.boxplot(data=trial_data_wpm_na_dropped, x="session", y="cpm", hue="condition")
-plt.ylim(0, 60)
+sns.boxplot(data=trial_data_wpm_na_dropped, x="session", y="overallCPM", hue="condition")
+plt.ylim(0, 200)
 plt.show()
+
+
+# backspace as a function of session ##############################################################
+sns.lineplot(data=trial_data_wpm_na_dropped, x="session", y="numDeletePressPerChar", hue="condition", style="condition", markers=True,err_style="bars", errorbar=("se", 2),)
+# plt.ylim(0, 60)
+plt.show()
+
+sns.catplot(data=trial_data_wpm_na_dropped, x="session", y="numDeletePressPerChar", hue="condition")
+plt.show()
+
+
+# cpm as a function of word length, separate plots for each condition  ##############################################################
+
+df = trial_data_wpm_na_dropped.melt(
+    id_vars=[col for col in trial_data_wpm_na_dropped.columns if not col.startswith('CPMWordLen')],
+    value_vars=[col for col in trial_data_wpm_na_dropped.columns if col.startswith('CPMWordLen')],
+    var_name='word_len',
+    value_name='CPM_by_word_len'
+)
+# Drop rows where CPM_by_word_len is NaN
+df = df.dropna(subset=['CPM_by_word_len'])
+df['word_len'] = df['word_len'].str.extract('(\d+)').astype(int)
+
+Q1 = df["CPM_by_word_len"].quantile(0.25)
+Q3 = df["CPM_by_word_len"].quantile(0.75)
+IQR = Q3 - Q1
+
+# Define outlier bounds
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+# Identify rows to drop
+extreme_values = df[(df["CPM_by_word_len"] < lower_bound) | (df["CPM_by_word_len"] > upper_bound)]
+df_filtered = df[(df["CPM_by_word_len"] >= lower_bound) & (df["CPM_by_word_len"] <= upper_bound)]
+
+g = sns.catplot(
+    data=df_filtered[df_filtered['word_len'] <= 12], x="word_len", y="CPM_by_word_len", hue="condition", col="session",
+    capsize=.2, palette="YlGnBu_d", errorbar="se",
+    kind="point", height=6, aspect=.75,
+)
+g.despine(left=True)
+plt.ylim(0, 300)
+plt.show()
+
+
+# plot the sweyepe miss rate  ##############################################################
+"""
+construct a dataframe for sweyepe miss rate: like this
+
+session     trial   type    rate
+1           1       first   0.2
+1           1       any     0.5
+1           1       all     0.3
+1           2       first   0.1
+1           2       any     0.2
+1           2       all     0.3
+...
+
+"""
+sweyepe_miss_rate = trial_data.dropna(subset=['sweyepe_first_candidate_match_rate', 'sweyepe_any_candidate_match_rate', 'sweyepe_all_candidate_miss_rate'])
+sweyepe_miss_rate = sweyepe_miss_rate[['session', 'trial_index', 'sweyepe_first_candidate_match_rate', 'sweyepe_any_candidate_match_rate', 'sweyepe_all_candidate_miss_rate']]
+sweyepe_miss_rate = pd.melt(sweyepe_miss_rate, id_vars=['session', 'trial_index'], var_name='type', value_name='rate')
+"""
+Rename the type to more meaningful names
+sweyepe_first_candidate_match_rate -> First Candidate Match
+sweyepe_any_candidate_match_rate -> Any Candidate Match
+sweyepe_all_candidate_miss_rate -> All Candidate Miss
+"""
+name_map = {
+    'sweyepe_first_candidate_match_rate': 'First Candidate Match',
+    'sweyepe_any_candidate_match_rate': 'Any Candidate Match',
+    'sweyepe_all_candidate_miss_rate': 'All Candidate Miss'
+}
+sweyepe_miss_rate['type'] = sweyepe_miss_rate['type'].map(name_map)
+sweyepe_miss_rate["session"] = pd.Categorical(
+    sweyepe_miss_rate["session"], categories=sorted(sweyepe_miss_rate["session"].unique()), ordered=True
+)
+
+g = sns.catplot(data=sweyepe_miss_rate, x="session", y="rate", hue="type", kind="bar")
+g.fig.set_figwidth(15)
+g.fig.set_figheight(6)
+ax = g.ax
+# Overlay a line plot
+# g = sns.lineplot(
+#     data=sweyepe_miss_rate, x="session", y="rate", hue="type", marker="o", ax=ax
+# )
+for p in ax.patches:
+    if p.get_height() > 0:
+        ax.text(
+            p.get_x() + p.get_width() / 2,  # x-coordinate (center of the bar)
+            p.get_height() + 0.05,  # y-coordinate (top of the bar)
+            f'{p.get_height():.3f}',  # Label text formatted to two decimal places
+            ha='center',  # Centered horizontally
+            va='bottom',  # Positioned just above the bar
+            fontsize=10  # Adjust font size
+        )
+plt.show()
+
+
+
+
+
