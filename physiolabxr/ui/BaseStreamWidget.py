@@ -6,7 +6,7 @@ from typing import Callable
 
 from PyQt6 import QtWidgets, uic, QtCore
 from PyQt6.QtCore import QTimer, QThread, QMutex, Qt
-from PyQt6.QtGui import QPixmap, QMovie
+from PyQt6.QtGui import QPixmap, QMovie, QPainter, QPen
 from PyQt6.QtWidgets import QDialogButtonBox, QSplitter
 
 from physiolabxr.configs import config_ui
@@ -138,6 +138,7 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
         # mutex for not update the settings while plotting
         self.setting_update_viz_mutex = QMutex()
         self.set_pop_button_icons()
+        self.show_border = False
 
     def start_timers(self):
         self.v_timer.start()
@@ -517,3 +518,12 @@ class BaseStreamWidget(Poppable, QtWidgets.QWidget):
 
     def get_viz_components(self):
         return self.viz_components
+    
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.show_border:
+            painter = QPainter(self)
+            pen = QPen(Qt.GlobalColor.red, 2)
+            painter.setPen(pen)
+            painter.drawRect(self.rect())
+            painter.end()

@@ -322,6 +322,11 @@ def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
             line_edit.textChanged.disconnect(set_back)
         line_edit.textChanged.connect(set_back)
         raise RenaError(f'{name} must be an integer')
+class ShortCutType(Enum):
+    switch = 1
+    delete = 2
+    start = 3
+    pop = 4
 
 # def add_items(combobox: QComboBox, items: Iterable):
 #     """
@@ -335,6 +340,3 @@ def get_int_from_line_edit(line_edit: QtWidgets.QLineEdit, name=""):
 #     # remove the placeholder item from the combobox if it exists
 #     if placeholder_index != -1:
 #         combobox.removeItem(placeholder_index)
-
-
-
