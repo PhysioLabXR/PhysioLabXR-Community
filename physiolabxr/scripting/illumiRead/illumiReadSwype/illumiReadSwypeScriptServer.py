@@ -12,6 +12,10 @@ class IllumiReadSwypeScriptServer(illumiReadSwypeScript_pb2_grpc.IllumiReadSwype
         result = self.script_instance.HandSwipe2WordRPC(**MessageToDict(request))
         return empty_pb2.Empty()
 
+    async def SwypePredictRPC(self, request, context):
+        result = self.script_instance.SwypePredictRPC()
+        return illumiReadSwypeScript_pb2.SwypePredictRPCResponse(message=result)
+
     async def Tap2CharRPC(self, request, context):
         result = self.script_instance.Tap2CharRPC(**MessageToDict(request))
         return illumiReadSwypeScript_pb2.Tap2CharRPCResponse(message=result)

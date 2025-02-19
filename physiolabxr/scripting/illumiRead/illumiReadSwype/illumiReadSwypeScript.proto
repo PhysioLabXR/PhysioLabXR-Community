@@ -3,6 +3,7 @@ import "google/protobuf/empty.proto";
 service IllumiReadSwypeScript {
   rpc ContextRPC(ContextRPCRequest) returns (ContextRPCResponse);
   rpc HandSwipe2WordRPC(HandSwipe2WordRPCRequest) returns (google.protobuf.Empty);
+  rpc SwypePredictRPC(google.protobuf.Empty) returns (SwypePredictRPCResponse);
   rpc Tap2CharRPC(Tap2CharRPCRequest) returns (Tap2CharRPCResponse);
 }
 message ContextRPCRequest {
@@ -14,6 +15,9 @@ message ContextRPCResponse {
 message HandSwipe2WordRPCRequest {
   float localX = 1;
   float localY = 2;
+}
+message SwypePredictRPCResponse {
+  string message = 1;
 }
 message Tap2CharRPCRequest {
   float input0 = 1;

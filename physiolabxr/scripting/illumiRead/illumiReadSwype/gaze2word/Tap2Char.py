@@ -131,13 +131,13 @@ class Tap2Char:
 
 
 
-
-if __name__ == '__main__':
-    gaze_data_path = 'C:/Users/6173-group/Documents/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
-    t2c = Tap2Char(gaze_data_path)
-
-    tap_position = (t2c.letter_locations['l'] + t2c.letter_locations['k']) / 2  # between 'l' and 'k'
-
-    start_time = time.perf_counter()
-    print(f"{t2c.predict(tap_position, 'hel') = }")
-    print(f"Time spent predicting: {time.perf_counter() - start_time:.8f}s")
+#
+# if __name__ == '__main__':
+#     gaze_data_path = 'C:/Users/6173-group/Documents/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
+#     t2c = Tap2Char(gaze_data_path)
+#
+#     tap_position = (t2c.letter_locations['l'] + t2c.letter_locations['k']) / 2  # between 'l' and 'k'
+#
+#     start_time = time.perf_counter()
+#     print(f"{t2c.predict(tap_position, 'hel') = }")
+#     print(f"Time spent predicting: {time.perf_counter() - start_time:.8f}s")
