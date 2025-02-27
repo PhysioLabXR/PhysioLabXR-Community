@@ -21,3 +21,4 @@ imblearn
 toml
 grpcio
 grpcio-tools
+msgpack == 0.5.6

@@ -19,8 +19,8 @@ def main():
     image = cv2.imread('Image.png')
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     # image_array = np.array(image)
-    width = 2555
-    height = 1246
+    width = 1280
+    height = 720
     image = cv2.resize(image, dsize=(int(width*0.5), int(height*0.5)), interpolation=cv2.INTER_CUBIC)
     image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     # (623, 1277, 3) 2386713
