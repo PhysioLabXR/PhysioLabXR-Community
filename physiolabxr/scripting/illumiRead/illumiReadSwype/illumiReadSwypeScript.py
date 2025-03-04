@@ -154,7 +154,7 @@ class IllumiReadSwypeScript(RenaScript):
     @async_rpc
     def SwypePredictRPC(self)-> str:
         highest_prob_words = self._swype_predict()
-        return highest_prob_words[0]
+        return '.'.join(highest_prob_words)
 
     # ----------------- RPC END--------------------------------------------------------------------
 
