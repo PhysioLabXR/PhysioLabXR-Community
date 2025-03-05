@@ -18,14 +18,14 @@ vol_pw.view.camera.azimuth = 30
 vol_pw.view.camera.scale_factor /= 1.5
 
 shape = vol_data.shape
-fig[1, 0].image(vol_data[:, :, shape[2] // 2], cmap='grays', clim=clim,
-                fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
-fig[0, 1].image(vol_data[:, shape[1] // 2, :], cmap='grays', clim=clim,
-                fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
-fig[1, 1].image(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
-                fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
-fig[1, 2].image(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
-                fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
+fig[1, 0].image_to_model(vol_data[:, :, shape[2] // 2], cmap='grays', clim=clim,
+                         fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
+fig[0, 1].image_to_model(vol_data[:, shape[1] // 2, :], cmap='grays', clim=clim,
+                         fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
+fig[1, 1].image_to_model(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
+                         fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
+fig[1, 2].image_to_model(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
+                         fg_color=(0.5, 0.5, 0.5, 1), texture_format=texture_format)
 
 
 

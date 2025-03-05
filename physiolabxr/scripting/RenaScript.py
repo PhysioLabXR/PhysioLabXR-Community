@@ -146,7 +146,7 @@ class RenaScript(ABC, threading.Thread):
             self.update_input_buffer(data_dict)
             loop_start_time = time.time()
             try:
-                self.loop()
+                 self.loop()
             except Exception as e:
                 # print('Exception in loop(): {0} {1}'.format(type(e), e))
                 traceback.print_exc()

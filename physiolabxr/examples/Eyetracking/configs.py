@@ -16,6 +16,6 @@ fovea_color = (0, 255, 0)
 parafovea_color = (0, 0, 255)
 peripheri_color = (0, 255, 255)
 
-image_shape = (400, 400, 3)
+image_shape = (448, 448, 3)
 image_size = image_shape[0], image_shape[1]
 ppds = image_size[0] / fovs[0], image_size[1] / fovs[1]  # horizontal, vertical, calculate pixel per degree of FOV

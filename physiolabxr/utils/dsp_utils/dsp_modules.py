@@ -327,6 +327,9 @@ class ClutterRemoval(DataProcessor):
         data = data - self._clutter
         return data
 
+    def set_initial_clutter(self, clutter):
+        self._clutter = clutter
+
     def reset_data_processor(self):
         self._clutter = None
 

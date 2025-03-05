@@ -12,12 +12,12 @@ from pylsl import local_clock
 
 def main():
     topic = "CamCapture"
-    srate = 120
-    port = "5557"
+    srate = 30
+    port = "5558"
 
     c_channels = 3
-    width = 64
-    height = 64
+    width = 448
+    height = 448
     n_channels = c_channels * width * height
 
     context = zmq.Context()
