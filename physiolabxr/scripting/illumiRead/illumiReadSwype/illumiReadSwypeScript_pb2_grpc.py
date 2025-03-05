@@ -40,9 +40,9 @@ class IllumiReadSwypeScriptStub(object):
                 request_serializer=illumiReadSwypeScript__pb2.ContextRPCRequest.SerializeToString,
                 response_deserializer=illumiReadSwypeScript__pb2.ContextRPCResponse.FromString,
                 _registered_method=True)
-        self.HandSwipe2WordRPC = channel.unary_unary(
-                '/IllumiReadSwypeScript/HandSwipe2WordRPC',
-                request_serializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.SerializeToString,
+        self.ExcelLoaderRPC = channel.unary_unary(
+                '/IllumiReadSwypeScript/ExcelLoaderRPC',
+                request_serializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
         self.SwypePredictRPC = channel.unary_unary(
@@ -66,7 +66,7 @@ class IllumiReadSwypeScriptServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def HandSwipe2WordRPC(self, request, context):
+    def ExcelLoaderRPC(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -92,9 +92,9 @@ def add_IllumiReadSwypeScriptServicer_to_server(servicer, server):
                     request_deserializer=illumiReadSwypeScript__pb2.ContextRPCRequest.FromString,
                     response_serializer=illumiReadSwypeScript__pb2.ContextRPCResponse.SerializeToString,
             ),
-            'HandSwipe2WordRPC': grpc.unary_unary_rpc_method_handler(
-                    servicer.HandSwipe2WordRPC,
-                    request_deserializer=illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.FromString,
+            'ExcelLoaderRPC': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExcelLoaderRPC,
+                    request_deserializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'SwypePredictRPC': grpc.unary_unary_rpc_method_handler(
@@ -146,7 +146,7 @@ class IllumiReadSwypeScript(object):
             _registered_method=True)
 
     @staticmethod
-    def HandSwipe2WordRPC(request,
+    def ExcelLoaderRPC(request,
             target,
             options=(),
             channel_credentials=None,
@@ -159,8 +159,8 @@ class IllumiReadSwypeScript(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/IllumiReadSwypeScript/HandSwipe2WordRPC',
-            illumiReadSwypeScript__pb2.HandSwipe2WordRPCRequest.SerializeToString,
+            '/IllumiReadSwypeScript/ExcelLoaderRPC',
+            illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,

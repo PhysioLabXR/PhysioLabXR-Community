@@ -92,15 +92,18 @@ class IllumiReadSwypeScript(RenaScript):
         print("Finished instantiating g2w")
 
         # trim the vocab for g2w
-        file_path = self.params['trial_sentences']
-        df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+        file_directory = os.path.join(current_dir, 'StudySentences')
 
-        sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
-        sentences = [s for s in sentences if isinstance(s, str)]
-        tokenizer = RegexpTokenizer(r'\w+')
-        words = [tokenizer.tokenize(s) for s in sentences]
-        words = [word for sublist in words for word in sublist]  # flatten the list
-        self.g2w.trim_vocab(words)
+
+        # file_path = self.params['trial_sentences']
+        # df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+        #
+        # sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        # sentences = [s for s in sentences if isinstance(s, str)]
+        # tokenizer = RegexpTokenizer(r'\w+')
+        # words = [tokenizer.tokenize(s) for s in sentences]
+        # words = [word for sublist in words for word in sublist]  # flatten the list
+        # self.g2w.trim_vocab(words)
 
         # t2c definition
         if os.path.exists('t2c.pkl'):
@@ -139,16 +142,8 @@ class IllumiReadSwypeScript(RenaScript):
         return highest_prob_char
 
     @async_rpc
-    def HandSwipe2WordRPC(self, localX:float, localY: float):
-        # Convert string back to list or array
-        # trajectory_data = np.fromstring(trajectory_data_str, sep=',')
+    def ExcelLoaderRPC(self, sessionNum:int, isPractice: bool):
 
-        # Call the prediction method with the trajectory data
-        # result = self.g2w.predict(trajectory_data, self.context)
-
-        # highest_prob_word = str(result[0][0])
-
-        # return highest_prob_word
         pass
 
     @async_rpc
@@ -438,8 +433,7 @@ class IllumiReadSwypeScript(RenaScript):
 
     # hand swype will use the same streaming channel as the illumiReadSwype
     def keyboard_handswype_state_callback(self):
-        # print("keyboard illumiread swype state")
-        # get the user input data
+
         for user_input_data_t in self.inputs[UserInputLSLStreamInfo.StreamName][0].T:
             user_input_button_2 = user_input_data_t[
                 illumiReadSwypeConfig.UserInputLSLStreamInfo.UserInputButton2ChannelIndex]  # swyping invoker

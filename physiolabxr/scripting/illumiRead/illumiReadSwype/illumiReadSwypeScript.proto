@@ -2,7 +2,7 @@ syntax = "proto3";
 import "google/protobuf/empty.proto";
 service IllumiReadSwypeScript {
   rpc ContextRPC(ContextRPCRequest) returns (ContextRPCResponse);
-  rpc HandSwipe2WordRPC(HandSwipe2WordRPCRequest) returns (google.protobuf.Empty);
+  rpc ExcelLoaderRPC(ExcelLoaderRPCRequest) returns (google.protobuf.Empty);
   rpc SwypePredictRPC(google.protobuf.Empty) returns (SwypePredictRPCResponse);
   rpc Tap2CharRPC(Tap2CharRPCRequest) returns (Tap2CharRPCResponse);
 }
@@ -12,9 +12,9 @@ message ContextRPCRequest {
 message ContextRPCResponse {
   string message = 1;
 }
-message HandSwipe2WordRPCRequest {
-  float localX = 1;
-  float localY = 2;
+message ExcelLoaderRPCRequest {
+  int32 sessionNum = 1;
+  bool isPractice = 2;
 }
 message SwypePredictRPCResponse {
   string message = 1;

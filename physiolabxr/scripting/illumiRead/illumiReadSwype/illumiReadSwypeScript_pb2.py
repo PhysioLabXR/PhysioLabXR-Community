@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1billumiReadSwypeScript.proto\x1a\x1bgoogle/protobuf/empty.proto\"#\n\x11\x43ontextRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\t\"%\n\x12\x43ontextRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\":\n\x18HandSwipe2WordRPCRequest\x12\x0e\n\x06localX\x18\x01 \x01(\x02\x12\x0e\n\x06localY\x18\x02 \x01(\x02\"*\n\x17SwypePredictRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"4\n\x12Tap2CharRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\x02\x12\x0e\n\x06input1\x18\x02 \x01(\x02\"&\n\x13Tap2CharRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\x95\x02\n\x15IllumiReadSwypeScript\x12\x35\n\nContextRPC\x12\x12.ContextRPCRequest\x1a\x13.ContextRPCResponse\x12\x46\n\x11HandSwipe2WordRPC\x12\x19.HandSwipe2WordRPCRequest\x1a\x16.google.protobuf.Empty\x12\x43\n\x0fSwypePredictRPC\x12\x16.google.protobuf.Empty\x1a\x18.SwypePredictRPCResponse\x12\x38\n\x0bTap2CharRPC\x12\x13.Tap2CharRPCRequest\x1a\x14.Tap2CharRPCResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1billumiReadSwypeScript.proto\x1a\x1bgoogle/protobuf/empty.proto\"#\n\x11\x43ontextRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\t\"%\n\x12\x43ontextRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"?\n\x15\x45xcelLoaderRPCRequest\x12\x12\n\nsessionNum\x18\x01 \x01(\x05\x12\x12\n\nisPractice\x18\x02 \x01(\x08\"*\n\x17SwypePredictRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\"4\n\x12Tap2CharRPCRequest\x12\x0e\n\x06input0\x18\x01 \x01(\x02\x12\x0e\n\x06input1\x18\x02 \x01(\x02\"&\n\x13Tap2CharRPCResponse\x12\x0f\n\x07message\x18\x01 \x01(\t2\x8f\x02\n\x15IllumiReadSwypeScript\x12\x35\n\nContextRPC\x12\x12.ContextRPCRequest\x1a\x13.ContextRPCResponse\x12@\n\x0e\x45xcelLoaderRPC\x12\x16.ExcelLoaderRPCRequest\x1a\x16.google.protobuf.Empty\x12\x43\n\x0fSwypePredictRPC\x12\x16.google.protobuf.Empty\x1a\x18.SwypePredictRPCResponse\x12\x38\n\x0bTap2CharRPC\x12\x13.Tap2CharRPCRequest\x1a\x14.Tap2CharRPCResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,14 +36,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CONTEXTRPCREQUEST']._serialized_end=95
   _globals['_CONTEXTRPCRESPONSE']._serialized_start=97
   _globals['_CONTEXTRPCRESPONSE']._serialized_end=134
-  _globals['_HANDSWIPE2WORDRPCREQUEST']._serialized_start=136
-  _globals['_HANDSWIPE2WORDRPCREQUEST']._serialized_end=194
-  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_start=196
-  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_end=238
-  _globals['_TAP2CHARRPCREQUEST']._serialized_start=240
-  _globals['_TAP2CHARRPCREQUEST']._serialized_end=292
-  _globals['_TAP2CHARRPCRESPONSE']._serialized_start=294
-  _globals['_TAP2CHARRPCRESPONSE']._serialized_end=332
-  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_start=335
-  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_end=612
+  _globals['_EXCELLOADERRPCREQUEST']._serialized_start=136
+  _globals['_EXCELLOADERRPCREQUEST']._serialized_end=199
+  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_start=201
+  _globals['_SWYPEPREDICTRPCRESPONSE']._serialized_end=243
+  _globals['_TAP2CHARRPCREQUEST']._serialized_start=245
+  _globals['_TAP2CHARRPCREQUEST']._serialized_end=297
+  _globals['_TAP2CHARRPCRESPONSE']._serialized_start=299
+  _globals['_TAP2CHARRPCRESPONSE']._serialized_end=337
+  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_start=340
+  _globals['_ILLUMIREADSWYPESCRIPT']._serialized_end=611
 # @@protoc_insertion_point(module_scope)
