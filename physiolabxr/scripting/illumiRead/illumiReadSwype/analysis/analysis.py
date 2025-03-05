@@ -529,6 +529,17 @@ plt.ylim(0, 200)
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)  # Adds a dashed grid
 plt.show()
 
+sns.catplot(data=trial_data_wpm_na_dropped, x="session", y="TER", hue="condition", kind="bar")
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)  # Adds a dashed grid
+plt.ylabel("Total Error Rate (%)")
+plt.show()
+
+sns.catplot(data=trial_data_wpm_na_dropped, x="session", y="MSD Error Rate", hue="condition", kind="bar")
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)  # Adds a dashed grid
+plt.ylabel("MSD Error Rate (%)")
+plt.show()
+
+
 
 # backspace as a function of session ##############################################################
 sns.lineplot(data=trial_data_wpm_na_dropped, x="session", y="numDeletePressPerChar", hue="condition", style="condition", markers=True,err_style="bars", errorbar=("se", 2),)
