@@ -10,7 +10,7 @@ class IllumiReadSwypeScriptServer(illumiReadSwypeScript_pb2_grpc.IllumiReadSwype
 
     async def ExcelLoaderRPC(self, request, context):
         result = self.script_instance.ExcelLoaderRPC(**MessageToDict(request))
-        return empty_pb2.Empty()
+        return illumiReadSwypeScript_pb2.ExcelLoaderRPCResponse(message=result)
 
     async def SwypePredictRPC(self, request, context):
         result = self.script_instance.SwypePredictRPC()

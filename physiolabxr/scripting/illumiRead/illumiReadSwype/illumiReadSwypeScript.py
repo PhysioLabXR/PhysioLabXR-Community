@@ -92,8 +92,7 @@ class IllumiReadSwypeScript(RenaScript):
         print("Finished instantiating g2w")
 
         # trim the vocab for g2w
-        file_directory = os.path.join(current_dir, 'StudySentences')
-
+        self.file_directory = os.path.join(current_dir, 'StudySentences')
 
         # file_path = self.params['trial_sentences']
         # df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
@@ -142,9 +141,36 @@ class IllumiReadSwypeScript(RenaScript):
         return highest_prob_char
 
     @async_rpc
-    def ExcelLoaderRPC(self, sessionNum:int, isPractice: bool):
+    def ExcelLoaderRPC(self, input0:str)-> str:
 
-        pass
+        session, practice = input0.split(".")
+        session = int(session)
+        practice = int(practice)
+
+        if(practice ==1):
+            file_path = os.path.join(self.file_directory, 'PracticeSentences.xlsx')
+        else:
+            if(session == 1):
+                file_path = os.path.join(self.file_directory, 'session1-short-longe-sentences.xlsx')
+            elif(session == 2):
+                file_path = os.path.join(self.file_directory, 'session2-short-longe-sentences.xlsx')
+            elif(session == 3):
+                file_path = os.path.join(self.file_directory, 'session3-short-longe-sentences.xlsx')
+            elif(session == 4):
+                file_path = os.path.join(self.file_directory, 'session4-short-longe-sentences.xlsx')
+            elif(session == 5):
+                file_path = os.path.join(self.file_directory, 'session5-short-longe-sentences.xlsx')
+
+        df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+
+        sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        sentences = [s for s in sentences if isinstance(s, str)]
+        tokenizer = RegexpTokenizer(r'\w+')
+        words = [tokenizer.tokenize(s) for s in sentences]
+        words = [word for sublist in words for word in sublist]  # flatten the list
+        self.g2w.trim_vocab(words)
+
+        return "Excel Loaded"
 
     @async_rpc
     def SwypePredictRPC(self)-> str:

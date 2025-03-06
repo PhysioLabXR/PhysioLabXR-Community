@@ -43,7 +43,7 @@ class IllumiReadSwypeScriptStub(object):
         self.ExcelLoaderRPC = channel.unary_unary(
                 '/IllumiReadSwypeScript/ExcelLoaderRPC',
                 request_serializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                response_deserializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCResponse.FromString,
                 _registered_method=True)
         self.SwypePredictRPC = channel.unary_unary(
                 '/IllumiReadSwypeScript/SwypePredictRPC',
@@ -95,7 +95,7 @@ def add_IllumiReadSwypeScriptServicer_to_server(servicer, server):
             'ExcelLoaderRPC': grpc.unary_unary_rpc_method_handler(
                     servicer.ExcelLoaderRPC,
                     request_deserializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.FromString,
-                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                    response_serializer=illumiReadSwypeScript__pb2.ExcelLoaderRPCResponse.SerializeToString,
             ),
             'SwypePredictRPC': grpc.unary_unary_rpc_method_handler(
                     servicer.SwypePredictRPC,
@@ -161,7 +161,7 @@ class IllumiReadSwypeScript(object):
             target,
             '/IllumiReadSwypeScript/ExcelLoaderRPC',
             illumiReadSwypeScript__pb2.ExcelLoaderRPCRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            illumiReadSwypeScript__pb2.ExcelLoaderRPCResponse.FromString,
             options,
             channel_credentials,
             insecure,
