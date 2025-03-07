@@ -131,7 +131,8 @@ class AppConfigs(metaclass=Singleton):
     tobii_app_path: str = None
 
     # user login
-    remembered_uid: str = None
+    remembered_token: str = None
+    refresh_token: str = None
 
     _media_paths = ['physiolabxr/_media/icons', 'physiolabxr/_media/logo', 'physiolabxr/_media/gifs']
     _supported_media_formats = ['.svg', '.gif']

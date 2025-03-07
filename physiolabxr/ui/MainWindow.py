@@ -543,7 +543,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     auth.revoke_refresh_tokens(remembered_uid)
 
                 # Clear remembered user data
-                AppConfigs().remembered_uid = None
+                AppConfigs().remembered_token = None
+                AppConfigs().refresh_token = None
 
                 # Display message
                 QMessageBox.information(self, "Signed Out", "You have been signed out.")

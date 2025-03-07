@@ -16,9 +16,6 @@ def physiolabxr():
     from physiolabxr.ui.SplashScreen import SplashScreen
     from physiolabxr.ui.SplashScreen import SplashLoadingTextNotifier
     from physiolabxr.ui.Login import LoginDialog
-    import firebase_admin
-    from firebase_admin import auth, credentials
-
     AppConfigs(_reset=False)  # create the singleton app configs object
     NetworkManager()
 
@@ -37,27 +34,13 @@ def physiolabxr():
     splash = SplashScreen()
     splash.show()
 
-
-    # Initialize Firebase Admin SDK
     SplashLoadingTextNotifier().set_loading_text("Logging in...")
-
-    service_account_path = "/Users/zeyitong/Desktop/physiolabxr-8cbb7-firebase-adminsdk-pb9po-b5c9df1c77.json"
-    # Initialize Firebase Admin SDK (with credentials)
-
-    if not firebase_admin._apps:
-        try:
-            cred = credentials.Certificate(service_account_path)  # Replace with actual path
-            firebase_admin.initialize_app(cred)
-        except Exception as e:
-            QMessageBox.critical(None, "Firebase Init Failed", f"Could not initialize Firebase: {e}")
-            sys.exit(1)
 
     login_dialog = LoginDialog()
 
-    # **🌟 Improved Auto-login Handling**
     auto_login_success = login_dialog.auto_login()
 
-    if not auto_login_success:  # If auto-login fails, prompt login
+    if not auto_login_success:
         if login_dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             splash.close()
             QMessageBox.critical(None, "Access Denied", "Login required to access the application.")

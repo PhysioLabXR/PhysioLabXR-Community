@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import QDialog, QMessageBox
 from physiolabxr.configs.configs import AppConfigs
 
 
+FIREBASE_API_KEY = "AIzaSyD7CJXqoCPtv2GzMQpGLKwTo4MacPqjqnw"
+
 class LoginDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -79,9 +81,8 @@ class LoginDialog(QDialog):
         self.label_4.setText("Don't have an account yet?")
         self.checkBox.setText("Remember my account on this device")
 
-
     def handle_login(self):
-        """Handle user login using Firebase Authentication & Custom Token."""
+        """Handle user login using Firebase Authentication & Store Refresh Token."""
         email = self.lineEdit.text()
         password = self.lineEdit_2.text()
 
@@ -90,68 +91,88 @@ class LoginDialog(QDialog):
             return
 
         try:
-            # Firebase REST API endpoint for sign-in
-            load_dotenv()
-            api_key = os.getenv("FIREBASE_API_KEY")
-            url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+            data = {"email": email, "password": password, "returnSecureToken": True}
+            response = requests.post(url, json=data)
+            response_data = response.json()
 
-            data = {
-                "email": email,
-                "password": password,
-                "returnSecureToken": True,
-            }
-
-            response = requests.post(f"{url}?key={api_key}", json=data)
-
-            if response.status_code == 200:
-                user_data = response.json()
-                uid = user_data.get("localId")
-
-                # Generate a custom token using Firebase Admin SDK
-                custom_token = auth.create_custom_token(uid).decode("utf-8")
+            if "idToken" in response_data:
+                id_token = response_data["idToken"]
+                refresh_token = response_data["refreshToken"]
+                local_id = response_data["localId"]
 
                 if self.checkBox.isChecked():
-                    AppConfigs().remembered_uid = uid  # Store UID instead of email
+                    AppConfigs().remembered_token = id_token
+                    AppConfigs().refresh_token = refresh_token
 
-                print("✅ Login Successful - UID stored:", uid)
+                print(f"✅ Login Successful - User: {local_id}")
 
-                self.accept()  # Close the dialog and indicate successful login
+                self.accept()  # Close the dialog on success
 
             else:
-                error_message = response.json().get("error", {}).get("message", "Unknown error occurred.")
+                error_message = response_data.get("error", {}).get("message", "Unknown error occurred.")
                 QMessageBox.critical(self, "Login Failed", f"An error occurred: {error_message}")
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An unexpected error occurred: {e}")
 
-    def auto_login(self):
-        """Auto-login using stored UID instead of email."""
-        uid = AppConfigs().remembered_uid
-        print(f"🔍 Checking stored UID in AppConfigs: {uid}")
+    def refresh_id_token(self):
+        """Refresh Firebase ID Token using the refresh token."""
+        refresh_token = AppConfigs().refresh_token
 
-        if not uid:
-            print("❌ No remembered UID found, requiring manual login.")
+        if not refresh_token:
+            print("❌ No refresh token found, user needs to log in again.")
+            return None
+
+        try:
+            url = f"https://securetoken.googleapis.com/v1/token?key={FIREBASE_API_KEY}"
+            data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
+            response = requests.post(url, json=data)
+            response_data = response.json()
+
+            if "id_token" in response_data:
+                new_id_token = response_data["id_token"]
+                new_refresh_token = response_data["refresh_token"]
+
+                # ✅ Update stored tokens
+                AppConfigs().remembered_token = new_id_token
+                AppConfigs().refresh_token = new_refresh_token
+
+                print("🔄 Token refreshed successfully")
+                return new_id_token
+
+            else:
+                print("❌ Failed to refresh token")
+                return None
+
+        except Exception as e:
+            QMessageBox.critical(self, "Token Refresh Failed", f"An unexpected error occurred: {e}")
+            return None
+
+    def auto_login(self):
+        """Auto-login using stored and refreshed token."""
+        id_token = self.refresh_id_token() or AppConfigs().remembered_token
+
+        if not id_token:
+            print("❌ No valid token found, requiring manual login.")
             return False
 
         try:
-            # Verify user existence using Firebase Admin SDK
-            user = auth.get_user(uid)
-            if user:
-                QMessageBox.information(self, "Auto Login", f"Welcome back, {user.email}!")
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
+            data = {"idToken": id_token}
+            response = requests.post(url, json=data)
+
+            if response.status_code == 200:
+                print("✅ Auto-login successful")
                 self.accept()
                 return True
             else:
-                print("❌ UID not found in Firebase, clearing remembered user.")
-                AppConfigs().remembered_uid = None
+                print("❌ Invalid token, requiring manual login.")
+                AppConfigs().remembered_token = None
                 return False
 
-        except firebase_admin.auth.UserNotFoundError:
-            print("❌ User not found in Firebase, clearing remembered user.")
-            AppConfigs().remembered_uid = None
-            return False
         except Exception as e:
             QMessageBox.critical(self, "Auto Login Failed", f"An unexpected error occurred: {e}")
-            AppConfigs().remembered_uid = None
             return False
 
     def handle_signup(self):
