@@ -1,3 +1,4 @@
+import pickle
 import string
 
 import nltk
@@ -73,6 +74,107 @@ class NGramModel:
         return next_words.most_common(k)
 
 
+    def predict_word_completion(self, prefix, k=5, ignore_punctuation=True):
+        """
+         Predict completions for a user input that may end with a partial word
+         (e.g., "How are y") or a space (e.g., "How are "), or be entirely empty.
+
+         - If the prefix ends with a partial word (no trailing space), this method
+           attempts to complete that partial word.
+         - If the prefix ends with a space (or is empty), it predicts the most
+           likely next word.
+
+         Parameters
+         ----------
+         prefix : str
+             The user input text, which may:
+              - End with a space, indicating the last token is complete.
+              - End with a partial token (no trailing space).
+              - Be entirely empty or whitespace.
+         k : int, optional
+             The maximum number of predicted completions to return. Defaults to 5.
+         ignore_punctuation : bool, optional
+             If True, punctuation tokens are excluded from predictions. Defaults to True.
+
+         Returns
+         -------
+         List[Tuple[str, int]]
+             A list of (word, score) tuples representing the top `k` completions or
+             next words, where `score` is the frequency (or count) of the word in
+             the model's n-gram distribution.
+
+         Examples
+         --------
+         >>> # Instantiate an NGramModel with n=3 (trigram)
+         >>> ngram_model = NGramModel(n=3)
+
+         >>> # 1) Predict completions for a partial word:
+         >>> prefix = "How are y"
+         >>> completions = ngram_model.predict_word_completion(prefix, k=5)
+         >>> print(completions)
+         [('you', 95), ('young', 27), ...]
+
+         >>> # 2) Predict the next word after a trailing space:
+         >>> prefix = "How are "
+         >>> completions = ngram_model.predict_word_completion(prefix, k=5)
+         >>> print(completions)
+         [('you', 350), ('we', 120), ...]
+
+         >>> # 3) Predict from an empty prefix:
+         >>> prefix = ""
+         >>> completions = ngram_model.predict_word_completion(prefix, k=5)
+         >>> print(completions)
+         [('the', 1025), ('a', 940), ...]
+         """
+        # Trim trailing spaces, but check if it originally ended with space
+        ended_with_space = (prefix.endswith(' ') or len(prefix.strip()) == 0)
+        stripped_prefix = prefix.rstrip()
+
+        if not stripped_prefix:
+            # If the prefix is empty or all spaces -> just call predict_next with empty prefix
+            return self.predict_next(
+                prefix="",
+                k=k,
+                ignore_punctuation=ignore_punctuation
+            )
+
+        # Tokenize the stripped prefix
+        tokens = nltk.word_tokenize(stripped_prefix)
+
+        if ended_with_space:
+            # If the user typed a space last, do a normal next-word prediction
+            # because there's no partial word to complete
+            return self.predict_next(
+                prefix=stripped_prefix,
+                k=k,
+                ignore_punctuation=ignore_punctuation
+            )
+        else:
+            # We assume the last token is a partial word to be completed
+            partial_word = tokens[-1]
+            # Build a prefix without the partial word
+            prefix_without_partial = " ".join(tokens[:-1])
+
+            # Get top predictions for the prefix without that partial
+            raw_predictions = self.predict_next(
+                prefix=prefix_without_partial,
+                k='all',  # get all predictions, then filter
+                ignore_punctuation=ignore_punctuation
+            )
+
+            # Filter so we only keep words starting with partial_word
+            partial_lower = partial_word.lower()
+            filtered = [
+                (word, count)
+                for word, count in raw_predictions.items()
+                if word.startswith(partial_lower)
+            ]
+
+            # Sort by count desc, then return top k
+            filtered_sorted = sorted(filtered, key=lambda x: x[1], reverse=True)
+            return filtered_sorted[:k]
+
+reload_model = False
 # Example usage
 if __name__ == "__main__":
     # Load the example corpus (you can use any text corpus)
@@ -80,7 +182,12 @@ if __name__ == "__main__":
     # Combine sentences from multiple corpora
 
     # Create an instance of the NGramModel with n=3 (trigram)
-    ngram_model = NGramModel(n=3)
+
+    if reload_model:
+        ngram_model = NGramModel(n=3)
+        pickle.dump(ngram_model, open("ngram_model.pkl", "wb"))
+    else:
+        ngram_model = pickle.load(open("ngram_model.pkl", "rb"))
 
     # Predict the top k most likely next words for a given prefix
     # prefix = "the stock market"
@@ -95,3 +202,17 @@ if __name__ == "__main__":
     print(f"Next word predictions for the prefix '{' '.join(prefix)}':")
     for word, count in top_k_predictions:
         print(f"{word}: {count}")
+
+    examples = [
+        "How are y",         # partial final word
+        "How are ",          # ends with space
+        "",                  # empty prefix
+        "The economy is bo"  # partial final word
+    ]
+    for text in examples:
+        completions = ngram_model.predict_word_completion(text, k=5, ignore_punctuation=True)
+        print(f"Prefix: '{text}'")
+        print("Predictions:")
+        for word, score in completions:
+            print(f"  {word} : {score}")
+        print("---")
