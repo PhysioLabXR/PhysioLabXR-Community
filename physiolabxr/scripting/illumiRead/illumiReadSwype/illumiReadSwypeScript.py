@@ -14,6 +14,7 @@ import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.Tap2Char import Tap2Char
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput, \
@@ -94,16 +95,6 @@ class IllumiReadSwypeScript(RenaScript):
         # trim the vocab for g2w
         self.file_directory = os.path.join(current_dir, 'StudySentences')
 
-        # file_path = self.params['trial_sentences']
-        # df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
-        #
-        # sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
-        # sentences = [s for s in sentences if isinstance(s, str)]
-        # tokenizer = RegexpTokenizer(r'\w+')
-        # words = [tokenizer.tokenize(s) for s in sentences]
-        # words = [word for sublist in words for word in sublist]  # flatten the list
-        # self.g2w.trim_vocab(words)
-
         # t2c definition
         if os.path.exists('t2c.pkl'):
             with open('t2c.pkl', 'rb') as f:
@@ -115,6 +106,13 @@ class IllumiReadSwypeScript(RenaScript):
                 pickle.dump(self.t2c, f)
             print("Finished instantiating t2c")
 
+        # load the NGramModel
+        if os.path.exists('ngram_model.pkl'):
+            self.ngram_model = pickle.load(open('ngram_model.pkl', 'rb'))
+        else:
+            self.ngram_model = NGramModel(n=3)
+            pickle.dump(self.ngram_model, open("ngram_model.pkl", "wb"))
+
         # the current context for the inputfield
         self.context = ""
         self.nextChar = ""
@@ -125,8 +123,11 @@ class IllumiReadSwypeScript(RenaScript):
     def ContextRPC(self, input0: str) -> str:
 
         self.context = input0.lower().rstrip()
+        # predict the candidate words
+        completions = self.ngram_model.predict_word_completion(self.context, k=5, ignore_punctuation=True)
+        word_candidates = ".".join([item[0] for item in completions])
 
-        return f"Sucess:{self.context}"
+        return word_candidates
 
     # the rpc for Tap2Char prediction
     # input: float of x and y position of the tap

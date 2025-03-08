@@ -174,7 +174,7 @@ class NGramModel:
             filtered_sorted = sorted(filtered, key=lambda x: x[1], reverse=True)
             return filtered_sorted[:k]
 
-reload_model = False
+reload_model = True
 # Example usage
 if __name__ == "__main__":
     # Load the example corpus (you can use any text corpus)
