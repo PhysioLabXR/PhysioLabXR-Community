@@ -15,6 +15,7 @@ from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConf
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.Tap2Char import Tap2Char
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram_interpolation import InterpolatedNGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeConfig import EventMarkerLSLStreamInfo, \
     GazeDataLSLStreamInfo, UserInputLSLStreamInfo
 from physiolabxr.scripting.illumiRead.illumiReadSwype.illumiReadSwypeUtils import illumiReadSwypeUserInput, \
@@ -59,9 +60,6 @@ class IllumiReadSwypeScript(RenaScript):
 
         self.ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
-        # spelling correction
-        # self.spell_corrector = SpellCorrector()
-        # self.spell_corrector.correct_string("WHAT")
 
         # create stream outlets
         illumireadswype_keyboard_suggestion_strip_lsl_stream_info = StreamInfo(
@@ -108,10 +106,10 @@ class IllumiReadSwypeScript(RenaScript):
 
         # load the NGramModel
         if os.path.exists('ngram_model.pkl'):
-            self.ngram_model = pickle.load(open('ngram_model.pkl', 'rb'))
+            self.ngram_model = pickle.load(open('ngram_model_interpolate.pkl', 'rb'))
         else:
-            self.ngram_model = NGramModel(n=3)
-            pickle.dump(self.ngram_model, open("ngram_model.pkl", "wb"))
+            self.ngram_model = InterpolatedNGramModel()
+            pickle.dump(self.ngram_model, open("ngram_model_interpolate.pkl", "wb"))
 
         # the current context for the inputfield
         self.context = ""
@@ -123,11 +121,9 @@ class IllumiReadSwypeScript(RenaScript):
     def ContextRPC(self, input0: str) -> str:
 
         self.context = input0.lower().rstrip("?")
-        # print(self.context)
         # predict the candidate words
         completions = self.ngram_model.predict_word_completion(self.context, k=5, ignore_punctuation=True)
         word_candidates = ".".join([item[0] for item in completions])
-        # print(word_candidates)
 
         return word_candidates
 
