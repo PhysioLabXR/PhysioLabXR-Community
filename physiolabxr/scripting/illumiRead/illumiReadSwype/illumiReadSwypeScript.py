@@ -105,7 +105,7 @@ class IllumiReadSwypeScript(RenaScript):
             print("Finished instantiating t2c")
 
         # load the NGramModel
-        if os.path.exists('ngram_model.pkl'):
+        if os.path.exists('ngram_model_interpolate.pkl'):
             self.ngram_model = pickle.load(open('ngram_model_interpolate.pkl', 'rb'))
         else:
             self.ngram_model = InterpolatedNGramModel()
@@ -119,12 +119,13 @@ class IllumiReadSwypeScript(RenaScript):
     # get the rpc call of word context from unity
     @async_rpc
     def ContextRPC(self, input0: str) -> str:
-
+        start_time = time.perf_counter()
         self.context = input0.lower().rstrip("?")
         # predict the candidate words
         completions = self.ngram_model.predict_word_completion(self.context, k=5, ignore_punctuation=True)
         word_candidates = ".".join([item[0] for item in completions])
-
+        # print(self.context)
+        # print(f"Time spent predicting: {time.perf_counter() - start_time:.8f}s")
         return word_candidates
 
     # the rpc for Tap2Char prediction
