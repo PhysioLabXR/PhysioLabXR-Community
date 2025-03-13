@@ -431,6 +431,7 @@ if __name__ == '__main__':
                     trial_w_input_df.loc[:, 'xKeyHitLocalValid'] = trial_w_input_df['xKeyHitLocal'].apply(lambda x: abs(x) != np.inf)
                     trial_w_input_df.loc[:, 'nWords'] = trial_w_input_df.copy()['currentWords'].apply(lambda x: len(x))
 
+                    sweyepe_durations = []
                     for w in words:
                         if len(w) == 1:
                             continue  # ignore single letter
@@ -448,7 +449,7 @@ if __name__ == '__main__':
                             assert w_first_appear_index >= sweyepe_start_index
                             assert sweyepe_end_index >= sweyepe_start_index
                             w_duration = trial_w_input_df['absoluteTime'][sweyepe_end_index] - trial_w_input_df['absoluteTime'][sweyepe_start_index]
-
+                            sweyepe_durations.append(w_duration)
                             # 3. Sweyepe first candidate miss rate, all candidate miss rate
                             # find the first row after sweyepe_end_index, AND candidates are available, AND the current text has content
                             # THE CURRENT TEXT MUST HAVE CONTENT because the candidates from previous trial may be carried over to the next trial, we need to find the first row where the currentText is not empty
@@ -472,8 +473,11 @@ if __name__ == '__main__':
                                 n_sweyepe_any_candidates_matched += 1
                             else:
                                 n_sweyepe_all_candidate_missed += 1
-
                         new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60] if f'CPMWordLen={len(w)}' not in new_trial_row else new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
+                    if new_trial_row['condition'] == 'Sweyepe':
+                        if np.any(np.isnan(sweyepe_durations)):
+                            print(f"found NAN in sweyepe durations: {sweyepe_durations}")
+                        new_trial_row['average_sweyepe_duration'] = np.mean(sweyepe_durations)
 
                     # 3. Sweyepe first candidate miss rate, all candidate miss rate
                     if new_trial_row['condition'] == 'Sweyepe':
