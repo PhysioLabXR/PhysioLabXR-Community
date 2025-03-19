@@ -143,27 +143,41 @@ class IllumiReadSwypeScript(RenaScript):
     @async_rpc
     def ExcelLoaderRPC(self, input0:str)-> str:
 
-        session, practice = input0.split(".")
+        user_study,session, practice = input0.split(".")
+        user_study = int(user_study)
         session = int(session)
         practice = int(practice)
 
         if(practice ==1):
             file_path = os.path.join(self.file_directory, 'PracticeSentences.xlsx')
         else:
-            if(session == 1):
-                file_path = os.path.join(self.file_directory, 'session1-short-longe-sentences.xlsx')
-            elif(session == 2):
-                file_path = os.path.join(self.file_directory, 'session2-short-longe-sentences.xlsx')
-            elif(session == 3):
-                file_path = os.path.join(self.file_directory, 'session3-short-longe-sentences.xlsx')
-            elif(session == 4):
-                file_path = os.path.join(self.file_directory, 'session4-short-longe-sentences.xlsx')
-            elif(session == 5):
-                file_path = os.path.join(self.file_directory, 'session5-short-longe-sentences.xlsx')
+            if(user_study != 2):
+                # if(session == 1):
+                #     file_path = os.path.join(self.file_directory, 'session1-short-longe-sentences.xlsx')
+                # elif(session == 2):
+                #     file_path = os.path.join(self.file_directory, 'session2-short-longe-sentences.xlsx')
+                # elif(session == 3):
+                #     file_path = os.path.join(self.file_directory, 'session3-short-longe-sentences.xlsx')
+                # elif(session == 4):
+                #     file_path = os.path.join(self.file_directory, 'session4-short-longe-sentences.xlsx')
+                # elif(session == 5):
+                #     file_path = os.path.join(self.file_directory, 'session5-short-longe-sentences.xlsx')
+                file_name = f"session{session}-short-longe-sentences.xlsx"
+                file_path = os.path.join(self.file_directory, file_name)
+            else:
+                subfolder = "user_study3_session_sentences"
+                file_name = f"session{session}_study_3.xlsx"
+                file_path = os.path.join(self.file_directory, subfolder, file_name)
 
-        df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
 
-        sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        # if not user study 3, then load sentences for column 0 and 1
+        if(user_study!=2):
+            df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+            sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
+        else:
+            df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
+            sentences = df.iloc[:, 0].tolist()
+
         sentences = [s for s in sentences if isinstance(s, str)]
         tokenizer = RegexpTokenizer(r'\w+')
         words = [tokenizer.tokenize(s) for s in sentences]

@@ -52,7 +52,7 @@ def create_study_sessions():
 
 
 
-export_dir = 'user_study3_session_sentences'
+export_dir = '../StudySentences/user_study3_session_sentences'
 
 if __name__ == "__main__":
     create_study_sessions()
