@@ -1,4 +1,5 @@
 import argparse
+import copy
 import json
 import os
 import pickle
@@ -177,7 +178,7 @@ if __name__ == '__main__':
         # sort by participant id
         participant_dirs.sort(key=lambda x: int(os.path.basename(x)[1:]))
 
-        trial_data = pd.DataFrame(columns=['participant', 'session', 'trial_index', 'isValid', 'condition', 'duration',
+        trial_data = pd.DataFrame(columns=['participant', 'session', 'trial_index', 'condition_trial_index', 'isValid', 'condition', 'duration',
                                            'wpm', 'finalUserInputEditDistance2Target', 'finalUserInputEditDistance2TargetNormalized',
                                            'targetSentence', 'userSentence',
                                            'overallCPM'] + [f'CPMWordLen={i}' for i in range(1, 30)] \
@@ -273,7 +274,7 @@ if __name__ == '__main__':
                 n_sweyepe_first_candidate_matched = 0
                 n_sweyepe_any_candidates_matched = 0
                 n_sweyepe_all_candidate_missed = 0
-
+                condition_trial_index = defaultdict(int)  # keeps track of the index for each trial for a given condition
                 for trial_index, trial_df in action_info_df.groupby('trialIndex'):
                     # if EndState is in the column conditionType, then this trial is skipped
                     if 'EndState' in trial_df['conditionType'].values:
@@ -432,21 +433,33 @@ if __name__ == '__main__':
                     trial_w_input_df.loc[:, 'nWords'] = trial_w_input_df.copy()['currentWords'].apply(lambda x: len(x))
 
                     sweyepe_durations = []
+                    w_first_appear_index = trial_w_input_df.index[0]
                     for w in words:
                         if len(w) == 1:
                             continue  # ignore single letter
                         # find the index when w first appear in trial_w_input_df['currentText']
-                        w_first_appear_index = trial_w_input_df[trial_w_input_df['currentWords'].apply(lambda x: w in x)].index[0]
+                        # in case a word appearing multiple times in the currentText,
+                        subset_df = trial_w_input_df.loc[w_first_appear_index:]
+                        subset_df = subset_df[subset_df['currentWords'].apply(lambda x: w in x)]
+                        w_first_appear_index = subset_df.index[0]
+
+                        # w_first_appear_index = trial_w_input_df.loc[w_first_appear_index:][trial_w_input_df['currentWords'].apply(lambda x: w in x)].index[0]
                         if new_trial_row['condition'] != 'Sweyepe':
-                            # find the last time nWords increment in the series up to w_first_appear_index, this is the beginning letter of the new word first being typed
+                            # find the last time nWords increment∂ in the series up to w_first_appear_index, this is the beginning letter of the new word first being typed
                             nWords_last_increment_index = trial_w_input_df.loc[:w_first_appear_index, 'nWords'].idxmax()
                             assert w_first_appear_index >= nWords_last_increment_index, f"Participant {participant_id} session {session_number} trial {trial_index} word {w} first appear index is smaller than the last nWords increment index."
                             w_duration = trial_w_input_df['absoluteTime'][w_first_appear_index] - trial_w_input_df['absoluteTime'][nWords_last_increment_index]
                         else:  # in Sweyepe, the start-typing time for a word is when the sweyepe trace starts
                             hit_state_transition = np.argwhere(np.diff(np.concatenate([[False], trial_w_input_df.loc[:w_first_appear_index, 'xKeyHitLocalValid'].values])))
-                            sweyepe_start_index = trial_w_input_df.index[hit_state_transition[-2][0]]
+                            try:
+                                sweyepe_start_index = trial_w_input_df.index[hit_state_transition[-2][0]]
+                            except IndexError as e:
+                                print(e)
                             sweyepe_end_index = trial_w_input_df.index[hit_state_transition[-1][0]]
-                            assert w_first_appear_index >= sweyepe_start_index
+                            try:
+                                assert w_first_appear_index >= sweyepe_start_index
+                            except:
+                                raise Exception(f"Participant {participant_id} session {session_number} trial {trial_index} word {w} first appear index is smaller than the sweyepe start index.")
                             assert sweyepe_end_index >= sweyepe_start_index
                             w_duration = trial_w_input_df['absoluteTime'][sweyepe_end_index] - trial_w_input_df['absoluteTime'][sweyepe_start_index]
                             sweyepe_durations.append(w_duration)
@@ -463,9 +476,18 @@ if __name__ == '__main__':
                             except IndexError:
                                 first_candidate = None
                             candidate123 = [trial_w_input_df.loc[first_candidate_available_index][f'candidate{i}'] for i in range(1, 4)]
+                            # target word is the word the participant is trying to type
                             # the target word is first word in target_sentence after removing the words that are already in cur_words
-                            target_words = [x.lower() for x in re.findall(r'\b\w+\b', target_sentence)]
-                            target_word = [x for x in target_words if x not in cur_words[:-1]][0]
+                            words_in_this_trial = [x.lower() for x in re.findall(r'\b\w+\b', target_sentence)]
+                            already_typed_words = cur_words[:-1]  # already typed words up to the last word
+                            for tw in already_typed_words:
+                                if tw in words_in_this_trial:
+                                    words_in_this_trial.remove(tw)
+                            try:
+                                target_word = words_in_this_trial[0]
+                            except IndexError as e:
+                                print(f"{e}: words_in_this_trial doesn't have any words left after removing already typed words.")
+
                             if first_candidate == target_word:
                                 n_sweyepe_first_candidate_matched += 1
                                 n_sweyepe_any_candidates_matched += 1
@@ -473,7 +495,14 @@ if __name__ == '__main__':
                                 n_sweyepe_any_candidates_matched += 1
                             else:
                                 n_sweyepe_all_candidate_missed += 1
-                        new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60] if f'CPMWordLen={len(w)}' not in new_trial_row else new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
+                        if f'CPMWordLen={len(w)}' not in new_trial_row:
+                            new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60]
+                        else:
+                            try:
+                                new_trial_row[f'CPMWordLen={len(w)}'] = new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
+                            except TypeError as e:
+                                raise e
+                        # new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60] if f'CPMWordLen={len(w)}' not in new_trial_row else new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
                     if new_trial_row['condition'] == 'Sweyepe':
                         if np.any(np.isnan(sweyepe_durations)):
                             print(f"found NAN in sweyepe durations: {sweyepe_durations}")
@@ -509,8 +538,13 @@ if __name__ == '__main__':
                     new_trial_row['TER'] = compute_total_error_rates(target_sentence.lower(), input_stream, new_trial_row['userSentence'].lower())["Total Error Rate (%)"]
                     new_trial_row['MSD Error Rate'] = compute_msd_error_rates(target_sentence.lower(), new_trial_row['userSentence'].lower())
 
-                    # action_info_df.iloc[last_unique_text_index]['trialTime'] - action_info_df.iloc[first_input_index]['trialTime']
+                    if new_trial_row['isValid']:
+                        condition_trial_index[new_trial_row['condition']] += 1
+                        new_trial_row['condition_trial_index'] = condition_trial_index[new_trial_row['condition']]  # the index of the trial for this condition
+                        if new_trial_row['condition_trial_index'] > 16:
+                            warnings.warn(f"!!!!!! Participant {participant_id} session {session_number} trial {trial_index} has more than 12 trials for this condition. It has {new_trial_row['condition_trial_index']} trials \n")
 
+                    # action_info_df.iloc[last_unique_text_index]['trialTime'] - action_info_df.iloc[first_input_index]['trialTime']
                     # report the number of valid trials for each conditions that this session has
 
                     trial_data = pd.concat([trial_data, pd.DataFrame([new_trial_row])], ignore_index=True)
@@ -542,6 +576,19 @@ sns.catplot(data=trial_data_wpm_na_dropped, x="session", y="MSD Error Rate", hue
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)  # Adds a dashed grid
 plt.ylabel("MSD Error Rate (%)")
 plt.show()
+
+
+# plot the performance as a function of trials in the users's first session
+trial_data_first_session = trial_data[trial_data['session'] == 1]
+trial_data_first_session = trial_data_first_session.dropna(subset=['wpm'])
+trial_data_first_session = trial_data_first_session[trial_data_first_session['condition_trial_index'] <= 12]
+sns.lineplot(data=trial_data_first_session, x="condition_trial_index", y="wpm", hue="condition", style="condition", markers=True, err_style="bars", errorbar=("se", 2))
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)  # Adds a dashed grid
+plt.show()
+
+
+
+
 
 
 
