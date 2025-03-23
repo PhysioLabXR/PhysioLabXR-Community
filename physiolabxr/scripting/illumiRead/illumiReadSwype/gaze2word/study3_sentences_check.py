@@ -51,3 +51,5 @@ for file_path in xlsx_files:
                 if word not in g2w.vocab_traces:
                     print(f"Out of vocab word: {word} In file {os.path.basename(file_path)} from sentence {sentence}")
 
+# check trim vocab works
+g2w.trim_vocab(all_words)
