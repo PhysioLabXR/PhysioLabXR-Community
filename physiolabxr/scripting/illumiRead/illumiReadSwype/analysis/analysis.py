@@ -136,7 +136,10 @@ group.add_argument("--reload_data", action="store_true", help="Reload data from 
 group.add_argument("--no_reload_data", action="store_false", dest="reload_data", help="Load from cache instead of reloading.")
 parser.add_argument("--data_root", type=str, required=True, help="The root directory of the data. If not specified, use the default data root.")
 parser.add_argument("--only_run_participants",  nargs='+', type=str, required=False, help="Only run the specified participants. Comma separated list of participant ids.", default=None)
+parser.add_argument("--skip_participants",  nargs='+', type=str, required=False, help="Skipped the specified participants. Comma separated list of participant ids.", default=None)
 args = parser.parse_args()
+
+# check only run and sipped participants doesn't overlap
 
 TRIAL_TIMESTAMP_STD_TOLERANCE = 0.5
 # user parameters ##############################################################
@@ -147,10 +150,17 @@ trial_data_export_path = os.path.join(data_root, 'trial_data.csv')
 reload_data = args.reload_data
 
 session_names = ['One', 'Two', 'Three', 'Four', 'Five']
-condition_names = ['HandTap', 'GazePinch', 'Sweyepe']
-participant_notes = {
-    'P001': ''
-}
+swype_conditions = ['Sweyepe', 'PartialSwipe', 'HandSwipe']
+eyetracking_conditions = ['Sweyepe', 'PartialSwipe', 'GazePinch']
+
+# use the data root name to determine which study is this
+# TODO add study 3 here
+if 'Study2' in os.path.basename(data_root):
+    study = 2
+    condition_names = ['HandTap', 'HandSwipe', 'PartialSwipe']  # HandTap here is with word completion
+else:
+    study = 1
+    condition_names = ['HandTap', 'GazePinch', 'Sweyepe']
 
 known_problematic_trial = ([{'participant': 'P001', 'session': 1, 'trial_index': i} for i in range(12, 36)] +  # these are skipped trials
                            [
@@ -164,8 +174,16 @@ known_problematic_trial = ([{'participant': 'P001', 'session': 1, 'trial_index':
                             {'participant': 'P028', 'session': 1, 'trial_index': 49},  # same as above
                             {'participant': 'P029', 'session': 1, 'trial_index': 12},  # same as above
                             {'participant': 'P032', 'session': 1, 'trial_index': 61},  # same as above
+
+                            {'participant': 'P2_004', 'session': 1, 'trial_index': 24},  # same as above
+                            {'participant': 'P2_008', 'session': 1, 'trial_index': 24},  # same as above
                             ])
 only_run_participants = args.only_run_participants
+skipped_participants = args.skip_participants
+
+if only_run_participants is not None and skipped_participants is not None:
+    assert all([x not in args.skip_participants for x in args.only_run_participants])
+
 
 # because in some of the earlier experiments, the absoluteTime in action info is not
 # LSL's local clock, the log_time as one of the eyetracking channels is always used as the reference clock to
@@ -175,6 +193,8 @@ only_run_participants = args.only_run_participants
 if __name__ == '__main__':
     if reload_data:
         participant_dirs = [os.path.join(data_root, d) for d in os.listdir(data_root) if d.startswith('P')]
+        if skipped_participants:
+            participant_dirs = [d for d in participant_dirs if os.path.basename(d) not in skipped_participants]
         # sort by participant id
         participant_dirs.sort(key=lambda x: int(os.path.basename(x)[1:]))
 
@@ -282,6 +302,8 @@ if __name__ == '__main__':
                         continue
                     new_trial_row = {}
 
+                    # TODO designate the columns trialTime and absoluteTime to be float columns, this will fix the P2_008
+
                     trial_df_filtered_with_condition = trial_df[trial_df['conditionType'].isin(condition_names)]  # only keep the rows where conditionType is one of the condition_names
 
                     new_trial_row['participant'] = participant_id
@@ -302,9 +324,11 @@ if __name__ == '__main__':
                             continue
 
                     # check the continuity of the trialTime and absoluteTime
-                    assert np.max(np.diff(np.array(trial_df_filtered_with_condition['trialTime'])) < TRIAL_TIMESTAMP_STD_TOLERANCE), f"The standard deviation of the timestamps is larger than {TRIAL_TIMESTAMP_STD_TOLERANCE}"
-                    assert np.max(np.diff(np.array(trial_df_filtered_with_condition['absoluteTime'])) < TRIAL_TIMESTAMP_STD_TOLERANCE), f"The standard deviation of the timestamps is larger than {TRIAL_TIMESTAMP_STD_TOLERANCE}"
-
+                    try:
+                        assert np.max(np.diff(np.array(trial_df_filtered_with_condition['trialTime'], dtype=float)) < TRIAL_TIMESTAMP_STD_TOLERANCE), f"The standard deviation of the timestamps is larger than {TRIAL_TIMESTAMP_STD_TOLERANCE}"
+                        assert np.max(np.diff(np.array(trial_df_filtered_with_condition['absoluteTime'], dtype=float)) < TRIAL_TIMESTAMP_STD_TOLERANCE), f"The standard deviation of the timestamps is larger than {TRIAL_TIMESTAMP_STD_TOLERANCE}"
+                    except TypeError as e:
+                        raise e
                     # only keep the rows where conditionType is one of the condition_names
                     user_inputs_step = trial_df_filtered_with_condition['currentText'].drop_duplicates(keep='first')
                     target_sentence = trial_df_filtered_with_condition['targetText'].drop_duplicates(keep='first').iloc[0]
@@ -316,6 +340,10 @@ if __name__ == '__main__':
                     new_trial_row['condition'] = trial_df_filtered_with_condition['conditionType'].mode().item()
 
                     deduplicated_user_inputs = trial_df_filtered_with_condition['currentText'].drop_duplicates(keep='first')
+                    try:
+                        np.isnan(deduplicated_user_inputs.iloc[0])
+                    except TypeError as e:
+                        raise e
                     if len(deduplicated_user_inputs) == 1 and np.isnan(deduplicated_user_inputs.iloc[0]):
                         warnings.warn(f"trial {trial_index} for Participant {participant_id} session {session_number} has no input."
                                       f"Deduplicated user input text are"
@@ -330,9 +358,8 @@ if __name__ == '__main__':
                     new_trial_row['FinalUserInputEditDistance2TargetNormalized'] = new_trial_row['FinalUserInputEditDistance2Target'] / max(len(user_inputs_step.iloc[-1]), len(target_sentence))
 
                     # find the first input
-                    if new_trial_row['condition'] == 'Sweyepe':
+                    if new_trial_row['condition'] in swype_conditions:
                         first_input_index = trial_df_filtered_with_condition[trial_df_filtered_with_condition['xKeyHitLocal'] != -np.inf].index[0]  # this index is that of action_info_df's instead of trial_df's
-
                     elif new_trial_row['condition'] == 'HandTap' or new_trial_row['condition'] == 'GazePinch':
                         first_input_index = 0
                         if 'eyeTrackingStatus' not in trial_df_filtered_with_condition.columns:  # need to check if the first ActionInfo input index is within the bounds of the stream timestamps
@@ -340,6 +367,8 @@ if __name__ == '__main__':
                             if abs(diff) >= 5e-3 :
                                 first_input_index = trial_df_filtered_with_condition[np.logical_not(pd.isna(trial_df_filtered_with_condition['keyboardValue']))].index[0]  # this index is that of action_info_df's instead of trial_df's
                         if first_input_index == 0: trial_first_index_is_zero_counter += 1
+                    else:
+                        raise Exception(f"Unknown condition: {new_trial_row['condition']}")
                     # else:
                     #     raise Exception(f"Unknown condition {new_trial_row['condition']}")
 
@@ -353,8 +382,9 @@ if __name__ == '__main__':
                                         f"Deduplicated user input text are \n"
                                         f"{trial_df_filtered_with_condition['currentText'].drop_duplicates(keep='first')}.")
                     trial_w_input_df = trial_df_filtered_with_condition.loc[first_input_index:last_unique_text_index]  # the trial rows from the first input to the last unique text
+                    trial_timestamps = np.array(trial_w_input_df['absoluteTime'].values, dtype=float)
 
-                    if new_trial_row['condition'] == 'Sweyepe' or new_trial_row['condition'] == 'GazePinch':  # removing the calibration time
+                    if new_trial_row['condition'] in eyetracking_conditions:  # removing the calibration time
                     # if new_trial_row['condition'] == 'GazePinch':  # removing the calibration time
                         # remove the rows of calibration
                         # there are two ways to know if is calibrating,
@@ -363,8 +393,10 @@ if __name__ == '__main__':
                             duration = trial_w_input_df['trialTime'].iloc[-1] - trial_w_input_df['trialTime'].iloc[0]
                             if len(trial_w_input_df[trial_w_input_df['eyeTrackingStatus'] != 'Available']) > 0:
                                 eye_status_trial = np.array([1 if x == 'Available' else 0 for x in trial_w_input_df['eyeTrackingStatus']])
-                                eye_timestamps_trial = trial_w_input_df['absoluteTime'].values
-                                invalid_duration = compute_invalid_duration(eye_status_trial, eye_timestamps_trial)
+                                try:
+                                    invalid_duration = compute_invalid_duration(eye_status_trial, trial_timestamps)
+                                except Exception as e:
+                                    raise e
                             else:
                                 invalid_duration = 0
                         else:  # 0 is invalid
@@ -397,19 +429,21 @@ if __name__ == '__main__':
                             # add the fitted eye status to the trial_w_input_df
                             trial_w_input_df['eyeTrackingStatusFittedFromStream'] = merged_df['status']
 
-                    if new_trial_row['condition'] == 'Sweyepe':
+                    if new_trial_row['condition'] in swype_conditions:
                         eye_status_col_name = 'eyeTrackingStatus' if 'eyeTrackingStatus' in trial_w_input_df.columns else 'eyeTrackingStatusFittedFromStream'
                         assert eye_status_col_name in trial_w_input_df.columns, f"Participant {participant_id} session {session_number} trial {trial_index} does not have the column {eye_status_col_name}."
 
                         key_hit = trial_w_input_df['xKeyHitLocal'].values
                         candidate1_is_na = pd.isna(trial_w_input_df['candidate1']).values
                         eye_status = trial_w_input_df[eye_status_col_name].values
-
-                        eye_hit_status = np.array([(0 if abs(x_key_hit) == np.inf and x_cndt_is_na else 1) for x_key_hit, x_cndt_is_na in zip(key_hit, candidate1_is_na)])
-                        hit_invalid_duration = compute_invalid_duration(eye_hit_status, trial_w_input_df['absoluteTime'].values)
+                        try:
+                            eye_hit_status = np.array([(0 if abs(x_key_hit) == np.inf and x_cndt_is_na else 1) for x_key_hit, x_cndt_is_na in zip(key_hit, candidate1_is_na)])
+                        except TypeError as e:
+                            raise e
+                        hit_invalid_duration = compute_invalid_duration(eye_hit_status, trial_timestamps)
 
                         eye_hit_calib_status = np.array([(0 if ((abs(x_key_hit) == np.inf and x_cndt_is_na ) or x_status == 0 )else 1) for x_key_hit, x_cndt_is_na, x_status in zip(key_hit, candidate1_is_na, eye_status)])
-                        hit_calib_invalid_duration = compute_invalid_duration(eye_hit_calib_status, trial_w_input_df['absoluteTime'].values)
+                        hit_calib_invalid_duration = compute_invalid_duration(eye_hit_calib_status, trial_timestamps)
 
                         # print(f"Total duration: {trial_w_input_df['trialTime'].iloc[-1] - trial_w_input_df['trialTime'].iloc[0]}. Hit ID: {hit_invalid_duration}. Hit calib ID: {hit_calib_invalid_duration}")
                         invalid_duration = hit_calib_invalid_duration
@@ -420,7 +454,7 @@ if __name__ == '__main__':
                     new_trial_row['wpm'] = (60/5) * len(new_trial_row['userSentence']) / new_trial_row['duration']
                     # new_trial_row['wpm'] = count_words(new_trial_row['userSentence']) / new_trial_row['duration'] * 60
 
-                    # 1. TODO overall CPM, CPM as a function word length
+                    # 1. overall CPM, CPM as a function word length
                     new_trial_row['overallCPM'] = len(new_trial_row['userSentence']) / new_trial_row['duration'] * 60
 
                     # find all the words in the final sentence
@@ -444,7 +478,7 @@ if __name__ == '__main__':
                         w_first_appear_index = subset_df.index[0]
 
                         # w_first_appear_index = trial_w_input_df.loc[w_first_appear_index:][trial_w_input_df['currentWords'].apply(lambda x: w in x)].index[0]
-                        if new_trial_row['condition'] != 'Sweyepe':
+                        if new_trial_row['condition'] not in swype_conditions:
                             # find the last time nWords increment∂ in the series up to w_first_appear_index, this is the beginning letter of the new word first being typed
                             nWords_last_increment_index = trial_w_input_df.loc[:w_first_appear_index, 'nWords'].idxmax()
                             assert w_first_appear_index >= nWords_last_increment_index, f"Participant {participant_id} session {session_number} trial {trial_index} word {w} first appear index is smaller than the last nWords increment index."
@@ -503,13 +537,13 @@ if __name__ == '__main__':
                             except TypeError as e:
                                 raise e
                         # new_trial_row[f'CPMWordLen={len(w)}'] = [len(w) / w_duration * 60] if f'CPMWordLen={len(w)}' not in new_trial_row else new_trial_row[f'CPMWordLen={len(w)}'] + [len(w) / w_duration * 60]
-                    if new_trial_row['condition'] == 'Sweyepe':
+                    if new_trial_row['condition'] in swype_conditions:
                         if np.any(np.isnan(sweyepe_durations)):
                             print(f"found NAN in sweyepe durations: {sweyepe_durations}")
                         new_trial_row['average_sweyepe_duration'] = np.mean(sweyepe_durations)
 
                     # 3. Sweyepe first candidate miss rate, all candidate miss rate
-                    if new_trial_row['condition'] == 'Sweyepe':
+                    if new_trial_row['condition'] in swype_conditions:
                         try:
                             new_trial_row['sweyepe_first_candidate_match_rate'] = n_sweyepe_first_candidate_matched / n_sweyepe_words
                             new_trial_row['sweyepe_any_candidate_match_rate'] = n_sweyepe_any_candidates_matched / n_sweyepe_words
@@ -522,10 +556,9 @@ if __name__ == '__main__':
                     for i in range(1, 30):
                         if f'CPMWordLen={i}' in new_trial_row:
                             new_trial_row[f'CPMWordLen={i}'] = np.mean(new_trial_row[f'CPMWordLen={i}'])
-                    # 2. TODO Backspace usage
                     # only count non-consecutive backspace
                     delete_presses = (trial_w_input_df["keyboardValue"] == "Delete") & (trial_w_input_df["keyboardValue"].shift() != "Delete")
-                    if new_trial_row['condition'] == 'Sweyepe':
+                    if new_trial_row['condition'] in swype_conditions:
                         new_trial_row['numDeletePress'] = new_trial_row['sweyepe_all_candidate_miss_rate']
                     else:
                         new_trial_row['numDeletePress'] = delete_presses.sum()
@@ -547,6 +580,13 @@ if __name__ == '__main__':
                     # action_info_df.iloc[last_unique_text_index]['trialTime'] - action_info_df.iloc[first_input_index]['trialTime']
                     # report the number of valid trials for each conditions that this session has
 
+                    # TODO check the number of completion and next word prediction usage when is study 2
+
+                    # TODO check the number of partial sweyepe completes for PartialSwipe and HandSwipe
+                    # pending on Season's response
+
+                    # TODO number of deletes mid swipe for PartialSwipe and HandSwipe
+
                     trial_data = pd.concat([trial_data, pd.DataFrame([new_trial_row])], ignore_index=True)
                     trial_dfs.append(trial_df_filtered_with_condition)
 
@@ -556,6 +596,8 @@ if __name__ == '__main__':
         trial_data = pd.read_csv(trial_data_export_path)
 
 # plot the wpm as a function of session ##############################################################
+assert trial_data.shape[0] > 0, "trial data is empty"
+
 trial_data_wpm_na_dropped = trial_data.dropna(subset=['wpm'])
 sns.boxplot(data=trial_data_wpm_na_dropped, x="session", y="wpm", hue="condition")
 plt.ylim(0, 60)
