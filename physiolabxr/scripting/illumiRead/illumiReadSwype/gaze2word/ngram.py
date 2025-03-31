@@ -208,7 +208,10 @@ if __name__ == "__main__":
         "How are ",          # ends with space
         "",                  # empty prefix
         "The economy is bo",  # partial final word
-        ""
+        "",
+        "A",
+        "How are c",
+        "Ap",
     ]
     for text in examples:
         completions = ngram_model.predict_word_completion(text, k=5, ignore_punctuation=True)
