@@ -13,7 +13,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import classification_report
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, ks_2samp
 from scipy.stats import spearmanr
 from nltk.corpus import stopwords
 import re
@@ -63,7 +63,7 @@ def min_max_normalize(array):
     return (array - np.min(array)) / (np.max(array) - np.min(array))
 
 def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig.ExperimentState,
-                  experiment_block_images: list, subimage_handler):
+                  experiment_block_images: list, subimage_handler, is_compute_divergence=False):
 
     trial_info = {}
 
@@ -105,9 +105,11 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
     ivt_filter = GazeFilterFixationDetectionIVT(angular_speed_threshold_degree=100)
 
     # construct the fixation sequence
+    time_looking_at_image = 0
     fixation_sequence = np.zeros_like(gaze_data_ts_stream)  # 0 or 1 depending on if a fixation is made on the image
     fixation_on_image_coordinates = -np.ones((len(gaze_data_ts_stream), 2), dtype=int)  # the fixation coordinates on the image
     for gaze_i, (gaze_data_t, ts) in enumerate(zip(gaze_data_stream.T, gaze_data_ts_stream)):
+        print(f"Processing gaze data {gaze_i} of {len(gaze_data_stream.T)}", end="\r")
         # construct gaze data
         gaze_data = GazeData()
         gaze_data.construct_gaze_data_tobii_pro_fusion(gaze_data_t)
@@ -135,20 +137,21 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
                 coordinate=gaze_point_on_screen_pixel_index)
 
             if gaze_point_is_in_screen_image_boundary:
+                time_looking_at_image += gaze_data_ts_interval
 
-                gaze_point_on_raw_image_coordinate = image_coordinate_transformation(
-                    original_image_shape=current_image_info.image_on_screen_shape,
-                    target_image_shape=current_image_info.original_image.shape[:2],
-                    coordinate_on_original_image=gaze_point_on_screen_pixel_index
-                )
-                gaze_on_image_attention_map = gaze_attention_matrix.get_gaze_on_image_attention_map(
-                    gaze_point_on_raw_image_coordinate,
-                    current_image_info.original_image.shape[:2])  # the gaze attention map on the original image
-
-                gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=None)  # perform the static clutter removal
+                if is_compute_divergence:
+                    gaze_point_on_raw_image_coordinate = image_coordinate_transformation(
+                        original_image_shape=current_image_info.image_on_screen_shape,
+                        target_image_shape=current_image_info.original_image.shape[:2],
+                        coordinate_on_original_image=gaze_point_on_screen_pixel_index
+                    )
+                    gaze_on_image_attention_map = gaze_attention_matrix.get_gaze_on_image_attention_map(
+                        gaze_point_on_raw_image_coordinate,
+                        current_image_info.original_image.shape[:2])  # the gaze attention map on the original image
+                    gaze_attention_matrix.gaze_attention_pixel_map_clutter_removal(gaze_on_image_attention_map, attention_clutter_ratio=None)  # perform the static clutter removal
+                    fixation_on_image_coordinates[gaze_i] = gaze_point_on_raw_image_coordinate
 
                 fixation_on_image_duration += gaze_data_ts_interval
-                fixation_on_image_coordinates[gaze_i] = gaze_point_on_raw_image_coordinate
                 fixation_sequence[gaze_i] = 1
 
     # identify all the fixations
@@ -160,18 +163,19 @@ def process_trial(trial_data: DataBuffer, trial_condition: AOIAugmentationConfig
     #     _fix_coord = fixation_on_image_coordinates[fix_onset]   # fixation coordinate on the r
     #     fixation_duration_image[_fix_coord[0], _fix_coord[1]] += 1  # first is height second is width
 
-    user_attention_mat = gaze_attention_matrix.gaze_attention_pixel_map_buffer.detach().cpu().numpy()
 
     # get the image attention from the model
-    model_name = "vit" if trial_condition == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState or trial_condition == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationInstructionState else "resnet"
-    model_attn_mat = subimage_handler.compute_perceptual_attention(
-        image_name, is_plot_results=False,  discard_ratio=0.0, model_name=model_name, normalize_by_subimage = False
-    )['original_image_attention']
+    if is_compute_divergence:
+        user_attention_mat = gaze_attention_matrix.gaze_attention_pixel_map_buffer.detach().cpu().numpy()
+        model_name = "vit" if trial_condition == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState or trial_condition == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationInstructionState else "resnet"
+        model_attn_mat = subimage_handler.compute_perceptual_attention(
+            image_name, is_plot_results=False,  discard_ratio=0.0, model_name=model_name, normalize_by_subimage = False
+        )['original_image_attention']
+        user_attention_divergence = compute_divergence(user_attention_map=user_attention_mat, model_attention_map=model_attn_mat)
+        trial_info['divergence'] = user_attention_divergence
 
-    user_attention_divergence = compute_divergence(user_attention_map=user_attention_mat, model_attention_map=model_attn_mat)
-
-    trial_info['divergence'] = user_attention_divergence
     trial_info['image name'] = image_name
+    trial_info['time looking at image'] = time_looking_at_image
 
     # get the number of interaction
     trial_info['cue update count'] = np.sum(trial_data['AOIAugmentationEventMarkerLSL'][0][event_channels.index("Update Visual Cue Marker")])
@@ -266,9 +270,11 @@ def process_session(data_root, participant_id, sub_image_handler_path):
 
     experiment_block_images = AOIAugmentationConfig.TestBlockImages
     trial_info_dict = {}
-    for trial_condition in trial_conditions:
+    for trial_cond_i, trial_condition in enumerate(trial_conditions):
+        print(f"Processing condition {trial_condition.get_name()} of {len(trial_conditions)} for participant {participant_id}")
         trial_info_dict[trial_condition] = []
-        for trial_data in condition_data[trial_condition]:
+        for trial_i, trial_data in enumerate(condition_data[trial_condition]):
+            print(f"Processing trial {trial_i} of {len(condition_data[trial_condition])} for participant {participant_id}")
             trial_info = process_trial(trial_data, trial_condition, experiment_block_images, subimage_handler)
             survey_row = survey_df[survey_df["ImageName"] == trial_info["image name"]]
             trial_info["Message"] = survey_row["Message"].values[0]
@@ -300,25 +306,32 @@ def preprocess_text(text):
 
 # start of the main block ######################################################
 if __name__ == "__main__":  # yes no is has experience ?
-    # study_participants = {"04": "Yes",  # # first block no guidance  # STUDY 1
-    #                         "08": "No",  # first block no guidance
-    #                         "09": "No",  # first block no guidance
-    #                         "10": "No",  # first block resnet
-    #                         "12": "No",  # first block no guidance
-    #                         "13": "Yes",  # first block vit
-    #                         "14-1": "Yes",  # first block no guidance
-    #                         "15-1": "Yes"}  # first block resnet
+    using_study = 1
 
-    study_participants = {  # STUDY 2
-                            "06": "No",
-                            "07": "No",
-                            "11": "No",
-                            "14-2": "Yes",
-                            "15-2": "Yes",
-    }
-    # data_root = "/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/"
-    m_data_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation"
-    m_result_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation\UserStudyResults 2"
+    m_data_root = r"/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation"
+
+    if using_study == 1:
+        """Select the study participants,"""
+        study_participants = {"04": "Yes",  # # first block no guidance  # STUDY 1
+                                "08": "No",  # first block no guidance
+                                "09": "No",  # first block no guidance
+                                "10": "No",  # first block resnet
+                                "12": "No",  # first block no guidance
+                                "13": "Yes",  # first block vit
+                                "14-1": "Yes",  # first block no guidance
+                                "15-1": "Yes"}  # first block resnet
+        m_result_root = "/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/UserStudyResults 1"
+    elif using_study == 2:
+        study_participants = { "06": "No",  # STUDY 2
+                                "07": "No",
+                                "11": "No",
+                                "14-2": "Yes",
+                                "15-2": "Yes",}
+        # m_result_root = r"C:\Dev\PycharmProjects\Temp\AOIAugmentation\UserStudyResults 2"
+        m_result_root = "/Users/apocalyvec/PycharmProjects/Temp/AOIAugmentation/UserStudyResults 2"
+    else:
+        raise Exception(f"Invalid study number {using_study}")
+
     m_sub_image_handler_path = os.path.join(m_data_root, 'sub_image_handler.p')
     m_data_root = os.path.join(m_data_root, 'Participants')
 
@@ -366,6 +379,20 @@ if __name__ == "__main__":  # yes no is has experience ?
     # sns.boxplot(data=trial_results, x="condition", y="Text Complexity")
     plt.ylabel("Diagnose insight")
     plt.show()
+
+    # plot the time people spent looking at image
+    sns.boxplot(data=trial_results, x="condition", y="time looking at image", hue="Has Experience")
+    plt.ylabel("Dwell time on the OCT report")
+    plt.ylim(0, 80)
+    plt.show()
+
+    # get the median of the time looking at image for experience users for the three conditions, report this number in paper
+    print(trial_results[trial_results["Has Experience"] == "Yes"].groupby("condition")["time looking at image"].median())
+
+    # compute the p-value between the two conditions for dwell time, and no experience
+    condition1 = trial_results[np.logical_and(trial_results["condition"] == AOIAugmentationConfig.ExperimentState.StaticAOIAugmentationState.get_name(), trial_results["Has Experience"] == "Yes")]["time looking at image"].values
+    condition2 = trial_results[np.logical_and(trial_results["condition"] == AOIAugmentationConfig.ExperimentState.InteractiveAOIAugmentationState.get_name(), trial_results["Has Experience"] == "Yes")]["time looking at image"].values
+    ks_statistic, p_value = ks_2samp(condition1, condition2)
 
     # compute p-value between no guidance and vit guidance
     no_guidance = trial_results[trial_results["condition"] == AOIAugmentationConfig.ExperimentState.NoAOIAugmentationState.get_name()]["divergence"]

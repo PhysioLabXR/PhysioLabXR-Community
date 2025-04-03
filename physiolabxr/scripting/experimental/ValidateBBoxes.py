@@ -3,17 +3,14 @@ import os
 import pandas as pd
 import cv2
 import json
-import ast
 
 from physiolabxr.examples.Eyetracking.EyeUtils import clip_bbox, add_bounding_box
 
-data_root = r"C:\Recordings\ReNaUnityCameraCapture_11_20_2024_19_31_57"
+data_root = "/Users/apocalyvec/Data/physioxr_experiment/attentionbci-pilot/Tests/2/0_video/ReNaUnityCameraCapture_11_20_2024_21_03_56"
 image_shape = (448, 448, 3)
 
 # read GazeInfo.csv
 df = pd.read_csv(os.path.join(data_root, "GazeInfo.csv"))
-
-
 
 # get the rows where bbox column is not '{}'
 df = df[df['bboxes'] != '{}']
