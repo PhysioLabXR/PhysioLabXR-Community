@@ -71,20 +71,21 @@ class NGramModel:
                     suffix = ng[-1]
                     self.models[i][prefix][suffix] += 1
 
-    def predict_next(
-        self, prefix, k=5, ignore_punctuation=False, return_prob=False, epsilon=1e-8
-    ):
+    def predict_next(self, prefix, k=5,
+                     ignore_punctuation=False,
+                     return_prob=False,
+                     epsilon=1e-8):
         """
         Predict the next word(s) given a prefix using a weighted mixture of
-        all valid n-gram orders from 1..n (including unigrams).
+        all valid n-gram orders (1..n). If `return_prob=True`, return
+        probabilities. Otherwise, return integer 'scores' (pseudo-counts).
         """
-        # Tokenize the prefix into words (lower-cased) and prepend a start token
+        # Tokenize prefix and prepend start token
         tokens = nltk.word_tokenize(prefix.lower())
         tokens = ['<s>'] + tokens
 
-        # Which n-gram models are valid given the prefix length?
-        # For an i-gram model, we need at least (i-1) tokens in the prefix.
-        # i=1 needs 0 tokens in the prefix, i=2 needs 1 token, etc.
+        # Which n-gram models are valid for this prefix length?
+        # For an i-gram, we need at least i-1 tokens in the prefix (0 if i=1).
         prefix_length = len(tokens)
         valid_ngram_orders = [
             i for i in range(1, self.n + 1)
@@ -92,66 +93,71 @@ class NGramModel:
         ]
 
         if not valid_ngram_orders:
-            # If the prefix is extremely short (which generally won't happen,
-            # since i=1 always is valid if prefix_length >= 0),
-            # return empty results
             return []
 
-        # Here we define uniform weights across valid orders.
-        # You can replace this with any weighting scheme you prefer.
+        # Use uniform weights among all valid orders
         weight = 1.0 / len(valid_ngram_orders)
 
         next_word_probs = defaultdict(float)
 
         for i in valid_ngram_orders:
-            # For i=1, prefix_tuple=() always, but let's follow the same logic:
             prefix_tuple = tuple(tokens[-(i - 1):]) if i > 1 else ()
-
             counts_i = self.models[i][prefix_tuple]
             total_counts_i = sum(counts_i.values())
             if total_counts_i == 0:
                 continue
 
-            # Convert counts to probabilities with additive smoothing
             vocab_size_i = len(counts_i)
             for word, count in counts_i.items():
                 if ignore_punctuation and word in string.punctuation:
                     continue
+                # Compute smoothed probability
                 p_i = (count + epsilon) / (total_counts_i + epsilon * vocab_size_i)
+                # Accumulate in the mixture
                 next_word_probs[word] += weight * p_i
 
         if not next_word_probs:
             return []
 
-        # Sort candidates by their accumulated probability
+        # Sort by accumulated probability (descending)
         sorted_words = sorted(next_word_probs.items(), key=lambda x: x[1], reverse=True)
 
+        # If k == 'all', we return all candidates
         if k == 'all':
-            # Return all candidates with their probabilities/scores
-            return sorted_words if return_prob else sorted_words
+            result = sorted_words
         else:
-            # Return top k
-            top_k = sorted_words[:k]
-            return top_k if return_prob else top_k
+            result = sorted_words[:k]
 
-    def predict_word_completion(self, prefix, k=5, ignore_punctuation=True):
+        # If return_prob=True, return (word, probability).
+        # If return_prob=False, return (word, integer_score).
+        if return_prob:
+            # Already in the form (word, probability)
+            return result
+        else:
+            # Convert probability to an integer 'score' (like a pseudo-count).
+            # Adjust the scaling (1e6 here) however you want.
+            scored_result = [(w, int(round(p * 1e6))) for w, p in result]
+            return scored_result
+
+    def predict_word_completion(self, prefix, k=5, ignore_punctuation=True,
+                                return_prob=False):
         """
-        Predict completions for a partial final word or next words if prefix
-        ends in whitespace.
+        Predict completions for a partial final word (no trailing space),
+        or next-word if prefix ends in space or is empty.
         """
-        # Check how the prefix ends
-        ended_with_space = (prefix.endswith(' ') or len(prefix.strip()) == 0)
+        ended_with_space = prefix.endswith(' ') or len(prefix.strip()) == 0
         stripped_prefix = prefix.rstrip()
 
+        # 1) If prefix is empty or all spaces, predict from ""
         if not stripped_prefix:
-            # If the prefix is empty or all spaces -> just predict next
             return self.predict_next(
                 prefix="",
                 k=k,
-                ignore_punctuation=ignore_punctuation
+                ignore_punctuation=ignore_punctuation,
+                return_prob=return_prob
             )
 
-        # Tokenize the stripped prefix
+        # 2) Otherwise, tokenize
         tokens = nltk.word_tokenize(stripped_prefix)
 
         if ended_with_space:
@@ -159,30 +165,37 @@ class NGramModel:
             return self.predict_next(
                 prefix=stripped_prefix,
                 k=k,
-                ignore_punctuation=ignore_punctuation
+                ignore_punctuation=ignore_punctuation,
+                return_prob=return_prob
             )
         else:
-            # We assume the last token is a partial word to complete
+            # The last token is a partial word to complete
             partial_word = tokens[-1]
             prefix_without_partial = " ".join(tokens[:-1])
 
-            # Get all predictions (then we filter by those that start with partial_word)
+            # Get a distribution for the prefix (all words), then filter
             raw_predictions = self.predict_next(
                 prefix=prefix_without_partial,
                 k='all',
-                ignore_punctuation=ignore_punctuation
+                ignore_punctuation=ignore_punctuation,
+                return_prob=True  # temporarily get probabilities
             )
 
             partial_lower = partial_word.lower()
-            filtered = [
-                (word, score)
-                for word, score in raw_predictions
-                if word.startswith(partial_lower)
-            ]
 
-            # Sort by descending score, return top k
+            # Filter to those starting with partial_lower
+            filtered = [(w, p) for (w, p) in raw_predictions if w.startswith(partial_lower)]
+            # Sort descending by probability
             filtered_sorted = sorted(filtered, key=lambda x: x[1], reverse=True)
-            return filtered_sorted[:k]
+            if k != 'all':
+                filtered_sorted = filtered_sorted[:k]
+
+            if return_prob:
+                # Keep as probabilities
+                return filtered_sorted
+            else:
+                # Convert to integer scores
+                return [(w, int(round(p * 1e6))) for (w, p) in filtered_sorted]
 
 reload_model = False
 # Example usage
@@ -214,19 +227,21 @@ if __name__ == "__main__":
         print(f"{word}: {count}")
 
     examples = [
-        "How are y",         # partial final word
-        "How are ",          # ends with space
-        "",                  # empty prefix
-        "The economy is bo",  # partial final word
-        "",
-        "A",
-        "How are c",
-        "Ap",
-        "The name of the mailboxes means nothin",
+        # "How are y",         # partial final word
+        # "How are ",          # ends with space
+        # "",                  # empty prefix
+        # "The economy is bo",  # partial final word
+        # "",
+        # "A",
+        # "How are c",
+        # "Ap",
+        # "The name of the mailboxes means nothin",
+        "This was a slightly differen",
+        'The rustling prob'
     ]
     for text in examples:
         start_time = time.perf_counter()
-        completions = ngram_model.predict_word_completion(text, k=5, ignore_punctuation=True)
+        completions = ngram_model.predict_word_completion(text, k=5, ignore_punctuation=True, return_prob=True)
         elapsed_time = time.perf_counter() - start_time
 
         print(f"Predicting using prefix: '{text}'")
