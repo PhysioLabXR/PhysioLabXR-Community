@@ -31,7 +31,7 @@ import string
 
 
 class InterpolatedNGramModel:
-    def __init__(self, alpha=0.7, beta=0.2, gamma=0.1, top_unigrams=300):
+    def __init__(self, alpha=0.7, beta=0.2, gamma=0.1, top_unigrams=80000):
         """
         A trigram model with interpolation over tri-, bi-, and uni-gram counts.
 
@@ -321,7 +321,7 @@ class InterpolatedNGramModel:
             return matching + filler
 
 
-reload_model = True
+reload_model = False
 # Example usage
 if __name__ == "__main__":
     # Load the example corpus (you can use any text corpus)
@@ -344,11 +344,11 @@ if __name__ == "__main__":
     #     print(f"{word}: {count}")
 
     #
-    prefix = ""
-    top_k_predictions = ngram_model.predict_next(prefix, k=5, ignore_punctuation=True)
-    print(f"Next word predictions for the prefix '{' '.join(prefix)}':")
-    for word, count in top_k_predictions:
-        print(f"{word}: {count}")
+    # prefix = ""
+    # top_k_predictions = ngram_model.predict_next(prefix, k=5, ignore_punctuation=True)
+    # print(f"Next word predictions for the prefix '{' '.join(prefix)}':")
+    # for word, count in top_k_predictions:
+    #     print(f"{word}: {count}")
 
     examples = [
         # "How are y",         # partial final word
