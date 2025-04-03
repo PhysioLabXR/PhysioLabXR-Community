@@ -195,7 +195,7 @@ class NGramModel:
                 return filtered_sorted
             else:
                 # Convert to integer scores
-                return [(w, int(round(p * 1e6))) for (w, p) in filtered_sorted]
+                return {(w, int(round(p * 1e6))) for (w, p) in filtered_sorted}
 
 reload_model = False
 # Example usage
@@ -235,9 +235,10 @@ if __name__ == "__main__":
         # "A",
         # "How are c",
         # "Ap",
-        # "The name of the mailboxes means nothin",
+        "The name of the mailboxes means nothin",
         "This was a slightly differen",
-        'The rustling prob'
+        'The rustling prob',
+        'And this is wha'
     ]
     for text in examples:
         start_time = time.perf_counter()
