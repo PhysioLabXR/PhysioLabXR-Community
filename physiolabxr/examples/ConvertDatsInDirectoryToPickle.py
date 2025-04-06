@@ -3,7 +3,8 @@ import pickle
 
 from physiolabxr.utils.RNStream import RNStream
 
-directory = f'C:/Users/LLINC-Lab/Documents/Recordings'
+# directory = f'C:/Users/LLINC-Lab/Documents/Recordings'
+directory = '/Users/apocalyvec/Library/CloudStorage/GoogleDrive-zl2990@columbia.edu/My Drive/PhysioTaskInference'
 
 files_to_convert = [os.path.join(directory, x) for x in os.listdir(directory) if x.endswith('.dats')]
 converted_file_paths = [x.replace('.dats', '.p') for x in files_to_convert]

@@ -175,3 +175,9 @@ physiolabxr/web/frontend/physiolabxr-web/coverage
 *.sw?
 
 *.tsbuildinfo
+
+
+# ----------------------
+#  webapp
+# ----------------------
+physiolabxr/web/frontend/physiolabxr-web/node_modules/

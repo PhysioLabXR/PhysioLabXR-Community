@@ -1,3 +1,5 @@
+from enum import Enum
+
 import os
 import pickle
 from pathlib import Path
@@ -6,6 +8,30 @@ import scipy.io
 from physiolabxr.utils.RNStream import RNStream
 from physiolabxr.utils.data_utils import CsvStoreLoad
 from physiolabxr.utils.xdf_utils import load_xdf
+
+# define an enum for different file types, it has a class function that takes in a filename and return a file type
+class FileType(Enum):
+    CSV = '.csv'
+    DATS = '.dats'
+    MAT = '.mat'
+    PICKLE = '.pickle'
+    XDF = '.xdf'
+
+    @classmethod
+    def from_filename(cls, filename):
+        file_extension = Path(filename).suffix
+        if file_extension == '.dats':
+            return cls.DATS
+        elif file_extension == '.mat' or file_extension == '.m':
+            return cls.MAT
+        elif file_extension == '.pickle' or file_extension == '.pkl' or file_extension == '.p':
+            return cls.PICKLE
+        elif file_extension == '.xdf':
+            return cls.XDF
+        elif file_extension == '.csv':
+            return cls.CSV
+        else:
+            raise ValueError(f"Unknown file extension: {file_extension}")
 
 
 def stream_in(file_path):
@@ -36,3 +62,20 @@ def stream_in(file_path):
             return load_xdf(file_path)
         else:
             raise Exception(f"Unknown file extension: {file_extension} {'are you trying to load a directory of CSVs?' if file_extension == '.csv' else ''}")
+
+def stream_in_bytes(file_bytes: bytes, file_type):
+    """ Load a file from bytes. This is useful for streaming data from a web server or other source.
+
+    Args:
+        file_type: can be 'csv', 'dats', 'mat', 'pickle', or 'xdf'
+    """
+    if file_type == FileType.CSV:
+        raise NotImplementedError("CSV streaming from bytes is not implemented yet.")
+    elif file_type == FileType.DATS:
+        raise NotImplementedError("DATS streaming from bytes is not implemented yet.")
+    elif file_type == FileType.MAT:
+        raise NotImplementedError("MAT streaming from bytes is not implemented yet.")
+    elif file_type == FileType.PICKLE:
+        return pickle.loads(file_bytes)
+    else:
+        raise ValueError(f"Unknown file type: {file_type}. Supported types are: {list(FileType)}")
