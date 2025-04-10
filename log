@@ -1,0 +1,24 @@
+2025-04-02 21:10:10,091 - root - INFO - Starting script thread
+data folder is set to `C:\Python\Python311\Lib\site-packages\neuspell\../data` script
+
+
+2025-04-02 21:10:13,625 - pytorch_pretrained_bert.modeling - INFO - Better speed can be achieved with apex installed from https://www.github.com/nvidia/apex .
+2025-04-02 21:10:13,632 - root - INFO - Compiling RPC for IllumiReadSwypeScript in D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/illumiReadSwypeScript.py
+2025-04-02 21:10:13,633 - root - INFO - Generated RPC method ContextRPC with request fields ['  string input0 = 1;'] and response type ['  string message = 1;']
+2025-04-02 21:10:13,633 - root - INFO - Generated RPC method ExcelLoaderRPC with request fields ['  string input0 = 1;'] and response type ['  string message = 1;']
+2025-04-02 21:10:13,633 - root - INFO - Generated RPC method SwypePredictRPC with request fields [] and response type ['  string message = 1;']
+2025-04-02 21:10:13,633 - root - INFO - Generated RPC method Tap2CharRPC with request fields ['  float input0 = 1;', '  float input1 = 2;'] and response type ['  string message = 1;']
+2025-04-02 21:10:13,633 - root - INFO - Successfully generated proto file D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype\illumiReadSwypeScript.proto from IllumiReadSwypeScript, saved to D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype\illumiReadSwypeScript.proto
+2025-04-02 21:10:13,634 - root - INFO - Compiling proto file with command: C:\Python\Python311\python.exe -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. illumiReadSwypeScript.proto
+2025-04-02 21:10:13,634 - root - INFO - Current working directory is D:\Season\PhysioLabXR
+2025-04-02 21:10:13,634 - root - INFO - Compile working directory is D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype
+2025-04-02 21:10:14,586 - root - INFO - D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype\illumiReadSwypeScript.proto file compiled successfully. Generated files are in D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype
+2025-04-02 21:10:14,587 - root - INFO - Server code generated at D:/Season/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype\illumiReadSwypeScriptServer.py
+2025-04-02 21:10:14,587 - root - INFO - RenaScript: RenaScript Thread started on process 39560
+2025-04-02 21:10:14,588 - root - INFO - RenaScript: Waiting for command routing ID from main app for command socket
+2025-04-02 21:10:14,588 - root - INFO - RenaScript: Script init completed
+Finished instantiating g2w
+
+
+2025-04-02 21:10:28,908 - root - INFO - user init function is called
+2025-04-02 21:10:28,909 - root - INFO - Entering loop

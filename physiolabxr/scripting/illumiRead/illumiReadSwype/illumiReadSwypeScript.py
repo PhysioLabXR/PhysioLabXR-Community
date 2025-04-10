@@ -108,7 +108,7 @@ class IllumiReadSwypeScript(RenaScript):
         if os.path.exists('ngram_model_interpolate.pkl'):
             self.ngram_model = pickle.load(open('ngram_model_interpolate.pkl', 'rb'))
         else:
-            self.ngram_model = InterpolatedNGramModel()
+            self.ngram_model = InterpolatedNGramModel(top_unigrams=25000)
             pickle.dump(self.ngram_model, open("ngram_model_interpolate.pkl", "wb"))
 
         # the current context for the inputfield
