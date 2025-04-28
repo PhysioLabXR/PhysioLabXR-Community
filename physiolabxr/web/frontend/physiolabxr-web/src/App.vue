@@ -25,20 +25,50 @@
 <!--      <div class="preview">-->
 <!--        <img :src="getFrameUrl(currentFrameIndex)" alt="Current Frame" />-->
 <!--      </div>-->
+      <div class="top-pane">
 
-      <div
-        class="preview"
-        :style="{
-          width: previewWidth + 'px',
-          height: previewHeight + 'px'
-        }"
-      >
-        <img :src="getFrameUrl(currentFrameIndex)" alt="Current Frame" />
-        <canvas ref="traceCanvas" class="gaze-trace"></canvas>
+        <div
+          class="preview"
+          :style="{
+            width: previewWidth + 'px',
+            height: previewHeight + 'px'
+          }"
+        >
+          <img :src="getFrameUrl(currentFrameIndex)" alt="Current Frame" />
+          <canvas ref="traceCanvas" class="gaze-trace"></canvas>
 
-        <!-- The gaze dot on top -->
-        <div v-if="showGaze" class="gaze-dot" :style="gazeDotStyle"></div>
+          <!-- The gaze dot on top -->
+          <div v-if="showGaze" class="gaze-dot" :style="gazeDotStyle"></div>
+        </div>
+
+        <div class="chat-pane">
+            <!-- Message History -->
+            <div class="chat-history">
+              <div
+                v-for="(msg, index) in conversation"
+                :key="index"
+                class="chat-message"
+                :class="msg.role"
+              >
+                <!-- You could style user vs. assistant differently -->
+                <strong v-if="msg.role === 'user'">You: </strong>
+                <strong v-else-if="msg.role === 'assistant'">Assistant: </strong>
+                {{ msg.content }}
+              </div>
+            </div>
+            <!-- Input / Send -->
+          <div class="chat-input">
+            <!-- Add placeholder text here -->
+            <textarea
+              v-model="userMessage"
+              rows="2"
+              placeholder="task inference prompt"
+            ></textarea>
+            <button @click="sendMessage">Send</button>
+          </div>
+        </div>
       </div>
+
 
       <!-- Playback controls -->
       <div class="controls">
@@ -97,6 +127,9 @@
       <!-- Chart.js pupil data -->
       <div class="chart-inner" ref="chartContainer">
           <canvas ref="chartCanvas"></canvas>
+      </div>
+      <div class="chart-inner" ref="chartContainerEEG">
+        <canvas ref="chartCanvasEEG"></canvas>
       </div>
     </div>
 
@@ -171,9 +204,14 @@ export default {
 
     onMounted(async () => {
       await fetchVideoInfo();
+
       await fetchGazeAligned();
       await fetchPupilData();
       renderPupilChart();
+
+      await fetchEEGData();
+      renderEEGChart();
+
       updateChartViewport();
     });
 
@@ -640,12 +678,16 @@ export default {
             data: rightData,
             borderColor: "red",
             fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
           },
           {
             label: "Left Pupil (mm)",
             data: leftData,
             borderColor: "blue",
             fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
           },
         ],
       },
@@ -739,11 +781,84 @@ export default {
     chartInstance.update();
   });
 
+    /**
+   * -------------------------------------------
+   * EEG charts
+   * -------------------------------------------
+   */
+  const chartCanvasEEG = ref(null);      // the <canvas ref="chartCanvasEEG">
+  const chartContainerEEG = ref(null);   // the <div ref="chartContainerEEG">
+  const eegTimes = ref([]);              // shared timestamps
+  const eegChannels = ref([]);           // array of { name, values[] }
+
+  let chartInstanceEEG = null;           // keep a reference to the EEG chart
+
+  async function fetchEEGData() {
+    try {
+      const res = await fetch("/api/eeg_data");
+      const data = await res.json();
+      if (data.error) {
+        console.error("EEG data error:", data.error);
+        return;
+      }
+      // Store in reactive refs
+      eegTimes.value = data.timestamps;   // e.g. length T
+      eegChannels.value = data.channels;  // e.g. array of length N (N channels)
+    } catch (err) {
+      console.error("Failed to fetch EEG data:", err);
+    }
+  }
   /**
    * -------------------------------------------
    * Return everything to template
    * -------------------------------------------
    */
+      const conversation = ref([
+        // Example of a welcome message
+        { role: "assistant", content: "Task inference results using video, EEG, and pupil data." }
+      ]);
+      const userMessage = ref("");
+
+      async function sendMessage() {
+      const content = userMessage.value.trim();
+      if (!content) return;
+
+      // 1) Push user message to conversation
+      conversation.value.push({ role: "user", content });
+      userMessage.value = "";
+
+      try {
+        // 2) Call your backend LLM endpoint (placeholder)
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_message: content }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.assistant_message) {
+          // 3) Add assistant reply
+          conversation.value.push({
+            role: "assistant",
+            content: data.assistant_message,
+          });
+        } else {
+          // Some error handling
+          console.error("LLM error:", data.error);
+          conversation.value.push({
+            role: "assistant",
+            content: "Thinking...",
+          });
+        }
+      } catch (err) {
+        console.error("LLM request failed:", err);
+        conversation.value.push({
+          role: "assistant",
+          content: "An error occurred calling the LLM.",
+        });
+      }
+    }
+
   return {
     fileInput,
     isUploading,
@@ -791,6 +906,10 @@ export default {
     renderPupilChart,
 
     timelineExpandable,
+
+    conversation,
+    userMessage,
+    sendMessage,
   };
 },
 };
@@ -842,7 +961,7 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 130px;
+  height: 100px;
 }
 
 .zoom-overlay {
@@ -938,6 +1057,56 @@ export default {
   max-width: 1250px;  /* but never exceed 1200px, for very wide screens */
   margin-left: -50px; /* example negative margin to shift left */
 }
+
+.top-pane {
+  display: flex;         /* put children in a horizontal row */
+  flex-direction: row;   /* optional, default is row anyway */
+  align-items: flex-start; /* so top edges align if their heights differ */
+  gap: 1rem;             /* space between preview and chat */
+}
+
+.chat-pane {
+  width: 530px;          /* fixed width or set min-width if you prefer */
+  height: 350px;          /* fixed width or set min-width if you prefer */
+  min-width: 250px;
+  border-left: 1px solid #ccc;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-history {
+  flex: 1; /* fill remaining vertical space */
+  overflow-y: auto;
+  background: #f9f9f9;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.chat-message {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+.chat-message.user {
+  text-align: right;
+  color: #333;
+}
+.chat-message.assistant {
+  text-align: left;
+  color: #444;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input textarea {
+  flex: 1;
+  resize: none;
+}
+
 
 </style>
 

@@ -112,6 +112,32 @@ def pupil_data():
         "left_sizes": size_l
     }
 
+@app.get("/api/eeg_data")
+def get_eeg_data():
+    global DATA_BUFFER
+    if "EEG" not in DATA_BUFFER.buffer:
+        return JSONResponse({"error": "Missing EEG data"}, status_code=400)
+
+    eeg_data, eeg_ts = DATA_BUFFER.buffer["EEG"]  # shape: (n_channels, T), (T,)
+    n_channels, n_samples = eeg_data.shape
+
+    # Convert timestamps to relative time
+    eeg_ts = eeg_ts - eeg_ts[0]
+
+    # Build a flexible structure for variable number of channels
+    # Example channel names: CH1, CH2, ...
+    channels = []
+    for i in range(n_channels):
+        channels.append({
+            "name": f"CH{i+1}",
+            "values": eeg_data[i, :].tolist()
+        })
+
+    return {
+        "timestamps": eeg_ts.tolist(),
+        "channels": channels
+    }
+
 
 @app.post("/api/upload_replay")
 async def upload_replay(replay_file: UploadFile = File(...)):
