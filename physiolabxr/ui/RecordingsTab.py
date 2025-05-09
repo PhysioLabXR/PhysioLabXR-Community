@@ -12,6 +12,7 @@ from PyQt6.QtCore import QTimer, QSettings
 from PyQt6.QtWidgets import QDialogButtonBox
 
 from physiolabxr.exceptions.exceptions import RenaError, TrySerializeObjectError
+from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.ui import ui_shared
 from physiolabxr.configs.config import settings
 from physiolabxr.configs.configs import AppConfigs, RecordingFileFormat
@@ -22,6 +23,7 @@ from physiolabxr.ui.dialogs import dialog_popup
 import subprocess
 
 from physiolabxr.utils.buffers import DataBuffer
+from physiolabxr.compression.compression import DataCompressionPreset
 
 
 class RecordingsTab(QtWidgets.QWidget):
@@ -54,6 +56,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.sessionTagTextEdit.textChanged.connect(self.update_ui_save_file)
 
         self.update_ui_save_file()
+        self.recording_start_time = None
 
         self.timer = QTimer()
 
@@ -82,7 +85,13 @@ class RecordingsTab(QtWidgets.QWidget):
             else:
                 return
 
-        self.save_stream = RNStream(self.save_path)
+        stream_types = self.parent.get_added_stream_types()
+        stream_names = self.parent.get_added_stream_names()  # TODO allow user to select compression codec
+        compression_codec_map = {s_name: (DataCompressionPreset.LOSSLESS if PresetType.is_video_preset(s_type) else DataCompressionPreset.RAW) for s_type, s_name in zip(stream_types, stream_names)}
+        # compression_codec_map = {s_name: DataCompressionPreset.RAW for s_type, s_name in zip(stream_types, stream_names)}
+
+        self.save_stream = RNStream(self.save_path,
+                                    compression_codec_map)
         self.recording_buffer.clear_buffer()  # clear buffer
         self.is_recording = True
         self.recording_byte_count = 0
@@ -94,6 +103,7 @@ class RecordingsTab(QtWidgets.QWidget):
         self.subjectTagTextEdit.setEnabled(False)
         self.sessionTagTextEdit.setEnabled(False)
 
+        self.recording_start_time = time.time()
         self.timer.setInterval(AppConfigs.eviction_interval)
         self.timer.timeout.connect(self.evict_buffer)
         self.timer.start()
@@ -103,9 +113,10 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.evict_buffer()
         self.timer.stop()
+        self.save_stream.close()
 
         self.recording_byte_count = 0
-        self.update_file_size_label()
+        self.update_main_window_recording_info_displays()
 
         # convert file format
         # if AppConfigs().recording_file_format != RecordingFileFormat.dats:
@@ -166,7 +177,7 @@ class RecordingsTab(QtWidgets.QWidget):
             self.interrupt_recordings_on_failed_evict()
 
         self.recording_buffer.clear_buffer()
-        self.update_file_size_label()
+        self.update_main_window_recording_info_displays()
 
     def interrupt_recordings_on_failed_evict(self):
         self.is_recording = False
@@ -174,11 +185,15 @@ class RecordingsTab(QtWidgets.QWidget):
         self.StartStopRecordingBtn.setIcon(AppConfigs()._icon_start)
         self.timer.stop()
         self.recording_byte_count = 0
-        self.update_file_size_label()
+        self.update_main_window_recording_info_displays()
 
-    def update_file_size_label(self):
-        self.parent.recording_file_size_label. \
-            setText('    Recording file size: {0} Mb'.format(str(round(self.recording_byte_count / 10 ** 6, 2))))
+    def update_main_window_recording_info_displays(self):
+        """Note down the file size and time
+        Time is in the format HH:MM:SS
+        """
+        time_since_start = time.strftime("%H:%M:%S", time.gmtime(time.time() - self.recording_start_time))
+        self.parent.recording_info_label. \
+            setText('    Recording: {0}    {1}Mb. '.format(time_since_start, str(round(self.recording_byte_count / 10 ** 6, 2))))
 
     def open_recording_directory(self):
         try:

@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from physiolabxr.compression.compression import DataCompressionPreset, EncoderProxy
 from physiolabxr.exceptions.exceptions import TrySerializeObjectError
 
 magic = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'
@@ -18,8 +19,23 @@ ts_dtype = 'float64'
 
 
 class RNStream:
-    def __init__(self, file_path):
+    def __init__(self, file_path, compression_codec_map=None):
         self.fn = file_path
+        self.compression_codec = compression_codec_map or {}      # {stream names (str): preset}
+        self._encoders: dict[str, EncoderProxy] = {}      # live encoders
+
+    # ──────────────────────────────────────────────────────────────────
+    def _get_encoder(self, stream, frames, preset):
+        """This function will be called in stream_out
+        It creates a new encoder if the stream is not in the encoder dict.
+        """
+        if stream in self._encoders:
+            return self._encoders[stream]
+
+        h, w = frames.shape[:2]
+        enc = EncoderProxy(preset=preset, width=w, height=h)
+        self._encoders[stream] = enc
+        return enc
 
     def stream_out(self, buffer):
         """
@@ -36,7 +52,7 @@ class RNStream:
         stream_label_bytes, dtype_bytes, dim_bytes, shape_bytes, data_bytes, ts_bytes = \
             b'', b'', b'', b'', b'', b''
         total_bytes = 0
-        for stream_label, data_ts_array in buffer.items():
+        for stream_name, data_ts_array in buffer.items():
             data_array, ts_array = data_ts_array[0], data_ts_array[1]
 
             # cast the arrays in
@@ -53,35 +69,50 @@ class RNStream:
             try:
                 assert all(i < j for i, j in zip(ts_array, ts_array[1:]))
             except AssertionError:
-                warnings.warn(f'RNStream: [{stream_label}] timestamps must be in increasing order.', UserWarning)
-            stream_label_bytes = \
-                bytes(stream_label[:max_label_len] + "".join(
-                    " " for x in range(max_label_len - len(stream_label))), encoding)
-            try:
-                dtype_str = str(data_array.dtype)
-                if dtype_str == 'object': raise TrySerializeObjectError(stream_label)  # object dtype is not supported because it cannot be deserialized
-                assert len(dtype_str) < max_dtype_len
-            except AssertionError:
-                raise Exception('dtype encoding exceeds max dtype length: {0}, please contact support'.format(max_dtype_len))
-            dtype_bytes = bytes(dtype_str + "".join(" " for x in range(max_dtype_len - len(dtype_str))),
-                                encoding)
-            try:
-                dim_bytes = len(data_array.shape).to_bytes(dim_bytes_len, 'little')
-                shape_bytes = b''.join(
-                    [s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
-            except OverflowError:
-                raise Exception('RN requires its stream to have number of dimensions less than 2^40, '
-                                'and the size of any dimension to be less than the same number ')
-            data_bytes = data_array.tobytes()
+                warnings.warn(f'RNStream: [{stream_name}] timestamps must be in increasing order.', UserWarning)
+
+            stream_label_bytes = bytes(
+                stream_name[:max_label_len] + "".join(" " for x in range(max_label_len - len(stream_name))), encoding)
+
+            compression_preset = self.compression_codec.get(stream_name, DataCompressionPreset.RAW)
+
+            if compression_preset.is_raw():                               # ---- RAW path
+                try:
+                    dtype_str = str(data_array.dtype)
+                    if dtype_str == 'object': raise TrySerializeObjectError(stream_name)  # object dtype is not supported because it cannot be deserialized
+                    assert len(dtype_str) < max_dtype_len
+                except AssertionError:
+                    raise Exception('dtype encoding exceeds max dtype length: {0}, please contact support'.format(max_dtype_len))
+                dtype_bytes = bytes(dtype_str + "".join(" " for x in range(max_dtype_len - len(dtype_str))),
+                                    encoding)
+                try:
+                    dim_bytes = len(data_array.shape).to_bytes(dim_bytes_len, 'little')
+                    shape_bytes = b''.join(
+                        [s.to_bytes(shape_bytes_len, 'little') for s in data_array.shape])  # the last axis is time
+                except OverflowError:
+                    raise Exception('RN requires its stream to have number of dimensions less than 2^40, '
+                                    'and the size of any dimension to be less than the same number ')
+                data_bytes = data_array.tobytes()
+            else:
+                enc = self._get_encoder(stream_name, data_array, compression_preset)
+
+                # push every frame of this eviction into encoder
+                H,W,_ ,T = data_array.shape
+                for i in range(T):
+                    enc.push(data_array[..., i], int(ts_array[i]*1_000_000))
+                data_bytes = enc.pop()                # packets since last flush
+
+                dtype_bytes = b"u1".ljust(max_dtype_len, b" ")
+                dim_bytes   = (1).to_bytes(dim_bytes_len,'little')
+                shape_bytes = len(data_bytes).to_bytes(shape_bytes_len,'little')
+
             ts_bytes = ts_array.tobytes()
-            out_file.write(magic)
-            out_file.write(stream_label_bytes)
-            out_file.write(dtype_bytes)
-            out_file.write(dim_bytes)
-            out_file.write(shape_bytes)
-            out_file.write(data_bytes)
-            out_file.write(ts_bytes)
-            total_bytes += len(magic) + len(stream_label_bytes) + len(dtype_bytes) + len(dim_bytes) + len(shape_bytes) + len(data_bytes) + len(ts_bytes)
+
+            # ─── write TLV packet ────────────────────────────────────
+            for chunk in (magic, stream_label_bytes, dtype_bytes,
+                          dim_bytes, shape_bytes, data_bytes, ts_bytes):
+                out_file.write(chunk)
+                total_bytes += len(chunk)
         out_file.close()
         return total_bytes
 
@@ -401,3 +432,10 @@ class RNStream:
             out.write(img)
 
         out.release()
+
+    def close(self):
+        for stream, enc in self._encoders.items():
+            enc.close()
+
+    def __del__(self):
+        self.close()
