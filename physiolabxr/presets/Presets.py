@@ -163,7 +163,8 @@ class VideoPreset(metaclass=SubPreset):
     num_channels: int = None
     nominal_sampling_rate: int = 30
     video_scale: float = 1.0
-    channel_order: VideoDeviceChannelOrder = VideoDeviceChannelOrder.RGB
+    channel_order: VideoDeviceChannelOrder = VideoDeviceChannelOrder.BGR
+    frame_rate: int = 15
 
     def __post_init__(self):
         """

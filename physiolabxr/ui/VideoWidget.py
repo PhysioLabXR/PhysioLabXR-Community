@@ -1,9 +1,11 @@
 # This Python file uses the following encoding: utf-8
 import time
+from collections import deque
 
 import numpy as np
 import pyqtgraph as pg
 
+from physiolabxr.configs import config_ui
 from physiolabxr.configs.configs import AppConfigs
 from physiolabxr.presets.PresetEnums import PresetType
 from physiolabxr.presets.presets_utils import get_video_scale, get_video_channel_order, get_video_device_id
@@ -40,6 +42,7 @@ class VideoWidget(BaseStreamWidget):
         self.connect_worker(self.worker, False)
         self.is_image_fitted_to_frame = False
         self.data_timer.start()
+        self.timestamp_queue = deque(maxlen=1024)
 
     def create_visualization_component(self):
         self.plot_widget = pg.PlotWidget()
@@ -53,6 +56,16 @@ class VideoWidget(BaseStreamWidget):
         image, timestamp = cam_id_cv_img_timestamp["frame"], cam_id_cv_img_timestamp["timestamp"]
         image = np.swapaxes(image, 0, 1)
         self.image_item.setImage(image)
+
+        # compute and display the frame rate
+        self.timestamp_queue.append(timestamp)
+        if len(self.timestamp_queue) > 1:
+            sampling_rate = len(self.timestamp_queue) / (np.max(self.timestamp_queue) - np.min(self.timestamp_queue))
+        else:
+            sampling_rate = np.nan
+        self.fs_label.setText(
+            'fps: {:.3f}'.format(round(sampling_rate, config_ui.sampling_rate_decimal_places)))
+        self.ts_label.setText('timestamp: {:.3f}'.format(timestamp))
 
         if not self.is_image_fitted_to_frame:
             self.plot_widget.setXRange(0, image.shape[0])
