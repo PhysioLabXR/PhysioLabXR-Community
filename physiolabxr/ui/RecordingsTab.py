@@ -87,7 +87,7 @@ class RecordingsTab(QtWidgets.QWidget):
 
         stream_types = self.parent.get_added_stream_types()
         stream_names = self.parent.get_added_stream_names()  # TODO allow user to select compression codec
-        compression_codec_map = {s_name: (DataCompressionPreset.LOSSLESS if PresetType.is_video_preset(s_type) else DataCompressionPreset.RAW) for s_type, s_name in zip(stream_types, stream_names)}
+        compression_codec_map = {s_name: (AppConfigs().video_compression if PresetType.is_video_preset(s_type) else DataCompressionPreset.RAW) for s_type, s_name in zip(stream_types, stream_names)}
         # compression_codec_map = {s_name: DataCompressionPreset.RAW for s_type, s_name in zip(stream_types, stream_names)}
 
         self.save_stream = RNStream(self.save_path,

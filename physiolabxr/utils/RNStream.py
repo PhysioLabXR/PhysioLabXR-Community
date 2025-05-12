@@ -9,7 +9,7 @@ except ImportError:
 import cv2
 import numpy as np
 
-from physiolabxr.compression.compression import DataCompressionPreset, EncoderProxy, COMPRESSION_ID_TO_PRESET, \
+from physiolabxr.compression.compression import DataCompressionPreset, EncoderProxy, \
     decode_h264
 from physiolabxr.exceptions.exceptions import TrySerializeObjectError
 
@@ -158,7 +158,7 @@ class RNStream:
                 for _ in range(n_ent):
                     lbl = file.read(max_label_len).decode(encoding).strip(' ')
                     cid = ord(file.read(1))
-                    codec_map[lbl] = COMPRESSION_ID_TO_PRESET.get(cid,DataCompressionPreset.RAW)
+                    codec_map[lbl] = DataCompressionPreset.from_cid(cid)
                 read_bytes_count += len(HEADER_MAGIC) + 1 + 1 + n_ent * (max_label_len + 1)
             else:
                 ver = 0

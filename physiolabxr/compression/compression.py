@@ -3,6 +3,8 @@ from fractions import Fraction
 from enum import Enum, unique
 import numpy as np
 
+from physiolabxr.utils.bidict import Bidict
+
 try:
     import av  # TODO windows/macOs: ship with a static FFmpeg build. For Ubuntu, use system FFmpeg. If av can't be imported, let the user know and fall back to RAW.
 except ImportError:
@@ -10,25 +12,68 @@ except ImportError:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+from enum import Enum, unique
+
+
 @unique
 class DataCompressionPreset(Enum):
-    RAW        = (0, None,            "")                       # id, codec, opts
-    LOSSLESS   = (1, "libx264rgb",    "-crf 0 -preset veryfast -tune zerolatency -bf 0")
+    _ignore_ = ("_codec", "_ffmpeg_opts", "_label")
+    # value  = cid
+    RAW      = "Raw (uncompressed)"
+    LOSSLESS = "Lossless H-264 RGB"
 
-    def __init__(self, cid: int, codec: str | None, opts: str):
-        self.cid        = cid          # 1-byte integer written to header
-        self.codec      = codec
-        self.ffmpeg_opts= opts
+    # ------------------------------------------------------------------
+    #  convenience properties
+    # ------------------------------------------------------------------
+    @property
+    def cid(self) -> int:                       # keep the old name
+        return _CID[self]                       # 1-byte id written to file
+
+    @property
+    def codec(self) -> str | None:
+        return _CODEC[self]
+
+    @property
+    def ffmpeg_opts(self) -> str:
+        return _FFMPEG_OPTS[self]
 
     def is_raw(self) -> bool:
         return self.codec is None
 
-    def arglist(self):                 # convenience
+    def arglist(self) -> list[str]:
+        """Return ``ffmpeg`` option list."""
         return self.ffmpeg_opts.split() if self.ffmpeg_opts else []
 
-# reverse lookup used by stream_in
-COMPRESSION_ID_TO_PRESET = {p.cid: p for p in DataCompressionPreset}
+    @classmethod
+    def from_cid(cls, cid: int) -> "DataCompressionPreset":
+        """
+        Reverse-lookup from the 1-byte *cid* stored in the file header
+        back to the enum member.
 
+        >>> DataCompressionPreset.from_cid(1) is DataCompressionPreset.LOSSLESS
+        True
+        >>> DataCompressionPreset.from_cid(99)
+        KeyError: 'unknown compression id: 99'
+        """
+        try:
+            return _CID.inv[cid]                # Enum does the heavy lifting
+        except ValueError:                 # but massage the error message
+            raise KeyError(f"unknown compression id: {cid}") from None
+
+_CODEC       = Bidict({
+    DataCompressionPreset.RAW     : None,
+    DataCompressionPreset.LOSSLESS: "libx264rgb",
+})
+
+_FFMPEG_OPTS = Bidict({
+    DataCompressionPreset.RAW     : "",
+    DataCompressionPreset.LOSSLESS: "-crf 0 -preset veryfast -tune zerolatency -bf 0",
+})
+
+_CID = Bidict({
+    DataCompressionPreset.RAW: 0,
+    DataCompressionPreset.LOSSLESS: 1,
+})
 
 # ──────────────────────────────────────────────────────────────────────────────
 class EncoderProxy:
