@@ -13,6 +13,7 @@ from physiolabxr.ui.BaseStreamWidget import BaseStreamWidget
 from physiolabxr.ui.VideoDeviceOptions import VideoDeviceOptions
 from physiolabxr.threadings.ScreenCaptureWorker import ScreenCaptureWorker
 from physiolabxr.threadings.WebcamWorker import WebcamWorker
+from physiolabxr.utils.image_utils import process_image
 
 
 class VideoWidget(BaseStreamWidget):
@@ -53,9 +54,16 @@ class VideoWidget(BaseStreamWidget):
 
     def process_stream_data(self, cam_id_cv_img_timestamp):
         self.viz_times.append(time.time())
-        image, timestamp = cam_id_cv_img_timestamp["frame"], cam_id_cv_img_timestamp["timestamp"]
-        image = np.swapaxes(image, 0, 1)
-        self.image_item.setImage(image)
+        display_image, timestamp = cam_id_cv_img_timestamp["frame"].copy(), cam_id_cv_img_timestamp["timestamp"]
+
+        # alter the image for display
+        display_image = process_image(display_image, self.worker.channel_order)  # scale is already changed by the worker
+        display_image = np.flip(display_image, axis=0)
+
+        display_image = np.swapaxes(display_image, 0, 1)
+
+
+        self.image_item.setImage(display_image)
 
         # compute and display the frame rate
         self.timestamp_queue.append(timestamp)
@@ -68,13 +76,13 @@ class VideoWidget(BaseStreamWidget):
         self.ts_label.setText('timestamp: {:.3f}'.format(timestamp))
 
         if not self.is_image_fitted_to_frame:
-            self.plot_widget.setXRange(0, image.shape[0])
-            self.plot_widget.setYRange(0, image.shape[1])
+            self.plot_widget.setXRange(0, display_image.shape[0])
+            self.plot_widget.setYRange(0, display_image.shape[1])
             self.is_image_fitted_to_frame = True
 
-        data_dict = {"stream_name": self.stream_name, "frames": np.expand_dims(image.reshape(-1), -1), "timestamps": np.array([timestamp])}
+        data_dict = {"stream_name": self.stream_name, "frames": np.expand_dims(display_image.reshape(-1), -1), "timestamps": np.array([timestamp])}
         self.main_parent.scripting_tab.forward_data(data_dict)
-        self.main_parent.recording_tab.update_camera_screen_buffer(self.stream_name, image, timestamp)
+        self.main_parent.recording_tab.update_camera_screen_buffer(self.stream_name, cam_id_cv_img_timestamp["frame"], timestamp)
 
     def video_preset_changed(self):
         self.worker.video_scale = get_video_scale(self.stream_name)
