@@ -35,6 +35,8 @@ class SettingsWidget(QtWidgets.QWidget):
         self.video_compression_combobox.addItems([member.value for member in DataCompressionPreset.__members__.values()])
         self.video_compression_combobox.activated.connect(self.video_compression_change)
 
+        self.is_save_separate_video_checkbox.setChecked(AppConfigs().is_save_separate_video)
+        self.is_save_separate_video_checkbox.stateChanged.connect(self.is_save_separate_video_change)
 
         # resolve replay settings
         self.start_stream_on_replay_checkbox.setChecked(AppConfigs().start_streams_on_replay)
@@ -208,11 +210,12 @@ class SettingsWidget(QtWidgets.QWidget):
         print(f"recording_file_format_change: {AppConfigs().recording_file_format}")
         self.parent.recording_tab.update_ui_save_file()
 
+    def is_save_separate_video_change(self):
+        AppConfigs().is_save_separate_video = self.is_save_separate_video_checkbox.isChecked()
 
     def video_compression_change(self):
         AppConfigs().video_compression = DataCompressionPreset(self.video_compression_combobox.currentText())
         print(f"video_compression_change: {AppConfigs().video_compression}")
-
 
     def reset_default(self):
         # marked for refactor

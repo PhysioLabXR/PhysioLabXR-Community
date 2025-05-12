@@ -291,8 +291,8 @@ def test_generate_video_roundtrip(tmpdir):
     rn = RNStream(dat_path)
     rn.generate_video("Screen")                       # default output path
 
-    avi_path = os.path.join(tmpdir, "capture_Screen.avi")
-    assert os.path.exists(avi_path), "AVI not written"
+    avi_path = os.path.join(tmpdir, "capture_Screen.mp4")
+    assert os.path.exists(avi_path), "video file not written"
 
     # CV2 is too lossy
     # decoded = _read_avi_rgb(avi_path)

@@ -476,6 +476,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_added_stream_types(self):
         return [s.preset_type for s in self.stream_widgets.values()]
 
+    def get_added_video_stream_names(self):
+        return [s_name for s_type, s_name in zip(self.get_added_stream_types(), self.get_added_stream_names()) if PresetType.is_video_preset(s_type)]
+
     def is_any_stream_widget_added(self):
         return len(self.stream_widgets) > 0
 

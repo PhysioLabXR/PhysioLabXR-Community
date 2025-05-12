@@ -1,10 +1,17 @@
 # threads.py -----------------------------------------------------------------
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot, Qt, QTimer
-from PyQt6.QtWidgets import QProgressDialog, QLabel, QVBoxLayout
+import sys
+import traceback
+
+from PyQt6.QtCore import (QObject, QThread, pyqtSignal, pyqtSlot,
+                          Qt, QTimer)
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel,
+                             QProgressBar)
 from PyQt6.QtGui import QMovie
 
+
 class _Worker(QObject):
-    finished = pyqtSignal(object)            # return value (or None)
+    finished = pyqtSignal(object)             # return value (or None)
+    failed   = pyqtSignal(str)       # emits traceback string
 
     def __init__(self, fn, args, kwargs):
         super().__init__()
@@ -12,74 +19,84 @@ class _Worker(QObject):
 
     @pyqtSlot()
     def run(self):
-        res = None
+        print("Worker.run()")
         try:
             res = self._fn(*self._args, **self._kwargs)
-        finally:
-            self.finished.emit(res)          # always emit
+            self.finished.emit(res)
+        except Exception:             # catch ANY error
+            tb = traceback.format_exc()
+            print(tb, file=sys.stderr, flush=True)
+            self.failed.emit(tb)
+
+
+class BusyDialog(QDialog):
+    """Non-modal 'busy…' window with optional animated GIF."""
+    def __init__(self, working_text, gif_path=None, parent=None):
+        super().__init__(parent, Qt.WindowType.Tool)
+        self.setWindowTitle("Please wait")
+        self.setWindowModality(Qt.WindowModality.NonModal)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        lay = QVBoxLayout(self)
+
+        # -- Animated GIF (optional) -------------------------------------
+        self.movie = None
+        if gif_path:
+            self.movie = QMovie(gif_path)
+            gif_label = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
+            gif_label.setMovie(self.movie)
+            self.movie.start()
+            lay.addWidget(gif_label)
+
+        # -- Status text -------------------------------------------------
+        self.label = QLabel(working_text,
+                            alignment=Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(self.label)
+
+        # -- Indeterminate progress bar ----------------------------------
+        bar = QProgressBar()
+        bar.setRange(0, 0)                    # pulsing
+        lay.addWidget(bar, stretch=1)
+
+        self.resize(220, 140)
+
+    def show_done(self, done_text):
+        self.label.setText(done_text)
+        if self.movie:
+            self.movie.stop()
+
 
 def run_in_thread(fn,
                   args=(),
                   kwargs=None,
                   working_text="Working…",
                   done_text="Done!",
-                  gif_path=None,             # <- NEW
+                  loading_gif_path=None,
                   parent=None):
     """
-    Execute *fn* in a background QThread and show a non-modal dialog
-    with an animated GIF while it runs.
-
-    Parameters
-    ----------
-    fn : Callable
-    args : tuple
-    kwargs : dict | None
-    working_text : str   text displayed while running
-    done_text    : str   text displayed for ~1 s after finishing
-    gif_path     : str | None  path to an animated GIF
-    parent       : QWidget | None  owner of the dialog
-
-    Returns
-    -------
-    QThread  (auto-deleted after finish)
+    Execute *fn* in a background QThread while showing a BusyDialog.
+    Returns the QThread (auto-cleaned on finish).
     """
     if kwargs is None:
         kwargs = {}
 
-    # ---------- UI ----------
-    dlg = QProgressDialog(parent)
-    dlg.setWindowTitle("Please wait")
-    dlg.setLabelText(working_text)
-    dlg.setMinimum(0)
-    dlg.setMaximum(0)                        # indeterminate bar
-    dlg.setWindowModality(Qt.WindowModality.NonModal)  # <- non-modal
-    dlg.setCancelButton(None)
-
-    # Optional: place GIF above the text
-    if gif_path:
-        gif_label = QLabel()
-        gif_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        movie = QMovie(gif_path)
-        gif_label.setMovie(movie)
-        movie.start()
-
-        # Insert the GIF at the top of the existing layout
-        lay: QVBoxLayout = dlg.layout()
-        lay.insertWidget(0, gif_label)
-
+    dlg = BusyDialog(working_text, loading_gif_path, parent)
     dlg.show()
 
-    # ---------- Worker + Thread ----------
     thread = QThread(parent)
     worker = _Worker(fn, args, kwargs)
     worker.moveToThread(thread)
+    thread.worker = worker #  strong reference to prevent garbage collection on the worker
 
-    def _on_finished(_result):
-        dlg.setLabelText(done_text)
-        if gif_path:
-            movie.stop()
+    # ---------- wiring ----------
+    def _on_finished(_):
+        dlg.show_done(done_text)
         QTimer.singleShot(1000, dlg.close)
         thread.quit()
+
+    worker.failed.connect(lambda tb: dlg.show_done("Failed — see console"))
+    worker.failed.connect(worker.deleteLater)
+    worker.failed.connect(thread.quit)
 
     thread.started.connect(worker.run)
     worker.finished.connect(_on_finished)
@@ -87,4 +104,5 @@ def run_in_thread(fn,
     thread.finished.connect(thread.deleteLater)
 
     thread.start()
-    return thread
+    print("run_in_thread: thread started, returning it.")
+    return thread, dlg, worker

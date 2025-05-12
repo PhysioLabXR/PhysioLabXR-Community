@@ -144,7 +144,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="QCheckBox" name="checkBox">
+                <widget class="QCheckBox" name="is_save_separate_video_checkbox">
                  <property name="toolTip">
                   <string>Whether to save video streams as separate files (.avi) when recording stops.</string>
                  </property>

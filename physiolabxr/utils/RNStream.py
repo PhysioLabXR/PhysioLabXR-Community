@@ -1,7 +1,10 @@
+import itertools
 import os
 import warnings
 from pathlib import Path
 import io
+from typing import List
+
 try:
     import av
 except ImportError:
@@ -12,6 +15,7 @@ import numpy as np
 from physiolabxr.compression.compression import DataCompressionPreset, EncoderProxy, \
     decode_h264
 from physiolabxr.exceptions.exceptions import TrySerializeObjectError
+from physiolabxr.utils.video import _MP4_FOURCC
 
 magic = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'
 max_label_len = 32
@@ -560,42 +564,77 @@ class RNStream:
         return file, buffer, read_bytes_count, total_bytes, finished
 
 
-    def generate_video(self, video_stream_name, output_path=''):
+    def generate_video(self, video_stream_name: str, output_path: str = ""):
         """
-        if output path is not specified, the output video will be place in the same directory as the
-        stream .dats file with a tag to its stream name
-        Args:
-            video_stream_name:
-            output_path:
+        Export *video_stream_name* to an **MP4** file (H.264 or mp4v).
+
+        If *output_path* is empty the file is written next to the .dats file as
+        <basename>_<stream>.mp4
         """
-        print('Load video stream...')
-        data_fn = self.fn.split('/')[-1]
-        data_root = Path(self.fn).parent.absolute()
-        data = self.stream_in(only_stream=(video_stream_name,))
+        print("Load video stream…")
+        data_fn = Path(self.fn).stem
+        data_root = Path(self.fn).parent
+        dst = (
+            data_root / f"{data_fn}_{video_stream_name}.mp4"
+            if not output_path else Path(output_path)
+        )
 
-        video_frame_stream = data[video_stream_name][0]
-        frame_count = video_frame_stream.shape[-1]
+        buf = self.stream_in(only_stream=(video_stream_name,))
+        frames = buf[video_stream_name][0]  # H × W × 3 × T
+        ts = buf[video_stream_name][1]
 
-        timestamp_stream = data[video_stream_name][1]
-        frate = len(timestamp_stream) / (timestamp_stream[-1] - timestamp_stream[0])
-        try:
-            assert len(video_frame_stream.shape) == 4 and video_frame_stream.shape[2] == 3
-        except AssertionError:
-            raise Exception('target stream is not a video stream. It does not have 4 dims (height, width, color, time)'
-                            'and/or the number of its color channel does not equal 3.')
-        frame_size = (data[video_stream_name][0].shape[1], data[video_stream_name][0].shape[0])
-        output_path = os.path.join(data_root, '{0}_{1}.avi'.format(data_fn.split('.')[0], video_stream_name)) if output_path == '' else output_path
+        # basic sanity
+        if frames.ndim != 4 or frames.shape[2] != 3:
+            raise ValueError(
+                f"'{video_stream_name}' is not a 3-channel video stream "
+                f"(shape = {frames.shape})."
+            )
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'),frate, frame_size)
+        h, w = frames.shape[:2]
+        fps = len(ts) / (ts[-1] - ts[0])
+        out = cv2.VideoWriter(
+            str(dst),
+            _MP4_FOURCC,
+            fps,
+            (w, h),
+        )
+        if not out.isOpened():
+            raise RuntimeError(
+                "OpenCV could not open the MP4 writer. "
+                "Make sure the codec is available on your system."
+            )
 
-        for i in range(frame_count):
-            print('Creating video progress {}%'.format(str(round(100 * i / frame_count, 2))), sep=' ', end='\r',
-                  flush=True)
-            img = video_frame_stream[:, :, :, i]
-            # img = np.reshape(img, newshape=list(frame_size) + [-1,])
-            out.write(img)
+        for i in range(frames.shape[-1]):
+            pct = 100 * i / (frames.shape[-1] - 1)
+            print(f"Writing {video_stream_name}: {pct:5.1f} %", end="\r", flush=True)
+            out.write(frames[..., i])
 
         out.release()
+        print(f"\nSaved → {dst}")
+        return str(dst)
+
+    def generate_videos(self, video_stream_names, output_paths=None):
+        """
+        Convenience wrapper: export many streams at once.
+
+        *output_paths* can be:
+          * **None** – each MP4 goes next to the .dats file
+          * a single path **str** / **Path** – treated as directory; files are
+            named <stream>.mp4 inside it
+          * an iterable of paths with the same length as *video_stream_names*
+        """
+        print("Generating MP4 videos…")
+        if output_paths is None:
+            paths = itertools.repeat("")  # will hit default logic
+        elif isinstance(output_paths, (str, os.PathLike)):
+            base = Path(output_paths)
+            base.mkdir(parents=True, exist_ok=True)
+            paths = (base / f"{s}.mp4" for s in video_stream_names)
+        else:
+            paths = output_paths  # assume iterable
+
+        for name, p in zip(video_stream_names, paths):
+            self.generate_video(name, str(p))
 
     def close(self):
         for stream, enc in self._encoders.items():

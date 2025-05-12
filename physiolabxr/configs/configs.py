@@ -97,6 +97,7 @@ class AppConfigs(metaclass=Singleton):
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000
     video_compression: DataCompressionPreset = DataCompressionPreset.LOSSLESS
+    is_save_separate_video: bool = False
 
     # data worker configs
     pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources

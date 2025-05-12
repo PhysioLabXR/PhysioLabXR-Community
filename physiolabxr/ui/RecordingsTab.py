@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import QDialogButtonBox
 
 from physiolabxr.exceptions.exceptions import RenaError, TrySerializeObjectError
 from physiolabxr.presets.PresetEnums import PresetType
+from physiolabxr.threadings.LongTasks import run_in_thread
 from physiolabxr.ui import ui_shared
 from physiolabxr.configs.config import settings
 from physiolabxr.configs.configs import AppConfigs, RecordingFileFormat
@@ -57,6 +58,11 @@ class RecordingsTab(QtWidgets.QWidget):
 
         self.update_ui_save_file()
         self.recording_start_time = None
+
+        # container to prevent the save video thread from being garbage collected
+        self.save_video_thread = None
+        self.save_video_dialog = None
+        self.save_video_worker = None
 
         self.timer = QTimer()
 
@@ -132,6 +138,19 @@ class RecordingsTab(QtWidgets.QWidget):
         self.experimentNameTextEdit.setEnabled(True)
         self.subjectTagTextEdit.setEnabled(True)
         self.sessionTagTextEdit.setEnabled(True)
+
+        video_stream_names = self.parent.get_added_video_stream_names()
+        base_name = os.path.basename(self.save_path).split('.')[0]
+        if AppConfigs().is_save_separate_video:
+            self.save_video_thread, self.save_video_dialog, self.save_video_worker = run_in_thread(
+                self.save_stream.generate_videos,
+                args=(video_stream_names, ),
+                working_text="Saving video streams as separate video files.",
+                done_text="Save complete.",
+                loading_gif_path=AppConfigs()._icon_load_square_48px,  # animated GIF
+                parent=self
+            )
+        print("stop_recording_btn_pressed: finished")
 
     def update_recording_buffer(self, data_dict: dict):
         # TODO: change lsl_data_type to stream_name?
