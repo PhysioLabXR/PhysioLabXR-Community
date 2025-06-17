@@ -313,6 +313,14 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeIntroductionState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState
         # elif state_marker == illumiReadSwypeConfig.ExperimentState.FeedbackState.value:
         #     self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.FeedbackState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.EndState.value:
@@ -353,6 +361,15 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
             self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState.value:
+            self.currentExperimentState = None
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState.value:
+            self.currentExperimentState = None
+        # ------------------------------------------------------------------------------------------------------------------
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.EndState.value:
             self.currentExperimentState = None
 
@@ -368,6 +385,12 @@ class IllumiReadSwypeScript(RenaScript):
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardHandSwypeState:
             self.keyboard_handswype_state_callback()
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState:
+            self.keyboard_partialswype_state_callback()
+
+        # the current 2 new eye swipe technique are now using partial swipe call back
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState:
+            self.keyboard_partialswype_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState:
             self.keyboard_partialswype_state_callback()
 
     def gaze_pinch_state_callback(self):
@@ -642,6 +665,11 @@ class IllumiReadSwypeScript(RenaScript):
         # clear the processed user input data and gaze data
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
         self.inputs.clear_stream_buffer_data(UserInputLSLStreamInfo.StreamName)
+
+
+
+
+
 
     def keyboard_freeswitch_state_callback(self):
         print("keyboard free switch state")

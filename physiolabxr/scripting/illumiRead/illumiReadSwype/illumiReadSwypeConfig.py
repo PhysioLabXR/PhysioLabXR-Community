@@ -145,9 +145,15 @@ class ExperimentState(Enum):
     KeyboardPartialSwypeIntroductionState = 14
     KeyboardPartialSwypeState = 15
 
+    KeyboardHGazeIntroductionState = 16
+    KeyboardHGazeState = 17
+
+    KeyboardDoubleCrossingIntroductionState = 18
+    KeyboardDoubleCrossingState = 19
+
     # FeedbackState = 12
 
-    EndState = 16
+    EndState = 20
 
 
 class ExperimentBlock(Enum):
