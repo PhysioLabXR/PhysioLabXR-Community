@@ -8,12 +8,15 @@ in case a function raises exception. We don't have to dig back into the function
 import copy
 import json
 import pickle
+import struct
 import time
 from collections import defaultdict
 
+import cv2
 import mne
 import numpy as np
 import torch
+from lpips import lpips
 from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
 
@@ -35,6 +38,9 @@ from rlpf.utils.viz_utils import visualize_block_gaze_event
 from rlpf.multimodal.data_utils import epochs_to_class_samples,compute_pca_ica
 from scipy.stats import stats
 
+from physiolabxr.examples.Eyetracking.configs import image_shape
+from physiolabxr.scripting.attention_bci.RenaFixationDataset import FixationDataset
+from physiolabxr.scripting.experimental.SideCamsSavingScreenCapture import get_cam_socket,receive_decode_image
 from physiolabxr.scripting.attention_bci.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.configs.shared import bcolors
@@ -87,6 +93,7 @@ class RenaProcessing(RenaScript):
         """
         super().__init__(*args, **kwargs)
 
+        self.data_buffer = None
         self.num_vs_before_training = None
         self.last_block_end_timestamp = None
         self.end_of_block_wait_start = None
@@ -96,7 +103,7 @@ class RenaProcessing(RenaScript):
         self.current_condition = None
         self.current_block_id = None
 
-        # TODO: the path is now absolute
+        # warning: the path is now absolute, should be changed at every pull request
         self.event_marker_channels = json.load(open("D:\Season\PhysioLabXR\physiolabxr\_presets\LSLPresets\ReNaEventMarker.json", 'r'))["ChannelNames"]
         self.loop_count = 0
 
@@ -144,6 +151,24 @@ class RenaProcessing(RenaScript):
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
 
+        '''----------------------------The part for fixation detection images-----------------------------------------'''
+        # fix detection parameters  #######################################
+        self.loss_fn_alex = lpips.LPIPS(net='alex')  # best forward scores
+        self.previous_img_patch = None
+        self.fixation_frame_counter = 0
+        self.distance = 0
+        self.fixation_outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
+
+        # TODO: -------------the camera capture should be from the OVTR image cropping instead of local host--------------
+        self.fixation_cam_socket = get_cam_socket("tcp://localhost:5556", 'rena_epochs_to_class_samples_rdf')
+        self.right_cam_socket =    get_cam_socket("tcp://localhost:5557", 'ColorDepthCamRight')
+        self.left_cam_socket =     get_cam_socket("tcp://localhost:5558", 'ColorDepthCamLeft')
+        self.back_cam_socket =     get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
+        print(f'Image sockets connected.')
+
+        '''--------------------------- Declaration of fixation dataset ---------------------------------------'''
+        self.fixation_dataset = FixationDataset()
+
     # Start will be called once when the run button is hit.
     def init(self):
         pass
@@ -153,8 +178,41 @@ class RenaProcessing(RenaScript):
         try:
             # send = np.random.random(3 + num_item_perblock)
             # self.prediction_outlet.push_sample(send)
-
             self.loop_count += 1
+
+            # feature: the camera capture for each loop of ReNa script
+
+            # the side camera capture
+            right_cam_color, right_cam_depth, timestamp_right, bboxes_right = receive_decode_image(self.right_cam_socket)
+            left_cam_color, left_cam_depth, timestamp_left, bboxes_left = receive_decode_image(self.left_cam_socket)
+            back_cam_color, back_cam_depth, timestamp_back, bboxes_back = receive_decode_image(self.back_cam_socket)
+
+            # the fixation camera capture
+            fixation_received = self.fixation_cam_socket.recv_multipart()
+            timestamp = struct.unpack('d', fixation_received[1])[0]
+            colorImagePNGBytes = fixation_received[2]
+            depthImagePNGBytes = fixation_received[3]
+            colorImg = np.frombuffer(colorImagePNGBytes, dtype='uint8').reshape((*image_shape[:2], 4))
+            colorImg = colorImg[:, :, :3]
+            colorImg = cv2.flip(colorImg, 0)
+            colorImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
+
+            depthImg = np.frombuffer(depthImagePNGBytes, dtype='uint16').reshape((*image_shape[:2], 1))
+            depthImg = cv2.flip(depthImg, 0)
+
+            gazed_item_index, gazed_item_dtn = struct.unpack('hh', fixation_received[5])
+            gaze_info = fixation_received[6]
+            gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
+            gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
+
+            # deprecated: should use the item bounding box given by the OVTR model
+            item_bboxes = fixation_received[4]
+            item_bboxes = json.loads(item_bboxes)
+
+
+
+
+            # feature: the state machine for event markers
             if 'Unity.ReNa.EventMarkers' in self.inputs.buffer.keys():  # if we receive event markers
                 if self.cur_state != 'endOfBlockWaiting':  # will not process new event marker if waiting
                     new_block_id, new_meta_block, new_condition, is_block_end, event_timestamp = self.get_block_update()
@@ -180,7 +238,7 @@ class RenaProcessing(RenaScript):
                         self.predicted_target_index_id_dict = defaultdict(float)
                         # self.running_mode_of_predicted_target = []  # reset running mode of predicted target
 
-                        # TODO: change the satate for classifier prep and identifier prep
+                        # TODO: change the state for classifier prep and identifier prep
                         if new_meta_block == 6:
                             self.num_vs_before_training = num_vs_to_train_in_classifier_prep
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {num_vs_to_train_in_classifier_prep}')
@@ -188,7 +246,7 @@ class RenaProcessing(RenaScript):
                             self.num_vs_before_training = num_vs_to_train_in_identifier_prep
                             print(f'[{self.loop_count}] entering identifier and performance evaluation')
 
-                        # TODO should add a new meta block for the type of space shooter
+                        # warning: should add a new meta block for the type of space shooter
 
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
                         print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
@@ -196,8 +254,9 @@ class RenaProcessing(RenaScript):
 
 
                 elif self.cur_state == 'in_block':
-                    # print('Updating buffer')
-                    # self.data_buffer.update_buffers(self.inputs.buffer)
+                    # feature: update the data buffer while in block state
+                    print('Updating buffer')
+                    self.data_buffer.update_buffers(self.inputs.buffer)
                     if is_block_end:
                         self.next_state = 'endOfBlockWaiting'
                         self.end_of_block_wait_start = time.time()
@@ -224,7 +283,7 @@ class RenaProcessing(RenaScript):
                     else:
                         print(f'[{self.loop_count}] block ended on while in meta block {self.current_metablock}. Skipping end of block processing. Not likely to happen.')
 
-                # TODO: should be turned off
+                # Deprecated, should be turned off
                 elif self.cur_state == 'waitingFeedback':
                     self.next_state = self.receive_prediction_feedback()
                     pass
