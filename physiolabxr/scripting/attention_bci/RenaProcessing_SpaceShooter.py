@@ -18,16 +18,18 @@ from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
 
 #----------- add RLPF to python path--------------
-from rlpf.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, \
-    gaze_event_detection_I_DT
+from rlpf.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, gaze_event_detection_I_DT
 from rlpf.learning.models import EEGPupilCNN
 from rlpf.learning.train import train_model_pupil_eeg_no_folds
+# from rlpf.learning.models import EEGPupilCNN
+# from rlpf.learning.train import train_model_pupil_eeg_no_folds
 from rlpf.params.params import conditions, tmax_pupil, random_seed
 from rlpf.utils.Event import get_events
 from rlpf.utils.RenaDataFrame import RenaDataFrame
 # epochs_to_class_samples, compute_pca_ica,
 from rlpf.utils.data_utils import  reject_combined, \
     binary_classification_metric, _epochs_to_samples_eeg_pupil
+from rlpf.utils.rdf_utils import rena_epochs_to_class_samples_rdf
 from rlpf.utils.utils import get_item_events
 from rlpf.utils.viz_utils import visualize_block_gaze_event
 from rlpf.multimodal.data_utils import epochs_to_class_samples,compute_pca_ica
@@ -39,15 +41,15 @@ from physiolabxr.configs.shared import bcolors
 from physiolabxr.utils.data_utils import get_date_string, mode_by_column
 
 # should add the SS condition to the processing file
-condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search"}
-metablock_name_dict = {5: "Classifier Prep", 6: "Identifier Prep"}
+condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search", 5: "Space Shooter"}
+metablock_name_dict = {6: "Classifier Prep", 7: "Identifier Prep"}
 
 colors = {'Distractor': 'blue', 'Target': 'red', 'Novelty': 'orange'}
 
 feedback_mode = 'weights'
 
 is_debugging = True
-is_simulating_predictions = False
+is_simulating_predictions = True
 is_simulating_eeg = True
 end_of_block_wait_time_in_simulate = 5
 num_item_perblock = 30
@@ -93,7 +95,9 @@ class RenaProcessing(RenaScript):
         self.meta_block_counter = 0
         self.current_condition = None
         self.current_block_id = None
-        self.event_marker_channels = json.load(open("../_presets/LSLPresets/ReNaEventMarker.json", 'r'))["ChannelNames"]
+
+        # TODO: the path is now absolute
+        self.event_marker_channels = json.load(open("D:\Season\PhysioLabXR\physiolabxr\_presets\LSLPresets\ReNaEventMarker.json", 'r'))["ChannelNames"]
         self.loop_count = 0
 
         self.item_events = []
@@ -176,22 +180,28 @@ class RenaProcessing(RenaScript):
                         self.predicted_target_index_id_dict = defaultdict(float)
                         # self.running_mode_of_predicted_target = []  # reset running mode of predicted target
 
-                        if new_meta_block == 5:
+                        # TODO: change the satate for classifier prep and identifier prep
+                        if new_meta_block == 6:
                             self.num_vs_before_training = num_vs_to_train_in_classifier_prep
                             print(f'[{self.loop_count}] entering classifier prep, num visual search blocks for training will be {num_vs_to_train_in_classifier_prep}')
-                        elif new_meta_block == 6:
+                        elif new_meta_block == 7:
                             self.num_vs_before_training = num_vs_to_train_in_identifier_prep
                             print(f'[{self.loop_count}] entering identifier and performance evaluation')
+
+                        # TODO should add a new meta block for the type of space shooter
 
                     if new_block_id and self.current_metablock:  # only record if we are in a metablock, this is to ignore the practice
                         print(f"[{self.loop_count}] in idle, find new block id {self.current_block_id}, entering in_block")
                         self.next_state = 'in_block'
+
+
                 elif self.cur_state == 'in_block':
                     # print('Updating buffer')
                     # self.data_buffer.update_buffers(self.inputs.buffer)
                     if is_block_end:
                         self.next_state = 'endOfBlockWaiting'
                         self.end_of_block_wait_start = time.time()
+
                 elif self.cur_state == 'endOfBlockWaiting':
                     self.end_of_block_waited = time.time() - self.end_of_block_wait_start
                     print(f"[{self.loop_count}] end of block waited {self.end_of_block_waited}")
@@ -202,27 +212,35 @@ class RenaProcessing(RenaScript):
                     else:
                         if np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) > self.last_block_end_timestamp + tmax_pupil + epoch_margin:
                             self.next_state = 'endOfBlockProcessing'
+
+                # TODO: the processing block at the end of block, should be changed for Space Shooter
                 elif self.cur_state == 'endOfBlockProcessing':
-                    if self.current_metablock == 5:
+
+                    if self.current_metablock == 6:
                         self.next_state = self.classifier_prep_phase_end_of_block()
-                    elif self.current_metablock == 6:
+                    elif self.current_metablock == 7:
                         self.next_state = self.identifier_prep_phase_end_of_block()
+
                     else:
                         print(f'[{self.loop_count}] block ended on while in meta block {self.current_metablock}. Skipping end of block processing. Not likely to happen.')
+
+                # TODO: should be turned off
                 elif self.cur_state == 'waitingFeedback':
                     self.next_state = self.receive_prediction_feedback()
                     pass
 
+            # the state switcher
             if self.next_state != self.cur_state:
                 print(f'[{self.loop_count}] updating state from {self.cur_state} to {self.next_state}')
                 self.cur_state = self.next_state
+
             # TODO check if there's any request queued
         except Exception as e:
             print(e)
-        # print(f"[{self.loop_count}] End of loop ")
 
-    # cleanup is called when the stop button is hit
+    '''############################################ the block related function call #####################################'''
 
+    # Deprecated
     def receive_prediction_feedback(self):
         try:
             if 'Unity.ReNa.PredictionFeedback' in self.inputs.keys() and len(self.inputs['Unity.ReNa.PredictionFeedback'][1]) - self.prediction_feedback_head > 0:  # there's new event marker
@@ -269,6 +287,7 @@ class RenaProcessing(RenaScript):
             print(f"[{self.loop_count}] ReceivePredictionFeedback: found exception." + str(e))
             raise e
 
+    # TODO: should be changed to train model API
     def classifier_prep_phase_end_of_block(self):
         if self.current_condition == conditions['VS']:
             self.vs_block_counter += 1
@@ -288,6 +307,7 @@ class RenaProcessing(RenaScript):
             print(f"[{self.loop_count}] ClassifierPrepEndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
         return 'idle'
 
+    # TODO: should be able to run in VS, TS and SS and call the reinforcement API
     def identifier_prep_phase_end_of_block(self):
         if self.current_condition == conditions['VS']:
             self.vs_block_counter += 1
@@ -316,8 +336,13 @@ class RenaProcessing(RenaScript):
             print(f"[{self.loop_count}] IdentifierEndOfBlockProcessing: not VS block, current condition is {self.current_condition }, skipping")
             return 'idle'
 
+
+    '''#################################################################################################################################################'''
+
     def cleanup(self):
         print('Cleanup function is called')
+
+
 
     def add_block_data(self, append_data=True):
         try:
@@ -325,6 +350,8 @@ class RenaProcessing(RenaScript):
                 return dict([(locking_name, [None,  np.random.randint(0, 3, size=num_item_perblock), None, None, None]) for locking_name, _ in locking_filters.items()])
 
             print(f'[{self.loop_count}] AddingBlockData: Adding block data with id {self.current_block_id} of condition {self.current_condition}')
+
+
             rdf = RenaDataFrame()
             data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed
             events = get_item_events(data['Unity.ReNa.EventMarkers'][0], data['Unity.ReNa.EventMarkers'][1], data['Unity.ReNa.ItemMarkers'][0], data['Unity.ReNa.ItemMarkers'][1])
@@ -348,8 +375,8 @@ class RenaProcessing(RenaScript):
                 if 'VS' in locking_name:  # TODO only care about VS conditions for now
                     print(f"[{self.loop_count}] AddingBlockData: Finding epochs samples on locking {locking_name}")
                     # if is_debugging: viz_eeg_epochs(rdf, event_names, event_filters, colors, title=f'Block ID {self.current_block_id}, Condition {self.current_condition}, MetaBlock {self.current_metablock}', n_jobs=1)
-
-                    x, y, epochs, event_ids = epochs_to_class_samples(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
+                    # x: [eeg_array := [N, c, t_{eeg}], pupil_array := [N, 2, t_{pupil}],]
+                    x, y, epochs, event_ids = rena_epochs_to_class_samples_rdf(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}, block {self.current_block_id}, condition {self.current_condition}, metablock {self.current_metablock}')
                     if x is None:
                         print(f"{bcolors.WARNING}[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}{bcolors.ENDC}")
                         continue
@@ -360,6 +387,7 @@ class RenaProcessing(RenaScript):
                         # print(f'[{self.loop_count}] AddingBlockData: only found one event {event_ids}, skipping adding epoch')
                         print(f'{bcolors.WARNING}[{self.loop_count}] AddingBlockData: {locking_name} only found one event {event_ids}{bcolors.ENDC}')
                         # continue
+                    # len(epoch_events) == N
                     epoch_events = get_events(event_filters, events, order='time')
                     try:
                         assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
@@ -438,10 +466,13 @@ class RenaProcessing(RenaScript):
     #     return (np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - start_time) > (tmax_pupil + epoch_margin)
 
     def train_identification_model(self):
+        # TODO change this to calling the API
+
         if is_simulating_predictions:
             print(f'[{self.loop_count}] TrainIdentificationModel: in simulation, skipping output.')
             return
         try:
+            # TODO change the model stuff to calling API instead of creating local models
             training_start_time = time.time()
             for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
                 print(f'[{self.loop_count}] TrainIdentificationModel: Training models for {locking_name}')
@@ -659,6 +690,10 @@ class RenaProcessing(RenaScript):
         x_eeg, pca, ica = compute_pca_ica(x_eeg, n_components=20, pca=pca, ica=ica)
         return x_eeg, x_pupil, y, pca, ica, ar, rejections
 
+
+
+
+    # the function for get the update for the block
     def get_block_update(self):
         try:
             # there cannot be multiple condition updates in one block update, which runs once a second
@@ -667,6 +702,8 @@ class RenaProcessing(RenaScript):
             new_meta_block = None
             new_condition = None
             this_event_timestamp = None
+
+            # This is the checker for new event
             if len(self.inputs['Unity.ReNa.EventMarkers'][1]) - self.event_marker_head > 0:  # there's new event marker
                 this_event_timestamp = self.inputs['Unity.ReNa.EventMarkers'][1][self.event_marker_head]
                 block_id_start_end = self.inputs['Unity.ReNa.EventMarkers'][0][self.event_marker_channels.index("BlockIDStartEnd"), self.event_marker_head]
@@ -692,22 +729,27 @@ class RenaProcessing(RenaScript):
                 else:  # the only other possibility is that this is a meta block marker
                     new_meta_block = block_marker if block_marker in metablock_name_dict.keys() else None
 
+
+
             if new_meta_block:
                 # self.current_block_id = new_block_id
                 self.meta_block_counter += 1
                 print("[{0}] get_block_update: Entering new META block {1}, metablock count is {2}".format(self.loop_count, metablock_name_dict[new_meta_block], self.meta_block_counter))
                 self.current_metablock = new_meta_block
                 # self.inputs.clear_buffer()  # should clear buffer at every metablock, so we don't need to deal with practice round data
+
             if new_block_id:
                 self.current_block_id = new_block_id
                 # message = "[{0}] Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + \
                 # ". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""
                 print("[{0}] get_block_update: Entering new block with ID {1}".format(self.loop_count, self.current_block_id) + (". No metablock is given, assuming in practice rounds." if not self.current_metablock else ""))
+
             if new_condition:
                 self.current_block_id = new_block_id
                 self.current_condition = new_condition
                 print("[{0}] get_block_update: Block {2} is setting current condition to {1}".format(self.loop_count, condition_name_dict[new_condition], self.current_block_id))
             return new_block_id, new_meta_block, new_condition, is_block_end, this_event_timestamp  # tells if there's new block and meta block
+
         except Exception as e:
             raise e
     # def get_item_event(self):

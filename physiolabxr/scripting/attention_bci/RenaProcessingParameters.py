@@ -1,5 +1,5 @@
-from renaanalysis.eye.eyetracking import Fixation, GazeRayIntersect
-from renaanalysis.params.params import conditions, dtnn_types
+from rlpf.eye.eyetracking import Fixation, GazeRayIntersect
+from rlpf.params.params import conditions, dtnn_types
 
 locking_filters = {
                     'VS-FLGI': [lambda x: type(x) == GazeRayIntersect and x.is_first_long_gaze and x.block_condition == conditions['VS'] and x.dtn == dtnn_types["Distractor"],

@@ -34,7 +34,7 @@ distance = 0
 outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
 # zmq camera capture fields #######################################
-subtopic = 'ColorDepthCamGazePositionBBox'
+subtopic = 'rena_epochs_to_class_samples_rdf'
 sub_tcpAddress = "tcp://localhost:5556"
 context = zmq.Context()
 cam_capture_sub_socket = context.socket(zmq.SUB)
