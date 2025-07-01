@@ -22,8 +22,6 @@ from pylsl import StreamInfo, StreamOutlet, pylsl
 
 #----------- add RLPF to python path--------------
 from rlpf.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, gaze_event_detection_I_DT
-from rlpf.learning.models import EEGPupilCNN
-from rlpf.learning.train import train_model_pupil_eeg_no_folds
 # from rlpf.learning.models import EEGPupilCNN
 # from rlpf.learning.train import train_model_pupil_eeg_no_folds
 from rlpf.params.params import conditions, tmax_pupil, random_seed
@@ -159,12 +157,19 @@ class RenaProcessing(RenaScript):
         self.distance = 0
         self.fixation_outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
-        # TODO: -------------the camera capture should be from the OVTR image cropping instead of local host--------------
+        # TODO: -------------the camera capture should be from the local host--------------
         self.fixation_cam_socket = get_cam_socket("tcp://localhost:5556", 'rena_epochs_to_class_samples_rdf')
         self.right_cam_socket =    get_cam_socket("tcp://localhost:5557", 'ColorDepthCamRight')
         self.left_cam_socket =     get_cam_socket("tcp://localhost:5558", 'ColorDepthCamLeft')
         self.back_cam_socket =     get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
         print(f'Image sockets connected.')
+
+        # TODO: ------------- the processed data from OVTR detection------------------------
+        self.ovtr_fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5560", 'OVTRCamFixation')
+        self.ovtr_right_cam_socket = get_cam_socket("tcp://127.0.0.1:5561", 'OVTRCamRight')
+        self.ovtr_left_cam_socket = get_cam_socket("tcp://127.0.0.1:5562", 'OVTRCamLeft')
+        self.ovtr_back_cam_socket = get_cam_socket("tcp://127.0.0.1:5563", 'OVTRCamBack')
+        print(f'OVTR image sockets connected.')
 
         '''--------------------------- Declaration of fixation dataset ---------------------------------------'''
         self.fixation_dataset = FixationDataset()
@@ -210,6 +215,12 @@ class RenaProcessing(RenaScript):
             item_bboxes = json.loads(item_bboxes)
 
 
+            right_msg = self.ovtr_right_cam_socket.recv_string()
+            right_topic, json_payload = right_msg.split(' ',1)
+            tracking_data = json.loads(json_payload)
+            if(tracking_data!=None):
+                for obj in tracking_data:
+                    print(f"ID: {obj['id']}, BBox: {obj['bbox']}, Timestamp: {obj['timestamp']}")
 
 
             # feature: the state machine for event markers
@@ -528,33 +539,34 @@ class RenaProcessing(RenaScript):
     #     return (np.max(self.inputs['Unity.VarjoEyeTrackingComplete'][1]) - start_time) > (tmax_pupil + epoch_margin)
 
     def train_identification_model(self):
+        return
         # TODO change this to calling the API
 
-        if is_simulating_predictions:
-            print(f'[{self.loop_count}] TrainIdentificationModel: in simulation, skipping output.')
-            return
-        try:
-            # TODO change the model stuff to calling API instead of creating local models
-            training_start_time = time.time()
-            for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
-                print(f'[{self.loop_count}] TrainIdentificationModel: Training models for {locking_name}')
-                try:
-                    x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
-                except Exception as e:
-                    print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: {locking_name}: error preprocessing block data, skipping. y is {y}. {str(e)}{bcolors.ENDC}')
-                    continue
-                if len(np.unique(y)) == 1:
-                    print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: y for {locking_name} only has class, skipping training. y is {y}{bcolors.ENDC}')
-                    continue
-                model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
-                model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
-                best_train_acc = np.max(training_histories['train accs'])
-                print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} (with {np.sum(y==0)} distractors and {np.sum(y==1)} targets) gives classification accuracy: {best_train_acc}')
-                self.models[locking_name] = model
-                self.models_accs[locking_name] = best_train_acc
-            print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
-        except Exception as e:
-            raise e
+        # if is_simulating_predictions:
+        #     print(f'[{self.loop_count}] TrainIdentificationModel: in simulation, skipping output.')
+        #     return
+        # try:
+        #     # TODO change the model stuff to calling API instead of creating local models
+        #     training_start_time = time.time()
+        #     for locking_name, (_, y, epochs_eeg, epochs_pupil, _) in self.locking_data.items():
+        #         print(f'[{self.loop_count}] TrainIdentificationModel: Training models for {locking_name}')
+        #         try:
+        #             x_eeg, x_pupil, y, self.PCAs[locking_name], self.ICAs[locking_name], self.ARs[locking_name], _ = self.preprocess_block_data(epochs_eeg, epochs_pupil)
+        #         except Exception as e:
+        #             print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: {locking_name}: error preprocessing block data, skipping. y is {y}. {str(e)}{bcolors.ENDC}')
+        #             continue
+        #         if len(np.unique(y)) == 1:
+        #             print(f'{bcolors.WARNING}[{self.loop_count}] TrainIdentificationModel: y for {locking_name} only has class, skipping training. y is {y}{bcolors.ENDC}')
+        #             continue
+        #         model = EEGPupilCNN(eeg_in_shape=x_eeg.shape, pupil_in_shape=x_pupil.shape, num_classes=2, eeg_in_channels=x_eeg.shape[1])
+        #         model, training_histories, criterion, label_encoder = train_model_pupil_eeg_no_folds([x_eeg, x_pupil], y, model, num_epochs=20, test_name='realtime')
+        #         best_train_acc = np.max(training_histories['train accs'])
+        #         print(f'[{self.loop_count}] TrainIdentificationModel: {locking_name} (with {np.sum(y==0)} distractors and {np.sum(y==1)} targets) gives classification accuracy: {best_train_acc}')
+        #         self.models[locking_name] = model
+        #         self.models_accs[locking_name] = best_train_acc
+        #     print(f'[{self.loop_count}] TrainIdentificationModel: training complete, took {time.time() - training_start_time} seconds')
+        # except Exception as e:
+        #     raise e
 
     def target_identification(self, this_block_data):
         try:
