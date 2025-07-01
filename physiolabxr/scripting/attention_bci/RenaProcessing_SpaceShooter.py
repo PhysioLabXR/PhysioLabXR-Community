@@ -368,7 +368,7 @@ class RenaProcessing(RenaScript):
 
     # TODO: should be able to run in VS, TS and SS and call the reinforcement API
     def identifier_prep_phase_end_of_block(self):
-        if self.current_condition == conditions['VS']:
+        if self.current_condition == conditions['TS'] or self.current_condition == conditions['SS']:
             self.vs_block_counter += 1
             print(f"[{self.loop_count}] IdentifierPrepEndOfBlockProcessing: Incrementing VS block counter to {self.vs_block_counter}")
             try:
@@ -468,6 +468,9 @@ class RenaProcessing(RenaScript):
                     else:
                         print(f"[{self.loop_count}] AddingBlockData: find but not adding {len(y)} samples to {locking_name} with {np.sum(y == 0)} distractors and {np.sum(y == 1)} targets")
                     this_locking_data[locking_name] = [x, y, epochs[0], epochs[1], epoch_events]
+
+                    print("")
+                    # TODO add FixationDataset here
 
             print(f"[{self.loop_count}] AddingBlockData: Process completed")
             self.clear_buffer()
