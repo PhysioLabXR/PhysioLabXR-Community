@@ -55,9 +55,9 @@ class Vocab:
         # remove from the counter single-letter words
         # and words that contains punctuation
         for word in list(self.vocabulary.keys()):
-            if len(word) == 1:
-                self.vocabulary.pop(word)
-            elif not word.isalpha():
+            # if len(word) == 1:
+            #     self.vocabulary.pop(word)
+            if not word.isalpha():
                 self.vocabulary.pop(word)
 
         # Optionally, lemmatize the tokens to reduce them to base forms
