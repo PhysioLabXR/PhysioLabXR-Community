@@ -81,9 +81,12 @@ class Gaze2Word:
         self.vocab_traces = OrderedDict()
         self.ngram_model = NGramModel(n=ngram_n)
 
-        for word in self.vocab.vocabulary:
+        # build the ngram model from the text corpus
+        for word in self.vocab.vocabulary:  # TODO check if single letter words are in self.vocab.vocabulary
             # Split the word into individual letters
             letters = list(word)
+            if len(letters) == 1:
+                letters = letters * 2  # if the word is a single letter, duplicate it to make it a valid trace
             # Get the corresponding KeyGroundTruthLocal for each letter
             try:
                 self.vocab_traces[word] = np.array([self.letter_locations[letter] for letter in letters])
@@ -306,56 +309,57 @@ class Gaze2Word:
             raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
 
-# if __name__ == '__main__':
-    # gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
+if __name__ == '__main__':
+    gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
     
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
-
-    # g2w = Gaze2Word(gaze_data_path)
-
-    # with open('g2w.pkl', 'wb') as f:
-    #     pickle.dump(g2w, f)
-
-    # # load it back
-    # with open('g2w.pkl', 'rb') as f:
-    #     g2w = pickle.load(f)
-
-    # if os.path.exists('g2w.pkl'):
-    #     with open('g2w.pkl', 'rb') as f:
-    #         g2w = pickle.load(f)
-    # else:
-    #     g2w = Gaze2Word(gaze_data_path)
-    #     with open('g2w.pkl', 'wb') as f:
-    #         pickle.dump(g2w, f)
+    if os.path.exists('g2w.pkl'):
+        with open('g2w.pkl', 'rb') as f:
+            g2w = pickle.load(f)
+    else:
+        g2w = Gaze2Word(gaze_data_path)
+        with open('g2w.pkl', 'wb') as f:
+            pickle.dump(g2w, f)
 
 
-    # # simple test ######################################################################################################
-    # perfect_gaze_trace = g2w.vocab_traces['hello']
+    # simple test ######################################################################################################
+    perfect_gaze_trace = g2w.vocab_traces['hello']
 
-    # print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
-    # print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
+    print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
+    print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
 
-    # # test with a long gaze trace (won't work without prefix) ##########################################################
-    # long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
-    #                                         np.linspace(g2w.letter_locations['e'], g2w.letter_locations['l'], num=2),
-    #                                         np.linspace(g2w.letter_locations['l'], g2w.letter_locations['l'], num=2),
-    #                                         np.linspace(g2w.letter_locations['l'], g2w.letter_locations['o'], num=2),
-    #                                         np.linspace(g2w.letter_locations['o'], g2w.letter_locations['o'], num=2)])
-    # print(f"Predicted long w/o context: {g2w.predict(5, long_gaze_trace)}")
-    # print(f"Predicted long w/ context: {g2w.predict(5, long_gaze_trace, prefix='')}")
+    # test with a long gaze trace (won't work without prefix) ##########################################################
+    long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
+                                            np.linspace(g2w.letter_locations['e'], g2w.letter_locations['l'], num=2),
+                                            np.linspace(g2w.letter_locations['l'], g2w.letter_locations['l'], num=2),
+                                            np.linspace(g2w.letter_locations['l'], g2w.letter_locations['o'], num=2),
+                                            np.linspace(g2w.letter_locations['o'], g2w.letter_locations['o'], num=2)])
+    print(f"Predicted long w/o context: {g2w.predict(5, long_gaze_trace)}")
+    print(f"Predicted long w/ context: {g2w.predict(5, long_gaze_trace, prefix='')}")
 
-    # # test with context  ###############################################################################################
-    # noisy_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['d'], g2w.letter_locations['d'], num=2),
-    #                                    np.linspace(g2w.letter_locations['d'], g2w.letter_locations['s'], num=2),
-    #                                    np.linspace(g2w.letter_locations['s'], g2w.letter_locations['a'], num=2),
-    #                                    np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
-    #                                    np.linspace(g2w.letter_locations['a'], g2w.letter_locations['r'], num=2),
-    #                                    np.linspace(g2w.letter_locations['r'], g2w.letter_locations['y'], num=2),
-    #                                    np.linspace(g2w.letter_locations['y'], g2w.letter_locations['y'], num=2),
-    #                                    ])
+    # test with context  ###############################################################################################
+    noisy_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['d'], g2w.letter_locations['d'], num=2),
+                                       np.linspace(g2w.letter_locations['d'], g2w.letter_locations['s'], num=2),
+                                       np.linspace(g2w.letter_locations['s'], g2w.letter_locations['a'], num=2),
+                                       np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
+                                       np.linspace(g2w.letter_locations['a'], g2w.letter_locations['r'], num=2),
+                                       np.linspace(g2w.letter_locations['r'], g2w.letter_locations['y'], num=2),
+                                       np.linspace(g2w.letter_locations['y'], g2w.letter_locations['y'], num=2),
+                                       ])
     
-    # print(noisy_gaze_trace)
-    # print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None)}")
-    # print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='have a nice')}")
+    print(noisy_gaze_trace)
+    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None)}")
+    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='have a nice')}")
+
+    # test with single letter  ###############################################################################################
+    noisy_gaze_trace = np.concatenate([
+                                       np.linspace(g2w.letter_locations['t'], g2w.letter_locations['a'], num=2),
+                                       np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
+                                       np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
+                                       ])
+    print(noisy_gaze_trace)
+    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None, include_single_letter_words=True)}")
+    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='in front of him is', include_single_letter_words=True)}")
+
 
     
