@@ -8,9 +8,55 @@ import pickle
 import sys
 import matplotlib.pyplot as plt
 from itertools import groupby
+# import sys, traceback
+#
+# def boom_on_exported_memoryview(unraisable):
+#     exc = unraisable.exc_value
+#     if isinstance(exc, BufferError) and 'memoryview has' in str(exc):
+#         print("\n=== Unraisable BufferError intercepted ===")
+#         print("object repr :", repr(unraisable.object))
+#         print("traceback   :", exc)          # still prints the BufferError text
+#         # Crash right here – the next three lines turn it into a normal traceback
+#         raise exc.with_traceback(unraisable.exc_traceback or None)
+#     # For anything else, fall back to the stock hook
+#     sys.__unraisablehook__(unraisable)
+#
+# sys.unraisablehook = boom_on_exported_memoryview
+# # mv_trace.py  – import **very early** (sitecustomize is perfect)
+#
+# # mv_leak_watch.py  ——  import this ONCE, as early as you can
+# import sys, tracemalloc, textwrap
+#
+# tracemalloc.start(25)          # keep 25 frames per allocation
+#
+# def boom_on_memoryview_leak(unraisable):
+#     exc = unraisable.exc_value
+#     if isinstance(exc, BufferError) and "memoryview has" in str(exc):
+#         mv = unraisable.object            # the view the GC is trying to kill
+#         print("\n====== GC hit leaked memoryview ======")
+#
+#         # 1) Where was this view allocated?
+#         tb = tracemalloc.get_object_traceback(mv)
+#         if tb:
+#             print("Allocated at:")
+#             for line in tb.format():
+#                 # tb.format() already gives "  File '...', line X, in func"
+#                 print("  ", line)
+#         else:
+#             print("*No tracemalloc info (view predates tracemalloc.start())*")
+#
+#         # 2) What Python stack *still exists* at GC time?
+#         print("\nTriggering traceback from inside GC:")
+#         raise exc.with_traceback(unraisable.exc_traceback)
+#
+#     # anything else → let default hook handle it
+#     sys.__unraisablehook__(unraisable)
+#
+# sys.unraisablehook = boom_on_memoryview_leak
+
+
 from physiolabxr.scripting.RenaScript import RenaScript
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_stream, cf_float32, LostError
-import torch
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.Tap2Char import Tap2Char
@@ -51,8 +97,6 @@ class IllumiReadSwypeScript(RenaScript):
         self.gaze_data_sequence = list()
         self.fixation_trace = list()
         self.user_input_sequence = list()
-
-        self.device = torch.device('cpu')
 
         self.current_image_name = None
 
@@ -551,7 +595,7 @@ class IllumiReadSwypeScript(RenaScript):
 
                     # predict the candidate words
                     cadidate_list = self.g2w.predict(4, temp_fixation_trace, run_dbscan=True, prefix=self.context,
-                                                     verbose=True, filter_by_starting_letter=0.35,
+                                                     verbose=False, filter_by_starting_letter=0.35,
                                                      use_trimmed_vocab=True, njobs=16)
                     word_candidate_list = [item[0] for item in cadidate_list]
 
