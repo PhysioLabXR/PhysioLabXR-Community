@@ -16,6 +16,7 @@ import cv2
 import mne
 import numpy as np
 import torch
+import zmq
 from lpips import lpips
 from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
@@ -36,9 +37,8 @@ from rlpf.utils.viz_utils import visualize_block_gaze_event
 from rlpf.multimodal.data_utils import epochs_to_class_samples,compute_pca_ica
 from scipy.stats import stats
 
-from physiolabxr.examples.Eyetracking.configs import image_shape
+from physiolabxr.scripting.attention_bci.RenaCameraUtils import receive_fixation_decode,get_cam_socket,receive_decode_image
 from physiolabxr.scripting.attention_bci.RenaFixationDataset import FixationDataset
-from physiolabxr.scripting.experimental.SideCamsSavingScreenCapture import get_cam_socket,receive_decode_image
 from physiolabxr.scripting.attention_bci.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.configs.shared import bcolors
@@ -158,10 +158,10 @@ class RenaProcessing(RenaScript):
         self.fixation_outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
         # TODO: -------------the camera capture should be from the local host--------------
-        self.fixation_cam_socket = get_cam_socket("tcp://localhost:5556", 'rena_epochs_to_class_samples_rdf')
-        self.right_cam_socket =    get_cam_socket("tcp://localhost:5557", 'ColorDepthCamRight')
-        self.left_cam_socket =     get_cam_socket("tcp://localhost:5558", 'ColorDepthCamLeft')
-        self.back_cam_socket =     get_cam_socket("tcp://localhost:5559", 'ColorDepthCamBack')
+        self.fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5556", 'rena_epochs_to_class_samples_rdf')
+        self.right_cam_socket =    get_cam_socket("tcp://127.0.0.1:5557", 'ColorDepthCamRight')
+        self.left_cam_socket =     get_cam_socket("tcp://127.0.0.1:5558", 'ColorDepthCamLeft')
+        self.back_cam_socket =     get_cam_socket("tcp://127.0.0.1:5559", 'ColorDepthCamBack')
         print(f'Image sockets connected.')
 
         # TODO: ------------- the processed data from OVTR detection------------------------
@@ -187,40 +187,42 @@ class RenaProcessing(RenaScript):
 
             # feature: the camera capture for each loop of ReNa script
 
-            # the side camera capture
-            right_cam_color, right_cam_depth, timestamp_right, bboxes_right = receive_decode_image(self.right_cam_socket)
-            left_cam_color, left_cam_depth, timestamp_left, bboxes_left = receive_decode_image(self.left_cam_socket)
-            back_cam_color, back_cam_depth, timestamp_back, bboxes_back = receive_decode_image(self.back_cam_socket)
+            fixation_msg = receive_fixation_decode(self.fixation_cam_socket)
+            right_msg = receive_decode_image(self.right_cam_socket)
+            left_msg = receive_decode_image(self.left_cam_socket)
+            back_msg = receive_decode_image(self.back_cam_socket)
 
-            # the fixation camera capture
-            fixation_received = self.fixation_cam_socket.recv_multipart()
-            timestamp = struct.unpack('d', fixation_received[1])[0]
-            colorImagePNGBytes = fixation_received[2]
-            depthImagePNGBytes = fixation_received[3]
-            colorImg = np.frombuffer(colorImagePNGBytes, dtype='uint8').reshape((*image_shape[:2], 4))
-            colorImg = colorImg[:, :, :3]
-            colorImg = cv2.flip(colorImg, 0)
-            colorImg = cv2.cvtColor(colorImg, cv2.COLOR_BGR2RGB)
+            if right_msg:
+                right_cam_color, right_cam_depth, timestamp_right, bboxes_right = right_msg
+            else:
+                right_cam_color, right_cam_depth, timestamp_right, bboxes_right = None, None, None,None
 
-            depthImg = np.frombuffer(depthImagePNGBytes, dtype='uint16').reshape((*image_shape[:2], 1))
-            depthImg = cv2.flip(depthImg, 0)
+            if left_msg:
+                left_cam_color, left_cam_depth, timestamp_left, bboxes_left = left_msg
+            else:
+                left_cam_color, left_cam_depth, timestamp_left, bboxes_left = None, None, None, None
 
-            gazed_item_index, gazed_item_dtn = struct.unpack('hh', fixation_received[5])
-            gaze_info = fixation_received[6]
-            gaze_x, gaze_y = struct.unpack('hh', gaze_info)  # the gaze coordinate
-            gaze_y = image_shape[1] - gaze_y  # because CV's y zero is at the bottom of the screen
+            if back_msg:
+                back_cam_color, back_cam_depth, timestamp_back, bboxes_back = back_msg
+            else:
+                back_cam_color, back_cam_depth, timestamp_back, bboxes_back = None, None, None,None
 
-            # deprecated: should use the item bounding box given by the OVTR model
-            item_bboxes = fixation_received[4]
-            item_bboxes = json.loads(item_bboxes)
+            if fixation_msg:
+                fixation_cam_color, fixation_cam_depth, timestamp_fixation, bboxes_fixation, gaze_x, gaze_y = fixation_msg
+            else:
+                fixation_cam_color, fixation_cam_depth, timestamp_fixation, bboxes_fixation, gaze_x, gaze_y = None, None, None, None,None,None
 
 
-            right_msg = self.ovtr_right_cam_socket.recv_string()
-            right_topic, json_payload = right_msg.split(' ',1)
-            tracking_data = json.loads(json_payload)
-            if(tracking_data!=None):
-                for obj in tracking_data:
-                    print(f"ID: {obj['id']}, BBox: {obj['bbox']}, Timestamp: {obj['timestamp']}")
+            try:
+                right_msg = self.ovtr_right_cam_socket.recv_string(zmq.NOBLOCK)
+                right_topic, json_payload = right_msg.split(' ', 1)
+                tracking_data = json.loads(json_payload)
+                if (tracking_data != None):
+                    for obj in tracking_data:
+                        print(f"ID: {obj['id']}, BBox: {obj['bbox']}, Timestamp: {obj['timestamp']}")
+            except zmq.Again:
+                print("ovtr receive failed")
+
 
 
             # feature: the state machine for event markers

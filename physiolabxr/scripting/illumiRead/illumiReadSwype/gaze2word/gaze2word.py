@@ -85,8 +85,8 @@ class Gaze2Word:
         for word in self.vocab.vocabulary:  # TODO check if single letter words are in self.vocab.vocabulary
             # Split the word into individual letters
             letters = list(word)
-            if len(letters) == 1:
-                letters = letters * 2  # if the word is a single letter, duplicate it to make it a valid trace
+            # if len(letters) == 1:
+            #     letters = letters * 2  # if the word is a single letter, duplicate it to make it a valid trace
             # Get the corresponding KeyGroundTruthLocal for each letter
             try:
                 self.vocab_traces[word] = np.array([self.letter_locations[letter] for letter in letters])

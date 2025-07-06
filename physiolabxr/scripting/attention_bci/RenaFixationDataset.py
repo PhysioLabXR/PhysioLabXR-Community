@@ -19,10 +19,12 @@ class FixationDataset(Dataset):
     """
 
     def __init__(self):
-        self.fixation_image: np.ndarray = np.empty()
-        self.pupil_epochs: ndarray = np.empty()
-        self.eeg_epochs: ndarray = np.empty()
-        self.is_target: ndarray = np.empty()
+        # feature: now uses the dummpy empty array
+        self.fixation_image = np.empty((0,), dtype=np.uint8)
+        self.fixation_depth_image = np.empty((0,), dtype=np.uint16)
+        self.pupil_epochs = np.empty((0,), dtype=np.float32)
+        self.eeg_epochs = np.empty((0,), dtype=np.float32)
+        self.is_target = np.empty((0,), dtype=bool)
 
     def extend(self, fixation_image: np.ndarray, fixation_depth_image: np.ndarray, pupil_epochs: ndarray,
                eeg_epochs: ndarray, is_target: ndarray):
