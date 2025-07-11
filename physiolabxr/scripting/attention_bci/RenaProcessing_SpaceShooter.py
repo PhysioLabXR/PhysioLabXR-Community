@@ -10,7 +10,8 @@ import json
 import pickle
 import struct
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
+import re
 
 import cv2
 import mne
@@ -37,7 +38,7 @@ from rlpf.utils.viz_utils import visualize_block_gaze_event
 from rlpf.multimodal.data_utils import epochs_to_class_samples,compute_pca_ica
 from scipy.stats import stats
 
-from physiolabxr.scripting.attention_bci.RenaCameraUtils import receive_fixation_decode,get_cam_socket,receive_decode_image
+from physiolabxr.scripting.attention_bci.RenaCameraUtils import receive_fixation_decode,get_cam_socket,receive_decode_image,draw_bboxes
 from physiolabxr.scripting.attention_bci.RenaFixationDataset import FixationDataset
 from physiolabxr.scripting.attention_bci.RenaProcessingParameters import locking_filters, event_names, epoch_margin
 from physiolabxr.scripting.RenaScript import RenaScript
@@ -63,6 +64,17 @@ num_vs_to_train_in_identifier_prep = 2  # for a total of 8 VS blocks in each met
 ar_cv_folds = 3
 
 target_threshold_quantile = 0.75
+
+FRAME_HISTORY = 30
+right_pull_buffer = deque(maxlen=FRAME_HISTORY)
+
+
+def find_frame(frames_deque, target_ts, tol_ms=0.1):
+    """Return (img, exact_ts) whose timestamp is within ±tol_ms of target_ts."""
+    for color_img, depth_img, ts, bbox in frames_deque:
+        if abs(ts - target_ts) <= tol_ms:
+            return color_img, depth_img, ts, bbox
+    return None, None, None, None
 
 # class ItemEvent():
 #     """
@@ -158,21 +170,30 @@ class RenaProcessing(RenaScript):
         self.fixation_outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
         # TODO: -------------the camera capture should be from the local host--------------
-        self.fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5556", 'rena_epochs_to_class_samples_rdf')
+        self.fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5556", 'ColorDepthCamGazePositionBBox')
+        self.fixation_cam_socket.setsockopt(zmq.CONFLATE,1)
         self.right_cam_socket =    get_cam_socket("tcp://127.0.0.1:5557", 'ColorDepthCamRight')
+        self.right_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.left_cam_socket =     get_cam_socket("tcp://127.0.0.1:5558", 'ColorDepthCamLeft')
+        self.left_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.back_cam_socket =     get_cam_socket("tcp://127.0.0.1:5559", 'ColorDepthCamBack')
+        self.back_cam_socket.setsockopt(zmq.CONFLATE, 1)
         print(f'Image sockets connected.')
 
         # TODO: ------------- the processed data from OVTR detection------------------------
         self.ovtr_fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5560", 'OVTRCamFixation')
+        self.ovtr_fixation_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.ovtr_right_cam_socket = get_cam_socket("tcp://127.0.0.1:5561", 'OVTRCamRight')
+        self.ovtr_right_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.ovtr_left_cam_socket = get_cam_socket("tcp://127.0.0.1:5562", 'OVTRCamLeft')
+        self.ovtr_left_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.ovtr_back_cam_socket = get_cam_socket("tcp://127.0.0.1:5563", 'OVTRCamBack')
+        self.ovtr_back_cam_socket.setsockopt(zmq.CONFLATE, 1)
         print(f'OVTR image sockets connected.')
 
         '''--------------------------- Declaration of fixation dataset ---------------------------------------'''
         self.fixation_dataset = FixationDataset()
+
 
     # Start will be called once when the run button is hit.
     def init(self):
@@ -187,16 +208,18 @@ class RenaProcessing(RenaScript):
 
             # feature: the camera capture for each loop of ReNa script
 
-            fixation_msg = receive_fixation_decode(self.fixation_cam_socket)
+            # fixation_msg = receive_fixation_decode(self.fixation_cam_socket)
             right_msg = receive_decode_image(self.right_cam_socket)
-            left_msg = receive_decode_image(self.left_cam_socket)
-            back_msg = receive_decode_image(self.back_cam_socket)
+            # left_msg = receive_decode_image(self.left_cam_socket)
+            # back_msg = receive_decode_image(self.back_cam_socket)
 
             if right_msg:
                 right_cam_color, right_cam_depth, timestamp_right, bboxes_right = right_msg
+                right_pull_buffer.append([right_cam_color, right_cam_depth, timestamp_right, bboxes_right])
+
             else:
                 right_cam_color, right_cam_depth, timestamp_right, bboxes_right = None, None, None,None
-
+            '''
             if left_msg:
                 left_cam_color, left_cam_depth, timestamp_left, bboxes_left = left_msg
             else:
@@ -211,15 +234,38 @@ class RenaProcessing(RenaScript):
                 fixation_cam_color, fixation_cam_depth, timestamp_fixation, bboxes_fixation, gaze_x, gaze_y = fixation_msg
             else:
                 fixation_cam_color, fixation_cam_depth, timestamp_fixation, bboxes_fixation, gaze_x, gaze_y = None, None, None, None,None,None
+            '''
 
+            # feature: the OVTR processed capture
 
             try:
                 right_msg = self.ovtr_right_cam_socket.recv_string(zmq.NOBLOCK)
-                right_topic, json_payload = right_msg.split(' ', 1)
+                right_topic, ts_right, json_payload = right_msg.split(' ', 2)
+                ts_right =float(ts_right)
                 tracking_data = json.loads(json_payload)
+
+                right_cam_color, right_cam_depth, timestamp_right, bboxes_right = find_frame(right_pull_buffer, ts_right)
+
                 if (tracking_data != None):
+                    boxes_np = []
+                    identities = []
                     for obj in tracking_data:
-                        print(f"ID: {obj['id']}, BBox: {obj['bbox']}, Timestamp: {obj['timestamp']}")
+                        # print(f"ID: {obj['id']}, BBox: {obj['bbox']}, Timestamp: {obj['time_stamp']}")
+
+                        x1, y1, x2, y2 = obj["bbox"]
+                        score = obj["score"]
+                        # if you don’t have a class label, put 0; your helper still works
+                        boxes_np.append([x1, y1, x2, y2, score, 0])
+                        identities.append(obj["id"])
+
+                    boxes_np = np.asarray(boxes_np, dtype=np.float32)
+
+                    # 2️⃣  draw once, using your helper
+                    if(right_msg):
+                        annotated = draw_bboxes(right_cam_color.copy(), boxes_np, identities)
+                        cv2.imshow("Right-cam OVTR", annotated)
+                        cv2.waitKey(delay=1)
+
             except zmq.Again:
                 print("ovtr receive failed")
 
@@ -484,6 +530,7 @@ class RenaProcessing(RenaScript):
 
                     print("")
                     # TODO add FixationDataset here
+                    self.fixation_dataset.extend()
 
             print(f"[{self.loop_count}] AddingBlockData: Process completed")
             self.clear_buffer()
