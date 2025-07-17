@@ -23,6 +23,7 @@ Known issues:
 """
 import os
 import ctypes
+import platform
 import warnings
 import time
 from dataclasses import dataclass, field
@@ -50,6 +51,48 @@ from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Voc
 class PREFIX_OPTIONS(Enum):
     FREQUENCY = 1
 
+_DLL_CACHE: dict[str, ctypes.CDLL] = {}
+
+
+def _get_cached_dll(path: str, symbol: str, argtypes, restype) -> ctypes.CDLL:
+    """Load & cache a shared library + bind its exported symbol."""
+    key = f"{path}:{symbol}"
+    if key not in _DLL_CACHE:
+        dll = ctypes.CDLL(path)
+        fn = getattr(dll, symbol)
+        fn.argtypes = argtypes
+        fn.restype = restype
+        _DLL_CACHE[key] = dll
+    return _DLL_CACHE[key]
+# ---------------------------------------------------------------------------
+# Pure-Python discrete Fréchet (2-D) for fallback
+# ---------------------------------------------------------------------------
+
+def _frechet_py(P: np.ndarray, Q: np.ndarray) -> float:
+    """Discrete Fréchet distance between two 2-D sequences (O(n·m))."""
+    n, m = len(P), len(Q)
+    ca = np.full((n, m), -1.0)
+
+    def _c(i: int, j: int) -> float:
+        if ca[i, j] > -1:
+            return ca[i, j]
+        d = np.linalg.norm(P[i] - Q[j])
+        if i == 0 and j == 0:
+            ca[i, j] = d
+        elif i > 0 and j == 0:
+            ca[i, j] = max(_c(i - 1, 0), d)
+        elif i == 0 and j > 0:
+            ca[i, j] = max(_c(0, j - 1), d)
+        elif i > 0 and j > 0:
+            ca[i, j] = max(
+                min(_c(i - 1, j), _c(i - 1, j - 1), _c(i, j - 1)),
+                d,
+            )
+        else:
+            ca[i, j] = float("inf")
+        return ca[i, j]
+
+    return _c(n - 1, m - 1)
 
 @dataclass
 class TrieNode:
