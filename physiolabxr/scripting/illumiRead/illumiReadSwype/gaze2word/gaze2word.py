@@ -4,6 +4,8 @@ Get started:
 
     # change the gaze data path: gaze_data_path
 
+    from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import *  # you must import * here because we use dataclass
+
     g2w = Gaze2Word(gaze_data_path)  # create an instance of the Gaze2Word class
     perfect_gaze_trace = g2w.vocab_traces['hello']  # create a perfect gaze trace for the word 'hello'
 
@@ -96,7 +98,7 @@ def _frechet_py(P: np.ndarray, Q: np.ndarray) -> float:
 
 @dataclass
 class TrieNode:
-    char: str | None = None                  # <─ NEW: the letter this node stands for
+    char: str | None = None
     children: Dict[str, "TrieNode"] = field(default_factory=dict)
     is_word: bool = False
     word: str | None = None
@@ -105,7 +107,7 @@ class TrieNode:
     state: Literal["RELEASE", "HOLD"] = "RELEASE"
 
 
-GAUSS_SIGMA = 0.4          # empirically tuned
+GAUSS_SIGMA = 0.4  # empirically tuned
 WINDOW_PX   = 30
 
 def gaussian_dist(dist_px: float) -> float:
@@ -720,6 +722,102 @@ class Gaze2Word:
                              top_n_spatial=50,
                              return_prob: float = True,
                              ):
+        """
+        Predict the *k* most likely words from a **continuous**, possibly noisy
+        gaze-path using the *GlanceWriter* decoding strategy.
+
+        --------------------------------------------------------------------
+        Algorithmic overview
+        --------------------------------------------------------------------
+        1. **Per-sample key scoring** – Every incoming gaze sample *gₜ* is
+           mapped to its nearest keyboard key *c* (typically ≤ 30 keys) and
+           awarded a *key-score*
+           ``K(c, t) = 𝓝(dist(gₜ, c); σ) · 1 / avg_speed(t, ±W)``
+           where 𝓝(·; σ) is a Gaussian of pixel distance and
+           ``avg_speed`` is the mean gaze velocity inside a ±*W* pixel window
+           (Eq. 1–3 in GlanceWriter).
+
+        2. **Prefix-trie walk** – A compressed trie of the full vocabulary
+           tracks every still-plausible word hypothesis.
+           * Nodes start in **RELEASE** and flip to **HOLD** when their letter
+             becomes the current key; their cumulative score ``ΣK`` is updated
+             while held.
+           * When the gaze moves to a child letter, that child node is seeded
+             with the parent’s cumulative score + its own ``K``.
+           * If a **HOLD** node terminates a word, its score is recorded in
+             `word_candidate`.
+
+        3. **Spatial likelihood ⇢ probability** – The top
+           `top_n_spatial` word candidates are normalised into a spatial
+           probability distribution *P<sub>spatial</sub>(w)*.
+
+        4. **Language-model fusion** – If *prefix* text is provided, a
+           pre-trained *n*-gram model supplies *P<sub>lang</sub>(w | prefix)*.
+           The two sources are combined multiplicatively
+
+           ``P(w) ∝ P_spatial(w)^(1-α) · P_lang(w|prefix)^α``.
+
+        5. **Output** – The *k* highest-probability words are returned either
+           as plain strings or as ``(word, probability)`` tuples.
+
+        Args
+            k : int
+                Number of candidate words to return.
+
+            gaze_trace : (T, 2) *np.ndarray*
+                Continuous (x, y) gaze coordinates. Assumed to be sampled at a
+                constant rate but **no timestamp is required**.
+
+            prefix : str | None, default *None*
+                Previous context (already typed words). If ``None`` the decoder
+                relies solely on the spatial likelihood. An empty string ``""``
+                is allowed and means “start-of-sentence”.
+
+            alpha : float, 0 ≤ α ≤ 1, default *0.05*
+                Mixture weight between language model and spatial evidence.
+                • α = 0→ spatial only (pure GlanceWriter)
+                • α = 1→ language model only (ignores gaze)
+
+            top_n_spatial : int, default *50*
+                How many of the highest-scoring spatial candidates to keep before
+                mixing with the language model.  Setting this too low can discard
+                plausible words; too high slightly slows computation.
+
+            return_prob : bool, default *True*
+                If *True*, return a list of ``(word, P)`` sorted by probability.
+                If *False*, return a list of words only.
+
+        Returns
+            list[tuple[str, float]] | list[str]
+                The *k* best candidates, ordered from most to least likely.
+                Format depends on *return_prob*.
+
+        --------------------------------------------------------------------
+        Notes
+        --------------------------------------------------------------------
+        • Runtime is **O(T·B)** where *T* is gaze-trace length and *B* is the
+          branching factor of the trie (≈ alphabet size).  This is linear in
+          trace length and typically **10–50 × faster** than DTW-based
+          decoders that compare against every word template.
+
+        • The trie collapses repeated letters (e.g. “letter” → “leter”) exactly
+          as described in the GlanceWriter paper, so held fixations do not
+          duplicate path steps.
+
+        • `alpha`, `GAUSS_SIGMA`, and `WINDOW_PX` are empirical hyper-parameters
+          that may need tuning for a new eye-tracker or keyboard layout.
+
+        • The function mutates internal trie nodes (HOLD/RELEASE, scores).
+          Re-entrancy is handled by resetting node state at the start of each
+          call; concurrent threads should instantiate separate `Gaze2Word`
+          objects.
+
+        --------------------------------------------------------------------
+        References
+        --------------------------------------------------------------------
+        Lee, J. & Kristensson, P. O. “GlanceWriter: Continuous Single-word
+        Gesture Typing in Gaze Interaction”. *CHI 2024*.
+        """
         release_nodes = self.trie_root.children
         hold_nodes : List[TrieNode] = []
         word_candidate : Dict[str, float] = {}
@@ -779,24 +877,24 @@ class Gaze2Word:
 if __name__ == '__main__':
     gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
-    g2w = Gaze2Word(gaze_data_path)
+    # g2w = Gaze2Word(gaze_data_path)
 
-    # if os.path.exists('g2w.pkl'):
-    #     with open('g2w.pkl', 'rb') as f:
-    #         g2w = pickle.load(f)
-    # else:
-    #     g2w = Gaze2Word(gaze_data_path)
-    #     with open('g2w.pkl', 'wb') as f:
-    #         pickle.dump(g2w, f)
+    if os.path.exists('g2w.pkl'):
+        with open('g2w.pkl', 'rb') as f:
+            g2w = pickle.load(f)
+    else:
+        g2w = Gaze2Word(gaze_data_path)
+        with open('g2w.pkl', 'wb') as f:
+            pickle.dump(g2w, f)
 
     # simple test ######################################################################################################
     perfect_gaze_trace = g2w.vocab_traces['hello']
 
+    print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
+    print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
+
     print(f"Predicted (GlanceWriter) perfect w/o context: o{g2w.predict_glancewriter(5, perfect_gaze_trace)}")
     print(f"Predicted (GlanceWriter) perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
-
-    print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace, verbose=True)}")
-    print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='', verbose=True)}")
 
     # test with a long gaze trace (won't work without prefix) ##########################################################
     long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
@@ -806,6 +904,9 @@ if __name__ == '__main__':
                                             np.linspace(g2w.letter_locations['o'], g2w.letter_locations['o'], num=2)])
     print(f"Predicted long w/o context: {g2w.predict(5, long_gaze_trace)}")
     print(f"Predicted long w/ context: {g2w.predict(5, long_gaze_trace, prefix='')}")
+
+    print(f"Predicted (GlanceWriter) long w/o context: {g2w.predict_glancewriter(5, long_gaze_trace)}")
+    print(f"Predicted (GlanceWriter)  long w/ context: {g2w.predict_glancewriter(5, long_gaze_trace, prefix='')}")
 
     # test with context  ###############################################################################################
     noisy_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['d'], g2w.letter_locations['d'], num=2),
