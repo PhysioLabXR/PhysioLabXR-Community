@@ -25,11 +25,14 @@ import os
 import ctypes
 import warnings
 import time
+from dataclasses import dataclass, field
+from itertools import groupby
+
 from joblib import Parallel, delayed
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import pickle
 from enum import Enum
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Dict, Literal
 
 import pandas as pd
 import numpy as np
@@ -46,6 +49,33 @@ from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Voc
 
 class PREFIX_OPTIONS(Enum):
     FREQUENCY = 1
+
+
+@dataclass
+class TrieNode:
+    char: str | None = None                  # <─ NEW: the letter this node stands for
+    children: Dict[str, "TrieNode"] = field(default_factory=dict)
+    is_word: bool = False
+    word: str | None = None
+    key_score: float = 0.0
+    cum_score: float = 0.0
+    state: Literal["RELEASE", "HOLD"] = "RELEASE"
+
+
+GAUSS_SIGMA = 0.4          # empirically tuned
+WINDOW_PX   = 30
+
+def gaussian_dist(dist_px: float) -> float:
+    return np.exp(-(dist_px**2) / (2 * GAUSS_SIGMA**2)) / (GAUSS_SIGMA*np.sqrt(2*np.pi))
+
+def stability_score(trace, idx):
+    # average speed in WINDOW_PX neighbourhood
+    lo = max(0, idx-WINDOW_PX); hi = min(len(trace)-1, idx+WINDOW_PX)
+    if hi==lo: return 0.0
+    dists = np.linalg.norm(np.diff(trace[lo:hi+1], axis=0), axis=1)
+    avg_speed = dists.mean() + 1e-6
+    return 1.0 / avg_speed
+
 
 
 class Gaze2Word:
@@ -103,6 +133,34 @@ class Gaze2Word:
         self.trimmed_vocab_traces = None
         self.trimmed_vocab_list = None
 
+        # build the trie for GlanceWriter
+        self.trie_root = None
+        self.build_trie(self.vocab.vocabulary)
+
+        # the following is used to compute the nearest key for the gaze point, used in GlanceWriter
+        self._letters_ordered = list(self.letter_locations.keys())
+        self._key_coords = np.vstack([self.letter_locations[ch]
+                                      for ch in self._letters_ordered])
+
+    def build_trie(self, vocab):
+        self.trie_root = TrieNode()
+        for w_i, word in enumerate(vocab):
+            print(f"Building trie: {w_i+1}/{len(vocab)}", end='\r')
+            node = self.trie_root
+            for char in self._collapse_runs(word):  # "moore" → "more"
+                node = node.children.setdefault(char, TrieNode(char=char))
+            node.is_word = True
+            node.word = word
+
+    def _collapse_runs(self, word: str) -> list[str]:
+        """
+        Collapse consecutive duplicate characters so “moore” → [m, o, r, e].
+
+        GlanceWriter treats a sustained fixation on the same key as a single
+        “HOLD”; merging runs in the lexicon makes that easier to match.
+        """
+        return [ch for ch, _ in groupby(word.lower())]
+
     def trim_vocab(self, vocab_list: List[str], verbose=True) -> None:
         """Use a smaller set of vocabs.
 
@@ -132,6 +190,9 @@ class Gaze2Word:
         for starting_letter, words in self.vocab_traces_starting_letter.items():
             _vocab_traces_starting_letter[starting_letter] = {word: trace for word, trace in words.items() if word in vocab_list}
         self.trimmed_vocab_traces_starting_letter = _vocab_traces_starting_letter
+
+        # build the trimmed
+        self.build_trie(self.trimmed_vocab_list)
 
         if verbose:
             print(f"Trimmed the vocab from {len(self.vocab_traces)} to {len(self.trimmed_vocab_traces)} words")
@@ -308,11 +369,95 @@ class Gaze2Word:
         else:
             raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
+    def _nearest_key(self, gaze_point: np.ndarray | list | tuple) -> str:
+        """
+        Return the letter whose centre is closest to *gaze_point*.
+
+        Runs in ~60 µs on a 30-key keyboard with pure NumPy—
+        plenty fast for 120 Hz eye-tracking.
+        """
+        gp = np.asarray(gaze_point)
+        # squared Euclidean distances (no need for sqrt)
+        dists = np.sum((self._key_coords - gp) ** 2, axis=1)
+        return self._letters_ordered[int(np.argmin(dists))]
+
+    def _key_score(self, key: str, trace: np.ndarray, idx: int) -> float:
+        """
+        GlanceWriter Eq. (1) & (2): Gaussian proximity × inverse speed.
+
+        key   : the keyboard letter we’re evaluating
+        trace : whole gaze path, shape (T, 2)
+        idx   : current time-step in the trace
+        """
+        # 1) distance from gaze point to key centre
+        dist_px = np.linalg.norm(trace[idx] - self.letter_locations[key])
+        d_term = gaussian_dist(dist_px)  # Eq. (1)  # TODO incorrect type?
+
+        # 2) gaze stability in a ±WINDOW_PX neighbourhood
+        g_term = stability_score(trace, idx)  # Eq. (2)
+
+        return d_term * g_term  # Eq. (3)
+
+    def predict_glancewriter(self, gaze_trace, k=5, prefix=None,
+                             alpha=0.3, top_n_spatial=10):
+        release_nodes = self.trie_root.children
+        hold_nodes : List[TrieNode] = []
+        word_candidate : Dict[str, float] = {}
+
+        for t, g in enumerate(gaze_trace):
+            key = self._nearest_key(g)                # map point → letter
+            kscore = self._key_score(key, gaze_trace, t)
+
+            # seed first-letter nodes ---
+            if key in release_nodes and release_nodes[key] not in hold_nodes:
+                node = release_nodes[key]; node.state = "HOLD"
+                node.key_score = kscore
+                node.cum_score = kscore
+                hold_nodes.append(node)
+
+            # --- 2. advance existing HOLD nodes ---
+            for node in list(hold_nodes):                     # iterate over a copy
+                # update node itself if gaze is still on it
+                if key == node.char  and kscore > node.key_score:
+                    node.cum_score += (kscore - node.key_score)
+                    node.key_score  = kscore
+
+                # try to move to matching children
+                for ch, child in node.children.items():
+                    if ch == key and child.state == "RELEASE":
+                        child.state      = "HOLD"
+                        child.key_score  = kscore
+                        child.cum_score  = node.cum_score + kscore
+                        hold_nodes.append(child)
+
+            # --- 3. whenever a word ends, push candidate ---
+            for node in hold_nodes:
+                if node.is_word:
+                    word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
+
+        # --- 4. spatial → probability, then combine with language model ---
+        if not word_candidate: return []
+        spatial_sorted = sorted(word_candidate.items(), key=lambda x:-x[1])[:top_n_spatial]
+        spatial_total  = sum(s for _,s in spatial_sorted)
+        p_spatial      = {w: s/spatial_total for w,s in spatial_sorted}
+
+        if prefix is not None:
+            p_lang = self.ngram_model.predict_next(prefix, k='all', return_prob=True)
+        else:
+            p_lang = defaultdict(lambda: 1.0/len(self.vocab.vocab_list))   # uniform
+
+        combined = {w:(p_spatial[w]**(1-alpha))*(p_lang.get(w,1e-8)**alpha)
+                    for w in p_spatial}
+
+        tops = sorted(combined.items(), key=lambda x:-x[1])[:k]
+        return tops
+
 
 if __name__ == '__main__':
     gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
-    
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+    # g2w = Gaze2Word(gaze_data_path)
+
     if os.path.exists('g2w.pkl'):
         with open('g2w.pkl', 'rb') as f:
             g2w = pickle.load(f)
@@ -327,6 +472,9 @@ if __name__ == '__main__':
 
     print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
     print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
+
+    print(f"Predicted perfect w/o context: {g2w.predict_glancewriter(5, perfect_gaze_trace)}")
+    print(f"Predicted perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
 
     # test with a long gaze trace (won't work without prefix) ##########################################################
     long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
