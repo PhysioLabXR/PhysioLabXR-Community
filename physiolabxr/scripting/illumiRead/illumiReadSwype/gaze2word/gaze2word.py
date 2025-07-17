@@ -389,17 +389,16 @@ class Gaze2Word:
         trace : whole gaze path, shape (T, 2)
         idx   : current time-step in the trace
         """
-        # 1) distance from gaze point to key centre
+        # distance from gaze point to key centre
         dist_px = np.linalg.norm(trace[idx] - self.letter_locations[key])
-        d_term = gaussian_dist(dist_px)  # Eq. (1)  # TODO incorrect type?
+        d_term = gaussian_dist(dist_px)  # Eq. (1)
 
-        # 2) gaze stability in a ±WINDOW_PX neighbourhood
+        # gaze stability in a ±WINDOW_PX neighbourhood
         g_term = stability_score(trace, idx)  # Eq. (2)
 
         return d_term * g_term  # Eq. (3)
 
-    def predict_glancewriter(self, gaze_trace, k=5, prefix=None,
-                             alpha=0.3, top_n_spatial=10):
+    def predict_glancewriter(self, k, gaze_trace, prefix=None, alpha=0.05, top_n_spatial=50):
         release_nodes = self.trie_root.children
         hold_nodes : List[TrieNode] = []
         word_candidate : Dict[str, float] = {}
@@ -408,14 +407,14 @@ class Gaze2Word:
             key = self._nearest_key(g)                # map point → letter
             kscore = self._key_score(key, gaze_trace, t)
 
-            # seed first-letter nodes ---
+            # seed first-letter nodes
             if key in release_nodes and release_nodes[key] not in hold_nodes:
                 node = release_nodes[key]; node.state = "HOLD"
                 node.key_score = kscore
                 node.cum_score = kscore
                 hold_nodes.append(node)
 
-            # --- 2. advance existing HOLD nodes ---
+            # advance existing HOLD nodes
             for node in list(hold_nodes):                     # iterate over a copy
                 # update node itself if gaze is still on it
                 if key == node.char  and kscore > node.key_score:
@@ -430,24 +429,23 @@ class Gaze2Word:
                         child.cum_score  = node.cum_score + kscore
                         hold_nodes.append(child)
 
-            # --- 3. whenever a word ends, push candidate ---
+            # whenever a word ends, push candidate
             for node in hold_nodes:
                 if node.is_word:
                     word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
 
-        # --- 4. spatial → probability, then combine with language model ---
+        # spatial → probability, then combine with language model
         if not word_candidate: return []
         spatial_sorted = sorted(word_candidate.items(), key=lambda x:-x[1])[:top_n_spatial]
         spatial_total  = sum(s for _,s in spatial_sorted)
-        p_spatial      = {w: s/spatial_total for w,s in spatial_sorted}
+        p_spatial      = {w: s/spatial_total for w,s in spatial_sorted}  # normalize
 
         if prefix is not None:
             p_lang = self.ngram_model.predict_next(prefix, k='all', return_prob=True)
         else:
             p_lang = defaultdict(lambda: 1.0/len(self.vocab.vocab_list))   # uniform
 
-        combined = {w:(p_spatial[w]**(1-alpha))*(p_lang.get(w,1e-8)**alpha)
-                    for w in p_spatial}
+        combined = {w:(p_spatial[w]**(1-alpha))*(p_lang.get(w,1e-8)**alpha) for w in p_spatial}
 
         tops = sorted(combined.items(), key=lambda x:-x[1])[:k]
         return tops
@@ -466,15 +464,14 @@ if __name__ == '__main__':
         with open('g2w.pkl', 'wb') as f:
             pickle.dump(g2w, f)
 
-
     # simple test ######################################################################################################
     perfect_gaze_trace = g2w.vocab_traces['hello']
 
+    print(f"Predicted (GlanceWriter) perfect w/o context: o{g2w.predict_glancewriter(5, perfect_gaze_trace)}")
+    print(f"Predicted (GlanceWriter) perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
+
     print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
     print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
-
-    print(f"Predicted perfect w/o context: {g2w.predict_glancewriter(5, perfect_gaze_trace)}")
-    print(f"Predicted perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
 
     # test with a long gaze trace (won't work without prefix) ##########################################################
     long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
