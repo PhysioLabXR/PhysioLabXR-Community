@@ -875,8 +875,9 @@ class Gaze2Word:
 
 
 if __name__ == '__main__':
-    gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
+    # gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+    gaze_data_path = r'C:\Users\apoca\PycharmProjects\PhysioLabXR-Community\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
     # g2w = Gaze2Word(gaze_data_path)
 
     if os.path.exists('g2w.pkl'):
