@@ -112,7 +112,7 @@ def run_dbscan_on_gaze(gaze_trace, timestamps, dbscan_eps, dbscan_min_samples, v
     if verbose: print(f"DBSCAN reduced the gaze trace from {len(gaze_trace)} to {len(centroids_dbscan)} points.")
     return np.array(centroids_dbscan)
 
-def run_dwt_dll(dll, gaze_trace, template_trace):
+def run_dtw_dll(dll, gaze_trace, template_trace):
     dll.find_cost.argtypes = [
         ctypes.POINTER(ctypes.c_double),
         ctypes.c_size_t,

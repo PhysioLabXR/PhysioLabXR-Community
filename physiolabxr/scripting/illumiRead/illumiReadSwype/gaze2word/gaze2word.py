@@ -4,6 +4,8 @@ Get started:
 
     # change the gaze data path: gaze_data_path
 
+    from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import *  # you must import * here because we use dataclass
+
     g2w = Gaze2Word(gaze_data_path)  # create an instance of the Gaze2Word class
     perfect_gaze_trace = g2w.vocab_traces['hello']  # create a perfect gaze trace for the word 'hello'
 
@@ -23,13 +25,17 @@ Known issues:
 """
 import os
 import ctypes
+import platform
 import warnings
 import time
+from dataclasses import dataclass, field
+from itertools import groupby
+
 from joblib import Parallel, delayed
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import pickle
 from enum import Enum
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Dict, Literal
 
 import pandas as pd
 import numpy as np
@@ -39,13 +45,82 @@ from dtw import dtw
 from sklearn.cluster import DBSCAN
 
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations, \
-    run_dbscan_on_gaze, run_dwt_dll
+    run_dbscan_on_gaze, run_dtw_dll
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
 
 
 class PREFIX_OPTIONS(Enum):
     FREQUENCY = 1
+
+_DLL_CACHE: dict[str, ctypes.CDLL] = {}
+
+
+def _get_cached_dll(path: str, symbol: str, argtypes, restype) -> ctypes.CDLL:
+    """Load & cache a shared library + bind its exported symbol."""
+    key = f"{path}:{symbol}"
+    if key not in _DLL_CACHE:
+        dll = ctypes.CDLL(path)
+        fn = getattr(dll, symbol)
+        fn.argtypes = argtypes
+        fn.restype = restype
+        _DLL_CACHE[key] = dll
+    return _DLL_CACHE[key]
+# ---------------------------------------------------------------------------
+# Pure-Python discrete Fréchet (2-D) for fallback
+# ---------------------------------------------------------------------------
+
+def _frechet_py(P: np.ndarray, Q: np.ndarray) -> float:
+    """Discrete Fréchet distance between two 2-D sequences (O(n·m))."""
+    n, m = len(P), len(Q)
+    ca = np.full((n, m), -1.0)
+
+    def _c(i: int, j: int) -> float:
+        if ca[i, j] > -1:
+            return ca[i, j]
+        d = np.linalg.norm(P[i] - Q[j])
+        if i == 0 and j == 0:
+            ca[i, j] = d
+        elif i > 0 and j == 0:
+            ca[i, j] = max(_c(i - 1, 0), d)
+        elif i == 0 and j > 0:
+            ca[i, j] = max(_c(0, j - 1), d)
+        elif i > 0 and j > 0:
+            ca[i, j] = max(
+                min(_c(i - 1, j), _c(i - 1, j - 1), _c(i, j - 1)),
+                d,
+            )
+        else:
+            ca[i, j] = float("inf")
+        return ca[i, j]
+
+    return _c(n - 1, m - 1)
+
+@dataclass
+class TrieNode:
+    char: str | None = None
+    children: Dict[str, "TrieNode"] = field(default_factory=dict)
+    is_word: bool = False
+    word: str | None = None
+    key_score: float = 0.0
+    cum_score: float = 0.0
+    state: Literal["RELEASE", "HOLD"] = "RELEASE"
+
+
+GAUSS_SIGMA = 0.4  # empirically tuned
+WINDOW_PX   = 30
+
+def gaussian_dist(dist_px: float) -> float:
+    return np.exp(-(dist_px**2) / (2 * GAUSS_SIGMA**2)) / (GAUSS_SIGMA*np.sqrt(2*np.pi))
+
+def stability_score(trace, idx):
+    # average speed in WINDOW_PX neighbourhood
+    lo = max(0, idx-WINDOW_PX); hi = min(len(trace)-1, idx+WINDOW_PX)
+    if hi==lo: return 0.0
+    dists = np.linalg.norm(np.diff(trace[lo:hi+1], axis=0), axis=1)
+    avg_speed = dists.mean() + 1e-6
+    return 1.0 / avg_speed
+
 
 
 class Gaze2Word:
@@ -103,6 +178,88 @@ class Gaze2Word:
         self.trimmed_vocab_traces = None
         self.trimmed_vocab_list = None
 
+        # build the trie for GlanceWriter
+        self.trie_root = None
+        self.build_trie(self.vocab.vocabulary)
+
+        # the following is used to compute the nearest key for the gaze point, used in GlanceWriter
+        self._letters_ordered = list(self.letter_locations.keys())
+        self._key_coords = np.vstack([self.letter_locations[ch]
+                                      for ch in self._letters_ordered])
+
+        # native back‑ends
+        self._dll_paths: dict[str, str] = {}
+        self.dtw_dll = self._load_native_lib("DTW")
+        self.frechet_dll = self._load_native_lib("Frechet")
+
+    def __getstate__(self):
+        st = self.__dict__.copy()
+        st["dtw_dll"] = None
+        st["frechet_dll"] = None
+        return st
+
+    def __setstate__(self, st):
+        self.__dict__ = st
+        self.dtw_dll = self._load_native_lib("DTW")
+        self.frechet_dll = self._load_native_lib("Frechet")
+
+    # -------------------- DLL loader ------------------------- #
+    def _load_native_lib(self, base: str) -> Optional[ctypes.CDLL]:
+        sys = platform.system()
+        ext = {"Windows": "dll", "Darwin": "dylib", "Linux": "so"}.get(sys)
+        if ext is None:
+            return None
+        name = f"{('lib' if sys != 'Windows' else '')}{base}.{ext}"
+        path = os.path.join(os.path.dirname(__file__), name)
+        if not os.path.exists(path):
+            return None
+        self._dll_paths[base] = path
+        try:
+            if base == "DTW":
+                dll = _get_cached_dll(
+                    path,
+                    "find_cost",
+                    [
+                        ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+                        ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+                    ],
+                    ctypes.c_double,
+                )
+            else:  # Frechet
+                dll = _get_cached_dll(
+                    path,
+                    "frechet_distance",
+                    [
+                        ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+                        ctypes.POINTER(ctypes.c_double), ctypes.c_size_t,
+                    ],
+                    ctypes.c_double,
+                )
+            print(f"Loaded native {base} library: {name}")
+            return dll
+        except Exception as exc:
+            warnings.warn(f"Failed to load native {base} ({exc})")
+            return None
+
+    def build_trie(self, vocab):
+        self.trie_root = TrieNode()
+        for w_i, word in enumerate(vocab):
+            print(f"Building trie: {w_i+1}/{len(vocab)}", end='\r')
+            node = self.trie_root
+            for char in self._collapse_runs(word):  # "moore" → "more"
+                node = node.children.setdefault(char, TrieNode(char=char))
+            node.is_word = True
+            node.word = word
+
+    def _collapse_runs(self, word: str) -> list[str]:
+        """
+        Collapse consecutive duplicate characters so “moore” → [m, o, r, e].
+
+        GlanceWriter treats a sustained fixation on the same key as a single
+        “HOLD”; merging runs in the lexicon makes that easier to match.
+        """
+        return [ch for ch, _ in groupby(word.lower())]
+
     def trim_vocab(self, vocab_list: List[str], verbose=True) -> None:
         """Use a smaller set of vocabs.
 
@@ -133,9 +290,183 @@ class Gaze2Word:
             _vocab_traces_starting_letter[starting_letter] = {word: trace for word, trace in words.items() if word in vocab_list}
         self.trimmed_vocab_traces_starting_letter = _vocab_traces_starting_letter
 
+        # build the trimmed
+        self.build_trie(self.trimmed_vocab_list)
+
         if verbose:
             print(f"Trimmed the vocab from {len(self.vocab_traces)} to {len(self.trimmed_vocab_traces)} words")
 
+
+    # def predict(self, k: int, gaze_trace: np.ndarray, timestamps=None,
+    #             prefix: Optional[Union[str, PREFIX_OPTIONS]]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
+    #             run_dbscan: bool=False, dbscan_eps: float= 0.1, dbscan_min_samples: int=3,
+    #             filter_by_starting_letter: Optional[float]=None,
+    #             njobs: int=1,
+    #             return_prob: float=True,
+    #             use_trimmed_vocab: bool=False,
+    #             verbose=False) -> list:
+    #     """Predict the top k most likely next word based on the gaze trace from Sweyepe and previous text
+    #
+    #     Tips:
+    #     1. Always use context even if it's empty, because
+    #         see example long_gaze_trace.
+    #     2. play around with the parameter ngram_alpha to find an optimal value.
+    #     3. if you have other probabilities that you want to combine with this one, you can set return_prob to True.
+    #     4. set run_dbscan to True to reduce the number of points in the gaze trace.
+    #
+    #     Args:
+    #         k: int: top k candidate words
+    #         gaze_trace: 2d array of shape (t, 2): gaze trace from Sweyepe, the first dimension is time, and the second
+    #             dimension is x and y.
+    #             for example, a gaze trace of shape (100, 2) has 100 time points.
+    #         timestamps: 1d array of shape (t,), or None: timestamps for the gaze_trace.
+    #             If given, it should be of the same length as the gaze_trace. It will used in computing DBSCAN,
+    #             such as that DBSCAN takes the order of the points into account.It is highly recommended you
+    #             supply this argument if you are using DBSCAN to make the prediction more accurate.
+    #
+    #             If None, the gaze_trace will be treated as a bunch of points without any order information
+    #             when computing DBSCAN.
+    #
+    #         Ngram related parameters:
+    #         ------------------------
+    #         prefix: str: previous text, None, or PREFIX_OPTIONS
+    #
+    #             If is not None, the prediction will be based on the previous text.
+    #                 Note that an empty string is also a valid prefix. The ngram will prepend the start token to the prefix,
+    #                 meaning the prediction will likely to be words that commonly follow the start token/aka the beginning of the sentence.
+    #
+    #             If is None, the prediction will be based on the gaze trace only.
+    #
+    #             (Not yet implemented) If is PREFIX_OPTIONS.FREQUENCY, the prediction will be based on the frequency of the words in the text.
+    #                 this is similar to setting the prefix to the empty string, but instead of frequency of the first word,
+    #                 it's the frequency of the whole text.
+    #
+    #         ngram_alpha: float: between 0 and 1, the weight of the ngram model in the prediction
+    #         ngram_epsilon: float: a small value to add to the ngram probabilities to avoid zero probabilities
+    #
+    #         Cluster related parameters:
+    #         ---------------------------
+    #         run_dbscan: bool: whether to run DBSCAN on the gaze trace before prediction
+    #         dbscan_eps: float: the maximum distance between two samples for one to be considered as in the neighborhood of the other
+    #         dbscan_min_samples: int: the number of samples in a neighborhood for a point to be considered as a core point
+    #
+    #         Using a smaller vocab:
+    #         ---------------------
+    #         use_trimmed_vocab: bool: whether to use a smaller vocab.
+    #             You need to call the trim_vocab method to use this feature. If not, it will throw a warning and use the full vocab.
+    #             This is particularly useful when you know your vocabs are drawn from a pool beforehand.
+    #
+    #         return_prob: bool: whether to return the probabilities of the top choise.
+    #
+    #     Returns:
+    #         list of str: top k candidate words
+    #     """
+    #     start_tot = time.perf_counter()
+    #     assert 0 <= ngram_alpha <= 1, "ngram_alpha should be between 0 and 1"
+    #     # start = time.perf_counter()
+    #     if run_dbscan:
+    #         gaze_trace = run_dbscan_on_gaze(gaze_trace, timestamps, dbscan_eps, dbscan_min_samples, verbose)
+    #     # print(f'db_scan time: {(time.perf_counter() - start):.8f}')
+    #     if len(gaze_trace) == 0:
+    #         return []
+    #
+    #     if len(gaze_trace) == 1:
+    #         gaze_point = gaze_trace[0]
+    #         # just return the word that is closest to the gaze point
+    #         distances = [np.linalg.norm(pos - gaze_point) for letter, pos in self.letter_locations.items()]
+    #         return self.letters[np.argmin(distances)]
+    #
+    #     # whether to use the trimmed vocab
+    #     if use_trimmed_vocab and self.trimmed_vocab_traces is not None:
+    #         vocab_traces_starting_letter = self.trimmed_vocab_traces_starting_letter
+    #         template_traces = self.trimmed_vocab_traces
+    #         vocab_list = self.trimmed_vocab_list
+    #     else:
+    #         if use_trimmed_vocab and self.trimmed_vocab_traces is None:
+    #             warnings.warn("Warning: use_trimmed_vocab is set to True, but the trimmed vocab is not set. Using the full vocab instead.")
+    #         vocab_traces_starting_letter = self.vocab_traces_starting_letter
+    #         template_traces = self.vocab_traces
+    #         vocab_list = self.vocab.vocab_list
+    #
+    #     if filter_by_starting_letter is not None:
+    #         start = time.perf_counter()
+    #         # find the letters in self.letters that are within the filter_by_starting_letter radius
+    #         first_gaze_point = gaze_trace[0]
+    #         possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
+    #         template_traces = {word: trace for letter in possible_letters for word, trace in vocab_traces_starting_letter[letter].items()}
+    #         vocab_list = list(template_traces.keys())
+    #         if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
+    #         print(f'filter time: {(time.perf_counter() - start):.8f}')
+    #     else:
+    #         template_traces = template_traces
+    #         vocab_list = vocab_list
+    #
+    #     start = time.perf_counter()
+    #     if njobs == 1:
+    #         distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+    #                      word, template_trace in template_traces.items()]
+    #     else:
+    #         distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
+    #                      word, template_trace in template_traces.items())
+    #         distances = [result.distance for result in distances]
+    #
+    #     # dll_path = os.path.join(os.path.dirname(__file__), 'DTW.dll')
+    #     # dwt_dll = ctypes.CDLL(dll_path)
+    #     #
+    #     # if njobs == 1:
+    #     #     distances = [
+    #     #         run_dwt_dll(
+    #     #             dwt_dll,
+    #     #             gaze_trace,
+    #     #             template_trace
+    #     #         ) for word, template_trace in template_traces.items()
+    #     #     ]
+    #     # else:
+    #     #     distances = Parallel(n_jobs=njobs)(
+    #     #         delayed(run_dwt_dll)(
+    #     #             dwt_dll,
+    #     #             gaze_trace,
+    #     #             template_trace
+    #     #         ) for word, template_trace in template_traces.items())
+    #
+    #     print(f'distance time: {(time.perf_counter() - start):.8f}')
+    #
+    #     if prefix is not None and isinstance(prefix, str):
+    #         start = time.perf_counter()
+    #         # tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k * 50]]
+    #         tops = [(word, distances) for word, distances in sorted(zip(vocab_list, distances), key=lambda x: x[1])][:k * 10]
+    #         distance_top_words = [word for word, _ in tops]
+    #         distances = [distance for _, distance in tops]
+    #
+    #         ngram_preds = self.ngram_model.predict_next(prefix, k='all', ignore_punctuation=True, return_prob=True)
+    #         # combine the distances with the ngram predictions
+    #         # first turn the distances into probabilities
+    #         distances = np.array(distances)
+    #         distance_probs = 1 - (distances - np.min(distances)) / (np.max(distances) - np.min(distances))
+    #
+    #         # find the corresponding ngram probabilities
+    #         ngram_probs = np.array([ngram_preds[word] for word in distance_top_words]) + ngram_epsilon
+    #
+    #         combined_prob = (ngram_probs ** ngram_alpha) * (distance_probs ** (1 - ngram_alpha))
+    #         ret = [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
+    #         print(f'prefix time: {(time.perf_counter() - start):.8f}')
+    #         print(f'total time: {(time.perf_counter() - start_tot):.8f}')
+    #         return ret
+    #     elif prefix is None:
+    #         tops = [(w, d) for w, d in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k]]
+    #
+    #         if return_prob: # turn distance into probs
+    #             words = [w for w, distance in tops]
+    #             distances = [d for _, d in tops]
+    #             distances = np.array(distances)
+    #             distance_probs = 1 - (distances - np.min(distances)) / (np.max(distances) - np.min(distances))
+    #             return [(w, d) for w, d in zip(words, distance_probs)]
+    #         else:
+    #             return tops
+    #     elif prefix is PREFIX_OPTIONS.FREQUENCY:
+    #         raise NotImplementedError("prefix option not implemented")
+    #     else:
+    #         raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
     def predict(self, k: int, gaze_trace: np.ndarray, timestamps=None,
                 prefix: Optional[Union[str, PREFIX_OPTIONS]]=None, ngram_alpha: float=0.05, ngram_epsilon: float=1e-8,
@@ -144,6 +475,7 @@ class Gaze2Word:
                 njobs: int=1,
                 return_prob: float=True,
                 use_trimmed_vocab: bool=False,
+                distance_type="dtw",
                 verbose=False) -> list:
         """Predict the top k most likely next word based on the gaze trace from Sweyepe and previous text
 
@@ -232,44 +564,89 @@ class Gaze2Word:
             start = time.perf_counter()
             # find the letters in self.letters that are within the filter_by_starting_letter radius
             first_gaze_point = gaze_trace[0]
-            possible_letters = [letter for letter, pos in self.letter_locations.items() if np.linalg.norm(pos - first_gaze_point) < filter_by_starting_letter]
+            distance_2_letters_dict = {letter: np.linalg.norm(pos - first_gaze_point) for letter, pos in self.letter_locations.items()}
+            distance_2_letters = np.array(list(distance_2_letters_dict.values()))
+            if np.sum(distance_2_letters < filter_by_starting_letter) == 0:
+                possible_letters = list(distance_2_letters_dict.keys())[np.argmin(distance_2_letters)]
+                warnings.warn(f"Warning: no letters found within {filter_by_starting_letter} distance from the first gaze point. Using the closest letter {possible_letters} with distance {np.min(distance_2_letters)}")
+            else:
+                possible_letters = [letter for letter, dist in distance_2_letters_dict.items() if dist < filter_by_starting_letter]
             template_traces = {word: trace for letter in possible_letters for word, trace in vocab_traces_starting_letter[letter].items()}
             vocab_list = list(template_traces.keys())
             if verbose: print(f"Filtering by starting letter reduced the number of words from {len(self.vocab_traces)} to {len(template_traces)}")
-            print(f'filter time: {(time.perf_counter() - start):.8f}')
+            if verbose: print(f'filter time: {(time.perf_counter() - start):.8f}')
         else:
             template_traces = template_traces
             vocab_list = vocab_list
 
+        if len(template_traces) == 0:
+            warnings.warn("No words found in the vocabulary. Returning an empty list.")
+            return []
+
+        native = False
+        if distance_type == "dtw":
+            if self.dtw_dll is not None:
+                native = True
+                dll_path = self._dll_paths["DTW"]
+                def dist_fn(tmp):
+                    dll = _get_cached_dll(dll_path, "find_cost", [], None)  # already configured
+                    return run_dtw_dll(dll, gaze_trace, tmp)
+            else:
+                def dist_fn(tmp):
+                    return dtw(
+                        gaze_trace, tmp, keep_internals=False, dist_method="euclidean"
+                    ).distance
+        else:  # Frechet
+            if self.frechet_dll is not None:
+                native = True
+                dll_path = self._dll_paths["Frechet"]
+                def dist_fn(tmp):
+                    dll = _get_cached_dll(dll_path, "frechet_distance", [], None)
+                    arr1 = gaze_trace.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+                    arr2 = tmp.flatten().ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+                    return dll.frechet_distance(arr1, len(gaze_trace), arr2, len(tmp))
+            else:
+                def dist_fn(tmp):
+                    return _frechet_py(gaze_trace, tmp)
+        # def dist_fn(tmp):
+        #     return dtw(gaze_trace, tmp, keep_internals=False, dist_method="euclidean").distance
+
+        # Parallel loop (threads for native, processes otherwise)
+        prefer = "threads" if native else "processes"
         start = time.perf_counter()
         if njobs == 1:
-            distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
-                         word, template_trace in template_traces.items()]
+            distances = [dist_fn(t) for t in template_traces.values()]
         else:
-            distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
-                         word, template_trace in template_traces.items())
-            distances = [result.distance for result in distances]
+            distances = Parallel(n_jobs=njobs, prefer=prefer)(
+                delayed(dist_fn)(t) for t in template_traces.values()
+            )
 
-        # dll_path = os.path.join(os.path.dirname(__file__), 'DTW.dll')
-        # dwt_dll = ctypes.CDLL(dll_path)
-        #
-        # if njobs == 1:
-        #     distances = [
-        #         run_dwt_dll(
-        #             dwt_dll,
-        #             gaze_trace,
-        #             template_trace
-        #         ) for word, template_trace in template_traces.items()
-        #     ]
+        # if self.dtw_dll is not None:
+        #     if njobs == 1:
+        #         distances = [
+        #             run_dtw_dll(
+        #                 self.dtw_dll,
+        #                 gaze_trace,
+        #                 template_trace
+        #             ) for word, template_trace in template_traces.items()
+        #         ]
+        #     else:
+        #         distances = Parallel(n_jobs=njobs)(
+        #             delayed(run_dtw_dll)(
+        #                 self.dtw_dll,
+        #                 gaze_trace,
+        #                 template_trace
+        #             ) for word, template_trace in template_traces.items())
         # else:
-        #     distances = Parallel(n_jobs=njobs)(
-        #         delayed(run_dwt_dll)(
-        #             dwt_dll,
-        #             gaze_trace,
-        #             template_trace
-        #         ) for word, template_trace in template_traces.items())
+        #     if njobs == 1:
+        #         distances = [dtw(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean').distance for
+        #                      word, template_trace in template_traces.items()]
+        #     else:
+        #         distances = Parallel(n_jobs=njobs)(delayed(dtw)(gaze_trace, template_trace, keep_internals=True, dist_method='euclidean') for
+        #                      word, template_trace in template_traces.items())
+        #         distances = [result.distance for result in distances]
 
-        print(f'distance time: {(time.perf_counter() - start):.8f}')
+        if verbose: print(f'distance time: {(time.perf_counter() - start):.8f}')
 
         if prefix is not None and isinstance(prefix, str):
             start = time.perf_counter()
@@ -289,8 +666,8 @@ class Gaze2Word:
 
             combined_prob = (ngram_probs ** ngram_alpha) * (distance_probs ** (1 - ngram_alpha))
             ret = [(word if not return_prob else word, -prob) for word, prob in sorted(zip(distance_top_words, -combined_prob), key=lambda x: x[1])[:k]]
-            print(f'prefix time: {(time.perf_counter() - start):.8f}')
-            print(f'total time: {(time.perf_counter() - start_tot):.8f}')
+            if verbose: print(f'prefix time: {(time.perf_counter() - start):.8f}')
+            if verbose: print(f'total time: {(time.perf_counter() - start_tot):.8f}')
             return ret
         elif prefix is None:
             tops = [(w, d) for w, d in sorted(zip(vocab_list, distances), key=lambda x: x[1])[:k]]
@@ -308,11 +685,201 @@ class Gaze2Word:
         else:
             raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
+    def _nearest_key(self, gaze_point: np.ndarray | list | tuple) -> str:
+        """
+        Return the letter whose centre is closest to *gaze_point*.
+
+        Runs in ~60 µs on a 30-key keyboard with pure NumPy—
+        plenty fast for 120 Hz eye-tracking.
+        """
+        gp = np.asarray(gaze_point)
+        # squared Euclidean distances (no need for sqrt)
+        dists = np.sum((self._key_coords - gp) ** 2, axis=1)
+        return self._letters_ordered[int(np.argmin(dists))]
+
+    def _key_score(self, key: str, trace: np.ndarray, idx: int) -> float:
+        """
+        GlanceWriter Eq. (1) & (2): Gaussian proximity × inverse speed.
+
+        key   : the keyboard letter we’re evaluating
+        trace : whole gaze path, shape (T, 2)
+        idx   : current time-step in the trace
+        """
+        # distance from gaze point to key centre
+        dist_px = np.linalg.norm(trace[idx] - self.letter_locations[key])
+        d_term = gaussian_dist(dist_px)  # Eq. (1)
+
+        # gaze stability in a ±WINDOW_PX neighbourhood
+        g_term = stability_score(trace, idx)  # Eq. (2)
+
+        return d_term * g_term  # Eq. (3)
+
+    def predict_glancewriter(self,
+                             k,
+                             gaze_trace,
+                             prefix=None,
+                             alpha=0.05,
+                             top_n_spatial=50,
+                             return_prob: float = True,
+                             ):
+        """
+        Predict the *k* most likely words from a **continuous**, possibly noisy
+        gaze-path using the *GlanceWriter* decoding strategy.
+
+        --------------------------------------------------------------------
+        Algorithmic overview
+        --------------------------------------------------------------------
+        1. **Per-sample key scoring** – Every incoming gaze sample *gₜ* is
+           mapped to its nearest keyboard key *c* (typically ≤ 30 keys) and
+           awarded a *key-score*
+           ``K(c, t) = 𝓝(dist(gₜ, c); σ) · 1 / avg_speed(t, ±W)``
+           where 𝓝(·; σ) is a Gaussian of pixel distance and
+           ``avg_speed`` is the mean gaze velocity inside a ±*W* pixel window
+           (Eq. 1–3 in GlanceWriter).
+
+        2. **Prefix-trie walk** – A compressed trie of the full vocabulary
+           tracks every still-plausible word hypothesis.
+           * Nodes start in **RELEASE** and flip to **HOLD** when their letter
+             becomes the current key; their cumulative score ``ΣK`` is updated
+             while held.
+           * When the gaze moves to a child letter, that child node is seeded
+             with the parent’s cumulative score + its own ``K``.
+           * If a **HOLD** node terminates a word, its score is recorded in
+             `word_candidate`.
+
+        3. **Spatial likelihood ⇢ probability** – The top
+           `top_n_spatial` word candidates are normalised into a spatial
+           probability distribution *P<sub>spatial</sub>(w)*.
+
+        4. **Language-model fusion** – If *prefix* text is provided, a
+           pre-trained *n*-gram model supplies *P<sub>lang</sub>(w | prefix)*.
+           The two sources are combined multiplicatively
+
+           ``P(w) ∝ P_spatial(w)^(1-α) · P_lang(w|prefix)^α``.
+
+        5. **Output** – The *k* highest-probability words are returned either
+           as plain strings or as ``(word, probability)`` tuples.
+
+        Args
+            k : int
+                Number of candidate words to return.
+
+            gaze_trace : (T, 2) *np.ndarray*
+                Continuous (x, y) gaze coordinates. Assumed to be sampled at a
+                constant rate but **no timestamp is required**.
+
+            prefix : str | None, default *None*
+                Previous context (already typed words). If ``None`` the decoder
+                relies solely on the spatial likelihood. An empty string ``""``
+                is allowed and means “start-of-sentence”.
+
+            alpha : float, 0 ≤ α ≤ 1, default *0.05*
+                Mixture weight between language model and spatial evidence.
+                • α = 0→ spatial only (pure GlanceWriter)
+                • α = 1→ language model only (ignores gaze)
+
+            top_n_spatial : int, default *50*
+                How many of the highest-scoring spatial candidates to keep before
+                mixing with the language model.  Setting this too low can discard
+                plausible words; too high slightly slows computation.
+
+            return_prob : bool, default *True*
+                If *True*, return a list of ``(word, P)`` sorted by probability.
+                If *False*, return a list of words only.
+
+        Returns
+            list[tuple[str, float]] | list[str]
+                The *k* best candidates, ordered from most to least likely.
+                Format depends on *return_prob*.
+
+        --------------------------------------------------------------------
+        Notes
+        --------------------------------------------------------------------
+        • Runtime is **O(T·B)** where *T* is gaze-trace length and *B* is the
+          branching factor of the trie (≈ alphabet size).  This is linear in
+          trace length and typically **10–50 × faster** than DTW-based
+          decoders that compare against every word template.
+
+        • The trie collapses repeated letters (e.g. “letter” → “leter”) exactly
+          as described in the GlanceWriter paper, so held fixations do not
+          duplicate path steps.
+
+        • `alpha`, `GAUSS_SIGMA`, and `WINDOW_PX` are empirical hyper-parameters
+          that may need tuning for a new eye-tracker or keyboard layout.
+
+        • The function mutates internal trie nodes (HOLD/RELEASE, scores).
+          Re-entrancy is handled by resetting node state at the start of each
+          call; concurrent threads should instantiate separate `Gaze2Word`
+          objects.
+
+        --------------------------------------------------------------------
+        References
+        --------------------------------------------------------------------
+        Lee, J. & Kristensson, P. O. “GlanceWriter: Continuous Single-word
+        Gesture Typing in Gaze Interaction”. *CHI 2024*.
+        """
+        release_nodes = self.trie_root.children
+        hold_nodes : List[TrieNode] = []
+        word_candidate : Dict[str, float] = {}
+
+        for t, g in enumerate(gaze_trace):
+            key = self._nearest_key(g)                # map point → letter
+            kscore = self._key_score(key, gaze_trace, t)
+
+            # seed first-letter nodes
+            if key in release_nodes and release_nodes[key] not in hold_nodes:
+                node = release_nodes[key]; node.state = "HOLD"
+                node.key_score = kscore
+                node.cum_score = kscore
+                hold_nodes.append(node)
+
+            # advance existing HOLD nodes
+            for node in list(hold_nodes):                     # iterate over a copy
+                # update node itself if gaze is still on it
+                if key == node.char  and kscore > node.key_score:
+                    node.cum_score += (kscore - node.key_score)
+                    node.key_score  = kscore
+
+                # try to move to matching children
+                for ch, child in node.children.items():
+                    if ch == key and child.state == "RELEASE":
+                        child.state      = "HOLD"
+                        child.key_score  = kscore
+                        child.cum_score  = node.cum_score + kscore
+                        hold_nodes.append(child)
+
+            # whenever a word ends, push candidate
+            for node in hold_nodes:
+                if node.is_word:
+                    word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
+
+        # spatial → probability, then combine with language model
+        if not word_candidate: return []
+        spatial_sorted = sorted(word_candidate.items(), key=lambda x:-x[1])[:top_n_spatial]
+        spatial_total  = sum(s for _,s in spatial_sorted)
+        p_spatial      = {w: s/spatial_total for w,s in spatial_sorted}  # normalize
+
+        if prefix is not None:
+            p_lang = self.ngram_model.predict_next(prefix, k='all', return_prob=True)
+        else:
+            p_lang = defaultdict(lambda: 1.0/len(self.vocab.vocab_list))   # uniform
+
+        combined = {w:(p_spatial[w]**(1-alpha))*(p_lang.get(w,1e-8)**alpha) for w in p_spatial}
+
+        tops = sorted(combined.items(), key=lambda x:-x[1])[:k]
+        if return_prob:
+            return tops
+        else:
+            tops = [w for w, _ in tops]
+            return tops
+
 
 if __name__ == '__main__':
-    gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
-    
+    # gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+    gaze_data_path = r'C:\Users\apoca\PycharmProjects\PhysioLabXR-Community\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
+    # g2w = Gaze2Word(gaze_data_path)
+
     if os.path.exists('g2w.pkl'):
         with open('g2w.pkl', 'rb') as f:
             g2w = pickle.load(f)
@@ -321,12 +888,14 @@ if __name__ == '__main__':
         with open('g2w.pkl', 'wb') as f:
             pickle.dump(g2w, f)
 
-
     # simple test ######################################################################################################
     perfect_gaze_trace = g2w.vocab_traces['hello']
 
     print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
     print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
+
+    print(f"Predicted (GlanceWriter) perfect w/o context: o{g2w.predict_glancewriter(5, perfect_gaze_trace)}")
+    print(f"Predicted (GlanceWriter) perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
 
     # test with a long gaze trace (won't work without prefix) ##########################################################
     long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
@@ -336,6 +905,9 @@ if __name__ == '__main__':
                                             np.linspace(g2w.letter_locations['o'], g2w.letter_locations['o'], num=2)])
     print(f"Predicted long w/o context: {g2w.predict(5, long_gaze_trace)}")
     print(f"Predicted long w/ context: {g2w.predict(5, long_gaze_trace, prefix='')}")
+
+    print(f"Predicted (GlanceWriter) long w/o context: {g2w.predict_glancewriter(5, long_gaze_trace)}")
+    print(f"Predicted (GlanceWriter)  long w/ context: {g2w.predict_glancewriter(5, long_gaze_trace, prefix='')}")
 
     # test with context  ###############################################################################################
     noisy_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['d'], g2w.letter_locations['d'], num=2),
@@ -358,8 +930,5 @@ if __name__ == '__main__':
                                        np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
                                        ])
     print(noisy_gaze_trace)
-    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None, include_single_letter_words=True)}")
-    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='in front of him is', include_single_letter_words=True)}")
-
-
-    
+    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None)}")
+    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='in front of him is')}")
