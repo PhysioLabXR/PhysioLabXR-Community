@@ -43,7 +43,7 @@ from dtw import dtw
 from sklearn.cluster import DBSCAN
 
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.g2w_utils import parse_letter_locations, \
-    run_dbscan_on_gaze, run_dwt_dll
+    run_dbscan_on_gaze, run_dtw_dll
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.vocab import Vocab
 
@@ -712,7 +712,14 @@ class Gaze2Word:
 
         return d_term * g_term  # Eq. (3)
 
-    def predict_glancewriter(self, k, gaze_trace, prefix=None, alpha=0.05, top_n_spatial=50):
+    def predict_glancewriter(self,
+                             k,
+                             gaze_trace,
+                             prefix=None,
+                             alpha=0.05,
+                             top_n_spatial=50,
+                             return_prob: float = True,
+                             ):
         release_nodes = self.trie_root.children
         hold_nodes : List[TrieNode] = []
         word_candidate : Dict[str, float] = {}
@@ -762,21 +769,25 @@ class Gaze2Word:
         combined = {w:(p_spatial[w]**(1-alpha))*(p_lang.get(w,1e-8)**alpha) for w in p_spatial}
 
         tops = sorted(combined.items(), key=lambda x:-x[1])[:k]
-        return tops
+        if return_prob:
+            return tops
+        else:
+            tops = [w for w, _ in tops]
+            return tops
 
 
 if __name__ == '__main__':
     gaze_data_path = '/Users/apocalyvec/PycharmProjects/PhysioLabXR/physiolabxr/scripting/illumiRead/illumiReadSwype/gaze2word/GazeData.csv'
     # gaze_data_path = r'C:\Users\Season\Documents\PhysioLab\physiolabxr\scripting\illumiRead\illumiReadSwype\gaze2word\GazeData.csv'
-    # g2w = Gaze2Word(gaze_data_path)
+    g2w = Gaze2Word(gaze_data_path)
 
-    if os.path.exists('g2w.pkl'):
-        with open('g2w.pkl', 'rb') as f:
-            g2w = pickle.load(f)
-    else:
-        g2w = Gaze2Word(gaze_data_path)
-        with open('g2w.pkl', 'wb') as f:
-            pickle.dump(g2w, f)
+    # if os.path.exists('g2w.pkl'):
+    #     with open('g2w.pkl', 'rb') as f:
+    #         g2w = pickle.load(f)
+    # else:
+    #     g2w = Gaze2Word(gaze_data_path)
+    #     with open('g2w.pkl', 'wb') as f:
+    #         pickle.dump(g2w, f)
 
     # simple test ######################################################################################################
     perfect_gaze_trace = g2w.vocab_traces['hello']
@@ -784,8 +795,8 @@ if __name__ == '__main__':
     print(f"Predicted (GlanceWriter) perfect w/o context: o{g2w.predict_glancewriter(5, perfect_gaze_trace)}")
     print(f"Predicted (GlanceWriter) perfect w/ context: {g2w.predict_glancewriter(5, perfect_gaze_trace, prefix='')}")
 
-    print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace)}")
-    print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='')}")
+    print(f"Predicted perfect w/o context: {g2w.predict(5, perfect_gaze_trace, verbose=True)}")
+    print(f"Predicted perfect w/ context: {g2w.predict(5, perfect_gaze_trace, prefix='', verbose=True)}")
 
     # test with a long gaze trace (won't work without prefix) ##########################################################
     long_gaze_trace = np.concatenate([np.linspace(g2w.letter_locations['h'], g2w.letter_locations['e'], num=2),
@@ -817,8 +828,5 @@ if __name__ == '__main__':
                                        np.linspace(g2w.letter_locations['a'], g2w.letter_locations['a'], num=2),
                                        ])
     print(noisy_gaze_trace)
-    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None, include_single_letter_words=True)}")
-    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='in front of him is', include_single_letter_words=True)}")
-
-
-    
+    print(f"Predicted noisy w/o context: {g2w.predict(5, noisy_gaze_trace, prefix=None)}")
+    print(f"Predicted noisy w/ context: {g2w.predict(5, noisy_gaze_trace, prefix='in front of him is')}")
