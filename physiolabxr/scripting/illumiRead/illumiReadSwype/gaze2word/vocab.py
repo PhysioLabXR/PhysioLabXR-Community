@@ -46,11 +46,14 @@ class Vocab:
         tokens = [normalize_and_filter(word.lower()) for word in corpora if word.isalpha()]
         self.vocabulary = Counter(tokens)
 
+        print("add words")
         # Add words from WordNet
         for synset in wordnet.all_synsets():
             for lemma in synset.lemmas():
                 normalized_word = normalize_and_filter(lemma.name().lower())
                 self.vocabulary[normalized_word] += 1
+
+        print("remove the single words")
 
         # remove from the counter single-letter words
         # and words that contains punctuation

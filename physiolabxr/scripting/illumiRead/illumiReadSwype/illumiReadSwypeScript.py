@@ -58,7 +58,7 @@ from itertools import groupby
 from physiolabxr.scripting.RenaScript import RenaScript
 from pylsl import StreamInfo, StreamOutlet, StreamInlet, resolve_stream, cf_float32, LostError
 from physiolabxr.scripting.illumiRead.illumiReadSwype import illumiReadSwypeConfig
-from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import Gaze2Word
+from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.gaze2word import *
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.Tap2Char import Tap2Char
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram import NGramModel
 from physiolabxr.scripting.illumiRead.illumiReadSwype.gaze2word.ngram_interpolation import InterpolatedNGramModel
@@ -195,7 +195,15 @@ class IllumiReadSwypeScript(RenaScript):
         if(practice ==1):
             file_path = os.path.join(self.file_directory, 'PracticeSentences.xlsx')
         else:
-            if(user_study != 2):
+            if(user_study == 2):
+                subfolder = "user_study4_session_sentences"
+                file_name = f"session{session}-short-longe-sentences.xlsx"
+                file_path = os.path.join(self.file_directory, subfolder, file_name)
+            elif(user_study == 3):
+                subfolder = "user_study3_session_sentences"
+                file_name = f"session{session}_study_3.xlsx"
+                file_path = os.path.join(self.file_directory, subfolder, file_name)
+            else:
                 # if(session == 1):
                 #     file_path = os.path.join(self.file_directory, 'session1-short-longe-sentences.xlsx')
                 # elif(session == 2):
@@ -208,19 +216,21 @@ class IllumiReadSwypeScript(RenaScript):
                 #     file_path = os.path.join(self.file_directory, 'session5-short-longe-sentences.xlsx')
                 file_name = f"session{session}-short-longe-sentences.xlsx"
                 file_path = os.path.join(self.file_directory, file_name)
-            else:
-                subfolder = "user_study3_session_sentences"
-                file_name = f"session{session}_study_3.xlsx"
-                file_path = os.path.join(self.file_directory, subfolder, file_name)
 
-
-        # if not user study 3, then load sentences for column 0 and 1
-        if(user_study!=2):
+        if(practice ==1):
             df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
             sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
         else:
-            df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
-            sentences = df.iloc[:, 0].tolist()
+            # if not user study 3, then load sentences for column 0 and 1
+            if(user_study ==2):
+                df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
+                sentences = df.iloc[:, 0].tolist()
+            elif(user_study ==3):
+                df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
+                sentences = df.iloc[:, 0].tolist()
+            else:
+                df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
+                sentences = df.iloc[:, 0].tolist() + df.iloc[:, 1].tolist()
 
         sentences = [s for s in sentences if isinstance(s, str)]
         tokenizer = RegexpTokenizer(r'\w+')
@@ -357,10 +367,10 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeIntroductionState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState
-        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState.value:
-            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState
-        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState.value:
-            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterIntroductionState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterIntroductionState
+        elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState.value:
+            self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState.value:
             self.currentExperimentState = illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState
         elif state_marker == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState.value:
@@ -405,9 +415,9 @@ class IllumiReadSwypeScript(RenaScript):
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardPartialSwypeState.value:
             self.currentExperimentState = None
-        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHGazeIntroductionState.value:
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterIntroductionState.value:
             self.currentExperimentState = None
-        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState.value:
+        elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState.value:
             self.currentExperimentState = None
         elif state_marker == -illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingIntroductionState.value:
             self.currentExperimentState = None
@@ -432,7 +442,7 @@ class IllumiReadSwypeScript(RenaScript):
             self.keyboard_partialswype_state_callback()
 
         # the current 2 new eye swipe technique are now using partial swipe call back
-        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardHGazeState:
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState:
             self.keyboard_partialswype_state_callback()
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState:
             self.keyboard_partialswype_state_callback()
@@ -709,11 +719,6 @@ class IllumiReadSwypeScript(RenaScript):
         # clear the processed user input data and gaze data
         self.inputs.clear_stream_buffer_data(GazeDataLSLStreamInfo.StreamName)
         self.inputs.clear_stream_buffer_data(UserInputLSLStreamInfo.StreamName)
-
-
-
-
-
 
     def keyboard_freeswitch_state_callback(self):
         print("keyboard free switch state")

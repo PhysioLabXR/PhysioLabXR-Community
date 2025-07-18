@@ -145,8 +145,8 @@ class ExperimentState(Enum):
     KeyboardPartialSwypeIntroductionState = 14
     KeyboardPartialSwypeState = 15
 
-    KeyboardHGazeIntroductionState = 16
-    KeyboardHGazeState = 17
+    KeyboardGlanceWriterIntroductionState = 16
+    KeyboardGlanceWriterState = 17
 
     KeyboardDoubleCrossingIntroductionState = 18
     KeyboardDoubleCrossingState = 19
