@@ -195,11 +195,11 @@ class IllumiReadSwypeScript(RenaScript):
         if(practice ==1):
             file_path = os.path.join(self.file_directory, 'PracticeSentences.xlsx')
         else:
-            if(user_study == 2):
+            if(user_study == 3):
                 subfolder = "user_study4_session_sentences"
                 file_name = f"session{session}-short-longe-sentences.xlsx"
                 file_path = os.path.join(self.file_directory, subfolder, file_name)
-            elif(user_study == 3):
+            elif(user_study == 2):
                 subfolder = "user_study3_session_sentences"
                 file_name = f"session{session}_study_3.xlsx"
                 file_path = os.path.join(self.file_directory, subfolder, file_name)
@@ -226,7 +226,7 @@ class IllumiReadSwypeScript(RenaScript):
                 df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
                 sentences = df.iloc[:, 0].tolist()
             elif(user_study ==3):
-                df = pd.read_excel(file_path, sheet_name='Sheet', header=None)
+                df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
                 sentences = df.iloc[:, 0].tolist()
             else:
                 df = pd.read_excel(file_path, sheet_name='Sheet1', header=None)
