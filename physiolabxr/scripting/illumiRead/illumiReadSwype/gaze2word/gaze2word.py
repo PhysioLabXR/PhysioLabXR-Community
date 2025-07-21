@@ -205,6 +205,8 @@ class Gaze2Word:
 
     # -------------------- DLL loader ------------------------- #
     def _load_native_lib(self, base: str) -> Optional[ctypes.CDLL]:
+        if not hasattr(self, "_dll_paths"):  # sometimes pickle load doesn't # restore this attribute
+            self._dll_paths = {}
         sys = platform.system()
         ext = {"Windows": "dll", "Darwin": "dylib", "Linux": "so"}.get(sys)
         if ext is None:
