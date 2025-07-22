@@ -164,6 +164,7 @@ class IllumiReadSwypeScript(RenaScript):
     @async_rpc
     def ContextRPC(self, input0: str) -> str:
         start_time = time.perf_counter()
+
         self.context = input0.lower().rstrip("?")
         # predict the candidate words
         completions = self.ngram_model.predict_word_completion(self.context, k=5, ignore_punctuation=True)
