@@ -20,7 +20,7 @@
       <item>
        <widget class="QTabWidget" name="settings_tabs">
         <property name="currentIndex">
-         <number>2</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="settings_appearance_tab">
          <attribute name="title">
@@ -123,6 +123,37 @@
                 </item>
                </layout>
               </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
+               <item>
+                <widget class="QLabel" name="label_5">
+                 <property name="toolTip">
+                  <string>Compression applied to video streams such as camera, monitor, and any stream designated as video in the stream settings. Compression only works for .dats, any other format will still save the raw array.</string>
+                 </property>
+                 <property name="text">
+                  <string>Video Compression (only application to .dats)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="video_compression_combobox"/>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <item>
+                <widget class="QCheckBox" name="is_save_separate_video_checkbox">
+                 <property name="toolTip">
+                  <string>Whether to save video streams as separate files (.avi) when recording stops.</string>
+                 </property>
+                 <property name="text">
+                  <string>Save separate video file(s)</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>

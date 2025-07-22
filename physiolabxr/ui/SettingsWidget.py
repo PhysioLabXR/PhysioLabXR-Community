@@ -4,6 +4,7 @@ import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic
 from PyQt6.QtWidgets import QFileDialog, QDialogButtonBox
 
+from physiolabxr.compression.compression import DataCompressionPreset
 from physiolabxr.configs import config
 from physiolabxr.configs.GlobalSignals import GlobalSignals
 from physiolabxr.configs.configs import AppConfigs, LinechartVizMode, RecordingFileFormat
@@ -30,6 +31,12 @@ class SettingsWidget(QtWidgets.QWidget):
         # resolve save directory
         self.SelectDataDirBtn.clicked.connect(self.select_data_dir_btn_pressed)
         self.set_recording_file_location(config.settings.value('recording_file_location'))
+
+        self.video_compression_combobox.addItems([member.value for member in DataCompressionPreset.__members__.values()])
+        self.video_compression_combobox.activated.connect(self.video_compression_change)
+
+        self.is_save_separate_video_checkbox.setChecked(AppConfigs().is_save_separate_video)
+        self.is_save_separate_video_checkbox.stateChanged.connect(self.is_save_separate_video_change)
 
         # resolve replay settings
         self.start_stream_on_replay_checkbox.setChecked(AppConfigs().start_streams_on_replay)
@@ -159,6 +166,7 @@ class SettingsWidget(QtWidgets.QWidget):
     def load_settings_to_ui(self):
         self.linechart_viz_mode_combobox.setCurrentText(AppConfigs().linechart_viz_mode.value)
         self.saveFormatComboBox.setCurrentText(AppConfigs().recording_file_format.value)
+        self.video_compression_combobox.setCurrentText(AppConfigs().video_compression.value)
 
     def switch_to_tab(self, tab_name: str):
         for index in range(self.settings_tabs.count()):
@@ -201,6 +209,13 @@ class SettingsWidget(QtWidgets.QWidget):
         AppConfigs().recording_file_format = RecordingFileFormat(self.saveFormatComboBox.currentText())
         print(f"recording_file_format_change: {AppConfigs().recording_file_format}")
         self.parent.recording_tab.update_ui_save_file()
+
+    def is_save_separate_video_change(self):
+        AppConfigs().is_save_separate_video = self.is_save_separate_video_checkbox.isChecked()
+
+    def video_compression_change(self):
+        AppConfigs().video_compression = DataCompressionPreset(self.video_compression_combobox.currentText())
+        print(f"video_compression_change: {AppConfigs().video_compression}")
 
     def reset_default(self):
         # marked for refactor

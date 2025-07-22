@@ -10,6 +10,7 @@ from multiprocessing import Manager
 from PyQt6.QtCore import QStandardPaths, QFile, QTextStream
 from PyQt6.QtGui import QIcon
 
+from physiolabxr.compression.compression import DataCompressionPreset
 from physiolabxr.exceptions.exceptions import RPCCSharpSetupError
 from physiolabxr.utils.ConfigPresetUtils import reload_enums, save_local
 from physiolabxr.utils.Singleton import Singleton
@@ -95,6 +96,8 @@ class AppConfigs(metaclass=Singleton):
     # recording configs
     recording_file_format: RecordingFileFormat = RecordingFileFormat.dats
     eviction_interval: int = 1000
+    video_compression: DataCompressionPreset = DataCompressionPreset.LOSSLESS
+    is_save_separate_video: bool = False
 
     # data worker configs
     pull_data_interval: int = 2  # in milliseconds, how often does the sensor/LSL pulls data from their designated sources

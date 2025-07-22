@@ -7,7 +7,6 @@ scikit-learn
 scipy~=1.11.0
 git+https://github.com/physiolabxr/pyqtgraph.git@physio
 pyxdf
-pyscreeze
 opencv-python
 pyzmq
 setuptools
@@ -22,3 +21,5 @@ toml
 grpcio
 grpcio-tools
 msgpack == 0.5.6
+av
+mss

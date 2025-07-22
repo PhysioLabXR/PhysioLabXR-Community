@@ -277,9 +277,9 @@
        </spacer>
       </item>
       <item alignment="Qt::AlignRight">
-       <widget class="QLabel" name="recording_file_size_label">
+       <widget class="QLabel" name="recording_info_label">
         <property name="text">
-         <string>    Recording file size: </string>
+         <string>Not Recording</string>
         </property>
        </widget>
       </item>
