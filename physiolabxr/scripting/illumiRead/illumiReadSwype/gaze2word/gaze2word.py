@@ -23,6 +23,7 @@ Known issues:
 * the inference can be slow when the gaze sequence is long. Mostly from the quadratic time complexity of the DTW algorithm.
 
 """
+import copy
 import os
 import ctypes
 import platform
@@ -244,6 +245,9 @@ class Gaze2Word:
             return None
 
     def build_trie(self, vocab):
+        # always add i, and a
+        _vocab = copy.deepcopy(vocab)
+        vocab += ['a', 'i']
         self.trie_root = TrieNode()
         for w_i, word in enumerate(vocab):
             print(f"Building trie: {w_i+1}/{len(vocab)}", end='\r')
@@ -686,17 +690,43 @@ class Gaze2Word:
         else:
             raise ValueError("prefix should be None, str, or PREFIX_OPTIONS")
 
-    def _nearest_key(self, gaze_point: np.ndarray | list | tuple) -> str:
+    def _nearest_keys(
+        self,
+        gaze_point: np.ndarray | list | tuple,
+        k: int = 1,
+        sort: bool = True,
+    ) -> str | list[str]:
         """
-        Return the letter whose centre is closest to *gaze_point*.
+        Return the *k* keys whose centres are closest to *gaze_point*.
 
-        Runs in ~60 µs on a 30-key keyboard with pure NumPy—
-        plenty fast for 120 Hz eye-tracking.
+        Parameters
+        ----------
+        gaze_point : (2,) array‑like
+            Current gaze sample (x,y) in display pixels.
+
+        k : int, default 1
+            How many nearest keys to return.
+            • k = 1 → a single ``str`` (for full backward compatibility)
+            • k > 1 → a ``list[str]`` of length *k* (closest first)
+
+        sort : bool, default True
+            When *k>1*, sort the returned keys from closest to furthest.
+            Setting ``sort=False`` is ~10% faster but returns the keys in
+            arbitrary order.
         """
-        gp = np.asarray(gaze_point)
-        # squared Euclidean distances (no need for sqrt)
+        gp = np.asarray(gaze_point, dtype=float)
+        # squared Euclidean distances (avoid the √ for speed)
         dists = np.sum((self._key_coords - gp) ** 2, axis=1)
-        return self._letters_ordered[int(np.argmin(dists))]
+
+        if k == 1:
+            return self._letters_ordered[int(np.argmin(dists))]
+
+        # indices of the k‑nearest keys (partial sort = O(N) not O(N log N))
+        idx = np.argpartition(dists, kth=k - 1)[:k]
+        if sort:
+            idx = idx[np.argsort(dists[idx])]          # order by true distance
+        return [self._letters_ordered[i] for i in idx]
+
 
     def _key_score(self, key: str, trace: np.ndarray, idx: int) -> float:
         """
@@ -819,41 +849,42 @@ class Gaze2Word:
         Lee, J. & Kristensson, P. O. “GlanceWriter: Continuous Single-word
         Gesture Typing in Gaze Interaction”. *CHI 2024*.
         """
-        release_nodes = self.trie_root.children
+        self._reset_trie_runtime_fields()
+        starting_nodes = self.trie_root.children
         hold_nodes : List[TrieNode] = []
         word_candidate : Dict[str, float] = {}
-
         for t, g in enumerate(gaze_trace):
-            key = self._nearest_key(g)                # map point → letter
-            kscore = self._key_score(key, gaze_trace, t)
+            keys = self._nearest_keys(g, k=3)                # map point → letter
+            for key in keys:
+                kscore = self._key_score(key, gaze_trace, t)
 
-            # seed first-letter nodes
-            if key in release_nodes and release_nodes[key] not in hold_nodes:
-                node = release_nodes[key]; node.state = "HOLD"
-                node.key_score = kscore
-                node.cum_score = kscore
-                hold_nodes.append(node)
+                # seed first-letter nodes
+                if key in starting_nodes and starting_nodes[key] not in hold_nodes:
+                    node = starting_nodes[key]
+                    node.state = "HOLD"  # TODO unitify how do we indicate a node's state
+                    node.key_score = kscore
+                    node.cum_score = kscore
+                    hold_nodes.append(node)
 
-            # advance existing HOLD nodes
-            for node in list(hold_nodes):                     # iterate over a copy
-                # update node itself if gaze is still on it
-                if key == node.char  and kscore > node.key_score:
-                    node.cum_score += (kscore - node.key_score)
-                    node.key_score  = kscore
+                # advance existing HOLD nodes
+                for node in list(hold_nodes):                     # iterate over a copy
+                    # update node itself if gaze is still on it
+                    if key == node.char  and kscore > node.key_score:
+                        node.cum_score += (kscore - node.key_score)
+                        node.key_score  = kscore
 
-                # try to move to matching children
-                for ch, child in node.children.items():
-                    if ch == key and child.state == "RELEASE":
-                        child.state      = "HOLD"
-                        child.key_score  = kscore
-                        child.cum_score  = node.cum_score + kscore
-                        hold_nodes.append(child)
+                    # move on to match child matching this key
+                    for ch, child in node.children.items():
+                        if ch == key and child.state == "RELEASE":
+                            child.state      = "HOLD"
+                            child.key_score  = kscore
+                            child.cum_score  = node.cum_score + kscore
+                            hold_nodes.append(child)
 
-            # whenever a word ends, push candidate
-            for node in hold_nodes:
-                if node.is_word:
-                    word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
-
+                # whenever a word ends, push candidate
+                for node in hold_nodes:
+                    if node.is_word:
+                        word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
         # spatial → probability, then combine with language model
         if not word_candidate: return []
         spatial_sorted = sorted(word_candidate.items(), key=lambda x:-x[1])[:top_n_spatial]
@@ -873,6 +904,21 @@ class Gaze2Word:
         else:
             tops = [w for w, _ in tops]
             return tops
+
+    def _iter_trie_nodes(self):
+        """Yield every TrieNode in the vocabulary trie (preorder)."""
+        stack = [self.trie_root]
+        while stack:
+            node = stack.pop()
+            yield node
+            stack.extend(node.children.values())
+
+    def _reset_trie_runtime_fields(self):
+        """Clear HOLD/RELEASE + scores before each decode."""
+        for node in self._iter_trie_nodes():
+            node.state = "RELEASE"
+            node.key_score = 0.0
+            node.cum_score = 0.0
 
 
 if __name__ == '__main__':

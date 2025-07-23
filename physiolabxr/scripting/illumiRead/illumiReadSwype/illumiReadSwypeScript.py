@@ -9,7 +9,6 @@ import sys
 import matplotlib.pyplot as plt
 from itertools import groupby
 
-from transformers.utils.import_utils import candidates
 
 # import sys, traceback
 #
@@ -447,9 +446,9 @@ class IllumiReadSwypeScript(RenaScript):
 
         # the current 2 new eye swipe technique are now using partial swipe call back
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState:
-            self.keyboard_partialswype_state_callback()
-        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState:
             self.keyboard_glance_writer_state_callback()
+        elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState:
+            self.keyboard_partialswype_state_callback()
 
     def gaze_pinch_state_callback(self):
         # print("keyboard click state")
@@ -738,41 +737,52 @@ class IllumiReadSwypeScript(RenaScript):
                 # start
 
             if self.illumiReadSwyping and not user_input_button_2:
-                # end swyping
-                grouped_list = [list(group) for key, group in
-                                groupby(self.gaze_data_sequence, key=lambda x: x.gaze_type)]
-
                 end_fixation_trace = []
+                # end swyping
+                # the sweyepe way: detecting fixation and only use fixation for decoding ------------------------
+                # grouped_list = [list(group) for key, group in
+                #                 groupby(self.gaze_data_sequence, key=lambda x: x.gaze_type)]
+                # for group in grouped_list:
+                #     # if the gaze is a fixation
+                #     if group[0].gaze_type == GazeType.FIXATION:
+                #
+                #         fixation_start_time = group[0].timestamp
+                #         fixation_end_time = group[-1].timestamp
+                #
+                #         # find the user input data that is closest to the fixation
+                #         user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(
+                #             UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
+                #
+                #         user_input_sequence = []
+                #         for user_input, timestamp in zip(user_input_during_fixation_data.T,
+                #                                          user_input_during_fixation_timestamps):
+                #             user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
+                #
+                #         # check if the fixation consists of only one user input
+                #         for user_input in user_input_sequence:
+                #             # gaze trace under fixation mode
+                #             if not np.array_equal(user_input.keyboard_background_hit_point_local, [1, 1, 1]):
+                #                 end_fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
+                # ------------------------------------------------------------------------------------------------
+                if len(self.gaze_data_sequence) > 0:
+                    user_input_sequence, user_input_sequence_ts = self.data_buffer.get_stream_in_time_range(
+                        UserInputLSLStreamInfo.StreamName,
+                        self.gaze_data_sequence[0].get_timestamp(),
+                        self.gaze_data_sequence[-1].get_timestamp())
+                    for user_input, ts in zip(user_input_sequence.T, user_input_sequence_ts):
+                        user_input_struct = illumiReadSwypeUserInput(user_input, ts)
+                        if not np.array_equal(user_input_struct.keyboard_background_hit_point_local, [1, 1, 1]):
+                            end_fixation_trace.append(user_input_struct.keyboard_background_hit_point_local[:2])
 
-                for group in grouped_list:
-                    # if the gaze is a fixation
-                    if group[0].gaze_type == GazeType.FIXATION:
-
-                        fixation_start_time = group[0].timestamp
-                        fixation_end_time = group[-1].timestamp
-
-                        # find the user input data that is closest to the fixation
-                        user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(
-                            UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
-
-                        user_input_sequence = []
-                        for user_input, timestamp in zip(user_input_during_fixation_data.T,
-                                                         user_input_during_fixation_timestamps):
-                            user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
-
-                        # check if the fixation consists of only one user input
-                        for user_input in user_input_sequence:
-                            # gaze trace under fixation mode
-                            if not np.array_equal(user_input.keyboard_background_hit_point_local, [1, 1, 1]):
-                                end_fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
-
-                        pass
+                # for gaze_point in self.gaze_data_sequence:
+                #     # find the user input data that is closest to the fixation
+                #     ts = gaze_point.get_timestamp()
+                #     user_input_seq_idx = find_closes_time_index(user_input_sequence[1], ts, return_diff=False)
 
                 # reset and start decoding
                 print("start decoding swype path")
 
                 self.illumiReadSwyping = False
-                self.gaze_data_sequence = []
                 self.data_buffer = DataBuffer()
                 self.ivt_filter.reset_data_processor()
 
@@ -785,6 +795,8 @@ class IllumiReadSwypeScript(RenaScript):
                     #                                  verbose=True, filter_by_starting_letter=0.35,
                     #                                  use_trimmed_vocab=True, njobs=16)
 
+                    print("Predicting glance writer")
+
                     candidate_list = self.g2w.predict_glancewriter(4,temp_fixation_trace,prefix = self.context)
 
                     word_candidate_list = [item[0] for item in candidate_list]
@@ -796,7 +808,7 @@ class IllumiReadSwypeScript(RenaScript):
                     lvt, overflow_flat = word_candidate_list_to_lvt(word_candidate_list)
 
                     self.illumireadswype_keyboard_suggestion_strip_lsl_outlet.push_sample(lvt)
-
+                self.gaze_data_sequence = []
 
         if self.illumiReadSwyping:
 
@@ -864,3 +876,9 @@ class IllumiReadSwypeScript(RenaScript):
             return word_candidate_list
         else:
             return ["None"]
+
+def find_closes_time_index(target_timestamps, source_timestamp, return_diff=False):
+    index_in_target = np.argmin(np.abs(target_timestamps - source_timestamp))
+    if return_diff:
+        return index_in_target, target_timestamps[index_in_target] - source_timestamp
+    return index_in_target
