@@ -448,7 +448,7 @@ class IllumiReadSwypeScript(RenaScript):
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardGlanceWriterState:
             self.keyboard_glance_writer_state_callback()
         elif self.currentExperimentState == illumiReadSwypeConfig.ExperimentState.KeyboardDoubleCrossingState:
-            self.keyboard_partialswype_state_callback()
+            self.keyboard_glance_writer_state_callback()
 
     def gaze_pinch_state_callback(self):
         # print("keyboard click state")
@@ -567,35 +567,33 @@ class IllumiReadSwypeScript(RenaScript):
                 # end swyping
 
                 print("start decoding swype path")
-                grouped_list = [list(group) for key, group in
-                                groupby(self.gaze_data_sequence, key=lambda x: x.gaze_type)]
+                if UserInputLSLStreamInfo.StreamName in self.inputs and len(self.inputs[UserInputLSLStreamInfo.StreamName][0]) > 0:
+                    grouped_list = [list(group) for key, group in
+                                    groupby(self.gaze_data_sequence, key=lambda x: x.gaze_type)]
+                    self.fixation_trace = []
+                    for group in grouped_list:
+                        # if the gaze is a fixation
+                        if group[0].gaze_type == GazeType.FIXATION:
 
-                self.fixation_trace = []
+                            fixation_start_time = group[0].timestamp
+                            fixation_end_time = group[-1].timestamp
 
-                for group in grouped_list:
-                    # if the gaze is a fixation
-                    if group[0].gaze_type == GazeType.FIXATION:
+                            # find the user input data that is closest to the fixation
+                            user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(
+                                UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
 
-                        fixation_start_time = group[0].timestamp
-                        fixation_end_time = group[-1].timestamp
+                            user_input_sequence = []
+                            for user_input, timestamp in zip(user_input_during_fixation_data.T,
+                                                             user_input_during_fixation_timestamps):
+                                user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
 
-                        # find the user input data that is closest to the fixation
-                        user_input_during_fixation_data, user_input_during_fixation_timestamps = self.data_buffer.get_stream_in_time_range(
-                            UserInputLSLStreamInfo.StreamName, fixation_start_time, fixation_end_time)
-
-                        user_input_sequence = []
-                        for user_input, timestamp in zip(user_input_during_fixation_data.T,
-                                                         user_input_during_fixation_timestamps):
-                            user_input_sequence.append(illumiReadSwypeUserInput(user_input, timestamp))
-
-                        # check if the fixation consists of only one user input
-                        for user_input in user_input_sequence:
-                            # gaze trace under fixation mode
-                            if not np.array_equal(user_input.keyboard_background_hit_point_local, [1, 1, 1]):
-                                self.fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
-
-                        pass
-
+                            # check if the fixation consists of only one user input
+                            for user_input in user_input_sequence:
+                                # gaze trace under fixation mode
+                                if not np.array_equal(user_input.keyboard_background_hit_point_local, [1, 1, 1]):
+                                    self.fixation_trace.append(user_input.keyboard_background_hit_point_local[:2])
+                else:
+                    print(f"UserInput is empty, will not decode.")
                 # reset
                 self.illumiReadSwyping = False
                 self.gaze_data_sequence = []
