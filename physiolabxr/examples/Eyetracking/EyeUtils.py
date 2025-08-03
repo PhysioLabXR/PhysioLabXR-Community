@@ -68,3 +68,26 @@ def clip_bbox(x_center, y_center, width, height, image_shape):
     y_center_clipped = y1 + clipped_height // 2
 
     return (x_center_clipped, y_center_clipped, clipped_width, clipped_height)
+
+def crop_bbox(img, x_c, y_c, w, h):
+    """
+    Return a cropped region or None if it would be empty / out of bounds.
+    All coordinates are integers (pixels).
+    """
+    H, W = img.shape[:2]
+
+    # Half-sizes (integer division keeps them even)
+    half_w = max(1, w // 2)
+    half_h = max(1, h // 2)
+
+    x1 = max(0, x_c - half_w)
+    y1 = max(0, y_c - half_h)
+    x2 = min(W - 1, x_c + half_w)   # inclusive
+    y2 = min(H - 1, y_c + half_h)
+
+    # If the box collapses, return None
+    if x2 < x1 or y2 < y1:
+        return None
+
+    # Slices are [start : end_exclusive] → add 1 to include the pixel at x2/y2
+    return img[y1:y2 + 1, x1:x2 + 1].copy()

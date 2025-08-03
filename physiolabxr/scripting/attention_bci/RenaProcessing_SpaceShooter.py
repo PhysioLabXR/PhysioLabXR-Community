@@ -173,7 +173,7 @@ class RenaProcessing(RenaScript):
         self.fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5556", 'ColorDepthCamGazePositionBBox')
         self.fixation_cam_socket.setsockopt(zmq.CONFLATE,1)
         self.right_cam_socket =    get_cam_socket("tcp://127.0.0.1:5557", 'ColorDepthCamRight')
-        self.right_cam_socket.setsockopt(zmq.CONFLATE, 1)
+        self.right_cam_socket.setsockopt(zmq.CONFLATE,1)
         self.left_cam_socket =     get_cam_socket("tcp://127.0.0.1:5558", 'ColorDepthCamLeft')
         self.left_cam_socket.setsockopt(zmq.CONFLATE, 1)
         self.back_cam_socket =     get_cam_socket("tcp://127.0.0.1:5559", 'ColorDepthCamBack')
@@ -239,7 +239,8 @@ class RenaProcessing(RenaScript):
             # feature: the OVTR processed capture
 
             try:
-                right_msg = self.ovtr_right_cam_socket.recv_string(zmq.NOBLOCK)
+
+                ovtr_right_msg = self.ovtr_right_cam_socket.recv_string(zmq.NOBLOCK)
                 right_topic, ts_right, json_payload = right_msg.split(' ', 2)
                 ts_right =float(ts_right)
                 tracking_data = json.loads(json_payload)
@@ -261,12 +262,15 @@ class RenaProcessing(RenaScript):
                     boxes_np = np.asarray(boxes_np, dtype=np.float32)
 
                     # 2️⃣  draw once, using your helper
-                    if(right_msg):
+                    if(ovtr_right_msg):
                         annotated = draw_bboxes(right_cam_color.copy(), boxes_np, identities)
                         cv2.imshow("Right-cam OVTR", annotated)
                         cv2.waitKey(delay=1)
 
             except zmq.Again:
+                if(right_msg):
+                    cv2.imshow("Right-cam OVTR", right_cam_color.copy())
+                    cv2.waitKey(delay=1)
                 print("ovtr receive failed")
 
 

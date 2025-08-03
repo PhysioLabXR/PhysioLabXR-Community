@@ -29,12 +29,8 @@ def get_cam_socket(sub_tcpAddress, topic: str):
 
 def receive_decode_image(socket):
 
-    # feature: use the zmq Noblock
-    try:
-        received = socket.recv_multipart(zmq.NOBLOCK)
-    except zmq.Again:
-        return None
 
+    received = socket.recv_multipart()
     timestamp = struct.unpack('d', received[1])[0]
     colorImagePNGBytes = received[2]
     depthImagePNGBytes = received[3]
