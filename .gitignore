@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# ignore the pickle files
+*.pkl
+
 # Distribution / packaging
 .Python
 build/
