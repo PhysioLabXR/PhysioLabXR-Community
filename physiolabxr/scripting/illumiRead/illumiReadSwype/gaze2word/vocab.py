@@ -53,7 +53,7 @@ class Vocab:
                 normalized_word = normalize_and_filter(lemma.name().lower())
                 self.vocabulary[normalized_word] += 1
 
-        print("remove the single words")
+        # print("remove the single words")
 
         # remove from the counter single-letter words
         # and words that contains punctuation

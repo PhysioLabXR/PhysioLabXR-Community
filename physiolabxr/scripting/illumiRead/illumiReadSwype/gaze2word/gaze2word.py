@@ -102,14 +102,14 @@ class TrieNode:
     char: str | None = None
     children: Dict[str, "TrieNode"] = field(default_factory=dict)
     is_word: bool = False
-    word: str | None = None
+    words: List[str] = field(default_factory=list)
     key_score: float = 0.0
     cum_score: float = 0.0
     state: Literal["RELEASE", "HOLD"] = "RELEASE"
 
 
 GAUSS_SIGMA = 0.4  # empirically tuned
-WINDOW_PX   = 30
+WINDOW_PX   = 15
 
 def gaussian_dist(dist_px: float) -> float:
     return np.exp(-(dist_px**2) / (2 * GAUSS_SIGMA**2)) / (GAUSS_SIGMA*np.sqrt(2*np.pi))
@@ -152,10 +152,14 @@ class Gaze2Word:
         self.letter_locations = parse_letter_locations(gaze_data_path)
         self.letters = list(self.letter_locations.keys())
         # create ideal traces for each word in the vocab
+        print("G2W: instantiating vocab")
         self.vocab = Vocab()
+        print("G2W: finished instantiating vocab")
 
         self.vocab_traces = OrderedDict()
+        print("G2W: instantiating ngram")
         self.ngram_model = NGramModel(n=ngram_n)
+        print("G2W: finished instantiating ngram")
 
         # build the ngram model from the text corpus
         for word in self.vocab.vocabulary:  # TODO check if single letter words are in self.vocab.vocabulary
@@ -179,10 +183,6 @@ class Gaze2Word:
         self.trimmed_vocab_traces = None
         self.trimmed_vocab_list = None
 
-        # build the trie for GlanceWriter
-        self.trie_root = None
-        self.build_trie(self.vocab.vocabulary)
-
         # the following is used to compute the nearest key for the gaze point, used in GlanceWriter
         self._letters_ordered = list(self.letter_locations.keys())
         self._key_coords = np.vstack([self.letter_locations[ch]
@@ -192,6 +192,11 @@ class Gaze2Word:
         self._dll_paths: dict[str, str] = {}
         self.dtw_dll = self._load_native_lib("DTW")
         self.frechet_dll = self._load_native_lib("Frechet")
+
+        # build the trie for GlanceWriter
+        self.trie_root = None
+        self.build_trie(self.vocab.vocabulary)
+
 
     def __getstate__(self):
         st = self.__dict__.copy()
@@ -246,16 +251,17 @@ class Gaze2Word:
 
     def build_trie(self, vocab):
         # always add i, and a
-        _vocab = copy.deepcopy(vocab)
-        vocab += ['a', 'i']
+        # _vocab = copy.deepcopy(vocab)
         self.trie_root = TrieNode()
-        for w_i, word in enumerate(vocab):
-            print(f"Building trie: {w_i+1}/{len(vocab)}", end='\r')
+        _vocab = np.unique(vocab).tolist()
+        _vocab += ['a', 'i']
+        for w_i, word in enumerate(_vocab):
+            print(f"Building trie: {w_i+1}/{len(_vocab)}", end='\r')
             node = self.trie_root
             for char in self._collapse_runs(word):  # "moore" → "more"
                 node = node.children.setdefault(char, TrieNode(char=char))
             node.is_word = True
-            node.word = word
+            node.words.append(str(word))
 
     def _collapse_runs(self, word: str) -> list[str]:
         """
@@ -884,7 +890,8 @@ class Gaze2Word:
                 # whenever a word ends, push candidate
                 for node in hold_nodes:
                     if node.is_word:
-                        word_candidate[node.word] = max(word_candidate.get(node.word,0), node.cum_score)
+                        for w in node.words:
+                            word_candidate[w] = max(word_candidate.get(w,0), node.cum_score)
         # spatial → probability, then combine with language model
         if not word_candidate: return []
         spatial_sorted = sorted(word_candidate.items(), key=lambda x:-x[1])[:top_n_spatial]
