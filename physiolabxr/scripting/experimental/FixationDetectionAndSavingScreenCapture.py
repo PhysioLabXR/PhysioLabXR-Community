@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     is_displaying = True
     is_decoding_fixations= False
-    is_saving_captures = True
+    is_saving_captures = False
     draw_fovea_on_image = False
 
     # fix detection parameters  #######################################

@@ -41,6 +41,7 @@ from physiolabxr.scripting.attention_bci.RenaProcessingParameters import locking
 from physiolabxr.scripting.RenaScript import RenaScript
 from physiolabxr.configs.shared import bcolors
 from physiolabxr.utils.data_utils import get_date_string, mode_by_column
+from physiolabxr.scripting.attention_bci.RenaDataLockingUtils import to_bytes, from_bytes
 
 # should add the SS condition to the processing file
 condition_name_dict = {1: "RSVP", 2: "Carousel", 3: "Visual Search", 4: "Table Search", 8: "Table Search gnd", 9: "Table Search Identifier", 10: "Space Shooter", 11: "SS gnd", 12: "SS orc PDecoder", 13: "SS full", 14: "Conclusion"}
@@ -266,10 +267,3 @@ def concatenate_as_epochArray(epochs_array):
 
     epochs_concatenated = EpochsArray(arrays, epochs_array[0].info, events=event_arrays, event_id=epochs_array[0].event_id)
     return epochs_concatenated\
-
-# convert any py obj to bytes format
-def to_bytes(py_obj) -> bytes:
-    return mp.packb(py_obj, use_bin_type=True)
-
-def from_bytes(b: bytes):
-    return mp.unpackb(b, raw=False)
