@@ -1,6 +1,4 @@
 """
-
-
 You will find plenty of try, except Exception in the functions defined here. This is to help debugging with breakpoints
 in case a function raises exception. We don't have to dig back into the function to find what's wrong
 """
@@ -18,6 +16,8 @@ import mne
 import numpy as np
 import torch
 import zmq
+import msgpack as mp
+import msgpack_numpy as mp_np
 from lpips import lpips
 from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
@@ -108,7 +108,16 @@ class RenaProcessing(RenaScript):
         # print(f'OVTR image sockets connected.')
 
         '''--------------------------- Declaration of fixation dataset ---------------------------------------'''
-        self.fixation_dataset = FixationDataset()
+        # self.fixation_dataset = FixationDataset()
+        
+        mp_np.patch()
+
+        '''-------------------- the channel setup for locking data ----------------------------'''
+        ctx = zmq.Context.instance()
+        self.locking_socket = ctx.socket(zmq.PUB)
+        self.locking_socket.bind('tcp://127.0.0.1:5564')
+
+
 
 
     # Start will be called once when the run button is hit.
@@ -187,7 +196,14 @@ class RenaProcessing(RenaScript):
 
             print(f"[{self.loop_count}] AddingBlockData: Process completed")
             self.clear_buffer()  # clear the buffer so that next time we run this function,
-            return this_locking_data  # TODO send this to eeg server,
+
+            # serialize the locking data to byte format
+            locking_payload = to_bytes(this_locking_data)
+
+            # send the serialized data to the tunneled server
+            self.locking_socket.send_multipart([b"locking", locking_payload])
+            print('The locking payload packed and sent to the server')
+            return this_locking_data
         except Exception as e:
             print(f"[{self.loop_count}]AddBlockData: exception when adding block data: " + str(e))
             raise e
@@ -249,4 +265,11 @@ def concatenate_as_epochArray(epochs_array):
     event_arrays = np.concatenate([x.events for x in epochs_array], axis=0)
 
     epochs_concatenated = EpochsArray(arrays, epochs_array[0].info, events=event_arrays, event_id=epochs_array[0].event_id)
-    return epochs_concatenated
+    return epochs_concatenated\
+
+# convert any py obj to bytes format
+def to_bytes(py_obj) -> bytes:
+    return mp.packb(py_obj, use_bin_type=True)
+
+def from_bytes(b: bytes):
+    return mp.unpackb(b, raw=False)
