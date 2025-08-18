@@ -1,0 +1,5 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+service RenaProcessing {
+  rpc add_block_data(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
