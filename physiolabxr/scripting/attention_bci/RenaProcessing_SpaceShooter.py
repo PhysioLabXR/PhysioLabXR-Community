@@ -443,4 +443,4 @@ def concatenate_as_epochArray(epochs_array):
     event_arrays = np.concatenate([x.events for x in epochs_array], axis=0)
 
     epochs_concatenated = EpochsArray(arrays, epochs_array[0].info, events=event_arrays, event_id=epochs_array[0].event_id)
-    return epochs_concatenated\
+    return epochs_concatenated
