@@ -21,6 +21,7 @@ import msgpack_numpy as mp_np
 from lpips import lpips
 from mne import EpochsArray
 from pylsl import StreamInfo, StreamOutlet, pylsl
+from pathlib import Path
 
 #----------- add RLPF to python path--------------
 from rlpf.eye.eyetracking import gaze_event_detection_I_VT, gaze_event_detection_PatchSim, gaze_event_detection_I_DT
@@ -79,8 +80,10 @@ class RenaProcessing(RenaScript):
         self.current_condition = None
         self.current_block_id = None
 
-        # warning: the path is now absolute, should be changed at every pull request
-        self.event_marker_channels = json.load(open("D:\Season\PhysioLabXR\physiolabxr\_presets\LSLPresets\ReNaEventMarker.json", 'r'))["ChannelNames"]
+        # the json is under physiolabxr/_presets
+        ROOT = Path(__file__).resolve().parents[2]
+        json_path = ROOT/"_presets"/ "LSLPresets"/"ReNaEventMarker.json"
+        self.event_marker_channels = json.load(open(json_path, 'r'))["ChannelNames"]
         self.loop_count = 0
 
         self.item_events = []
@@ -111,33 +114,7 @@ class RenaProcessing(RenaScript):
         self.previous_img_patch = None
         self.fixation_frame_counter = 0
         self.distance = 0
-        # self.fixation_outlet = StreamOutlet(StreamInfo("FixationDetection", 'FixationDetection', 3, 30, 'float32'))
 
-        # # TODO: -------------the camera capture should be from the local host--------------
-        # self.fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5556", 'ColorDepthCamGazePositionBBox')
-        # self.fixation_cam_socket.setsockopt(zmq.CONFLATE,1)
-        # self.right_cam_socket =    get_cam_socket("tcp://127.0.0.1:5557", 'ColorDepthCamRight')
-        # self.right_cam_socket.setsockopt(zmq.CONFLATE,1)
-        # self.left_cam_socket =     get_cam_socket("tcp://127.0.0.1:5558", 'ColorDepthCamLeft')
-        # self.left_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # self.back_cam_socket =     get_cam_socket("tcp://127.0.0.1:5559", 'ColorDepthCamBack')
-        # self.back_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # print(f'Image sockets connected.')
-        #
-        # # TODO: ------------- the processed data from OVTR detection------------------------
-        # self.ovtr_fixation_cam_socket = get_cam_socket("tcp://127.0.0.1:5560", 'OVTRCamFixation')
-        # self.ovtr_fixation_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # self.ovtr_right_cam_socket = get_cam_socket("tcp://127.0.0.1:5561", 'OVTRCamRight')
-        # self.ovtr_right_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # self.ovtr_left_cam_socket = get_cam_socket("tcp://127.0.0.1:5562", 'OVTRCamLeft')
-        # self.ovtr_left_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # self.ovtr_back_cam_socket = get_cam_socket("tcp://127.0.0.1:5563", 'OVTRCamBack')
-        # self.ovtr_back_cam_socket.setsockopt(zmq.CONFLATE, 1)
-        # print(f'OVTR image sockets connected.')
-
-        '''--------------------------- Declaration of fixation dataset ---------------------------------------'''
-        # self.fixation_dataset = FixationDataset()
-        
         mp_np.patch()
 
         '''-------------------- the channel setup for locking data ----------------------------'''
@@ -145,8 +122,6 @@ class RenaProcessing(RenaScript):
         # self.locking_socket = ctx.socket(zmq.PUB)
         # self.locking_socket.setsockopt(zmq.IPV6, 0)
         # self.locking_socket.bind('tcp://127.0.0.1:1002')
-
-
 
 
     # Start will be called once when the run button is hit.
