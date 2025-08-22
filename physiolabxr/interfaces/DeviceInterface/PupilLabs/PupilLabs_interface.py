@@ -10,7 +10,6 @@ def connect_to_pupil_core(context):
 
     # Connect to Pupil Core's default localhost address and port
     socket.connect("tcp://127.0.0.1:50020")
-
     # Subscribe to world camera frames
     socket.send_string("SUB_PORT")
     sub_port = socket.recv_string()
@@ -18,6 +17,7 @@ def connect_to_pupil_core(context):
     # Set up subscriber socket for frame data
     sub_socket = context.socket(zmq.SUB)
     sub_socket.connect(f"tcp://127.0.0.1:{sub_port}")
+    sub_socket.setsockopt(zmq.CONFLATE, 1)
 
     # only subscribing to the world frame
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, "frame.world")
@@ -97,15 +97,19 @@ if __name__ == "__main__":
 
     socket_world_camera_pub = context.socket(zmq.PUB)
     socket_world_camera_pub.bind("tcp://*:%s" % port_world_camera)
+    # socket_world_camera_pub.setsockopt(zmq.CONFLATE, 1)
 
     socket_eye_pub = context.socket(zmq.PUB)
     socket_eye_pub.bind("tcp://*:%s" % port_eye)
+    # socket_eye_pub.setsockopt(zmq.CONFLATE, 1)
 
     socket_pupil_l = context.socket(zmq.PUB)
     socket_pupil_l.bind("tcp://*:%s" % port_pupil_l)
+    # socket_pupil_l.setsockopt(zmq.CONFLATE, 1)
 
     socket_pupil_r = context.socket(zmq.PUB)
     socket_pupil_r.bind("tcp://*:%s" % port_pupil_r)
+    # socket_pupil_r.setsockopt(zmq.CONFLATE, 1)
 
     # Connect to Pupil Core
     socket_req, socket_sub = connect_to_pupil_core(context)
