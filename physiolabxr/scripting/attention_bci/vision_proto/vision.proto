@@ -1,0 +1,33 @@
+syntax = "proto3";
+package vision;
+
+import "google/protobuf/empty.proto";
+
+service Vision {
+  // 1) Analyze images/metadata -> dict: ID-> confidence level
+  rpc Analyze (AnalyzeRequest) returns (AnalyzeReply) {}
+
+  // 2) Fire-and-forget integer push (no return body)
+  rpc PushInt (PushIntRequest) returns (google.protobuf.Empty) {}
+}
+
+message AnalyzeRequest {
+  double  timestamp_ms     = 1;
+
+  bytes  color_image      = 2;   // e.g., img colorData
+  bytes  depth_image      = 3;   // e.g., img depthData
+
+  // Extra context from your ZMQ payload
+  string bbox_json        = 4;   // your bboxJson
+
+  bytes gaze_item_index_dtn = 5;
+  bytes current_screen_location_bytes = 6;
+}
+
+message AnalyzeReply {
+  map<int32, float> id_scores = 1;
+}
+
+message PushIntRequest {
+  int32 value             = 1;
+}

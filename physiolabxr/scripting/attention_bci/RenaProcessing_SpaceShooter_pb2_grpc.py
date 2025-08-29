@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import AsyncRPCExample_pb2 as AsyncRPCExample__pb2
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 GRPC_GENERATED_VERSION = '1.66.1'
 GRPC_VERSION = grpc.__version__
@@ -18,14 +18,14 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in AsyncRPCExample_pb2_grpc.py depends on'
+        + f' but the generated code in RenaProcessing_SpaceShooter_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
-class AsyncRPCExampleStub(object):
+class RenaProcessingStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -34,43 +34,43 @@ class AsyncRPCExampleStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.AsyncOneArgOneReturn = channel.unary_unary(
-                '/AsyncRPCExample/AsyncOneArgOneReturn',
-                request_serializer=AsyncRPCExample__pb2.AsyncOneArgOneReturnRequest.SerializeToString,
-                response_deserializer=AsyncRPCExample__pb2.AsyncOneArgOneReturnResponse.FromString,
+        self.add_block_data = channel.unary_unary(
+                '/RenaProcessing/add_block_data',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
 
 
-class AsyncRPCExampleServicer(object):
+class RenaProcessingServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def AsyncOneArgOneReturn(self, request, context):
+    def add_block_data(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_AsyncRPCExampleServicer_to_server(servicer, server):
+def add_RenaProcessingServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'AsyncOneArgOneReturn': grpc.unary_unary_rpc_method_handler(
-                    servicer.AsyncOneArgOneReturn,
-                    request_deserializer=AsyncRPCExample__pb2.AsyncOneArgOneReturnRequest.FromString,
-                    response_serializer=AsyncRPCExample__pb2.AsyncOneArgOneReturnResponse.SerializeToString,
+            'add_block_data': grpc.unary_unary_rpc_method_handler(
+                    servicer.add_block_data,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'AsyncRPCExample', rpc_method_handlers)
+            'RenaProcessing', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('AsyncRPCExample', rpc_method_handlers)
+    server.add_registered_method_handlers('RenaProcessing', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class AsyncRPCExample(object):
+class RenaProcessing(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def AsyncOneArgOneReturn(request,
+    def add_block_data(request,
             target,
             options=(),
             channel_credentials=None,
@@ -83,9 +83,9 @@ class AsyncRPCExample(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/AsyncRPCExample/AsyncOneArgOneReturn',
-            AsyncRPCExample__pb2.AsyncOneArgOneReturnRequest.SerializeToString,
-            AsyncRPCExample__pb2.AsyncOneArgOneReturnResponse.FromString,
+            '/RenaProcessing/add_block_data',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,
