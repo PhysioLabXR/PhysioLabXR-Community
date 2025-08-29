@@ -241,7 +241,7 @@ class RenaProcessing(RenaScript):
             if not is_simulating_VS:
                 data = copy.deepcopy(self.inputs.buffer)  # deep copy the data so our data doesn't get changed. This data only have the last block's data because at the end of this function, we clear the buffer
             else:
-                with open('simulate_data.pkl', 'rb') as f:
+                with open('real_data.pkl', 'rb') as f:
                     data = pickle.load(f)
 
             # load the data based on the .pkl file content
@@ -263,9 +263,8 @@ class RenaProcessing(RenaScript):
             this_locking_data = {}
             for locking_name, event_filters in locking_filters.items():
                 if 'VS' in locking_name:
-
                     # TODO: double check if the bio semi send any streams
-                    x, y, epochs, event_ids = rena_epochs_to_class_samples_rdf(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}')
+                    x, y, epochs, event_ids, meta_data = rena_epochs_to_class_samples_rdf(rdf, event_names, event_filters, data_type='both', n_jobs=1, reject=None, plots='full', colors=colors, title=f'{locking_name}', picks_eeg=('Fz', 'Cz', 'Pz', 'POz'))
                     if x is None:
                         print(f"{bcolors.WARNING}[{self.loop_count}] AddingBlockData: No event found for locking {locking_name}{bcolors.ENDC}")
                         continue
@@ -281,12 +280,24 @@ class RenaProcessing(RenaScript):
                         print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
                         raise e
 
+                    for bid in np.unique([e.block_id for e in epoch_events]):
+                        block_e = [e for e in epoch_events if e.block_id == bid]
+                        target_item_id_count = len(np.unique([e.item_id for e in block_e if e.dtn == 2.0]))
+                        try:
+                            assert target_item_id_count == 1 or target_item_id_count == 0
+                        except AssertionError as e:
+                            print(f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
+                            raise e
+
+                    # this is for single-block
                     target_item_id_count = len(np.unique([e.item_id for e in epoch_events if e.dtn==2.0]))
-                    try:
-                        assert target_item_id_count == 1 or target_item_id_count == 0
-                    except AssertionError as e:
-                        print(f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
-                        raise e
+
+                    # try:
+                    #     assert target_item_id_count == 1 or target_item_id_count == 0
+                    # except AssertionError as e:
+                    #     print(f"[{self.loop_count}] AddingBlockData: true target item ids not all equal, this should NEVER happen!")
+                    #     raise e
+
 
                     if append_data:
                         self._add_block_data_to_locking(locking_name, x, y, epochs[0], epochs[1], epoch_events)

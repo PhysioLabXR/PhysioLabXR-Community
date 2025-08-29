@@ -30,7 +30,7 @@ class AsyncRPCExample(RenaScript):
         Args:
             input0 (str): the input
         """
-        cycle = 100000
+        cycle = 1
         for i in range(cycle):
             print(f"Spinning {i}/{cycle}")
         return f"received: {input0}"
