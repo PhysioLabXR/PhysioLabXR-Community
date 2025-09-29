@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>form</class>
+ <widget class="QWidget" name="form">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>640</width><height>280</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>Options for B-Alert</string>
+  </property>
+
+  <layout class="QVBoxLayout" name="root_vlayout">
+
+
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <property name="labelAlignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_license">
+       <property name="text"><string>Select your ABM license folder</string></property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="hl_license">
+       <item>
+        <widget class="QLineEdit" name="license_dir_lineedit">
+         <property name="placeholderText">
+          <string>e.g. C:\ABM\B-Alert\License</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="license_browse_btn">
+         <property name="text"><string>…</string></property>
+         <property name="toolTip"><string>Browse for license folder</string></property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+
+
+   <item>
+    <layout class="QHBoxLayout" name="row_check_impedance">
+     <item>
+      <spacer name="spacer_ci_left">
+       <property name="orientation"><enum>Qt::Horizontal</enum></property>
+       <property name="sizeHint"><size><width>40</width><height>20</height></size></property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="sync_license_btn">
+       <property name="text"><string>Sync License</string></property>
+       <property name="toolTip"><string>Copy selected license files into EXE\License</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="check_impedance_btn">
+       <property name="text"><string>Check Impedance</string></property>
+       <property name="toolTip"><string>Measure electrode impedances (no streaming)</string></property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="spacer_ci_right">
+       <property name="orientation"><enum>Qt::Horizontal</enum></property>
+       <property name="sizeHint"><size><width>40</width><height>20</height></size></property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+
+
+   <item>
+    <widget class="QLabel" name="status_label">
+     <property name="text"><string/></property>
+     <property name="wordWrap"><bool>true</bool></property>
+     <property name="styleSheet">
+      <string notr="true">color: #c8c8c8;</string>
+     </property>
+    </widget>
+   </item>
+
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

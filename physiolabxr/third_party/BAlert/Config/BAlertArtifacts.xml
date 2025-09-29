@@ -1,0 +1,18 @@
+
+<Settings>
+	<ConfigVersion>00.00.00.00</ConfigVersion>
+	<ArtifactProcessing>
+		<EyeBlinks>
+			1
+		</EyeBlinks>
+		<Saturation>
+			1
+		</Saturation>
+		<Spike>
+			1
+		</Spike>
+		<Excursion>
+			1
+		</Excursion>
+	</ArtifactProcessing>
+</Settings>
