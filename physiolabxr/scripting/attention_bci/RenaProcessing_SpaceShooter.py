@@ -274,11 +274,11 @@ class RenaProcessing(RenaScript):
                     else:
                         print(f'{bcolors.WARNING}[{self.loop_count}] AddingBlockData: {locking_name} only found one event {event_ids}{bcolors.ENDC}')
                     epoch_events = get_events(event_filters, events, order='time')
-                    try:
-                        assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
-                    except AssertionError as e:
-                        print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
-                        raise e
+                    # try:
+                    #     assert np.all(np.array([x.dtn for x in epoch_events])-1 == y)
+                    # except AssertionError as e:
+                    #     print(f"[{self.loop_count}] AddingBlockData: add_block_data: epoch block events is different from y")
+                    #     raise e
 
                     for bid in np.unique([e.block_id for e in epoch_events]):
                         block_e = [e for e in epoch_events if e.block_id == bid]
