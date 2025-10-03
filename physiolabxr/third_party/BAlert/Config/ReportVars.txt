@@ -1,0 +1,17 @@
+HR	HeartRate
+Delta	PSDBandwidths_ByChannel
+ThetaTotal	PSDBandwidths_ByChannel
+AlphaTotal	PSDBandwidths_ByChannel
+Beta	PSDBandwidths_ByChannel
+Gamma	PSDBandwidths_ByChannel
+Delta	PSDBandwidths_Overall
+ThetaTotal	PSDBandwidths_Overall
+AlphaTotal	PSDBandwidths_Overall
+Beta	PSDBandwidths_Overall
+Gamma	PSDBandwidths_Overall
+Sleep Onset	Classify
+Distraction	Classify
+Low Engagement	Classify
+High Engagement	Classify
+Drowsy	Classify
+Workload	Classify
