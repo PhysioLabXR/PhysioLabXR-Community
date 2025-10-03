@@ -1,0 +1,9 @@
+{ "StreamName":"illumiReadSwypeEventMarkerLSL",
+  "ChannelNames":[
+        "BlockChannelIndex",
+        "ExperimentStateChannelIndex",
+        "UserInputsChannelIndex"
+  ],
+  "NominalSamplingRate":  200,
+  "GroupInfo":  [1, 2],
+  "DataType": "float32"}

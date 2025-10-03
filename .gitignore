@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# ignore the pickle files
+*.pkl
+
 # Distribution / packaging
 .Python
 build/
@@ -145,3 +148,11 @@ UserConfig.json
 
 # IDE
 .idea
+
+# BAlert License
+physiolabxr/interfaces/DeviceInterface/BAlert/x64/Release/License/
+
+# BAlert runtime output
+physiolabxr/third_party/BAlert/Config/balert_command.txt
+physiolabxr/third_party/BAlert/Config/balert_status.txt
+physiolabxr/third_party/BAlert/Config/balert_impedance.json

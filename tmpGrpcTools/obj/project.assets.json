@@ -63,6 +63,7 @@
     }
   },
   "projectFileDependencyGroups": {
+
     "net9.0": [
       "Grpc.Tools >= 2.70.0"
     ]
@@ -115,6 +116,7 @@
             "suppressParent": "All",
             "target": "Package",
             "version": "[2.70.0, )"
+
           }
         },
         "imports": [

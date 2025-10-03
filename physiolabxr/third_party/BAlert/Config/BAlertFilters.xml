@@ -1,0 +1,30 @@
+
+<Settings>
+	<ConfigVersion>00.01.00.00</ConfigVersion>
+	<FiltersProcessing>
+		<MimicX6>
+			1
+		</MimicX6>
+		<Notch50>
+			1
+		</Notch50>
+		<Notch60>
+			1
+		</Notch60>
+		<Notch100>
+			1
+		</Notch100>
+		<Notch120>
+			1
+		</Notch120>
+		<Filter20>
+			0
+		</Filter20>
+		<Filter005>
+			0
+		</Filter005>
+		<MimicX6OnFlex>
+			1
+		</MimicX6OnFlex>
+	</FiltersProcessing>
+</Settings>
