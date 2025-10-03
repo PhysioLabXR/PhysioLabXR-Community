@@ -473,6 +473,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def get_added_stream_names(self):
         return list(self.stream_widgets.keys())
 
+    def get_added_stream_types(self):
+        return [s.preset_type for s in self.stream_widgets.values()]
+
+    def get_added_video_stream_names(self):
+        return [s_name for s_type, s_name in zip(self.get_added_stream_types(), self.get_added_stream_names()) if PresetType.is_video_preset(s_type)]
+
     def is_any_stream_widget_added(self):
         return len(self.stream_widgets) > 0
 
@@ -518,4 +524,4 @@ class MainWindow(QtWidgets.QMainWindow):
         self.adjust_notification_panel_location()
 
     def adjust_notification_panel_location(self):
-        self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_file_size_label.height() - 12)  # substract 64 to account for margin
+        self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_info_label.height() - 12)  # substract 64 to account for margin

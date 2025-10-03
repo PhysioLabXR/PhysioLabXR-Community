@@ -334,7 +334,7 @@ class ReplayTab(QtWidgets.QWidget):
         self.playback_position_signal.emit(new_playback_position)
 
     def get_num_replay_channels(self):
-        return len(self.stream_info)
+        return len(self.stream_info) if self.is_replaying else 0
 
     def _request_replay_performance(self):
         print('Sending performance request command ReplayClient')  # TODO change the send to a progress bar
