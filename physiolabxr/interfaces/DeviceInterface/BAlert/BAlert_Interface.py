@@ -11,6 +11,13 @@ import numpy as np
 from pylsl import resolve_byprop, StreamInlet
 from typing import Union, List, Dict, Tuple
 
+from physiolabxr.exceptions.exceptions import (
+    FailToSetupDevice,
+    CustomDeviceStartStreamError,
+    CustomDeviceStreamInterruptedError,
+    CustomDeviceNotFoundError,
+)
+
 
 from physiolabxr.interfaces.LSLInletInterface import LSLInletInterface
 
@@ -222,10 +229,28 @@ class BAlert_Interface(LSLInletInterface):
         )
 
         self._start_reader_thread()
-        self._wait_until_ready_or_lsl(timeout=90)
+        ready = self._wait_until_ready_or_lsl(timeout=90)
+
+        if not ready:
+            code, msg = self._read_status()
+            msg = (msg or "").strip()
+            if (code == self.STATUS_STOPPED) and ("Stopped OK" in msg):
+                self._soft_fail(
+                    "B-Alert ESU is not connected or access was denied by the system (SDK: Stopped OK). Please check the USB connection, power/Bluetooth, drivers, and permissions, then try again."
+                )
+            elif code == self.STATUS_ERROR:
+                self._soft_fail(f"Failed to start B-Alert (SDK error): {msg}")
+            else:
+                self._soft_fail(
+                    "B-Alert did not become ready in time or no LSL stream was found. Please verify the device connection and try again."
+                )
+            return
 
         if not self._try_connect_lsl():
-            raise RuntimeError("BAlert LSL stream not found after process started.")
+            self._soft_fail(
+                "The process started, but no B-Alert LSL stream was found. The device may not be connected, or the SDK has not started streaming."
+            )
+            return
 
         atexit.register(self.stop_stream)
         self._start_status_watcher()
@@ -272,6 +297,37 @@ class BAlert_Interface(LSLInletInterface):
         self.proc = None
         self.device_available = False
         self._stopping = False
+
+    # ---- helper: soft fail without raising ----
+    def _soft_fail(self, user_msg: str):
+        try:
+            print(user_msg)
+        except Exception:
+            pass
+        try:
+            if self.cmd_file:
+                with open(self.cmd_file, "w", encoding="utf-8") as f:
+                    f.write("STOP")
+        except Exception:
+            pass
+        try:
+            self._stop_reader_thread()
+            self._stop_status_watcher()
+        except Exception:
+            pass
+        try:
+            if self.proc and self.proc.poll() is None:
+                self.proc.terminate()
+                try:
+                    self.proc.wait(timeout=1.5)
+                except subprocess.TimeoutExpired:
+                    self.proc.kill()
+        except Exception:
+            pass
+        self.proc = None
+        self.inlet = None
+        self._inlet_closed = True
+        self.device_available = False
 
     def get_sampling_rate(self):
         return self.device_nominal_sampling_rate
@@ -350,6 +406,14 @@ class BAlert_Interface(LSLInletInterface):
 
             t0 = time.time()
             last_log = ""
+            sig_line = ""
+            sig_keywords = (
+                "IsConnectionOpened=FALSE",
+                "Disconnected",
+                "No device",
+                "ACCESS_DENIED",
+                "Stopped OK",
+            )
 
             while True:
                 rc = proc.poll()
@@ -359,21 +423,13 @@ class BAlert_Interface(LSLInletInterface):
                         line = proc.stdout.readline()
                         if line:
                             last_log = line.rstrip()
+                            if any(k in last_log for k in sig_keywords):
+                                sig_line = last_log
                     except Exception:
                         pass
 
                 if json_path.exists():
-                    try:
-                        data = json.loads(json_path.read_text(encoding="utf-8"))
-                        items: List[Dict] = []
-                        for it in data.get("impedances", []):
-                            name = it.get("name", "")
-                            val = float(it.get("value", 99999))
-                            ok = bool(it.get("ok", (val != 99999 and val < 40.0)))
-                            items.append({"name": name, "value": val, "ok": ok})
-                        return True, items
-                    except Exception as e:
-                        last_log = f"JSON parse error: {e}"
+                    pass
 
                 try:
                     if status_path.exists():
@@ -381,19 +437,17 @@ class BAlert_Interface(LSLInletInterface):
                         if s:
                             parts = s.split(",", 1)
                             code = int(parts[0])
-                            msg = parts[1] if len(parts) > 1 else ""
-                            if code == 6:  # STATUS_ERROR
-                                return False, (msg or "SDK error")
-                            if code == 8 and "Impedance done" in msg and not json_path.exists():
-                                time.sleep(0.3)
-                                if not json_path.exists():
-                                    return False, "Impedance finished but no result file produced."
+                            smsg = parts[1] if len(parts) > 1 else ""
+                            if code in (6, 8) and ("Stopped OK" in smsg or "Disconnected" in smsg):
+                                return False, f"disconnected::{smsg}"
                 except Exception:
                     pass
 
                 if rc is not None:
+                    if sig_line:
+                        return False, f"disconnected::{sig_line}"
                     elapsed = time.time() - t0
-                    return False, f"early_exit::{elapsed:.2f}::{last_log or 'no-log'}"
+                    return False, f"early_exit::{elapsed:.2f}::{(last_log or '')}"
 
                 if time.time() - t0 > timeout:
                     try:
@@ -467,22 +521,22 @@ class BAlert_Interface(LSLInletInterface):
         except Exception:
             return None, ""
 
-    def _wait_until_ready_or_lsl(self, timeout=90):
+    def _wait_until_ready_or_lsl(self, timeout=90) -> bool:
         t0 = time.time()
         last_msg = ""
         while time.time() - t0 < timeout:
             if self._has_lsl_stream():
-                return
+                return True
             code, msg = self._read_status()
             if msg and msg != last_msg:
                 last_msg = msg
                 print(f"[BAlert] status: {code}, {msg}")
             if code in (self.STATUS_READY, self.STATUS_STREAMING):
-                return
+                return True
             if code in (self.STATUS_ERROR, self.STATUS_STOPPED):
-                raise RuntimeError(f"BAlert error/stop: {msg}")
+                return False
             time.sleep(0.2)
-        raise TimeoutError("BAlert not ready and no LSL stream found in time.")
+        return False
 
     def _has_lsl_stream(self) -> bool:
         try:

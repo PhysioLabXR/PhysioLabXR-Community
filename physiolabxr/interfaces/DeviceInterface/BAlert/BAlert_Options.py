@@ -238,6 +238,14 @@ class _ImpWorker(QtCore.QThread):
 
                 t0 = time.time()
                 last_log = ""
+                disconnected_hit = False
+                disconnect_markers = (
+                    "IsConnectionOpened=FALSE",
+                    "Disconnected",
+                    "No device",
+                    "Stopped OK",
+                    "STATUS_STOPPED",
+                )
 
                 while True:
                     rc = proc.poll()
@@ -246,7 +254,10 @@ class _ImpWorker(QtCore.QThread):
                         try:
                             line = proc.stdout.readline()
                             if line:
-                                last_log = line.rstrip()
+                                line = line.rstrip()
+                                last_log = line
+                                if any(m in line for m in disconnect_markers):
+                                    disconnected_hit = True
                         except Exception:
                             pass
 
@@ -270,19 +281,23 @@ class _ImpWorker(QtCore.QThread):
                             if s:
                                 code = int(s.split(",", 1)[0])
                                 msg = s.split(",", 1)[1] if "," in s else ""
+                                # SDK ERROR
                                 if code == 6:
-                                    return False, f"{msg or 'SDK error'}"
-                                if code == 8 and "Impedance done" in msg and not self.json_path.exists():
-                                    time.sleep(0.3)
-                                    if self.json_path.exists():
-                                        continue
-                                    return False, "Impedance finished but no result file produced."
+                                    return False, (msg or "SDK error")
+                                if code == 8:
+                                    if "Impedance done" in msg and not self.json_path.exists():
+                                        time.sleep(0.3)
+                                        if self.json_path.exists():
+                                            continue
+                                        return False, "Impedance finished but no result file produced."
+                                    return False, "disconnected::status_stopped"
                     except Exception:
                         pass
 
                     if rc is not None:
                         elapsed = time.time() - t0
-                        return False, f"early_exit::{elapsed:.2f}::{last_log or 'no-log'}"
+                        prefix = "disconnected" if disconnected_hit else "early_exit"
+                        return False, f"{prefix}::{elapsed:.2f}::{last_log or 'no-log'}"
 
                     if time.time() - t0 > self.timeout:
                         try:
@@ -293,30 +308,54 @@ class _ImpWorker(QtCore.QThread):
 
                     time.sleep(0.08)
 
+            def _clean_log(s: str) -> str:
+                if not s:
+                    return s
+                noisy = ("bin_dir=", "cfg_dir=", "lic_dir=", "license_dir=")
+                return "" if any(k in s for k in noisy) else s
+
             ok, msg = one_attempt()
-            if not ok and msg.startswith("early_exit::"):
+
+            if not ok and isinstance(msg, str) and msg.startswith("disconnected::"):
+                self.failed.emit(
+                    "B-Alert ESU is not connected or access was denied. "
+                    "Please check USB/power/Bluetooth, drivers, and permissions."
+                )
+                return
+
+            if not ok and isinstance(msg, str) and msg.startswith("early_exit::"):
+                parts = msg.split("::", 2)
                 try:
-                    elapsed = float(msg.split("::", 2)[1])
+                    elapsed = float(parts[1])
                 except Exception:
                     elapsed = 0.0
+                last_log = parts[2] if len(parts) > 2 else ""
+
                 if elapsed < 2.5:
                     time.sleep(1.0)
                     ok2, msg2 = one_attempt()
                     if ok2:
                         return
+                    if isinstance(msg2, str) and msg2.startswith("early_exit::"):
+                        self.failed.emit("Please wait a few seconds and try again.")
+                        return
                     msg = msg2 or msg
+                    last_log = (msg.split("::", 2)[-1]
+                                if isinstance(msg, str) and "::" in msg else last_log)
 
-                parts = msg.split("::", 2)
-                last = parts[2] if len(parts) > 2 else ""
-                self.failed.emit(
-                    "Please wait a second and try again."
-                )
+                clean = _clean_log(last_log)
+                if clean:
+                    self.failed.emit(f"Failed to measure impedance. Details: {clean}")
+                else:
+                    self.failed.emit("Failed to measure impedance. The SDK exited before producing results.")
                 return
 
-            if ok:
+            if not ok:
+                clean = _clean_log(str(msg))
+                self.failed.emit(clean or "Failed to measure impedance.")
                 return
 
-            self.failed.emit(f"Impedance failed: {msg}")
+            return
 
         except Exception as e:
             self.failed.emit(str(e))
@@ -583,7 +622,6 @@ class BAlert_Options(BaseDeviceOptions):
         except Exception:
             pass
 
-        self.status_label.setText("Checking…")
         self.check_btn_set_enabled(False)
 
         wd = _guess_work_dir_like_interface()
@@ -595,8 +633,9 @@ class BAlert_Options(BaseDeviceOptions):
 
     def check_btn_set_enabled(self, enabled: bool):
         try:
-            self.check_impedance_btn.setEnabled(enabled)                    # type: ignore[attr-defined]
+            self.check_impedance_btn.setEnabled(enabled)  # type: ignore[attr-defined]
             self.sync_license_btn.setEnabled(enabled)
+            self.check_impedance_btn.setText("Check Impedance" if enabled else "Checking…")
         except Exception:
             pass
 
