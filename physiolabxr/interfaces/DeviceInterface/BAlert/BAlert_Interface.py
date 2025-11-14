@@ -142,7 +142,7 @@ class BAlert_Interface(LSLInletInterface):
 
     @staticmethod
     def _sync_license_to_exe_dir(exe_path: Path, user_lic_dir: Path) -> Path:
-        exts = {".lic", ".key", ".dat", ".xml", ".txt"}
+        exts = {".key", ".exe"}
         if user_lic_dir.is_file():
             user_lic_dir = user_lic_dir.parent
         dst = exe_path.parent / "License"
@@ -234,23 +234,29 @@ class BAlert_Interface(LSLInletInterface):
         if not ready:
             code, msg = self._read_status()
             msg = (msg or "").strip()
+
             if (code == self.STATUS_STOPPED) and ("Stopped OK" in msg):
-                self._soft_fail(
-                    "B-Alert ESU is not connected or access was denied by the system (SDK: Stopped OK). Please check the USB connection, power/Bluetooth, drivers, and permissions, then try again."
+                self._cleanup()
+                raise CustomDeviceStartStreamError(
+                    "B-Alert ESU is not connected or access was denied by the system. "
+                    "Please check the USB connection, power/Bluetooth, drivers, and permissions, then try again."
                 )
             elif code == self.STATUS_ERROR:
-                self._soft_fail(f"Failed to start B-Alert (SDK error): {msg}")
+                self._cleanup()
+                raise CustomDeviceStartStreamError(f"Failed to start B-Alert: {msg}")
             else:
-                self._soft_fail(
-                    "B-Alert did not become ready in time or no LSL stream was found. Please verify the device connection and try again."
+                self._cleanup()
+                raise CustomDeviceStartStreamError(
+                    "B-Alert did not become ready in time or no LSL stream was found. "
+                    "Please verify the device connection and try again."
                 )
-            return
 
         if not self._try_connect_lsl():
-            self._soft_fail(
-                "The process started, but no B-Alert LSL stream was found. The device may not be connected, or the SDK has not started streaming."
+            self._cleanup()
+            raise CustomDeviceStartStreamError(
+                "The process started, but no B-Alert LSL stream was found. "
+                "The device may not be connected, or the SDK has not started streaming."
             )
-            return
 
         atexit.register(self.stop_stream)
         self._start_status_watcher()
@@ -299,22 +305,21 @@ class BAlert_Interface(LSLInletInterface):
         self._stopping = False
 
     # ---- helper: soft fail without raising ----
-    def _soft_fail(self, user_msg: str):
-        try:
-            print(user_msg)
-        except Exception:
-            pass
+    def _cleanup(self):
+        """Internal cleanup without raising exceptions"""
         try:
             if self.cmd_file:
                 with open(self.cmd_file, "w", encoding="utf-8") as f:
                     f.write("STOP")
         except Exception:
             pass
+
         try:
             self._stop_reader_thread()
             self._stop_status_watcher()
         except Exception:
             pass
+
         try:
             if self.proc and self.proc.poll() is None:
                 self.proc.terminate()
@@ -324,10 +329,17 @@ class BAlert_Interface(LSLInletInterface):
                     self.proc.kill()
         except Exception:
             pass
+
         self.proc = None
         self.inlet = None
         self._inlet_closed = True
         self.device_available = False
+
+    def _soft_fail(self, user_msg: str):
+        """Clean up and raise an exception to notify the UI"""
+        print(user_msg)
+        self._cleanup()
+        raise CustomDeviceStartStreamError(user_msg)
 
     def get_sampling_rate(self):
         return self.device_nominal_sampling_rate

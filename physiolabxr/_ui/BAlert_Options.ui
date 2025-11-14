@@ -52,12 +52,7 @@
        <property name="sizeHint"><size><width>40</width><height>20</height></size></property>
       </spacer>
      </item>
-     <item>
-      <widget class="QPushButton" name="sync_license_btn">
-       <property name="text"><string>Sync License</string></property>
-       <property name="toolTip"><string>Copy selected license files into EXE\License</string></property>
-      </widget>
-     </item>
+
      <item>
       <widget class="QPushButton" name="check_impedance_btn">
        <property name="text"><string>Check Impedance</string></property>
