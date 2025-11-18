@@ -1,0 +1,8 @@
+{"ExperimentName": "V2_Rena",
+  "PresetStreamNames": [
+    "Unity.ReNa.EventMarkers",
+    "Unity.ReNa.ItemMarkers",
+    "Unity.HeadTracker",
+    "Unity.HandTracker",
+    "Unity.VarjoEyeTrackingComplete",
+    "BAlert"]}

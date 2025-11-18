@@ -9,6 +9,9 @@ service Vision {
 
   // 2) Fire-and-forget integer push (no return body)
   rpc PushInt (PushIntRequest) returns (google.protobuf.Empty) {}
+
+  // 3) Fire-and-forget gaze frame (no return body)
+  rpc GazeFrame(GazeFrameRequest) returns (google.protobuf.Empty);
 }
 
 message AnalyzeRequest {
@@ -30,4 +33,8 @@ message AnalyzeReply {
 
 message PushIntRequest {
   int32 value             = 1;
+}
+
+message GazeFrameRequest{
+  map<int32, int32> id_gazed = 1;
 }

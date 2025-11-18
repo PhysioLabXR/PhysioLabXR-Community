@@ -4,9 +4,9 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import vision_pb2 as vision__pb2
+import vision_pb2 as vision__pb2
 
-GRPC_GENERATED_VERSION = '1.74.0'
+GRPC_GENERATED_VERSION = '1.66.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -45,6 +45,11 @@ class VisionStub(object):
                 request_serializer=vision__pb2.PushIntRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
+        self.GazeFrame = channel.unary_unary(
+                '/vision.Vision/GazeFrame',
+                request_serializer=vision__pb2.GazeFrameRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                _registered_method=True)
 
 
 class VisionServicer(object):
@@ -64,6 +69,13 @@ class VisionServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GazeFrame(self, request, context):
+        """3) Fire-and-forget gaze frame (no return body)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_VisionServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -75,6 +87,11 @@ def add_VisionServicer_to_server(servicer, server):
             'PushInt': grpc.unary_unary_rpc_method_handler(
                     servicer.PushInt,
                     request_deserializer=vision__pb2.PushIntRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'GazeFrame': grpc.unary_unary_rpc_method_handler(
+                    servicer.GazeFrame,
+                    request_deserializer=vision__pb2.GazeFrameRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
@@ -131,6 +148,33 @@ class Vision(object):
             target,
             '/vision.Vision/PushInt',
             vision__pb2.PushIntRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GazeFrame(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/vision.Vision/GazeFrame',
+            vision__pb2.GazeFrameRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
