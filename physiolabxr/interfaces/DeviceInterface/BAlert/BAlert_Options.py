@@ -56,7 +56,7 @@ def _kill_existing_balert(timeout: float = 1.5):
         pass
 
 def _sync_license_to_exe_dir(exe: Path, user_lic_dir: Path) -> Path:
-    exts = {".lic", ".key", ".dat", ".xml", ".txt"}
+    exts = {".key", ".exe"}
     if user_lic_dir.is_file():
         user_lic_dir = user_lic_dir.parent
 
@@ -478,7 +478,7 @@ class BAlert_Options(BaseDeviceOptions):
         self.resize(WINDOW_MIN_W, WINDOW_MIN_H)
 
         self.license_browse_btn.clicked.connect(self._on_browse_license)   # type: ignore[attr-defined]
-        self.sync_license_btn.clicked.connect(self._on_sync_license)
+
         self.check_impedance_btn.clicked.connect(self._on_check_impedance) # type: ignore[attr-defined]
 
         self.license_sync_label = QtWidgets.QLabel(
@@ -549,36 +549,6 @@ class BAlert_Options(BaseDeviceOptions):
         self.license_sync_label.setText(msg)
         self.license_sync_label.setStyleSheet("color:#c62828; font-weight:600;")
 
-    # ----- Sync License btn -----
-    def _on_sync_license(self):
-        exe = _balert_exe_path()
-        if not exe.exists():
-            QtWidgets.QMessageBox.critical(self, "Sync License", f"Cannot find BAlert.exe:\n{exe}")
-            return
-
-        lic_dir = (self.license_dir_lineedit.text() or "").strip()          # type: ignore[attr-defined]
-        if not lic_dir or not Path(lic_dir).exists():
-            QtWidgets.QMessageBox.critical(self, "Sync License", "Please select a valid License folder.")
-            return
-
-        _kill_existing_balert(timeout=1.0)
-        self.sync_license_btn.setEnabled(False)
-        try:
-            _sync_license_to_exe_dir(exe, Path(lic_dir))
-        except Exception as e:
-            self._show_license_sync_failed("Please reselect the folder.")
-            QtWidgets.QMessageBox.critical(self, "Sync License", f"License sync failed:\n{e}")
-            return
-        finally:
-            QtCore.QThread.msleep(350)
-            self.sync_license_btn.setEnabled(True)
-
-        self._show_license_synced()
-        try:
-            AppConfigs().balert_license_dir = lic_dir
-        except Exception:
-            pass
-
     # ----- select license -----
     def _on_browse_license(self):
         saved_dir = getattr(AppConfigs(), "balert_license_dir", "")
@@ -634,7 +604,6 @@ class BAlert_Options(BaseDeviceOptions):
     def check_btn_set_enabled(self, enabled: bool):
         try:
             self.check_impedance_btn.setEnabled(enabled)  # type: ignore[attr-defined]
-            self.sync_license_btn.setEnabled(enabled)
             self.check_impedance_btn.setText("Check Impedance" if enabled else "Checking…")
         except Exception:
             pass
@@ -647,7 +616,7 @@ class BAlert_Options(BaseDeviceOptions):
         need_fix = [
             it for it in eeg_items
             if float(it.get("value", 99999)) == 99999
-               or float(it.get("value", 99999)) > 40.0
+               or float(it.get("value", 99999)) >= 40.0
         ]
         total = 20
         self.status_label.setText("OK" if not need_fix else f"{len(need_fix)}/{total} channel(s) need fix")
