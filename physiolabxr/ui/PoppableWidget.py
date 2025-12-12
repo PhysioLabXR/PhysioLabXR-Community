@@ -25,7 +25,8 @@ class Poppable(QtWidgets.QWidget):
 
     def dock_window(self):
         assert self.pop_button is not None, "PoppableWidget must have a pop_button set before calling dock_window"
-        self.parent_layout.insertWidget(self.parent_layout.count() - 1, self)
+        if self.parent_layout is not None:
+            self.parent_layout.insertWidget(self.parent_layout.count() - 1, self)
         self.another_window.hide()
         self.another_window.deleteLater()
 
