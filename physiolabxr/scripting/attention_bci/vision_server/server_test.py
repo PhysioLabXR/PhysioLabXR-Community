@@ -2,10 +2,17 @@
 
 #----- gRPC service -------
 import asyncio
+import traceback
+
 import grpc
-from physiolabxr.scripting.attention_bci.vision_proto import vision_pb2, vision_pb2_grpc
+from wingman.vision_server_rpc import vision_pb2, vision_pb2_grpc
 from google.protobuf import empty_pb2
+import lpips
 from wingman.camera_utils import camera_capture_utils
+from scripting.eyetracking.configs import *
+from wingman.vision_data_config import *
+from collections import defaultdict
+# from supervised_client import *
 
 class VisionService(vision_pb2_grpc.VisionServicer):
     """
