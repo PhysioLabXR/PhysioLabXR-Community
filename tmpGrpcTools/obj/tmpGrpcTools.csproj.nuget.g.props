@@ -5,17 +5,18 @@
     <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
     <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
     <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
-    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\LabUser\.nuget\packages\</NuGetPackageFolders>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\Seasonhe\.nuget\packages\;C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages</NuGetPackageFolders>
     <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
-    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.13.0</NuGetToolVersion>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.13.2</NuGetToolVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <SourceRoot Include="C:\Users\LabUser\.nuget\packages\" />
+    <SourceRoot Include="C:\Users\Seasonhe\.nuget\packages\" />
+    <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
   </ItemGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Import Project="$(NuGetPackageRoot)grpc.tools\2.70.0\build\Grpc.Tools.props" Condition="Exists('$(NuGetPackageRoot)grpc.tools\2.70.0\build\Grpc.Tools.props')" />
+    <Import Project="$(NuGetPackageRoot)grpc.tools\2.76.0\build\Grpc.Tools.props" Condition="Exists('$(NuGetPackageRoot)grpc.tools\2.76.0\build\Grpc.Tools.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgGrpc_Tools Condition=" '$(PkgGrpc_Tools)' == '' ">C:\Users\LabUser\.nuget\packages\grpc.tools\2.70.0</PkgGrpc_Tools>
+    <PkgGrpc_Tools Condition=" '$(PkgGrpc_Tools)' == '' ">C:\Users\Seasonhe\.nuget\packages\grpc.tools\2.76.0</PkgGrpc_Tools>
   </PropertyGroup>
 </Project>

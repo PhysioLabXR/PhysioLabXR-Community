@@ -2,7 +2,7 @@
   "version": 3,
   "targets": {
     "net9.0": {
-      "Grpc.Tools/2.70.0": {
+      "Grpc.Tools/2.76.0": {
         "type": "package",
         "build": {
           "build/Grpc.Tools.props": {},
@@ -12,10 +12,10 @@
     }
   },
   "libraries": {
-    "Grpc.Tools/2.70.0": {
-      "sha512": "Mibx8fUC1ihh1jZU5+yy7nR4C05FPSI1uKAtSaLkorU3xX/6XNWhuZhku5BuWdw2FRPuWKDfpts5f7a1UUqH2g==",
+    "Grpc.Tools/2.76.0": {
+      "sha512": "goRzYZVMgQtyLvkWdgTnPycg49hlNxnMkqGGgR3l7nCOm0bUh0YeAneiJ9JFk3XLgF4suQUdETYkl2Mg/TBr0w==",
       "type": "package",
-      "path": "grpc.tools/2.70.0",
+      "path": "grpc.tools/2.76.0",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -44,7 +44,7 @@
         "build/native/include/google/protobuf/timestamp.proto",
         "build/native/include/google/protobuf/type.proto",
         "build/native/include/google/protobuf/wrappers.proto",
-        "grpc.tools.2.70.0.nupkg.sha512",
+        "grpc.tools.2.76.0.nupkg.sha512",
         "grpc.tools.nuspec",
         "packageIcon.png",
         "tools/linux_arm64/grpc_csharp_plugin",
@@ -63,30 +63,36 @@
     }
   },
   "projectFileDependencyGroups": {
-
     "net9.0": [
-      "Grpc.Tools >= 2.70.0"
+      "Grpc.Tools >= 2.76.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\LabUser\\.nuget\\packages\\": {}
+    "C:\\Users\\Seasonhe\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj",
+      "projectUniqueName": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj",
       "projectName": "tmpGrpcTools",
-      "projectPath": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj",
-      "packagesPath": "C:\\Users\\LabUser\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\obj\\",
+      "projectPath": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj",
+      "packagesPath": "C:\\Users\\Seasonhe\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\LabUser\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Seasonhe\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -115,8 +121,7 @@
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
             "suppressParent": "All",
             "target": "Package",
-            "version": "[2.70.0, )"
-
+            "version": "[2.76.0, )"
           }
         },
         "imports": [
@@ -135,7 +140,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

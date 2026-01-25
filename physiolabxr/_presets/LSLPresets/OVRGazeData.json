@@ -1,0 +1,55 @@
+{ "StreamName":"OVREyeGazeLSL",
+  "ChannelNames":[
+    "FrameNumber",
+
+    "CaptureTime",
+
+    "LogTime",
+
+
+    "HMDLocalPositionX",
+    "HMDLocalPositionY",
+    "HMDLocalPositionZ",
+    "HMDLocalRotationX",
+    "HMDLocalRotationY",
+    "HMDLocalRotationZ",
+
+
+    "CombinedGazeValid",
+    "CombinedGazeForwardX",
+    "CombinedGazeForwardY",
+    "CombinedGazeForwardZ",
+    "CombinedGazeOriginX",
+    "CombinedGazeOriginY",
+    "CombinedGazeOriginZ",
+    "CombinedGazeConfidence",
+
+
+
+    "InterPupillaryDistanceInMM",
+
+
+    "LeftEyeGazeValid",
+    "LeftGazeForwardX",
+    "LeftGazeForwardY",
+    "LeftGazeForwardZ",
+    "LeftGazeOriginX",
+    "LeftGazeOriginY",
+    "LeftGazeOriginZ",
+    "LeftGazeConfidence",
+
+
+
+    "RightEyeGazeValid",
+    "RightGazeForwardX",
+    "RightGazeForwardY",
+    "RightGazeForwardZ",
+    "RightGazeOriginX",
+    "RightGazeOriginY",
+    "RightGazeOriginZ",
+    "RightGazeConfidence"
+
+  ],
+  "NominalSamplingRate":  72,
+  "GroupInfo":  [3, 9, 17, 18],
+  "DataType": "float32"}
