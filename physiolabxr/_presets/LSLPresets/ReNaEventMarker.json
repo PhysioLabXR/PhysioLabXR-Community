@@ -12,9 +12,10 @@
     "TSCollectItem",
     "Likert",
     "FireEvent",
-    "ShipHealth"
+    "ShipHealth",
+    "DestroyEvent"
   ],
-  "GroupInfo":  [1,2,3,4,8,9,11],
+  "GroupInfo":  [2,4,11],
   "NominalSamplingRate":  75,
   "DataType": "float32"
 }
