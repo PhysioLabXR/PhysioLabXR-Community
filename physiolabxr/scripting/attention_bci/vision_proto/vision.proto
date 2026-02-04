@@ -12,6 +12,9 @@ service Vision {
 
   // 3) Fire-and-forget gaze frame (no return body)
   rpc GazeFrame(GazeFrameRequest) returns (google.protobuf.Empty);
+
+  // 4) Fire-and-forget label target (no return body)
+  rpc LabelTarget(LabelTargetRequest) returns (google.protobuf.Empty);
 }
 
 message AnalyzeRequest {
@@ -37,4 +40,9 @@ message PushIntRequest {
 
 message GazeFrameRequest{
   map<int32, int32> id_gazed = 1;
+}
+
+message LabelTargetRequest {
+  int32 idx = 1;
+  int32 dtn = 2;
 }
