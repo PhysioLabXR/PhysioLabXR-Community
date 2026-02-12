@@ -1,2 +1,2 @@
 {"ExperimentName": "CLAd",
-  "PresetStreamNames": ["OVREyeGazeLSL", "VarjoEyeTrackingLSL"]}
+  "PresetStreamNames": [ "VarjoEyeTrackingLSL", "BAlert"]}
