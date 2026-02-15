@@ -185,7 +185,7 @@ def integer_one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)]).astype(int)
 
 
-def corrupt_frame_padding(time_series_data, min_threshold=np.NINF, max_threshold=np.PINF, frame_channel_first=True):
+def corrupt_frame_padding(time_series_data, min_threshold=np.NINF, max_threshold=-np.inf, frame_channel_first=True):
     if not frame_channel_first:
         time_series_data = np.moveaxis(time_series_data, -1, 0)
 
