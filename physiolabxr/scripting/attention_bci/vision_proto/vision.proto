@@ -8,7 +8,7 @@ service Vision {
   rpc Analyze (AnalyzeRequest) returns (AnalyzeReply) {}
 
   // 2) Fire-and-forget integer push (no return body)
-  rpc PushInt (PushIntRequest) returns (google.protobuf.Empty) {}
+  rpc OnBlockStart (OnBlockStartRequest) returns (google.protobuf.Empty) {}
 
   // 3) Fire-and-forget gaze frame (no return body)
   rpc GazeFrame(GazeFrameRequest) returns (google.protobuf.Empty);
@@ -34,7 +34,7 @@ message AnalyzeReply {
   map<int32, float> id_scores = 1;
 }
 
-message PushIntRequest {
+message OnBlockStartRequest {
   int32 value             = 1;
 }
 

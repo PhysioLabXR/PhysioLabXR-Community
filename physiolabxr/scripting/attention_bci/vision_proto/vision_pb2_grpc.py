@@ -40,9 +40,9 @@ class VisionStub(object):
                 request_serializer=vision__pb2.AnalyzeRequest.SerializeToString,
                 response_deserializer=vision__pb2.AnalyzeReply.FromString,
                 _registered_method=True)
-        self.PushInt = channel.unary_unary(
-                '/vision.Vision/PushInt',
-                request_serializer=vision__pb2.PushIntRequest.SerializeToString,
+        self.OnBlockStart = channel.unary_unary(
+                '/vision.Vision/OnBlockStart',
+                request_serializer=vision__pb2.OnBlockStartRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
         self.GazeFrame = channel.unary_unary(
@@ -67,7 +67,7 @@ class VisionServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def PushInt(self, request, context):
+    def OnBlockStart(self, request, context):
         """2) Fire-and-forget integer push (no return body)
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -96,9 +96,9 @@ def add_VisionServicer_to_server(servicer, server):
                     request_deserializer=vision__pb2.AnalyzeRequest.FromString,
                     response_serializer=vision__pb2.AnalyzeReply.SerializeToString,
             ),
-            'PushInt': grpc.unary_unary_rpc_method_handler(
-                    servicer.PushInt,
-                    request_deserializer=vision__pb2.PushIntRequest.FromString,
+            'OnBlockStart': grpc.unary_unary_rpc_method_handler(
+                    servicer.OnBlockStart,
+                    request_deserializer=vision__pb2.OnBlockStartRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'GazeFrame': grpc.unary_unary_rpc_method_handler(
@@ -150,7 +150,7 @@ class Vision(object):
             _registered_method=True)
 
     @staticmethod
-    def PushInt(request,
+    def OnBlockStart(request,
             target,
             options=(),
             channel_credentials=None,
@@ -163,8 +163,8 @@ class Vision(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/vision.Vision/PushInt',
-            vision__pb2.PushIntRequest.SerializeToString,
+            '/vision.Vision/OnBlockStart',
+            vision__pb2.OnBlockStartRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
