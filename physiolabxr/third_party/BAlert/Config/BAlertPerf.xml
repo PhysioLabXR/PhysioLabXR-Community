@@ -1,0 +1,20 @@
+
+<PerformanceConfiguration>
+	<StimuliByQuartiles3CVT>
+		<Quartile1>
+			139
+		</Quartile1>
+		<Quartile2>
+			258
+		</Quartile2>
+		<Quartile3>
+			316
+		</Quartile3>
+		<Quartile4>
+			376
+		</Quartile4>
+	</StimuliByQuartiles3CVT>
+	<RespBeforeEOECStimuli>
+		1000
+	</RespBeforeEOECStimuli>
+</PerformanceConfiguration>

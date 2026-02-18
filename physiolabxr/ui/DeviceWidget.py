@@ -73,9 +73,13 @@ class DeviceWidget(BaseStreamWidget):
             self.set_button_icons()
             self.main_parent.update_active_streams()
         except CustomDeviceStartStreamError as e:
+            show_label_movie(self.waiting_label, False)  # Stop loading animation
+            self.set_button_icons()  # Reset button state
             self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
             return
         except CustomDeviceStreamInterruptedError as e:
+            show_label_movie(self.waiting_label, False)
+            self.set_button_icons()
             self.main_parent.current_dialog = dialog_popup(msg=str(e), title='ERROR')
             return
         except ChannelMismatchError as e:  # only LSL's channel mismatch can be checked at this time, zmq's channel mismatch can only be checked when receiving data

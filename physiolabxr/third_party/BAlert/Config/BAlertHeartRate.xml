@@ -1,0 +1,27 @@
+
+<BAlertLab>
+	<ConfigVersion>00.00.00.00</ConfigVersion>
+	<HeartRate>
+		<BeatTolerance>
+			0.300000
+		</BeatTolerance>
+		<MedianFilter>
+			0
+		</MedianFilter>
+		<EkgAmplitudeDetect>
+			1
+		</EkgAmplitudeDetect>
+		<HRVWindow1>
+			5
+		</HRVWindow1>
+		<HRVWindow2>
+			10
+		</HRVWindow2>
+		<HRVWindow3>
+			15
+		</HRVWindow3>
+		<HRVWindow4>
+			20
+		</HRVWindow4>
+	</HeartRate>
+</BAlertLab>
