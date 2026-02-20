@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import warnings
+from typing import Optional
 
 import numpy as np
 
@@ -205,19 +206,40 @@ class DataBuffer():
     def get_data(self, stream_name):
         return self.buffer[stream_name][0]
 
-    def get_stream_in_time_range(self, stream_name, start_time, end_time):
-
+    def get_stream_in_time_range(
+            self,
+            stream_name: str,
+            start_time: float,
+            end_time: float,
+            num_samples: Optional[int] = None,
+    ):
         # start time must be smaller than end time
         if start_time > end_time:
-            raise ValueError('start_time must be smaller than end_time')
+            raise ValueError("start_time must be smaller than end_time")
 
         stream_data = self.buffer[stream_name][0]
         stream_timestamps = self.buffer[stream_name][1]
 
-        start_index = np.searchsorted(stream_timestamps, [start_time], side='left')[0]
-        end_index = np.searchsorted(stream_timestamps, [end_time], side='right')[0]
+        start_index = int(np.searchsorted(stream_timestamps, start_time, side="left"))
+        end_index = int(np.searchsorted(stream_timestamps, end_time, side="right"))
 
-        return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
+        if num_samples is None:
+            return [stream_data[:, start_index:end_index], stream_timestamps[start_index:end_index]]
+
+        if not isinstance(num_samples, int) or num_samples <= 0:
+            raise ValueError("num_samples must be a positive int when provided")
+
+        available = end_index - start_index
+        if available < num_samples:
+            raise ValueError(
+                f"Requested num_samples={num_samples}, but only {available} samples available "
+                f"in [{start_time}, {end_time}] for stream '{stream_name}'. "
+                f"(start_index={start_index}, end_index={end_index})"
+            )
+
+        # Guarantee exact length: take the first num_samples within the window
+        stop = start_index + num_samples
+        return [stream_data[:, start_index:stop], stream_timestamps[start_index:stop]]
 
     def get_stream_in_index_range(self, stream_name, start_index, end_index):
 
