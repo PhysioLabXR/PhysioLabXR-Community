@@ -294,6 +294,106 @@ class DataBufferSingleStream():
         return self.samples_received > 0
 
 
+from typing import Callable, Dict, List, Optional
+
+class FilteredDataBuffer(DataBuffer):
+    """
+    DataBuffer that can apply realtime (stateful) processors to specific input streams,
+    and store the processed output into a separate stream name, while optionally keeping raw.
+
+    - Input stream name stays raw (e.g., "_BAlert")
+    - Output stream name stores filtered (e.g., "_BAlert__filt")
+    - Filter state persists across update calls (good for realtime IIR)
+    """
+    def __init__(self, stream_buffer_sizes: dict = None):
+        super().__init__(stream_buffer_sizes=stream_buffer_sizes)
+        # input_stream -> list[factory(channel_num)->DataProcessor]
+        self._processor_factories: Dict[str, List[Callable[[int], object]]] = {}
+        # input_stream -> instantiated processors
+        self._chains: Dict[str, List[object]] = {}
+        # input_stream -> output_stream
+        self._out_stream: Dict[str, str] = {}
+        # input_stream -> keep raw?
+        self._keep_raw: Dict[str, bool] = {}
+
+    def add_filter_chain(
+            self,
+            input_stream: str,
+            output_stream: Optional[str] = None,
+            processor_factories: Optional[List[Callable[[int], object]]] = None,
+            keep_input: bool = True,
+    ):
+        if processor_factories is None or len(processor_factories) == 0:
+            raise ValueError("processor_factories must be a non-empty list of callables(channel_num)->DataProcessor")
+
+        out = output_stream or f"{input_stream}__filt"
+        self._processor_factories[input_stream] = list(processor_factories)
+        self._out_stream[input_stream] = out
+        self._keep_raw[input_stream] = bool(keep_input)
+
+        # mirror buffer size if user configured one for the raw stream
+        if input_stream in self.stream_name_buffer_sizes and out not in self.stream_name_buffer_sizes:
+            self.stream_name_buffer_sizes[out] = self.stream_name_buffer_sizes[input_stream]
+
+        # force re-init on next packet
+        self._chains.pop(input_stream, None)
+
+    def reset_filters(self, input_stream: Optional[str] = None):
+        """Reset filter taps (useful between participants / sessions)."""
+        streams = [input_stream] if input_stream is not None else list(self._chains.keys())
+        for s in streams:
+            chain = self._chains.get(s, None)
+            if chain is None:
+                continue
+            for p in chain:
+                try:
+                    p.reset_tap()
+                except Exception:
+                    pass
+
+    def _ensure_chain(self, input_stream: str, channel_num: int) -> List[object]:
+        chain = self._chains.get(input_stream, None)
+
+        def _chain_matches(ch: List[object]) -> bool:
+            for p in ch:
+                # your realtime_DSP processors have channel_num attr
+                if getattr(p, "channel_num", channel_num) != channel_num:
+                    return False
+            return True
+
+        if chain is None or not _chain_matches(chain):
+            factories = self._processor_factories[input_stream]
+            chain = [f(channel_num) for f in factories]
+            self._chains[input_stream] = chain
+
+        return chain
+
+    def _update_buffer(self, stream_name, frames, timestamps):
+        # If no filters for this stream, behave exactly like DataBuffer
+        if stream_name not in self._processor_factories:
+            return super()._update_buffer(stream_name, frames, timestamps)
+
+        # Defensive: ensure numpy arrays
+        frames = np.asarray(frames)
+        timestamps = np.asarray(timestamps)
+
+        out_name = self._out_stream[stream_name]
+        chain = self._ensure_chain(stream_name, int(frames.shape[0]))
+
+        # Apply processors in order (stateful across calls)
+        filtered = frames
+        for p in chain:
+            filtered = p.process_buffer(filtered)
+
+        # Keep dtype reasonable (your server expects float32 downstream)
+        filtered = np.asarray(filtered, dtype=np.float32)
+
+        if self._keep_raw.get(stream_name, True):
+            super()._update_buffer(stream_name, frames, timestamps)
+
+        super()._update_buffer(out_name, filtered, timestamps)
+
+
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
