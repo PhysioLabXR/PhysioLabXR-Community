@@ -185,7 +185,7 @@ def integer_one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)]).astype(int)
 
 
-def corrupt_frame_padding(time_series_data, min_threshold=np.NINF, max_threshold=-np.inf, frame_channel_first=True):
+def corrupt_frame_padding(time_series_data, min_threshold=-np.inf, max_threshold=np.inf, frame_channel_first=True):
     if not frame_channel_first:
         time_series_data = np.moveaxis(time_series_data, -1, 0)
 
@@ -249,7 +249,7 @@ def time_series_static_clutter_removal(time_series_data, init_clutter=None, sign
 
     return time_series_data
 
-def is_broken_frame(frame, min_threshold=np.NINF, max_threshold=np.PINF):
+def is_broken_frame(frame, min_threshold=-np.inf, max_threshold=np.inf):
     if np.min(frame) < min_threshold or np.max(frame) > max_threshold:
         return True
     else:
