@@ -37,8 +37,9 @@ message AnalyzeReply {
 message OnBlockStartRequest {
   string participant_id = 1;
   int32 study = 2;
-  int32 block_id = 3;
-  int32 difficulty = 4;
+  int32 block_idx = 3;  // this is the block index, in Unity this is called block id
+  int32 block_marker = 4;  // this indicate the type of the block
+  int32 difficulty = 5;
 }
 
 message GazeFrameRequest{
