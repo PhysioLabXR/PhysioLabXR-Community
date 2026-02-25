@@ -35,10 +35,15 @@ class VisionStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Analyze = channel.unary_unary(
-                '/vision.Vision/Analyze',
-                request_serializer=vision__pb2.AnalyzeRequest.SerializeToString,
-                response_deserializer=vision__pb2.AnalyzeReply.FromString,
+        self.ProcessWingmanCamera = channel.unary_unary(
+                '/vision.Vision/ProcessWingmanCamera',
+                request_serializer=vision__pb2.ProcessWingmanCameraRequest.SerializeToString,
+                response_deserializer=vision__pb2.ProcessWingmanCameraReply.FromString,
+                _registered_method=True)
+        self.ProcessFixationCamera = channel.unary_unary(
+                '/vision.Vision/ProcessFixationCamera',
+                request_serializer=vision__pb2.ProcessFixationCameraRequest.SerializeToString,
+                response_deserializer=vision__pb2.ProcessFixationCameraReply.FromString,
                 _registered_method=True)
         self.OnBlockStart = channel.unary_unary(
                 '/vision.Vision/OnBlockStart',
@@ -60,29 +65,36 @@ class VisionStub(object):
 class VisionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Analyze(self, request, context):
-        """1) Analyze images/metadata -> dict: ID-> confidence level
+    def ProcessWingmanCamera(self, request, context):
+        """1) Analyze Wingman images/metadata -> dict: ID-> confidence level
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ProcessFixationCamera(self, request, context):
+        """2) Analyze Fixation images/metadata -> dict: ID-> confidence level
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def OnBlockStart(self, request, context):
-        """2) Fire-and-forget integer push (no return body)
+        """3) Fire-and-forget integer push (no return body)
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GazeFrame(self, request, context):
-        """3) Fire-and-forget gaze frame (no return body)
+        """4) Fire-and-forget gaze frame (no return body)
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def LabelTarget(self, request, context):
-        """4) Fire-and-forget label target (no return body)
+        """5) Fire-and-forget label target (no return body)
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -91,10 +103,15 @@ class VisionServicer(object):
 
 def add_VisionServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Analyze': grpc.unary_unary_rpc_method_handler(
-                    servicer.Analyze,
-                    request_deserializer=vision__pb2.AnalyzeRequest.FromString,
-                    response_serializer=vision__pb2.AnalyzeReply.SerializeToString,
+            'ProcessWingmanCamera': grpc.unary_unary_rpc_method_handler(
+                    servicer.ProcessWingmanCamera,
+                    request_deserializer=vision__pb2.ProcessWingmanCameraRequest.FromString,
+                    response_serializer=vision__pb2.ProcessWingmanCameraReply.SerializeToString,
+            ),
+            'ProcessFixationCamera': grpc.unary_unary_rpc_method_handler(
+                    servicer.ProcessFixationCamera,
+                    request_deserializer=vision__pb2.ProcessFixationCameraRequest.FromString,
+                    response_serializer=vision__pb2.ProcessFixationCameraReply.SerializeToString,
             ),
             'OnBlockStart': grpc.unary_unary_rpc_method_handler(
                     servicer.OnBlockStart,
@@ -123,7 +140,7 @@ class Vision(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Analyze(request,
+    def ProcessWingmanCamera(request,
             target,
             options=(),
             channel_credentials=None,
@@ -136,9 +153,36 @@ class Vision(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/vision.Vision/Analyze',
-            vision__pb2.AnalyzeRequest.SerializeToString,
-            vision__pb2.AnalyzeReply.FromString,
+            '/vision.Vision/ProcessWingmanCamera',
+            vision__pb2.ProcessWingmanCameraRequest.SerializeToString,
+            vision__pb2.ProcessWingmanCameraReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ProcessFixationCamera(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/vision.Vision/ProcessFixationCamera',
+            vision__pb2.ProcessFixationCameraRequest.SerializeToString,
+            vision__pb2.ProcessFixationCameraReply.FromString,
             options,
             channel_credentials,
             insecure,

@@ -25,31 +25,39 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cvision.proto\x12\x06vision\x1a\x1bgoogle/protobuf/empty.proto\"\xa7\x01\n\x0e\x41nalyzeRequest\x12\x14\n\x0ctimestamp_ms\x18\x01 \x01(\x01\x12\x13\n\x0b\x63olor_image\x18\x02 \x01(\x0c\x12\x13\n\x0b\x64\x65pth_image\x18\x03 \x01(\x0c\x12\x11\n\tbbox_json\x18\x04 \x01(\t\x12\x1b\n\x13gaze_item_index_dtn\x18\x05 \x01(\x0c\x12%\n\x1d\x63urrent_screen_location_bytes\x18\x06 \x01(\x0c\"v\n\x0c\x41nalyzeReply\x12\x35\n\tid_scores\x18\x01 \x03(\x0b\x32\".vision.AnalyzeReply.IdScoresEntry\x1a/\n\rIdScoresEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\"b\n\x13OnBlockStartRequest\x12\x16\n\x0eparticipant_id\x18\x01 \x01(\t\x12\r\n\x05study\x18\x02 \x01(\x05\x12\x10\n\x08\x62lock_id\x18\x03 \x01(\x05\x12\x12\n\ndifficulty\x18\x04 \x01(\x05\"{\n\x10GazeFrameRequest\x12\x37\n\x08id_gazed\x18\x01 \x03(\x0b\x32%.vision.GazeFrameRequest.IdGazedEntry\x1a.\n\x0cIdGazedEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\".\n\x12LabelTargetRequest\x12\x0b\n\x03idx\x18\x01 \x01(\x05\x12\x0b\n\x03\x64tn\x18\x02 \x01(\x05\x32\x8c\x02\n\x06Vision\x12\x39\n\x07\x41nalyze\x12\x16.vision.AnalyzeRequest\x1a\x14.vision.AnalyzeReply\"\x00\x12\x45\n\x0cOnBlockStart\x12\x1b.vision.OnBlockStartRequest\x1a\x16.google.protobuf.Empty\"\x00\x12=\n\tGazeFrame\x12\x18.vision.GazeFrameRequest\x1a\x16.google.protobuf.Empty\x12\x41\n\x0bLabelTarget\x12\x1a.vision.LabelTargetRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cvision.proto\x12\x06vision\x1a\x1bgoogle/protobuf/empty.proto\"p\n\x1bProcessWingmanCameraRequest\x12\x14\n\x0ctimestamp_ms\x18\x01 \x01(\x01\x12\x13\n\x0b\x63olor_image\x18\x02 \x01(\x0c\x12\x13\n\x0b\x64\x65pth_image\x18\x03 \x01(\x0c\x12\x11\n\tbbox_json\x18\x04 \x01(\t\"\x90\x01\n\x19ProcessWingmanCameraReply\x12\x42\n\tid_scores\x18\x01 \x03(\x0b\x32/.vision.ProcessWingmanCameraReply.IdScoresEntry\x1a/\n\rIdScoresEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\"\xb5\x01\n\x1cProcessFixationCameraRequest\x12\x14\n\x0ctimestamp_ms\x18\x01 \x01(\x01\x12\x13\n\x0b\x63olor_image\x18\x02 \x01(\x0c\x12\x13\n\x0b\x64\x65pth_image\x18\x03 \x01(\x0c\x12\x11\n\tbbox_json\x18\x04 \x01(\t\x12\x1b\n\x13gaze_item_index_dtn\x18\x05 \x01(\x0c\x12%\n\x1d\x63urrent_screen_location_bytes\x18\x06 \x01(\x0c\"\x92\x01\n\x1aProcessFixationCameraReply\x12\x43\n\tid_scores\x18\x01 \x03(\x0b\x32\x30.vision.ProcessFixationCameraReply.IdScoresEntry\x1a/\n\rIdScoresEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\"y\n\x13OnBlockStartRequest\x12\x16\n\x0eparticipant_id\x18\x01 \x01(\t\x12\r\n\x05study\x18\x02 \x01(\x05\x12\x11\n\tblock_idx\x18\x03 \x01(\x05\x12\x14\n\x0c\x62lock_marker\x18\x04 \x01(\x05\x12\x12\n\ndifficulty\x18\x05 \x01(\x05\"{\n\x10GazeFrameRequest\x12\x37\n\x08id_gazed\x18\x01 \x03(\x0b\x32%.vision.GazeFrameRequest.IdGazedEntry\x1a.\n\x0cIdGazedEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\".\n\x12LabelTargetRequest\x12\x0b\n\x03idx\x18\x01 \x01(\x05\x12\x0b\n\x03\x64tn\x18\x02 \x01(\x05\x32\x98\x03\n\x06Vision\x12`\n\x14ProcessWingmanCamera\x12#.vision.ProcessWingmanCameraRequest\x1a!.vision.ProcessWingmanCameraReply\"\x00\x12\x63\n\x15ProcessFixationCamera\x12$.vision.ProcessFixationCameraRequest\x1a\".vision.ProcessFixationCameraReply\"\x00\x12\x45\n\x0cOnBlockStart\x12\x1b.vision.OnBlockStartRequest\x1a\x16.google.protobuf.Empty\"\x00\x12=\n\tGazeFrame\x12\x18.vision.GazeFrameRequest\x1a\x16.google.protobuf.Empty\x12\x41\n\x0bLabelTarget\x12\x1a.vision.LabelTargetRequest\x1a\x16.google.protobuf.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'vision_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ANALYZEREPLY_IDSCORESENTRY']._loaded_options = None
-  _globals['_ANALYZEREPLY_IDSCORESENTRY']._serialized_options = b'8\001'
+  _globals['_PROCESSWINGMANCAMERAREPLY_IDSCORESENTRY']._loaded_options = None
+  _globals['_PROCESSWINGMANCAMERAREPLY_IDSCORESENTRY']._serialized_options = b'8\001'
+  _globals['_PROCESSFIXATIONCAMERAREPLY_IDSCORESENTRY']._loaded_options = None
+  _globals['_PROCESSFIXATIONCAMERAREPLY_IDSCORESENTRY']._serialized_options = b'8\001'
   _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._loaded_options = None
   _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._serialized_options = b'8\001'
-  _globals['_ANALYZEREQUEST']._serialized_start=54
-  _globals['_ANALYZEREQUEST']._serialized_end=221
-  _globals['_ANALYZEREPLY']._serialized_start=223
-  _globals['_ANALYZEREPLY']._serialized_end=341
-  _globals['_ANALYZEREPLY_IDSCORESENTRY']._serialized_start=294
-  _globals['_ANALYZEREPLY_IDSCORESENTRY']._serialized_end=341
-  _globals['_ONBLOCKSTARTREQUEST']._serialized_start=343
-  _globals['_ONBLOCKSTARTREQUEST']._serialized_end=441
-  _globals['_GAZEFRAMEREQUEST']._serialized_start=443
-  _globals['_GAZEFRAMEREQUEST']._serialized_end=566
-  _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._serialized_start=520
-  _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._serialized_end=566
-  _globals['_LABELTARGETREQUEST']._serialized_start=568
-  _globals['_LABELTARGETREQUEST']._serialized_end=614
-  _globals['_VISION']._serialized_start=617
-  _globals['_VISION']._serialized_end=885
+  _globals['_PROCESSWINGMANCAMERAREQUEST']._serialized_start=53
+  _globals['_PROCESSWINGMANCAMERAREQUEST']._serialized_end=165
+  _globals['_PROCESSWINGMANCAMERAREPLY']._serialized_start=168
+  _globals['_PROCESSWINGMANCAMERAREPLY']._serialized_end=312
+  _globals['_PROCESSWINGMANCAMERAREPLY_IDSCORESENTRY']._serialized_start=265
+  _globals['_PROCESSWINGMANCAMERAREPLY_IDSCORESENTRY']._serialized_end=312
+  _globals['_PROCESSFIXATIONCAMERAREQUEST']._serialized_start=315
+  _globals['_PROCESSFIXATIONCAMERAREQUEST']._serialized_end=496
+  _globals['_PROCESSFIXATIONCAMERAREPLY']._serialized_start=499
+  _globals['_PROCESSFIXATIONCAMERAREPLY']._serialized_end=645
+  _globals['_PROCESSFIXATIONCAMERAREPLY_IDSCORESENTRY']._serialized_start=265
+  _globals['_PROCESSFIXATIONCAMERAREPLY_IDSCORESENTRY']._serialized_end=312
+  _globals['_ONBLOCKSTARTREQUEST']._serialized_start=647
+  _globals['_ONBLOCKSTARTREQUEST']._serialized_end=768
+  _globals['_GAZEFRAMEREQUEST']._serialized_start=770
+  _globals['_GAZEFRAMEREQUEST']._serialized_end=893
+  _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._serialized_start=847
+  _globals['_GAZEFRAMEREQUEST_IDGAZEDENTRY']._serialized_end=893
+  _globals['_LABELTARGETREQUEST']._serialized_start=895
+  _globals['_LABELTARGETREQUEST']._serialized_end=941
+  _globals['_VISION']._serialized_start=944
+  _globals['_VISION']._serialized_end=1352
 # @@protoc_insertion_point(module_scope)

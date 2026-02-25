@@ -4,20 +4,44 @@ package vision;
 import "google/protobuf/empty.proto";
 
 service Vision {
-  // 1) Analyze images/metadata -> dict: ID-> confidence level
-  rpc Analyze (AnalyzeRequest) returns (AnalyzeReply) {}
+  // 1) Analyze Wingman images/metadata -> dict: ID-> confidence level
+  rpc ProcessWingmanCamera (ProcessWingmanCameraRequest) returns (ProcessWingmanCameraReply) {}
 
-  // 2) Fire-and-forget integer push (no return body)
+  // 2) Analyze Fixation images/metadata -> dict: ID-> confidence level
+  rpc ProcessFixationCamera (ProcessFixationCameraRequest) returns (ProcessFixationCameraReply) {}
+
+  // 3) Fire-and-forget integer push (no return body)
   rpc OnBlockStart (OnBlockStartRequest) returns (google.protobuf.Empty) {}
 
-  // 3) Fire-and-forget gaze frame (no return body)
+  // 4) Fire-and-forget gaze frame (no return body)
   rpc GazeFrame(GazeFrameRequest) returns (google.protobuf.Empty);
 
-  // 4) Fire-and-forget label target (no return body)
+  // 5) Fire-and-forget label target (no return body)
   rpc LabelTarget(LabelTargetRequest) returns (google.protobuf.Empty);
 }
 
-message AnalyzeRequest {
+
+
+
+message ProcessWingmanCameraRequest {
+  double  timestamp_ms     = 1;
+
+  bytes  color_image      = 2;   // e.g., img colorData
+  bytes  depth_image      = 3;   // e.g., img depthData
+
+  // Extra context from your ZMQ payload
+  string bbox_json        = 4;   // your bboxJson
+
+}
+
+message ProcessWingmanCameraReply {
+  map<int32, float> id_scores = 1;
+}
+
+
+
+
+message ProcessFixationCameraRequest {
   double  timestamp_ms     = 1;
 
   bytes  color_image      = 2;   // e.g., img colorData
@@ -30,9 +54,10 @@ message AnalyzeRequest {
   bytes current_screen_location_bytes = 6;
 }
 
-message AnalyzeReply {
+message ProcessFixationCameraReply {
   map<int32, float> id_scores = 1;
 }
+
 
 message OnBlockStartRequest {
   string participant_id = 1;
