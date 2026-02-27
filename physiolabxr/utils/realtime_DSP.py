@@ -321,9 +321,14 @@ class RealtimeICAEogProxy(DataProcessor):
         self._ica = ica
         self._fitted = True
 
-        print(f"[RealtimeICAEogProxy] fitted: exclude={self.exclude} "
-              f"(blink max={max(corr_fp1.max(), corr_fp2.max()):.3f}, "
-              f"horiz max={max(corr_hL.max(), corr_hR.max()):.3f})")
+        GREEN = "\033[92m"
+        RESET = "\033[0m"
+
+        print(
+            f"{GREEN}[RealtimeICAEogProxy] fitted: exclude={self.exclude} "
+            f"(blink max={max(corr_fp1.max(), corr_fp2.max()):.3f}, "
+            f"horiz max={max(corr_hL.max(), corr_hR.max()):.3f}){RESET}"
+        )
 
     def process_buffer(self, data: np.ndarray) -> np.ndarray:
         data = np.asarray(data, dtype=np.float32)
