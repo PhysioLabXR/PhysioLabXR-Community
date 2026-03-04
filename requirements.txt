@@ -1,6 +1,6 @@
 brainflow~=5.12.0
 numpy ~= 1.26.0
-PyQt6~=6.6.1
+PyQt6~=6.10.2
 pyserial~=3.5
 pylsl~=1.16.2
 scikit-learn~=1.4.0
