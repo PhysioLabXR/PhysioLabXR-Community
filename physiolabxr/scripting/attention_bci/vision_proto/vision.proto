@@ -4,52 +4,43 @@ package vision;
 import "google/protobuf/empty.proto";
 
 service Vision {
-  // 1) Analyze Wingman images/metadata -> dict: ID-> confidence level
-  rpc ProcessWingmanCamera (ProcessWingmanCameraRequest) returns (ProcessWingmanCameraReply) {}
+  // 1) Analyze Wingman images/metadata -> dict: item_id -> posterior score
+  rpc ProcessWingmanCamera(ProcessWingmanCameraRequest) returns (ProcessWingmanCameraReply) {}
 
-  // 2) Analyze Fixation images/metadata -> dict: ID-> confidence level
-  rpc ProcessFixationCamera (ProcessFixationCameraRequest) returns (ProcessFixationCameraReply) {}
+  // 2) Analyze Fixation images/metadata -> dict: item_id -> posterior score
+  rpc ProcessFixationCamera(ProcessFixationCameraRequest) returns (ProcessFixationCameraReply) {}
 
-  // 3) Fire-and-forget integer push (no return body)
-  rpc OnBlockStart (OnBlockStartRequest) returns (google.protobuf.Empty) {}
+  // 2.5) Lightweight poll: Unity asks for current scores for a set of active item IDs
+  rpc GetPredictions(GetPredictionsRequest) returns (GetPredictionsReply) {}
 
-  // 4) Fire-and-forget gaze frame (no return body)
+  // 3) Block/session metadata
+  rpc OnBlockStart(OnBlockStartRequest) returns (google.protobuf.Empty) {}
+
+  // 4) Deprecated: long-gaze is handled internally by a background poller
   rpc GazeFrame(GazeFrameRequest) returns (google.protobuf.Empty);
 
-  // 5) Fire-and-forget label target (no return body)
+  // 5) Explicit shot event from Unity
   rpc LabelTarget(LabelTargetRequest) returns (google.protobuf.Empty);
 }
 
-
-
-
 message ProcessWingmanCameraRequest {
-  double  timestamp_ms     = 1;
-
-  bytes  color_image      = 2;   // e.g., img colorData
-  bytes  depth_image      = 3;   // e.g., img depthData
-
-  // Extra context from your ZMQ payload
-  string bbox_json        = 4;   // your bboxJson
-
+  double timestamp_ms = 1;
+  bytes color_image = 2;
+  bytes depth_image = 3;
+  string bbox_json = 4;
 }
 
 message ProcessWingmanCameraReply {
   map<int32, float> id_scores = 1;
 }
 
-
-
-
 message ProcessFixationCameraRequest {
-  double  timestamp_ms     = 1;
+  double timestamp_ms = 1;
+  bytes color_image = 2;
+  bytes depth_image = 3;
+  string bbox_json = 4;
 
-  bytes  color_image      = 2;   // e.g., img colorData
-  bytes  depth_image      = 3;   // e.g., img depthData
-
-  // Extra context from your ZMQ payload
-  string bbox_json        = 4;   // your bboxJson
-
+  // Kept as useful per-frame context even though long-gaze is handled elsewhere now
   bytes gaze_item_index_dtn = 5;
   bytes current_screen_location_bytes = 6;
 }
@@ -58,16 +49,23 @@ message ProcessFixationCameraReply {
   map<int32, float> id_scores = 1;
 }
 
+message GetPredictionsRequest {
+  repeated int32 item_ids = 1;
+}
+
+message GetPredictionsReply {
+  map<int32, float> id_scores = 1;
+}
 
 message OnBlockStartRequest {
   string participant_id = 1;
   int32 study = 2;
-  int32 block_idx = 3;  // this is the block index, in Unity this is called block id
-  int32 block_marker = 4;  // this indicate the type of the block
+  int32 block_idx = 3;
+  int32 block_marker = 4;
   int32 difficulty = 5;
 }
 
-message GazeFrameRequest{
+message GazeFrameRequest {
   map<int32, int32> id_gazed = 1;
 }
 
