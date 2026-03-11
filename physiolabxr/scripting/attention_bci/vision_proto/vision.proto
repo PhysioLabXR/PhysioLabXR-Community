@@ -21,6 +21,12 @@ service Vision {
 
   // 5) Explicit shot event from Unity
   rpc LabelTarget(LabelTargetRequest) returns (google.protobuf.Empty);
+
+  // 6) Respawn target event from Unity
+  rpc Respawn(RespawnRequest) returns (google.protobuf.Empty);
+
+  // 7) Silent target switch from Unity
+  rpc SilentTargetSwitch(SilentTargetSwitchRequest) returns (google.protobuf.Empty);
 }
 
 message ProcessWingmanCameraRequest {
@@ -70,6 +76,21 @@ message GazeFrameRequest {
 }
 
 message LabelTargetRequest {
-  int32 idx = 1;
-  int32 dtn = 2;
+  double timestamp = 1;
+  int32 idx = 2;
+  int32 dtn = 3;
+}
+
+message RespawnRequest{
+  double timestamp = 1;
+  int32 idx = 2;
+  int32 dtn = 3;
+  int32 catalog_idx = 4;
+}
+
+message SilentTargetSwitchRequest{
+  double timestamp = 1;
+  int32 first_target_catalog_idx = 2;
+  int32 second_target_catalog_idx = 3;
+  repeated int32 second_target_item_indices = 4;
 }

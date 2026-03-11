@@ -45,6 +45,11 @@ class VisionStub(object):
                 request_serializer=vision__pb2.ProcessFixationCameraRequest.SerializeToString,
                 response_deserializer=vision__pb2.ProcessFixationCameraReply.FromString,
                 _registered_method=True)
+        self.GetPredictions = channel.unary_unary(
+                '/vision.Vision/GetPredictions',
+                request_serializer=vision__pb2.GetPredictionsRequest.SerializeToString,
+                response_deserializer=vision__pb2.GetPredictionsReply.FromString,
+                _registered_method=True)
         self.OnBlockStart = channel.unary_unary(
                 '/vision.Vision/OnBlockStart',
                 request_serializer=vision__pb2.OnBlockStartRequest.SerializeToString,
@@ -60,41 +65,72 @@ class VisionStub(object):
                 request_serializer=vision__pb2.LabelTargetRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
+        self.Respawn = channel.unary_unary(
+                '/vision.Vision/Respawn',
+                request_serializer=vision__pb2.RespawnRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                _registered_method=True)
+        self.SilentTargetSwitch = channel.unary_unary(
+                '/vision.Vision/SilentTargetSwitch',
+                request_serializer=vision__pb2.SilentTargetSwitchRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                _registered_method=True)
 
 
 class VisionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def ProcessWingmanCamera(self, request, context):
-        """1) Analyze Wingman images/metadata -> dict: ID-> confidence level
+        """1) Analyze Wingman images/metadata -> dict: item_id -> posterior score
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ProcessFixationCamera(self, request, context):
-        """2) Analyze Fixation images/metadata -> dict: ID-> confidence level
+        """2) Analyze Fixation images/metadata -> dict: item_id -> posterior score
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPredictions(self, request, context):
+        """2.5) Lightweight poll: Unity asks for current scores for a set of active item IDs
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def OnBlockStart(self, request, context):
-        """3) Fire-and-forget integer push (no return body)
+        """3) Block/session metadata
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GazeFrame(self, request, context):
-        """4) Fire-and-forget gaze frame (no return body)
+        """4) Deprecated: long-gaze is handled internally by a background poller
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def LabelTarget(self, request, context):
-        """5) Fire-and-forget label target (no return body)
+        """5) Explicit shot event from Unity
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Respawn(self, request, context):
+        """6) Respawn target event from Unity
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SilentTargetSwitch(self, request, context):
+        """7) Silent target switch from Unity
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -113,6 +149,11 @@ def add_VisionServicer_to_server(servicer, server):
                     request_deserializer=vision__pb2.ProcessFixationCameraRequest.FromString,
                     response_serializer=vision__pb2.ProcessFixationCameraReply.SerializeToString,
             ),
+            'GetPredictions': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPredictions,
+                    request_deserializer=vision__pb2.GetPredictionsRequest.FromString,
+                    response_serializer=vision__pb2.GetPredictionsReply.SerializeToString,
+            ),
             'OnBlockStart': grpc.unary_unary_rpc_method_handler(
                     servicer.OnBlockStart,
                     request_deserializer=vision__pb2.OnBlockStartRequest.FromString,
@@ -126,6 +167,16 @@ def add_VisionServicer_to_server(servicer, server):
             'LabelTarget': grpc.unary_unary_rpc_method_handler(
                     servicer.LabelTarget,
                     request_deserializer=vision__pb2.LabelTargetRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'Respawn': grpc.unary_unary_rpc_method_handler(
+                    servicer.Respawn,
+                    request_deserializer=vision__pb2.RespawnRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'SilentTargetSwitch': grpc.unary_unary_rpc_method_handler(
+                    servicer.SilentTargetSwitch,
+                    request_deserializer=vision__pb2.SilentTargetSwitchRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
@@ -183,6 +234,33 @@ class Vision(object):
             '/vision.Vision/ProcessFixationCamera',
             vision__pb2.ProcessFixationCameraRequest.SerializeToString,
             vision__pb2.ProcessFixationCameraReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPredictions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/vision.Vision/GetPredictions',
+            vision__pb2.GetPredictionsRequest.SerializeToString,
+            vision__pb2.GetPredictionsReply.FromString,
             options,
             channel_credentials,
             insecure,
@@ -263,6 +341,60 @@ class Vision(object):
             target,
             '/vision.Vision/LabelTarget',
             vision__pb2.LabelTargetRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Respawn(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/vision.Vision/Respawn',
+            vision__pb2.RespawnRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SilentTargetSwitch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/vision.Vision/SilentTargetSwitch',
+            vision__pb2.SilentTargetSwitchRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
