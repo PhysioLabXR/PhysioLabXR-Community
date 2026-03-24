@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj": {}
+    "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj": {}
   },
   "projects": {
-    "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj": {
+    "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj",
+        "projectUniqueName": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj",
         "projectName": "tmpGrpcTools",
-        "projectPath": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\tmpGrpcTools.csproj",
-        "packagesPath": "C:\\Users\\LabUser\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\LabUser\\PycharmProjects\\PhysioLabXR-Community\\tmpGrpcTools\\obj\\",
+        "projectPath": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\tmpGrpcTools.csproj",
+        "packagesPath": "C:\\Users\\Seasonhe\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Seasonhe\\Documents\\PhysioLabXR\\tmpGrpcTools\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\LabUser\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Seasonhe\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -46,7 +52,7 @@
           "dependencies": {
             "Grpc.Tools": {
               "target": "Package",
-              "version": "[2.70.0, )"
+              "version": "[2.76.0, )"
             }
           },
           "imports": [
@@ -65,7 +71,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
