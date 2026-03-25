@@ -17,6 +17,9 @@ class DataProcessorType(Enum):
     RealtimeNotch = 'RealtimeNotch'
     RealtimeButterBandpass = 'RealtimeButterBandpass'
     RealtimeVrms = 'RealtimeVrms'
+    RealtimeAvgRef = 'RealtimeAvgRef'
+    RealtimeICAEogProxy = 'RealtimeICAEogProxy'
+    RealtimeBadChannelInterp = 'RealtimeBadChannelInterp'
 
 class DataProcessor:
     def __init__(self, data_processor_type: DataProcessorType):
@@ -38,33 +41,89 @@ class DataProcessor:
     def activate_data_processor(self):
         pass
 
-# class IIRFilter(DataProcessor):
-#
-#     def __init__(self):
-#         super().__init__()
-#         self.a = None
-#         self.b = None
-#         self.x_tap = None
-#         self.y_tap = None
-#
-#     def process_sample(self, data):
-#         # perform realtime filter with tap
-#
-#         # push x
-#         self.x_tap[:, 1:] = self.x_tap[:, : -1]
-#         self.x_tap[:, 0] = data
-#         # push y
-#         self.y_tap[:, 1:] = self.y_tap[:, : -1]
-#         # calculate new y
-#         self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
-#                            np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
-#
-#         data = self.y_tap[:, 0]
-#         return data
-#
-#     def reset_tap(self):
-#         self.x_tap.fill(0)
-#         self.y_tap.fill(0)
+
+class RealtimeBadChannelInterp(DataProcessor):
+    """
+    Replaces bad channels with the mean of their designated neighbor channels,
+    in-place on every buffer update.  Should be the FIRST processor in the chain
+    so downstream DSP (avg-ref, ICA, …) never sees the bad data.
+
+    Parameters
+    ----------
+    channel_num : int
+        Total number of channels in the incoming stream.
+    bad_channels : list[int]
+        Indices of channels to interpolate (absolute indices in the stream).
+    neighbors : dict[int, list[int]] | None
+        Optional mapping from each bad channel index to the list of channel
+        indices to average for interpolation.
+        If None (or a bad channel is missing from the dict), defaults to every
+        channel that is NOT itself in bad_channels.
+    """
+
+    def __init__(
+            self,
+            channel_num: int,
+            bad_channels: list,
+            neighbors: dict = None,
+    ):
+        super().__init__(DataProcessorType.RealtimeBadChannelInterp)
+        self.channel_num = int(channel_num)
+        self.bad_channels = list(bad_channels)
+
+        all_ch = list(range(self.channel_num))
+        good_default = [c for c in all_ch if c not in self.bad_channels]
+
+        # Build neighbor arrays once so process_buffer is fast
+        # _neighbors[bad_ch] = np.array of neighbor indices
+        self._neighbors: dict[int, np.ndarray] = {}
+        for bc in self.bad_channels:
+            if neighbors and bc in neighbors and len(neighbors[bc]) > 0:
+                nbrs = [c for c in neighbors[bc] if c != bc]
+            else:
+                nbrs = good_default
+            if len(nbrs) == 0:
+                raise ValueError(
+                    f"Bad channel {bc} has no valid neighbors to interpolate from."
+                )
+            self._neighbors[bc] = np.asarray(nbrs, dtype=int)
+
+        if self.bad_channels:
+            print(
+                f"[RealtimeBadChannelInterp] bad_channels={self.bad_channels} | "
+                f"neighbors={{ {', '.join(f'{bc}: {list(self._neighbors[bc])}' for bc in self.bad_channels)} }}"
+            )
+        else:
+            print("[RealtimeBadChannelInterp] no bad channels configured — pass-through.")
+
+    # reset_tap is a no-op: interpolation is memoryless
+    def reset_tap(self):
+        pass
+
+    def process_buffer(self, data: np.ndarray) -> np.ndarray:
+        """
+        data : np.ndarray, shape (channels, time)
+        Returns a copy with bad channels replaced by the mean of their neighbors.
+        """
+        if not self.bad_channels:
+            return data
+
+        out = np.array(data, dtype=np.float32)  # always copy; don't mutate upstream data
+        for bc in self.bad_channels:
+            nbr_idx = self._neighbors[bc]
+            out[bc, :] = np.mean(out[nbr_idx, :], axis=0)
+        return out
+
+    def process_sample(self, data: np.ndarray) -> np.ndarray:
+        """Single-sample fallback (channels,)."""
+        if not self.bad_channels:
+            return data
+        out = np.array(data, dtype=np.float32)
+        for bc in self.bad_channels:
+            nbr_idx = self._neighbors[bc]
+            out[bc] = np.mean(out[nbr_idx])
+        return out
+
 
 class RealtimeNotch(DataProcessor):
     def __init__(self, w0=60, Q=20, fs=250, channel_num=8):
@@ -78,17 +137,11 @@ class RealtimeNotch(DataProcessor):
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
     def process_sample(self, data):
-        # perform realtime filter with tap
-
-        # push x
         self.x_tap[:, 1:] = self.x_tap[:, : -1]
         self.x_tap[:, 0] = data
-        # push y
         self.y_tap[:, 1:] = self.y_tap[:, : -1]
-        # calculate new y
         self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
                            np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
-
         data = self.y_tap[:, 0]
         return data
 
@@ -110,17 +163,11 @@ class RealtimeButterBandpass(DataProcessor):
         self.y_tap = np.zeros((self.channel_num, len(self.a)))
 
     def process_sample(self, data):
-        # perform realtime filter with tap
-
-        # push x
         self.x_tap[:, 1:] = self.x_tap[:, : -1]
         self.x_tap[:, 0] = data
-        # push y
         self.y_tap[:, 1:] = self.y_tap[:, : -1]
-        # calculate new y
         self.y_tap[:, 0] = np.sum(np.multiply(self.x_tap, self.b), axis=1) - \
                            np.sum(np.multiply(self.y_tap[:, 1:], self.a[1:]), axis=1)
-
         data = self.y_tap[:, 0]
         return data
 
@@ -137,7 +184,7 @@ class RealtimeButterBandpass(DataProcessor):
 
 
 class RealtimeVrms(DataProcessor):
-    def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):  # interval in ms
+    def __init__(self, fs=250, channel_num=8, interval_ms=250, offset_ms=0):
         super().__init__(data_processor_type=DataProcessorType.RealtimeVrms)
         self.fs = fs
         self.channel_num = channel_num
@@ -146,28 +193,14 @@ class RealtimeVrms(DataProcessor):
         self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
         self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
 
-    # def init_buffer(self):
-    #     self.data_buffer_size = round(self.fs * self.interval_ms * 0.001)
-    #     self.data_buffer = np.zeros((self.channel_num, self.data_buffer_size))
-
     def process_sample(self, data):
         self.data_buffer[:, 1:] = self.data_buffer[:, : -1]
         self.data_buffer[:, 0] = data
         vrms = np.sqrt(1 / self.data_buffer_size * np.sum(np.square(self.data_buffer), axis=1))
-        # vrms = np.mean(self.data_buffer, axis=1)
-        # print(vrms)
         return vrms
 
     def reset_tap(self):
         self.data_buffer.fill(0)
-
-
-class DataProcessorType(Enum):
-    RealtimeNotch = 'RealtimeNotch'
-    RealtimeButterBandpass = 'RealtimeButterBandpass'
-    RealtimeVrms = 'RealtimeVrms'
-    RealtimeAvgRef = 'RealtimeAvgRef'
-    RealtimeICAEogProxy = 'RealtimeICAEogProxy'
 
 
 class RealtimeAvgRef(DataProcessor):
@@ -203,11 +236,11 @@ class RealtimeICAEogProxy(DataProcessor):
             self,
             fs: int,
             channel_num: int,
-            eeg_picks,                        # NEW: ICA only on EEG
+            eeg_picks,
             n_components: int = 20,
             fit_duration_s: float = 30.0,
-            fp_pair=(0, 1),                   # NEW: (Fp1, Fp2) indices in full stream
-            f7f8_pair=(2, 3),                 # NEW: (F7, F8) indices in full stream
+            fp_pair=(0, 1),
+            f7f8_pair=(2, 3),
             blink_z_thresholds=(3.0, 2.75, 2.5, 2.25, 2.0),
             horiz_z_thresholds=(2.5, 2.25, 2.0, 1.75, 1.5),
             random_state: int = 42,
@@ -259,19 +292,16 @@ class RealtimeICAEogProxy(DataProcessor):
         self._calib_n = min(self.fit_samples, self._calib_n + n)
 
     def _fit(self):
-        X = self._calib.T  # (T, C_eeg)
+        X = self._calib.T
         ica = FastICA(
             n_components=self.n_components,
             random_state=self.random_state,
             max_iter=self.max_iter,
             whiten="unit-variance",
         )
-        S = ica.fit_transform(X)  # (T, K)
+        S = ica.fit_transform(X)
 
-        # Build proxies from calibration data (FULL-stream indices mapped into EEG space)
-        # We need the EEG-calib versions of those channels:
         def _eeg_rel(full_idx: int) -> int:
-            # find where full_idx sits inside eeg_picks
             hits = np.where(self.eeg_picks == full_idx)[0]
             if hits.size == 0:
                 raise ValueError(f"Channel idx {full_idx} not in eeg_picks")
@@ -282,9 +312,9 @@ class RealtimeICAEogProxy(DataProcessor):
         f7  = self._calib[_eeg_rel(self.f7_idx),  :].astype(np.float64)
         f8  = self._calib[_eeg_rel(self.f8_idx),  :].astype(np.float64)
 
-        frontal_ref = 0.5 * (fp1 + fp2)            # matches your offline
-        hL = f7 - frontal_ref                      # F7 - frontal_ref
-        hR = f8 - frontal_ref                      # F8 - frontal_ref
+        frontal_ref = 0.5 * (fp1 + fp2)
+        hL = f7 - frontal_ref
+        hR = f8 - frontal_ref
 
         K = S.shape[1]
         corr_fp1 = np.zeros((K,), dtype=np.float64)
@@ -302,7 +332,6 @@ class RealtimeICAEogProxy(DataProcessor):
         def _z(c):
             return (c - c.mean()) / (c.std() + 1e-12)
 
-        # mimic your offline: pick *all* comps that pass threshold (union) and break on first threshold that yields any
         blink_ex = []
         for thr in self.blink_z_thresholds:
             cand = set(np.where(_z(corr_fp1) >= thr)[0].tolist()) | set(np.where(_z(corr_fp2) >= thr)[0].tolist())
@@ -323,7 +352,6 @@ class RealtimeICAEogProxy(DataProcessor):
 
         GREEN = "\033[92m"
         RESET = "\033[0m"
-
         print(
             f"{GREEN}[RealtimeICAEogProxy] fitted: exclude={self.exclude} "
             f"(blink max={max(corr_fp1.max(), corr_fp2.max()):.3f}, "
@@ -337,7 +365,7 @@ class RealtimeICAEogProxy(DataProcessor):
         if not self._fitted:
             self._append_calib(x_eeg)
             if self._calib_n >= self.fit_samples:
-                self._fit()   # (still blocking; if you want I’ll give you the threaded version)
+                self._fit()
             return data
 
         if self._ica is None or len(self.exclude) == 0:
@@ -364,6 +392,8 @@ def get_processor_class(data_processor_type):
         return RealtimeAvgRef
     elif data_processor_type == DataProcessorType.RealtimeICAEogProxy:
         return RealtimeICAEogProxy
+    elif data_processor_type == DataProcessorType.RealtimeBadChannelInterp:
+        return RealtimeBadChannelInterp
 
 
 if __name__ == '__main__':
