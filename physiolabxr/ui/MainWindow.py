@@ -4,7 +4,8 @@ import webbrowser
 from typing import Dict
 
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtGui import QKeyEvent, QKeySequence, QShortcutEvent
 from PyQt6.QtWidgets import QMessageBox, QDialogButtonBox
 
 from physiolabxr.configs.GlobalSignals import GlobalSignals
@@ -38,7 +39,7 @@ from physiolabxr.ui.RecordingsTab import RecordingsTab
 from physiolabxr.ui.SettingsWidget import SettingsWidget
 from physiolabxr.ui.ReplayTab import ReplayTab
 from physiolabxr.utils.buffers import DataBuffer
-from physiolabxr.utils.ui_utils import another_window
+from physiolabxr.utils.ui_utils import another_window, ShortCutType
 from physiolabxr.ui.dialogs import dialog_popup
 from physiolabxr.ui.DeviceWidget import DeviceWidget
 
@@ -144,6 +145,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # notification pane
         self.notification_panel = NotificationPane(self)
+
+        # shortcut setup
+        QtWidgets.QApplication.instance().installEventFilter(self)
+        self.shortcut_ids = {
+            self.grabShortcut(QKeySequence('Alt+Tab'), context=Qt.ShortcutContext.ApplicationShortcut): ShortCutType.switch, 
+            self.grabShortcut(QKeySequence('Alt+D'), context=Qt.ShortcutContext.ApplicationShortcut): ShortCutType.delete,
+            self.grabShortcut(QKeySequence('Alt+S'), context=Qt.ShortcutContext.ApplicationShortcut): ShortCutType.start,
+            self.grabShortcut(QKeySequence('Alt+P'), context=Qt.ShortcutContext.ApplicationShortcut): ShortCutType.pop
+            }
+    
 
 
         # # fmri widget
@@ -519,3 +530,45 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def adjust_notification_panel_location(self):
         self.notification_panel.move(self.width() - self.notification_panel.width() - 9, self.height() - self.notification_panel.height() - self.recording_file_size_label.height() - 12)  # substract 64 to account for margin
+
+    def eventFilter(self, source, event):
+        if event.type() == QKeyEvent.Type.KeyRelease:
+            if event.key() == Qt.Key.Key_Alt:
+                for widget in self.stream_widgets.values():
+                    if widget.show_border:
+                        widget.show_border = False
+                        widget.update()
+                        return True  
+        return super(MainWindow, self).eventFilter(source, event)
+
+    def event(self, event):
+        if isinstance(event, QShortcutEvent):
+            shortcut = self.shortcut_ids.get(event.shortcutId())
+            widgests = list(self.stream_widgets.values())[::-1]
+            index = next((i for i, widget in enumerate(widgests) if widget.hasFocus()), -1)
+            match shortcut:
+                case ShortCutType.switch:
+                    widgests[index].show_border = False
+                    widgests[index].update()
+                    index = (index+1)%len(widgests)
+                    if widgests[index].is_popped:
+                        widgests[index].activateWindow()
+                    else:
+                        self.activateWindow()
+                    widgests[index].show_border = True
+                    widgests[index].update()
+                    widgests[index].setFocus()
+                case ShortCutType.delete:
+                    if widgests[index].hasFocus():
+                        widgests[index].try_close()
+                case ShortCutType.start:
+                    if widgests[index].hasFocus():
+                        widgests[index].start_stop_stream_btn_clicked()
+                case ShortCutType.pop:
+                    if widgests[index].hasFocus():
+                        if widgests[index].is_popped:
+                            widgests[index].dock_window()
+                        else:
+                            widgests[index].pop_window()
+                    widgests[index].setFocus()
+        return super().event(event)
