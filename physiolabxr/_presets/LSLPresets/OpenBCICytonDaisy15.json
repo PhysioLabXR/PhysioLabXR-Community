@@ -11,7 +11,7 @@
     "Fz",
     "F4",
     "F8",
-    "Unused",
+    "O2",
     "C3",
     "Cz",
     "C4",
@@ -19,7 +19,7 @@
     "Pz",
     "P4",
     "O1",
-    "O2",
+    "Unused",
     "X",
     "Y",
     "Z",
@@ -37,5 +37,5 @@
     "Marker"
   ],
   "NominalSamplingRate": 125,
-  "GroupInfo": [1, 17]
+  "GroupInfo": [1, 16,17,20]
 }

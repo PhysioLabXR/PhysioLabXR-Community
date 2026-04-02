@@ -3,24 +3,22 @@ import pickle
 
 from physiolabxr.utils.RNStream import RNStream
 
-my_directory = r'C:\Users\Haowe\Downloads\temp\0'
+my_file = r'C:\Data\Wingman\03_24_2026_12_04_40-Exp_wingman_us3_c-Sbj_43-Ssn_1.dats'
 
-def directory_dats_to_pickle_recursive(directory):
-    files_to_convert = []
-    for dirpath, dirnames, filenames in os.walk(directory):
-        for filename in filenames:
-            if filename.endswith('.dats'):
-                files_to_convert.append(os.path.join(dirpath, filename))
 
-    converted_file_paths = [x.replace('.dats', '.p') for x in files_to_convert]
+def single_dats_to_pickle(file_path):
+    if not file_path.endswith('.dats'):
+        print(f"File {file_path} is not a .dats file.")
+        return
 
-    for i, (f, fc) in enumerate(zip(files_to_convert, converted_file_paths)):
-        print('Working on file {} of {}'.format(i + 1, len(files_to_convert)))
-        test_rns = RNStream(f)
-        reloaded_data = test_rns.stream_in(jitter_removal=False, ignore_stream=['monitor1', '1'])
-        with open(fc, 'wb') as outfile:
-            pickle.dump(reloaded_data, outfile)
+    converted_file_path = file_path.replace('.dats', '.p')
+    print('Working on file:', file_path)
+    test_rns = RNStream(file_path)
+    reloaded_data = test_rns.stream_in(jitter_removal=False, ignore_stream=['monitor1', '1'])
+    with open(converted_file_path, 'wb') as outfile:
+        pickle.dump(reloaded_data, outfile)
+    print('File converted to:', converted_file_path)
 
 
 if __name__ == '__main__':
-    directory_dats_to_pickle_recursive(my_directory)
+    single_dats_to_pickle(my_file)

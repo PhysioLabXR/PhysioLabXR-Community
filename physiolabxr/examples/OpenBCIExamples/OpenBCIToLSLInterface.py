@@ -4,6 +4,268 @@ from pylsl import StreamInfo, StreamOutlet
 import serial
 from serial.tools import list_ports
 
+import numpy as np
+from scipy.signal import butter, iirnotch, lfilter, lfilter_zi, sosfilt, sosfilt_zi
+
+
+REVE_CHANNEL_NAMES = (
+    "Fp1", "Fp2", "F7", "F3", "Fz",
+    "F4", "F8", "C3", "Cz", "C4",
+    "P3", "Pz", "P4", "O1", "O2",
+)
+
+MIDLINE_SOURCE_MAP = {
+    "Fz": ("F3", "F4"),
+    "Cz": ("C3", "C4"),
+    "Pz": ("P3", "P4"),
+}
+
+FRONTAL_CHANNELS = {"Fp1", "Fp2", "F7", "F3", "Fz", "F4", "F8"}
+POSTERIOR_CHANNELS = {"P3", "Pz", "P4", "O1", "O2"}
+
+
+def normalize_channel_label(value):
+    text = str(value or "").strip().upper()
+    return "".join(character for character in text if character.isalnum())
+
+
+def common_average_reference(samples):
+    if samples.ndim != 2 or samples.shape[0] < 2:
+        return samples
+    return samples - np.mean(samples, axis=0, keepdims=True)
+
+
+def robust_clip_channels(samples, n_sigmas=6.0):
+    clipped = np.asarray(samples, dtype=float).copy()
+    if clipped.ndim != 2 or clipped.shape[-1] == 0:
+        return clipped.astype(np.float32, copy=False)
+
+    for idx in range(clipped.shape[0]):
+        channel = clipped[idx]
+        finite_values = channel[np.isfinite(channel)]
+        if finite_values.size < 8:
+            continue
+
+        median = float(np.median(finite_values))
+        mad = float(np.median(np.abs(finite_values - median)))
+        sigma = 1.4826 * mad
+        if sigma <= 0:
+            continue
+
+        limit = n_sigmas * sigma
+        clipped[idx] = np.clip(channel, median - limit, median + limit)
+
+    return clipped.astype(np.float32, copy=False)
+
+
+class RealTimeEegPreprocessor:
+    def __init__(
+        self,
+        *,
+        sampling_rate,
+        raw_eeg_labels,
+        low_hz=1.0,
+        high_hz=40.0,
+        line_noise_hz=60.0,
+        robust_clip_sigma=6.0,
+        frontal_artifact_z_threshold=3.25,
+        frontal_regression_strength=0.25,
+        artifact_smoothing_sec=0.08,
+        max_artifact_attenuation=0.30,
+    ):
+        self.sampling_rate = float(sampling_rate)
+        self.low_hz = float(low_hz)
+        self.high_hz = float(high_hz)
+        self.line_noise_hz = float(line_noise_hz)
+        self.robust_clip_sigma = float(robust_clip_sigma)
+        self.frontal_artifact_z_threshold = float(frontal_artifact_z_threshold)
+        self.frontal_regression_strength = float(frontal_regression_strength)
+        self.max_artifact_attenuation = float(max_artifact_attenuation)
+        self.project_specs = self._build_project_specs(raw_eeg_labels)
+        self.frontal_indices = tuple(
+            idx for idx, label in enumerate(REVE_CHANNEL_NAMES) if label in FRONTAL_CHANNELS
+        )
+        self.posterior_indices = tuple(
+            idx for idx, label in enumerate(REVE_CHANNEL_NAMES) if label in POSTERIOR_CHANNELS
+        )
+        self.artifact_kernel_len = max(int(round(float(artifact_smoothing_sec) * self.sampling_rate)), 1)
+
+        self.bandpass_sos = self._build_bandpass_sos()
+        self.bandpass_states = None
+        self.notch_coeffs = self._build_notch_coeffs()
+        self.notch_states = None
+
+    @staticmethod
+    def _build_project_specs(raw_eeg_labels):
+        label_to_idx = {
+            normalize_channel_label(label): idx
+            for idx, label in enumerate(raw_eeg_labels)
+        }
+        specs = []
+        for label in REVE_CHANNEL_NAMES:
+            key = normalize_channel_label(label)
+            if key in label_to_idx:
+                specs.append((label_to_idx[key],))
+                continue
+
+            source_labels = MIDLINE_SOURCE_MAP.get(label)
+            if source_labels is None:
+                raise RuntimeError(f"Cannot map required REVE channel `{label}` from raw OpenBCI labels.")
+            source_indices = []
+            for source_label in source_labels:
+                source_key = normalize_channel_label(source_label)
+                if source_key not in label_to_idx:
+                    raise RuntimeError(
+                        f"Cannot synthesize `{label}` because source channel `{source_label}` is missing."
+                    )
+                source_indices.append(label_to_idx[source_key])
+            specs.append(tuple(source_indices))
+        return tuple(specs)
+
+    def _build_bandpass_sos(self):
+        nyquist = self.sampling_rate / 2.0
+        high = min(self.high_hz, nyquist * 0.95)
+        low = max(self.low_hz, 0.01)
+        if low >= high:
+            return None
+        return butter(4, [low / nyquist, high / nyquist], btype="band", output="sos")
+
+    def _build_notch_coeffs(self):
+        nyquist = self.sampling_rate / 2.0
+        if self.line_noise_hz <= 0 or self.line_noise_hz >= nyquist * 0.95:
+            return None
+        if self.line_noise_hz >= self.high_hz:
+            return None
+        return iirnotch(self.line_noise_hz, 30.0, fs=self.sampling_rate)
+
+    def _project_chunk(self, board_frames, eeg_channel_indices):
+        eeg_chunk = np.asarray(board_frames[:, list(eeg_channel_indices)], dtype=np.float32)
+        projected = np.empty((eeg_chunk.shape[0], len(REVE_CHANNEL_NAMES)), dtype=np.float32)
+        for output_idx, spec in enumerate(self.project_specs):
+            if len(spec) == 1:
+                projected[:, output_idx] = eeg_chunk[:, spec[0]]
+            else:
+                projected[:, output_idx] = np.mean(eeg_chunk[:, list(spec)], axis=1)
+        return projected
+
+    def _initialize_filter_states(self, channel_first):
+        if self.bandpass_sos is not None and self.bandpass_states is None:
+            template = sosfilt_zi(self.bandpass_sos)
+            self.bandpass_states = [
+                template * float(channel_first[idx, 0])
+                for idx in range(channel_first.shape[0])
+            ]
+
+        if self.notch_coeffs is not None and self.notch_states is None:
+            b_coeffs, a_coeffs = self.notch_coeffs
+            template = lfilter_zi(b_coeffs, a_coeffs)
+            self.notch_states = [
+                template * float(channel_first[idx, 0])
+                for idx in range(channel_first.shape[0])
+            ]
+
+    def _apply_causal_filters(self, samples):
+        channel_first = np.asarray(samples, dtype=np.float32).T
+        if channel_first.ndim != 2 or channel_first.shape[1] == 0:
+            return np.asarray(samples, dtype=np.float32)
+
+        self._initialize_filter_states(channel_first)
+        filtered = np.empty_like(channel_first)
+        for idx in range(channel_first.shape[0]):
+            signal = channel_first[idx].astype(np.float32, copy=True)
+
+            if self.notch_coeffs is not None:
+                b_coeffs, a_coeffs = self.notch_coeffs
+                signal, self.notch_states[idx] = lfilter(
+                    b_coeffs,
+                    a_coeffs,
+                    signal,
+                    zi=self.notch_states[idx],
+                )
+
+            if self.bandpass_sos is not None:
+                signal, self.bandpass_states[idx] = sosfilt(
+                    self.bandpass_sos,
+                    signal,
+                    zi=self.bandpass_states[idx],
+                )
+
+            filtered[idx] = signal
+
+        filtered = common_average_reference(filtered)
+        filtered = robust_clip_channels(filtered, n_sigmas=self.robust_clip_sigma)
+        return filtered.T.astype(np.float32, copy=False)
+
+    def _smooth_artifact_weight(self, reference_z):
+        over_threshold = np.abs(reference_z) - self.frontal_artifact_z_threshold
+        if np.max(over_threshold) <= 0:
+            return np.zeros_like(reference_z, dtype=np.float32)
+
+        weight = np.clip(over_threshold / max(self.frontal_artifact_z_threshold, 1e-6), 0.0, 1.0)
+        kernel_len = self.artifact_kernel_len
+        if kernel_len > 1 and weight.size > 1:
+            kernel = np.hanning(kernel_len)
+            if np.allclose(kernel.sum(), 0.0):
+                kernel = np.ones(kernel_len, dtype=float)
+            kernel = kernel / np.sum(kernel)
+            pad = kernel_len // 2
+            padded = np.pad(weight, (pad, pad), mode="edge")
+            weight = np.convolve(padded, kernel, mode="same")[pad:-pad]
+        return np.clip(weight, 0.0, 1.0).astype(np.float32, copy=False)
+
+    def _attenuate_frontal_artifacts(self, samples):
+        cleaned = np.asarray(samples, dtype=np.float32).copy()
+        if cleaned.ndim != 2 or cleaned.shape[0] < 4 or not self.frontal_indices:
+            return cleaned
+
+        frontal_signal = np.mean(cleaned[:, self.frontal_indices], axis=1)
+        if self.posterior_indices:
+            posterior_signal = np.mean(cleaned[:, self.posterior_indices], axis=1)
+            artifact_reference = frontal_signal - posterior_signal
+        else:
+            artifact_reference = frontal_signal
+
+        median = float(np.median(artifact_reference))
+        mad = float(np.median(np.abs(artifact_reference - median)))
+        sigma = 1.4826 * mad
+        if sigma <= 1e-6:
+            sigma = float(np.std(artifact_reference)) + 1e-6
+
+        reference_centered = artifact_reference - median
+        reference_z = reference_centered / sigma
+        artifact_weight = self._smooth_artifact_weight(reference_z)
+        if np.max(artifact_weight) <= 1e-3:
+            return cleaned
+
+        weighted_reference = artifact_weight * reference_centered
+        reference_variance = float(np.dot(weighted_reference, weighted_reference)) + 1e-6
+        for channel_idx in range(cleaned.shape[1]):
+            channel = cleaned[:, channel_idx]
+            slope = float(np.dot(channel, weighted_reference) / reference_variance)
+            if channel_idx in self.frontal_indices:
+                spatial_scale = 0.70
+            elif channel_idx in self.posterior_indices:
+                spatial_scale = 0.12
+            else:
+                spatial_scale = 0.30
+            correction_gain = np.clip(
+                self.frontal_regression_strength * spatial_scale * artifact_weight,
+                0.0,
+                self.max_artifact_attenuation,
+            )
+            cleaned[:, channel_idx] = channel - (correction_gain * slope * reference_centered)
+
+        return cleaned
+
+    def process_chunk(self, board_frames, eeg_channel_indices):
+        if board_frames.size == 0:
+            return np.empty((0, len(REVE_CHANNEL_NAMES)), dtype=np.float32)
+
+        projected = self._project_chunk(board_frames, eeg_channel_indices)
+        filtered = self._apply_causal_filters(projected)
+        cleaned = self._attenuate_frontal_artifacts(filtered)
+        return cleaned.astype(np.float32, copy=False)
+
 
 class OpenBCIToLSLInterface:
     _BOARD_ALIASES = {
@@ -18,6 +280,7 @@ class OpenBCIToLSLInterface:
         self,
         stream_name,
         stream_type="EEG",
+        preprocessed_stream_name=None,
         serial_port="COM5",
         board_id=BoardIds.CYTON_BOARD.value,
         log=False,
@@ -37,13 +300,26 @@ class OpenBCIToLSLInterface:
 
         self.stream_name = stream_name
         self.stream_type = stream_type
+        self.preprocessed_stream_name = preprocessed_stream_name or f"{stream_name}_Preprocessed"
         self.board_id = self._resolve_board_id(board_id)
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
         self.board_descr = BoardShim.get_board_descr(self.board_id)
+        self.raw_channel_descriptors = self._build_channel_descriptors()
+        self.raw_eeg_labels = [label for label, _, channel_type in self.raw_channel_descriptors if channel_type == "EEG"]
+        self.raw_eeg_indices = tuple(
+            idx for idx, (_, _, channel_type) in enumerate(self.raw_channel_descriptors) if channel_type == "EEG"
+        )
         self.channel_count = 0
         self.info_eeg = None
         self.outlet_eeg = None
+        self.info_preprocessed_eeg = None
+        self.outlet_preprocessed_eeg = None
+        self.preprocessed_channel_count = len(REVE_CHANNEL_NAMES)
+        self.eeg_preprocessor = RealTimeEegPreprocessor(
+            sampling_rate=self.board_descr["sampling_rate"],
+            raw_eeg_labels=self.raw_eeg_labels,
+        )
 
         if log:
             BoardShim.enable_dev_board_logger()
@@ -171,6 +447,10 @@ class OpenBCIToLSLInterface:
         descriptors.append(("Marker", "marker", "MARKER"))
         return descriptors
 
+    @staticmethod
+    def _build_preprocessed_channel_descriptors():
+        return [(label, "microvolts", "EEG") for label in REVE_CHANNEL_NAMES]
+
     def start_sensor(self):
         self._assert_serial_port_accessible()
         try:
@@ -198,8 +478,12 @@ class OpenBCIToLSLInterface:
         if frames.size == 0:
             return frames
 
-        for frame in frames.T:
-            self.push_frame(frame)
+        raw_chunk = np.asarray(frames.T, dtype=np.float32)
+        self.push_chunk(raw_chunk)
+
+        preprocessed_chunk = self.eeg_preprocessor.process_chunk(raw_chunk, self.raw_eeg_indices)
+        if preprocessed_chunk.size:
+            self.push_preprocessed_chunk(preprocessed_chunk)
 
         return frames
 
@@ -234,7 +518,7 @@ class OpenBCIToLSLInterface:
         )
 
         chns = self.info_eeg.desc().append_child("channels")
-        channel_descriptors = self._build_channel_descriptors()
+        channel_descriptors = self.raw_channel_descriptors
         if len(channel_descriptors) != self.channel_count:
             raise RuntimeError(
                 f"Board description generated {len(channel_descriptors)} labels for a {self.channel_count}-channel stream."
@@ -249,6 +533,30 @@ class OpenBCIToLSLInterface:
         self.info_eeg.desc().append_child_value("manufacturer", "OpenBCI Inc.")
         self.outlet_eeg = StreamOutlet(self.info_eeg)
 
+        preprocessed_source_id = f"{source_id}_preprocessed"
+        self.info_preprocessed_eeg = StreamInfo(
+            name=self.preprocessed_stream_name,
+            type=stream_type,
+            channel_count=self.preprocessed_channel_count,
+            nominal_srate=nominal_srate,
+            channel_format=channel_format,
+            source_id=preprocessed_source_id,
+        )
+
+        preprocessed_channels = self.info_preprocessed_eeg.desc().append_child("channels")
+        for label, unit, channel_type in self._build_preprocessed_channel_descriptors():
+            ch = preprocessed_channels.append_child("channel")
+            ch.append_child_value("label", label)
+            ch.append_child_value("unit", unit)
+            ch.append_child_value("type", channel_type)
+
+        self.info_preprocessed_eeg.desc().append_child_value("manufacturer", "OpenBCI Inc.")
+        self.info_preprocessed_eeg.desc().append_child_value(
+            "preprocessing",
+            "realtime_bandpass_car_soft_ocular_suppression",
+        )
+        self.outlet_preprocessed_eeg = StreamOutlet(self.info_preprocessed_eeg)
+
         print(
             "--------------------------------------\n"
             "LSL Configuration:\n"
@@ -260,24 +568,42 @@ class OpenBCIToLSLInterface:
             f"      Sampling Rate: {nominal_srate}\n"
             f"      Channel Format: {channel_format}\n"
             f"      Source Id: {source_id}\n"
+            "  Stream 2:\n"
+            f"      Name: {self.preprocessed_stream_name}\n"
+            f"      Type: {stream_type}\n"
+            f"      Channel Count: {self.preprocessed_channel_count}\n"
+            f"      Sampling Rate: {nominal_srate}\n"
+            f"      Channel Format: {channel_format}\n"
+            f"      Source Id: {preprocessed_source_id}\n"
         )
 
-    def push_frame(self, samples):
+    def push_chunk(self, samples):
         if self.outlet_eeg is None:
             raise RuntimeError("LSL outlet is not ready. Call start_sensor() or create_lsl() first.")
 
-        if hasattr(samples, "tolist"):
-            samples = samples.tolist()
-        else:
-            samples = list(samples)
-
-        if len(samples) != self.channel_count:
+        array = np.asarray(samples, dtype=np.float32)
+        if array.ndim == 1:
+            array = array.reshape(1, -1)
+        if array.shape[1] != self.channel_count:
             raise ValueError(
-                f"LSL sample length mismatch: got {len(samples)} values, but the outlet expects {self.channel_count}. "
-                f"Check board_id (Cyton=0, Cyton+Daisy=2)."
+                f"Raw LSL chunk width mismatch: got {array.shape[1]} values, "
+                f"but the outlet expects {self.channel_count}."
             )
+        self.outlet_eeg.push_chunk(array.tolist())
 
-        self.outlet_eeg.push_sample(samples)
+    def push_preprocessed_chunk(self, samples):
+        if self.outlet_preprocessed_eeg is None:
+            raise RuntimeError("Preprocessed LSL outlet is not ready. Call start_sensor() or create_lsl() first.")
+
+        array = np.asarray(samples, dtype=np.float32)
+        if array.ndim == 1:
+            array = array.reshape(1, -1)
+        if array.shape[1] != self.preprocessed_channel_count:
+            raise ValueError(
+                f"Preprocessed LSL chunk width mismatch: got {array.shape[1]} values, "
+                f"but the outlet expects {self.preprocessed_channel_count}."
+            )
+        self.outlet_preprocessed_eeg.push_chunk(array.tolist())
 
     def info_print(self):
         print("Board Information:")
@@ -303,14 +629,15 @@ def run_test_lsl(openbci_interface):
     return True
 
 
-def main():
+def main(stream_name, stream_type, preprocessed_stream_name, serial_port, board_id, log, ring_buffer_size):
     openbci_interface = OpenBCIToLSLInterface(
-        stream_name="OpenBCI_Cyton_Daisy_15_Channels",
-        stream_type="EEG",
-        serial_port="COM4",
-        board_id="cyton+daisy",
-        log=False,
-        ring_buffer_size=45000,
+        stream_name=stream_name,
+        stream_type=stream_type,
+        preprocessed_stream_name=preprocessed_stream_name,
+        serial_port=serial_port,
+        board_id=board_id,
+        log=log,
+        ring_buffer_size=ring_buffer_size
     )
 
     try:
@@ -321,4 +648,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(
+        stream_name="OpenBCI_Cyton_Daisy_15_Channels",
+        stream_type="EEG",
+        preprocessed_stream_name="OpenBCI_Cyton_Daisy_15_Channels_Preprocessed",
+        serial_port="COM7",
+        board_id="cyton+daisy",
+        log=False,
+        ring_buffer_size=45000,
+    )
