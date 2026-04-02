@@ -1,0 +1,11 @@
+{
+  "StreamName":"MachineStateLSL",
+  "ChannelNames": [
+    "Spinning",
+    "Rpm",
+    "QuilLocked"
+  ],
+  "NominalSamplingRate": 75,
+  "GroupInfo": [3],
+  "DataType": "float32"
+}

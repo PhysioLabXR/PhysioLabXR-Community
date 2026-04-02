@@ -1,0 +1,10 @@
+{
+  "StreamName":"CLAdEventMarkerLSL",
+  "ChannelNames": [
+    "UnityTime",
+    "StepNumber"
+  ],
+  "NominalSamplingRate": 75,
+  "GroupInfo": [1,2],
+  "DataType": "float32"
+}

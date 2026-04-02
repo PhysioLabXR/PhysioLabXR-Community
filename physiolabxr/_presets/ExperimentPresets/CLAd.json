@@ -1,2 +1,2 @@
 {"ExperimentName": "CLAd",
-  "PresetStreamNames": [ "VarjoEyeTrackingLSL", "BAlert"]}
+  "PresetStreamNames": [ "VarjoEyeTrackingLSL", "OpenBCI_Cyton_Daisy_15_Channels", "CLAdEventMarkerLSL", "MachineStateLSL"]}

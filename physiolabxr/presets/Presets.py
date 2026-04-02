@@ -293,13 +293,17 @@ def _load_stream_presets(presets, dirty_presets):
                 warnings.warn(f'Failed to load preset {dirty_preset_path}. Ignoring it.')
                 continue
 
-            if category == PresetType.LSL.value or category == PresetType.ZMQ.value or category == PresetType.CUSTOM.value:
-                stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
-                presets.add_stream_preset(stream_preset_dict)
-            elif category == PresetType.EXPERIMENT.value:
-                presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
-            else:
-                raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
+            try:
+                if category == PresetType.LSL.value or category == PresetType.ZMQ.value or category == PresetType.CUSTOM.value:
+                    stream_preset_dict = preprocess_stream_preset(loaded_preset_dict, category)
+                    presets.add_stream_preset(stream_preset_dict)
+                elif category == PresetType.EXPERIMENT.value:
+                    presets.add_experiment_preset(loaded_preset_dict['ExperimentName'], loaded_preset_dict['PresetStreamNames'])
+                else:
+                    raise ValueError(f'unknown category {category} for preset {dirty_preset_path}')
+            except (TypeError, KeyError, ValueError) as error:
+                warnings.warn(f'Failed to load preset {dirty_preset_path}. Ignoring it. Error: {error}')
+                continue
 
 def preprocess_stream_preset(stream_preset_dict, category):
     """
@@ -482,9 +486,14 @@ class Presets(metaclass=Singleton):
                 preset_dict = {k: v for k, v in preset_dict.items() if not k.startswith('_')}  # don't load private variables
                 if 'stream_presets' in preset_dict.keys():
                     for key, value in preset_dict['stream_presets'].items():
-                        if PresetType.is_lsl_zmq_custom_preset(value['preset_type']):
-                            preset = StreamPreset(**value)
-                            preset_dict['stream_presets'][key] = preset
+                        try:
+                            if PresetType.is_lsl_zmq_custom_preset(value['preset_type']):
+                                preset = StreamPreset(**value)
+                                preset_dict['stream_presets'][key] = preset
+                        except (TypeError, KeyError, ValueError) as error:
+                            print(
+                                f"Cached stream preset {key} will not be loaded because it has invalid attributes: {error}"
+                            )
                         # elif PresetType.is_video_preset(value['preset_type']):  # video presets won't be loaded
                         #     preset = VideoPreset(**value)
                         #     preset_dict['stream_presets'][key] = preset

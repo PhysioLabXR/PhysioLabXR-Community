@@ -23,7 +23,7 @@ grpcio-tools
 av
 mss
 pytest~=8.0.0
-PyQt6-sip~=13.6.0
+PyQt6-sip
 protobuf~=6.32.0
 pytest-qt~=4.3.1
 PyAudio~=0.2.14
