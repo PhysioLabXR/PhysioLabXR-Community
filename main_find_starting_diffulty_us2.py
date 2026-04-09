@@ -75,6 +75,9 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     39: r"C:\Users\Season\Downloads\wingman_39_us1_ReNaSessionLog_03-17-2026-21-28-27.json",
     40: r"C:\Users\Season\Downloads\wingman_40_us1_ReNaSessionLog_03-18-2026-09-37-54.json",
     41: r"C:\Users\Season\Downloads\wingman_41_us1_ReNaSessionLog_03-18-2026-11-31-24.json",
+
+    42: r"C:\Users\Season\Downloads\wingman_42_us1_ReNaSessionLog_03-18-2026-13-43-36.json",
+
     43: r"C:\Users\Season\Downloads\wingman_43_us1_ReNaSessionLog_03-18-2026-16-47-54.json",
     45: r"C:\Users\Season\Downloads\wingman_45_us1_ReNaSessionLog_03-19-2026-19-39-08.json",
     46: r"C:\Users\Season\Downloads\wingman_46_us1_ReNaSessionLog_03-20-2026-12-48-48.json",
@@ -90,6 +93,7 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     58: r"ReNaSessionLog_03-29-2026-12-41-56.json",
     59: r"ReNaSessionLog_03-29-2026-15-50-51.json",
     60: r"ReNaSessionLog_03-29-2026-18-52-48.json",
+    61: r"C:\Users\Season\Downloads\wingman_61_us1_ReNaSessionLog_03-30-2026-19-48-09.json",
     62: r"C:\UnityProjects\ReNaSuite\Assets\Logs\ReNaSessionLog_03-31-2026-09-58-18.json"
 }
 
