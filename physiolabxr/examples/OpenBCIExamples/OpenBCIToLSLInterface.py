@@ -1,3 +1,6 @@
+from collections import deque
+import warnings
+
 import brainflow
 from brainflow.board_shim import BoardIds, BoardShim, BrainFlowInputParams
 from pylsl import StreamInfo, StreamOutlet
@@ -6,6 +9,14 @@ from serial.tools import list_ports
 
 import numpy as np
 from scipy.signal import butter, iirnotch, lfilter, lfilter_zi, sosfilt, sosfilt_zi
+from scipy.stats import kurtosis
+
+try:
+    from sklearn.decomposition import FastICA
+    from sklearn.exceptions import ConvergenceWarning
+except ImportError:
+    FastICA = None
+    ConvergenceWarning = Warning
 
 
 REVE_CHANNEL_NAMES = (
@@ -67,6 +78,16 @@ class RealTimeEegPreprocessor:
         low_hz=1.0,
         high_hz=40.0,
         line_noise_hz=60.0,
+        enable_ica=True,
+        ica_history_sec=20.0,
+        ica_fit_sec=10.0,
+        ica_refit_sec=10.0,
+        ica_max_iter=400,
+        ica_random_state=42,
+        ica_source_z_threshold=4.0,
+        ica_kurtosis_z_threshold=1.75,
+        ica_frontal_ratio_threshold=1.10,
+        ica_low_freq_ratio_threshold=0.50,
         robust_clip_sigma=6.0,
         frontal_artifact_z_threshold=3.25,
         frontal_regression_strength=0.25,
@@ -77,6 +98,13 @@ class RealTimeEegPreprocessor:
         self.low_hz = float(low_hz)
         self.high_hz = float(high_hz)
         self.line_noise_hz = float(line_noise_hz)
+        self.enable_ica = bool(enable_ica) and FastICA is not None
+        self.ica_max_iter = int(ica_max_iter)
+        self.ica_random_state = int(ica_random_state)
+        self.ica_source_z_threshold = float(ica_source_z_threshold)
+        self.ica_kurtosis_z_threshold = float(ica_kurtosis_z_threshold)
+        self.ica_frontal_ratio_threshold = float(ica_frontal_ratio_threshold)
+        self.ica_low_freq_ratio_threshold = float(ica_low_freq_ratio_threshold)
         self.robust_clip_sigma = float(robust_clip_sigma)
         self.frontal_artifact_z_threshold = float(frontal_artifact_z_threshold)
         self.frontal_regression_strength = float(frontal_regression_strength)
@@ -89,11 +117,25 @@ class RealTimeEegPreprocessor:
             idx for idx, label in enumerate(REVE_CHANNEL_NAMES) if label in POSTERIOR_CHANNELS
         )
         self.artifact_kernel_len = max(int(round(float(artifact_smoothing_sec) * self.sampling_rate)), 1)
+        history_seconds = max(float(ica_history_sec), float(ica_fit_sec))
+        max_history = max(int(round(history_seconds * self.sampling_rate)), 1)
+        self.ica_history = deque(maxlen=max_history)
+        self.fit_ica_sample_count = max(int(round(float(ica_fit_sec) * self.sampling_rate)), 256)
+        self.refit_ica_sample_count = max(int(round(float(ica_refit_sec) * self.sampling_rate)), 1)
+        self.samples_seen = 0
+        self.last_ica_fit_sample = None
+        self.ica_model = None
+        self.ica_component_mask = None
+        self.ica_source_limits = None
+        self.ica_ready_logged = False
 
         self.bandpass_sos = self._build_bandpass_sos()
         self.bandpass_states = None
         self.notch_coeffs = self._build_notch_coeffs()
         self.notch_states = None
+
+        if bool(enable_ica) and FastICA is None:
+            print("OpenBCIInterface: scikit-learn is unavailable, ICA preprocessing is disabled.")
 
     @staticmethod
     def _build_project_specs(raw_eeg_labels):
@@ -196,6 +238,119 @@ class RealTimeEegPreprocessor:
         filtered = robust_clip_channels(filtered, n_sigmas=self.robust_clip_sigma)
         return filtered.T.astype(np.float32, copy=False)
 
+    def _append_ica_history(self, samples):
+        if not self.enable_ica:
+            return
+
+        sample_array = np.asarray(samples, dtype=np.float32)
+        if sample_array.ndim != 2 or sample_array.shape[0] == 0:
+            return
+
+        self.samples_seen += int(sample_array.shape[0])
+        for row in sample_array:
+            self.ica_history.append(np.array(row, dtype=np.float32, copy=True))
+
+    def _fit_ica_if_needed(self):
+        if not self.enable_ica:
+            return
+        if len(self.ica_history) < self.fit_ica_sample_count:
+            return
+        if (
+            self.ica_model is not None
+            and self.last_ica_fit_sample is not None
+            and (self.samples_seen - self.last_ica_fit_sample) < self.refit_ica_sample_count
+        ):
+            return
+
+        fit_history = np.asarray(self.ica_history, dtype=np.float32)[-self.fit_ica_sample_count:]
+        n_channels = fit_history.shape[1]
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ConvergenceWarning)
+                ica_model = FastICA(
+                    n_components=n_channels,
+                    random_state=self.ica_random_state,
+                    max_iter=self.ica_max_iter,
+                    tol=5e-3,
+                    whiten="unit-variance",
+                )
+                sources = ica_model.fit_transform(fit_history)
+        except Exception as error:
+            print(f"OpenBCIInterface: ICA fit skipped because fitting failed: {error}")
+            return
+
+        source_scales = np.std(sources, axis=0) + 1e-6
+        source_kurtosis = kurtosis(sources, axis=0, fisher=False, bias=False, nan_policy="omit")
+        source_kurtosis = np.nan_to_num(source_kurtosis, nan=0.0, posinf=0.0, neginf=0.0)
+        kurtosis_z = (source_kurtosis - np.mean(source_kurtosis)) / (np.std(source_kurtosis) + 1e-6)
+        kurtosis_z = np.nan_to_num(kurtosis_z, nan=0.0, posinf=0.0, neginf=0.0)
+
+        spectra = np.abs(np.fft.rfft(sources, axis=0)) ** 2
+        freqs = np.fft.rfftfreq(sources.shape[0], d=1.0 / self.sampling_rate)
+        low_band_mask = (freqs >= 0.5) & (freqs <= 4.0)
+        workload_band_mask = (freqs >= 0.5) & (freqs <= min(self.high_hz, 25.0))
+        if low_band_mask.any() and workload_band_mask.any():
+            low_band_power = np.mean(spectra[low_band_mask, :], axis=0)
+            workload_band_power = np.mean(spectra[workload_band_mask, :], axis=0) + 1e-6
+            low_freq_ratio = low_band_power / workload_band_power
+        else:
+            low_freq_ratio = np.zeros(n_channels, dtype=float)
+
+        mixing = np.abs(np.asarray(ica_model.mixing_, dtype=float))
+        mixing = np.nan_to_num(mixing, nan=0.0, posinf=0.0, neginf=0.0)
+        frontal_indices = [idx for idx in self.frontal_indices if idx < mixing.shape[0]]
+        other_indices = [idx for idx in range(mixing.shape[0]) if idx not in frontal_indices]
+        frontal_strength = np.mean(mixing[frontal_indices, :], axis=0) if frontal_indices else np.ones(n_channels)
+        other_strength = np.mean(mixing[other_indices, :], axis=0) + 1e-6 if other_indices else 1.0
+        frontal_ratio = frontal_strength / other_strength
+        frontal_ratio = np.nan_to_num(frontal_ratio, nan=0.0, posinf=0.0, neginf=0.0)
+
+        component_mask = (
+            (
+                (np.abs(kurtosis_z) >= self.ica_kurtosis_z_threshold)
+                | (low_freq_ratio >= self.ica_low_freq_ratio_threshold)
+            )
+            & (frontal_ratio >= self.ica_frontal_ratio_threshold)
+        )
+
+        self.ica_model = ica_model
+        self.ica_component_mask = component_mask
+        self.ica_source_limits = self.ica_source_z_threshold * source_scales
+        self.last_ica_fit_sample = self.samples_seen
+        if not self.ica_ready_logged:
+            print(
+                "OpenBCIInterface: ICA is ready "
+                f"({n_channels} components, suppressing {int(component_mask.sum())} artifact components)."
+            )
+            self.ica_ready_logged = True
+        else:
+            print(
+                "OpenBCIInterface: ICA was refreshed "
+                f"(suppressing {int(component_mask.sum())} artifact components)."
+            )
+
+    def _apply_ica(self, samples):
+        if not self.enable_ica or self.ica_model is None:
+            return np.asarray(samples, dtype=np.float32)
+
+        dsp_samples = np.asarray(samples, dtype=np.float32)
+        try:
+            sources = self.ica_model.transform(dsp_samples)
+        except Exception:
+            return dsp_samples
+
+        if self.ica_component_mask is not None and self.ica_component_mask.any():
+            sources[:, self.ica_component_mask] = 0.0
+
+        if self.ica_source_limits is not None:
+            sources = np.clip(sources, -self.ica_source_limits, self.ica_source_limits)
+
+        try:
+            reconstructed = self.ica_model.inverse_transform(sources)
+        except Exception:
+            return dsp_samples
+        return np.array(reconstructed, dtype=np.float32, copy=False)
+
     def _smooth_artifact_weight(self, reference_z):
         over_threshold = np.abs(reference_z) - self.frontal_artifact_z_threshold
         if np.max(over_threshold) <= 0:
@@ -263,7 +418,10 @@ class RealTimeEegPreprocessor:
 
         projected = self._project_chunk(board_frames, eeg_channel_indices)
         filtered = self._apply_causal_filters(projected)
-        cleaned = self._attenuate_frontal_artifacts(filtered)
+        self._append_ica_history(filtered)
+        self._fit_ica_if_needed()
+        ica_cleaned = self._apply_ica(filtered)
+        cleaned = self._attenuate_frontal_artifacts(ica_cleaned)
         return cleaned.astype(np.float32, copy=False)
 
 
@@ -551,10 +709,12 @@ class OpenBCIToLSLInterface:
             ch.append_child_value("type", channel_type)
 
         self.info_preprocessed_eeg.desc().append_child_value("manufacturer", "OpenBCI Inc.")
-        self.info_preprocessed_eeg.desc().append_child_value(
-            "preprocessing",
-            "realtime_bandpass_car_soft_ocular_suppression",
+        preprocessing_tag = (
+            "realtime_bandpass_car_fastica_soft_ocular_suppression"
+            if self.eeg_preprocessor.enable_ica
+            else "realtime_bandpass_car_soft_ocular_suppression"
         )
+        self.info_preprocessed_eeg.desc().append_child_value("preprocessing", preprocessing_tag)
         self.outlet_preprocessed_eeg = StreamOutlet(self.info_preprocessed_eeg)
 
         print(
