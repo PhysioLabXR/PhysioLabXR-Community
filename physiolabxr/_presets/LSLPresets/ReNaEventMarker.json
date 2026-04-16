@@ -13,9 +13,11 @@
     "Likert",
     "FireEvent",
     "ShipHealth",
-    "DestroyEvent"
+    "DestroyEvent",
+    "SilentTargetSwitch",
+    "Respawned"
   ],
-  "GroupInfo":  [2,4,11],
+  "GroupInfo":  [2,4,11, 14],
   "NominalSamplingRate":  75,
   "DataType": "float32"
 }

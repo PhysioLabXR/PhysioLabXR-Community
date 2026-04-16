@@ -78,6 +78,8 @@ class RecordingsTab(QtWidgets.QWidget):
                                                       title='Warning', main_parent=self.parent, buttons=QDialogButtonBox.StandardButton.Ok)
             return
         self.save_path = self.generate_save_path()  # get a new save path
+        # remove \t from self.save_path if exists, as it can cause issues with file saving and opening
+        self.save_path = self.save_path.replace('\t', '')
 
         if not os.path.exists(os.path.dirname(self.save_path)):
             reply = dialog_popup(f'The directory {os.path.dirname(self.save_path)} does not exist. Do you want to create it?', title='Warning',
@@ -95,7 +97,6 @@ class RecordingsTab(QtWidgets.QWidget):
         stream_names = self.parent.get_added_stream_names()  # TODO allow user to select compression codec
         compression_codec_map = {s_name: (AppConfigs().video_compression if PresetType.is_video_preset(s_type) else DataCompressionPreset.RAW) for s_type, s_name in zip(stream_types, stream_names)}
         # compression_codec_map = {s_name: DataCompressionPreset.RAW for s_type, s_name in zip(stream_types, stream_names)}
-
         self.save_stream = RNStream(self.save_path,
                                     compression_codec_map)
         self.recording_buffer.clear_buffer()  # clear buffer

@@ -1,0 +1,24 @@
+{
+  "StreamName": "OpenBCI_Cyton_Daisy_15_Channels_Preprocessed",
+  "StreamType": "EEG",
+  "_Board_id": 2,
+  "ChannelNames": [
+    "Fp1",
+    "Fp2",
+    "F7",
+    "F3",
+    "Fz",
+    "F4",
+    "F8",
+    "C3",
+    "Cz",
+    "C4",
+    "P3",
+    "Pz",
+    "P4",
+    "O1",
+    "O2"
+  ],
+  "NominalSamplingRate": 125,
+  "GroupInfo": [15]
+}
