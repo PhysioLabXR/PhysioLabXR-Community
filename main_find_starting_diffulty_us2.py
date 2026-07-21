@@ -42,7 +42,7 @@ LOG_ROOT = r"C:\UnityProjects\ReNaSuite\Assets\Logs"
 #   Only add/uncomment people if they are here for US2
 PARTICIPANT_LOGS: Dict[int, str] = {
     4: "ReNaSessionLog_02-28-2026-12-19-44.json",
-    # 5:  "ReNaSessionLog_02-28-2026-14-13-20.json",
+    5:  "ReNaSessionLog_02-28-2026-14-13-20.json",
     6: "ReNaSessionLog_02-28-2026-15-32-56.json",
     8: "ReNaSessionLog_02-28-2026-19-24-30.json",
     9: "ReNaSessionLog_03-01-2026-13-59-23.json",
@@ -54,7 +54,7 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     15: "ReNaSessionLog_03-02-2026-18-20-30.json",
     16: "ReNaSessionLog_03-04-2026-18-10-44.json",
     # 17: "ReNaSessionLog_03-05-2026-21-57-42.json",
-    18: "ReNaSessionLog_03-06-2026-22-21-04.json",
+    # 18: "ReNaSessionLog_03-06-2026-22-21-04.json",
     19: "ReNaSessionLog_03-07-2026-18-03-04.json",
     20: "ReNaSessionLog_03-08-2026-11-28-28.json",
     # 21: "ReNaSessionLog_03-08-2026-16-19-52.json",
@@ -66,6 +66,8 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     28: "ReNaSessionLog_03-11-2026-10-23-14.json",
     29: "ReNaSessionLog_03-11-2026-19-46-10.json",
 
+    # 31: r"C:\Users\Season\Downloads\wingman_31_us1_ReNaSessionLog_03-12-2026-18-17-44.json",
+    32: r"C:\Users\Season\Downloads\wingman_32_us1_ReNaSessionLog_03-13-2026-11-08-25.json",
     33: "ReNaSessionLog_03-14-2026-16-42-51.json",
     34: "ReNaSessionLog_03-15-2026-15-40-18.json",
     35: r"C:\Users\Season\Downloads\wingman_35_us1_ReNaSessionLog_03-15-2026-21-27-33.json",
@@ -76,15 +78,17 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     40: r"C:\Users\Season\Downloads\wingman_40_us1_ReNaSessionLog_03-18-2026-09-37-54.json",
     41: r"C:\Users\Season\Downloads\wingman_41_us1_ReNaSessionLog_03-18-2026-11-31-24.json",
 
-    42: r"C:\Users\Season\Downloads\wingman_42_us1_ReNaSessionLog_03-18-2026-13-43-36.json",
+    # 42: r"C:\Users\Season\Downloads\wingman_42_us1_ReNaSessionLog_03-18-2026-13-43-36.json",
 
     43: r"C:\Users\Season\Downloads\wingman_43_us1_ReNaSessionLog_03-18-2026-16-47-54.json",
-    45: r"C:\Users\Season\Downloads\wingman_45_us1_ReNaSessionLog_03-19-2026-19-39-08.json",
+    # 45: r"C:\Users\Season\Downloads\wingman_45_us1_ReNaSessionLog_03-19-2026-19-39-08.json",
     46: r"C:\Users\Season\Downloads\wingman_46_us1_ReNaSessionLog_03-20-2026-12-48-48.json",
+    47: r"C:\Users\Season\Downloads\wingman_47_us1_ReNaSessionLog_03-20-2026-16-16-25.json",
     48: "ReNaSessionLog_03-20-2026-18-33-47.json",
     49: r"C:\Users\Season\Downloads\wingman_49_us1_ReNaSessionLog_03-21-2026-12-08-25.json",
-    50: "ReNaSessionLog_03-22-2026-13-52-56.json",
+    # 50: "ReNaSessionLog_03-22-2026-13-52-56.json",
     51: r"C:\Users\Season\Downloads\wingman_51_us1_ReNaSessionLog_03-23-2026-10-54-11.json",
+    52: r"C:\Users\Season\Downloads\wingman_52_us1_ReNaSessionLog_03-24-2026-16-32-58.json",
     53: r"C:\Users\Season\Downloads\wingman_53_us1_ReNaSessionLog_03-25-2026-20-59-50.json",
     54: r"ReNaSessionLog_03-26-2026-12-23-35.json",
     55: r"ReNaSessionLog_03-26-2026-18-54-40.json",
@@ -94,7 +98,14 @@ PARTICIPANT_LOGS: Dict[int, str] = {
     59: r"ReNaSessionLog_03-29-2026-15-50-51.json",
     60: r"ReNaSessionLog_03-29-2026-18-52-48.json",
     61: r"C:\Users\Season\Downloads\wingman_61_us1_ReNaSessionLog_03-30-2026-19-48-09.json",
-    62: r"C:\UnityProjects\ReNaSuite\Assets\Logs\ReNaSessionLog_03-31-2026-09-58-18.json"
+    62: r"C:\UnityProjects\ReNaSuite\Assets\Logs\ReNaSessionLog_03-31-2026-09-58-18.json",
+    63: r"C:\Users\Season\Downloads\wingman_63_us1_ReNaSessionLog_04-08-2026-13-30-34.json",
+    # 64: r"C:\Users\Season\Downloads\wingman_64_us1_ReNaSessionLog_04-16-2026-17-48-39.json",
+    65: r"C:\Users\Season\Downloads\wingman_65_us1_ReNaSessionLog_04-17-2026-17-48-08.json",
+    66: r"C:\Users\Season\Downloads\wingman_66_us1_ReNaSessionLog_05-14-2026-17-19-44.json",
+    67: r"C:\Users\Season\Downloads\wingman_67_us1_ReNaSessionLog_05-29-2026-18-01-47.json",
+    68: r"C:\Users\Season\Downloads\wingman_68_us1_ReNaSessionLog_05-29-2026-22-40-59.json",
+
 }
 
 # Force certain participants to specific conditions.
@@ -107,6 +118,9 @@ FORCE_CONDITIONS: Dict[int, str] = {
     9: "C",
     37: "C",
     36: "IE",
+    66: "O",
+    67: "O",
+    68: "O",
 }
 
 CONDITIONS = ["O", "C", "IE", "E"]
