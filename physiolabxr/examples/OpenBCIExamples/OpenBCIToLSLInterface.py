@@ -3,7 +3,7 @@ import warnings
 
 import brainflow
 from brainflow.board_shim import BoardIds, BoardShim, BrainFlowInputParams
-from pylsl import StreamInfo, StreamOutlet
+from pylsl import StreamInfo, StreamInlet, StreamOutlet, local_clock, resolve_byprop
 import serial
 from serial.tools import list_ports
 
@@ -23,6 +23,17 @@ REVE_CHANNEL_NAMES = (
     "Fp1", "Fp2", "F7", "F3", "Fz",
     "F4", "F8", "C3", "Cz", "C4",
     "P3", "Pz", "P4", "O1", "O2",
+)
+
+# The lab cap's ACTUAL wiring, board pins 1-16 (Cyton 1-8, Daisy 9-16). This is
+# lab-authored ground truth — it must match the raw-stream preset
+# physiolabxr/_presets/LSLPresets/OpenBCICytonDaisy15.json (ChannelNames[1:17]),
+# and a CLAdEEG test enforces that. It includes REAL Fz/Cz/Pz electrodes, unlike
+# BrainFlow's default labels — passing it as eeg_labels_override makes the
+# preprocessing use the true positions instead of synthesizing the midline.
+CAP_MONTAGE = (
+    "Fp1", "Fp2", "F7", "F3", "Fz", "F4", "F8", "O2",
+    "C3", "Cz", "C4", "P3", "Pz", "P4", "O1", "Unused",
 )
 
 MIDLINE_SOURCE_MAP = {
@@ -69,7 +80,148 @@ def robust_clip_channels(samples, n_sigmas=6.0):
     return clipped.astype(np.float32, copy=False)
 
 
+def compute_ocular_value(previous_forward, forward, dt, combined_valid, left_valid, right_valid,
+                         full_scale_rad_per_s=4.0):
+    """One ocular-activity value in [0, 1] from a Varjo gaze sample: validity
+    dropouts (blinks) saturate the trace; otherwise gaze angular speed scales it
+    (4 rad/s ~ 230 deg/s, comfortably inside saccade range, maps to 1.0)."""
+    invalidity = 1.0 - min(float(combined_valid), float(left_valid), float(right_valid))
+    if invalidity >= 1.0:
+        return 1.0
+
+    speed_term = 0.0
+    if previous_forward is not None and dt > 0:
+        prev = np.asarray(previous_forward, dtype=float)
+        curr = np.asarray(forward, dtype=float)
+        prev_norm = np.linalg.norm(prev)
+        curr_norm = np.linalg.norm(curr)
+        if prev_norm > 1e-9 and curr_norm > 1e-9:
+            cosine = float(np.clip(np.dot(prev, curr) / (prev_norm * curr_norm), -1.0, 1.0))
+            angle = float(np.arccos(cosine))
+            speed_term = min(1.0, (angle / dt) / float(full_scale_rad_per_s))
+
+    return max(invalidity, speed_term)
+
+
+def resample_ocular_reference(buffer, n_samples, sampling_rate, t_end):
+    """Sample-holds a [(timestamp, value)] gaze buffer onto the n_samples EEG grid
+    ending at t_end. Returns None when no gaze data is available."""
+    if not buffer or n_samples <= 0 or sampling_rate <= 0:
+        return None
+
+    values = np.empty(n_samples, dtype=np.float32)
+    buffer_idx = 0
+    last_value = np.nan
+    for sample_idx in range(n_samples):
+        t = t_end - (n_samples - 1 - sample_idx) / float(sampling_rate)
+        while buffer_idx < len(buffer) and buffer[buffer_idx][0] <= t:
+            last_value = buffer[buffer_idx][1]
+            buffer_idx += 1
+        if not np.isfinite(last_value):
+            # EEG samples preceding the first gaze sample hold the first value.
+            last_value = buffer[0][1]
+        values[sample_idx] = last_value
+    return values
+
+
+class GazeOcularReferenceInlet:
+    """Non-blocking subscriber to the Varjo gaze LSL stream that maintains a
+    rolling ocular-activity trace for validating ICA component rejection.
+    Degrades to None (conservative preprocessing) when the stream is absent."""
+
+    STREAM_NAME = "VarjoEyeTrackingLSL"
+    COMBINED_VALID_IDX = 9
+    FORWARD_IDX = (10, 11, 12)
+    LEFT_VALID_IDX = 17
+    RIGHT_VALID_IDX = 27
+
+    def __init__(self, buffer_sec=180.0, resolve_retry_sec=5.0):
+        self.buffer_sec = float(buffer_sec)
+        self.resolve_retry_sec = float(resolve_retry_sec)
+        self.buffer = deque()
+        self._inlet = None
+        self._next_resolve_at = 0.0
+        self._previous_forward = None
+        self._previous_ts = None
+        self._connected_logged = False
+
+    def _ensure_inlet(self):
+        if self._inlet is not None:
+            return
+        now = local_clock()
+        if now < self._next_resolve_at:
+            return
+        self._next_resolve_at = now + self.resolve_retry_sec
+        try:
+            candidates = resolve_byprop("name", self.STREAM_NAME, timeout=0.0)
+        except Exception:
+            candidates = []
+        if candidates:
+            try:
+                self._inlet = StreamInlet(candidates[0], max_buflen=30)
+                if not self._connected_logged:
+                    print(f"OpenBCIInterface: connected gaze stream `{self.STREAM_NAME}` "
+                          "for ocular-validated ICA.")
+                    self._connected_logged = True
+            except Exception as error:
+                print(f"OpenBCIInterface: could not open gaze inlet: {error}")
+                self._inlet = None
+
+    def poll(self):
+        self._ensure_inlet()
+        if self._inlet is None:
+            return
+        try:
+            samples, timestamps = self._inlet.pull_chunk(timeout=0.0, max_samples=512)
+        except Exception:
+            return
+        for sample, ts in zip(samples, timestamps):
+            forward = np.asarray([sample[i] for i in self.FORWARD_IDX], dtype=float)
+            dt = (ts - self._previous_ts) if self._previous_ts is not None else 0.0
+            value = compute_ocular_value(
+                self._previous_forward, forward, dt,
+                sample[self.COMBINED_VALID_IDX],
+                sample[self.LEFT_VALID_IDX],
+                sample[self.RIGHT_VALID_IDX],
+            )
+            self.buffer.append((float(ts), float(value)))
+            self._previous_forward = forward
+            self._previous_ts = ts
+
+        cutoff = local_clock() - self.buffer_sec
+        while self.buffer and self.buffer[0][0] < cutoff:
+            self.buffer.popleft()
+
+    def reference_for(self, n_samples, sampling_rate):
+        """The ocular trace aligned with the newest n_samples EEG samples, or None."""
+        self.poll()
+        if not self.buffer:
+            return None
+        return resample_ocular_reference(
+            list(self.buffer), n_samples, sampling_rate, t_end=local_clock())
+
+
 class RealTimeEegPreprocessor:
+    """Causal notch/band-pass -> rank-aware frozen FastICA (physical channels only,
+    ocular-evidence component rejection) -> midline synthesis -> CAR -> robust clip.
+
+    Design constraints for WM-load calibration (why the defaults look like this):
+    - The Cyton+Daisy montage has no physical Fz/Cz/Pz; they are synthesized as
+      lateral averages, so ICA must run on the physical channels only or the
+      decomposition is rank-deficient.
+    - The ICA fit is FROZEN after one long baseline fit (default 90 s): a cleaning
+      function that changes over time cleans different load blocks differently and
+      becomes a load-correlated confound.
+    - A component is only rejected as ocular when it is frontally weighted AND its
+      time course correlates with concurrent ocular activity (gaze velocity /
+      validity dropouts supplied per sample via `ocular_reference`). Spectral or
+      spatial heuristics alone match frontal-midline theta — the WM signal itself.
+      Without an ocular reference the fallback is deliberately conservative
+      (extreme kurtosis only).
+    - The frontal regression stage triggers more often under high load (more eye
+      movement), so it is OFF by default.
+    """
+
     def __init__(
         self,
         *,
@@ -79,18 +231,18 @@ class RealTimeEegPreprocessor:
         high_hz=40.0,
         line_noise_hz=60.0,
         enable_ica=True,
-        ica_history_sec=20.0,
-        ica_fit_sec=10.0,
-        ica_refit_sec=10.0,
+        ica_history_sec=90.0,
+        ica_fit_sec=90.0,
+        ica_refit_sec=None,
         ica_max_iter=400,
         ica_random_state=42,
         ica_source_z_threshold=4.0,
-        ica_kurtosis_z_threshold=1.75,
+        ica_kurtosis_z_threshold=3.0,
         ica_frontal_ratio_threshold=1.10,
-        ica_low_freq_ratio_threshold=0.50,
+        ocular_corr_threshold=0.30,
         robust_clip_sigma=6.0,
         frontal_artifact_z_threshold=3.25,
-        frontal_regression_strength=0.25,
+        frontal_regression_strength=0.0,
         artifact_smoothing_sec=0.08,
         max_artifact_attenuation=0.30,
     ):
@@ -104,30 +256,58 @@ class RealTimeEegPreprocessor:
         self.ica_source_z_threshold = float(ica_source_z_threshold)
         self.ica_kurtosis_z_threshold = float(ica_kurtosis_z_threshold)
         self.ica_frontal_ratio_threshold = float(ica_frontal_ratio_threshold)
-        self.ica_low_freq_ratio_threshold = float(ica_low_freq_ratio_threshold)
+        self.ocular_corr_threshold = float(ocular_corr_threshold)
         self.robust_clip_sigma = float(robust_clip_sigma)
         self.frontal_artifact_z_threshold = float(frontal_artifact_z_threshold)
         self.frontal_regression_strength = float(frontal_regression_strength)
         self.max_artifact_attenuation = float(max_artifact_attenuation)
         self.project_specs = self._build_project_specs(raw_eeg_labels)
+
+        # Physical vs synthesized REVE channels. ICA sees only physical ones.
+        self.physical_positions = tuple(
+            idx for idx, spec in enumerate(self.project_specs) if len(spec) == 1
+        )
+        reve_to_physical = {reve_idx: pos for pos, reve_idx in enumerate(self.physical_positions)}
+        self.synthesized_outputs = []
+        for reve_idx, spec in enumerate(self.project_specs):
+            if len(spec) == 1:
+                continue
+            source_labels = MIDLINE_SOURCE_MAP[REVE_CHANNEL_NAMES[reve_idx]]
+            source_positions = []
+            for label in source_labels:
+                source_reve_idx = REVE_CHANNEL_NAMES.index(label)
+                source_positions.append(reve_to_physical[source_reve_idx])
+            self.synthesized_outputs.append((reve_idx, tuple(source_positions)))
+
         self.frontal_indices = tuple(
             idx for idx, label in enumerate(REVE_CHANNEL_NAMES) if label in FRONTAL_CHANNELS
         )
         self.posterior_indices = tuple(
             idx for idx, label in enumerate(REVE_CHANNEL_NAMES) if label in POSTERIOR_CHANNELS
         )
+        self.physical_frontal_positions = tuple(
+            pos for pos, reve_idx in enumerate(self.physical_positions)
+            if REVE_CHANNEL_NAMES[reve_idx] in FRONTAL_CHANNELS
+        )
+
         self.artifact_kernel_len = max(int(round(float(artifact_smoothing_sec) * self.sampling_rate)), 1)
         history_seconds = max(float(ica_history_sec), float(ica_fit_sec))
         max_history = max(int(round(history_seconds * self.sampling_rate)), 1)
         self.ica_history = deque(maxlen=max_history)
+        self.ocular_history = deque(maxlen=max_history)
         self.fit_ica_sample_count = max(int(round(float(ica_fit_sec) * self.sampling_rate)), 256)
-        self.refit_ica_sample_count = max(int(round(float(ica_refit_sec) * self.sampling_rate)), 1)
+        self.ica_refit_disabled = ica_refit_sec is None
+        self.refit_ica_sample_count = (
+            None if self.ica_refit_disabled
+            else max(int(round(float(ica_refit_sec) * self.sampling_rate)), 1)
+        )
         self.samples_seen = 0
         self.last_ica_fit_sample = None
         self.ica_model = None
         self.ica_component_mask = None
         self.ica_source_limits = None
         self.ica_ready_logged = False
+        self.ocular_fallback_warned = False
 
         self.bandpass_sos = self._build_bandpass_sos()
         self.bandpass_states = None
@@ -180,15 +360,25 @@ class RealTimeEegPreprocessor:
             return None
         return iirnotch(self.line_noise_hz, 30.0, fs=self.sampling_rate)
 
-    def _project_chunk(self, board_frames, eeg_channel_indices):
+    def _project_physical(self, board_frames, eeg_channel_indices):
+        """Extracts only the physically recorded REVE channels (no synthesized midline)."""
         eeg_chunk = np.asarray(board_frames[:, list(eeg_channel_indices)], dtype=np.float32)
-        projected = np.empty((eeg_chunk.shape[0], len(REVE_CHANNEL_NAMES)), dtype=np.float32)
-        for output_idx, spec in enumerate(self.project_specs):
-            if len(spec) == 1:
-                projected[:, output_idx] = eeg_chunk[:, spec[0]]
-            else:
-                projected[:, output_idx] = np.mean(eeg_chunk[:, list(spec)], axis=1)
+        projected = np.empty((eeg_chunk.shape[0], len(self.physical_positions)), dtype=np.float32)
+        for pos, reve_idx in enumerate(self.physical_positions):
+            projected[:, pos] = eeg_chunk[:, self.project_specs[reve_idx][0]]
         return projected
+
+    def _synthesize_full(self, cleaned_physical):
+        """Rebuilds the full REVE layout: physical channels in place, midline
+        synthesized from the CLEANED lateral pairs (midline carries no independent
+        signal, so it must never pass through ICA as its own channel)."""
+        n = cleaned_physical.shape[0]
+        full = np.empty((n, len(REVE_CHANNEL_NAMES)), dtype=np.float32)
+        for pos, reve_idx in enumerate(self.physical_positions):
+            full[:, reve_idx] = cleaned_physical[:, pos]
+        for reve_idx, source_positions in self.synthesized_outputs:
+            full[:, reve_idx] = np.mean(cleaned_physical[:, list(source_positions)], axis=1)
+        return full
 
     def _initialize_filter_states(self, channel_first):
         if self.bandpass_sos is not None and self.bandpass_states is None:
@@ -234,11 +424,12 @@ class RealTimeEegPreprocessor:
 
             filtered[idx] = signal
 
-        filtered = common_average_reference(filtered)
-        filtered = robust_clip_channels(filtered, n_sigmas=self.robust_clip_sigma)
+        # CAR and clipping deliberately do NOT happen here anymore: CAR would make
+        # the physical-channel matrix rank-deficient before ICA, and clipping is a
+        # per-channel nonlinearity that belongs after reconstruction.
         return filtered.T.astype(np.float32, copy=False)
 
-    def _append_ica_history(self, samples):
+    def _append_ica_history(self, samples, ocular_reference=None):
         if not self.enable_ica:
             return
 
@@ -246,24 +437,37 @@ class RealTimeEegPreprocessor:
         if sample_array.ndim != 2 or sample_array.shape[0] == 0:
             return
 
-        self.samples_seen += int(sample_array.shape[0])
-        for row in sample_array:
-            self.ica_history.append(np.array(row, dtype=np.float32, copy=True))
+        n = int(sample_array.shape[0])
+        self.samples_seen += n
+
+        if ocular_reference is None:
+            ocular_values = np.full(n, np.nan, dtype=np.float32)
+        else:
+            ocular_values = np.asarray(ocular_reference, dtype=np.float32).reshape(-1)
+            if ocular_values.shape[0] != n:
+                ocular_values = np.full(n, np.nan, dtype=np.float32)
+
+        for row_idx in range(n):
+            self.ica_history.append(np.array(sample_array[row_idx], dtype=np.float32, copy=True))
+            self.ocular_history.append(float(ocular_values[row_idx]))
 
     def _fit_ica_if_needed(self):
         if not self.enable_ica:
             return
         if len(self.ica_history) < self.fit_ica_sample_count:
             return
+        if self.ica_model is not None and self.ica_refit_disabled:
+            return  # frozen: the cleaning function must be identical across load blocks
         if (
             self.ica_model is not None
             and self.last_ica_fit_sample is not None
+            and self.refit_ica_sample_count is not None
             and (self.samples_seen - self.last_ica_fit_sample) < self.refit_ica_sample_count
         ):
             return
 
         fit_history = np.asarray(self.ica_history, dtype=np.float32)[-self.fit_ica_sample_count:]
-        n_channels = fit_history.shape[1]
+        n_channels = fit_history.shape[1]  # physical channels only — full rank
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", ConvergenceWarning)
@@ -285,33 +489,45 @@ class RealTimeEegPreprocessor:
         kurtosis_z = (source_kurtosis - np.mean(source_kurtosis)) / (np.std(source_kurtosis) + 1e-6)
         kurtosis_z = np.nan_to_num(kurtosis_z, nan=0.0, posinf=0.0, neginf=0.0)
 
-        spectra = np.abs(np.fft.rfft(sources, axis=0)) ** 2
-        freqs = np.fft.rfftfreq(sources.shape[0], d=1.0 / self.sampling_rate)
-        low_band_mask = (freqs >= 0.5) & (freqs <= 4.0)
-        workload_band_mask = (freqs >= 0.5) & (freqs <= min(self.high_hz, 25.0))
-        if low_band_mask.any() and workload_band_mask.any():
-            low_band_power = np.mean(spectra[low_band_mask, :], axis=0)
-            workload_band_power = np.mean(spectra[workload_band_mask, :], axis=0) + 1e-6
-            low_freq_ratio = low_band_power / workload_band_power
-        else:
-            low_freq_ratio = np.zeros(n_channels, dtype=float)
-
         mixing = np.abs(np.asarray(ica_model.mixing_, dtype=float))
         mixing = np.nan_to_num(mixing, nan=0.0, posinf=0.0, neginf=0.0)
-        frontal_indices = [idx for idx in self.frontal_indices if idx < mixing.shape[0]]
-        other_indices = [idx for idx in range(mixing.shape[0]) if idx not in frontal_indices]
-        frontal_strength = np.mean(mixing[frontal_indices, :], axis=0) if frontal_indices else np.ones(n_channels)
-        other_strength = np.mean(mixing[other_indices, :], axis=0) + 1e-6 if other_indices else 1.0
+        frontal_rows = [idx for idx in self.physical_frontal_positions if idx < mixing.shape[0]]
+        other_rows = [idx for idx in range(mixing.shape[0]) if idx not in frontal_rows]
+        frontal_strength = np.mean(mixing[frontal_rows, :], axis=0) if frontal_rows else np.ones(n_channels)
+        other_strength = np.mean(mixing[other_rows, :], axis=0) + 1e-6 if other_rows else 1.0
         frontal_ratio = frontal_strength / other_strength
         frontal_ratio = np.nan_to_num(frontal_ratio, nan=0.0, posinf=0.0, neginf=0.0)
+        frontal_gate = frontal_ratio >= self.ica_frontal_ratio_threshold
 
-        component_mask = (
-            (
-                (np.abs(kurtosis_z) >= self.ica_kurtosis_z_threshold)
-                | (low_freq_ratio >= self.ica_low_freq_ratio_threshold)
-            )
-            & (frontal_ratio >= self.ica_frontal_ratio_threshold)
+        # Ocular evidence: correlate each component's time course with the
+        # concurrent ocular activity trace (gaze velocity / validity dropouts).
+        # Rejecting on spectral/spatial heuristics alone would delete frontal
+        # midline theta — the very signal the WM-load classifier reads.
+        ocular = np.asarray(self.ocular_history, dtype=np.float32)[-self.fit_ica_sample_count:]
+        finite = np.isfinite(ocular)
+        ocular_usable = (
+            ocular.shape[0] == sources.shape[0]
+            and float(finite.mean()) > 0.5
+            and float(np.nanstd(ocular)) > 1e-6
         )
+
+        if ocular_usable:
+            reference = np.where(finite, ocular, 0.0).astype(float)
+            reference = reference - np.mean(reference)
+            reference_norm = float(np.linalg.norm(reference)) + 1e-12
+            centered_sources = sources - np.mean(sources, axis=0, keepdims=True)
+            source_norms = np.linalg.norm(centered_sources, axis=0) + 1e-12
+            ocular_corr = np.abs(centered_sources.T @ reference) / (source_norms * reference_norm)
+            component_mask = frontal_gate & (ocular_corr >= self.ocular_corr_threshold)
+        else:
+            if not self.ocular_fallback_warned:
+                print(
+                    "OpenBCIInterface: no ocular reference available — falling back to a "
+                    "conservative rejection rule (frontal + extreme kurtosis only). "
+                    "Provide gaze data for validated ocular component removal."
+                )
+                self.ocular_fallback_warned = True
+            component_mask = frontal_gate & (np.abs(kurtosis_z) >= self.ica_kurtosis_z_threshold)
 
         self.ica_model = ica_model
         self.ica_component_mask = component_mask
@@ -319,8 +535,9 @@ class RealTimeEegPreprocessor:
         self.last_ica_fit_sample = self.samples_seen
         if not self.ica_ready_logged:
             print(
-                "OpenBCIInterface: ICA is ready "
-                f"({n_channels} components, suppressing {int(component_mask.sum())} artifact components)."
+                "OpenBCIInterface: ICA is ready and FROZEN for the session "
+                f"({n_channels} physical-channel components, suppressing {int(component_mask.sum())} "
+                f"ocular components, ocular evidence {'used' if ocular_usable else 'unavailable'})."
             )
             self.ica_ready_logged = True
         else:
@@ -370,6 +587,11 @@ class RealTimeEegPreprocessor:
 
     def _attenuate_frontal_artifacts(self, samples):
         cleaned = np.asarray(samples, dtype=np.float32).copy()
+        # Off by default: this stage triggers on frontal excursions, which grow
+        # with WM load (more eye movement) — enabling it makes cleaning intensity
+        # a load-correlated confound. Opt in only for non-calibration use.
+        if self.frontal_regression_strength <= 0.0:
+            return cleaned
         if cleaned.ndim != 2 or cleaned.shape[0] < 4 or not self.frontal_indices:
             return cleaned
 
@@ -412,16 +634,23 @@ class RealTimeEegPreprocessor:
 
         return cleaned
 
-    def process_chunk(self, board_frames, eeg_channel_indices):
+    def process_chunk(self, board_frames, eeg_channel_indices, ocular_reference=None):
+        """Cleans one chunk. `ocular_reference` is an optional per-sample ocular
+        activity trace (same length as the chunk; e.g. gaze velocity + validity
+        dropouts from the Varjo stream) used as ground truth for ICA rejection."""
         if board_frames.size == 0:
             return np.empty((0, len(REVE_CHANNEL_NAMES)), dtype=np.float32)
 
-        projected = self._project_chunk(board_frames, eeg_channel_indices)
-        filtered = self._apply_causal_filters(projected)
-        self._append_ica_history(filtered)
+        physical = self._project_physical(board_frames, eeg_channel_indices)
+        filtered = self._apply_causal_filters(physical)
+        self._append_ica_history(filtered, ocular_reference)
         self._fit_ica_if_needed()
-        ica_cleaned = self._apply_ica(filtered)
-        cleaned = self._attenuate_frontal_artifacts(ica_cleaned)
+        cleaned_physical = self._apply_ica(filtered)
+
+        full = self._synthesize_full(cleaned_physical)
+        full = common_average_reference(full.T).T
+        full = robust_clip_channels(full.T, n_sigmas=self.robust_clip_sigma).T
+        cleaned = self._attenuate_frontal_artifacts(full)
         return cleaned.astype(np.float32, copy=False)
 
 
@@ -444,7 +673,14 @@ class OpenBCIToLSLInterface:
         log=False,
         streamer_params="",
         ring_buffer_size=45000,
+        eeg_labels_override=None,
     ):
+        """`eeg_labels_override`: the cap's ACTUAL electrode montage (one 10-20
+        label per EEG channel, board order). BrainFlow's board descriptor only
+        provides the DEFAULT assumed montage — if the physical cap places
+        electrodes elsewhere (e.g. real Fz/Cz/Pz on the midline), declare it here
+        so the preprocessing and the REVE projection use the true positions
+        instead of synthesizing them."""
         self.params = BrainFlowInputParams()
         self.params.serial_port = serial_port
         self.params.ip_port = 0
@@ -463,6 +699,14 @@ class OpenBCIToLSLInterface:
         self.streamer_params = streamer_params
         self.ring_buffer_size = ring_buffer_size
         self.board_descr = BoardShim.get_board_descr(self.board_id)
+        self.eeg_labels_override = list(eeg_labels_override) if eeg_labels_override else None
+        if self.eeg_labels_override is not None:
+            board_eeg_count = len(self.board_descr.get("eeg_channels", []))
+            if len(self.eeg_labels_override) != board_eeg_count:
+                raise ValueError(
+                    f"eeg_labels_override has {len(self.eeg_labels_override)} labels but the "
+                    f"{self.board_descr['name']} board records {board_eeg_count} EEG channels."
+                )
         self.raw_channel_descriptors = self._build_channel_descriptors()
         self.raw_eeg_labels = [label for label, _, channel_type in self.raw_channel_descriptors if channel_type == "EEG"]
         self.raw_eeg_indices = tuple(
@@ -478,6 +722,7 @@ class OpenBCIToLSLInterface:
             sampling_rate=self.board_descr["sampling_rate"],
             raw_eeg_labels=self.raw_eeg_labels,
         )
+        self.gaze_reference = GazeOcularReferenceInlet()
 
         if log:
             BoardShim.enable_dev_board_logger()
@@ -574,7 +819,7 @@ class OpenBCIToLSLInterface:
             ) from error
 
     def _build_channel_descriptors(self):
-        eeg_labels = [
+        eeg_labels = self.eeg_labels_override or [
             label.strip()
             for label in self.board_descr.get("eeg_names", "").split(",")
             if label.strip()
@@ -639,7 +884,10 @@ class OpenBCIToLSLInterface:
         raw_chunk = np.asarray(frames.T, dtype=np.float32)
         self.push_chunk(raw_chunk)
 
-        preprocessed_chunk = self.eeg_preprocessor.process_chunk(raw_chunk, self.raw_eeg_indices)
+        ocular_reference = self.gaze_reference.reference_for(
+            raw_chunk.shape[0], self.board_descr["sampling_rate"])
+        preprocessed_chunk = self.eeg_preprocessor.process_chunk(
+            raw_chunk, self.raw_eeg_indices, ocular_reference=ocular_reference)
         if preprocessed_chunk.size:
             self.push_preprocessed_chunk(preprocessed_chunk)
 
@@ -789,7 +1037,8 @@ def run_test_lsl(openbci_interface):
     return True
 
 
-def main(stream_name, stream_type, preprocessed_stream_name, serial_port, board_id, log, ring_buffer_size):
+def main(stream_name, stream_type, preprocessed_stream_name, serial_port, board_id, log,
+         ring_buffer_size, eeg_labels_override=None):
     openbci_interface = OpenBCIToLSLInterface(
         stream_name=stream_name,
         stream_type=stream_type,
@@ -797,7 +1046,8 @@ def main(stream_name, stream_type, preprocessed_stream_name, serial_port, board_
         serial_port=serial_port,
         board_id=board_id,
         log=log,
-        ring_buffer_size=ring_buffer_size
+        ring_buffer_size=ring_buffer_size,
+        eeg_labels_override=eeg_labels_override,
     )
 
     try:
@@ -816,4 +1066,5 @@ if __name__ == "__main__":
         board_id="cyton+daisy",
         log=False,
         ring_buffer_size=45000,
+        eeg_labels_override=list(CAP_MONTAGE),
     )

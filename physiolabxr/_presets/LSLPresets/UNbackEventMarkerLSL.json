@@ -1,0 +1,16 @@
+{
+  "StreamName":"UNbackEventMarkerLSL",
+  "ChannelNames": [
+    "UnityTime",
+    "EventCode",
+    "BlockIndex",
+    "TrialIndex",
+    "IsTarget",
+    "OutcomeCode",
+    "RtMs",
+    "N",
+    "BlockKind"
+  ],
+  "NominalSamplingRate": 75,
+  "DataType": "float32"
+}
