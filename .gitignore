@@ -156,3 +156,7 @@ physiolabxr/interfaces/DeviceInterface/BAlert/x64/Release/License/
 physiolabxr/third_party/BAlert/Config/balert_command.txt
 physiolabxr/third_party/BAlert/Config/balert_status.txt
 physiolabxr/third_party/BAlert/Config/balert_impedance.json
+
+# .NET build artifacts (gRPC tools project)
+tmpGrpcTools/obj/
+tmpGrpcTools/bin/
