@@ -1,0 +1,20 @@
+{
+  "StreamName":"CLAdSceneLuminanceLSL",
+  "ChannelNames": [
+    "unity_time",
+    "view_luminance",
+    "gaze_luminance",
+    "gaze_valid",
+    "gaze_u",
+    "gaze_v",
+    "view_pos_x",
+    "view_pos_y",
+    "view_pos_z",
+    "view_rot_x",
+    "view_rot_y",
+    "view_rot_z",
+    "view_rot_w"
+  ],
+  "NominalSamplingRate": 30,
+  "DataType": "float32"
+}

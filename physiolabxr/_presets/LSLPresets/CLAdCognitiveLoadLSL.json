@@ -1,0 +1,16 @@
+{
+  "StreamName":"CLAdCognitiveLoadLSL",
+  "ChannelNames": [
+    "fusion_score",
+    "eeg_probability",
+    "pupil_probability",
+    "pupil_z",
+    "pupil_mean_mm",
+    "step_number",
+    "unity_time",
+    "baseline_ready",
+    "load_value_01"
+  ],
+  "NominalSamplingRate": 1,
+  "DataType": "float32"
+}

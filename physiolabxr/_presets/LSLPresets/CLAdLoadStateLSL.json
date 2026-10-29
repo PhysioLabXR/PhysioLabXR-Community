@@ -1,0 +1,20 @@
+{
+  "StreamName":"CLAdLoadStateLSL",
+  "ChannelNames": [
+    "seq",
+    "unity_time",
+    "step_number",
+    "state",
+    "state_dwell_sec",
+    "load_value_01",
+    "eeg_p10",
+    "eeg_p50",
+    "eeg_p90",
+    "eeg_quality_ok",
+    "modality_mask",
+    "baseline_ready",
+    "calibration_mode"
+  ],
+  "NominalSamplingRate": 1,
+  "DataType": "float32"
+}
