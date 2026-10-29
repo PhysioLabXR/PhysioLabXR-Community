@@ -1062,7 +1062,7 @@ if __name__ == "__main__":
         stream_name="OpenBCI_Cyton_Daisy_15_Channels",
         stream_type="EEG",
         preprocessed_stream_name="OpenBCI_Cyton_Daisy_15_Channels_Preprocessed",
-        serial_port="COM7",
+        serial_port="COM8",
         board_id="cyton+daisy",
         log=False,
         ring_buffer_size=45000,
