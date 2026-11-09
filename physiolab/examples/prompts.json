@@ -1,0 +1,62 @@
+[
+  {
+    "id": "emg-gesture",
+    "prompt": "Show a gesture when the simulated muscle signal activates.",
+    "target": "web",
+    "status": "Runnable template"
+  },
+  {
+    "id": "focus-wearables",
+    "prompt": "Use my Apple Watch and Oura data to build a personal focus dashboard.",
+    "target": "phone",
+    "status": "Requires validated model and real connectors"
+  },
+  {
+    "id": "adaptive-workspace",
+    "prompt": "Adapt my Quest workspace when cognitive load changes.",
+    "target": "quest",
+    "status": "Requires validated model and Quest adapter"
+  },
+  {
+    "id": "recovery-dashboard",
+    "prompt": "Build a consent-based recovery dashboard for a discharged patient.",
+    "target": "web-dashboard",
+    "status": "Requires scope/clinical review, consent and validated metrics"
+  },
+  {
+    "id": "p300-speller",
+    "prompt": "Build a P300 spelling task with EEG and synchronized stimulus markers.",
+    "target": "web",
+    "status": "Requires EEG and event synchronization"
+  },
+  {
+    "id": "emg-game",
+    "prompt": "Use an EMG gesture to make the dinosaur jump.",
+    "target": "web",
+    "status": "Requires application adapter and real EMG connector"
+  },
+  {
+    "id": "sleep-summary",
+    "prompt": "Summarize my synced Oura sleep data each week.",
+    "target": "phone",
+    "status": "Requires Oura V2 sync and reporting"
+  },
+  {
+    "id": "breathing-feedback",
+    "prompt": "Show a breathing exercise with heart-rate feedback from my watch.",
+    "target": "phone",
+    "status": "Requires companion bridge and feedback app"
+  },
+  {
+    "id": "motion-repetitions",
+    "prompt": "Count movement repetitions from my phone accelerometer.",
+    "target": "phone",
+    "status": "Requires motion connector and task-specific evaluation"
+  },
+  {
+    "id": "multimodal-research",
+    "prompt": "Record EEG and eye tracking with task markers and export a synchronized session.",
+    "target": "web",
+    "status": "Requires legacy bridges and clock alignment"
+  }
+]

@@ -1,0 +1,151 @@
+[
+  {
+    "key": "S1",
+    "owner": "Serena",
+    "title": "Inventory sensor capabilities and confirm the first live-data path",
+    "area": "devices",
+    "dependencies": [],
+    "due_date": "2026-11-15",
+    "description": "Owner: Serena\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nEnumerate Apple Watch, Oura Ring, phone motion and existing EEG/LSL devices. Record data types, channels, units, nominal/observed rates, live vs synced delivery, permissions, platform limitations and clock source. Select one attainable live stream for the Nov 15 sync. Include evidence for availability rather than assuming every wearable streams continuously.\n\nStart here: physiolab/backend/src/physiolab/devices/catalog.py.\n\nDependencies: Ready to start.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-5",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-5/inventory-sensor-capabilities-and-confirm-the-first-live-data-path"
+  },
+  {
+    "key": "S2",
+    "owner": "Serena",
+    "title": "Connect Apple Watch through a local companion bridge",
+    "area": "devices",
+    "dependencies": [
+      "S1"
+    ],
+    "due_date": "2026-11-15",
+    "description": "Owner: Serena\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nImplement the chosen HealthKit/watchOS/iPhone bridge path behind DeviceConnector and normalize output to SampleBatch. Demonstrate real sensor data, permission denial, disconnect/reconnect and explicit Unix-time mapping. Document supported data types/rates and limitations. Preserve the simulated connector for hardware-free development.\n\nStart here: physiolab/backend/src/physiolab/devices/base.py.\n\nDependencies: S1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-6",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-6/connect-apple-watch-through-a-local-companion-bridge"
+  },
+  {
+    "key": "S3",
+    "owner": "Serena",
+    "title": "Implement Oura V2 sync with consent and data provenance",
+    "area": "devices",
+    "dependencies": [
+      "S1"
+    ],
+    "due_date": null,
+    "description": "Owner: Serena\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nAdd OAuth V2 authorization and retrieval for the selected Oura data types. Persist source timestamps and last-sync time; distinguish synced/batch data from live streaming. Handle revoked/expired access and rate limits. Provide fixture-based tests and one authorized end-to-end retrieval; keep tokens server-side.\n\nStart here: physiolab/backend/src/physiolab/devices/base.py.\n\nDependencies: S1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-7",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-7/implement-oura-v2-sync-with-consent-and-data-provenance"
+  },
+  {
+    "key": "S4",
+    "owner": "Serena",
+    "title": "Bridge a legacy PhysioLabXR LSL or EEG connector",
+    "area": "devices",
+    "dependencies": [
+      "S1"
+    ],
+    "due_date": null,
+    "description": "Owner: Serena\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nUse LegacyDeviceAdapter to wrap one existing connector without importing Qt/native SDKs into the cloud API. Verify channel-major to sample-major conversion, units, channel count and clock mapping. Demonstrate start/read/stop and device loss with cleanup. Specify the authenticated local-to-runtime transport seam.\n\nStart here: physiolab/backend/src/physiolab/devices/legacy.py.\n\nDependencies: S1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-8",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-8/bridge-a-legacy-physiolabxr-lsl-or-eeg-connector"
+  },
+  {
+    "key": "H1",
+    "owner": "Haosen",
+    "title": "Define and validate the preprocessing module registry",
+    "area": "processing",
+    "dependencies": [],
+    "due_date": "2026-11-15",
+    "description": "Owner: Haosen\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nExtend the bandpass/window starter into a documented registry with parameter bounds, sample-rate and modality compatibility, units, state/reset rules and error behavior. Test chunk continuity, window overlap, missing/out-of-order data and invalid Nyquist settings. Preserve the shared contracts and regenerate API types when they change.\n\nStart here: physiolab/backend/src/physiolab/processing/modules.py.\n\nDependencies: Ready to start.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-9",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-9/define-and-validate-the-preprocessing-module-registry"
+  },
+  {
+    "key": "H2",
+    "owner": "Haosen",
+    "title": "Review open physiological models and publish model cards",
+    "area": "models",
+    "dependencies": [],
+    "due_date": "2026-11-15",
+    "description": "Owner: Haosen\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nReview available open-source physiological/foundation models. Compare modalities, license, weights availability, preprocessing, sampling rate, output semantics, latency, hardware needs and promptability. Select a practical first model. Document why it fits and its validity limits; do not depend on the unavailable foundation model discussed in the meeting.\n\nStart here: physiolab/backend/src/physiolab/models/base.py.\n\nDependencies: Ready to start.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-10",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-10/review-open-physiological-models-and-publish-model-cards"
+  },
+  {
+    "key": "H3",
+    "owner": "Haosen",
+    "title": "Integrate the first open physiological model adapter",
+    "area": "models",
+    "dependencies": [
+      "H1",
+      "H2"
+    ],
+    "due_date": null,
+    "description": "Owner: Haosen\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nImplement PhysiologicalModel for the chosen model with fixed version/provenance and reproducible fixture inputs. Validate preprocessing compatibility and output schema. Run on simulated or replayed data initially; surface incompatible inputs and missing weights honestly. Supply a reproducible inference example and latency measurements.\n\nStart here: physiolab/backend/src/physiolab/models/base.py.\n\nDependencies: H1, H2.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-11",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-11/integrate-the-first-open-physiological-model-adapter"
+  },
+  {
+    "key": "H4",
+    "owner": "Haosen",
+    "title": "Create deterministic EMG and P300 evaluation fixtures",
+    "area": "evaluation",
+    "dependencies": [
+      "H1"
+    ],
+    "due_date": null,
+    "description": "Owner: Haosen\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nEstablish ground-truth EMG gesture and P300 tasks to validate end-to-end signal handling, inference and app responses. Check timing, dropped data and recovery; record expected labels/events and metrics. Separate pipeline correctness from physiological validity. Outline the later self-report study for focus/cognitive-load decoding.\n\nStart here: physiolab/backend/tests/test_pipeline.py and examples/emg-pipeline.json.\n\nDependencies: H1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-12",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-12/create-deterministic-emg-and-p300-evaluation-fixtures"
+  },
+  {
+    "key": "M1",
+    "owner": "Marvin",
+    "title": "Curate ten example prompts and handcrafted golden pipelines",
+    "area": "applications",
+    "dependencies": [],
+    "due_date": "2026-11-15",
+    "description": "Owner: Marvin\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nStart from examples/prompts.json and refine ten representative prompts spanning wearables, web/phone/Quest, clinician dashboard and research/BCI. For each, define required devices, processing, model, target, expected behavior, constraints and a golden pipeline or explicit unsupported result. Cover ambiguous prompts and unavailable capabilities.\n\nStart here: physiolab/examples/prompts.json and examples/emg-pipeline.json.\n\nDependencies: Ready to start.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-13",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-13/curate-ten-example-prompts-and-handcrafted-golden-pipelines"
+  },
+  {
+    "key": "M2",
+    "owner": "Marvin",
+    "title": "Implement a validated pipeline-generation agent",
+    "area": "orchestration",
+    "dependencies": [
+      "M1"
+    ],
+    "due_date": null,
+    "description": "Owner: Marvin\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nReplace TemplatePlanner behind PipelinePlanner with a provider-configurable agent. Emit only schema-valid supported nodes/edges/parameters; validate before execution, explain missing capabilities and retain provenance. Compare candidate generation providers mentioned in the meeting against the golden fixtures. Score run success, deploy success and user intent with a separate judge and pinned model versions.\n\nStart here: physiolab/backend/src/physiolab/orchestration/planner.py and validation.py.\n\nDependencies: M1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-14",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-14/implement-a-validated-pipeline-generation-agent"
+  },
+  {
+    "key": "M3",
+    "owner": "Marvin",
+    "title": "Build application adapters for web, phone and Quest",
+    "area": "applications",
+    "dependencies": [
+      "M1"
+    ],
+    "due_date": null,
+    "description": "Owner: Marvin\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nExtend the standalone HTML starter into working target-specific app adapters. Start with an end-to-end web app, then a phone path and Quest XR path. Consume typed inference events, implement connection/error states and document local/device setup. Verify each target on its real runtime before reporting deploy success; preserve a replayable demo.\n\nStart here: physiolab/backend/src/physiolab/applications/export.py and web/src/components/SessionPanel.tsx.\n\nDependencies: M1.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-15",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-15/build-application-adapters-for-web-phone-and-quest"
+  },
+  {
+    "key": "M4",
+    "owner": "Marvin",
+    "title": "Implement Render per-request workers and deployment lifecycle",
+    "area": "deployments",
+    "dependencies": [
+      "M2"
+    ],
+    "due_date": null,
+    "description": "Owner: Marvin\n\nContext: PhysioLab team handoff, Nov 8, 2026.\n\nAcceptance criteria:\nUse render.yaml and DeploymentProvider as the starting seams. Add a control plane for per-request isolated runtime provisioning, job status, cancellation, teardown and failure cleanup. Define tenant authentication, secrets, persistent storage, quotas and cost limits. Test an isolated deployment with health/readiness checks and cleanup; the starter blueprint is only one simulation service.\n\nStart here: physiolab/render.yaml, Dockerfile and backend/src/physiolab/applications/export.py.\n\nDependencies: M2.\n\nHandoff: https://github.com/PhysioLabXR/PhysioLabXR-Community/tree/feat/physiolab-platform-skeleton/physiolab\nMeeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7",
+    "linear_id": "PHY-16",
+    "linear_url": "https://linear.app/physiolab/issue/PHY-16/implement-render-per-request-workers-and-deployment-lifecycle"
+  }
+]

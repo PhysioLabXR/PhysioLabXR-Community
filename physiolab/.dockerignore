@@ -1,0 +1,8 @@
+**/node_modules
+**/.venv
+**/dist
+**/.data
+**/__pycache__
+**/test-results
+**/playwright-report
+design
