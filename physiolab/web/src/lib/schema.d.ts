@@ -235,25 +235,17 @@ export interface components {
       timestamp: number;
       /** Model Id */
       model_id: string;
-      /**
-       * Label
-       * @enum {string}
-       */
-      label: "rest" | "gesture";
+      /** Label */
+      label: string;
       /** Value */
       value: number;
-      /**
-       * Unit
-       * @default rms
-       * @constant
-       */
-      unit: "rms";
+      /** Unit */
+      unit: string;
       /**
        * Simulated
        * @default true
-       * @constant
        */
-      simulated: true;
+      simulated: boolean;
     };
     /** Node */
     "Node-Input": {
@@ -395,9 +387,8 @@ export interface components {
       /**
        * Simulated
        * @default true
-       * @constant
        */
-      simulated: true;
+      simulated: boolean;
     };
     /** StreamDescriptor */
     StreamDescriptor: {
@@ -408,7 +399,7 @@ export interface components {
       /** Modality */
       modality: string;
       /** Sample Rate Hz */
-      sample_rate_hz: number;
+      sample_rate_hz: number | null;
       /** Channels */
       channels: components["schemas"]["Channel"][];
       /**

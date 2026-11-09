@@ -580,10 +580,6 @@
           },
           "label": {
             "type": "string",
-            "enum": [
-              "rest",
-              "gesture"
-            ],
             "title": "Label"
           },
           "value": {
@@ -592,13 +588,10 @@
           },
           "unit": {
             "type": "string",
-            "const": "rms",
-            "title": "Unit",
-            "default": "rms"
+            "title": "Unit"
           },
           "simulated": {
             "type": "boolean",
-            "const": true,
             "title": "Simulated",
             "default": true
           }
@@ -955,7 +948,6 @@
           },
           "simulated": {
             "type": "boolean",
-            "const": true,
             "title": "Simulated",
             "default": true
           }
@@ -991,8 +983,15 @@
             "title": "Modality"
           },
           "sample_rate_hz": {
-            "type": "number",
-            "exclusiveMinimum": 0.0,
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Sample Rate Hz"
           },
           "channels": {

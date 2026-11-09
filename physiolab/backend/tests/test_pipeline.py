@@ -8,7 +8,15 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from physiolab.api import create_app
-from physiolab.contracts import Project, ProjectCreate, SampleBatch, Session
+from physiolab.contracts import (
+    Channel,
+    Inference,
+    Project,
+    ProjectCreate,
+    SampleBatch,
+    Session,
+    StreamDescriptor,
+)
 from physiolab.devices.legacy import LegacyDeviceAdapter
 from physiolab.devices.simulated import SimulatedEMG
 from physiolab.models.demo import DemoEMGModel
@@ -169,3 +177,24 @@ def test_restart_marks_unfinished_recording_interrupted(tmp_path):
     recovered = Store(tmp_path).session(session.id)
     assert recovered.status == "interrupted"
     assert isinstance(recovered.ended_at, datetime)
+
+
+def test_irregular_wearable_and_non_emg_contract():
+    stream = StreamDescriptor(
+        id="heart-rate",
+        device_id="wearable",
+        modality="cardiac",
+        channels=[Channel(name="heart-rate", unit="bpm")],
+        delivery="batch",
+    )
+    batch = SampleBatch(stream=stream, timestamps=[1000, 1004.8], samples=[[65], [66]], sequence=0)
+    assert batch.stream.sample_rate_hz is None
+    result = Inference(
+        timestamp=1004.8,
+        model_id="example-summary",
+        label="mean-heart-rate",
+        value=65.5,
+        unit="bpm",
+        simulated=False,
+    )
+    assert result.label == "mean-heart-rate" and not result.simulated

@@ -19,4 +19,5 @@ class DemoEMGModel:
             model_id=self.id,
             label="gesture" if rms >= self.threshold else "rest",
             value=rms,
+            unit="rms",
         )

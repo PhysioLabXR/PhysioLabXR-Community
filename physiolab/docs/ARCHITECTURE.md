@@ -37,7 +37,9 @@ cannot run. The initial runtime supports a single five-node chain; arbitrary bra
 fan-in, modalities and model outputs belong in deliberate contract extensions with tests.
 
 Samples are **samples × channels**; each row has a Unix-seconds timestamp. Channel names,
-units, nominal rate and delivery mode travel with the data. Each connector must document
+units, nominal rate and delivery mode travel with the data. Irregular/batch sources can
+leave the nominal rate null; processors must require or derive a rate explicitly. Model
+outputs use generic labels, numeric values and units so new tasks do not need an EMG label enum. Each connector must document
 its actual clock and how it maps to Unix time. `LegacyDeviceAdapter` converts the old
 **channels × samples** result and requires a clock converter. Do not infer live availability
 from an advertised sampling rate or disguise Oura synchronization as live streaming.

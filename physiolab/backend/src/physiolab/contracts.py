@@ -26,7 +26,7 @@ class StreamDescriptor(Contract):
     id: str
     device_id: str
     modality: str
-    sample_rate_hz: float = Field(gt=0)
+    sample_rate_hz: float | None = Field(default=None, gt=0)
     channels: list[Channel] = Field(min_length=1)
     delivery: Literal["live", "batch", "simulated"]
     clock: Literal["unix_seconds"] = "unix_seconds"
@@ -86,10 +86,10 @@ class Project(Contract):
 class Inference(Contract):
     timestamp: float
     model_id: str
-    label: Literal["rest", "gesture"]
+    label: str
     value: float
-    unit: Literal["rms"] = "rms"
-    simulated: Literal[True] = True
+    unit: str
+    simulated: bool = True
 
 
 class Session(Contract):
@@ -102,7 +102,7 @@ class Session(Contract):
     raw: list[SampleBatch] = Field(default_factory=list)
     inferences: list[Inference] = Field(default_factory=list)
     error: str | None = None
-    simulated: Literal[True] = True
+    simulated: bool = True
 
 
 class DeviceInfo(Contract):
