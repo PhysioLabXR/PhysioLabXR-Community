@@ -1,0 +1,9 @@
+{
+  "archive": "PhysioLab Builder Import.zip",
+  "sha256": "79c5808871ed65dcb5df1360e4233b8e47c04d7143373275852b6381e14857d9",
+  "preserved": "Top-level prototype, runtime, styles, screenshots, XR page and image assets",
+  "omitted": [
+    ".thumbnail",
+    "uploads/PhysioLab builder interface/ (duplicate tree)"
+  ]
+}

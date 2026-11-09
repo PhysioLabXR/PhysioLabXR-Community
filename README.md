@@ -1,3 +1,5 @@
+> **Building the new PhysioLab platform?** Start with [physiolab/README.md](physiolab/README.md) and the [team handoff](physiolab/docs/HANDOFF.md). The desktop PhysioLabXR documentation continues below.
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]

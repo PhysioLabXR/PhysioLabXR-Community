@@ -1,0 +1,11 @@
+node_modules/
+.data/
+.venv/
+dist/
+test-results/
+playwright-report/
+.env
+.DS_Store
+# The legacy root ignores directories named lib; these are frontend source files.
+!web/src/lib/
+!web/src/lib/**

@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "nodes": [
+    {
+      "id": "sensor",
+      "kind": "device",
+      "implementation": "simulated-emg",
+      "parameters": {}
+    },
+    {
+      "id": "filter",
+      "kind": "processing",
+      "implementation": "bandpass",
+      "parameters": {
+        "low_hz": 10.0,
+        "high_hz": 40.0
+      }
+    },
+    {
+      "id": "window",
+      "kind": "processing",
+      "implementation": "sliding-window",
+      "parameters": {
+        "size": 100.0,
+        "stride": 50.0
+      }
+    },
+    {
+      "id": "model",
+      "kind": "model",
+      "implementation": "demo-emg-rms",
+      "parameters": {
+        "threshold": 0.25
+      }
+    },
+    {
+      "id": "app",
+      "kind": "application",
+      "implementation": "web-preview",
+      "parameters": {}
+    }
+  ],
+  "edges": [
+    {
+      "source": "sensor",
+      "target": "filter"
+    },
+    {
+      "source": "filter",
+      "target": "window"
+    },
+    {
+      "source": "window",
+      "target": "model"
+    },
+    {
+      "source": "model",
+      "target": "app"
+    }
+  ]
+}

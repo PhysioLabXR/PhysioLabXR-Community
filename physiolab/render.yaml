@@ -1,0 +1,17 @@
+# Select physiolab/render.yaml as the Blueprint path. This is a demo service template;
+# tenant-specific worker provisioning belongs to Marvin's deployment backlog.
+services:
+  - type: web
+    name: physiolab-demo
+    runtime: docker
+    plan: free
+    rootDir: physiolab
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PHYSIOLAB_DATA_DIR
+        value: /tmp/physiolab-data
+# Free service storage is ephemeral. Use synthetic data only. Auth, tenant isolation,
+# persistent storage, quotas and per-request provisioning are not implemented yet.

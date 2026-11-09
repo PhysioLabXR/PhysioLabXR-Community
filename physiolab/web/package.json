@@ -1,0 +1,34 @@
+{
+  "name": "@physiolab/builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5178 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4178",
+    "types": "openapi-typescript ../docs/openapi.json -o src/lib/schema.d.ts && prettier --write src/lib/schema.d.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests *.ts *.json index.html",
+    "format:check": "prettier --check src tests *.ts *.json index.html"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "openapi-typescript": "7.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "5.9.3",
+    "vite": "8.3.6"
+  }
+}

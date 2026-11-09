@@ -66,3 +66,7 @@ include-package-data = true
 #    "_presets/*",
 #    "_media/*",
 #]
+
+# Keep the new web platform out of the legacy desktop distribution.
+[tool.setuptools.packages.find]
+include = ["physiolabxr*"]

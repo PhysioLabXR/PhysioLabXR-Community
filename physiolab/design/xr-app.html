@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adaptive workspace · XR Blocks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<style>html,body{margin:0;height:100%;background:#0f1016;overflow:hidden;font-family:system-ui,-apple-system,sans-serif}canvas{display:block}#hint{position:fixed;left:10px;top:8px;font-size:11px;color:#8a8ca8;pointer-events:none;letter-spacing:.02em}</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/",
+    "xrblocks": "https://cdn.jsdelivr.net/gh/google/xrblocks@build/xrblocks.js",
+    "xrblocks/addons/": "https://cdn.jsdelivr.net/gh/google/xrblocks@build/addons/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="hint">XR Blocks desktop simulator · click to focus, drag to look, WASD to move, click panels</div>
+<script type="module">
+import * as THREE from 'three';
+import * as xb from 'xrblocks';
+
+const ACCENT = '#8b7cf6', ACCENT_DIM = '#5b4fc4', INK = '#15161e', INK2 = '#1c1d28', TEXT = '#e6e7f2', MUTED = '#8a8ca8', OK = '#6fcf97';
+const lerp = (a, b, k) => a + (b - a) * k;
+
+// The physio state arrives from PhysioLab over postMessage: {type:'physio', load, running}
+const physio = { load: 50, running: false, override: null };
+window.addEventListener('message', e => { const d = e.data || {}; if (d.type === 'physio') { if (typeof d.load === 'number') physio.load = d.load; if (typeof d.running === 'boolean') physio.running = d.running; } });
+
+class AdaptiveWorkspace extends xb.Script {
+  async init() {
+    await super.init();
+    this.add(new THREE.HemisphereLight(0xffffff, 0x444466, 2));
+    const grid = new THREE.GridHelper(14, 28, 0x2a2b3d, 0x1c1d2a); this.add(grid);
+    const y = xb.user.height - 0.25, z = -xb.user.objectDistance - 0.2;
+
+    const text = (t, size, color) => new xb.UIText({ text: t, style: { fontSize: size, color: color || TEXT } });
+    const lines = (n, seed) => Array.from({ length: n }, (_, i) => new xb.UIPanel({ style: { height: 10, borderRadius: 5, width: `${55 + ((i * seed) % 40)}%`, backgroundColor: '#3a3c52' } }));
+
+    // Document: the one thing that always stays
+    this.doc = new xb.UICard({ size: { width: 0.9, height: 'auto' }, manipulation: true, edge: true, style: { flexDirection: 'column', gap: 12, padding: 28, backgroundColor: INK, borderRadius: 24 }, children: [
+      text('Quarterly plan — draft 3', 30), new xb.UIPanel({ style: { height: 3, width: 70, backgroundColor: ACCENT, borderRadius: 2 } }), ...lines(7, 37),
+      new xb.UIPanel({ style: { flexDirection: 'row', gap: 12, marginTop: 8 }, children: [
+        new xb.UIButton({ label: 'Comment', onClick: () => this.toast('Comment added to the draft') }),
+        new xb.UIButton({ label: 'Share', onClick: () => this.toast('Share sheet opened') }) ] }) ] });
+    this.doc.position.set(0, y, z); this.add(this.doc);
+
+    // Messages (left) and Timeline (right): these move away under load
+    this.msgs = new xb.UICard({ size: { width: 0.5, height: 'auto' }, manipulation: true, style: { flexDirection: 'column', gap: 10, padding: 22, backgroundColor: INK2, borderRadius: 20 }, children: [
+      text('Messages', 24), ...['Ana · 2 min', 'Design review · 9 min', 'Build bot · 14 min'].map(t => new xb.UIPanel({ style: { flexDirection: 'row', gap: 10, alignItems: 'center' }, children: [new xb.UIPanel({ style: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#3a3c52' } }), text(t, 17, MUTED)] })),
+      new xb.UIButton({ label: 'Reply to Ana', onClick: () => this.toast('Reply opened') }) ] });
+    this.msgs.position.set(-0.95, y, z + 0.25); this.msgs.rotation.y = 0.55; this.add(this.msgs);
+
+    this.time = new xb.UICard({ size: { width: 0.5, height: 'auto' }, manipulation: true, style: { flexDirection: 'column', gap: 10, padding: 22, backgroundColor: INK2, borderRadius: 20 }, children: [
+      text('Timeline', 24), ...lines(5, 53), new xb.UIButton({ label: 'Jump to today', onClick: () => this.toast('Timeline moved to today') }) ] });
+    this.time.position.set(0.95, y, z + 0.25); this.time.rotation.y = -0.55; this.add(this.time);
+    this.homes = { msgs: this.msgs.position.clone(), time: this.time.position.clone() };
+
+    // Held notifications: appears only while decluttered
+    this.held = new xb.UICard({ size: { width: 0.34, height: 'auto' }, style: { flexDirection: 'row', gap: 10, padding: 14, alignItems: 'center', backgroundColor: INK2, borderRadius: 999 }, children: [
+      new xb.UIPanel({ style: { width: 10, height: 10, borderRadius: 5, backgroundColor: ACCENT } }), this.heldText = text('3 notifications held', 16, MUTED) ] });
+    this.held.position.set(0, y - 0.62, z + 0.1); this.held.visible = false; this.add(this.held);
+
+    // HUD: load, mode, adaptive toggle, manual override
+    this.loadText = text('Load — · waiting for PhysioLab', 18, MUTED);
+    this.progress = new xb.UIProgress({ ariaLabel: 'Cognitive load', value: 0.5, style: { flexGrow: 1, height: 8 } });
+    this.adaptive = true;
+    const toggle = new xb.UIToggle({ ariaLabel: 'Adaptive layout', checked: true, style: { ':checked': { backgroundColor: ACCENT_DIM, color: '#ffffff' } }, onChange: c => { this.adaptive = c; this.toast(c ? 'Adaptation on' : 'Adaptation off'); } });
+    const slider = new xb.UISlider({ ariaLabel: 'Override load', min: 0, max: 100, step: 1, value: 50, style: { width: 160 }, onInput: v => { physio.override = v; }, onChange: () => { setTimeout(() => { physio.override = null; }, 4000); } });
+    this.hud = new xb.UIOverlay({ style: { position: 'absolute', left: 16, right: 16, bottom: 14, flexDirection: 'row', alignItems: 'center', gap: 16, padding: 12, backgroundColor: 'rgba(21,22,30,0.85)', borderRadius: 16 }, children: [
+      this.loadText, this.progress,
+      new xb.UIPanel({ style: { flexDirection: 'row', alignItems: 'center', gap: 8 }, children: [text('Adaptive', 15, MUTED), toggle] }),
+      new xb.UIPanel({ style: { flexDirection: 'row', alignItems: 'center', gap: 8 }, children: [text('Try load', 15, MUTED), slider] }) ] });
+    this.add(this.hud);
+
+    this.toastText = text('', 15); this.toastCard = new xb.UIOverlay({ style: { position: 'absolute', left: '50%', top: 16, transform: { translateX: '-50%' }, padding: 10, backgroundColor: '#e6e7f2', borderRadius: 999 }, children: [this.toastText] });
+    this.toastText.style.color = '#0f1016'; this.toastCard.visible = false; this.add(this.toastCard);
+
+    this.mode = 'full'; this.k = 1; this.last = performance.now(); this.holdUntil = 0;
+    parent.postMessage({ type: 'xr-ready' }, '*');
+  }
+  toast(t) { this.toastText.text = t; this.toastCard.visible = true; clearTimeout(this.toastT); this.toastT = setTimeout(() => { this.toastCard.visible = false; }, 1800); }
+  update() {
+    const now = performance.now(); const dt = Math.min(0.05, (now - this.last) / 1000); this.last = now;
+    const load = physio.override ?? physio.load; const live = physio.running || physio.override !== null;
+    // hysteresis mirrors the Adaptation policy node: declutter ≥ 60, restore < 40, 20 s minimum hold (shortened to 4 s for the simulator)
+    if (this.adaptive && live && now > this.holdUntil) {
+      if (this.mode === 'full' && load >= 60) { this.mode = 'focus'; this.holdUntil = now + 4000; }
+      else if (this.mode === 'focus' && load < 40) { this.mode = 'full'; this.holdUntil = now + 4000; }
+    }
+    if (!this.adaptive) this.mode = 'full';
+    const target = this.mode === 'focus' ? 0 : 1; this.k = lerp(this.k, target, 1 - Math.exp(-dt * 2.5));
+    const k = this.k;
+    [['msgs', -1], ['time', 1]].forEach(([key, dir]) => { const c = this[key]; const h = this.homes[key]; c.position.x = h.x + dir * (1 - k) * 0.7; c.position.z = h.z - (1 - k) * 0.9; c.style.opacity = 0.12 + k * 0.88; c.pointerEvents = k > 0.5 ? 'auto' : 'none'; });
+    this.held.visible = k < 0.5;
+    this.progress.value = load / 100;
+    this.loadText.text = live ? `Load ${Math.round(load)} · ${this.mode === 'focus' ? 'decluttered' : 'full workspace'}${physio.override !== null ? ' · manual' : ''}` : 'Load — · press Run in PhysioLab';
+    this.loadText.style.color = live ? (load >= 60 ? ACCENT : OK) : MUTED;
+  }
+}
+
+xb.ui.theme = 'grayGlass';
+const options = new xb.Options();
+xb.add(new AdaptiveWorkspace());
+xb.init(options);
+</script>
+</body>
+</html>
