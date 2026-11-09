@@ -2,24 +2,26 @@
 
 Linear PHY is the live tracker. These twelve handoff tasks preserve the meeting scope.
 
-Key dependencies refer to rows below; update Linear links here after creation.
+All twelve issues are published as Todo in [Linear PHY](https://linear.app/physiolab/team/PHY/active), with four assigned to each owner. The links below open the live issues; key dependencies refer to this handoff. November 15 is the first checkpoint recorded in the near-term issue descriptions.
 
 | Key | Owner | Task | Depends on | Initial target |
 | --- | --- | --- | --- | --- |
-| S1 | Serena | Inventory sensor capabilities and confirm the first live-data path | Ready | 2026-11-15 |
-| S2 | Serena | Connect Apple Watch through a local companion bridge | S1 | 2026-11-15 |
-| S3 | Serena | Implement Oura V2 sync with consent and data provenance | S1 | After prerequisite review |
-| S4 | Serena | Bridge a legacy PhysioLabXR LSL or EEG connector | S1 | After prerequisite review |
-| H1 | Haosen | Define and validate the preprocessing module registry | Ready | 2026-11-15 |
-| H2 | Haosen | Review open physiological models and publish model cards | Ready | 2026-11-15 |
-| H3 | Haosen | Integrate the first open physiological model adapter | H1, H2 | After prerequisite review |
-| H4 | Haosen | Create deterministic EMG and P300 evaluation fixtures | H1 | After prerequisite review |
-| M1 | Marvin | Curate ten example prompts and handcrafted golden pipelines | Ready | 2026-11-15 |
-| M2 | Marvin | Implement a validated pipeline-generation agent | M1 | After prerequisite review |
-| M3 | Marvin | Build application adapters for web, phone and Quest | M1 | After prerequisite review |
-| M4 | Marvin | Implement Render per-request workers and deployment lifecycle | M2 | After prerequisite review |
+| [PHY-5](https://linear.app/physiolab/issue/PHY-5/inventory-sensor-capabilities-and-confirm-the-first-live-data-path) (S1) | Serena | Inventory sensor capabilities and confirm the first live-data path | Ready | 2026-11-15 |
+| [PHY-6](https://linear.app/physiolab/issue/PHY-6/connect-apple-watch-through-a-local-companion-bridge) (S2) | Serena | Connect Apple Watch through a local companion bridge | S1 | 2026-11-15 |
+| [PHY-7](https://linear.app/physiolab/issue/PHY-7/implement-oura-v2-sync-with-consent-and-data-provenance) (S3) | Serena | Implement Oura V2 sync with consent and data provenance | S1 | After prerequisite review |
+| [PHY-8](https://linear.app/physiolab/issue/PHY-8/bridge-a-legacy-physiolabxr-lsl-or-eeg-connector) (S4) | Serena | Bridge a legacy PhysioLabXR LSL or EEG connector | S1 | After prerequisite review |
+| [PHY-9](https://linear.app/physiolab/issue/PHY-9/define-and-validate-the-preprocessing-module-registry) (H1) | Haosen | Define and validate the preprocessing module registry | Ready | 2026-11-15 |
+| [PHY-10](https://linear.app/physiolab/issue/PHY-10/review-open-physiological-models-and-publish-model-cards) (H2) | Haosen | Review open physiological models and publish model cards | Ready | 2026-11-15 |
+| [PHY-11](https://linear.app/physiolab/issue/PHY-11/integrate-the-first-open-physiological-model-adapter) (H3) | Haosen | Integrate the first open physiological model adapter | H1, H2 | After prerequisite review |
+| [PHY-12](https://linear.app/physiolab/issue/PHY-12/create-deterministic-emg-and-p300-evaluation-fixtures) (H4) | Haosen | Create deterministic EMG and P300 evaluation fixtures | H1 | After prerequisite review |
+| [PHY-13](https://linear.app/physiolab/issue/PHY-13/curate-ten-example-prompts-and-handcrafted-golden-pipelines) (M1) | Marvin | Curate ten example prompts and handcrafted golden pipelines | Ready | 2026-11-15 |
+| [PHY-14](https://linear.app/physiolab/issue/PHY-14/implement-a-validated-pipeline-generation-agent) (M2) | Marvin | Implement a validated pipeline-generation agent | M1 | After prerequisite review |
+| [PHY-15](https://linear.app/physiolab/issue/PHY-15/build-application-adapters-for-web-phone-and-quest) (M3) | Marvin | Build application adapters for web, phone and Quest | M1 | After prerequisite review |
+| [PHY-16](https://linear.app/physiolab/issue/PHY-16/implement-render-per-request-workers-and-deployment-lifecycle) (M4) | Marvin | Implement Render per-request workers and deployment lifecycle | M2 | After prerequisite review |
 
 ## S1 — Inventory sensor capabilities and confirm the first live-data path
+
+Linear: [PHY-5](https://linear.app/physiolab/issue/PHY-5/inventory-sensor-capabilities-and-confirm-the-first-live-data-path).
 
 Owner: Serena
 
@@ -38,6 +40,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## S2 — Connect Apple Watch through a local companion bridge
 
+Linear: [PHY-6](https://linear.app/physiolab/issue/PHY-6/connect-apple-watch-through-a-local-companion-bridge).
+
 Owner: Serena
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -54,6 +58,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 
 ## S3 — Implement Oura V2 sync with consent and data provenance
+
+Linear: [PHY-7](https://linear.app/physiolab/issue/PHY-7/implement-oura-v2-sync-with-consent-and-data-provenance).
 
 Owner: Serena
 
@@ -72,6 +78,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## S4 — Bridge a legacy PhysioLabXR LSL or EEG connector
 
+Linear: [PHY-8](https://linear.app/physiolab/issue/PHY-8/bridge-a-legacy-physiolabxr-lsl-or-eeg-connector).
+
 Owner: Serena
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -88,6 +96,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 
 ## H1 — Define and validate the preprocessing module registry
+
+Linear: [PHY-9](https://linear.app/physiolab/issue/PHY-9/define-and-validate-the-preprocessing-module-registry).
 
 Owner: Haosen
 
@@ -106,6 +116,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## H2 — Review open physiological models and publish model cards
 
+Linear: [PHY-10](https://linear.app/physiolab/issue/PHY-10/review-open-physiological-models-and-publish-model-cards).
+
 Owner: Haosen
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -122,6 +134,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 
 ## H3 — Integrate the first open physiological model adapter
+
+Linear: [PHY-11](https://linear.app/physiolab/issue/PHY-11/integrate-the-first-open-physiological-model-adapter).
 
 Owner: Haosen
 
@@ -140,6 +154,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## H4 — Create deterministic EMG and P300 evaluation fixtures
 
+Linear: [PHY-12](https://linear.app/physiolab/issue/PHY-12/create-deterministic-emg-and-p300-evaluation-fixtures).
+
 Owner: Haosen
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -156,6 +172,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 
 ## M1 — Curate ten example prompts and handcrafted golden pipelines
+
+Linear: [PHY-13](https://linear.app/physiolab/issue/PHY-13/curate-ten-example-prompts-and-handcrafted-golden-pipelines).
 
 Owner: Marvin
 
@@ -174,6 +192,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## M2 — Implement a validated pipeline-generation agent
 
+Linear: [PHY-14](https://linear.app/physiolab/issue/PHY-14/implement-a-validated-pipeline-generation-agent).
+
 Owner: Marvin
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -191,6 +211,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 ## M3 — Build application adapters for web, phone and Quest
 
+Linear: [PHY-15](https://linear.app/physiolab/issue/PHY-15/build-application-adapters-for-web-phone-and-quest).
+
 Owner: Marvin
 
 Context: PhysioLab team handoff, Nov 8, 2026.
@@ -207,6 +229,8 @@ Meeting: https://notes.granola.ai/d/bb8697db-17e8-4a97-8a2e-e5588fb289b7
 
 
 ## M4 — Implement Render per-request workers and deployment lifecycle
+
+Linear: [PHY-16](https://linear.app/physiolab/issue/PHY-16/implement-render-per-request-workers-and-deployment-lifecycle).
 
 Owner: Marvin
 

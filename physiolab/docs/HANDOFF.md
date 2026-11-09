@@ -44,6 +44,10 @@ validate outputs, and expose failures clearly. Deliver an end-to-end web target,
 and Quest paths, with deployment status and teardown. Add Render per-request workers only
 with isolation and explicit cost/cleanup controls.
 
+## Live tasks
+
+The [Linear PHY board](https://linear.app/physiolab/team/PHY/active) contains twelve assigned Todo issues: Serena **PHY-5–PHY-8**, Haosen **PHY-9–PHY-12**, and Marvin **PHY-13–PHY-16**. Each includes acceptance criteria, a code entry point and prerequisite links. Start with **PHY-5**, **PHY-9/PHY-10**, and **PHY-13**, respectively. See [BACKLOG.md](BACKLOG.md) for direct links.
+
 ## Working agreement
 
 1. Branch from `feat/physiolab-platform-skeleton` until it is merged. Create component PRs.
