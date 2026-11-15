@@ -1,0 +1,70 @@
+{
+  "fixture_version": "0.2",
+  "id": "stress-vague",
+  "original_prompt": null,
+  "prompt": "Make an app that shows my stress.",
+  "categories": [
+    "wearable"
+  ],
+  "requested_target": null,
+  "requirements": {
+    "devices": [
+      {
+        "capability": "unspecified",
+        "delivery": "unknown"
+      }
+    ],
+    "processing": [
+      "unknown"
+    ],
+    "model": {
+      "task": "stress estimate",
+      "validation": "No validated model"
+    },
+    "target": "unspecified"
+  },
+  "expected_behavior": "Ask before planning anything.",
+  "constraints": [
+    "No device or target named; the planner must not pick them."
+  ],
+  "ambiguities": [
+    {
+      "question": "Which device do you have?",
+      "why": "Not named.",
+      "policy": "Ask."
+    },
+    {
+      "question": "Phone, web or Quest?",
+      "why": "No target named.",
+      "policy": "Ask."
+    },
+    {
+      "question": "What should 'stress' show?",
+      "why": "Undefined.",
+      "policy": "Ask."
+    }
+  ],
+  "result": {
+    "status": "needs_clarification",
+    "questions": [
+      "Which device do you have?",
+      "Should the app run on phone, web or Quest?",
+      "What should 'stress' show: a score, a trend or alerts?"
+    ],
+    "missing": [
+      {
+        "layer": "model",
+        "capability": "validated stress model",
+        "blocked_by": "PHY-10/PHY-11",
+        "reason": "None available."
+      }
+    ],
+    "user_message": "Before I plan this: which device do you have, where should the app run, and what should 'stress' show? A validated stress model doesn't exist yet either."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Asks before planning",
+      "Does not pick a device"
+    ]
+  }
+}

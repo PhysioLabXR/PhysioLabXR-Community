@@ -1,0 +1,112 @@
+{
+  "fixture_version": "0.2",
+  "id": "emg-more-sensitive",
+  "original_prompt": null,
+  "prompt": "Make the simulated EMG gesture detector more sensitive.",
+  "categories": [
+    "web"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "emg",
+        "implementation": "simulated-emg",
+        "delivery": "simulated"
+      }
+    ],
+    "processing": [
+      "bandpass 10-40 Hz",
+      "sliding-window 100 / 50"
+    ],
+    "model": {
+      "task": "binary gesture vs rest",
+      "implementation": "demo-emg-rms",
+      "validation": "Deterministic simulation only; not a physiologically validated classifier."
+    },
+    "target": "web-preview"
+  },
+  "expected_behavior": "Same demo with a lower threshold, so weaker activation counts as a gesture.",
+  "constraints": [
+    "Threshold must stay within 0 < threshold <= 2."
+  ],
+  "ambiguities": [
+    {
+      "question": "How much more sensitive?",
+      "why": "No amount given.",
+      "policy": "Apply a default step (0.25 -> 0.15) and say so."
+    }
+  ],
+  "result": {
+    "status": "runnable",
+    "provenance": "simulated",
+    "pipeline": {
+      "schema_version": "1.0",
+      "nodes": [
+        {
+          "id": "sensor",
+          "kind": "device",
+          "implementation": "simulated-emg",
+          "parameters": {}
+        },
+        {
+          "id": "filter",
+          "kind": "processing",
+          "implementation": "bandpass",
+          "parameters": {
+            "low_hz": 10.0,
+            "high_hz": 40.0
+          }
+        },
+        {
+          "id": "window",
+          "kind": "processing",
+          "implementation": "sliding-window",
+          "parameters": {
+            "size": 100.0,
+            "stride": 50.0
+          }
+        },
+        {
+          "id": "model",
+          "kind": "model",
+          "implementation": "demo-emg-rms",
+          "parameters": {
+            "threshold": 0.15
+          }
+        },
+        {
+          "id": "app",
+          "kind": "application",
+          "implementation": "web-preview",
+          "parameters": {}
+        }
+      ],
+      "edges": [
+        {
+          "source": "sensor",
+          "target": "filter"
+        },
+        {
+          "source": "filter",
+          "target": "window"
+        },
+        {
+          "source": "window",
+          "target": "model"
+        },
+        {
+          "source": "model",
+          "target": "app"
+        }
+      ]
+    },
+    "user_message": "Lowered the gesture threshold from 0.25 to 0.15 on the simulated demo."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Changes only the threshold",
+      "States the new value"
+    ]
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "fixture_version": "0.2",
+  "id": "emg-game",
+  "original_prompt": "Use an EMG gesture to make the dinosaur jump.",
+  "prompt": "Make the dinosaur in a web game jump whenever the simulated EMG detects a gesture.",
+  "categories": [
+    "web",
+    "research-bci"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "emg",
+        "implementation": "simulated-emg",
+        "delivery": "simulated"
+      }
+    ],
+    "processing": [
+      "bandpass 10-40 Hz",
+      "sliding-window 100 / 50"
+    ],
+    "model": {
+      "task": "binary gesture vs rest",
+      "implementation": "demo-emg-rms",
+      "validation": "Deterministic simulation only; not a physiologically validated classifier."
+    },
+    "target": "web game (dino jump)"
+  },
+  "expected_behavior": "Each detected gesture triggers exactly one jump; the game shows connection and error states.",
+  "constraints": [
+    "The game target does not exist; the replay HTML export is not a game.",
+    "One gesture must map to one jump (no repeats while held)."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "partial",
+    "available_layers": [
+      "device (simulated)",
+      "processing",
+      "model (demo RMS)"
+    ],
+    "missing": [
+      {
+        "layer": "application",
+        "capability": "web game adapter (dino jump)",
+        "blocked_by": "PHY-15",
+        "reason": "Only web-preview exists in the catalog."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Same as the runnable EMG chain, with a game target instead of the preview. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "simulated-emg",
+            "parameters": {}
+          },
+          {
+            "id": "filter",
+            "kind": "processing",
+            "implementation": "bandpass",
+            "parameters": {
+              "low_hz": 10.0,
+              "high_hz": 40.0
+            }
+          },
+          {
+            "id": "window",
+            "kind": "processing",
+            "implementation": "sliding-window",
+            "parameters": {
+              "size": 100.0,
+              "stride": 50.0
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "demo-emg-rms",
+            "parameters": {
+              "threshold": 0.25
+            }
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "web-game-dino",
+            "parameters": {
+              "action": "jump",
+              "on_label": "gesture"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "filter"
+          },
+          {
+            "source": "filter",
+            "target": "window"
+          },
+          {
+            "source": "window",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can detect the simulated gesture, but there's no game target yet, so I can't make the dinosaur jump. I can run the detector in the web preview instead."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Does not claim a working game",
+      "Offers the runnable subset"
+    ]
+  }
+}

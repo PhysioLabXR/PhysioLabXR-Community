@@ -1,0 +1,109 @@
+{
+  "fixture_version": "0.2",
+  "id": "emg-filter-out-of-range",
+  "original_prompt": null,
+  "prompt": "Filter the simulated EMG between 80 and 120 Hz.",
+  "categories": [
+    "web"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "emg",
+        "implementation": "simulated-emg",
+        "delivery": "simulated"
+      }
+    ],
+    "processing": [
+      "bandpass 80-120 Hz (requested)"
+    ],
+    "model": {
+      "task": "binary gesture vs rest",
+      "implementation": "demo-emg-rms",
+      "validation": "Deterministic simulation only; not a physiologically validated classifier."
+    },
+    "target": "web-preview"
+  },
+  "expected_behavior": "Reject the setting, explain the 50 Hz limit and suggest a valid range.",
+  "constraints": [
+    "Simulated EMG is 100 Hz, so frequencies must stay below 50 Hz (Nyquist)."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "invalid_request",
+    "requested_pipeline": {
+      "schema_version": "1.0",
+      "nodes": [
+        {
+          "id": "sensor",
+          "kind": "device",
+          "implementation": "simulated-emg",
+          "parameters": {}
+        },
+        {
+          "id": "filter",
+          "kind": "processing",
+          "implementation": "bandpass",
+          "parameters": {
+            "low_hz": 80.0,
+            "high_hz": 120.0
+          }
+        },
+        {
+          "id": "window",
+          "kind": "processing",
+          "implementation": "sliding-window",
+          "parameters": {
+            "size": 100.0,
+            "stride": 50.0
+          }
+        },
+        {
+          "id": "model",
+          "kind": "model",
+          "implementation": "demo-emg-rms",
+          "parameters": {
+            "threshold": 0.25
+          }
+        },
+        {
+          "id": "app",
+          "kind": "application",
+          "implementation": "web-preview",
+          "parameters": {}
+        }
+      ],
+      "edges": [
+        {
+          "source": "sensor",
+          "target": "filter"
+        },
+        {
+          "source": "filter",
+          "target": "window"
+        },
+        {
+          "source": "window",
+          "target": "model"
+        },
+        {
+          "source": "model",
+          "target": "app"
+        }
+      ]
+    },
+    "suggestion": {
+      "low_hz": 10.0,
+      "high_hz": 40.0
+    },
+    "user_message": "The simulated signal is sampled at 100 Hz, so I can't filter above 50 Hz. Want 10-40 Hz instead?"
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Rejects the range",
+      "Explains why",
+      "Suggests a valid range"
+    ]
+  }
+}

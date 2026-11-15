@@ -521,3 +521,38 @@ footer {
     display: none;
   }
 }
+
+.create-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.plan-preview {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-neutral-700);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.plan-preview p {
+  margin: 10px 0 0;
+}
+.plan-preview ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+.plan-preview li {
+  margin-top: 4px;
+}
+.plan-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.plan-runnable {
+  border-color: var(--color-accent);
+  color: var(--color-accent-200);
+}

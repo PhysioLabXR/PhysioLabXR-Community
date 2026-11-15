@@ -1,0 +1,113 @@
+{
+  "fixture_version": "0.2",
+  "id": "breathing-feedback",
+  "original_prompt": "Show a breathing exercise with heart-rate feedback from my watch.",
+  "prompt": "Show a breathing exercise on my phone with heart-rate feedback from my Apple Watch.",
+  "categories": [
+    "wearable",
+    "phone"
+  ],
+  "requested_target": "phone",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "apple-watch heart rate",
+        "delivery": "near-live via companion bridge"
+      }
+    ],
+    "processing": [
+      "heart-rate smoothing"
+    ],
+    "model": {
+      "task": "simple pacing rule (no trained model)",
+      "validation": "Not a clinical intervention"
+    },
+    "target": "phone breathing app"
+  },
+  "expected_behavior": "Guided breathing animation with heart rate shown and its delay disclosed.",
+  "constraints": [
+    "Watch heart-rate latency must be measured and shown (PHY-5)."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "Apple Watch connector",
+        "blocked_by": "PHY-6",
+        "reason": "Planned only."
+      },
+      {
+        "layer": "processing",
+        "capability": "heart-rate smoothing",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "application",
+        "capability": "breathing app",
+        "blocked_by": "PHY-15",
+        "reason": "No phone target."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Moved from the original ten; overlaps focus-wearables. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "apple-watch",
+            "parameters": {
+              "data": "heart_rate"
+            }
+          },
+          {
+            "id": "smooth",
+            "kind": "processing",
+            "implementation": "moving-average",
+            "parameters": {
+              "seconds": 5.0
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "breathing-pacer",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "phone-breathing",
+            "parameters": {}
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "smooth"
+          },
+          {
+            "source": "smooth",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the Apple Watch connector and a phone app are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Discloses latency",
+      "Names the missing connector"
+    ]
+  }
+}

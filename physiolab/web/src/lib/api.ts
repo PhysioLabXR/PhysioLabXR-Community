@@ -3,6 +3,7 @@ export type Project = components["schemas"]["Project"];
 export type Pipeline = components["schemas"]["Pipeline-Output"];
 export type Session = components["schemas"]["Session"];
 export type Catalog = components["schemas"]["Catalog"];
+export type PlanResult = components["schemas"]["PlanResult"];
 
 export async function api<T>(
   path: string,

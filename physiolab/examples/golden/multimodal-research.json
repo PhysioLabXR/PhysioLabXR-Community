@@ -1,0 +1,134 @@
+{
+  "fixture_version": "0.2",
+  "id": "multimodal-research",
+  "original_prompt": "Record EEG and eye tracking with task markers and export a synchronized session.",
+  "prompt": "Record EEG and eye tracking with task markers on one shared clock and export the session from the web app.",
+  "categories": [
+    "research-bci",
+    "web"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "EEG",
+        "delivery": "live via legacy bridge"
+      },
+      {
+        "capability": "eye tracker",
+        "delivery": "live via legacy bridge"
+      },
+      {
+        "capability": "task markers",
+        "delivery": "live"
+      }
+    ],
+    "processing": [
+      "clock alignment across streams"
+    ],
+    "model": {
+      "task": "none (recording only)",
+      "validation": "Timing accuracy"
+    },
+    "target": "web recording + synchronized export"
+  },
+  "expected_behavior": "One export file with all streams on a shared Unix-time clock.",
+  "constraints": [
+    "Runtime and export handle one stream today.",
+    "Each device clock must map to Unix time."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "EEG + eye-tracker bridges",
+        "blocked_by": "PHY-8",
+        "reason": "Legacy adapters exist but are unvalidated."
+      },
+      {
+        "layer": "device",
+        "capability": "task marker stream",
+        "blocked_by": "unassigned",
+        "reason": "No marker source."
+      },
+      {
+        "layer": "processing",
+        "capability": "multi-stream clock alignment",
+        "blocked_by": "unassigned",
+        "reason": "Not implemented."
+      },
+      {
+        "layer": "runtime",
+        "capability": "multi-stream graph without a model",
+        "blocked_by": "contract extension (team decision)",
+        "reason": "Single five-node chain only."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "No model layer: recording only. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "eeg",
+            "kind": "device",
+            "implementation": "legacy-lsl-eeg",
+            "parameters": {}
+          },
+          {
+            "id": "gaze",
+            "kind": "device",
+            "implementation": "legacy-eye-tracker",
+            "parameters": {}
+          },
+          {
+            "id": "markers",
+            "kind": "device",
+            "implementation": "task-markers",
+            "parameters": {}
+          },
+          {
+            "id": "align",
+            "kind": "processing",
+            "implementation": "clock-align",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "web-session-export",
+            "parameters": {}
+          }
+        ],
+        "edges": [
+          {
+            "source": "eeg",
+            "target": "align"
+          },
+          {
+            "source": "gaze",
+            "target": "align"
+          },
+          {
+            "source": "markers",
+            "target": "align"
+          },
+          {
+            "source": "align",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the EEG and eye-tracker bridges, a marker stream, clock alignment and multi-stream recording are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Mentions clock alignment",
+      "Does not claim sync"
+    ]
+  }
+}

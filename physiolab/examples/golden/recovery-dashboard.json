@@ -1,0 +1,143 @@
+{
+  "fixture_version": "0.2",
+  "id": "recovery-dashboard",
+  "original_prompt": "Build a consent-based recovery dashboard for a discharged patient.",
+  "prompt": "Build a consent-based web dashboard so a clinician can track a discharged patient's daily steps and resting heart rate from their Apple Watch.",
+  "categories": [
+    "clinician-dashboard",
+    "web",
+    "wearable"
+  ],
+  "requested_target": "web-dashboard",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "apple-watch steps + resting heart rate",
+        "delivery": "unverified"
+      }
+    ],
+    "processing": [
+      "daily aggregation"
+    ],
+    "model": {
+      "task": "descriptive trends (no diagnosis)",
+      "validation": "Clinical review required"
+    },
+    "target": "clinician web dashboard"
+  },
+  "expected_behavior": "A clinician sees consented daily trends with data freshness and no diagnostic claims.",
+  "constraints": [
+    "Consent capture and revocation are required.",
+    "No diagnosis or treatment claims.",
+    "Patient data must not live in local JSON storage without auth and tenant isolation."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "requires_review",
+    "review_needed": [
+      "clinical scope",
+      "consent flow",
+      "patient data handling"
+    ],
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "Apple Watch connector",
+        "blocked_by": "PHY-6",
+        "reason": "Planned only."
+      },
+      {
+        "layer": "processing",
+        "capability": "daily aggregation",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "deployment",
+        "capability": "auth, tenant isolation, secure storage",
+        "blocked_by": "PHY-16",
+        "reason": "Not implemented."
+      },
+      {
+        "layer": "application",
+        "capability": "clinician dashboard",
+        "blocked_by": "PHY-15",
+        "reason": "No dashboard target."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Only after clinical and privacy review. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "apple-watch",
+            "parameters": {
+              "data": "steps,resting_heart_rate"
+            }
+          },
+          {
+            "id": "daily",
+            "kind": "processing",
+            "implementation": "daily-aggregate",
+            "parameters": {
+              "stat": "sum_and_mean"
+            }
+          },
+          {
+            "id": "window",
+            "kind": "processing",
+            "implementation": "sliding-window",
+            "parameters": {
+              "size": 7.0,
+              "stride": 1.0
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "descriptive-trend",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "clinician-dashboard",
+            "parameters": {
+              "consent_required": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "daily"
+          },
+          {
+            "source": "daily",
+            "target": "window"
+          },
+          {
+            "source": "window",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "This needs clinical and privacy review first, and the watch connector, secure storage and dashboard don't exist yet."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Flags review",
+      "Makes no clinical claims",
+      "Requires consent"
+    ]
+  }
+}

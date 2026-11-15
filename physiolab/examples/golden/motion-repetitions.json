@@ -1,0 +1,132 @@
+{
+  "fixture_version": "0.2",
+  "id": "motion-repetitions",
+  "original_prompt": "Count movement repetitions from my phone accelerometer.",
+  "prompt": "Count my squat repetitions from my phone's accelerometer and show the count on my phone.",
+  "categories": [
+    "phone"
+  ],
+  "requested_target": "phone",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "phone accelerometer",
+        "delivery": "unverified"
+      }
+    ],
+    "processing": [
+      "acceleration magnitude",
+      "lowpass ~3 Hz",
+      "peak detection"
+    ],
+    "model": {
+      "task": "squat repetition counter",
+      "validation": "Task-specific evaluation needed"
+    },
+    "target": "phone"
+  },
+  "expected_behavior": "A live squat count that increases by one per repetition.",
+  "constraints": [
+    "Phone permissions and measured sample rate are unknown."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "phone motion connector",
+        "blocked_by": "unassigned (after PHY-5 inventory)",
+        "reason": "Planned only; no connector issue yet."
+      },
+      {
+        "layer": "processing",
+        "capability": "magnitude + peak detection",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "model",
+        "capability": "rep counter + evaluation",
+        "blocked_by": "unassigned",
+        "reason": "No model or ground-truth task."
+      },
+      {
+        "layer": "application",
+        "capability": "phone target",
+        "blocked_by": "PHY-15",
+        "reason": "No phone adapter."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "phone-motion",
+            "parameters": {
+              "data": "accelerometer"
+            }
+          },
+          {
+            "id": "magnitude",
+            "kind": "processing",
+            "implementation": "vector-magnitude",
+            "parameters": {}
+          },
+          {
+            "id": "filter",
+            "kind": "processing",
+            "implementation": "lowpass",
+            "parameters": {
+              "cutoff_hz": 3.0
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "rep-counter",
+            "parameters": {
+              "exercise": "squat"
+            }
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "phone-display",
+            "parameters": {}
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "magnitude"
+          },
+          {
+            "source": "magnitude",
+            "target": "filter"
+          },
+          {
+            "source": "filter",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the phone motion connector, a rep counter and a phone target are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Names the missing connector",
+      "Keeps the exercise as squats"
+    ]
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "fixture_version": "0.2",
+  "id": "p300-speller",
+  "original_prompt": "Build a P300 spelling task with EEG and synchronized stimulus markers.",
+  "prompt": "Build a web P300 speller that uses my EEG headset and synchronized flash markers to pick letters.",
+  "categories": [
+    "research-bci",
+    "web"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "EEG",
+        "delivery": "live via legacy LSL bridge"
+      },
+      {
+        "capability": "stimulus markers",
+        "delivery": "live, clock-aligned"
+      }
+    ],
+    "processing": [
+      "bandpass 0.5-20 Hz",
+      "epoching 0-800 ms after each flash"
+    ],
+    "model": {
+      "task": "P300 detection",
+      "validation": "Deterministic P300 fixture (PHY-12)"
+    },
+    "target": "web speller UI"
+  },
+  "expected_behavior": "Flashing letter grid; the selected letter appears after enough flash repetitions.",
+  "constraints": [
+    "Needs two synchronized streams.",
+    "Marker and EEG clocks must map to Unix time."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "EEG connector",
+        "blocked_by": "PHY-8",
+        "reason": "Legacy bridge not yet validated."
+      },
+      {
+        "layer": "device",
+        "capability": "stimulus markers + clock sync",
+        "blocked_by": "unassigned (related PHY-12)",
+        "reason": "No marker stream or alignment."
+      },
+      {
+        "layer": "processing",
+        "capability": "epoching",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "model",
+        "capability": "P300 classifier",
+        "blocked_by": "PHY-11/PHY-12",
+        "reason": "No P300 model."
+      },
+      {
+        "layer": "runtime",
+        "capability": "multi-stream graph",
+        "blocked_by": "contract extension (team decision)",
+        "reason": "Runtime runs a single chain only."
+      },
+      {
+        "layer": "application",
+        "capability": "speller UI",
+        "blocked_by": "PHY-15",
+        "reason": "No speller target."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Markers join EEG at the epoching step. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "eeg",
+            "kind": "device",
+            "implementation": "legacy-lsl-eeg",
+            "parameters": {}
+          },
+          {
+            "id": "markers",
+            "kind": "device",
+            "implementation": "stimulus-markers",
+            "parameters": {}
+          },
+          {
+            "id": "filter",
+            "kind": "processing",
+            "implementation": "bandpass",
+            "parameters": {
+              "low_hz": 0.5,
+              "high_hz": 20.0
+            }
+          },
+          {
+            "id": "epoch",
+            "kind": "processing",
+            "implementation": "epoch",
+            "parameters": {
+              "start_s": 0.0,
+              "end_s": 0.8
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "p300-classifier",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "web-speller",
+            "parameters": {}
+          }
+        ],
+        "edges": [
+          {
+            "source": "eeg",
+            "target": "filter"
+          },
+          {
+            "source": "filter",
+            "target": "epoch"
+          },
+          {
+            "source": "markers",
+            "target": "epoch"
+          },
+          {
+            "source": "epoch",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: EEG, synchronized markers, a P300 model and a speller app are missing, and the runtime handles only one stream."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Mentions synchronization",
+      "Mentions the multi-stream limit"
+    ]
+  }
+}

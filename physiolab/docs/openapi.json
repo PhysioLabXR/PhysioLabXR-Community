@@ -40,6 +40,45 @@
         }
       }
     },
+    "/api/plan": {
+      "post": {
+        "summary": "Plan",
+        "description": "Preview what the agent planner would do with a prompt. Creates and runs nothing.",
+        "operationId": "plan_api_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/projects": {
       "get": {
         "summary": "Projects",
@@ -608,6 +647,35 @@
         ],
         "title": "Inference"
       },
+      "Missing": {
+        "properties": {
+          "layer": {
+            "type": "string",
+            "title": "Layer"
+          },
+          "capability": {
+            "type": "string",
+            "title": "Capability"
+          },
+          "blocked_by": {
+            "type": "string",
+            "title": "Blocked By"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "layer",
+          "capability",
+          "blocked_by",
+          "reason"
+        ],
+        "title": "Missing"
+      },
       "Node-Input": {
         "properties": {
           "id": {
@@ -776,6 +844,96 @@
         ],
         "title": "Pipeline"
       },
+      "PlanRequest": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Prompt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "PlanRequest"
+      },
+      "PlanResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "runnable",
+              "partial",
+              "unsupported",
+              "needs_clarification",
+              "requires_review",
+              "invalid_request",
+              "refused"
+            ],
+            "title": "Status"
+          },
+          "pipeline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pipeline-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing": {
+            "items": {
+              "$ref": "#/components/schemas/Missing"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion"
+          },
+          "user_message": {
+            "type": "string",
+            "title": "User Message"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "pipeline",
+          "missing",
+          "questions",
+          "suggestion",
+          "user_message",
+          "provenance"
+        ],
+        "title": "PlanResult"
+      },
       "Project": {
         "properties": {
           "id": {
@@ -836,6 +994,55 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ProjectCreate"
+      },
+      "Provenance": {
+        "properties": {
+          "planner": {
+            "type": "string",
+            "title": "Planner",
+            "default": "agent-v0"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "prompt_sha256": {
+            "type": "string",
+            "title": "Prompt Sha256"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "validation_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Validation Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "planner",
+          "provider",
+          "model",
+          "prompt_sha256",
+          "created_at",
+          "attempts",
+          "validation_errors"
+        ],
+        "title": "Provenance"
       },
       "SampleBatch": {
         "properties": {

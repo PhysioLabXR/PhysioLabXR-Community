@@ -52,3 +52,20 @@ test("collaborator creates, configures, runs, stops, exports and reopens a proje
     fullPage: true,
   });
 });
+
+test("planner preview explains an unsupported prompt without creating a project", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByLabel("What would you like to build?")
+    .fill(
+      "Combine my Apple Watch and Oura data into a focus score on my phone.",
+    );
+  await page.getByRole("button", { name: "Check my prompt" }).click();
+  await expect(page.getByTestId("plan-status")).toHaveText(
+    "Can't build this yet",
+  );
+  await expect(page.getByTestId("plan-preview")).toContainText("PHY-6");
+  await expect(page.getByTestId("plan-preview")).toContainText("Preview only");
+});
