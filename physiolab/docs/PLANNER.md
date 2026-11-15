@@ -64,7 +64,8 @@ Baseline today: 100% status accuracy, 0.81 missing-layer recall on 14 fixtures.
 - Validation catches invalid pipelines, not wrong intent. Example found during testing: a
   Garmin prompt produced a valid EMG demo; fixed in the baseline, but this is exactly what the
   intent judge must catch for LLM providers.
-- Not wired into `api.py` yet. `AgentPlanner.plan()` keeps the `PipelinePlanner` interface, but
-  showing refusals in the UI needs `PlanResult` in `contracts.py` plus `make schema`: a contract
-  change for team review.
+- Wired in as a **preview only**: `POST /api/plan` returns a `PlanResult`, and the builder's
+  "Check my prompt" button shows it. Create project still uses `TemplatePlanner`. Replacing it
+  means deciding what a non-runnable plan does to project creation and moving `PlanResult` into
+  `contracts.py`: a change for team review.
 - The runtime only runs the EMG chain, so only one pipeline shape can be runnable today.

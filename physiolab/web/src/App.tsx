@@ -14,6 +14,7 @@ import {
   type Pipeline,
   type Project,
   type Session,
+  type PlanResult,
 } from "./lib/api";
 import { PipelineCanvas } from "./components/PipelineCanvas";
 import { Inspector } from "./components/Inspector";
@@ -33,6 +34,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [plan, setPlan] = useState<PlanResult | null>(null);
   const [tab, setTab] = useState<"flow" | "devices">("flow");
   const active = sessions.find((s) => s.status === "running");
   const session =
@@ -214,7 +216,10 @@ export default function App() {
               <textarea
                 maxLength={2000}
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  setPlan(null);
+                }}
               />
             </label>
             <div className="create-footer">
@@ -224,10 +229,27 @@ export default function App() {
                   Your intent is saved. This starter runs the selected template.
                 </p>
               </div>
-              <button className="btn primary" disabled={busy} type="submit">
-                Create project <ArrowRight />
-              </button>
+              <div className="create-actions">
+                <button
+                  className="btn"
+                  disabled={busy || !prompt.trim()}
+                  type="button"
+                  onClick={() =>
+                    void action(async () =>
+                      setPlan(
+                        await api<PlanResult>("/plan", "POST", { prompt }),
+                      ),
+                    )
+                  }
+                >
+                  Check my prompt
+                </button>
+                <button className="btn primary" disabled={busy} type="submit">
+                  Create project <ArrowRight />
+                </button>
+              </div>
             </div>
+            {plan && <PlanPreview plan={plan} />}
           </form>
           <section>
             <div className="section-title">
@@ -335,5 +357,56 @@ export default function App() {
         <span>Devices / Signal processing / Models / Applications</span>
       </footer>
     </>
+  );
+}
+
+const PLAN_LABELS: Record<PlanResult["status"], string> = {
+  runnable: "Can build this now",
+  partial: "Partly possible",
+  unsupported: "Can't build this yet",
+  needs_clarification: "Needs more detail",
+  requires_review: "Needs review first",
+  invalid_request: "Setting out of range",
+  refused: "Not allowed",
+};
+
+function PlanPreview({ plan }: { plan: PlanResult }) {
+  return (
+    <div className="plan-preview" data-testid="plan-preview">
+      <div className="plan-head">
+        <span className={`tag plan-${plan.status}`} data-testid="plan-status">
+          {PLAN_LABELS[plan.status]}
+        </span>
+        <span className="muted">
+          Planner preview · {plan.provenance.provider} / {plan.provenance.model}
+        </span>
+      </div>
+      <p>{plan.user_message}</p>
+      {plan.pipeline && (
+        <p className="muted">
+          {plan.pipeline.nodes.map((n) => n.implementation).join(" → ")}
+        </p>
+      )}
+      {plan.missing.length > 0 && (
+        <ul>
+          {plan.missing.map((m) => (
+            <li key={`${m.layer}-${m.capability}`}>
+              <strong>{m.capability}</strong> ({m.layer}) · {m.blocked_by}
+              <span className="muted"> · {m.reason}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {plan.questions.length > 0 && (
+        <ul>
+          {plan.questions.map((q) => (
+            <li key={q}>{q}</li>
+          ))}
+        </ul>
+      )}
+      <p className="muted">
+        Preview only. Create project still runs the EMG gesture template.
+      </p>
+    </div>
   );
 }

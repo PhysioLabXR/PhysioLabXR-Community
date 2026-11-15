@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
+from physiolab.api import create_app
 from physiolab.contracts import ProjectCreate
 from physiolab.devices.catalog import CATALOG
 from physiolab.orchestration.agent import AgentPlanner, PlanNotRunnable, build_instructions
@@ -127,3 +129,16 @@ def test_provenance_and_callable_provider():
 def test_instructions_list_planned_devices_as_unavailable():
     text = build_instructions()
     assert "apple-watch (planned" in text and "simulated-emg" in text
+
+
+def test_plan_endpoint_previews_without_creating_anything(tmp_path):
+    with TestClient(create_app(tmp_path)) as client:
+        ok = client.post("/api/plan", json={"prompt": "Show a gesture from the simulated EMG."})
+        assert ok.status_code == 200 and ok.json()["status"] == "runnable"
+        assert ok.json()["pipeline"] == golden_emg()
+        no = client.post("/api/plan", json={"prompt": "Show my Oura sleep on my phone."}).json()
+        assert no["status"] == "unsupported" and no["pipeline"] is None
+        assert {m["blocked_by"] for m in no["missing"]} >= {"PHY-7", "PHY-15"}
+        assert no["provenance"]["provider"] == "rule-based"
+        assert client.post("/api/plan", json={"prompt": ""}).status_code == 422
+        assert client.get("/api/projects").json() == []

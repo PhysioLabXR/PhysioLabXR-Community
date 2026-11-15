@@ -38,6 +38,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/plan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Plan
+     * @description Preview what the agent planner would do with a prompt. Creates and runs nothing.
+     */
+    post: operations["plan_api_plan_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/projects": {
     parameters: {
       query?: never;
@@ -247,6 +267,17 @@ export interface components {
        */
       simulated: boolean;
     };
+    /** Missing */
+    Missing: {
+      /** Layer */
+      layer: string;
+      /** Capability */
+      capability: string;
+      /** Blocked By */
+      blocked_by: string;
+      /** Reason */
+      reason: string;
+    };
     /** Node */
     "Node-Input": {
       /** Id */
@@ -305,6 +336,38 @@ export interface components {
       /** Edges */
       edges: components["schemas"]["Edge"][];
     };
+    /** PlanRequest */
+    PlanRequest: {
+      /** Prompt */
+      prompt: string;
+    };
+    /** PlanResult */
+    PlanResult: {
+      /**
+       * Status
+       * @enum {string}
+       */
+      status:
+        | "runnable"
+        | "partial"
+        | "unsupported"
+        | "needs_clarification"
+        | "requires_review"
+        | "invalid_request"
+        | "refused";
+      pipeline: components["schemas"]["Pipeline-Output"] | null;
+      /** Missing */
+      missing: components["schemas"]["Missing"][];
+      /** Questions */
+      questions: string[];
+      /** Suggestion */
+      suggestion: {
+        [key: string]: number;
+      } | null;
+      /** User Message */
+      user_message: string;
+      provenance: components["schemas"]["Provenance"];
+    };
     /** Project */
     Project: {
       /**
@@ -341,6 +404,29 @@ export interface components {
        * @constant
        */
       template: "emg-demo";
+    };
+    /** Provenance */
+    Provenance: {
+      /**
+       * Planner
+       * @default agent-v0
+       */
+      planner: string;
+      /** Provider */
+      provider: string;
+      /** Model */
+      model: string;
+      /** Prompt Sha256 */
+      prompt_sha256: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Attempts */
+      attempts: number;
+      /** Validation Errors */
+      validation_errors: string[];
     };
     /** SampleBatch */
     SampleBatch: {
@@ -472,6 +558,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Catalog"];
+        };
+      };
+    };
+  };
+  plan_api_plan_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PlanRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PlanResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

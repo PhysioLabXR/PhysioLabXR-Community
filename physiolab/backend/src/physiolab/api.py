@@ -10,7 +10,9 @@ from fastapi.staticfiles import StaticFiles
 from physiolab.applications.export import export_preview
 from physiolab.contracts import Catalog, Pipeline, Project, ProjectCreate, Session
 from physiolab.devices.catalog import CATALOG
+from physiolab.orchestration.agent import AgentPlanner, PlanRequest, PlanResult
 from physiolab.orchestration.planner import TemplatePlanner
+from physiolab.orchestration.providers import provider_from_env
 from physiolab.orchestration.runtime import Runtime
 from physiolab.orchestration.validation import validate_pipeline
 from physiolab.storage import Store
@@ -42,6 +44,11 @@ def create_app(data_dir: Path | None = None, interval: float = 0.2, max_batches:
     @app.get("/api/catalog", response_model=Catalog)
     def catalog():
         return CATALOG
+
+    @app.post("/api/plan", response_model=PlanResult)
+    def plan(request: PlanRequest):
+        """Preview what the agent planner would do with a prompt. Creates and runs nothing."""
+        return AgentPlanner(provider_from_env()).plan_detailed(request.prompt)
 
     @app.get("/api/projects", response_model=list[Project])
     def projects():

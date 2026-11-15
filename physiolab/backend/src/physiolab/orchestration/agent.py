@@ -58,6 +58,10 @@ class PlanResult(Contract):
     provenance: Provenance
 
 
+class PlanRequest(Contract):
+    prompt: str = Field(min_length=1, max_length=2000)
+
+
 class GenerationProvider(Protocol):
     """Anything that turns (instructions, prompt) into a JSON string. Swap to compare models."""
 
