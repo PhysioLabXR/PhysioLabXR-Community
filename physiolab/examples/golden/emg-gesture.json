@@ -1,0 +1,108 @@
+{
+  "fixture_version": "0.2",
+  "id": "emg-gesture",
+  "original_prompt": "Show a gesture when the simulated muscle signal activates.",
+  "prompt": "Show 'gesture' or 'rest' in the web preview when the simulated EMG signal activates.",
+  "categories": [
+    "web"
+  ],
+  "requested_target": "web",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "emg",
+        "implementation": "simulated-emg",
+        "delivery": "simulated"
+      }
+    ],
+    "processing": [
+      "bandpass 10-40 Hz",
+      "sliding-window 100 samples / stride 50"
+    ],
+    "model": {
+      "task": "binary gesture vs rest",
+      "implementation": "demo-emg-rms",
+      "validation": "Deterministic simulation only; not a physiologically validated classifier."
+    },
+    "target": "web-preview"
+  },
+  "expected_behavior": "Label alternates between 'rest' and 'gesture' about every 2 s; the session stops automatically after 60 s.",
+  "constraints": [
+    "Must be shown as simulated, never as live EMG.",
+    "RMS threshold baseline is not a trained gesture model."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "runnable",
+    "provenance": "simulated",
+    "pipeline": {
+      "schema_version": "1.0",
+      "nodes": [
+        {
+          "id": "sensor",
+          "kind": "device",
+          "implementation": "simulated-emg",
+          "parameters": {}
+        },
+        {
+          "id": "filter",
+          "kind": "processing",
+          "implementation": "bandpass",
+          "parameters": {
+            "low_hz": 10.0,
+            "high_hz": 40.0
+          }
+        },
+        {
+          "id": "window",
+          "kind": "processing",
+          "implementation": "sliding-window",
+          "parameters": {
+            "size": 100.0,
+            "stride": 50.0
+          }
+        },
+        {
+          "id": "model",
+          "kind": "model",
+          "implementation": "demo-emg-rms",
+          "parameters": {
+            "threshold": 0.25
+          }
+        },
+        {
+          "id": "app",
+          "kind": "application",
+          "implementation": "web-preview",
+          "parameters": {}
+        }
+      ],
+      "edges": [
+        {
+          "source": "sensor",
+          "target": "filter"
+        },
+        {
+          "source": "filter",
+          "target": "window"
+        },
+        {
+          "source": "window",
+          "target": "model"
+        },
+        {
+          "source": "model",
+          "target": "app"
+        }
+      ]
+    },
+    "user_message": "Built a simulated EMG gesture demo for the web preview. It uses a fake muscle signal and a simple energy threshold, not a real sensor or trained model."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Uses the simulated EMG source and labels it simulated",
+      "Shows gesture/rest labels",
+      "Targets the web preview"
+    ]
+  }
+}

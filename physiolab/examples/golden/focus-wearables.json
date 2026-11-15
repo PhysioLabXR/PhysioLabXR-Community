@@ -1,0 +1,179 @@
+{
+  "fixture_version": "0.2",
+  "id": "focus-wearables",
+  "original_prompt": "Use my Apple Watch and Oura data to build a personal focus dashboard.",
+  "prompt": "Combine my Apple Watch heart rate and Oura sleep data into a daily focus score on my phone.",
+  "categories": [
+    "wearable",
+    "phone"
+  ],
+  "requested_target": "phone",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "apple-watch heart rate",
+        "delivery": "unverified"
+      },
+      {
+        "capability": "oura sleep",
+        "delivery": "batch (sync)"
+      }
+    ],
+    "processing": [
+      "daily heart-rate features",
+      "daily sleep features",
+      "merge by date"
+    ],
+    "model": {
+      "task": "daily focus score",
+      "validation": "Requires a self-report study; no ground truth today"
+    },
+    "target": "phone dashboard"
+  },
+  "expected_behavior": "One focus score per day with the data freshness of each source shown.",
+  "constraints": [
+    "Oura is synced in batches, never live.",
+    "A focus score must not reuse the EMG fixture's validation claim."
+  ],
+  "ambiguities": [
+    {
+      "question": "What does the focus score represent (0-100 score, low/high state)?",
+      "why": "Focus has no agreed definition.",
+      "policy": "Report blockers first; ask once capabilities exist."
+    }
+  ],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "Apple Watch connector",
+        "blocked_by": "PHY-6",
+        "reason": "Planned only; live availability unverified."
+      },
+      {
+        "layer": "device",
+        "capability": "Oura V2 sync",
+        "blocked_by": "PHY-7",
+        "reason": "Planned only; batch delivery."
+      },
+      {
+        "layer": "processing",
+        "capability": "daily aggregation + merge",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "model",
+        "capability": "validated focus model",
+        "blocked_by": "PHY-10/PHY-11",
+        "reason": "No model selected; focus needs a self-report study."
+      },
+      {
+        "layer": "application",
+        "capability": "phone dashboard",
+        "blocked_by": "PHY-15",
+        "reason": "No phone target."
+      },
+      {
+        "layer": "runtime",
+        "capability": "multi-source graph",
+        "blocked_by": "contract extension (team decision)",
+        "reason": "Runtime runs a single chain only."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Two sources merged by date. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "watch",
+            "kind": "device",
+            "implementation": "apple-watch",
+            "parameters": {
+              "data": "heart_rate"
+            }
+          },
+          {
+            "id": "oura",
+            "kind": "device",
+            "implementation": "oura",
+            "parameters": {
+              "data": "sleep"
+            }
+          },
+          {
+            "id": "hr_daily",
+            "kind": "processing",
+            "implementation": "daily-aggregate",
+            "parameters": {
+              "stat": "mean"
+            }
+          },
+          {
+            "id": "sleep_daily",
+            "kind": "processing",
+            "implementation": "daily-aggregate",
+            "parameters": {
+              "stat": "sum"
+            }
+          },
+          {
+            "id": "merge",
+            "kind": "processing",
+            "implementation": "merge-by-date",
+            "parameters": {}
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "focus-estimator",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "phone-dashboard",
+            "parameters": {}
+          }
+        ],
+        "edges": [
+          {
+            "source": "watch",
+            "target": "hr_daily"
+          },
+          {
+            "source": "oura",
+            "target": "sleep_daily"
+          },
+          {
+            "source": "hr_daily",
+            "target": "merge"
+          },
+          {
+            "source": "sleep_daily",
+            "target": "merge"
+          },
+          {
+            "source": "merge",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the Apple Watch and Oura connectors, a validated focus model and the phone target are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Names every missing layer",
+      "Does not invent a focus model",
+      "Treats Oura as batch"
+    ]
+  }
+}

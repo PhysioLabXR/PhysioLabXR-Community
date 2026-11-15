@@ -1,0 +1,120 @@
+{
+  "fixture_version": "0.2",
+  "id": "sleep-summary",
+  "original_prompt": "Summarize my synced Oura sleep data each week.",
+  "prompt": "Send me a weekly summary of my synced Oura sleep data on my phone.",
+  "categories": [
+    "wearable",
+    "phone"
+  ],
+  "requested_target": "phone",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "oura sleep",
+        "delivery": "batch (sync)"
+      }
+    ],
+    "processing": [
+      "weekly aggregation"
+    ],
+    "model": {
+      "task": "descriptive summary (no inference)",
+      "validation": "Descriptive only"
+    },
+    "target": "phone weekly report"
+  },
+  "expected_behavior": "Once a week, a summary of the last 7 days with the last sync time shown.",
+  "constraints": [
+    "Never present synced data as live.",
+    "Sessions stop after 60 s; weekly scheduling does not exist."
+  ],
+  "ambiguities": [],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "Oura V2 sync",
+        "blocked_by": "PHY-7",
+        "reason": "Planned only."
+      },
+      {
+        "layer": "processing",
+        "capability": "weekly aggregation",
+        "blocked_by": "PHY-9",
+        "reason": "Not in the registry."
+      },
+      {
+        "layer": "runtime",
+        "capability": "scheduled weekly jobs",
+        "blocked_by": "unassigned",
+        "reason": "Sessions are short and manual."
+      },
+      {
+        "layer": "application",
+        "capability": "phone report",
+        "blocked_by": "PHY-15",
+        "reason": "No phone target."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Four nodes: no sliding window needed for weekly batches. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "oura",
+            "parameters": {
+              "data": "sleep"
+            }
+          },
+          {
+            "id": "weekly",
+            "kind": "processing",
+            "implementation": "weekly-aggregate",
+            "parameters": {}
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "descriptive-summary",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "phone-report",
+            "parameters": {
+              "schedule": "weekly"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "weekly"
+          },
+          {
+            "source": "weekly",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the Oura connector, weekly scheduling and a phone target are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Uses batch delivery",
+      "Refuses rather than faking data"
+    ]
+  }
+}

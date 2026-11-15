@@ -1,0 +1,135 @@
+{
+  "fixture_version": "0.2",
+  "id": "adaptive-workspace",
+  "original_prompt": "Adapt my Quest workspace when cognitive load changes.",
+  "prompt": "Use my EEG headset to simplify my Quest 3 workspace when my cognitive load goes up.",
+  "categories": [
+    "quest",
+    "research-bci"
+  ],
+  "requested_target": "quest",
+  "requirements": {
+    "devices": [
+      {
+        "capability": "EEG",
+        "delivery": "live via legacy LSL bridge"
+      }
+    ],
+    "processing": [
+      "bandpass 1-40 Hz",
+      "sliding window"
+    ],
+    "model": {
+      "task": "cognitive load estimate",
+      "validation": "Requires a self-report study"
+    },
+    "target": "Quest 3 XR workspace"
+  },
+  "expected_behavior": "When estimated load crosses a threshold, the XR workspace hides non-essential panels; it restores them when load drops.",
+  "constraints": [
+    "Cognitive load has no validated model.",
+    "Workspace changes must not flicker (needs hysteresis)."
+  ],
+  "ambiguities": [
+    {
+      "question": "What exactly should 'simplify' do?",
+      "why": "Adaptation behavior is open.",
+      "policy": "Use 'hide non-essential panels' and say so."
+    }
+  ],
+  "result": {
+    "status": "unsupported",
+    "missing": [
+      {
+        "layer": "device",
+        "capability": "EEG connector",
+        "blocked_by": "PHY-8",
+        "reason": "Legacy bridge not yet validated."
+      },
+      {
+        "layer": "model",
+        "capability": "cognitive load model",
+        "blocked_by": "PHY-10/PHY-11",
+        "reason": "Needs a model and self-report validation."
+      },
+      {
+        "layer": "application",
+        "capability": "Quest XR adapter",
+        "blocked_by": "PHY-15",
+        "reason": "No Quest target."
+      }
+    ],
+    "target_pipeline": {
+      "executable": false,
+      "note": "Window size assumes ~256 Hz EEG; set from the real device rate. Implementation names are proposed; owners may rename them when they build the parts.",
+      "pipeline": {
+        "schema_version": "1.0",
+        "nodes": [
+          {
+            "id": "sensor",
+            "kind": "device",
+            "implementation": "legacy-lsl-eeg",
+            "parameters": {}
+          },
+          {
+            "id": "filter",
+            "kind": "processing",
+            "implementation": "bandpass",
+            "parameters": {
+              "low_hz": 1.0,
+              "high_hz": 40.0
+            }
+          },
+          {
+            "id": "window",
+            "kind": "processing",
+            "implementation": "sliding-window",
+            "parameters": {
+              "size": 512.0,
+              "stride": 256.0
+            }
+          },
+          {
+            "id": "model",
+            "kind": "model",
+            "implementation": "cognitive-load-estimator",
+            "parameters": {}
+          },
+          {
+            "id": "app",
+            "kind": "application",
+            "implementation": "quest-workspace",
+            "parameters": {
+              "action": "hide-panels"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "sensor",
+            "target": "filter"
+          },
+          {
+            "source": "filter",
+            "target": "window"
+          },
+          {
+            "source": "window",
+            "target": "model"
+          },
+          {
+            "source": "model",
+            "target": "app"
+          }
+        ]
+      }
+    },
+    "user_message": "I can't build this yet: the EEG bridge, a cognitive-load model and the Quest target are missing."
+  },
+  "evaluation": {
+    "intent_rubric": [
+      "Uses EEG as named",
+      "Does not claim validated load estimation"
+    ]
+  }
+}
